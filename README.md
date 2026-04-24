@@ -431,6 +431,13 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --output-tsv /tmp/stwo-phase44d-source-emission-reuse.tsv \
   --capture-timings
 
+# Probe a custom Phase44D step-count range (fails closed if the execution-proof
+# surface cannot construct that source chain, e.g. current overflow at 4+ steps)
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  bench-stwo-phase44d-source-emission-reuse \
+  --step-counts 2 \
+  --output-tsv /tmp/stwo-phase44d-source-emission-reuse-steps.tsv
+
 # Measure the higher-layer Phase71 handoff receipt surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   bench-stwo-phase71-handoff-receipt-reuse \

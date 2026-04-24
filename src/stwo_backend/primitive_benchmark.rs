@@ -44,6 +44,7 @@ use super::history_replay_projection_prover::{
     prove_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
+    verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding,
     Phase43HistoryReplayProjectionCompactProofEnvelope,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 };
@@ -96,9 +97,9 @@ pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION: &str =
 pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE: &str =
     "phase30_source_bound_ordered_manifest_reuse_calibration";
 pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_VERSION: &str =
-    "stwo-phase44d-source-emission-benchmark-v1";
+    "stwo-phase44d-source-emission-benchmark-v2";
 pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_SCOPE: &str =
-    "phase44d_typed_source_emission_boundary_calibration";
+    "phase44d_typed_source_emission_boundary_scaling_calibration";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION: &str =
     "stwo-phase71-handoff-receipt-benchmark-v1";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE: &str =
@@ -117,6 +118,7 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
 const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
+const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 64;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
     "STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS";
@@ -298,6 +300,7 @@ pub struct StwoPhase44DSourceEmissionBenchmarkMeasurement {
     pub steps: usize,
     pub relation: String,
     pub serialized_bytes: usize,
+    pub emit_ms: f64,
     pub verify_ms: f64,
     pub verified: bool,
     pub note: String,
@@ -437,6 +440,7 @@ struct Phase44DSourceEmissionBenchmarkInput {
     phase43_trace: Phase43HistoryReplayTrace,
     compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
     boundary: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    boundary_emit_ms: f64,
 }
 
 #[derive(Clone)]
@@ -1049,6 +1053,13 @@ pub fn run_stwo_phase44d_source_emission_benchmark_with_options(
     )
 }
 
+pub fn run_stwo_phase44d_source_emission_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_benchmark_for_step_counts(step_counts, capture_timings)
+}
+
 fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     step_counts: &[usize],
     capture_timings: bool,
@@ -1069,12 +1080,31 @@ fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
                 .to_string(),
         ));
     }
-
+    if step_counts.iter().any(|&steps| !steps.is_power_of_two()) {
+        return Err(VmError::InvalidConfig(
+            "phase44d source emission benchmark requires power-of-two step counts".to_string(),
+        ));
+    }
+    if step_counts
+        .iter()
+        .any(|&steps| steps > PHASE44D_SOURCE_EMISSION_MAX_STEPS)
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "phase44d source emission benchmark supports at most {} steps",
+            PHASE44D_SOURCE_EMISSION_MAX_STEPS
+        )));
+    }
     let layout = phase12_default_decoding_layout();
     let mut rows = Vec::new();
     for &steps in step_counts {
-        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)?;
-        let benchmark_input = phase44d_source_emission_benchmark_input(&chain)?;
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "phase44d source emission benchmark cannot construct {}-step proof-checked source chain on the current execution-proof surface: {}",
+                    steps, error
+                ))
+            })?;
+        let benchmark_input = phase44d_source_emission_benchmark_input(&chain, capture_timings)?;
         rows.push(measure_phase44d_source_emission_shared(
             &benchmark_input,
             capture_timings,
@@ -1086,6 +1116,19 @@ fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
                 capture_timings,
             )?,
         );
+        rows.push(measure_phase44d_source_emission_compact_projection_only(
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(measure_phase44d_source_emission_manifest_replay_only(
+            &chain,
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(measure_phase44d_source_emission_boundary_binding_only(
+            &benchmark_input,
+            capture_timings,
+        )?);
     }
 
     if let Some(failed) = rows.iter().find(|row| !row.verified) {
@@ -1488,11 +1531,11 @@ pub fn save_stwo_phase44d_source_emission_benchmark_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\tverify_ms\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\temit_ms\tverify_ms\tverified\tnote\n",
     );
     for row in &report.rows {
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
             report.benchmark_version,
             report.semantic_scope,
             report.timing_mode,
@@ -1504,6 +1547,7 @@ pub fn save_stwo_phase44d_source_emission_benchmark_report_tsv(
             row.steps,
             row.relation,
             row.serialized_bytes,
+            format_timing_ms(row.emit_ms),
             format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
@@ -2551,21 +2595,25 @@ fn phase44d_prepare_benchmark_trace_from_sources(
 
 fn phase44d_source_emission_benchmark_input(
     chain: &Phase12DecodingChainManifest,
+    capture_timings: bool,
 ) -> Result<Phase44DSourceEmissionBenchmarkInput> {
     let shared_manifest = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
     let phase43_trace = phase44d_prepare_benchmark_trace_from_sources(chain, &shared_manifest)?;
     let compact_envelope =
         prove_phase43_history_replay_projection_compact_claim_envelope(&phase43_trace)?;
-    let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-        &phase43_trace,
-        &shared_manifest,
-    )?;
+    let (boundary, boundary_emit_ms) = measure_elapsed_ms(capture_timings, || {
+        emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &phase43_trace,
+            &shared_manifest,
+        )
+    })?;
     Ok(Phase44DSourceEmissionBenchmarkInput {
         total_steps: chain.total_steps,
         shared_manifest,
         phase43_trace,
         compact_envelope,
         boundary,
+        boundary_emit_ms,
     })
 }
 
@@ -2579,6 +2627,22 @@ fn phase44d_source_emission_serialized_bytes(
         + serde_json::to_vec(compact_envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
             .len())
+}
+
+fn phase44d_boundary_serialized_bytes(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(boundary)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
+}
+
+fn phase43_compact_projection_serialized_bytes(
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(compact_envelope)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
 }
 
 fn measure_phase44d_source_emission_shared(
@@ -2601,9 +2665,10 @@ fn measure_phase44d_source_emission_shared(
         steps: input.total_steps,
         relation: "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof".to_string(),
         serialized_bytes,
+        emit_ms: input.boundary_emit_ms,
         verify_ms,
         verified,
-        note: "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface".to_string(),
+        note: "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface; emit_ms reports boundary construction cost separately".to_string(),
     })
 }
 
@@ -2614,9 +2679,7 @@ fn measure_phase44d_source_emission_manifest_plus_compact_baseline(
 ) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
     debug_assert_eq!(input.phase43_trace.total_steps, input.total_steps);
     let serialized_bytes = phase30_manifest_serialized_bytes(&input.shared_manifest)?
-        + serde_json::to_vec(&input.compact_envelope)
-            .map_err(|error| VmError::Serialization(error.to_string()))?
-            .len();
+        + phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
     let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
         let compact_ok = verify_phase43_history_replay_projection_compact_claim_envelope(
             &input.compact_envelope.claim,
@@ -2639,9 +2702,83 @@ fn measure_phase44d_source_emission_manifest_plus_compact_baseline(
         steps: input.total_steps,
         relation: "ordered Phase30 manifest plus one compact Phase43 projection proof".to_string(),
         serialized_bytes,
+        emit_ms: 0.0,
         verify_ms,
         verified,
         note: "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain as a lower-layer baseline".to_string(),
+    })
+}
+
+fn measure_phase44d_source_emission_compact_projection_only(
+    input: &Phase44DSourceEmissionBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
+    let serialized_bytes = phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase43_history_replay_projection_compact_claim_envelope(
+            &input.compact_envelope.claim,
+            &input.compact_envelope.proof,
+        )
+    })?;
+    Ok(StwoPhase44DSourceEmissionBenchmarkMeasurement {
+        primitive: "phase43_compact_projection_proof".to_string(),
+        backend_variant: "compact_phase43_projection_proof_only".to_string(),
+        steps: input.total_steps,
+        relation: "one compact Phase43 projection proof envelope".to_string(),
+        serialized_bytes,
+        emit_ms: 0.0,
+        verify_ms,
+        verified,
+        note: "causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on".to_string(),
+    })
+}
+
+fn measure_phase44d_source_emission_manifest_replay_only(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase44DSourceEmissionBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
+    let serialized_bytes = phase30_manifest_serialized_bytes(&input.shared_manifest)?;
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &input.shared_manifest,
+            chain,
+        )
+    })?;
+    Ok(StwoPhase44DSourceEmissionBenchmarkMeasurement {
+        primitive: "phase30_source_bound_manifest_replay".to_string(),
+        backend_variant: "phase30_manifest_replay_only".to_string(),
+        steps: input.total_steps,
+        relation: "ordered Phase30 manifest replay against the proof-checked Phase12 chain".to_string(),
+        serialized_bytes,
+        emit_ms: 0.0,
+        verify_ms,
+        verified: true,
+        note: "causal decomposition row: isolates the ordered Phase30 manifest replay that the lower-layer baseline pays after compact proof verification".to_string(),
+    })
+}
+
+fn measure_phase44d_source_emission_boundary_binding_only(
+    input: &Phase44DSourceEmissionBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
+    let serialized_bytes = phase44d_boundary_serialized_bytes(&input.boundary)?;
+    let (acceptance, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+            &input.boundary,
+            &input.compact_envelope.claim,
+        )
+    })?;
+    Ok(StwoPhase44DSourceEmissionBenchmarkMeasurement {
+        primitive: "phase44d_source_chain_public_output_boundary".to_string(),
+        backend_variant: "phase44d_typed_boundary_binding_only".to_string(),
+        steps: input.total_steps,
+        relation: "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification".to_string(),
+        serialized_bytes,
+        emit_ms: input.boundary_emit_ms,
+        verify_ms,
+        verified: acceptance.final_useful_compression_boundary,
+        note: "causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface".to_string(),
     })
 }
 
@@ -4708,9 +4845,10 @@ mod tests {
     fn phase44d_source_emission_benchmark_preserves_expected_row_shape() {
         let report = run_stwo_phase44d_source_emission_benchmark_with_options(false)
             .expect("phase44d source emission benchmark should run");
-        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.rows.len(), PHASE44D_SOURCE_EMISSION_STEP_COUNTS.len() * 5);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
         assert!(report.rows.iter().any(|row| {
             row.backend_variant == "typed_source_boundary_plus_compact_projection" && row.steps == 2
         }));
@@ -4720,12 +4858,13 @@ mod tests {
     fn phase44d_source_emission_benchmark_defaults_to_zero_timings_without_capture() {
         let report = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2], false)
             .expect("phase44d source emission benchmark should run");
-        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.rows.len(), 5);
         assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
         assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
         assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
         assert_eq!(report.timing_runs, 0);
         assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.emit_ms == 0.0));
         assert!(report.rows.iter().all(|row| row.verified));
     }
 
@@ -4753,17 +4892,48 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_benchmark_rejects_non_power_of_two_step_counts() {
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 6], false)
+            .expect_err("non-power-of-two step counts must fail");
+        assert!(error.to_string().contains("requires power-of-two step counts"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_rejects_oversized_step_counts() {
+        let error =
+            run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 128], false)
+                .expect_err("oversized step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("supports at most 64 steps"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_surfaces_execution_proof_overflow_at_four_steps() {
+        let error = run_stwo_phase44d_source_emission_benchmark_for_steps(&[4], false)
+            .expect_err("four-step Phase44D benchmark should surface current execution-proof overflow");
+        assert!(error
+            .to_string()
+            .contains("cannot construct 4-step proof-checked source chain"));
+        assert!(error
+            .to_string()
+            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
+    }
+
+    #[test]
     fn phase44d_source_emission_benchmark_uses_publication_profile() {
         let layout = phase12_default_decoding_layout();
         let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 2)
             .expect("phase12 decoding family demo");
-        let input = phase44d_source_emission_benchmark_input(&chain).expect("benchmark input");
+        let input =
+            phase44d_source_emission_benchmark_input(&chain, false).expect("benchmark input");
         assert_eq!(
             chain.steps[0].proof.claim.options,
             crate::proof::publication_v1_stark_options()
         );
         assert_eq!(input.phase43_trace.total_steps, input.total_steps);
         assert_eq!(input.shared_manifest.total_steps, input.total_steps);
+        assert_eq!(input.boundary_emit_ms, 0.0);
     }
 
     #[test]
@@ -4771,7 +4941,8 @@ mod tests {
         let layout = phase12_default_decoding_layout();
         let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
             .expect("phase12 decoding family demo");
-        let mut input = phase44d_source_emission_benchmark_input(&chain).expect("benchmark input");
+        let mut input =
+            phase44d_source_emission_benchmark_input(&chain, false).expect("benchmark input");
         input.compact_envelope.proof[0] ^= 0x01;
         let error = measure_phase44d_source_emission_shared(&input, false)
             .expect_err("tampered compact proof must fail");

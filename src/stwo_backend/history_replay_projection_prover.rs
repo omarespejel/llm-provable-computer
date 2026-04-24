@@ -1679,6 +1679,41 @@ pub fn verify_phase44d_history_replay_projection_external_source_root_acceptance
             "Phase 44D source-root compact envelope verification returned false".to_string(),
         ));
     }
+    build_phase44d_history_replay_projection_external_source_root_acceptance(
+        source_claim,
+        &compact_envelope.claim,
+        emitted_canonical_source_root,
+    )
+}
+
+pub fn verify_phase44d_history_replay_projection_external_source_root_binding(
+    source_claim: &Phase43HistoryReplayProjectionSourceRootClaim,
+    compact_claim: &Phase43HistoryReplayProjectionCompactClaim,
+    emitted_canonical_source_root: &str,
+) -> Result<Phase44DHistoryReplayProjectionExternalSourceRootAcceptance> {
+    if emitted_canonical_source_root != source_claim.canonical_source_root {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D emitted canonical source root does not match source claim canonical source root"
+                .to_string(),
+        ));
+    }
+    if !verify_phase43_history_replay_projection_source_root_binding(source_claim, compact_claim)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D source-root compact claim binding returned false".to_string(),
+        ));
+    }
+    build_phase44d_history_replay_projection_external_source_root_acceptance(
+        source_claim,
+        compact_claim,
+        emitted_canonical_source_root,
+    )
+}
+
+fn build_phase44d_history_replay_projection_external_source_root_acceptance(
+    source_claim: &Phase43HistoryReplayProjectionSourceRootClaim,
+    compact_claim: &Phase43HistoryReplayProjectionCompactClaim,
+    emitted_canonical_source_root: &str,
+) -> Result<Phase44DHistoryReplayProjectionExternalSourceRootAcceptance> {
     Ok(
         Phase44DHistoryReplayProjectionExternalSourceRootAcceptance {
             acceptance_version:
@@ -1687,20 +1722,12 @@ pub fn verify_phase44d_history_replay_projection_external_source_root_acceptance
             emitted_canonical_source_root: emitted_canonical_source_root.to_string(),
             source_claim_canonical_source_root: source_claim.canonical_source_root.clone(),
             source_root_preimage_commitment: source_claim.source_root_preimage_commitment.clone(),
-            compact_projection_trace_root: compact_envelope
-                .claim
-                .stwo_projection_trace_root
-                .clone(),
-            compact_preprocessed_trace_root: compact_envelope
-                .claim
-                .stwo_preprocessed_trace_root
-                .clone(),
+            compact_projection_trace_root: compact_claim.stwo_projection_trace_root.clone(),
+            compact_preprocessed_trace_root: compact_claim.stwo_preprocessed_trace_root.clone(),
             terminal_boundary_logup_statement_commitment: source_claim
                 .terminal_boundary_logup_statement_commitment
                 .clone(),
-            compact_claim_useful_compression_boundary: compact_envelope
-                .claim
-                .useful_compression_boundary,
+            compact_claim_useful_compression_boundary: compact_claim.useful_compression_boundary,
             final_useful_compression_boundary: true,
         },
     )
@@ -1882,6 +1909,23 @@ pub fn verify_phase44d_history_replay_projection_source_chain_public_output_boun
     verify_phase44d_history_replay_projection_source_emission_public_output_acceptance(
         &boundary.source_emission_public_output,
         compact_envelope,
+    )
+}
+
+pub fn verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_claim: &Phase43HistoryReplayProjectionCompactClaim,
+) -> Result<Phase44DHistoryReplayProjectionExternalSourceRootAcceptance> {
+    validate_phase44d_history_replay_projection_source_chain_public_output_boundary(boundary)?;
+    let public_output = &boundary.source_emission_public_output;
+    validate_phase44d_history_replay_projection_source_emission_public_output(public_output)?;
+    verify_phase44d_history_replay_projection_external_source_root_binding(
+        &public_output.source_emission.source_claim,
+        compact_claim,
+        &public_output
+            .source_emission
+            .emitted_root_artifact
+            .emitted_canonical_source_root,
     )
 }
 
@@ -5899,6 +5943,57 @@ mod tests {
             .expect("recommit source-chain public output boundary")
         );
         assert!(acceptance.final_useful_compression_boundary);
+    }
+
+    #[test]
+    fn phase44d_source_emission_public_output_boundary_binding_matches_full_acceptance() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+
+        let full =
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+                &boundary,
+                &compact_envelope,
+            )
+            .expect("full Phase44D boundary acceptance should verify");
+        let binding =
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                &boundary,
+                &compact_envelope.claim,
+            )
+            .expect("Phase44D boundary binding should verify after compact-proof checks");
+
+        assert_eq!(binding, full);
+    }
+
+    #[test]
+    fn phase44d_source_emission_public_output_boundary_binding_rejects_stale_compact_claim() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+
+        let mut stale_compact_claim = compact_envelope.claim.clone();
+        stale_compact_claim.stwo_projection_trace_root = hash32('g');
+
+        let error =
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                &boundary,
+                &stale_compact_claim,
+            )
+            .expect_err("stale compact claim must reject Phase44D boundary binding");
+
+        assert!(!error.to_string().is_empty());
     }
 
     #[test]

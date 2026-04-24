@@ -90,6 +90,7 @@ use llm_provable_computer::{
     run_stwo_phase30_source_bound_manifest_reuse_benchmark,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options,
     run_stwo_phase44d_source_emission_benchmark,
+    run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
@@ -483,6 +484,9 @@ enum Command {
         /// Optional file where the benchmark JSON will be written.
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
+        /// Optional comma-delimited step counts. Defaults to the publication sweep.
+        #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
+        step_counts: Vec<usize>,
         /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
@@ -1948,10 +1952,12 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::BenchStwoPhase44dSourceEmissionReuse {
             output_tsv,
             output_json,
+            step_counts,
             capture_timings,
         } => bench_stwo_phase44d_source_emission_reuse_command(
             &output_tsv,
             output_json.as_deref(),
+            &step_counts,
             capture_timings,
         )?,
         Command::BenchStwoPhase71HandoffReceiptReuse {
@@ -3340,12 +3346,14 @@ fn bench_stwo_phase30_source_bound_manifest_reuse_command(
 fn bench_stwo_phase44d_source_emission_reuse_command(
     output_tsv: &Path,
     output_json: Option<&Path>,
+    step_counts: &[usize],
     capture_timings: bool,
 ) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
         let _ = output_tsv;
         let _ = output_json;
+        let _ = step_counts;
         let _ = capture_timings;
         return Err(VmError::UnsupportedProof(
             "S-two Phase44D source emission benchmark requires building with `--features stwo-backend`"
@@ -3369,10 +3377,14 @@ fn bench_stwo_phase44d_source_emission_reuse_command(
                 }
             }
         }
-        let report = if capture_timings {
-            run_stwo_phase44d_source_emission_benchmark_with_options(true)?
+        let report = if step_counts.is_empty() {
+            if capture_timings {
+                run_stwo_phase44d_source_emission_benchmark_with_options(true)?
+            } else {
+                run_stwo_phase44d_source_emission_benchmark()?
+            }
         } else {
-            run_stwo_phase44d_source_emission_benchmark()?
+            run_stwo_phase44d_source_emission_benchmark_for_steps(step_counts, capture_timings)?
         };
         save_stwo_phase44d_source_emission_benchmark_report_tsv(&report, output_tsv)?;
         if let Some(path) = output_json {
@@ -3384,11 +3396,12 @@ fn bench_stwo_phase44d_source_emission_reuse_command(
         println!("semantic_scope: {}", report.semantic_scope);
         for row in &report.rows {
             println!(
-                "phase44d_source_emission_benchmark: {} {} steps={} serialized_bytes={} verify_ms={} verified={}",
+                "phase44d_source_emission_benchmark: {} {} steps={} serialized_bytes={} emit_ms={} verify_ms={} verified={}",
                 row.primitive,
                 row.backend_variant,
                 row.steps,
                 row.serialized_bytes,
+                row.emit_ms,
                 row.verify_ms,
                 row.verified
             );
@@ -13363,6 +13376,34 @@ mod cli_dispatch_tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_benchmark_command_preserves_step_counts_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-source-emission-reuse",
+                "--step-counts",
+                "2,4,8,16",
+                "--output-tsv",
+                "phase44d.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-source-emission-reuse"),
+                OsString::from("--step-counts"),
+                OsString::from("2,4,8,16"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d.tsv"),
+            ]
+        );
+    }
+
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
     fn phase71_handoff_receipt_benchmark_command_is_hidden_without_stwo_backend() {
@@ -13642,6 +13683,7 @@ mod cli_dispatch_tests {
                 let Command::BenchStwoPhase44dSourceEmissionReuse {
                     output_tsv,
                     output_json,
+                    step_counts,
                     capture_timings,
                 } = cli.command
                 else {
@@ -13651,6 +13693,7 @@ mod cli_dispatch_tests {
                 let err = super::bench_stwo_phase44d_source_emission_reuse_command(
                     &output_tsv,
                     output_json.as_deref(),
+                    &step_counts,
                     capture_timings,
                 )
                 .expect_err("identical output paths must fail before benchmark execution");

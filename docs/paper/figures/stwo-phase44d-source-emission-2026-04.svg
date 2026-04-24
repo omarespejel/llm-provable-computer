@@ -1,52 +1,127 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="930" viewBox="0 0 1700 930">
-<rect width="100%" height="100%" fill="#F5F1E8"/>
-<text x="850.0" y="72.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="38" font-weight="700" fill="#1F2937">Phase44D Source-Emission Boundary Calibration</text>
-<text x="850.0" y="108.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="400" fill="#4B5563">One typed source-chain public-output boundary versus the lower-layer Phase30 manifest plus compact Phase43 projection baseline</text>
-<text x="850.0" y="136.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Median of 5 measured runs. Verification time compares one typed Phase44D source-emission boundary against the lower-layer manifest-plus-compact-proof baseline.</text>
-<rect x="150" y="136" width="42" height="20" rx="7" fill="#2563EB"/>
-<text x="208.0" y="152.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="21" font-weight="400" fill="#374151">Typed Phase44D boundary + compact proof</text>
-<rect x="680" y="136" width="42" height="20" rx="7" fill="#D97706"/>
-<text x="738.0" y="152.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="21" font-weight="400" fill="#374151">Phase30 manifest + compact proof baseline</text>
-<rect x="90" y="220" width="720" height="420" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
-<text x="450.0" y="268.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Serialized Boundary Surface</text>
-<line x1="178.0" y1="489.0" x2="770.0" y2="489.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="166.0" y="495.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">15,310</text>
-<line x1="178.0" y1="430.0" x2="770.0" y2="430.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="166.0" y="436.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">30,619</text>
-<line x1="178.0" y1="371.0" x2="770.0" y2="371.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="166.0" y="377.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">45,928</text>
-<line x1="178.0" y1="312.0" x2="770.0" y2="312.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="166.0" y="318.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">61,238</text>
-<line x1="178.0" y1="548.0" x2="770.0" y2="548.0" stroke="#A9B3C0" stroke-width="2"/>
-<line x1="178.0" y1="312.0" x2="178.0" y2="548.0" stroke="#A9B3C0" stroke-width="2"/>
-<rect x="262.0" y="312.0" width="170.0" height="236.0" rx="16" fill="#2563EB"/>
-<text x="347.0" y="300.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="600" fill="#2563EB">61,238 B</text>
-<text x="347.0" y="578.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">Typed boundary</text>
-<text x="347.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#6B7280">2-step point</text>
-<rect x="516.0" y="323.0" width="170.0" height="225.0" rx="16" fill="#D97706"/>
-<text x="601.0" y="311.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="600" fill="#D97706">58,382 B</text>
-<text x="601.0" y="578.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">Manifest baseline</text>
-<text x="601.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#6B7280">2-step point</text>
-<rect x="890" y="220" width="720" height="420" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
-<text x="1250.0" y="268.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Verification Time</text>
-<line x1="978.0" y1="489.0" x2="1570.0" y2="489.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="966.0" y="495.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">4.179</text>
-<line x1="978.0" y1="430.0" x2="1570.0" y2="430.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="966.0" y="436.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">8.358</text>
-<line x1="978.0" y1="371.0" x2="1570.0" y2="371.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="966.0" y="377.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">12.5</text>
-<line x1="978.0" y1="312.0" x2="1570.0" y2="312.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="966.0" y="318.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">16.7</text>
-<line x1="978.0" y1="548.0" x2="1570.0" y2="548.0" stroke="#A9B3C0" stroke-width="2"/>
-<line x1="978.0" y1="312.0" x2="978.0" y2="548.0" stroke="#A9B3C0" stroke-width="2"/>
-<rect x="1062.0" y="534.2" width="170.0" height="13.8" rx="16" fill="#2563EB"/>
-<text x="1147.0" y="522.2" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="600" fill="#2563EB">0.978 ms</text>
-<text x="1147.0" y="578.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">Typed boundary</text>
-<text x="1147.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#6B7280">2-step point</text>
-<rect x="1316.0" y="312.0" width="170.0" height="236.0" rx="16" fill="#D97706"/>
-<text x="1401.0" y="300.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="600" fill="#D97706">16.7 ms</text>
-<text x="1401.0" y="578.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">Manifest baseline</text>
-<text x="1401.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#6B7280">2-step point</text>
-<text x="850.0" y="844.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">This is a single 2-step power-of-two calibration point. Larger checked points are currently blocked by the compact projection surface and the execution-proof ceiling, so the figure is intentionally a bar comparison rather than a fake trend line.</text>
-<text x="850.0" y="874.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">At the checked point, the typed Phase44D boundary is larger than the manifest baseline on serialized bytes and verifies faster than it.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1880" height="1280" viewBox="0 0 1880 1280" fill="none">
+<rect x="0" y="0" width="1880" height="1280" fill="#F8FAFC" />
+<text x="940.0" y="64.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="42" font-weight="600" fill="#1F2937">Phase44D Typed Boundary Over the Compact Projection Line</text>
+<text x="940.0" y="104.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="400" fill="#4B5563">Single checked power-of-two point at 2 steps with causal decomposition</text>
+<text x="940.0" y="136.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Median-of-5 measured timings from microsecond capture</text>
+<rect x="70.0" y="170.0" width="820.0" height="420.0" rx="28" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
+<text x="104.0" y="210.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">A. Main Verify Comparison</text>
+<text x="104.0" y="240.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#4B5563">Typed boundary vs lower-layer baseline over the same compact projection proof.</text>
+<text x="92.0" y="384.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Verify (ms)</text>
+<line x1="160.0" y1="260.0" x2="830.0" y2="260.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="265.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">19.7</text>
+<line x1="160.0" y1="309.6" x2="830.0" y2="309.6" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="314.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">15.8</text>
+<line x1="160.0" y1="359.2" x2="830.0" y2="359.2" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="364.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">11.8</text>
+<line x1="160.0" y1="408.8" x2="830.0" y2="408.8" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="413.8" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">7.877</text>
+<line x1="160.0" y1="458.4" x2="830.0" y2="458.4" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="463.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">3.938</text>
+<line x1="160.0" y1="508.0" x2="830.0" y2="508.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="513.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0</text>
+<line x1="160.0" y1="508.0" x2="830.0" y2="508.0" stroke="#111827" stroke-width="1.5" />
+<line x1="160.0" y1="260.0" x2="160.0" y2="508.0" stroke="#111827" stroke-width="1.5" />
+<text x="495.0" y="538.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#374151">2</text>
+<text x="495.0" y="566.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Steps</text>
+<line x1="160.0" y1="266.0" x2="188.0" y2="266.0" stroke="#2563EB" stroke-width="4" stroke-linecap="round" />
+<circle cx="174.0" cy="266.0" r="4.5" fill="#2563EB" />
+<text x="198.0" y="271.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Typed Phase44D boundary + compact proof</text>
+<line x1="390.0" y1="266.0" x2="418.0" y2="266.0" stroke="#D97706" stroke-width="4" stroke-linecap="round" />
+<circle cx="404.0" cy="266.0" r="4.5" fill="#D97706" />
+<text x="428.0" y="271.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Phase30 manifest + compact proof baseline</text>
+<circle cx="495.0" cy="495.9" r="5.5" fill="#2563EB" stroke="#FFFFFF" stroke-width="2" />
+<text x="507.0" y="485.9" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#2563EB">0.957 ms</text>
+<circle cx="495.0" cy="297.8" r="5.5" fill="#D97706" stroke="#FFFFFF" stroke-width="2" />
+<text x="507.0" y="287.8" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#D97706">16.7 ms</text>
+<rect x="990.0" y="170.0" width="820.0" height="420.0" rx="28" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
+<text x="1024.0" y="210.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">B. Causal Verify Breakdown</text>
+<text x="1024.0" y="240.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#4B5563">Compact-proof verification, manifest replay, and boundary binding split apart.</text>
+<text x="1012.0" y="384.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Verify (ms)</text>
+<line x1="1080.0" y1="260.0" x2="1750.0" y2="260.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="265.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">18.7</text>
+<line x1="1080.0" y1="309.6" x2="1750.0" y2="309.6" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="314.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">15</text>
+<line x1="1080.0" y1="359.2" x2="1750.0" y2="359.2" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="364.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">11.2</text>
+<line x1="1080.0" y1="408.8" x2="1750.0" y2="408.8" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="413.8" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">7.484</text>
+<line x1="1080.0" y1="458.4" x2="1750.0" y2="458.4" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="463.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">3.742</text>
+<line x1="1080.0" y1="508.0" x2="1750.0" y2="508.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="513.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0</text>
+<line x1="1080.0" y1="508.0" x2="1750.0" y2="508.0" stroke="#111827" stroke-width="1.5" />
+<line x1="1080.0" y1="260.0" x2="1080.0" y2="508.0" stroke="#111827" stroke-width="1.5" />
+<text x="1415.0" y="538.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#374151">2</text>
+<text x="1415.0" y="566.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Steps</text>
+<line x1="1080.0" y1="266.0" x2="1108.0" y2="266.0" stroke="#475569" stroke-width="4" stroke-linecap="round" />
+<circle cx="1094.0" cy="266.0" r="4.5" fill="#475569" />
+<text x="1118.0" y="271.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Compact Phase43 proof only</text>
+<line x1="1310.0" y1="266.0" x2="1338.0" y2="266.0" stroke="#B45309" stroke-width="4" stroke-linecap="round" />
+<circle cx="1324.0" cy="266.0" r="4.5" fill="#B45309" />
+<text x="1348.0" y="271.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Phase30 manifest replay only</text>
+<line x1="1540.0" y1="266.0" x2="1568.0" y2="266.0" stroke="#059669" stroke-width="4" stroke-linecap="round" />
+<circle cx="1554.0" cy="266.0" r="4.5" fill="#059669" />
+<text x="1578.0" y="271.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Phase44D boundary binding only</text>
+<circle cx="1415.0" cy="502.0" r="5.5" fill="#475569" stroke="#FFFFFF" stroke-width="2" />
+<text x="1427.0" y="492.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#475569">0.456 ms</text>
+<circle cx="1415.0" cy="297.8" r="5.5" fill="#B45309" stroke="#FFFFFF" stroke-width="2" />
+<text x="1427.0" y="287.8" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#B45309">15.9 ms</text>
+<circle cx="1415.0" cy="502.7" r="5.5" fill="#059669" stroke="#FFFFFF" stroke-width="2" />
+<text x="1427.0" y="492.7" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#059669">0.399 ms</text>
+<rect x="70.0" y="720.0" width="820.0" height="420.0" rx="28" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
+<text x="104.0" y="760.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">C. Serialized Surface</text>
+<text x="104.0" y="790.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#4B5563">Phase44D keeps the latency win but pays a modest byte premium at the checked point.</text>
+<text x="92.0" y="934.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Bytes</text>
+<line x1="160.0" y1="810.0" x2="830.0" y2="810.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="815.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">66,137</text>
+<line x1="160.0" y1="859.6" x2="830.0" y2="859.6" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="864.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">52,910</text>
+<line x1="160.0" y1="909.2" x2="830.0" y2="909.2" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="914.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">39,682</text>
+<line x1="160.0" y1="958.8" x2="830.0" y2="958.8" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="963.8" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">26,455</text>
+<line x1="160.0" y1="1008.4" x2="830.0" y2="1008.4" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="1013.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">13,227</text>
+<line x1="160.0" y1="1058.0" x2="830.0" y2="1058.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="144.0" y="1063.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0</text>
+<line x1="160.0" y1="1058.0" x2="830.0" y2="1058.0" stroke="#111827" stroke-width="1.5" />
+<line x1="160.0" y1="810.0" x2="160.0" y2="1058.0" stroke="#111827" stroke-width="1.5" />
+<text x="495.0" y="1088.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#374151">2</text>
+<text x="495.0" y="1116.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Steps</text>
+<line x1="160.0" y1="816.0" x2="188.0" y2="816.0" stroke="#2563EB" stroke-width="4" stroke-linecap="round" />
+<circle cx="174.0" cy="816.0" r="4.5" fill="#2563EB" />
+<text x="198.0" y="821.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Typed Phase44D boundary + compact proof</text>
+<line x1="390.0" y1="816.0" x2="418.0" y2="816.0" stroke="#D97706" stroke-width="4" stroke-linecap="round" />
+<circle cx="404.0" cy="816.0" r="4.5" fill="#D97706" />
+<text x="428.0" y="821.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Phase30 manifest + compact proof baseline</text>
+<circle cx="495.0" cy="828.4" r="5.5" fill="#2563EB" stroke="#FFFFFF" stroke-width="2" />
+<text x="507.0" y="818.4" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#2563EB">61,238 B</text>
+<circle cx="495.0" cy="839.1" r="5.5" fill="#D97706" stroke="#FFFFFF" stroke-width="2" />
+<text x="507.0" y="829.1" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#D97706">58,382 B</text>
+<rect x="990.0" y="720.0" width="820.0" height="420.0" rx="28" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
+<text x="1024.0" y="760.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">D. Boundary Emit Cost</text>
+<text x="1024.0" y="790.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#4B5563">Boundary construction is measured separately from verifier latency.</text>
+<text x="1012.0" y="934.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Emit (ms)</text>
+<line x1="1080.0" y1="810.0" x2="1750.0" y2="810.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="815.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">1.22</text>
+<line x1="1080.0" y1="859.6" x2="1750.0" y2="859.6" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="864.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0.976</text>
+<line x1="1080.0" y1="909.2" x2="1750.0" y2="909.2" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="914.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0.732</text>
+<line x1="1080.0" y1="958.8" x2="1750.0" y2="958.8" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="963.8" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0.488</text>
+<line x1="1080.0" y1="1008.4" x2="1750.0" y2="1008.4" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="1013.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0.244</text>
+<line x1="1080.0" y1="1058.0" x2="1750.0" y2="1058.0" stroke="#E5E7EB" stroke-width="1" />
+<text x="1064.0" y="1063.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#6B7280">0</text>
+<line x1="1080.0" y1="1058.0" x2="1750.0" y2="1058.0" stroke="#111827" stroke-width="1.5" />
+<line x1="1080.0" y1="810.0" x2="1080.0" y2="1058.0" stroke="#111827" stroke-width="1.5" />
+<text x="1415.0" y="1088.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#374151">2</text>
+<text x="1415.0" y="1116.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#374151">Steps</text>
+<line x1="1080.0" y1="816.0" x2="1108.0" y2="816.0" stroke="#2563EB" stroke-width="4" stroke-linecap="round" />
+<circle cx="1094.0" cy="816.0" r="4.5" fill="#2563EB" />
+<text x="1118.0" y="821.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#374151">Typed Phase44D boundary + compact proof</text>
+<circle cx="1415.0" cy="847.8" r="5.5" fill="#2563EB" stroke="#FFFFFF" stroke-width="2" />
+<text x="1427.0" y="837.8" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="600" fill="#2563EB">1.034 ms</text>
+<text x="70.0" y="1234.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#334155">Checked point: 2 steps. Typed boundary verify 0.957 ms vs 16.7 ms for the lower-layer baseline (17.4x). Causal split: compact proof 0.456 ms, manifest replay 15.9 ms, boundary binding 0.399 ms, emit 1.034 ms.</text>
 </svg>
