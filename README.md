@@ -410,25 +410,38 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 
 # Measure the one-shot primitive calibration surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  bench-stwo-primitive-lookup-vs-naive --capture-timings
+  bench-stwo-primitive-lookup-vs-naive \
+  --output-tsv /tmp/stwo-primitive-lookup-vs-naive.tsv \
+  --capture-timings
 
 # Measure repeated shared-table reuse directly
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  bench-stwo-shared-table-reuse --capture-timings
+  bench-stwo-shared-table-reuse \
+  --output-tsv /tmp/stwo-shared-table-reuse.tsv \
+  --capture-timings
 
 # Measure the richer Phase12-style shared normalization + activation bundle
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  bench-stwo-phase12-shared-lookup-bundle-reuse --capture-timings
+  bench-stwo-phase12-shared-lookup-bundle-reuse \
+  --output-tsv /tmp/stwo-phase12-shared-lookup-bundle-reuse.tsv \
+  --capture-timings
 
 # Measure the higher-layer typed Phase44D source-emission boundary
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  bench-stwo-phase44d-source-emission-reuse --capture-timings
+  bench-stwo-phase44d-source-emission-reuse \
+  --output-tsv /tmp/stwo-phase44d-source-emission-reuse.tsv \
+  --capture-timings
 
 # Measure the higher-layer Phase71 handoff receipt surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  bench-stwo-phase71-handoff-receipt-reuse --capture-timings
+  bench-stwo-phase71-handoff-receipt-reuse \
+  --output-tsv /tmp/stwo-phase71-handoff-receipt-reuse.tsv \
+  --capture-timings
 
 # Freeze the publication-facing benchmark evidence
+# These scripts default to deterministic timing placeholders.
+# Set CAPTURE_TIMINGS=1 and ALLOW_HOST_DEPENDENT_OUTPUTS=1 when refreshing
+# checked canonical timing evidence on the local benchmark host.
 bash scripts/paper/generate_stwo_primitive_lookup_vs_naive_benchmark.sh
 bash scripts/paper/generate_stwo_shared_table_reuse_benchmark.sh
 bash scripts/paper/generate_stwo_phase12_shared_lookup_bundle_benchmark.sh
