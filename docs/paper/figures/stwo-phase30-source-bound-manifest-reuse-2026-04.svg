@@ -67,5 +67,5 @@
 <circle cx="1279.0" cy="412.3" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <circle cx="1576.0" cy="296.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <text x="1570.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="600" fill="#D97706">86.5 ms</text>
-<text x="850.0" y="842.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">This is a manifest-layer calibration only: acceptance means the ordered Phase30 source-bound check scales better than repeating one-step source-bound checks.</text>
+<text x="850.0" y="842.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">This is a manifest-layer calibration only: acceptance means the ordered Phase30 manifest re-derives exactly from the proof-checked Phase12 chain with the expected source-chain, layout, and boundary bindings.</text>
 </svg>

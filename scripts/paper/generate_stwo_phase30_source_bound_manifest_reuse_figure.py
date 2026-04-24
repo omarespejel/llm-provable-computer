@@ -423,7 +423,7 @@ def build_svg(*, grouped: dict[str, list[dict[str, str]]], measured: bool, runs:
             render_text(
                 WIDTH / 2,
                 842,
-                "This is a manifest-layer calibration only: acceptance means the ordered Phase30 source-bound check scales better than repeating one-step source-bound checks.",
+                "This is a manifest-layer calibration only: acceptance means the ordered Phase30 manifest re-derives exactly from the proof-checked Phase12 chain with the expected source-chain, layout, and boundary bindings.",
                 size=18,
                 fill="#6B7280",
             ),

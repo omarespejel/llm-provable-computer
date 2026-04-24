@@ -14,6 +14,7 @@ ALLOW_HOST_DEPENDENT_OUTPUTS="${ALLOW_HOST_DEPENDENT_OUTPUTS:-0}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.svg}"
+# Intentionally use ${VAR-default} so PNG_OUT= / PDF_OUT= disables optional rasters.
 PNG_OUT="${PNG_OUT-$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.png}"
 PDF_OUT="${PDF_OUT-$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.pdf}"
 
@@ -23,7 +24,7 @@ if [[ "$CAPTURE_TIMINGS" != "0" && "$CAPTURE_TIMINGS" != "1" ]]; then
 fi
 if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
   if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
-    echo "BENCH_RUNS must be a positive odd integer" >&2
+    echo "BENCH_RUNS must be a positive odd integer >= 3 when CAPTURE_TIMINGS=1" >&2
     exit 1
   fi
   if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
@@ -93,7 +94,7 @@ PY
   for output_path in "${NORMALIZED_OUTPUTS[@]}"; do
     for canonical_path in "${NORMALIZED_CANONICAL_PATHS[@]}"; do
       if [[ "$output_path" == "$canonical_path" ]]; then
-        echo "CAPTURE_TIMINGS=1 requires noncanonical output paths unless ALLOW_HOST_DEPENDENT_OUTPUTS=1" >&2
+        echo "CAPTURE_TIMINGS=1 with canonical tracked outputs requires ALLOW_HOST_DEPENDENT_OUTPUTS=1 or explicit noncanonical TSV_OUT/JSON_OUT/SVG_OUT overrides" >&2
         exit 1
       fi
     done

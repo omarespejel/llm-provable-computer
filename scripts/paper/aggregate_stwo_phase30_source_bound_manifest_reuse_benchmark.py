@@ -19,6 +19,8 @@ DETERMINISTIC_FIELDS = (
     "verified",
     "note",
 )
+EXPECTED_INPUT_TIMING_MODE = "measured_single_run"
+EXPECTED_INPUT_TIMING_POLICY = "single_run_from_microsecond_capture"
 
 
 def key_for(row: dict[str, Any]) -> tuple[str, str, int]:
@@ -78,9 +80,13 @@ def main() -> None:
 
     for input_path in args.inputs:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
-        if payload.get("timing_mode") != "measured_single_run":
+        if payload.get("timing_mode") != EXPECTED_INPUT_TIMING_MODE:
             raise SystemExit(
-                f"{input_path} must be a measured single-run benchmark payload; got {payload.get('timing_mode')!r}"
+                f"{input_path} must be a {EXPECTED_INPUT_TIMING_MODE!r} benchmark payload; got {payload.get('timing_mode')!r}"
+            )
+        if payload.get("timing_policy") != EXPECTED_INPUT_TIMING_POLICY:
+            raise SystemExit(
+                f"{input_path} must report timing_policy {EXPECTED_INPUT_TIMING_POLICY!r}; got {payload.get('timing_policy')!r}"
             )
         if payload.get("timing_runs") != 1:
             raise SystemExit(
