@@ -154,6 +154,34 @@ struct AuxiliaryState {
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ArithmeticSubsetProofMode {
+    LegacyCarryFree,
+    Phase12CarryAwareExperimental,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Clone, Debug)]
+struct Phase12CarryAwareArithmeticSubsetEval {
+    log_size: u32,
+    memory_size: usize,
+    initial_state: PublicState,
+    final_state: PublicState,
+}
+
+#[derive(Clone, Debug)]
+struct CarryAwareAuxiliaryState {
+    loaded_memory: i16,
+    raw_acc_active: i32,
+    wrap_delta: i16,
+    wrap_delta_inv: BaseField,
+    next_pc_active: u8,
+    next_acc_active: i16,
+    next_carry_active: bool,
+    next_memory_active: Vec<i16>,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CarryAwareArithmeticSubsetPrototypeRow {
     pub step_index: usize,
@@ -211,6 +239,68 @@ impl TraceLayout {
 
     fn next_acc_active(&self) -> usize {
         self.aux_prefix() + 3
+    }
+
+    fn next_memory_active(&self, index: usize) -> usize {
+        self.aux_prefix() + Self::AUX_PREFIX_WIDTH + index
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CarryAwareTraceLayout {
+    memory_size: usize,
+}
+
+impl CarryAwareTraceLayout {
+    const STATE_PREFIX_WIDTH: usize = 7;
+    const AUX_PREFIX_WIDTH: usize = 7;
+
+    fn new(memory_size: usize) -> Self {
+        Self { memory_size }
+    }
+
+    fn state_width(&self) -> usize {
+        Self::STATE_PREFIX_WIDTH + self.memory_size
+    }
+
+    fn total_width(&self) -> usize {
+        self.state_width() * 2 + Self::AUX_PREFIX_WIDTH + self.memory_size
+    }
+
+    fn next_prefix(&self) -> usize {
+        self.state_width()
+    }
+
+    fn aux_prefix(&self) -> usize {
+        self.state_width() * 2
+    }
+
+    fn loaded_memory(&self) -> usize {
+        self.aux_prefix()
+    }
+
+    fn raw_acc_active(&self) -> usize {
+        self.aux_prefix() + 1
+    }
+
+    fn wrap_delta(&self) -> usize {
+        self.aux_prefix() + 2
+    }
+
+    fn wrap_delta_inv(&self) -> usize {
+        self.aux_prefix() + 3
+    }
+
+    fn next_pc_active(&self) -> usize {
+        self.aux_prefix() + 4
+    }
+
+    fn next_acc_active(&self) -> usize {
+        self.aux_prefix() + 5
+    }
+
+    fn next_carry_active(&self) -> usize {
+        self.aux_prefix() + 6
     }
 
     fn next_memory_active(&self, index: usize) -> usize {
@@ -434,6 +524,291 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
     }
 }
 
+impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        // Keep the experimental subset within the same trace-degree envelope
+        // as the shipped carry-free path until the component is fully
+        // integrated with the prover's mask-point accounting.
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let layout = CarryAwareTraceLayout::new(self.memory_size);
+        let one = E::F::from(BaseField::from(1u32));
+        let zero = E::F::zero();
+        let wrap_basis = E::F::from(base_i32(1 << 16));
+
+        let current_pc = eval.next_trace_mask();
+        let current_acc = eval.next_trace_mask();
+        let current_sp = eval.next_trace_mask();
+        let current_zero = eval.next_trace_mask();
+        let current_carry = eval.next_trace_mask();
+        let current_halted = eval.next_trace_mask();
+        let current_acc_inv = eval.next_trace_mask();
+        let current_memory: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
+
+        let next_pc = eval.next_trace_mask();
+        let next_acc = eval.next_trace_mask();
+        let next_sp = eval.next_trace_mask();
+        let next_zero = eval.next_trace_mask();
+        let next_carry = eval.next_trace_mask();
+        let next_halted = eval.next_trace_mask();
+        let next_acc_inv = eval.next_trace_mask();
+        let next_memory: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
+        let loaded_memory_aux = eval.next_trace_mask();
+        let raw_acc_active_aux = eval.next_trace_mask();
+        let wrap_delta_aux = eval.next_trace_mask();
+        let wrap_delta_inv_aux = eval.next_trace_mask();
+        let next_pc_active_aux = eval.next_trace_mask();
+        let next_acc_active_aux = eval.next_trace_mask();
+        let next_carry_active_aux = eval.next_trace_mask();
+        let next_memory_active_aux: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
+
+        let opcode_flags: Vec<_> = OPCODE_COLUMN_NAMES
+            .iter()
+            .map(|name| eval.get_preprocessed_column(column_id(name)))
+            .collect();
+        let immediate = eval.get_preprocessed_column(column_id(IMMEDIATE_COLUMN));
+        let jump_target = eval.get_preprocessed_column(column_id(JUMP_TARGET_COLUMN));
+        let is_first_row = eval.get_preprocessed_column(column_id(FIRST_ROW_COLUMN));
+        let is_last_row = eval.get_preprocessed_column(column_id(LAST_ROW_COLUMN));
+        let address_flags: Vec<_> = (0..self.memory_size)
+            .map(|index| eval.get_preprocessed_column(column_id(&address_column_name(index))))
+            .collect();
+        let store_address_flags: Vec<_> = (0..self.memory_size)
+            .map(|index| eval.get_preprocessed_column(column_id(&store_address_column_name(index))))
+            .collect();
+
+        for bit in [
+            current_zero.clone(),
+            current_carry.clone(),
+            current_halted.clone(),
+            next_zero.clone(),
+            next_carry.clone(),
+            next_halted.clone(),
+            next_carry_active_aux.clone(),
+            is_first_row.clone(),
+            is_last_row.clone(),
+        ] {
+            eval.add_constraint(bit.clone() * (bit - one.clone()));
+        }
+
+        for selector in opcode_flags
+            .iter()
+            .cloned()
+            .chain(address_flags.iter().cloned())
+            .chain(store_address_flags.iter().cloned())
+        {
+            eval.add_constraint(selector.clone() * (selector - one.clone()));
+        }
+
+        let opcode_sum = opcode_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(opcode_sum - one.clone());
+
+        let load_immediate_selector = opcode_flags[1].clone();
+        let load_selector = opcode_flags[2].clone();
+        let store_selector = opcode_flags[3].clone();
+        let add_immediate_selector = opcode_flags[4].clone();
+        let add_memory_selector = opcode_flags[5].clone();
+        let sub_memory_selector = opcode_flags[6].clone();
+        let mul_memory_selector = opcode_flags[7].clone();
+        let jump_selector = opcode_flags[8].clone();
+        let jump_if_zero_selector = opcode_flags[9].clone();
+        let halt_selector = opcode_flags[10].clone();
+        let non_acc_selector = opcode_flags[0].clone()
+            + store_selector.clone()
+            + jump_selector.clone()
+            + jump_if_zero_selector.clone()
+            + halt_selector.clone();
+        let carry_sensitive_selector = add_immediate_selector.clone()
+            + add_memory_selector.clone()
+            + sub_memory_selector.clone()
+            + mul_memory_selector.clone();
+        let carry_clearing_selector = load_immediate_selector.clone() + load_selector.clone();
+
+        let memory_operand_selector = load_selector.clone()
+            + store_selector.clone()
+            + add_memory_selector.clone()
+            + sub_memory_selector.clone()
+            + mul_memory_selector.clone();
+        let address_sum = address_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(address_sum - memory_operand_selector);
+        let store_address_sum = store_address_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(store_address_sum - store_selector.clone());
+
+        eval.add_constraint(current_zero.clone() * current_acc.clone());
+        eval.add_constraint(
+            (one.clone() - current_zero.clone())
+                * (current_acc.clone() * current_acc_inv - one.clone()),
+        );
+        eval.add_constraint(next_zero.clone() * next_acc.clone());
+        eval.add_constraint(
+            (one.clone() - next_zero.clone()) * (next_acc.clone() * next_acc_inv - one.clone()),
+        );
+
+        let loaded_memory = address_flags
+            .iter()
+            .cloned()
+            .zip(current_memory.iter().cloned())
+            .fold(zero.clone(), |acc, (sel, value)| acc + sel * value);
+        eval.add_constraint(loaded_memory_aux.clone() - loaded_memory.clone());
+
+        eval.add_constraint(non_acc_selector.clone() * raw_acc_active_aux.clone());
+        eval.add_constraint(load_immediate_selector.clone() * (raw_acc_active_aux.clone() - immediate.clone()));
+        eval.add_constraint(load_selector.clone() * (raw_acc_active_aux.clone() - loaded_memory_aux.clone()));
+        eval.add_constraint(
+            add_immediate_selector.clone()
+                * (raw_acc_active_aux.clone() - current_acc.clone() - immediate.clone()),
+        );
+        eval.add_constraint(
+            add_memory_selector.clone()
+                * (raw_acc_active_aux.clone() - current_acc.clone() - loaded_memory_aux.clone()),
+        );
+        eval.add_constraint(
+            sub_memory_selector.clone()
+                * (raw_acc_active_aux.clone() - current_acc.clone() + loaded_memory_aux.clone()),
+        );
+        eval.add_constraint(
+            mul_memory_selector.clone()
+                * (raw_acc_active_aux.clone() - current_acc.clone() * loaded_memory_aux.clone()),
+        );
+
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (raw_acc_active_aux.clone()
+                    - next_acc_active_aux.clone()
+                    - wrap_delta_aux.clone() * wrap_basis.clone()),
+        );
+        eval.add_constraint((one.clone() - carry_sensitive_selector.clone()) * wrap_delta_aux.clone());
+        eval.add_constraint(
+            (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_inv_aux.clone(),
+        );
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (one.clone() - next_carry_active_aux.clone())
+                * wrap_delta_aux.clone(),
+        );
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (one.clone() - next_carry_active_aux.clone())
+                * wrap_delta_inv_aux.clone(),
+        );
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (wrap_delta_aux.clone() * wrap_delta_inv_aux.clone()
+                    - next_carry_active_aux.clone()),
+        );
+        eval.add_constraint(carry_clearing_selector.clone() * next_carry_active_aux.clone());
+        eval.add_constraint(
+            non_acc_selector.clone()
+                * (next_carry_active_aux.clone() - current_carry.clone()),
+        );
+
+        let pc_plus_one = current_pc.clone() + one.clone();
+        let jump_taken = current_zero.clone() * jump_target.clone()
+            + (one.clone() - current_zero.clone()) * pc_plus_one.clone();
+        let expected_pc_active = opcode_flags[0].clone() * pc_plus_one.clone()
+            + load_immediate_selector.clone() * pc_plus_one.clone()
+            + load_selector.clone() * pc_plus_one.clone()
+            + store_selector.clone() * pc_plus_one.clone()
+            + add_immediate_selector.clone() * pc_plus_one.clone()
+            + add_memory_selector.clone() * pc_plus_one.clone()
+            + sub_memory_selector.clone() * pc_plus_one.clone()
+            + mul_memory_selector.clone() * pc_plus_one.clone()
+            + jump_selector.clone() * jump_target.clone()
+            + jump_if_zero_selector.clone() * jump_taken
+            + halt_selector.clone() * current_pc.clone();
+        eval.add_constraint(next_pc_active_aux.clone() - expected_pc_active);
+
+        let wrapped_raw_acc = raw_acc_active_aux.clone() - wrap_delta_aux.clone() * wrap_basis;
+        let expected_acc_active = load_immediate_selector.clone() * immediate.clone()
+            + load_selector.clone() * loaded_memory_aux.clone()
+            + carry_sensitive_selector.clone() * wrapped_raw_acc
+            + non_acc_selector.clone() * current_acc.clone();
+        eval.add_constraint(next_acc_active_aux.clone() - expected_acc_active);
+
+        let expected_halted_active = halt_selector.clone();
+        let expected_next_pc = current_halted.clone() * current_pc.clone()
+            + (one.clone() - current_halted.clone()) * next_pc_active_aux;
+        let expected_next_acc = current_halted.clone() * current_acc.clone()
+            + (one.clone() - current_halted.clone()) * next_acc_active_aux;
+        let expected_next_sp = current_sp.clone();
+        let expected_next_carry = current_halted.clone() * current_carry.clone()
+            + (one.clone() - current_halted.clone()) * next_carry_active_aux.clone();
+        let expected_next_halted = current_halted.clone()
+            + (one.clone() - current_halted.clone()) * expected_halted_active;
+
+        eval.add_constraint(next_pc - expected_next_pc);
+        eval.add_constraint(next_acc - expected_next_acc);
+        eval.add_constraint(next_sp - expected_next_sp);
+        eval.add_constraint(next_carry - expected_next_carry);
+        eval.add_constraint(next_halted - expected_next_halted);
+
+        for (index, (current_mem, next_mem)) in current_memory
+            .iter()
+            .cloned()
+            .zip(next_memory.iter().cloned())
+            .enumerate()
+        {
+            let store_here = store_address_flags[index].clone();
+            let expected_next_mem_active = store_here.clone() * current_acc.clone()
+                + (one.clone() - store_here) * current_mem.clone();
+            eval.add_constraint(next_memory_active_aux[index].clone() - expected_next_mem_active);
+            let expected_next_mem = current_halted.clone() * current_mem.clone()
+                + (one.clone() - current_halted.clone()) * next_memory_active_aux[index].clone();
+            eval.add_constraint(next_mem - expected_next_mem);
+        }
+
+        constrain_public_state_carry_aware(
+            &mut eval,
+            &layout,
+            is_first_row,
+            &self.initial_state,
+            &current_pc,
+            &current_acc,
+            &current_sp,
+            &current_zero,
+            &current_carry,
+            &current_halted,
+            &current_memory,
+        );
+        constrain_public_state_carry_aware(
+            &mut eval,
+            &layout,
+            is_last_row,
+            &self.final_state,
+            &current_pc,
+            &current_acc,
+            &current_sp,
+            &current_zero,
+            &current_carry,
+            &current_halted,
+            &current_memory,
+        );
+
+        eval
+    }
+}
+
 pub(crate) fn prove_phase5_arithmetic_subset(
     witness: PreparedExecutionWitness,
 ) -> Result<VanillaStarkExecutionProof> {
@@ -562,6 +937,157 @@ pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof
     verify_phase7_auxiliary_proofs(proof)?;
     verify_phase8_embedded_normalization(proof, payload.embedded_normalization.as_ref())?;
     verify_phase9_embedded_activation_lookup(proof, payload.embedded_activation_lookup.as_ref())?;
+    verify_phase10_embedded_shared_normalization(
+        proof,
+        payload.embedded_shared_normalization.as_ref(),
+    )?;
+    verify_phase10_embedded_shared_activation_lookup(
+        proof,
+        payload.embedded_shared_activation_lookup.as_ref(),
+    )?;
+    Ok(true)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn prove_phase12_carry_aware_arithmetic_subset_experimental(
+    witness: PreparedExecutionWitness,
+) -> Result<VanillaStarkExecutionProof> {
+    validate_phase12_carry_aware_claim(&witness.claim)?;
+    let trace = &witness.state_trace;
+    validate_phase12_carry_aware_subset_witness(&witness.claim.program, trace, witness.claim.steps)?;
+
+    let trace_bundle = build_trace_bundle_with_mode(
+        &witness.claim.program,
+        trace,
+        ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+    )?;
+    let component = phase12_carry_aware_arithmetic_subset_component(
+        trace_bundle.log_size,
+        witness.claim.program.initial_memory(),
+        witness.claim.final_state.clone(),
+    );
+    let config = PcsConfig::default();
+    let twiddles = CpuBackend::precompute_twiddles(
+        CanonicCoset::new(
+            component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+
+    let prover_channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace_bundle.preprocessed_trace.clone());
+    tree_builder.commit(prover_channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace_bundle.base_trace.clone());
+    tree_builder.commit(prover_channel);
+
+    let stark_proof = prove::<CpuBackend, Blake2sM31MerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    )
+    .map_err(|error| {
+        VmError::UnsupportedProof(format!(
+            "experimental Phase12 carry-aware arithmetic-subset proving failed: {error}"
+        ))
+    })?;
+
+    let embedded_shared_normalization =
+        build_phase10_embedded_shared_normalization(&witness.claim)?;
+    let embedded_shared_activation_lookup =
+        build_phase10_embedded_shared_activation_lookup(&witness.claim)?;
+    let proof_bytes = serde_json::to_vec(&Phase5ArithmeticSubsetProofPayload {
+        stark_proof,
+        canonical_preprocessed_rows: trace_bundle.preprocessed_rows,
+        embedded_normalization: None,
+        embedded_activation_lookup: None,
+        embedded_shared_normalization,
+        embedded_shared_activation_lookup,
+    })
+    .map_err(|error| VmError::Serialization(error.to_string()))?;
+
+    Ok(VanillaStarkExecutionProof {
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: super::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+            .to_string(),
+        stwo_auxiliary: None,
+        claim: witness.claim,
+        proof: proof_bytes,
+    })
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn verify_phase12_carry_aware_arithmetic_subset_experimental(
+    proof: &VanillaStarkExecutionProof,
+) -> Result<bool> {
+    if proof.proof_backend_version != super::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "experimental Phase12 carry-aware proof backend version `{}` does not match expected `{}`",
+            proof.proof_backend_version,
+            super::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+        )));
+    }
+    validate_phase12_carry_aware_claim(&proof.claim)?;
+    if proof.proof.len() > MAX_DECODING_PROOF_PAYLOAD_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 proof payload is {} bytes, exceeding the limit of {} bytes",
+            proof.proof.len(),
+            MAX_DECODING_PROOF_PAYLOAD_BYTES
+        )));
+    }
+    let state_trace = reconstruct_state_trace_from_claim(&proof.claim)?;
+    validate_phase12_carry_aware_subset_witness(
+        &proof.claim.program,
+        &state_trace,
+        proof.claim.steps,
+    )?;
+    let trace_bundle = build_trace_bundle_with_mode(
+        &proof.claim.program,
+        &state_trace,
+        ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+    )?;
+    let component = phase12_carry_aware_arithmetic_subset_component(
+        trace_bundle.log_size,
+        proof.claim.program.initial_memory(),
+        proof.claim.final_state.clone(),
+    );
+
+    let payload: Phase5ArithmeticSubsetProofPayload = serde_json::from_slice(&proof.proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if payload.canonical_preprocessed_rows != trace_bundle.preprocessed_rows {
+        return Err(VmError::UnsupportedProof(
+            "experimental Phase12 carry-aware verification rejected proof with non-canonical preprocessed rows"
+                .to_string(),
+        ));
+    }
+
+    let stark_proof = payload.stark_proof;
+    let config = stark_proof.config;
+    let verifier_channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    let sizes = component.trace_log_degree_bounds();
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], verifier_channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], verifier_channel);
+
+    let verified = verify(
+        &[&component],
+        verifier_channel,
+        commitment_scheme,
+        stark_proof,
+    )
+    .is_ok();
+    if !verified {
+        return Ok(false);
+    }
+
     verify_phase10_embedded_shared_normalization(
         proof,
         payload.embedded_shared_normalization.as_ref(),
@@ -1639,6 +2165,27 @@ fn arithmetic_subset_component(
     )
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+fn phase12_carry_aware_arithmetic_subset_component(
+    log_size: u32,
+    initial_memory: &[i16],
+    final_state: MachineState,
+) -> FrameworkComponent<Phase12CarryAwareArithmeticSubsetEval> {
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(
+        &preprocessed_column_ids(initial_memory.len()),
+    );
+    FrameworkComponent::new(
+        &mut allocator,
+        Phase12CarryAwareArithmeticSubsetEval {
+            log_size,
+            memory_size: initial_memory.len(),
+            initial_state: PublicState::from_initial_memory(initial_memory),
+            final_state: PublicState::from_machine_state(final_state),
+        },
+        SecureField::zero(),
+    )
+}
+
 fn validate_phase5_claim(claim: &VanillaStarkExecutionClaim) -> Result<()> {
     if !matches!(claim.attention_mode, Attention2DMode::AverageHard) {
         return Err(VmError::UnsupportedProof(format!(
@@ -1655,6 +2202,26 @@ fn validate_phase5_claim(claim: &VanillaStarkExecutionClaim) -> Result<()> {
     .or_else(|_| {
         let trace = reconstruct_state_trace_from_claim(claim)?;
         validate_phase5_subset_witness(&claim.program, &trace, claim.steps)
+    })
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn validate_phase12_carry_aware_claim(claim: &VanillaStarkExecutionClaim) -> Result<()> {
+    if !matches!(claim.attention_mode, Attention2DMode::AverageHard) {
+        return Err(VmError::UnsupportedProof(format!(
+            "experimental Phase12 carry-aware proving supports only `average-hard` attention, got `{}`",
+            claim.attention_mode
+        )));
+    }
+
+    validate_phase12_carry_aware_subset_witness(
+        &claim.program,
+        std::slice::from_ref(&claim.final_state),
+        claim.steps,
+    )
+    .or_else(|_| {
+        let trace = reconstruct_state_trace_from_claim(claim)?;
+        validate_phase12_carry_aware_subset_witness(&claim.program, &trace, claim.steps)
     })
 }
 
@@ -1707,6 +2274,68 @@ fn validate_phase5_subset_witness(
         if usize::from(state.sp) != program.memory_size() {
             return Err(VmError::UnsupportedProof(format!(
                 "S-two arithmetic subset pilot does not yet support stack-pointer motion; expected sp={} at row {row}, got {}",
+                program.memory_size(),
+                state.sp
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn validate_phase12_carry_aware_subset_witness(
+    program: &Program,
+    states: &[MachineState],
+    steps: usize,
+) -> Result<()> {
+    if !matches_decoding_step_v2(program) {
+        return Err(VmError::UnsupportedProof(
+            "experimental Phase12 carry-aware proving supports only the decoding_step_v2 family"
+                .to_string(),
+        ));
+    }
+    super::validate_phase2_proof_shape(program, &Attention2DMode::AverageHard)?;
+
+    if states.is_empty() {
+        return Err(VmError::UnsupportedProof(
+            "experimental Phase12 carry-aware proving requires a non-empty state trace"
+                .to_string(),
+        ));
+    }
+
+    let expected_trace_len = steps.checked_add(1).ok_or_else(|| {
+        VmError::UnsupportedProof(
+            "experimental Phase12 carry-aware proof steps overflow".to_string(),
+        )
+    })?;
+    if expected_trace_len != states.len() && states.len() != 1 {
+        return Err(VmError::UnsupportedProof(format!(
+            "experimental Phase12 carry-aware proving expected state trace length {} for {steps} steps, got {}",
+            expected_trace_len,
+            states.len()
+        )));
+    }
+
+    let final_state = states.last().expect("non-empty");
+    if !final_state.halted {
+        return Err(VmError::UnsupportedProof(
+            "experimental Phase12 carry-aware proving currently requires halted executions"
+                .to_string(),
+        ));
+    }
+
+    for (row, state) in states.iter().enumerate() {
+        if state.memory.len() != program.memory_size() {
+            return Err(VmError::UnsupportedProof(format!(
+                "experimental Phase12 carry-aware proving expected memory size {} at row {row}, got {}",
+                program.memory_size(),
+                state.memory.len()
+            )));
+        }
+        if usize::from(state.sp) != program.memory_size() {
+            return Err(VmError::UnsupportedProof(format!(
+                "experimental Phase12 carry-aware proving does not yet support stack-pointer motion; expected sp={} at row {row}, got {}",
                 program.memory_size(),
                 state.sp
             )));
@@ -2227,14 +2856,32 @@ struct TraceBundle {
     base_trace: Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>,
 }
 
-fn build_trace_bundle(program: &Program, states: &[MachineState]) -> Result<TraceBundle> {
+fn build_trace_bundle(
+    program: &Program,
+    states: &[MachineState],
+) -> Result<TraceBundle> {
+    build_trace_bundle_with_mode(program, states, ArithmeticSubsetProofMode::LegacyCarryFree)
+}
+
+fn build_trace_bundle_with_mode(
+    program: &Program,
+    states: &[MachineState],
+    mode: ArithmeticSubsetProofMode,
+) -> Result<TraceBundle> {
     let real_rows = states.len().max(1);
     let row_count = real_rows.next_power_of_two();
     let log_size = row_count.ilog2();
     let preprocessed_rows = build_preprocessed_rows(program, states, row_count)?;
     let preprocessed_trace =
         preprocessed_trace(&preprocessed_rows, log_size, program.memory_size());
-    let base_trace = base_trace(program, states, log_size, program.memory_size())?;
+    let base_trace = match mode {
+        ArithmeticSubsetProofMode::LegacyCarryFree => {
+            base_trace(program, states, log_size, program.memory_size())?
+        }
+        ArithmeticSubsetProofMode::Phase12CarryAwareExperimental => {
+            carry_aware_base_trace(program, states, log_size, program.memory_size())?
+        }
+    };
     Ok(TraceBundle {
         log_size,
         preprocessed_rows,
@@ -2355,10 +3002,100 @@ fn base_trace(
         .collect())
 }
 
+fn carry_aware_base_trace(
+    program: &Program,
+    states: &[MachineState],
+    log_size: u32,
+    memory_size: usize,
+) -> Result<Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>> {
+    let row_count = 1usize << log_size;
+    let layout = CarryAwareTraceLayout::new(memory_size);
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let mut columns = (0..layout.total_width())
+        .map(|_| Col::<CpuBackend, BaseField>::zeros(row_count))
+        .collect::<Vec<_>>();
+
+    let last_state = states.last().expect("non-empty state trace");
+    for row_index in 0..row_count {
+        let current = if row_index + 1 < states.len() {
+            &states[row_index]
+        } else {
+            last_state
+        };
+        let next = if row_index + 1 < states.len() {
+            &states[row_index + 1]
+        } else {
+            last_state
+        };
+        let auxiliary = carry_aware_auxiliary_values(program, current, next)?;
+        let current_row = state_values(current);
+        let next_row = state_values(next);
+        for (column_index, value) in current_row.into_iter().enumerate() {
+            columns[column_index].set(row_index, value);
+        }
+        for (offset, value) in next_row.into_iter().enumerate() {
+            columns[layout.next_prefix() + offset].set(row_index, value);
+        }
+        columns[layout.loaded_memory()].set(row_index, base_i16(auxiliary.loaded_memory));
+        columns[layout.raw_acc_active()].set(row_index, base_i32(auxiliary.raw_acc_active));
+        columns[layout.wrap_delta()].set(row_index, base_i16(auxiliary.wrap_delta));
+        columns[layout.wrap_delta_inv()].set(row_index, auxiliary.wrap_delta_inv);
+        columns[layout.next_pc_active()]
+            .set(row_index, base_u32(u32::from(auxiliary.next_pc_active)));
+        columns[layout.next_acc_active()].set(row_index, base_i16(auxiliary.next_acc_active));
+        columns[layout.next_carry_active()].set(row_index, bool_base(auxiliary.next_carry_active));
+        for (index, value) in auxiliary.next_memory_active.into_iter().enumerate() {
+            columns[layout.next_memory_active(index)].set(row_index, base_i16(value));
+        }
+    }
+
+    Ok(columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<CpuBackend, BaseField, NaturalOrder>::new(domain, column)
+                .bit_reverse()
+        })
+        .collect())
+}
+
 fn constrain_public_state<E: EvalAtRow>(
     eval: &mut E,
     layout: &TraceLayout,
     _is_initial: bool,
+    selector: E::F,
+    state: &PublicState,
+    current_pc: &E::F,
+    current_acc: &E::F,
+    current_sp: &E::F,
+    current_zero: &E::F,
+    current_carry: &E::F,
+    current_halted: &E::F,
+    current_memory: &[E::F],
+) {
+    eval.add_constraint(selector.clone() * (current_pc.clone() - base_u8_field::<E>(state.pc)));
+    eval.add_constraint(selector.clone() * (current_acc.clone() - base_i16_field::<E>(state.acc)));
+    eval.add_constraint(selector.clone() * (current_sp.clone() - base_u8_field::<E>(state.sp)));
+    eval.add_constraint(
+        selector.clone() * (current_zero.clone() - bool_field::<E>(state.zero_flag)),
+    );
+    eval.add_constraint(
+        selector.clone() * (current_carry.clone() - bool_field::<E>(state.carry_flag)),
+    );
+    eval.add_constraint(
+        selector.clone() * (current_halted.clone() - bool_field::<E>(state.halted)),
+    );
+    for index in 0..layout.memory_size {
+        eval.add_constraint(
+            selector.clone()
+                * (current_memory[index].clone() - base_i16_field::<E>(state.memory[index])),
+        );
+    }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn constrain_public_state_carry_aware<E: EvalAtRow>(
+    eval: &mut E,
+    layout: &CarryAwareTraceLayout,
     selector: E::F,
     state: &PublicState,
     current_pc: &E::F,
@@ -2555,6 +3292,116 @@ fn auxiliary_values(program: &Program, state: &MachineState) -> Result<Auxiliary
     })
 }
 
+fn carry_aware_auxiliary_values(
+    program: &Program,
+    current: &MachineState,
+    next: &MachineState,
+) -> Result<CarryAwareAuxiliaryState> {
+    let instruction = program.instruction_at(current.pc)?;
+    let loaded_memory = match instruction {
+        Instruction::Load(address)
+        | Instruction::Store(address)
+        | Instruction::AddMemory(address)
+        | Instruction::SubMemory(address)
+        | Instruction::MulMemory(address) => current.memory[address as usize],
+        _ => 0,
+    };
+    let pc_plus_one = current.pc.saturating_add(1);
+    let next_pc_active = match instruction {
+        Instruction::Jump(target) => target,
+        Instruction::JumpIfZero(target) => {
+            if current.zero_flag {
+                target
+            } else {
+                pc_plus_one
+            }
+        }
+        Instruction::Halt => current.pc,
+        _ => pc_plus_one,
+    };
+    let raw_acc_active = match instruction {
+        Instruction::LoadImmediate(value) => i32::from(value),
+        Instruction::Load(_) => i32::from(loaded_memory),
+        Instruction::AddImmediate(value) => i32::from(current.acc) + i32::from(value),
+        Instruction::AddMemory(_) => i32::from(current.acc) + i32::from(loaded_memory),
+        Instruction::SubMemory(_) => i32::from(current.acc) - i32::from(loaded_memory),
+        Instruction::MulMemory(_) => i32::from(current.acc) * i32::from(loaded_memory),
+        _ => 0,
+    };
+    let wrap_delta = match instruction {
+        Instruction::AddImmediate(_)
+        | Instruction::AddMemory(_)
+        | Instruction::SubMemory(_)
+        | Instruction::MulMemory(_) => carry_aware_wrap_delta(raw_acc_active, next.acc)?,
+        _ => 0,
+    };
+    let wrap_delta_inv = wrap_delta_inverse_base(wrap_delta);
+    let next_acc_active = match instruction {
+        Instruction::LoadImmediate(value) => value,
+        Instruction::Load(_) => loaded_memory,
+        Instruction::AddImmediate(_)
+        | Instruction::AddMemory(_)
+        | Instruction::SubMemory(_)
+        | Instruction::MulMemory(_) => next.acc,
+        _ => current.acc,
+    };
+    let next_carry_active = match instruction {
+        Instruction::LoadImmediate(_) | Instruction::Load(_) => false,
+        Instruction::AddImmediate(_)
+        | Instruction::AddMemory(_)
+        | Instruction::SubMemory(_)
+        | Instruction::MulMemory(_) => wrap_delta != 0,
+        _ => current.carry_flag,
+    };
+    let mut next_memory_active = current.memory.clone();
+    if let Instruction::Store(address) = instruction {
+        next_memory_active[address as usize] = current.acc;
+    }
+
+    if current.halted {
+        if next != current {
+            return Err(VmError::UnsupportedProof(
+                "carry-aware arithmetic subset expected halted rows to stay fixed".to_string(),
+            ));
+        }
+    } else {
+        if next.pc != next_pc_active {
+            return Err(VmError::UnsupportedProof(format!(
+                "carry-aware arithmetic subset expected next pc {} at row with instruction `{instruction:?}`, got {}",
+                next_pc_active, next.pc
+            )));
+        }
+        if next.acc != next_acc_active {
+            return Err(VmError::UnsupportedProof(format!(
+                "carry-aware arithmetic subset expected next acc {} at row with instruction `{instruction:?}`, got {}",
+                next_acc_active, next.acc
+            )));
+        }
+        if next.carry_flag != next_carry_active {
+            return Err(VmError::UnsupportedProof(format!(
+                "carry-aware arithmetic subset expected next carry {} at row with instruction `{instruction:?}`, got {}",
+                next_carry_active, next.carry_flag
+            )));
+        }
+        if next.memory != next_memory_active {
+            return Err(VmError::UnsupportedProof(format!(
+                "carry-aware arithmetic subset expected next memory for instruction `{instruction:?}`"
+            )));
+        }
+    }
+
+    Ok(CarryAwareAuxiliaryState {
+        loaded_memory,
+        raw_acc_active,
+        wrap_delta,
+        wrap_delta_inv,
+        next_pc_active,
+        next_acc_active,
+        next_carry_active,
+        next_memory_active,
+    })
+}
+
 #[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn collect_carry_aware_arithmetic_subset_prototype_rows(
     program: &Program,
@@ -2661,6 +3508,30 @@ fn prototype_wrap_delta(raw_acc: i64, wrapped_acc: i16) -> Result<i32> {
     })
 }
 
+fn carry_aware_wrap_delta(raw_acc: i32, wrapped_acc: i16) -> Result<i16> {
+    let delta = i64::from(raw_acc) - i64::from(wrapped_acc);
+    if delta % (1i64 << 16) != 0 {
+        return Err(VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic subset wrap delta {} is not divisible by 2^16",
+            delta
+        )));
+    }
+    i16::try_from(delta / (1i64 << 16)).map_err(|_| {
+        VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic subset wrap delta {} exceeds i16 range",
+            delta
+        ))
+    })
+}
+
+fn wrap_delta_inverse_base(delta: i16) -> BaseField {
+    if delta == 0 {
+        BaseField::zero()
+    } else {
+        base_i16(delta).inverse()
+    }
+}
+
 fn opcode_flags(instruction: Instruction) -> [u32; 11] {
     let mut flags = [0u32; 11];
     let index = match instruction {
@@ -2694,6 +3565,14 @@ fn base_i16(value: i16) -> BaseField {
         BaseField::from_u32_unchecked(value as u32)
     } else {
         BaseField::from_u32_unchecked((M31_MODULUS as i64 + value as i64) as u32)
+    }
+}
+
+fn base_i32(value: i32) -> BaseField {
+    if value >= 0 {
+        BaseField::from_u32_unchecked(value as u32)
+    } else {
+        BaseField::from_u32_unchecked((M31_MODULUS as i64 + i64::from(value)) as u32)
     }
 }
 
@@ -3033,6 +3912,114 @@ mod tests {
         assert_trace_polys_satisfy_constraints_for_program(compile_program(path));
     }
 
+    fn assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            runtime.trace(),
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(result.final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_trace(
+            &tree,
+            trace.log_size,
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
+    fn assert_phase12_carry_aware_trace_polys_satisfy_constraints_for_four_step_overflow_seed() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            runtime.trace(),
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(result.final_state.clone()),
+        };
+        let trace_polys = TreeVec(vec![
+            trace
+                .preprocessed_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+            trace
+                .base_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_polys(
+            &trace_polys,
+            CanonicCoset::new(trace.log_size),
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
     fn panic_payload_to_string(payload: Box<dyn std::any::Any + Send>) -> String {
         if let Some(message) = payload.downcast_ref::<&str>() {
             (*message).to_string()
@@ -3261,5 +4248,15 @@ mod tests {
         assert_eq!(row.wrapped_acc, 22_336);
         assert_eq!(row.wrap_delta, 1);
         assert!(row.carry_after);
+    }
+
+    #[test]
+    fn carry_aware_phase12_four_step_trace_satisfies_constraints() {
+        assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed();
+    }
+
+    #[test]
+    fn carry_aware_phase12_four_step_trace_polys_satisfy_constraints() {
+        assert_phase12_carry_aware_trace_polys_satisfy_constraints_for_four_step_overflow_seed();
     }
 }
