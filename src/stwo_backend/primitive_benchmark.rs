@@ -3915,6 +3915,17 @@ mod tests {
     }
 
     #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_uses_publication_profile() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 1)
+            .expect("phase12 decoding family demo");
+        assert_eq!(
+            chain.steps[0].proof.claim.options,
+            crate::proof::publication_v1_stark_options()
+        );
+    }
+
+    #[test]
     fn phase30_source_bound_manifest_reuse_benchmark_rejects_tampered_manifest_binding() {
         let layout = phase12_default_decoding_layout();
         let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 2)

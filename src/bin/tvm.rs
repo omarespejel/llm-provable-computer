@@ -462,7 +462,7 @@ enum Command {
         /// Optional file where the benchmark JSON will be written.
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
-        /// Capture host-dependent wall-clock timings in local, noncanonical report output.
+        /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
     },
