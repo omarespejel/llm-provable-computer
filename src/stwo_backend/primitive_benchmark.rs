@@ -35,6 +35,7 @@ use super::decoding::{
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
     prove_phase12_decoding_demo_for_layout_steps,
+    prove_phase12_decoding_demo_for_layout_steps_publication,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase30DecodingStepProofEnvelopeManifest,
@@ -912,7 +913,7 @@ fn run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
     let layout = phase12_default_decoding_layout();
     let mut rows = Vec::new();
     for &steps in step_counts {
-        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)?;
         let benchmark_input = phase30_source_bound_manifest_benchmark_input(&chain)?;
         rows.push(measure_phase30_source_bound_manifest_shared(
             &chain,
@@ -3898,7 +3899,7 @@ mod tests {
     #[test]
     fn phase30_source_bound_manifest_reuse_benchmark_shared_variant_flattens_manifest_surface() {
         let layout = phase12_default_decoding_layout();
-        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3)
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 3)
             .expect("phase12 decoding family demo");
         let input = phase30_source_bound_manifest_benchmark_input(&chain).expect("benchmark input");
         let shared_row = measure_phase30_source_bound_manifest_shared(&chain, &input, false)
@@ -3911,5 +3912,20 @@ mod tests {
         assert_eq!(shared_row.envelopes, 3);
         assert_eq!(independent_row.envelopes, 3);
         assert!(independent_row.serialized_bytes > shared_row.serialized_bytes);
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_rejects_tampered_manifest_binding() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 2)
+            .expect("phase12 decoding family demo");
+        let mut input =
+            phase30_source_bound_manifest_benchmark_input(&chain).expect("benchmark input");
+        input.shared_manifest.source_chain_commitment = "00".repeat(32);
+        let error = measure_phase30_source_bound_manifest_shared(&chain, &input, false)
+            .expect_err("tampered source binding must fail");
+        assert!(error
+            .to_string()
+            .contains("does not match the derived Phase 12 chain"));
     }
 }
