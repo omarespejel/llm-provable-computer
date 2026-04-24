@@ -123,7 +123,7 @@ def group_rows(rows: List[Dict[str, str]]) -> Dict[str, List[Dict[str, str]]]:
     return grouped
 
 
-def timing_metadata(rows: List[Dict[str, str]], *, fallback_runs: int) -> Tuple[bool, int]:
+def timing_metadata(rows: List[Dict[str, str]], *, fallback_runs: int) -> Tuple[str, int]:
     first = rows[0]
     mode = first.get("timing_mode", "").strip()
     policy = first.get("timing_policy", "").strip()
@@ -160,7 +160,7 @@ def timing_metadata(rows: List[Dict[str, str]], *, fallback_runs: int) -> Tuple[
             raise SystemExit(
                 "deterministic phase71 rows must report timing_runs == 0; got {}".format(runs)
             )
-        return False, 0
+        return mode, 0
     if mode in {"measured_single_run", "measured_median"}:
         if mode == "measured_single_run" and policy != "single_run_from_microsecond_capture":
             raise SystemExit(
@@ -190,7 +190,7 @@ def timing_metadata(rows: List[Dict[str, str]], *, fallback_runs: int) -> Tuple[
                         runs
                     )
                 )
-            return True, runs
+            return mode, runs
         policy_runs_raw = policy.removeprefix("median_of_").removesuffix(
             "_runs_from_microsecond_capture"
         )
@@ -218,7 +218,7 @@ def timing_metadata(rows: List[Dict[str, str]], *, fallback_runs: int) -> Tuple[
                     fallback_runs, runs
                 )
             )
-        return True, runs
+        return mode, runs
     raise SystemExit(
         "unsupported timing_mode in phase71 benchmark rows: {!r}".format(mode)
     )
@@ -503,14 +503,19 @@ def write_optional_rasters(
             )
 
 
-def build_svg(*, grouped: Dict[str, List[Dict[str, str]]], measured: bool, runs: int) -> str:
-    subtitle = (
-        "Median of {} measured runs. Verification time compares one Phase71 receipt against replaying the full ordered Phase30 manifest.".format(
-            runs
+def build_svg(*, grouped: Dict[str, List[Dict[str, str]]], timing_mode: str, runs: int) -> str:
+    if timing_mode == "measured_median":
+        subtitle = (
+            f"Median of {runs} measured runs. Verification time compares one "
+            "Phase71 receipt against replaying the full ordered Phase30 manifest."
         )
-        if measured
-        else "Deterministic report surface with wall-clock timings disabled."
-    )
+    elif timing_mode == "measured_single_run":
+        subtitle = (
+            "Single measured run. Verification time compares one Phase71 receipt "
+            "against replaying the full ordered Phase30 manifest."
+        )
+    else:
+        subtitle = "Deterministic report surface with wall-clock timings disabled."
     footer = phase71_footer(grouped)
     return "\n".join(
         [
@@ -573,8 +578,8 @@ def main() -> None:
     rows = read_rows(args.input_tsv)
     validate_rows(rows, source=args.input_tsv)
     grouped = group_rows(rows)
-    measured, runs = timing_metadata(rows, fallback_runs=args.bench_runs)
-    svg = build_svg(grouped=grouped, measured=measured, runs=runs)
+    timing_mode, runs = timing_metadata(rows, fallback_runs=args.bench_runs)
+    svg = build_svg(grouped=grouped, timing_mode=timing_mode, runs=runs)
     args.output_svg.write_text(svg, encoding="utf-8")
 
     write_optional_rasters(args.output_svg, args.output_png, args.output_pdf)

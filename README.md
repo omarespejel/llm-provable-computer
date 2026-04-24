@@ -439,9 +439,10 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --capture-timings
 
 # Freeze the publication-facing benchmark evidence
-# These scripts default to deterministic timing placeholders.
-# Set CAPTURE_TIMINGS=1 and ALLOW_HOST_DEPENDENT_OUTPUTS=1 when refreshing
-# checked canonical timing evidence on the local benchmark host.
+# These scripts default to deterministic timing placeholders (`CAPTURE_TIMINGS=0`).
+# Set `CAPTURE_TIMINGS=1` and `ALLOW_HOST_DEPENDENT_OUTPUTS=1` only when
+# intentionally refreshing checked canonical timing evidence on the local
+# benchmark host.
 bash scripts/paper/generate_stwo_primitive_lookup_vs_naive_benchmark.sh
 bash scripts/paper/generate_stwo_shared_table_reuse_benchmark.sh
 bash scripts/paper/generate_stwo_phase12_shared_lookup_bundle_benchmark.sh

@@ -59,6 +59,14 @@ def main() -> None:
 
     if output_paths_conflict(args.output_json, args.output_tsv):
         parser.error("--output-json and --output-tsv must be distinct paths")
+    for index, input_path in enumerate(args.inputs):
+        if output_paths_conflict(input_path, args.output_json) or output_paths_conflict(
+            input_path, args.output_tsv
+        ):
+            raise SystemExit(f"input path must differ from outputs: {input_path}")
+        for previous in args.inputs[:index]:
+            if output_paths_conflict(input_path, previous):
+                raise SystemExit(f"duplicate input path: {input_path}")
     if len(args.inputs) < 3:
         raise SystemExit("expected at least 3 repeated benchmark runs for aggregation")
     if len(args.inputs) % 2 == 0:
