@@ -41,10 +41,10 @@ published numbers make three boundaries explicit:
     `4,968` raw proof bytes, `14.939 ms` prove, and `6.745 ms` verify from
     `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`;
   - the checked Phase44D typed source-emission boundary at the current two-step
-    power-of-two point: `60,089` serialized bytes and `0.992 ms` verify from
+    power-of-two point: `61,238` serialized bytes and `0.978 ms` verify from
     `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`;
   - the checked Phase71 handoff receipt at three steps: `1,533` serialized bytes and
-    `34.396 ms` verify from
+    `34.613 ms` verify from
     `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`.
   These are still not full transformer benchmarks, but they now cover a proving-surface
   row, a latency-oriented typed boundary row, and a size-oriented receipt row rather than
