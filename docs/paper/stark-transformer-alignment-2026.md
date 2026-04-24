@@ -629,6 +629,60 @@ same chain. This is a manifest-layer calibration only, but it shows that once th
 ordered decode-envelope surface is used as intended, repeated source-bound verification
 is cheaper than recomputing a one-step manifest for every step independently.
 
+The next checked calibration row moves above the ordered Phase30 manifest surface and
+onto the first typed source-emission boundary that the compact projection line can
+currently support. Its evidence files
+`docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`,
+`docs/paper/evidence/stwo-phase44d-source-emission-2026-04.json`, and Figure 4E compare
+one `Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary` against the lower
+source-bound baseline of verifying the same compact Phase43 projection proof and then
+replaying the ordered Phase30 manifest. This is not a fake curve. The current compact
+projection surface honestly gives us one checked power-of-two point at two steps, so the
+figure is a bar comparison rather than a line. That single point is still useful because
+the result is sharp and asymmetric: the typed boundary is slightly larger (`60,089`
+serialized bytes versus `57,237` for the lower-layer baseline), but median verification
+latency collapses from `16.570 ms` to `0.992 ms`. So the Phase44D source-emission layer
+is not a byte win. It is a local **verification-latency win** at the checked point,
+because it avoids replaying the ordered Phase30 verifier surface while preserving the
+same compact source-root claim.
+
+![Figure 4E. Phase44D typed source-emission boundary calibration over the compact projection line.](figures/stwo-phase44d-source-emission-2026-04.svg)
+
+**Figure 4E.** Phase44D typed source-emission boundary calibration from
+`docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`. The blue bar is one
+typed `Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary` accepted against
+the real compact Phase43 projection proof. The orange bar is the lower-layer baseline
+that verifies that same compact proof and then replays the ordered Phase30 manifest
+against the proof-checked Phase12 chain. The current checked point is only two steps,
+but it shows a real higher-layer split: slightly larger serialized surface in exchange
+for sharply lower verification latency.
+
+The next checked calibration row moves one layer higher again, from the typed
+source-emission boundary to the actual Phase71 handoff receipt surface. Its evidence
+files `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`,
+`docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.json`, and Figure 4F compare
+one `Phase71ActualStwoStepEnvelopeHandoffReceipt` against replaying the full ordered
+Phase30 manifest over the same proof-checked Phase12 chain. This benchmark gives the
+mirror image of Figure 4E. The handoff receipt wins clearly on serialized surface and
+keeps that surface flat across repeated steps (`1,533` bytes at one, two, and three
+steps, versus `2,188`, `3,443`, and `4,698` for the manifest baseline). But the receipt
+does **not** win on verification time: by three steps it verifies in `34.396 ms` versus
+`23.663 ms` for the direct Phase30 replay baseline. So the Phase71 layer is not a local
+latency win. It is a **receipt-size win** that preserves a smaller source-bound handoff
+surface while still paying more verification work than the lower layer on the current
+path.
+
+![Figure 4F. Phase71 handoff receipt calibration over repeated decode-step ranges.](figures/stwo-phase71-handoff-receipt-2026-04.svg)
+
+**Figure 4F.** Phase71 handoff receipt calibration from
+`docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`. The blue line verifies
+one compact Phase71 handoff receipt against the proof-checked Phase12 chain and the
+ordered Phase30 manifest it summarizes. The orange line verifies the full ordered Phase30
+manifest directly as the lower-layer baseline. The receipt surface is much smaller and
+stays flat across repeated steps, but current verification still costs more than replaying
+the ordered manifest directly. Taken together, Figures 4E and 4F make the higher-layer
+story more precise: different carried-state packaging layers improve different costs.
+
 #### Threat model and soundness boundary
 
 The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
@@ -650,12 +704,21 @@ commitment, and the ordered step-claim list for the combined bundle. Figure 4D i
 narrower: acceptance there means the ordered Phase30 manifest re-derives exactly from the
 supplied proof-checked Phase12 chain, including source-chain commitment, layout
 commitment, and boundary continuity, and that the one-step comparison path repeats that
-same source-bound derivation for each range independently. This is a concrete soundness
-boundary, not a new asymptotic theorem: the paper relies on upstream S-two cryptographic
-assumptions for proof soundness and on deterministic repository-local checks for
-metadata, table identity, and source-bound artifact structure. It does not claim
-recursive compression, full standard-softmax inference soundness, or a universal
-security theorem for every row in the experimental S-two tier.
+same source-bound derivation for each range independently. Figure 4E is narrower again:
+acceptance there means the typed Phase44D source-chain public-output boundary is accepted
+against the same compact Phase43 projection proof it embeds, including the source-root,
+terminal-boundary, and public-output checks performed by the repository-local verifier,
+without replaying the ordered Phase30 manifest inside that benchmark surface. Figure 4F
+is the receipt-layer analogue: acceptance means the
+`Phase71ActualStwoStepEnvelopeHandoffReceipt` verifies against the supplied proof-checked
+Phase12 chain and the ordered Phase30 manifest it summarizes, preserving the source-bound
+handoff relation without claiming recursive compression or standalone receipt soundness
+independent of those sources. This is a concrete soundness boundary, not a new asymptotic
+theorem: the paper relies on upstream S-two cryptographic assumptions for proof soundness
+and on deterministic repository-local checks for metadata, table identity, source-bound
+artifact structure, typed public-output binding, and receipt/source consistency. It does
+not claim recursive compression, full standard-softmax inference soundness, or a
+universal security theorem for every row in the experimental S-two tier.
 
 For shared lookup evidence, the artifact binds normalization and activation table
 identity into a static lookup-table registry commitment inside the shared lookup
