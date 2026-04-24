@@ -3899,7 +3899,7 @@ mod tests {
     #[test]
     fn phase30_source_bound_manifest_reuse_benchmark_shared_variant_flattens_manifest_surface() {
         let layout = phase12_default_decoding_layout();
-        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 3)
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3)
             .expect("phase12 decoding family demo");
         let input = phase30_source_bound_manifest_benchmark_input(&chain).expect("benchmark input");
         let shared_row = measure_phase30_source_bound_manifest_shared(&chain, &input, false)
@@ -3928,7 +3928,7 @@ mod tests {
     #[test]
     fn phase30_source_bound_manifest_reuse_benchmark_rejects_tampered_manifest_binding() {
         let layout = phase12_default_decoding_layout();
-        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 2)
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
             .expect("phase12 decoding family demo");
         let mut input =
             phase30_source_bound_manifest_benchmark_input(&chain).expect("benchmark input");

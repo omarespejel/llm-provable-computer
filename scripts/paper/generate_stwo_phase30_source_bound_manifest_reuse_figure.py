@@ -130,15 +130,43 @@ def group_rows(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
 def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[bool, int]:
     first = rows[0]
     mode = first.get("timing_mode", "").strip()
+    policy = first.get("timing_policy", "").strip()
+    unit = first.get("timing_unit", "").strip()
     runs_raw = first.get("timing_runs", "").strip()
     if not mode:
-        return False, fallback_runs
+        raise SystemExit("phase30 manifest benchmark rows must include timing_mode")
+    if not policy:
+        raise SystemExit("phase30 manifest benchmark rows must include timing_policy")
+    if unit != "milliseconds":
+        raise SystemExit(
+            f"unsupported timing_unit in phase30 manifest benchmark rows: {unit!r}"
+        )
     for row in rows[1:]:
-        if row.get("timing_mode", "").strip() != mode or row.get("timing_runs", "").strip() != runs_raw:
+        if (
+            row.get("timing_mode", "").strip() != mode
+            or row.get("timing_policy", "").strip() != policy
+            or row.get("timing_unit", "").strip() != unit
+            or row.get("timing_runs", "").strip() != runs_raw
+        ):
             raise SystemExit("inconsistent timing metadata across phase30 manifest benchmark rows")
     if mode == "deterministic_zeroed":
+        if policy != "zero_when_capture_disabled":
+            raise SystemExit(
+                f"unexpected timing_policy for deterministic phase30 manifest rows: {policy!r}"
+            )
         return False, 0
     if mode in {"measured_single_run", "measured_median"}:
+        if mode == "measured_single_run" and policy != "single_run_from_microsecond_capture":
+            raise SystemExit(
+                f"unexpected timing_policy for measured_single_run phase30 manifest rows: {policy!r}"
+            )
+        if mode == "measured_median" and (
+            not policy.startswith("median_of_")
+            or not policy.endswith("_runs_from_microsecond_capture")
+        ):
+            raise SystemExit(
+                f"unexpected timing_policy for measured_median phase30 manifest rows: {policy!r}"
+            )
         try:
             runs = int(runs_raw)
         except ValueError as exc:
