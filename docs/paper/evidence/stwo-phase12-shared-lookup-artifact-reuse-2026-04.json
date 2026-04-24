@@ -1,0 +1,82 @@
+{
+  "benchmark_version": "stwo-phase12-shared-lookup-artifact-reuse-benchmark-v1",
+  "semantic_scope": "phase12_shared_lookup_artifact_registry_reuse_calibration",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 5,
+  "rows": [
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "shared_registry_reuse",
+      "steps": 1,
+      "unique_artifacts": 1,
+      "relation": "real Phase12 shared lookup artifact registry",
+      "proof_bytes": 5368,
+      "serialized_bytes": 59210,
+      "verify_ms": 7.66,
+      "verified": true,
+      "note": "one deduplicated registry artifact extracted from a proof-checked Phase12 chain and verified once for all repeated step references"
+    },
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "independent_artifact_verification",
+      "steps": 1,
+      "unique_artifacts": 1,
+      "relation": "independent Phase12 shared lookup artifact verification",
+      "proof_bytes": 5368,
+      "serialized_bytes": 59111,
+      "verify_ms": 7.529,
+      "verified": true,
+      "note": "each step extracts and verifies its own real Phase12 shared lookup artifact without registry deduplication"
+    },
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "shared_registry_reuse",
+      "steps": 2,
+      "unique_artifacts": 1,
+      "relation": "real Phase12 shared lookup artifact registry",
+      "proof_bytes": 5368,
+      "serialized_bytes": 59277,
+      "verify_ms": 7.788,
+      "verified": true,
+      "note": "one deduplicated registry artifact extracted from a proof-checked Phase12 chain and verified once for all repeated step references"
+    },
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "independent_artifact_verification",
+      "steps": 2,
+      "unique_artifacts": 2,
+      "relation": "independent Phase12 shared lookup artifact verification",
+      "proof_bytes": 10736,
+      "serialized_bytes": 118046,
+      "verify_ms": 15.725,
+      "verified": true,
+      "note": "each step extracts and verifies its own real Phase12 shared lookup artifact without registry deduplication"
+    },
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "shared_registry_reuse",
+      "steps": 3,
+      "unique_artifacts": 1,
+      "relation": "real Phase12 shared lookup artifact registry",
+      "proof_bytes": 5368,
+      "serialized_bytes": 59344,
+      "verify_ms": 7.852,
+      "verified": true,
+      "note": "one deduplicated registry artifact extracted from a proof-checked Phase12 chain and verified once for all repeated step references"
+    },
+    {
+      "primitive": "phase12_shared_lookup_artifact",
+      "backend_variant": "independent_artifact_verification",
+      "steps": 3,
+      "unique_artifacts": 3,
+      "relation": "independent Phase12 shared lookup artifact verification",
+      "proof_bytes": 16104,
+      "serialized_bytes": 176981,
+      "verify_ms": 23.12,
+      "verified": true,
+      "note": "each step extracts and verifies its own real Phase12 shared lookup artifact without registry deduplication"
+    }
+  ]
+}
