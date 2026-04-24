@@ -153,6 +153,21 @@ struct AuxiliaryState {
     next_memory_active: Vec<i16>,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct CarryAwareArithmeticSubsetPrototypeRow {
+    pub step_index: usize,
+    pub instruction: String,
+    pub pc: u8,
+    pub memory_address: Option<u8>,
+    pub acc_before: i16,
+    pub operand: i16,
+    pub raw_acc: i64,
+    pub wrapped_acc: i16,
+    pub wrap_delta: i32,
+    pub carry_after: bool,
+}
+
 #[derive(Clone, Copy, Debug)]
 struct TraceLayout {
     memory_size: usize,
@@ -2540,6 +2555,112 @@ fn auxiliary_values(program: &Program, state: &MachineState) -> Result<Auxiliary
     })
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn collect_carry_aware_arithmetic_subset_prototype_rows(
+    program: &Program,
+    states: &[MachineState],
+) -> Result<Vec<CarryAwareArithmeticSubsetPrototypeRow>> {
+    validate_phase5_proven_fixture(program)?;
+    if states.len() < 2 {
+        return Err(VmError::UnsupportedProof(
+            "carry-aware arithmetic-subset prototype requires at least two machine states"
+                .to_string(),
+        ));
+    }
+
+    let mut rows = Vec::with_capacity(states.len() - 1);
+    for (step_index, window) in states.windows(2).enumerate() {
+        let current = &window[0];
+        let next = &window[1];
+        let instruction = program.instruction_at(current.pc)?;
+        let memory_address = memory_operand_address(instruction);
+        let operand = prototype_operand(current, instruction);
+        let raw_acc = prototype_raw_acc(current, next, instruction, operand);
+        let wrapped_acc = next.acc;
+        let expected_wrapped = raw_acc as i16;
+        if expected_wrapped != wrapped_acc {
+            return Err(VmError::UnsupportedProof(format!(
+                "carry-aware arithmetic-subset prototype expected wrapped accumulator {} at step {}, got {}",
+                expected_wrapped, step_index, wrapped_acc
+            )));
+        }
+        rows.push(CarryAwareArithmeticSubsetPrototypeRow {
+            step_index,
+            instruction: format!("{instruction:?}"),
+            pc: current.pc,
+            memory_address,
+            acc_before: current.acc,
+            operand,
+            raw_acc,
+            wrapped_acc,
+            wrap_delta: prototype_wrap_delta(raw_acc, wrapped_acc)?,
+            carry_after: next.carry_flag,
+        });
+    }
+    Ok(rows)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn memory_operand_address(instruction: Instruction) -> Option<u8> {
+    match instruction {
+        Instruction::Load(address)
+        | Instruction::Store(address)
+        | Instruction::AddMemory(address)
+        | Instruction::SubMemory(address)
+        | Instruction::MulMemory(address) => Some(address),
+        _ => None,
+    }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn prototype_operand(state: &MachineState, instruction: Instruction) -> i16 {
+    match instruction {
+        Instruction::LoadImmediate(value) | Instruction::AddImmediate(value) => value,
+        Instruction::Load(address)
+        | Instruction::Store(address)
+        | Instruction::AddMemory(address)
+        | Instruction::SubMemory(address)
+        | Instruction::MulMemory(address) => state.memory[address as usize],
+        _ => 0,
+    }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn prototype_raw_acc(
+    current: &MachineState,
+    next: &MachineState,
+    instruction: Instruction,
+    operand: i16,
+) -> i64 {
+    match instruction {
+        Instruction::LoadImmediate(_) => i64::from(operand),
+        Instruction::Load(_) => i64::from(operand),
+        Instruction::AddImmediate(_) | Instruction::AddMemory(_) => {
+            i64::from(current.acc) + i64::from(operand)
+        }
+        Instruction::SubMemory(_) => i64::from(current.acc) - i64::from(operand),
+        Instruction::MulMemory(_) => i64::from(current.acc) * i64::from(operand),
+        _ => i64::from(next.acc),
+    }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn prototype_wrap_delta(raw_acc: i64, wrapped_acc: i16) -> Result<i32> {
+    let delta = raw_acc - i64::from(wrapped_acc);
+    if delta % (1i64 << 16) != 0 {
+        return Err(VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic-subset prototype wrap delta {} is not divisible by 2^16",
+            delta
+        )));
+    }
+    i32::try_from(delta / (1i64 << 16)).map_err(|_| {
+        VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic-subset prototype wrap delta {} exceeds i32 range",
+            delta
+        ))
+    })
+}
+
 fn opcode_flags(instruction: Instruction) -> [u32; 11] {
     let mut flags = [0u32; 11];
     let index = match instruction {
@@ -2601,7 +2722,7 @@ mod tests {
     use super::*;
     use crate::stwo_backend::decoding::{
         decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
-        phase12_demo_initial_memories,
+        phase12_demo_initial_memories, phase12_demo_initial_memories_for_steps,
     };
     use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
     use crate::{ProgramCompiler, TransformerVmConfig};
@@ -3106,5 +3227,39 @@ mod tests {
     #[test]
     fn phase5_single_neuron_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/single_neuron.tvm");
+    }
+
+    #[test]
+    fn carry_aware_subset_prototype_captures_honest_phase12_four_step_overflow_row() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+
+        let rows = collect_carry_aware_arithmetic_subset_prototype_rows(&program, runtime.trace())
+            .expect("prototype rows");
+        let row = rows
+            .iter()
+            .find(|row| row.carry_after)
+            .expect("overflow row");
+        assert_eq!(row.step_index, 44);
+        assert_eq!(row.instruction, "MulMemory(28)");
+        assert_eq!(row.acc_before, 1373);
+        assert_eq!(row.operand, 64);
+        assert_eq!(row.raw_acc, 87_872);
+        assert_eq!(row.wrapped_acc, 22_336);
+        assert_eq!(row.wrap_delta, 1);
+        assert!(row.carry_after);
     }
 }
