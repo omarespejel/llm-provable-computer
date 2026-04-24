@@ -33,11 +33,13 @@ use super::arithmetic_subset_prover::phase12_shared_lookup_artifact_from_proof_p
 use super::decoding::{
     commit_phase12_layout, commit_phase23_boundary_state, phase12_default_decoding_layout,
     phase12_demo_initial_memories_for_steps_with_incoming_divisor,
-    phase12_demo_initial_memories_for_steps_with_rescaling,
-    phase14_prepare_decoding_chain, phase30_prepare_decoding_step_proof_envelope_manifest,
+    phase12_demo_initial_memories_for_steps_with_rescaling, phase14_prepare_decoding_chain,
+    phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
     prove_phase12_decoding_demo_for_layout_initial_memories_publication,
-    prove_phase12_decoding_demo_for_layout_steps_publication, verify_phase14_decoding_chain,
+    prove_phase12_decoding_demo_for_layout_steps_publication,
+    prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental,
+    verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase12DemoRescalingProfile,
@@ -79,12 +81,12 @@ use super::shared_lookup_artifact::{
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
 };
+use crate::engine::ExecutionTraceEntry;
 use crate::error::{Result, VmError};
 use crate::instruction::Instruction;
-use crate::engine::ExecutionTraceEntry;
+use crate::proof::StarkProofBackend;
 use crate::runtime::ExecutionRuntime;
 use crate::{ProgramCompiler, TransformerVmConfig};
-use crate::proof::StarkProofBackend;
 
 pub const STWO_PRIMITIVE_BENCHMARK_VERSION: &str = "stwo-primitive-lookup-vs-naive-benchmark-v1";
 pub const STWO_PRIMITIVE_BENCHMARK_SCOPE: &str =
@@ -108,6 +110,10 @@ pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_VERSION: &str =
     "stwo-phase44d-source-emission-benchmark-v2";
 pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_SCOPE: &str =
     "phase44d_typed_source_emission_boundary_scaling_calibration";
+pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION: &str =
+    "stwo-phase44d-source-emission-experimental-benchmark-v1";
+pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE: &str =
+    "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION: &str =
     "stwo-phase71-handoff-receipt-benchmark-v1";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE: &str =
@@ -134,6 +140,7 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
 const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 64;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
@@ -1137,6 +1144,33 @@ pub fn run_stwo_phase44d_source_emission_benchmark_for_steps(
     run_stwo_phase44d_source_emission_benchmark_for_step_counts(step_counts, capture_timings)
 }
 
+pub fn run_stwo_phase44d_source_emission_experimental_benchmark(
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_step_counts(
+        &PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_experimental_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_step_counts(
+        &PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_step_counts(
+        step_counts,
+        capture_timings,
+    )
+}
+
 fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     step_counts: &[usize],
     capture_timings: bool,
@@ -1202,8 +1236,81 @@ fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     })
 }
 
-pub fn run_stwo_phase12_arithmetic_budget_map(
-) -> Result<StwoPhase12ArithmeticBudgetMapReport> {
+fn run_stwo_phase44d_source_emission_experimental_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    validate_phase44d_step_counts(
+        step_counts,
+        "phase44d source emission experimental benchmark",
+        PHASE44D_SOURCE_EMISSION_MAX_STEPS,
+    )?;
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout,
+                steps,
+            )
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "phase44d source emission experimental benchmark cannot construct {}-step proof-checked source chain on the carry-aware execution-proof surface: {}",
+                    steps, error
+                ))
+            })?;
+        let benchmark_input = phase44d_source_emission_benchmark_input(&chain, capture_timings)?;
+        rows.push(phase44d_experimental_measurement(
+            measure_phase44d_source_emission_shared(&benchmark_input, capture_timings)?,
+        ));
+        rows.push(phase44d_experimental_measurement(
+            measure_phase44d_source_emission_manifest_plus_compact_baseline(
+                &chain,
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase44d_experimental_measurement(
+            measure_phase44d_source_emission_compact_projection_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase44d_experimental_measurement(
+            measure_phase44d_source_emission_manifest_replay_only(
+                &chain,
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase44d_experimental_measurement(
+            measure_phase44d_source_emission_boundary_binding_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase44d source emission experimental benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase44DSourceEmissionBenchmarkReport {
+        benchmark_version: STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+pub fn run_stwo_phase12_arithmetic_budget_map() -> Result<StwoPhase12ArithmeticBudgetMapReport> {
     run_stwo_phase12_arithmetic_budget_map_for_max_steps(PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS)
 }
 
@@ -1233,8 +1340,12 @@ pub fn run_stwo_phase12_arithmetic_budget_map_for_max_steps(
                 .first_carry_event
                 .as_ref()
                 .map(|event| format!("{:?}", event.instruction));
-            let first_carry_pc = sample.first_carry_event.as_ref().map(|event| event.state_before.pc);
-            let first_carry_runtime_step = sample.first_carry_event.as_ref().map(|event| event.step);
+            let first_carry_pc = sample
+                .first_carry_event
+                .as_ref()
+                .map(|event| event.state_before.pc);
+            let first_carry_runtime_step =
+                sample.first_carry_event.as_ref().map(|event| event.step);
             let first_carry_raw_acc = sample
                 .first_carry_event
                 .as_ref()
@@ -1570,7 +1681,8 @@ fn phase12_execution_budget_sample(
     layout: &super::decoding::Phase12DecodingLayout,
     initial_memory: Vec<i16>,
 ) -> Result<Phase12ExecutionBudgetSample> {
-    let program = super::decoding::decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
+    let program =
+        super::decoding::decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
     let step_limit = phase12_program_step_limit(&program)?;
     let model = ProgramCompiler.compile_program(program, phase12_demo_runtime_config())?;
     let mut runtime = ExecutionRuntime::new(model, step_limit);
@@ -1637,9 +1749,11 @@ fn select_phase44d_research_rescaling_profile(
     incoming_divisor: Option<i16>,
     lookup_divisor: Option<i16>,
 ) -> Result<Phase12DemoRescalingProfile> {
-    let target_steps = *step_counts
-        .last()
-        .ok_or_else(|| VmError::InvalidConfig("phase44d rescaled exploratory benchmark requires at least one step count".to_string()))?;
+    let target_steps = *step_counts.last().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "phase44d rescaled exploratory benchmark requires at least one step count".to_string(),
+        )
+    })?;
     let mut last_error = None;
     let incoming_candidates: Vec<i16> = match incoming_divisor {
         Some(divisor) => vec![divisor],
@@ -1655,9 +1769,12 @@ fn select_phase44d_research_rescaling_profile(
                 incoming_divisor: *incoming_divisor,
                 lookup_divisor,
             };
-            let initial_memories =
-                phase12_demo_initial_memories_for_steps_with_rescaling(layout, target_steps, profile)?;
-        if !phase12_initial_memories_are_carry_free(layout, &initial_memories)? {
+            let initial_memories = phase12_demo_initial_memories_for_steps_with_rescaling(
+                layout,
+                target_steps,
+                profile,
+            )?;
+            if !phase12_initial_memories_are_carry_free(layout, &initial_memories)? {
                 continue;
             }
             match prove_phase12_decoding_demo_for_layout_initial_memories_publication(
@@ -3136,6 +3253,16 @@ fn phase44d_source_emission_benchmark_input(
         boundary,
         boundary_emit_ms,
     })
+}
+
+fn phase44d_experimental_measurement(
+    mut row: StwoPhase44DSourceEmissionBenchmarkMeasurement,
+) -> StwoPhase44DSourceEmissionBenchmarkMeasurement {
+    row.note = format!(
+        "experimental Phase12 source chain uses the carry-aware execution-proof backend. {}",
+        row.note
+    );
+    row
 }
 
 fn phase44d_source_emission_serialized_bytes(
@@ -5366,7 +5493,10 @@ mod tests {
     fn phase44d_source_emission_benchmark_preserves_expected_row_shape() {
         let report = run_stwo_phase44d_source_emission_benchmark_with_options(false)
             .expect("phase44d source emission benchmark should run");
-        assert_eq!(report.rows.len(), PHASE44D_SOURCE_EMISSION_STEP_COUNTS.len() * 5);
+        assert_eq!(
+            report.rows.len(),
+            PHASE44D_SOURCE_EMISSION_STEP_COUNTS.len() * 5
+        );
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
         assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
@@ -5416,29 +5546,29 @@ mod tests {
     fn phase44d_source_emission_benchmark_rejects_non_power_of_two_step_counts() {
         let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 6], false)
             .expect_err("non-power-of-two step counts must fail");
-        assert!(error.to_string().contains("requires power-of-two step counts"));
+        assert!(error
+            .to_string()
+            .contains("requires power-of-two step counts"));
     }
 
     #[test]
     fn phase44d_source_emission_benchmark_rejects_oversized_step_counts() {
-        let error =
-            run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 128], false)
-                .expect_err("oversized step counts must fail");
-        assert!(error
-            .to_string()
-            .contains("supports at most 64 steps"));
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 128], false)
+            .expect_err("oversized step counts must fail");
+        assert!(error.to_string().contains("supports at most 64 steps"));
     }
 
     #[test]
     fn phase44d_source_emission_benchmark_surfaces_execution_proof_overflow_at_four_steps() {
-        let error = run_stwo_phase44d_source_emission_benchmark_for_steps(&[4], false)
-            .expect_err("four-step Phase44D benchmark should surface current execution-proof overflow");
+        let error = run_stwo_phase44d_source_emission_benchmark_for_steps(&[4], false).expect_err(
+            "four-step Phase44D benchmark should surface current execution-proof overflow",
+        );
         assert!(error
             .to_string()
             .contains("cannot construct 4-step proof-checked source chain"));
-        assert!(error
-            .to_string()
-            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
+        assert!(error.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
     }
 
     #[test]
@@ -5471,6 +5601,83 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_experimental_benchmark_uses_carry_aware_publication_chain() {
+        let layout = phase12_default_decoding_layout();
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout, 8,
+            )
+            .expect("experimental carry-aware phase12 decoding family demo");
+        assert_eq!(chain.total_steps, 8);
+        assert!(chain.steps.iter().all(|step| {
+            step.proof.proof_backend_version
+                == crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+        }));
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("phase14 replay");
+        verify_phase14_decoding_chain(&phase14).expect("phase14 verification");
+        let input =
+            phase44d_source_emission_benchmark_input(&chain, false).expect("benchmark input");
+        assert_eq!(input.total_steps, 8);
+        assert_eq!(input.phase43_trace.total_steps, 8);
+        assert_eq!(input.shared_manifest.total_steps, 8);
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_clears_honest_eight_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[8], false)
+                .expect("experimental phase44d source emission benchmark should run");
+        assert_eq!(report.rows.len(), 5);
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE
+        );
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| {
+            row.note.contains(
+                "experimental Phase12 source chain uses the carry-aware execution-proof backend",
+            )
+        }));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection" && row.steps == 8
+        }));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_scales_through_four_and_eight_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[4, 8], false)
+                .expect("experimental phase44d source emission benchmark should run");
+        assert_eq!(report.rows.len(), 10);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| row.steps == 4));
+        assert!(report.rows.iter().any(|row| row.steps == 8));
+    }
+
+    #[test]
+    #[ignore = "expensive experimental phase44d full sweep"]
+    fn phase44d_source_emission_experimental_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase44d_source_emission_experimental_benchmark_with_options(false)
+            .expect("experimental phase44d source emission benchmark should run");
+        assert_eq!(
+            report.rows.len(),
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS.len() * 5
+        );
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 64
+        }));
+    }
+
+    #[test]
     fn phase12_arithmetic_budget_map_surfaces_first_blocked_four_step_seed() {
         let report = run_stwo_phase12_arithmetic_budget_map_for_max_steps(4)
             .expect("phase12 arithmetic budget map should run");
@@ -5481,7 +5688,10 @@ mod tests {
             .find(|row| row.steps == 4 && row.seed_step_index == 3)
             .expect("blocked four-step seed");
         assert_eq!(blocked.first_carry_runtime_step, Some(45));
-        assert_eq!(blocked.first_carry_instruction.as_deref(), Some("MulMemory(28)"));
+        assert_eq!(
+            blocked.first_carry_instruction.as_deref(),
+            Some("MulMemory(28)")
+        );
         assert_eq!(blocked.first_carry_raw_acc, Some(87_872));
         assert_eq!(blocked.max_abs_raw_acc, 180_864);
         assert!(!blocked.execution_surface_supports_seed);
@@ -5489,13 +5699,9 @@ mod tests {
 
     #[test]
     fn phase44d_rescaled_exploratory_benchmark_defaults_to_identity_profile_at_two_steps() {
-        let report = run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
-            &[2],
-            None,
-            None,
-            false,
-        )
-        .expect("two-step rescaled exploratory benchmark should run");
+        let report =
+            run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(&[2], None, None, false)
+                .expect("two-step rescaled exploratory benchmark should run");
         assert_eq!(report.rows.len(), 5);
         assert_eq!(report.incoming_divisor, 1);
         assert_eq!(report.lookup_divisor, 1);
@@ -5506,13 +5712,9 @@ mod tests {
 
     #[test]
     fn phase44d_rescaled_exploratory_benchmark_still_cannot_clear_honest_four_steps() {
-        let error = run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
-            &[2, 4],
-            None,
-            None,
-            false,
-        )
-        .expect_err("four-step rescaled exploratory benchmark should still fail");
+        let error =
+            run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(&[2, 4], None, None, false)
+                .expect_err("four-step rescaled exploratory benchmark should still fail");
         assert!(error
             .to_string()
             .contains("could not find a carry-free rescaling profile"));

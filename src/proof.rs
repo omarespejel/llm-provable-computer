@@ -1202,25 +1202,36 @@ mod tests {
             .expect("prove")
     }
 
-    fn phase12_four_step_overflow_model() -> crate::model::TransformerVm {
+    fn phase12_models_for_steps(total_steps: usize) -> Vec<(usize, crate::model::TransformerVm)> {
         let layout = phase12_default_decoding_layout();
-        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+        phase12_demo_initial_memories_for_steps(&layout, total_steps)
             .expect("memories")
             .into_iter()
+            .enumerate()
+            .map(|(seed_step_index, initial_memory)| {
+                let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+                    .expect("program");
+                let model = ProgramCompiler
+                    .compile_program(
+                        program,
+                        TransformerVmConfig {
+                            num_layers: 1,
+                            attention_mode: Attention2DMode::AverageHard,
+                            ..TransformerVmConfig::default()
+                        },
+                    )
+                    .expect("compile model");
+                (seed_step_index, model)
+            })
+            .collect()
+    }
+
+    fn phase12_four_step_overflow_model() -> crate::model::TransformerVm {
+        phase12_models_for_steps(4)
+            .into_iter()
             .nth(3)
-            .expect("overflowing fourth seed");
-        let program =
-            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
-        ProgramCompiler
-            .compile_program(
-                program,
-                TransformerVmConfig {
-                    num_layers: 1,
-                    attention_mode: Attention2DMode::AverageHard,
-                    ..TransformerVmConfig::default()
-                },
-            )
-            .expect("compile model")
+            .expect("overflowing fourth seed")
+            .1
     }
 
     #[test]
@@ -1300,9 +1311,9 @@ HALT
         let model = phase12_four_step_overflow_model();
         let err = prove_execution_stark_with_options(&model, 256, production_v1_stark_options())
             .expect_err("legacy proving should reject carry-bearing trace");
-        assert!(err
-            .to_string()
-            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
+        assert!(err.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
     }
 
     #[test]
@@ -1338,6 +1349,57 @@ HALT
         assert!(
             verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&proof)
                 .expect("experimental verification")
+        );
+    }
+
+    #[test]
+    fn experimental_phase12_carry_aware_surface_proves_honest_eight_step_family() {
+        let mut carry_bearing_seed_count = 0usize;
+        for (seed_step_index, model) in phase12_models_for_steps(8) {
+            let proof = prove_execution_stark_phase12_carry_aware_experimental_with_options(
+                &model,
+                256,
+                production_v1_stark_options(),
+            )
+            .unwrap_or_else(|error| {
+                panic!(
+                    "experimental carry-aware proof should clear honest 8-step seed {seed_step_index}: {error}"
+                )
+            });
+            assert_eq!(
+                proof.proof_backend_version,
+                stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+            );
+            assert!(proof.claim.final_state.halted, "seed {seed_step_index}");
+            let mut runtime = crate::interpreter::NativeInterpreter::new(
+                proof.claim.program.clone(),
+                proof.claim.attention_mode.clone(),
+                proof.claim.steps,
+            );
+            let result = runtime.run().expect("re-run claim");
+            assert_eq!(
+                result.final_state, proof.claim.final_state,
+                "seed {seed_step_index}"
+            );
+            let rows = stwo_backend::collect_carry_aware_arithmetic_subset_prototype_rows(
+                &proof.claim.program,
+                runtime.trace(),
+            )
+            .expect("prototype rows");
+            if rows.iter().any(|row| row.carry_after) {
+                carry_bearing_seed_count += 1;
+            }
+            assert!(
+                verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&proof)
+                    .unwrap_or_else(|error| panic!(
+                        "experimental verification should succeed for honest 8-step seed {seed_step_index}: {error}"
+                    )),
+                "seed {seed_step_index}"
+            );
+        }
+        assert!(
+            carry_bearing_seed_count >= 4,
+            "honest 8-step family should include multiple carry-bearing seeds"
         );
     }
 

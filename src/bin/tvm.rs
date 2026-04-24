@@ -83,24 +83,24 @@ use llm_provable_computer::{
     prove_phase27_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
+    run_stwo_phase12_arithmetic_budget_map, run_stwo_phase12_arithmetic_budget_map_for_max_steps,
     run_stwo_phase12_shared_lookup_artifact_reuse_benchmark,
     run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_with_options,
     run_stwo_phase12_shared_lookup_bundle_benchmark,
     run_stwo_phase12_shared_lookup_bundle_benchmark_with_options,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options,
-    run_stwo_phase12_arithmetic_budget_map,
-    run_stwo_phase12_arithmetic_budget_map_for_max_steps,
     run_stwo_phase44d_rescaled_exploratory_benchmark,
     run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps,
     run_stwo_phase44d_rescaled_exploratory_benchmark_with_options,
     run_stwo_phase44d_source_emission_benchmark,
     run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
+    run_stwo_phase44d_source_emission_experimental_benchmark,
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_steps,
+    run_stwo_phase44d_source_emission_experimental_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
-    save_stwo_phase12_arithmetic_budget_map_report_json,
-    save_stwo_phase12_arithmetic_budget_map_report_tsv,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
@@ -116,6 +116,8 @@ use llm_provable_computer::{
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, save_phase92_shared_normalization_primitive_artifact,
+    save_stwo_phase12_arithmetic_budget_map_report_json,
+    save_stwo_phase12_arithmetic_budget_map_report_tsv,
     save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_json,
     save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_tsv,
     save_stwo_phase12_shared_lookup_bundle_benchmark_report_json,
@@ -494,6 +496,22 @@ enum Command {
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
         /// Optional comma-delimited step counts. Defaults to the publication sweep.
+        #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
+        step_counts: Vec<usize>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Run the typed Phase44D source-emission benchmark on the experimental carry-aware Phase12 backend.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    BenchStwoPhase44dSourceEmissionExperimentalReuse {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Optional comma-delimited step counts. Defaults to the honest exploratory sweep.
         #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
         step_counts: Vec<usize>,
         /// Capture host-dependent wall-clock timings in the report output.
@@ -2004,6 +2022,17 @@ fn run() -> llm_provable_computer::Result<()> {
             &step_counts,
             capture_timings,
         )?,
+        Command::BenchStwoPhase44dSourceEmissionExperimentalReuse {
+            output_tsv,
+            output_json,
+            step_counts,
+            capture_timings,
+        } => bench_stwo_phase44d_source_emission_experimental_reuse_command(
+            &output_tsv,
+            output_json.as_deref(),
+            &step_counts,
+            capture_timings,
+        )?,
         Command::BenchStwoPhase12ArithmeticBudgetMap {
             output_tsv,
             output_json,
@@ -3478,6 +3507,76 @@ fn bench_stwo_phase44d_source_emission_reuse_command(
     }
 }
 
+fn bench_stwo_phase44d_source_emission_experimental_reuse_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = step_counts;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase44D experimental source emission benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase44D experimental source emission benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if step_counts.is_empty() {
+            if capture_timings {
+                run_stwo_phase44d_source_emission_experimental_benchmark_with_options(true)?
+            } else {
+                run_stwo_phase44d_source_emission_experimental_benchmark()?
+            }
+        } else {
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(
+                step_counts,
+                capture_timings,
+            )?
+        };
+        save_stwo_phase44d_source_emission_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase44d_source_emission_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "phase44d_source_emission_experimental_benchmark: {} {} steps={} serialized_bytes={} emit_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.serialized_bytes,
+                row.emit_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
 fn bench_stwo_phase12_arithmetic_budget_map_command(
     output_tsv: &Path,
     output_json: Option<&Path>,
@@ -3585,20 +3684,21 @@ fn bench_stwo_phase44d_rescaled_exploratory_command(
                 }
             }
         }
-        let report = if step_counts.is_empty() && incoming_divisor.is_none() && lookup_divisor.is_none() {
-            if capture_timings {
-                run_stwo_phase44d_rescaled_exploratory_benchmark_with_options(true)?
+        let report =
+            if step_counts.is_empty() && incoming_divisor.is_none() && lookup_divisor.is_none() {
+                if capture_timings {
+                    run_stwo_phase44d_rescaled_exploratory_benchmark_with_options(true)?
+                } else {
+                    run_stwo_phase44d_rescaled_exploratory_benchmark()?
+                }
             } else {
-                run_stwo_phase44d_rescaled_exploratory_benchmark()?
-            }
-        } else {
-            run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
-                step_counts,
-                incoming_divisor,
-                lookup_divisor,
-                capture_timings,
-            )?
-        };
+                run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
+                    step_counts,
+                    incoming_divisor,
+                    lookup_divisor,
+                    capture_timings,
+                )?
+            };
         save_stwo_phase44d_rescaled_exploratory_benchmark_report_tsv(&report, output_tsv)?;
         if let Some(path) = output_json {
             save_stwo_phase44d_rescaled_exploratory_benchmark_report_json(&report, path)?;
@@ -13623,6 +13723,75 @@ mod cli_dispatch_tests {
 
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
+    fn phase44d_source_emission_experimental_benchmark_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase44d-source-emission-experimental-reuse"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_command_parses_directly_and_is_not_run_shorthand(
+    ) {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase44d-source-emission-experimental-reuse"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-source-emission-experimental-reuse",
+                "--output-tsv",
+                "phase44d-experimental.tsv",
+                "--output-json",
+                "phase44d-experimental.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-source-emission-experimental-reuse"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d-experimental.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("phase44d-experimental.json"),
+            ]
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_command_preserves_step_counts_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-source-emission-experimental-reuse",
+                "--step-counts",
+                "2,4,8",
+                "--capture-timings",
+                "--output-tsv",
+                "phase44d-experimental.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-source-emission-experimental-reuse"),
+                OsString::from("--step-counts"),
+                OsString::from("2,4,8"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d-experimental.tsv"),
+            ]
+        );
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
     fn phase12_arithmetic_budget_map_command_is_hidden_without_stwo_backend() {
         let help = Cli::command().render_long_help().to_string();
         assert!(!help.contains("bench-stwo-phase12-arithmetic-budget-map"));
@@ -14520,6 +14689,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-phase12-shared-lookup-artifact-reuse"
                 | "bench-stwo-phase30-source-bound-manifest-reuse"
                 | "bench-stwo-phase44d-source-emission-reuse"
+                | "bench-stwo-phase44d-source-emission-experimental-reuse"
                 | "bench-stwo-phase12-arithmetic-budget-map"
                 | "bench-stwo-phase44d-rescaled-exploratory"
                 | "bench-stwo-phase71-handoff-receipt-reuse"

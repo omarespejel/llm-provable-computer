@@ -8687,10 +8687,15 @@ fn phase43_verify_header(trace: &Phase43HistoryReplayTrace) -> Result<()> {
             trace.proof_backend
         )));
     }
-    if trace.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+    if trace.proof_backend_version != STWO_BACKEND_VERSION_PHASE12
+        && trace.proof_backend_version
+            != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+    {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 43 history replay trace requires proof backend version `{}`, got `{}`",
-            STWO_BACKEND_VERSION_PHASE12, trace.proof_backend_version
+            "Phase 43 history replay trace requires proof backend version `{}` or `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL,
+            trace.proof_backend_version
         )));
     }
     if trace.statement_version != CLAIM_STATEMENT_VERSION_V1 {

@@ -35,13 +35,13 @@ pub use arithmetic_component::{
     phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
     Phase3ArithmeticComponentMetadata, Phase3TreeSubspan,
 };
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_prototype_rows;
 #[cfg(feature = "stwo-backend")]
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
 };
-#[cfg(all(feature = "stwo-backend", test))]
-pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_prototype_rows;
 #[cfg(all(feature = "stwo-backend", test))]
 pub(crate) use decoding::phase12_demo_initial_memories_for_steps;
 #[cfg(feature = "stwo-backend")]
@@ -300,8 +300,7 @@ pub use normalization_prover::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use primitive_benchmark::{
-    run_stwo_phase12_arithmetic_budget_map,
-    run_stwo_phase12_arithmetic_budget_map_for_max_steps,
+    run_stwo_phase12_arithmetic_budget_map, run_stwo_phase12_arithmetic_budget_map_for_max_steps,
     run_stwo_phase12_shared_lookup_artifact_reuse_benchmark,
     run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_with_options,
     run_stwo_phase12_shared_lookup_bundle_benchmark,
@@ -314,6 +313,9 @@ pub use primitive_benchmark::{
     run_stwo_phase44d_source_emission_benchmark,
     run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
+    run_stwo_phase44d_source_emission_experimental_benchmark,
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_steps,
+    run_stwo_phase44d_source_emission_experimental_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
@@ -334,21 +336,20 @@ pub use primitive_benchmark::{
     save_stwo_phase71_handoff_receipt_benchmark_report_tsv,
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
     save_stwo_shared_table_reuse_benchmark_report_json,
-    save_stwo_shared_table_reuse_benchmark_report_tsv,
-    StwoPhase12ArithmeticBudgetMapMeasurement, StwoPhase12ArithmeticBudgetMapReport,
-    StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement,
+    save_stwo_shared_table_reuse_benchmark_report_tsv, StwoPhase12ArithmeticBudgetMapMeasurement,
+    StwoPhase12ArithmeticBudgetMapReport, StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement,
     StwoPhase12SharedLookupArtifactReuseBenchmarkReport,
     StwoPhase12SharedLookupBundleBenchmarkMeasurement,
     StwoPhase12SharedLookupBundleBenchmarkReport,
     StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement,
     StwoPhase30SourceBoundManifestReuseBenchmarkReport,
     StwoPhase44DRescaledExploratoryBenchmarkMeasurement,
-    StwoPhase44DRescaledExploratoryBenchmarkReport,
-    StwoPhase44DSourceEmissionBenchmarkMeasurement, StwoPhase44DSourceEmissionBenchmarkReport,
-    StwoPhase71HandoffReceiptBenchmarkMeasurement, StwoPhase71HandoffReceiptBenchmarkReport,
-    StwoPrimitiveBenchmarkMeasurement, StwoPrimitiveBenchmarkReport,
-    StwoSharedTableReuseBenchmarkMeasurement, StwoSharedTableReuseBenchmarkReport,
-    STWO_PHASE12_ARITHMETIC_BUDGET_MAP_SCOPE, STWO_PHASE12_ARITHMETIC_BUDGET_MAP_VERSION,
+    StwoPhase44DRescaledExploratoryBenchmarkReport, StwoPhase44DSourceEmissionBenchmarkMeasurement,
+    StwoPhase44DSourceEmissionBenchmarkReport, StwoPhase71HandoffReceiptBenchmarkMeasurement,
+    StwoPhase71HandoffReceiptBenchmarkReport, StwoPrimitiveBenchmarkMeasurement,
+    StwoPrimitiveBenchmarkReport, StwoSharedTableReuseBenchmarkMeasurement,
+    StwoSharedTableReuseBenchmarkReport, STWO_PHASE12_ARITHMETIC_BUDGET_MAP_SCOPE,
+    STWO_PHASE12_ARITHMETIC_BUDGET_MAP_VERSION,
     STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_SCOPE,
     STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_VERSION,
     STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE,
