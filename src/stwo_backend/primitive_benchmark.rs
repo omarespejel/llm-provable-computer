@@ -34,7 +34,6 @@ use super::decoding::{
     commit_phase12_layout, commit_phase23_boundary_state, phase12_default_decoding_layout,
     phase14_prepare_decoding_chain, phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
-    prove_phase12_decoding_demo_for_layout_steps,
     prove_phase12_decoding_demo_for_layout_steps_publication, verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
@@ -1074,7 +1073,7 @@ fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     let layout = phase12_default_decoding_layout();
     let mut rows = Vec::new();
     for &steps in step_counts {
-        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)?;
         let benchmark_input = phase44d_source_emission_benchmark_input(&chain)?;
         rows.push(measure_phase44d_source_emission_shared(
             &benchmark_input,

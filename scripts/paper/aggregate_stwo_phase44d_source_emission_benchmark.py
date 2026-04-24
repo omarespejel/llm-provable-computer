@@ -89,7 +89,9 @@ def main() -> None:
         if benchmark_version is None:
             benchmark_version = payload["benchmark_version"]
             semantic_scope = payload["semantic_scope"]
-            timing_unit = payload.get("timing_unit", "milliseconds")
+            if "timing_unit" not in payload:
+                raise SystemExit(f"{input_path} must include timing_unit")
+            timing_unit = payload["timing_unit"]
             canonical_rows = payload["rows"]
             build_row_map(canonical_rows, source=input_path)
             for row in canonical_rows:
@@ -103,7 +105,7 @@ def main() -> None:
                 raise SystemExit(
                     f"semantic_scope mismatch in {input_path}: {payload['semantic_scope']} != {semantic_scope}"
                 )
-            if payload.get("timing_unit", "milliseconds") != timing_unit:
+            if payload.get("timing_unit") != timing_unit:
                 raise SystemExit(
                     f"timing_unit mismatch in {input_path}: {payload.get('timing_unit')!r} != {timing_unit!r}"
                 )

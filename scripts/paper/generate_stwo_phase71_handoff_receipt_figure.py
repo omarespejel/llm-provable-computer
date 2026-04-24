@@ -266,6 +266,34 @@ def point_label(value: float, metric_key: str) -> str:
     return format_milliseconds(value)
 
 
+def phase71_footer(grouped: Dict[str, List[Dict[str, str]]]) -> str:
+    receipt = grouped["shared_handoff_receipt"][-1]
+    baseline = grouped["phase30_manifest_baseline"][-1]
+    receipt_bytes = float(receipt["serialized_bytes"])
+    baseline_bytes = float(baseline["serialized_bytes"])
+    receipt_verify = float(receipt["verify_ms"])
+    baseline_verify = float(baseline["verify_ms"])
+    steps = int(receipt["steps"])
+
+    if abs(receipt_bytes - baseline_bytes) < 1e-9:
+        byte_phrase = "matches the manifest baseline on serialized bytes"
+    elif receipt_bytes < baseline_bytes:
+        byte_phrase = "is smaller than the manifest baseline on serialized bytes"
+    else:
+        byte_phrase = "is larger than the manifest baseline on serialized bytes"
+
+    if abs(receipt_verify - baseline_verify) < 1e-9:
+        verify_phrase = "matches it on verification time"
+    elif receipt_verify < baseline_verify:
+        verify_phrase = "verifies faster than it"
+    else:
+        verify_phrase = "verifies more slowly than it"
+
+    return "At {} steps, the Phase71 handoff receipt {} and {}.".format(
+        steps, byte_phrase, verify_phrase
+    )
+
+
 def render_panel(
     *,
     grouped: Dict[str, List[Dict[str, str]]],
@@ -483,6 +511,7 @@ def build_svg(*, grouped: Dict[str, List[Dict[str, str]]], measured: bool, runs:
         if measured
         else "Deterministic report surface with wall-clock timings disabled."
     )
+    footer = phase71_footer(grouped)
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}">'.format(
@@ -516,7 +545,14 @@ def build_svg(*, grouped: Dict[str, List[Dict[str, str]]], measured: bool, runs:
             render_text(
                 WIDTH / 2,
                 842,
-                "This is a source-bound receipt-layer calibration only. The compact Phase71 surface flattens artifact size across repeated steps, but current verification still costs more than replaying the ordered Phase30 manifest directly on this path.",
+                "This is a source-bound receipt-layer calibration only.",
+                size=18,
+                fill="#6B7280",
+            ),
+            render_text(
+                WIDTH / 2,
+                872,
+                footer,
                 size=18,
                 fill="#6B7280",
             ),

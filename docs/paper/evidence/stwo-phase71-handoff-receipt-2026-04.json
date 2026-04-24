@@ -12,7 +12,7 @@
       "steps": 1,
       "relation": "one Phase71 actual S-two step-envelope handoff receipt",
       "serialized_bytes": 1533,
-      "verify_ms": 11.768,
+      "verify_ms": 12.324,
       "verified": true,
       "note": "one compact Phase71 receipt is verified against the proof-checked Phase12 chain and its ordered Phase30 manifest, preserving the source-bound handoff summary without shipping every envelope field directly"
     },
@@ -22,7 +22,7 @@
       "steps": 1,
       "relation": "ordered Phase30 manifest replay baseline",
       "serialized_bytes": 2188,
-      "verify_ms": 8.192,
+      "verify_ms": 8.598,
       "verified": true,
       "note": "the lower-layer baseline verifies the full ordered Phase30 manifest against the same proof-checked Phase12 chain, without collapsing it into the smaller Phase71 handoff receipt surface"
     },
@@ -32,7 +32,7 @@
       "steps": 2,
       "relation": "one Phase71 actual S-two step-envelope handoff receipt",
       "serialized_bytes": 1533,
-      "verify_ms": 23.032,
+      "verify_ms": 23.223,
       "verified": true,
       "note": "one compact Phase71 receipt is verified against the proof-checked Phase12 chain and its ordered Phase30 manifest, preserving the source-bound handoff summary without shipping every envelope field directly"
     },
@@ -42,7 +42,7 @@
       "steps": 2,
       "relation": "ordered Phase30 manifest replay baseline",
       "serialized_bytes": 3443,
-      "verify_ms": 15.907,
+      "verify_ms": 16.134,
       "verified": true,
       "note": "the lower-layer baseline verifies the full ordered Phase30 manifest against the same proof-checked Phase12 chain, without collapsing it into the smaller Phase71 handoff receipt surface"
     },
@@ -52,7 +52,7 @@
       "steps": 3,
       "relation": "one Phase71 actual S-two step-envelope handoff receipt",
       "serialized_bytes": 1533,
-      "verify_ms": 34.396,
+      "verify_ms": 34.613,
       "verified": true,
       "note": "one compact Phase71 receipt is verified against the proof-checked Phase12 chain and its ordered Phase30 manifest, preserving the source-bound handoff summary without shipping every envelope field directly"
     },
@@ -62,7 +62,7 @@
       "steps": 3,
       "relation": "ordered Phase30 manifest replay baseline",
       "serialized_bytes": 4698,
-      "verify_ms": 23.663,
+      "verify_ms": 23.795,
       "verified": true,
       "note": "the lower-layer baseline verifies the full ordered Phase30 manifest against the same proof-checked Phase12 chain, without collapsing it into the smaller Phase71 handoff receipt surface"
     }

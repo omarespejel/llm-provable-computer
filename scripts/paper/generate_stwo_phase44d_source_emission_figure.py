@@ -269,6 +269,33 @@ def value_label(value: float, metric_key: str) -> str:
     return "{} ms".format(rendered)
 
 
+def phase44d_footer(rows_by_variant: Dict[str, Dict[str, str]]) -> str:
+    typed = rows_by_variant["typed_source_boundary_plus_compact_projection"]
+    baseline = rows_by_variant["phase30_manifest_plus_compact_projection_baseline"]
+    typed_bytes = float(typed["serialized_bytes"])
+    baseline_bytes = float(baseline["serialized_bytes"])
+    typed_verify = float(typed["verify_ms"])
+    baseline_verify = float(baseline["verify_ms"])
+
+    if abs(typed_bytes - baseline_bytes) < 1e-9:
+        byte_phrase = "matches the manifest baseline on serialized bytes"
+    elif typed_bytes < baseline_bytes:
+        byte_phrase = "is smaller than the manifest baseline on serialized bytes"
+    else:
+        byte_phrase = "is larger than the manifest baseline on serialized bytes"
+
+    if abs(typed_verify - baseline_verify) < 1e-9:
+        verify_phrase = "matches it on verification time"
+    elif typed_verify < baseline_verify:
+        verify_phrase = "verifies faster than it"
+    else:
+        verify_phrase = "verifies more slowly than it"
+
+    return "At the checked point, the typed Phase44D boundary {} and {}.".format(
+        byte_phrase, verify_phrase
+    )
+
+
 def render_panel(
     *,
     rows_by_variant: Dict[str, Dict[str, str]],
@@ -464,6 +491,7 @@ def build_svg(*, rows_by_variant: Dict[str, Dict[str, str]], measured: bool, run
         if measured
         else "Deterministic report surface with wall-clock timings disabled."
     )
+    footer = phase44d_footer(rows_by_variant)
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}">'.format(
@@ -504,7 +532,7 @@ def build_svg(*, rows_by_variant: Dict[str, Dict[str, str]], measured: bool, run
             render_text(
                 WIDTH / 2,
                 874,
-                "The result is split: the typed Phase44D boundary is slightly larger, but it avoids replaying the ordered Phase30 verifier surface and collapses verification latency at this checked point.",
+                footer,
                 size=18,
                 fill="#6B7280",
             ),
