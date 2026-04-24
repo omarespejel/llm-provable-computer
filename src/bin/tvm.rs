@@ -87,6 +87,8 @@ use llm_provable_computer::{
     run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_with_options,
     run_stwo_phase12_shared_lookup_bundle_benchmark,
     run_stwo_phase12_shared_lookup_bundle_benchmark_with_options,
+    run_stwo_phase30_source_bound_manifest_reuse_benchmark,
+    run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
@@ -106,6 +108,8 @@ use llm_provable_computer::{
     save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_tsv,
     save_stwo_phase12_shared_lookup_bundle_benchmark_report_json,
     save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv,
+    save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_json,
+    save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_tsv,
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
     save_stwo_shared_table_reuse_benchmark_report_json,
     save_stwo_shared_table_reuse_benchmark_report_tsv,
@@ -439,6 +443,19 @@ enum Command {
     /// Run a real Phase12 shared lookup artifact reuse benchmark over a deduplicated artifact registry.
     #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
     BenchStwoPhase12SharedLookupArtifactReuse {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Run a source-bound Phase30 manifest reuse benchmark over one ordered manifest versus one-step manifests.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    BenchStwoPhase30SourceBoundManifestReuse {
         /// File where the benchmark TSV will be written.
         #[arg(long = "output-tsv")]
         output_tsv: PathBuf,
@@ -1885,6 +1902,15 @@ fn run() -> llm_provable_computer::Result<()> {
             output_json.as_deref(),
             capture_timings,
         )?,
+        Command::BenchStwoPhase30SourceBoundManifestReuse {
+            output_tsv,
+            output_json,
+            capture_timings,
+        } => bench_stwo_phase30_source_bound_manifest_reuse_command(
+            &output_tsv,
+            output_json.as_deref(),
+            capture_timings,
+        )?,
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::ProveStwoDecodingFamilyDemo { output } => {
@@ -3188,6 +3214,68 @@ fn bench_stwo_phase12_shared_lookup_artifact_reuse_command(
                 row.steps,
                 row.unique_artifacts,
                 row.proof_bytes,
+                row.serialized_bytes,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_phase30_source_bound_manifest_reuse_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase30 source-bound manifest reuse benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase30 source-bound manifest reuse benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if capture_timings {
+            run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options(true)?
+        } else {
+            run_stwo_phase30_source_bound_manifest_reuse_benchmark()?
+        };
+        save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "phase30_source_bound_manifest_reuse_benchmark: {} {} steps={} manifests={} envelopes={} serialized_bytes={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.manifests,
+                row.envelopes,
                 row.serialized_bytes,
                 row.verify_ms,
                 row.verified
@@ -12976,6 +13064,71 @@ mod cli_dispatch_tests {
 
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase30-source-bound-manifest-reuse"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_command_parses_directly_and_is_not_run_shorthand(
+    ) {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase30-source-bound-manifest-reuse"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase30-source-bound-manifest-reuse",
+                "--output-tsv",
+                "phase30.tsv",
+                "--output-json",
+                "phase30.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase30-source-bound-manifest-reuse"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase30.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("phase30.json"),
+            ]
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_command_preserves_capture_timings_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase30-source-bound-manifest-reuse",
+                "--capture-timings",
+                "--output-tsv",
+                "phase30.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase30-source-bound-manifest-reuse"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase30.tsv"),
+            ]
+        );
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
     fn phase12_shared_lookup_artifact_reuse_benchmark_command_is_hidden_without_stwo_backend() {
         let help = Cli::command().render_long_help().to_string();
         assert!(!help.contains("bench-stwo-phase12-shared-lookup-artifact-reuse"));
@@ -13117,6 +13270,52 @@ mod cli_dispatch_tests {
             .expect("spawn phase12 artifact negative-path test thread")
             .join()
             .expect("phase12 artifact negative-path test thread should not panic");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_command_rejects_identical_output_paths_before_run(
+    ) {
+        std::thread::Builder::new()
+            .name("phase30-source-bound-manifest-cli-negative".to_string())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let cli = Cli::try_parse_from(normalize_args(
+                    [
+                        "tvm",
+                        "bench-stwo-phase30-source-bound-manifest-reuse",
+                        "--output-tsv",
+                        "same.path",
+                        "--output-json",
+                        "same.path",
+                    ]
+                    .into_iter()
+                    .map(OsString::from),
+                ))
+                .expect("phase30 source-bound manifest command should parse");
+
+                let Command::BenchStwoPhase30SourceBoundManifestReuse {
+                    output_tsv,
+                    output_json,
+                    capture_timings,
+                } = cli.command
+                else {
+                    panic!("expected phase30 source-bound manifest benchmark command");
+                };
+
+                let err = super::bench_stwo_phase30_source_bound_manifest_reuse_command(
+                    &output_tsv,
+                    output_json.as_deref(),
+                    capture_timings,
+                )
+                .expect_err("identical output paths must fail before benchmark execution");
+                assert!(err
+                    .to_string()
+                    .contains("`--output-json` must differ from `--output-tsv`"));
+            })
+            .expect("spawn phase30 negative-path test thread")
+            .join()
+            .expect("phase30 negative-path test thread should not panic");
     }
 
     #[test]
@@ -13579,6 +13778,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-shared-table-reuse"
                 | "bench-stwo-phase12-shared-lookup-bundle-reuse"
                 | "bench-stwo-phase12-shared-lookup-artifact-reuse"
+                | "bench-stwo-phase30-source-bound-manifest-reuse"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
