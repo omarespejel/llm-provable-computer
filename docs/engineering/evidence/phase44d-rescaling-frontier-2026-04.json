@@ -1,0 +1,86 @@
+{
+  "frontier_version": "phase44d-rescaling-frontier-v1",
+  "semantic_scope": "phase44d_rescaled_exploratory_feasibility_grid",
+  "search_grid": {
+    "incoming_divisor_candidates": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "lookup_divisor_candidates": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256,
+      512
+    ]
+  },
+  "rows": [
+    {
+      "steps": 2,
+      "status": "verified",
+      "incoming_divisor": 1,
+      "lookup_divisor": 1,
+      "shared_serialized_bytes": 61238,
+      "baseline_serialized_bytes": 58382,
+      "note": "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface; emit_ms reports boundary construction cost separately Rescaled exploratory path: Phase12 demo incoming magnitudes were divided by 1 and lookup-seed magnitudes were divided by 1 with nonzero-preserving rounding before proving the same decoding_step_v2 family."
+    },
+    {
+      "steps": 4,
+      "status": "blocked",
+      "incoming_divisor": null,
+      "lookup_divisor": null,
+      "shared_serialized_bytes": null,
+      "baseline_serialized_bytes": null,
+      "note": "error: unsupported proof construction: phase44d rescaled exploratory benchmark could not find a carry-free rescaling profile that supports a proof-checked 4-step Phase12 source chain"
+    },
+    {
+      "steps": 8,
+      "status": "blocked",
+      "incoming_divisor": null,
+      "lookup_divisor": null,
+      "shared_serialized_bytes": null,
+      "baseline_serialized_bytes": null,
+      "note": "error: unsupported proof construction: phase44d rescaled exploratory benchmark could not find a carry-free rescaling profile that supports a proof-checked 8-step Phase12 source chain"
+    },
+    {
+      "steps": 16,
+      "status": "blocked",
+      "incoming_divisor": null,
+      "lookup_divisor": null,
+      "shared_serialized_bytes": null,
+      "baseline_serialized_bytes": null,
+      "note": "error: unsupported proof construction: phase44d rescaled exploratory benchmark could not find a carry-free rescaling profile that supports a proof-checked 16-step Phase12 source chain"
+    },
+    {
+      "steps": 32,
+      "status": "blocked",
+      "incoming_divisor": null,
+      "lookup_divisor": null,
+      "shared_serialized_bytes": null,
+      "baseline_serialized_bytes": null,
+      "note": "error: unsupported proof construction: phase44d rescaled exploratory benchmark could not find a carry-free rescaling profile that supports a proof-checked 32-step Phase12 source chain"
+    },
+    {
+      "steps": 64,
+      "status": "blocked",
+      "incoming_divisor": null,
+      "lookup_divisor": null,
+      "shared_serialized_bytes": null,
+      "baseline_serialized_bytes": null,
+      "note": "error: unsupported proof construction: phase44d rescaled exploratory benchmark could not find a carry-free rescaling profile that supports a proof-checked 64-step Phase12 source chain"
+    }
+  ]
+}

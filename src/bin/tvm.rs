@@ -89,11 +89,18 @@ use llm_provable_computer::{
     run_stwo_phase12_shared_lookup_bundle_benchmark_with_options,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options,
+    run_stwo_phase12_arithmetic_budget_map,
+    run_stwo_phase12_arithmetic_budget_map_for_max_steps,
+    run_stwo_phase44d_rescaled_exploratory_benchmark,
+    run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps,
+    run_stwo_phase44d_rescaled_exploratory_benchmark_with_options,
     run_stwo_phase44d_source_emission_benchmark,
     run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
+    save_stwo_phase12_arithmetic_budget_map_report_json,
+    save_stwo_phase12_arithmetic_budget_map_report_tsv,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
@@ -115,6 +122,8 @@ use llm_provable_computer::{
     save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv,
     save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_json,
     save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_tsv,
+    save_stwo_phase44d_rescaled_exploratory_benchmark_report_json,
+    save_stwo_phase44d_rescaled_exploratory_benchmark_report_tsv,
     save_stwo_phase44d_source_emission_benchmark_report_json,
     save_stwo_phase44d_source_emission_benchmark_report_tsv,
     save_stwo_phase71_handoff_receipt_benchmark_report_json,
@@ -487,6 +496,41 @@ enum Command {
         /// Optional comma-delimited step counts. Defaults to the publication sweep.
         #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
         step_counts: Vec<usize>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Map the arithmetic headroom of the default Phase12 source-chain seeds before the proof surface rejects overflow.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    BenchStwoPhase12ArithmeticBudgetMap {
+        /// File where the report TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the report JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Maximum Phase12 chain length to scan. Defaults to the exploratory ceiling.
+        #[arg(long = "max-steps")]
+        max_steps: Option<usize>,
+    },
+    /// Run a research-only rescaled Phase44D sweep that preserves the decoding_step_v2 family but shrinks incoming magnitudes.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    BenchStwoPhase44dRescaledExploratory {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Optional comma-delimited step counts. Defaults to the exploratory sweep.
+        #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
+        step_counts: Vec<usize>,
+        /// Optional incoming-value divisor. When omitted, the smallest successful research divisor is auto-selected.
+        #[arg(long = "incoming-divisor")]
+        incoming_divisor: Option<i16>,
+        /// Optional lookup-seed divisor. When omitted, the smallest successful research divisor is auto-selected.
+        #[arg(long = "lookup-divisor")]
+        lookup_divisor: Option<i16>,
         /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
@@ -1960,6 +2004,30 @@ fn run() -> llm_provable_computer::Result<()> {
             &step_counts,
             capture_timings,
         )?,
+        Command::BenchStwoPhase12ArithmeticBudgetMap {
+            output_tsv,
+            output_json,
+            max_steps,
+        } => bench_stwo_phase12_arithmetic_budget_map_command(
+            &output_tsv,
+            output_json.as_deref(),
+            max_steps,
+        )?,
+        Command::BenchStwoPhase44dRescaledExploratory {
+            output_tsv,
+            output_json,
+            step_counts,
+            incoming_divisor,
+            lookup_divisor,
+            capture_timings,
+        } => bench_stwo_phase44d_rescaled_exploratory_command(
+            &output_tsv,
+            output_json.as_deref(),
+            &step_counts,
+            incoming_divisor,
+            lookup_divisor,
+            capture_timings,
+        )?,
         Command::BenchStwoPhase71HandoffReceiptReuse {
             output_tsv,
             output_json,
@@ -3400,6 +3468,155 @@ fn bench_stwo_phase44d_source_emission_reuse_command(
                 row.primitive,
                 row.backend_variant,
                 row.steps,
+                row.serialized_bytes,
+                row.emit_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_phase12_arithmetic_budget_map_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    max_steps: Option<usize>,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = max_steps;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase12 arithmetic budget map requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase12 arithmetic budget map")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if let Some(max_steps) = max_steps {
+            run_stwo_phase12_arithmetic_budget_map_for_max_steps(max_steps)?
+        } else {
+            run_stwo_phase12_arithmetic_budget_map()?
+        };
+        save_stwo_phase12_arithmetic_budget_map_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase12_arithmetic_budget_map_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        println!("rows: {}", report.rows.len());
+        if let Some(first_blocked) = report
+            .rows
+            .iter()
+            .find(|row| !row.execution_surface_supports_seed)
+        {
+            println!(
+                "first_blocked_seed: steps={} seed_step_index={} first_carry_runtime_step={} first_carry_instruction={}",
+                first_blocked.steps,
+                first_blocked.seed_step_index,
+                first_blocked
+                    .first_carry_runtime_step
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "none".to_string()),
+                first_blocked
+                    .first_carry_instruction
+                    .clone()
+                    .unwrap_or_else(|| "none".to_string())
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_phase44d_rescaled_exploratory_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    step_counts: &[usize],
+    incoming_divisor: Option<i16>,
+    lookup_divisor: Option<i16>,
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = step_counts;
+        let _ = incoming_divisor;
+        let _ = lookup_divisor;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase44D rescaled exploratory benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase44D rescaled exploratory benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if step_counts.is_empty() && incoming_divisor.is_none() && lookup_divisor.is_none() {
+            if capture_timings {
+                run_stwo_phase44d_rescaled_exploratory_benchmark_with_options(true)?
+            } else {
+                run_stwo_phase44d_rescaled_exploratory_benchmark()?
+            }
+        } else {
+            run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
+                step_counts,
+                incoming_divisor,
+                lookup_divisor,
+                capture_timings,
+            )?
+        };
+        save_stwo_phase44d_rescaled_exploratory_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase44d_rescaled_exploratory_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        println!("incoming_divisor: {}", report.incoming_divisor);
+        println!("lookup_divisor: {}", report.lookup_divisor);
+        for row in &report.rows {
+            println!(
+                "phase44d_rescaled_exploratory_benchmark: {} {} steps={} incoming_divisor={} lookup_divisor={} serialized_bytes={} emit_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.incoming_divisor,
+                row.lookup_divisor,
                 row.serialized_bytes,
                 row.emit_ms,
                 row.verify_ms,
@@ -13406,6 +13623,96 @@ mod cli_dispatch_tests {
 
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
+    fn phase12_arithmetic_budget_map_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase12-arithmetic-budget-map"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase12_arithmetic_budget_map_command_parses_directly_and_is_not_run_shorthand() {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase12-arithmetic-budget-map"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase12-arithmetic-budget-map",
+                "--output-tsv",
+                "budget.tsv",
+                "--output-json",
+                "budget.json",
+                "--max-steps",
+                "8",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase12-arithmetic-budget-map"),
+                OsString::from("--output-tsv"),
+                OsString::from("budget.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("budget.json"),
+                OsString::from("--max-steps"),
+                OsString::from("8"),
+            ]
+        );
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
+    fn phase44d_rescaled_exploratory_benchmark_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase44d-rescaled-exploratory"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_rescaled_exploratory_benchmark_command_parses_directly_and_is_not_run_shorthand() {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase44d-rescaled-exploratory"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-rescaled-exploratory",
+                "--step-counts",
+                "2,4,8,16",
+                "--incoming-divisor",
+                "8",
+                "--lookup-divisor",
+                "4",
+                "--capture-timings",
+                "--output-tsv",
+                "phase44d-rescaled.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-rescaled-exploratory"),
+                OsString::from("--step-counts"),
+                OsString::from("2,4,8,16"),
+                OsString::from("--incoming-divisor"),
+                OsString::from("8"),
+                OsString::from("--lookup-divisor"),
+                OsString::from("4"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d-rescaled.tsv"),
+            ]
+        );
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
     fn phase71_handoff_receipt_benchmark_command_is_hidden_without_stwo_backend() {
         let help = Cli::command().render_long_help().to_string();
         assert!(!help.contains("bench-stwo-phase71-handoff-receipt-reuse"));
@@ -14213,6 +14520,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-phase12-shared-lookup-artifact-reuse"
                 | "bench-stwo-phase30-source-bound-manifest-reuse"
                 | "bench-stwo-phase44d-source-emission-reuse"
+                | "bench-stwo-phase12-arithmetic-budget-map"
+                | "bench-stwo-phase44d-rescaled-exploratory"
                 | "bench-stwo-phase71-handoff-receipt-reuse"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"

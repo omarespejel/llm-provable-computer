@@ -9998,6 +9998,17 @@ pub(crate) fn prove_phase12_decoding_demo_for_layout_steps_publication(
     )
 }
 
+pub(crate) fn prove_phase12_decoding_demo_for_layout_initial_memories_publication(
+    layout: &Phase12DecodingLayout,
+    initial_memories: &[Vec<i16>],
+) -> Result<Phase12DecodingChainManifest> {
+    prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options(
+        layout,
+        initial_memories,
+        publication_v1_stark_options(),
+    )
+}
+
 pub fn prove_phase12_decoding_demo_for_layout_steps(
     layout: &Phase12DecodingLayout,
     total_steps: usize,
@@ -10014,6 +10025,20 @@ fn prove_phase12_decoding_demo_for_layout_steps_with_stark_options(
     total_steps: usize,
     stark_options: crate::proof::VanillaStarkProofOptions,
 ) -> Result<Phase12DecodingChainManifest> {
+    let initial_memories = phase12_demo_initial_memories_for_steps(layout, total_steps)?;
+    prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options(
+        layout,
+        &initial_memories,
+        stark_options,
+    )
+}
+
+fn prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options(
+    layout: &Phase12DecodingLayout,
+    initial_memories: &[Vec<i16>],
+    stark_options: crate::proof::VanillaStarkProofOptions,
+) -> Result<Phase12DecodingChainManifest> {
+    let total_steps = initial_memories.len();
     if total_steps == 0 {
         return Err(VmError::InvalidConfig(
             "Phase 12 decoding demo must contain at least one step".to_string(),
@@ -10030,7 +10055,15 @@ fn prove_phase12_decoding_demo_for_layout_steps_with_stark_options(
         ..TransformerVmConfig::default()
     };
     let mut proofs = Vec::with_capacity(total_steps);
-    for initial_memory in phase12_demo_initial_memories_for_steps(layout, total_steps)? {
+    let expected_memory_size = layout.memory_size()?;
+    for initial_memory in initial_memories.iter().cloned() {
+        if initial_memory.len() != expected_memory_size {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 decoding demo initial memory length {} does not match expected layout memory size {}",
+                initial_memory.len(),
+                expected_memory_size
+            )));
+        }
         let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
         let model = ProgramCompiler.compile_program(program, config.clone())?;
         let proof = prove_execution_stark_with_backend_and_options(
@@ -12815,9 +12848,51 @@ pub(crate) fn phase12_demo_initial_memories(
     phase12_demo_initial_memories_for_steps(layout, 3)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct Phase12DemoRescalingProfile {
+    pub incoming_divisor: i16,
+    pub lookup_divisor: i16,
+}
+
+impl Default for Phase12DemoRescalingProfile {
+    fn default() -> Self {
+        Self {
+            incoming_divisor: 1,
+            lookup_divisor: 1,
+        }
+    }
+}
+
 pub(crate) fn phase12_demo_initial_memories_for_steps(
     layout: &Phase12DecodingLayout,
     total_steps: usize,
+) -> Result<Vec<Vec<i16>>> {
+    phase12_demo_initial_memories_for_steps_with_rescaling(
+        layout,
+        total_steps,
+        Phase12DemoRescalingProfile::default(),
+    )
+}
+
+pub(crate) fn phase12_demo_initial_memories_for_steps_with_incoming_divisor(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+    incoming_divisor: i16,
+) -> Result<Vec<Vec<i16>>> {
+    phase12_demo_initial_memories_for_steps_with_rescaling(
+        layout,
+        total_steps,
+        Phase12DemoRescalingProfile {
+            incoming_divisor,
+            lookup_divisor: 1,
+        },
+    )
+}
+
+pub(crate) fn phase12_demo_initial_memories_for_steps_with_rescaling(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+    profile: Phase12DemoRescalingProfile,
 ) -> Result<Vec<Vec<i16>>> {
     layout.validate()?;
     if total_steps == 0 {
@@ -12830,6 +12905,18 @@ pub(crate) fn phase12_demo_initial_memories_for_steps(
             "Phase 12 demo seed generation requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
         )));
     }
+    if profile.incoming_divisor <= 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 demo seed generation incoming divisor must be positive, got {}",
+            profile.incoming_divisor
+        )));
+    }
+    if profile.lookup_divisor <= 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 demo seed generation lookup divisor must be positive, got {}",
+            profile.lookup_divisor
+        )));
+    }
     let kv_cache_range = layout.kv_cache_range()?;
     let incoming_token_range = layout.incoming_token_range()?;
     let query_range = layout.query_range()?;
@@ -12840,13 +12927,18 @@ pub(crate) fn phase12_demo_initial_memories_for_steps(
 
     let mut memories = Vec::with_capacity(total_steps);
     for position in 0..total_steps {
-        let incoming_values = phase12_demo_incoming_values(layout.pair_width, position);
+        let incoming_values =
+            phase12_demo_incoming_values_rescaled(layout.pair_width, position, profile.incoming_divisor);
         let query_values = phase12_demo_query_values(layout.pair_width, position);
         let mut memory = vec![0; layout.memory_size()?];
         memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
         memory[incoming_token_range.clone()].copy_from_slice(&incoming_values);
         memory[query_range.clone()].copy_from_slice(&query_values);
-        write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range.clone());
+        write_phase12_noncanonical_lookup_seed_rescaled(
+            &mut memory,
+            lookup_range.clone(),
+            profile.lookup_divisor,
+        );
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
@@ -12865,10 +12957,48 @@ pub(crate) fn phase12_demo_initial_memories_for_steps(
     Ok(memories)
 }
 
+fn phase12_demo_incoming_values_rescaled(
+    pair_width: usize,
+    step_index: usize,
+    incoming_divisor: i16,
+) -> Vec<i16> {
+    phase12_demo_incoming_values(pair_width, step_index)
+        .into_iter()
+        .map(|value| rescale_i16_magnitude_preserving_nonzero(value, incoming_divisor))
+        .collect()
+}
+
+fn write_phase12_noncanonical_lookup_seed_rescaled(
+    memory: &mut [i16],
+    lookup: std::ops::Range<usize>,
+    lookup_divisor: i16,
+) {
+    let slice = &mut memory[lookup];
+    assert_eq!(
+        slice.len(),
+        PHASE12_LOOKUP_ROW_VALUES.len(),
+        "Phase 12 lookup seed length mismatch"
+    );
+    for (cell, &value) in slice.iter_mut().zip(PHASE12_LOOKUP_ROW_VALUES.iter()) {
+        *cell = rescale_i16_magnitude_preserving_nonzero(value.saturating_add(1), lookup_divisor);
+    }
+}
+
 fn phase12_demo_incoming_values(pair_width: usize, step_index: usize) -> Vec<i16> {
     (0..pair_width)
         .map(|offset| ((step_index + 1) as i16) * (offset as i16 + 1))
         .collect()
+}
+
+fn rescale_i16_magnitude_preserving_nonzero(value: i16, divisor: i16) -> i16 {
+    if divisor <= 1 || value == 0 {
+        return value;
+    }
+    let sign = if value.is_negative() { -1i32 } else { 1i32 };
+    let scaled_abs = ((i32::from(value).unsigned_abs() as i32) + i32::from(divisor) - 1)
+        / i32::from(divisor);
+    let scaled = sign * scaled_abs.max(1);
+    scaled as i16
 }
 
 fn phase12_demo_query_values(pair_width: usize, step_index: usize) -> Vec<i16> {
