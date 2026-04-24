@@ -1,8 +1,9 @@
 # Published zkML Calibration Note (2026-04-24)
 
 This note records the current literature-facing calibration pass for the repository's
-STARK-vs-SNARK transformer positioning after the checked one-shot, shared-table, and
-Phase12-style shared-bundle rows landed in the paper evidence set.
+STARK-vs-SNARK transformer positioning after the checked one-shot, shared-table,
+Phase12-style shared-bundle, Phase44D typed-boundary, and Phase71 handoff-receipt rows
+landed in the paper evidence set.
 
 Primary-source table:
 
@@ -34,12 +35,20 @@ published numbers make three boundaries explicit:
 - `BitSage obelyzk.rs` reports a `41.4s` warm-cache proof for one
   `Qwen2.5-14B` token on `H100`; this is the closest public STARK-native
   comparator row, but it is repo-reported and not a matched benchmark.
-- the current repository's strongest literature-facing local row is now the checked
-  Phase12-style shared lookup bundle at three paired rows: `4,968` raw proof bytes,
-  `14.939 ms` prove time, and `6.745 ms` verify time from
-  `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`.
-  That is still not a full transformer benchmark, but it is a verifier-bound,
-  multi-table reuse row rather than a deleted fixed-fixture artifact.
+- the current repository now exposes **three** literature-facing local calibration rows,
+  each for a different regime:
+  - the checked Phase12-style shared lookup bundle at three paired rows:
+    `4,968` raw proof bytes, `14.939 ms` prove, and `6.745 ms` verify from
+    `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`;
+  - the checked Phase44D typed source-emission boundary at the current two-step
+    power-of-two point: `60,089` serialized bytes and `0.992 ms` verify from
+    `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`;
+  - the checked Phase71 handoff receipt at three steps: `1,533` serialized bytes and
+    `34.396 ms` verify from
+    `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`.
+  These are still not full transformer benchmarks, but they now cover a proving-surface
+  row, a latency-oriented typed boundary row, and a size-oriented receipt row rather than
+  a single local artifact line.
 
 ## Immediate consequence for paper positioning
 
@@ -49,8 +58,9 @@ transformers.”
 The current defensible claim is:
 
 - lookup-friendly proof systems align with transformer non-arithmetic pressure,
-- the repository now provides one-shot and reuse-sensitive `stwo` calibration rows,
-  including a verifier-bound two-table bundle row, and
+- the repository now provides one-shot and reuse-sensitive `stwo` calibration rows
+  across three different local surfaces: proving bundle, typed source boundary, and
+  handoff receipt, and
 - external calibration should be read by workload regime, not as a matched wall-clock
   race.
 
@@ -69,7 +79,9 @@ The next calibration step must therefore preserve the same standard:
 
 1. keep adding only verifier-bound local rows whose reuse claim is enforced by the
    proof statement rather than by artifact deduplication,
-2. widen that reuse-sensitive measurement discipline to richer kernels before making
+2. keep the local calibration rows split by cost regime instead of collapsing them into
+   a fake universal win story,
+3. widen that reuse-sensitive measurement discipline to richer kernels before making
    the headline broader, and
-3. add narrower external comparator rows only when workload boundary, hardware, and
+4. add narrower external comparator rows only when workload boundary, hardware, and
    proof object are explicit enough to avoid backend-slogan comparisons.
