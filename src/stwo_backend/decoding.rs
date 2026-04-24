@@ -14074,11 +14074,13 @@ mod kani_phase30_proofs {
 mod tests {
     use super::*;
     use crate::config::Attention2DMode;
+    use crate::engine::ExecutionTraceEntry;
     use crate::interpreter::NativeInterpreter;
     use crate::proof::{
         production_v1_stark_options, prove_execution_stark_with_backend_and_options,
         ExecutionClaimCommitments, VanillaStarkExecutionClaim,
     };
+    use crate::runtime::ExecutionRuntime;
     use crate::state::MachineState;
     use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
     use crate::stwo_backend::shared_lookup_artifact::{
@@ -14094,6 +14096,13 @@ mod tests {
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use std::sync::OnceLock;
+
+    #[derive(Debug, Clone)]
+    struct Phase12ExecutionCarryProvenance {
+        seed_step_index: usize,
+        event: ExecutionTraceEntry,
+        raw_acc: i64,
+    }
 
     fn sample_commitments() -> ExecutionClaimCommitments {
         ExecutionClaimCommitments {
@@ -14175,6 +14184,98 @@ mod tests {
                 commitments: Some(sample_commitments()),
             },
             proof: sample_phase12_proof_payload(layout, &final_memory),
+        }
+    }
+
+    fn phase12_first_execution_carry_for_steps(
+        layout: &Phase12DecodingLayout,
+        total_steps: usize,
+    ) -> Phase12ExecutionCarryProvenance {
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+
+        for (seed_step_index, initial_memory) in
+            phase12_demo_initial_memories_for_steps(layout, total_steps)
+                .expect("demo memories")
+                .into_iter()
+                .enumerate()
+        {
+            let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)
+                .expect("program");
+            let step_limit = decoding_program_step_limit(&program).expect("step limit");
+            let model = ProgramCompiler
+                .compile_program(program, config.clone())
+                .expect("compile");
+            let mut runtime = ExecutionRuntime::new(model, step_limit);
+            let result = runtime.run().expect("runtime run");
+            assert!(result.halted, "compiled Phase12 demo runtime should halt");
+
+            if let Some(event) = runtime
+                .events()
+                .iter()
+                .find(|event| event.state_after.carry_flag)
+                .cloned()
+            {
+                return Phase12ExecutionCarryProvenance {
+                    seed_step_index,
+                    raw_acc: phase12_execution_event_raw_acc(&event),
+                    event,
+                };
+            }
+        }
+
+        panic!("expected a carry-bearing execution event");
+    }
+
+    fn phase12_execution_event_raw_acc(event: &ExecutionTraceEntry) -> i64 {
+        match event.instruction {
+            Instruction::LoadImmediate(value) => i64::from(value),
+            Instruction::Load(address) => i64::from(event.state_before.memory[usize::from(address)]),
+            Instruction::Pop => i64::from(event.state_before.memory[usize::from(event.state_before.sp)]),
+            Instruction::AddImmediate(value) => {
+                i64::from(event.state_before.acc) + i64::from(value)
+            }
+            Instruction::AddMemory(address) => {
+                i64::from(event.state_before.acc)
+                    + i64::from(event.state_before.memory[usize::from(address)])
+            }
+            Instruction::SubImmediate(value) => {
+                i64::from(event.state_before.acc) - i64::from(value)
+            }
+            Instruction::SubMemory(address) => {
+                i64::from(event.state_before.acc)
+                    - i64::from(event.state_before.memory[usize::from(address)])
+            }
+            Instruction::MulImmediate(value) => {
+                i64::from(event.state_before.acc) * i64::from(value)
+            }
+            Instruction::MulMemory(address) => {
+                i64::from(event.state_before.acc)
+                    * i64::from(event.state_before.memory[usize::from(address)])
+            }
+            Instruction::AndImmediate(value) => i64::from(event.state_before.acc & value),
+            Instruction::AndMemory(address) => {
+                i64::from(event.state_before.acc & event.state_before.memory[usize::from(address)])
+            }
+            Instruction::OrImmediate(value) => i64::from(event.state_before.acc | value),
+            Instruction::OrMemory(address) => {
+                i64::from(event.state_before.acc | event.state_before.memory[usize::from(address)])
+            }
+            Instruction::XorImmediate(value) => i64::from(event.state_before.acc ^ value),
+            Instruction::XorMemory(address) => {
+                i64::from(event.state_before.acc ^ event.state_before.memory[usize::from(address)])
+            }
+            Instruction::CmpImmediate(value) => {
+                i64::from(event.state_before.acc) - i64::from(value)
+            }
+            Instruction::CmpMemory(address) => {
+                i64::from(event.state_before.acc)
+                    - i64::from(event.state_before.memory[usize::from(address)])
+            }
+            _ => i64::from(event.state_after.acc),
         }
     }
 
@@ -19090,6 +19191,116 @@ mod tests {
                 )
             });
         }
+    }
+
+    #[test]
+    fn phase12_four_step_execution_carry_provenance_is_lookup_scaling_overflow() {
+        let layout = phase12_default_decoding_layout();
+        let provenance = phase12_first_execution_carry_for_steps(&layout, 4);
+
+        assert_eq!(provenance.seed_step_index, 3);
+        assert_eq!(provenance.event.step, 45);
+        assert_eq!(provenance.event.layer_idx, Some(0));
+        assert_eq!(provenance.event.instruction, Instruction::MulMemory(28));
+        assert_eq!(provenance.event.state_before.pc, 44);
+        assert_eq!(provenance.event.state_before.acc, 1373);
+        assert_eq!(provenance.event.state_before.memory[28], 64);
+        assert!(!provenance.event.state_before.carry_flag);
+        assert_eq!(provenance.raw_acc, 87_872);
+        assert_eq!(provenance.event.state_after.acc, 22_336);
+        assert!(provenance.event.state_after.carry_flag);
+    }
+
+    #[test]
+    fn phase12_four_step_native_and_compiled_runtimes_agree_on_first_overflowing_step() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+            .expect("program");
+        let step_limit = decoding_program_step_limit(&program).expect("step limit");
+        let mut native = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            step_limit,
+        );
+        let native_result = native.run().expect("native run");
+        assert!(native_result.halted);
+        let native_event = native
+            .events()
+            .iter()
+            .find(|event| event.state_after.carry_flag)
+            .expect("native carry event");
+
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+        let model = ProgramCompiler
+            .compile_program(program, config)
+            .expect("compile");
+        let mut runtime = ExecutionRuntime::new(model, step_limit);
+        let runtime_result = runtime.run().expect("compiled run");
+        assert!(runtime_result.halted);
+        let runtime_event = runtime
+            .events()
+            .iter()
+            .find(|event| event.state_after.carry_flag)
+            .expect("compiled carry event");
+
+        assert_eq!(native_event.step, 45);
+        assert_eq!(native_event.instruction, Instruction::MulMemory(28));
+        assert_eq!(native_event.state_before.acc, 1373);
+        assert_eq!(native_event.state_before.memory[28], 64);
+        assert_eq!(native_event.state_after.acc, 22_336);
+        assert!(native_event.state_after.carry_flag);
+
+        assert_eq!(runtime_event.step, native_event.step);
+        assert_eq!(runtime_event.instruction, native_event.instruction);
+        assert_eq!(runtime_event.state_before.acc, native_event.state_before.acc);
+        assert_eq!(runtime_event.state_before.memory[28], native_event.state_before.memory[28]);
+        assert_eq!(runtime_event.state_after.acc, native_event.state_after.acc);
+        assert_eq!(
+            phase12_execution_event_raw_acc(runtime_event),
+            phase12_execution_event_raw_acc(native_event)
+        );
+    }
+
+    #[test]
+    fn phase12_four_step_first_overflowing_seed_is_rejected_by_execution_proof_surface() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+            .expect("program");
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: 1,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile");
+
+        let error = prove_execution_stark_with_backend_and_options(
+            &model,
+            128,
+            StarkProofBackend::Stwo,
+            production_v1_stark_options(),
+        )
+        .expect_err("4-step seed should hit the carry/overflow guard before proving");
+        assert!(error
+            .to_string()
+            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
     }
 
     #[test]
