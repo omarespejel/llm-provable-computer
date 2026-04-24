@@ -254,24 +254,25 @@ def main() -> None:
     verify_ax.spines["top"].set_visible(False)
     verify_ax.spines["right"].set_visible(False)
 
-    shared_64 = float(
+    frontier_step = max(steps)
+    shared_frontier = float(
         next(
             row["verify_ms"]
             for row in grouped["typed_source_boundary_plus_compact_projection"]
-            if int(row["steps"]) == 64
+            if int(row["steps"]) == frontier_step
         )
     )
-    baseline_64 = float(
+    baseline_frontier = float(
         next(
             row["verify_ms"]
             for row in grouped["phase30_manifest_plus_compact_projection_baseline"]
-            if int(row["steps"]) == 64
+            if int(row["steps"]) == frontier_step
         )
     )
-    ratio = baseline_64 / shared_64
+    ratio = baseline_frontier / shared_frontier
     verify_ax.annotate(
-        f"{ratio:.1f}x lower verify latency at 64 steps",
-        (64, shared_64),
+        f"{ratio:.1f}x lower verify latency at {frontier_step} steps",
+        (frontier_step, shared_frontier),
         xytext=(-10, 14),
         textcoords="offset points",
         ha="right",
