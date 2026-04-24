@@ -574,6 +574,33 @@ regime only starts after the first pair: once the shared bundle carries more tha
 paired row, raw proof bytes flatten sharply, and by three paired rows local prove time
 beats both independent baselines.
 
+The next checked calibration row narrows the scope again, this time onto the exact
+checked-in `Phase12SharedLookupArtifact` type instead of the benchmark-only bundle. Its
+evidence files `docs/paper/evidence/stwo-phase12-shared-lookup-artifact-reuse-2026-04.tsv`,
+`docs/paper/evidence/stwo-phase12-shared-lookup-artifact-reuse-2026-04.json`, and Figure
+4C extract the real artifact from a proof-checked parameterized decoding chain, then
+compare one deduplicated registry artifact against independent per-step artifact
+verification. This benchmark is intentionally narrower than Figure 4B: it does not claim
+an execution-proof proving win, and it does not compare against arithmetic baselines. It
+measures only the artifact layer the live Phase12 chain already reuses. At one repeated
+reference the registry path is basically a wash, with slightly higher serialized bytes due
+to the registry wrapper. By two and three repeated references the shape is the one the
+chain actually wants: the deduplicated path stays at `5,368` raw nested proof bytes and
+roughly `7.8 ms` verification, while independent per-step artifact verification rises to
+`10,736` / `16,104` raw bytes and `15.725 ms` / `23.120 ms`. Serialized artifact bytes
+show the same near-flat versus linear split (`59,344` versus `176,981` by three repeated
+references).
+
+![Figure 4C. Real Phase12 shared lookup artifact reuse benchmark inside S-two over repeated decoding-step references.](figures/stwo-phase12-shared-lookup-artifact-reuse-2026-04.svg)
+
+**Figure 4C.** Real Phase12 shared lookup artifact reuse benchmark from
+`docs/paper/evidence/stwo-phase12-shared-lookup-artifact-reuse-2026-04.tsv`. The blue line
+deduplicates one checked `Phase12SharedLookupArtifact` across repeated decoding-step
+references. The orange line extracts and verifies the same artifact independently from
+each step proof payload. This is an artifact-layer verification calibration only, but it
+confirms the same reuse-sensitive direction on the exact artifact type the parameterized
+Phase12 chain already carries.
+
 #### Threat model and soundness boundary
 
 The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
@@ -581,7 +608,10 @@ can choose arbitrary serialized inputs, reorder claimed rows, swap table identit
 splice stale nested artifacts, and relabel backend or version metadata. For the direct
 S-two proof rows in Figures 3, 4, and 4B, acceptance means the upstream S-two proof object
 verifies under the implemented relation and the repository-local verifier checks the
-canonical-table and claimed-row binding required by that surface. The benchmark report's
+canonical-table and claimed-row binding required by that surface. Figure 4C is narrower:
+acceptance there means the real `Phase12SharedLookupArtifact` verifies under the
+repository-local artifact verifier and the repeated-step registry view does not
+re-interpret the artifact beyond deduplicating repeated references. The benchmark report's
 declared semantic scope and benchmark version are checked at the report layer, not by the
 direct proof verifiers themselves. For the Phase 92 shared-normalization artifact, the
 proof surface additionally checks the static lookup registry commitment and the ordered

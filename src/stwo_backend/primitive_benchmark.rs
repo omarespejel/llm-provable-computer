@@ -29,6 +29,11 @@ use stwo_constraint_framework::{
     RelationEntry, TraceLocationAllocator,
 };
 
+use super::arithmetic_subset_prover::phase12_shared_lookup_artifact_from_proof_payload;
+use super::decoding::{
+    commit_phase12_layout, phase12_default_decoding_layout,
+    prove_phase12_decoding_demo_for_layout_steps, Phase12DecodingChainManifest,
+};
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
     prove_phase10_shared_binary_step_lookup_envelope,
@@ -44,7 +49,8 @@ use super::normalization_prover::{
     Phase92SharedNormalizationPrimitiveStep,
 };
 use super::shared_lookup_artifact::{
-    phase12_static_lookup_table_registry_from_envelopes, Phase12StaticLookupTableCommitment,
+    phase12_static_lookup_table_registry_from_envelopes, verify_phase12_shared_lookup_artifact,
+    Phase12SharedLookupArtifact, Phase12StaticLookupTableCommitment,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
 };
@@ -61,10 +67,22 @@ pub const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_VERSION: &str =
     "stwo-phase12-shared-lookup-bundle-reuse-benchmark-v1";
 pub const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE: &str =
     "phase12_style_combined_shared_lookup_bundle_calibration";
+pub const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_VERSION: &str =
+    "stwo-phase12-shared-lookup-artifact-reuse-benchmark-v1";
+pub const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_SCOPE: &str =
+    "phase12_shared_lookup_artifact_registry_reuse_calibration";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION: &str =
     "stwo-phase12-style-shared-lookup-bundle-benchmark-artifact-v1";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE: &str =
     "phase12_style_combined_shared_lookup_bundle_benchmark_artifact";
+const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REGISTRY_VIEW_VERSION: &str =
+    "stwo-phase12-shared-lookup-artifact-registry-view-v1";
+const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REGISTRY_VIEW_SCOPE: &str =
+    "phase12_shared_lookup_artifact_registry_view";
+const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_VERSION: &str =
+    "stwo-phase12-shared-lookup-artifact-independent-view-v1";
+const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
+    "phase12_shared_lookup_artifact_independent_view";
 const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
     "STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS";
 const BENCHMARK_TIMING_UNIT_MILLISECONDS: &str = "milliseconds";
@@ -109,6 +127,7 @@ const RMSNORM_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 5];
 const SOFTMAX_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 8];
 const ACTIVATION_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
+const PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPrimitiveBenchmarkMeasurement {
@@ -187,6 +206,31 @@ pub struct StwoPhase12SharedLookupBundleBenchmarkReport {
     pub rows: Vec<StwoPhase12SharedLookupBundleBenchmarkMeasurement>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub unique_artifacts: usize,
+    pub relation: String,
+    pub proof_bytes: usize,
+    pub serialized_bytes: usize,
+    pub verify_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase12SharedLookupArtifactReuseBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement>,
+}
+
 #[derive(Serialize, Deserialize)]
 struct PrimitiveBenchmarkProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
@@ -234,6 +278,23 @@ struct Phase12SharedLookupBundleBenchmarkArtifact {
     activation_proof_envelope: super::lookup_prover::Phase10SharedLookupProofEnvelope,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct Phase12SharedLookupArtifactRegistryView {
+    view_version: String,
+    semantic_scope: String,
+    total_steps: usize,
+    artifact_commitment_refs: Vec<String>,
+    shared_lookup_artifacts: Vec<Phase12SharedLookupArtifact>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct Phase12SharedLookupArtifactIndependentView {
+    view_version: String,
+    semantic_scope: String,
+    total_steps: usize,
+    step_artifacts: Vec<Phase12SharedLookupArtifact>,
+}
+
 #[derive(Clone)]
 struct Row2Bundle {
     log_size: u32,
@@ -247,6 +308,13 @@ struct ActivationBundle {
     log_size: u32,
     canonical_rows: Vec<Phase3LookupTableRow>,
     claimed_rows: Vec<Phase3LookupTableRow>,
+}
+
+#[derive(Clone)]
+struct Phase12SharedLookupArtifactBenchmarkInput {
+    total_steps: usize,
+    shared_artifact: Phase12SharedLookupArtifact,
+    step_artifacts: Vec<Phase12SharedLookupArtifact>,
 }
 
 #[derive(Clone)]
@@ -681,6 +749,84 @@ fn run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
     })
 }
 
+pub fn run_stwo_phase12_shared_lookup_artifact_reuse_benchmark(
+) -> Result<StwoPhase12SharedLookupArtifactReuseBenchmarkReport> {
+    run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
+        &PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupArtifactReuseBenchmarkReport> {
+    run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
+        &PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupArtifactReuseBenchmarkReport> {
+    if step_counts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup artifact reuse benchmark requires at least one step count"
+                .to_string(),
+        ));
+    }
+    if step_counts.iter().any(|&steps| steps == 0) {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup artifact reuse benchmark step counts must be positive"
+                .to_string(),
+        ));
+    }
+    if !step_counts.windows(2).all(|window| window[0] < window[1]) {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup artifact reuse benchmark step counts must be strictly increasing"
+                .to_string(),
+        ));
+    }
+
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let benchmark_input = phase12_shared_lookup_artifact_benchmark_input(&chain)?;
+        rows.push(measure_phase12_shared_lookup_artifact_registry_reuse(
+            &layout,
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(
+            measure_phase12_shared_lookup_artifact_independent_verification(
+                &layout,
+                &benchmark_input,
+                capture_timings,
+            )?,
+        );
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase12 shared lookup artifact reuse benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase12SharedLookupArtifactReuseBenchmarkReport {
+        benchmark_version: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
 struct BenchmarkTimingSurface {
     mode: &'static str,
     policy: &'static str,
@@ -881,6 +1027,48 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
             row.proof_bytes,
             row.serialized_bytes,
             format_timing_ms(row.prove_ms),
+            format_timing_ms(row.verify_ms),
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_json(
+    report: &StwoPhase12SharedLookupArtifactReuseBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_tsv(
+    report: &StwoPhase12SharedLookupArtifactReuseBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\tunique_artifacts\trelation\tproof_bytes\tserialized_bytes\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.primitive,
+            row.backend_variant,
+            row.steps,
+            row.unique_artifacts,
+            row.relation,
+            row.proof_bytes,
+            row.serialized_bytes,
             format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
@@ -1353,6 +1541,149 @@ fn measure_activation_independent_naive(
         verify_ms,
         verified: true,
         note: "one selector-arithmetic proof per step without shared lookup reuse".to_string(),
+    })
+}
+
+fn phase12_shared_lookup_artifact_benchmark_input(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase12SharedLookupArtifactBenchmarkInput> {
+    if chain.shared_lookup_artifacts.len() != 1 {
+        return Err(VmError::InvalidConfig(format!(
+            "phase12 shared lookup artifact benchmark expects exactly one deduplicated shared artifact, found {}",
+            chain.shared_lookup_artifacts.len()
+        )));
+    }
+    let layout_commitment = commit_phase12_layout(&chain.layout);
+    let shared_artifact = chain
+        .shared_lookup_artifacts
+        .first()
+        .cloned()
+        .expect("shared artifact count checked above");
+    let mut step_artifacts = Vec::with_capacity(chain.steps.len());
+    for (step_index, step) in chain.steps.iter().enumerate() {
+        if step.shared_lookup_artifact_commitment != shared_artifact.artifact_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup artifact benchmark expected a single shared commitment `{}` but step {step_index} referenced `{}`",
+                shared_artifact.artifact_commitment, step.shared_lookup_artifact_commitment
+            )));
+        }
+        let extracted = phase12_shared_lookup_artifact_from_proof_payload(
+            &step.proof,
+            &layout_commitment,
+        )?
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "phase12 shared lookup artifact benchmark step {step_index} is missing its extracted artifact payload"
+            ))
+        })?;
+        if extracted != shared_artifact {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup artifact benchmark step {step_index} extracted artifact does not match the deduplicated registry artifact"
+            )));
+        }
+        step_artifacts.push(extracted);
+    }
+    Ok(Phase12SharedLookupArtifactBenchmarkInput {
+        total_steps: chain.total_steps,
+        shared_artifact,
+        step_artifacts,
+    })
+}
+
+fn phase12_shared_lookup_artifact_registry_view(
+    input: &Phase12SharedLookupArtifactBenchmarkInput,
+) -> Phase12SharedLookupArtifactRegistryView {
+    Phase12SharedLookupArtifactRegistryView {
+        view_version: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REGISTRY_VIEW_VERSION.to_string(),
+        semantic_scope: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REGISTRY_VIEW_SCOPE.to_string(),
+        total_steps: input.total_steps,
+        artifact_commitment_refs: vec![
+            input.shared_artifact.artifact_commitment.clone();
+            input.total_steps
+        ],
+        shared_lookup_artifacts: vec![input.shared_artifact.clone()],
+    }
+}
+
+fn phase12_shared_lookup_artifact_independent_view(
+    input: &Phase12SharedLookupArtifactBenchmarkInput,
+) -> Phase12SharedLookupArtifactIndependentView {
+    Phase12SharedLookupArtifactIndependentView {
+        view_version: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_VERSION.to_string(),
+        semantic_scope: STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE.to_string(),
+        total_steps: input.total_steps,
+        step_artifacts: input.step_artifacts.clone(),
+    }
+}
+
+fn measure_phase12_shared_lookup_artifact_registry_reuse(
+    layout: &super::decoding::Phase12DecodingLayout,
+    input: &Phase12SharedLookupArtifactBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement> {
+    let registry_view = phase12_shared_lookup_artifact_registry_view(input);
+    let proof_bytes = phase12_shared_lookup_artifact_proof_bytes(&input.shared_artifact)?;
+    let serialized_bytes = serde_json::to_vec(&registry_view)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len();
+    let layout_commitment = commit_phase12_layout(layout);
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase12_shared_lookup_artifact(&input.shared_artifact, layout, &layout_commitment)?;
+        for artifact_commitment in &registry_view.artifact_commitment_refs {
+            if artifact_commitment != &input.shared_artifact.artifact_commitment {
+                return Err(VmError::InvalidConfig(format!(
+                    "phase12 shared lookup artifact registry benchmark encountered unexpected artifact commitment `{artifact_commitment}`"
+                )));
+            }
+        }
+        Ok(())
+    })?;
+    Ok(StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement {
+        primitive: "phase12_shared_lookup_artifact".to_string(),
+        backend_variant: "shared_registry_reuse".to_string(),
+        steps: input.total_steps,
+        unique_artifacts: 1,
+        relation: "real Phase12 shared lookup artifact registry".to_string(),
+        proof_bytes,
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "one deduplicated registry artifact extracted from a proof-checked Phase12 chain and verified once for all repeated step references".to_string(),
+    })
+}
+
+fn measure_phase12_shared_lookup_artifact_independent_verification(
+    layout: &super::decoding::Phase12DecodingLayout,
+    input: &Phase12SharedLookupArtifactBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement> {
+    let independent_view = phase12_shared_lookup_artifact_independent_view(input);
+    let mut proof_bytes = 0usize;
+    for artifact in &input.step_artifacts {
+        proof_bytes += phase12_shared_lookup_artifact_proof_bytes(artifact)?;
+    }
+    let serialized_bytes = serde_json::to_vec(&independent_view)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len();
+    let layout_commitment = commit_phase12_layout(layout);
+    let mut verify_ms = 0.0_f64;
+    for artifact in &input.step_artifacts {
+        let ((), elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase12_shared_lookup_artifact(artifact, layout, &layout_commitment)
+        })?;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
+    }
+    Ok(StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement {
+        primitive: "phase12_shared_lookup_artifact".to_string(),
+        backend_variant: "independent_artifact_verification".to_string(),
+        steps: input.total_steps,
+        unique_artifacts: input.step_artifacts.len(),
+        relation: "independent Phase12 shared lookup artifact verification".to_string(),
+        proof_bytes,
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "each step extracts and verifies its own real Phase12 shared lookup artifact without registry deduplication".to_string(),
     })
 }
 
@@ -2726,6 +3057,16 @@ fn phase12_shared_lookup_bundle_proof_bytes(
     )? + shared_activation_stark_proof_size(&artifact.activation_proof_envelope.proof)?)
 }
 
+fn phase12_shared_lookup_artifact_proof_bytes(
+    artifact: &Phase12SharedLookupArtifact,
+) -> Result<usize> {
+    Ok(shared_normalization_stark_proof_size(
+        &artifact.normalization_proof_envelope.proof_envelope.proof,
+    )? + shared_activation_stark_proof_size(
+        &artifact.activation_proof_envelope.proof_envelope.proof,
+    )?)
+}
+
 fn lower_hex(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
@@ -3152,5 +3493,84 @@ mod tests {
         )
         .expect_err("mismatched row counts must fail");
         assert!(error.to_string().contains("requires matching row counts"));
+    }
+
+    #[test]
+    #[ignore = "expensive phase12 shared lookup artifact reuse benchmark"]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_with_options(false)
+            .expect("phase12 shared lookup artifact reuse benchmark should run");
+        assert_eq!(report.rows.len(), 6);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
+        assert!(report
+            .rows
+            .iter()
+            .all(|row| row.serialized_bytes >= row.proof_bytes));
+        assert!(report
+            .rows
+            .iter()
+            .any(|row| row.backend_variant == "shared_registry_reuse" && row.steps == 3));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_defaults_to_zero_timings_without_capture() {
+        let report =
+            run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(&[1], false)
+                .expect("phase12 shared lookup artifact reuse benchmark should run");
+        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verified));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_rejects_empty_step_counts() {
+        let error =
+            run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(&[], false)
+                .expect_err("empty step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("requires at least one step count"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_rejects_non_monotonic_step_counts() {
+        let error = run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
+            &[1, 3, 2],
+            false,
+        )
+        .expect_err("unsorted step counts must fail");
+        assert!(error.to_string().contains("must be strictly increasing"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_rejects_zero_step_count() {
+        let error =
+            run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(&[0], false)
+                .expect_err("zero step count must fail");
+        assert!(error.to_string().contains("must be positive"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_reuse_benchmark_shared_variant_flattens_verify_work() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3)
+            .expect("phase12 decoding family demo");
+        let input =
+            phase12_shared_lookup_artifact_benchmark_input(&chain).expect("benchmark input");
+        let shared_row =
+            measure_phase12_shared_lookup_artifact_registry_reuse(&layout, &input, false)
+                .expect("shared row");
+        let independent_row =
+            measure_phase12_shared_lookup_artifact_independent_verification(&layout, &input, false)
+                .expect("independent row");
+        assert_eq!(shared_row.unique_artifacts, 1);
+        assert_eq!(independent_row.unique_artifacts, 3);
+        assert!(independent_row.proof_bytes > shared_row.proof_bytes);
+        assert!(independent_row.serialized_bytes > shared_row.serialized_bytes);
     }
 }
