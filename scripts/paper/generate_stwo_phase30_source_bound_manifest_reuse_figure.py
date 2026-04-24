@@ -332,23 +332,56 @@ def render_legend() -> str:
     return "\n".join(parts)
 
 
-def rasterize(svg_path: Path, output_path: Path) -> None:
-    if output_path.suffix.lower() == ".png":
-        mime = "image/png"
-    elif output_path.suffix.lower() == ".pdf":
-        mime = "application/pdf"
-    else:
-        raise ValueError(f"unsupported raster output format: {output_path}")
+def write_optional_rasters(
+    svg_path: Path,
+    png_path: Path | None,
+    pdf_path: Path | None,
+) -> None:
+    if png_path is not None:
+        png_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_png = png_path.with_suffix(png_path.suffix + ".tmp")
+        try:
+            rsvg = subprocess.run(
+                ["rsvg-convert", "-f", "png", "-o", str(tmp_png), str(svg_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            tmp_png.unlink(missing_ok=True)
+            raise SystemExit(
+                f"rsvg-convert is required to render {png_path} from {svg_path}"
+            ) from None
+        if rsvg.returncode == 0:
+            tmp_png.replace(png_path)
+        else:
+            tmp_png.unlink(missing_ok=True)
+            raise SystemExit(
+                f"rsvg-convert png failed for {png_path}: {rsvg.stderr.strip()}"
+            )
 
-    command = [
-        "rsvg-convert",
-        "--format",
-        mime,
-        "--output",
-        str(output_path),
-        str(svg_path),
-    ]
-    subprocess.run(command, check=True)
+    if pdf_path is not None:
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
+        try:
+            rsvg_pdf = subprocess.run(
+                ["rsvg-convert", "-f", "pdf", "-o", str(tmp_pdf), str(svg_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            tmp_pdf.unlink(missing_ok=True)
+            raise SystemExit(
+                f"rsvg-convert is required to render {pdf_path} from {svg_path}"
+            ) from None
+        if rsvg_pdf.returncode == 0:
+            tmp_pdf.replace(pdf_path)
+        else:
+            tmp_pdf.unlink(missing_ok=True)
+            raise SystemExit(
+                f"rsvg-convert pdf failed for {pdf_path}: {rsvg_pdf.stderr.strip()}"
+            )
 
 
 def build_svg(*, grouped: dict[str, list[dict[str, str]]], measured: bool, runs: int) -> str:
@@ -413,16 +446,7 @@ def main() -> None:
     svg = build_svg(grouped=grouped, measured=measured, runs=runs)
     args.output_svg.write_text(svg, encoding="utf-8")
 
-    if args.output_png is not None:
-        try:
-            rasterize(args.output_svg, args.output_png)
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            pass
-    if args.output_pdf is not None:
-        try:
-            rasterize(args.output_svg, args.output_pdf)
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            pass
+    write_optional_rasters(args.output_svg, args.output_png, args.output_pdf)
 
 
 if __name__ == "__main__":

@@ -609,14 +609,15 @@ evidence files `docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-202
 independent one-step manifests over the same proof-checked Phase12 chain. This is still
 not recursion and not proof compression. It is a **source-bound manifest-layer
 calibration**: the verifier re-derives Phase30 from the Phase12 chain and checks the
-ordered manifest against that source. At one step the two surfaces coincide. By two and
-three steps the ordered manifest is clearly smaller and faster than repeating the
-one-step source-bound check: at three steps the shared manifest is `4,698` serialized
-bytes and `930.202 ms` median verification, versus `6,564` bytes and `1,618.191 ms`
-across three independent one-step manifests. The result is narrow but useful. It says
-the reuse-sensitive advantage now survives not only at the table and artifact layers, but
-also at the first ordered decode-manifest layer that preserves source-chain commitment,
-layout commitment, and boundary continuity together.
+ordered manifest against that source. At one step the byte surface coincides and the
+median verification timings stay in the same local range (`263.441 ms` ordered versus
+`205.876 ms` independent). By two and three steps the ordered manifest is clearly
+smaller and faster than repeating the one-step source-bound check: at three steps the
+shared manifest is `4,698` serialized bytes and `529.686 ms` median verification, versus
+`6,564` bytes and `1,265.941 ms` across three independent one-step manifests. The result
+is narrow but useful. It says the reuse-sensitive advantage now survives not only at the
+table and artifact layers, but also at the first ordered decode-manifest layer that
+preserves source-chain commitment, layout commitment, and boundary continuity together.
 
 ![Figure 4D. Phase30 source-bound manifest reuse benchmark over ordered decode-step envelopes.](figures/stwo-phase30-source-bound-manifest-reuse-2026-04.svg)
 

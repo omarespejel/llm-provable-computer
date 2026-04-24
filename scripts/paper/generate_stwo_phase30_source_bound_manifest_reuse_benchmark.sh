@@ -10,6 +10,7 @@ cd "$REPO_ROOT"
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
 CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-0}"
+ALLOW_HOST_DEPENDENT_OUTPUTS="${ALLOW_HOST_DEPENDENT_OUTPUTS:-0}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.svg}"
@@ -29,6 +30,10 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
     echo "BENCH_RUNS must be an odd integer >= 3" >&2
     exit 1
   fi
+fi
+if [[ "$ALLOW_HOST_DEPENDENT_OUTPUTS" != "0" && "$ALLOW_HOST_DEPENDENT_OUTPUTS" != "1" ]]; then
+  echo "ALLOW_HOST_DEPENDENT_OUTPUTS must be 0 or 1" >&2
+  exit 1
 fi
 
 OUTPUT_PATH_ARGS=("$TSV_OUT" "$JSON_OUT" "$SVG_OUT")
@@ -57,6 +62,43 @@ for ((i = 0; i < ${#NORMALIZED_OUTPUTS[@]}; i++)); do
     fi
   done
 done
+
+if [[ "$CAPTURE_TIMINGS" == "1" && "$ALLOW_HOST_DEPENDENT_OUTPUTS" != "1" ]]; then
+  CANONICAL_CAPTURE_PATHS=(
+    "$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.tsv"
+    "$REPO_ROOT/docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.json"
+    "$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.svg"
+  )
+  if [[ -n "$PNG_OUT" ]]; then
+    CANONICAL_CAPTURE_PATHS+=(
+      "$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.png"
+    )
+  fi
+  if [[ -n "$PDF_OUT" ]]; then
+    CANONICAL_CAPTURE_PATHS+=(
+      "$REPO_ROOT/docs/paper/figures/stwo-phase30-source-bound-manifest-reuse-2026-04.pdf"
+    )
+  fi
+  NORMALIZED_CANONICAL_PATHS=()
+  while IFS= read -r normalized_path; do
+    NORMALIZED_CANONICAL_PATHS+=("$normalized_path")
+  done < <(python3 - "${CANONICAL_CAPTURE_PATHS[@]}" <<'PY'
+import os
+import sys
+
+for raw_path in sys.argv[1:]:
+    print(os.path.normpath(os.path.abspath(raw_path)))
+PY
+  )
+  for output_path in "${NORMALIZED_OUTPUTS[@]}"; do
+    for canonical_path in "${NORMALIZED_CANONICAL_PATHS[@]}"; do
+      if [[ "$output_path" == "$canonical_path" ]]; then
+        echo "CAPTURE_TIMINGS=1 requires noncanonical output paths unless ALLOW_HOST_DEPENDENT_OUTPUTS=1" >&2
+        exit 1
+      fi
+    done
+  done
+fi
 
 EVIDENCE_DIR="$(dirname "$TSV_OUT")"
 JSON_DIR="$(dirname "$JSON_OUT")"
