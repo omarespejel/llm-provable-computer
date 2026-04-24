@@ -601,6 +601,33 @@ each step proof payload. This is an artifact-layer verification calibration only
 confirms the same reuse-sensitive direction on the exact artifact type the parameterized
 Phase12 chain already carries.
 
+The next checked calibration row moves one level higher again, from the
+Phase12 artifact surface to the actual ordered Phase30 decode-envelope surface. Its
+evidence files `docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.tsv`,
+`docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.json`, and Figure
+4D compare one ordered `Phase30DecodingStepProofEnvelopeManifest` against `N`
+independent one-step manifests over the same proof-checked Phase12 chain. This is still
+not recursion and not proof compression. It is a **source-bound manifest-layer
+calibration**: the verifier re-derives Phase30 from the Phase12 chain and checks the
+ordered manifest against that source. At one step the two surfaces coincide. By two and
+three steps the ordered manifest is clearly smaller and faster than repeating the
+one-step source-bound check: at three steps the shared manifest is `4,698` serialized
+bytes and `930.202 ms` median verification, versus `6,564` bytes and `1,618.191 ms`
+across three independent one-step manifests. The result is narrow but useful. It says
+the reuse-sensitive advantage now survives not only at the table and artifact layers, but
+also at the first ordered decode-manifest layer that preserves source-chain commitment,
+layout commitment, and boundary continuity together.
+
+![Figure 4D. Phase30 source-bound manifest reuse benchmark over ordered decode-step envelopes.](figures/stwo-phase30-source-bound-manifest-reuse-2026-04.svg)
+
+**Figure 4D.** Phase30 source-bound manifest reuse benchmark from
+`docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.tsv`. The blue line
+verifies one ordered Phase30 manifest against the proof-checked Phase12 chain. The
+orange line verifies the same step ranges as separate one-step manifests against that
+same chain. This is a manifest-layer calibration only, but it shows that once the
+ordered decode-envelope surface is used as intended, repeated source-bound verification
+is cheaper than recomputing a one-step manifest for every step independently.
+
 #### Threat model and soundness boundary
 
 The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
@@ -618,11 +645,15 @@ proof surface additionally checks the static lookup registry commitment and the 
 claimed-row list; for Figure 4B's Phase12-style shared bundle, the second nested proof
 surface is the binary-step activation lookup envelope paired with that Phase 92 artifact,
 and the verifier checks the canonical activation rows, the shared static-table registry
-commitment, and the ordered step-claim list for the combined bundle. This is a concrete
-soundness boundary, not a new asymptotic theorem: the paper relies on upstream S-two
-cryptographic assumptions for proof soundness and on deterministic repository-local
-checks for metadata, table identity, and source-bound artifact structure. It does not
-claim recursive compression, full standard-softmax inference soundness, or a universal
+commitment, and the ordered step-claim list for the combined bundle. Figure 4D is again
+narrower: acceptance there means the ordered Phase30 manifest re-derives exactly from the
+supplied proof-checked Phase12 chain, including source-chain commitment, layout
+commitment, and boundary continuity, and that the one-step comparison path repeats that
+same source-bound derivation for each range independently. This is a concrete soundness
+boundary, not a new asymptotic theorem: the paper relies on upstream S-two cryptographic
+assumptions for proof soundness and on deterministic repository-local checks for
+metadata, table identity, and source-bound artifact structure. It does not claim
+recursive compression, full standard-softmax inference soundness, or a universal
 security theorem for every row in the experimental S-two tier.
 
 For shared lookup evidence, the artifact binds normalization and activation table

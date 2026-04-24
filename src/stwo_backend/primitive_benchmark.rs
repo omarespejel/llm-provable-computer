@@ -32,7 +32,12 @@ use stwo_constraint_framework::{
 use super::arithmetic_subset_prover::phase12_shared_lookup_artifact_from_proof_payload;
 use super::decoding::{
     commit_phase12_layout, phase12_default_decoding_layout,
-    prove_phase12_decoding_demo_for_layout_steps, Phase12DecodingChainManifest,
+    phase30_prepare_decoding_step_proof_envelope_manifest,
+    phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
+    prove_phase12_decoding_demo_for_layout_steps,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
+    Phase12DecodingChainManifest, Phase30DecodingStepProofEnvelopeManifest,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
@@ -71,6 +76,10 @@ pub const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_VERSION: &str =
     "stwo-phase12-shared-lookup-artifact-reuse-benchmark-v1";
 pub const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_REUSE_BENCHMARK_SCOPE: &str =
     "phase12_shared_lookup_artifact_registry_reuse_calibration";
+pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION: &str =
+    "stwo-phase30-source-bound-manifest-reuse-benchmark-v1";
+pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE: &str =
+    "phase30_source_bound_ordered_manifest_reuse_calibration";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION: &str =
     "stwo-phase12-style-shared-lookup-bundle-benchmark-artifact-v1";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE: &str =
@@ -83,6 +92,7 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_VERSION: &str =
     "stwo-phase12-shared-lookup-artifact-independent-view-v1";
 const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
+const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
     "STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS";
 const BENCHMARK_TIMING_UNIT_MILLISECONDS: &str = "milliseconds";
@@ -231,6 +241,31 @@ pub struct StwoPhase12SharedLookupArtifactReuseBenchmarkReport {
     pub rows: Vec<StwoPhase12SharedLookupArtifactReuseBenchmarkMeasurement>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub manifests: usize,
+    pub envelopes: usize,
+    pub relation: String,
+    pub serialized_bytes: usize,
+    pub verify_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase30SourceBoundManifestReuseBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement>,
+}
+
 #[derive(Serialize, Deserialize)]
 struct PrimitiveBenchmarkProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
@@ -315,6 +350,13 @@ struct Phase12SharedLookupArtifactBenchmarkInput {
     total_steps: usize,
     shared_artifact: Phase12SharedLookupArtifact,
     step_artifacts: Vec<Phase12SharedLookupArtifact>,
+}
+
+#[derive(Clone)]
+struct Phase30SourceBoundManifestBenchmarkInput {
+    total_steps: usize,
+    shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    step_manifests: Vec<Phase30DecodingStepProofEnvelopeManifest>,
 }
 
 #[derive(Clone)]
@@ -827,6 +869,82 @@ fn run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
     })
 }
 
+pub fn run_stwo_phase30_source_bound_manifest_reuse_benchmark(
+) -> Result<StwoPhase30SourceBoundManifestReuseBenchmarkReport> {
+    run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
+        &PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase30SourceBoundManifestReuseBenchmarkReport> {
+    run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
+        &PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase30SourceBoundManifestReuseBenchmarkReport> {
+    if step_counts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase30 source-bound manifest reuse benchmark requires at least one step count"
+                .to_string(),
+        ));
+    }
+    if step_counts.iter().any(|&steps| steps == 0) {
+        return Err(VmError::InvalidConfig(
+            "phase30 source-bound manifest reuse benchmark step counts must be positive"
+                .to_string(),
+        ));
+    }
+    if !step_counts.windows(2).all(|window| window[0] < window[1]) {
+        return Err(VmError::InvalidConfig(
+            "phase30 source-bound manifest reuse benchmark step counts must be strictly increasing"
+                .to_string(),
+        ));
+    }
+
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let benchmark_input = phase30_source_bound_manifest_benchmark_input(&chain)?;
+        rows.push(measure_phase30_source_bound_manifest_shared(
+            &chain,
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(measure_phase30_source_bound_manifest_independent(
+            &chain,
+            &benchmark_input,
+            capture_timings,
+        )?);
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase30 source-bound manifest reuse benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase30SourceBoundManifestReuseBenchmarkReport {
+        benchmark_version: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
 struct BenchmarkTimingSurface {
     mode: &'static str,
     policy: &'static str,
@@ -1068,6 +1186,48 @@ pub fn save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_tsv(
             row.unique_artifacts,
             row.relation,
             row.proof_bytes,
+            row.serialized_bytes,
+            format_timing_ms(row.verify_ms),
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_json(
+    report: &StwoPhase30SourceBoundManifestReuseBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_tsv(
+    report: &StwoPhase30SourceBoundManifestReuseBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\tmanifests\tenvelopes\trelation\tserialized_bytes\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.primitive,
+            row.backend_variant,
+            row.steps,
+            row.manifests,
+            row.envelopes,
+            row.relation,
             row.serialized_bytes,
             format_timing_ms(row.verify_ms),
             row.verified,
@@ -1684,6 +1844,111 @@ fn measure_phase12_shared_lookup_artifact_independent_verification(
         verify_ms,
         verified: true,
         note: "each step extracts and verifies its own real Phase12 shared lookup artifact without registry deduplication".to_string(),
+    })
+}
+
+fn phase30_source_bound_manifest_benchmark_input(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase30SourceBoundManifestBenchmarkInput> {
+    let shared_manifest = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
+    if shared_manifest.total_steps != chain.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "phase30 manifest benchmark expected shared manifest total_steps={} to match chain total_steps={}",
+            shared_manifest.total_steps, chain.total_steps
+        )));
+    }
+    let mut step_manifests = Vec::with_capacity(chain.total_steps);
+    for step_index in 0..chain.total_steps {
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+            chain,
+            step_index,
+            step_index + 1,
+        )?;
+        if manifest.total_steps != 1 || manifest.envelopes.len() != 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "phase30 manifest benchmark expected one-step range manifest at step {step_index}, found total_steps={} envelopes={}",
+                manifest.total_steps,
+                manifest.envelopes.len()
+            )));
+        }
+        if manifest.source_chain_commitment != shared_manifest.source_chain_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "phase30 manifest benchmark one-step manifest {step_index} changed source_chain_commitment"
+            )));
+        }
+        step_manifests.push(manifest);
+    }
+    Ok(Phase30SourceBoundManifestBenchmarkInput {
+        total_steps: chain.total_steps,
+        shared_manifest,
+        step_manifests,
+    })
+}
+
+fn phase30_manifest_serialized_bytes(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(manifest)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
+}
+
+fn measure_phase30_source_bound_manifest_shared(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase30SourceBoundManifestBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement> {
+    let serialized_bytes = phase30_manifest_serialized_bytes(&input.shared_manifest)?;
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &input.shared_manifest,
+            chain,
+        )
+    })?;
+    Ok(StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement {
+        primitive: "phase30_decoding_step_manifest".to_string(),
+        backend_variant: "shared_ordered_manifest".to_string(),
+        steps: input.total_steps,
+        manifests: 1,
+        envelopes: input.shared_manifest.envelopes.len(),
+        relation: "one ordered Phase30 decoding-step manifest".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check".to_string(),
+    })
+}
+
+fn measure_phase30_source_bound_manifest_independent(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase30SourceBoundManifestBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement> {
+    let mut serialized_bytes = 0usize;
+    let mut verify_ms = 0.0_f64;
+    for (step_index, manifest) in input.step_manifests.iter().enumerate() {
+        serialized_bytes += phase30_manifest_serialized_bytes(manifest)?;
+        let ((), elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+                manifest,
+                chain,
+                step_index,
+                step_index + 1,
+            )
+        })?;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
+    }
+    Ok(StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement {
+        primitive: "phase30_decoding_step_manifest".to_string(),
+        backend_variant: "independent_single_step_manifests".to_string(),
+        steps: input.total_steps,
+        manifests: input.step_manifests.len(),
+        envelopes: input.step_manifests.len(),
+        relation: "independent one-step Phase30 manifests".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment".to_string(),
     })
 }
 
@@ -3571,6 +3836,80 @@ mod tests {
         assert_eq!(shared_row.unique_artifacts, 1);
         assert_eq!(independent_row.unique_artifacts, 3);
         assert!(independent_row.proof_bytes > shared_row.proof_bytes);
+        assert!(independent_row.serialized_bytes > shared_row.serialized_bytes);
+    }
+
+    #[test]
+    #[ignore = "expensive phase30 source-bound manifest reuse benchmark"]
+    fn phase30_source_bound_manifest_reuse_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options(false)
+            .expect("phase30 source-bound manifest reuse benchmark should run");
+        assert_eq!(report.rows.len(), 6);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report
+            .rows
+            .iter()
+            .any(|row| row.backend_variant == "shared_ordered_manifest" && row.steps == 3));
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_defaults_to_zero_timings_without_capture() {
+        let report =
+            run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(&[1], false)
+                .expect("phase30 source-bound manifest reuse benchmark should run");
+        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verified));
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_rejects_empty_step_counts() {
+        let error =
+            run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(&[], false)
+                .expect_err("empty step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("requires at least one step count"));
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_rejects_non_monotonic_step_counts() {
+        let error = run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
+            &[1, 3, 2],
+            false,
+        )
+        .expect_err("unsorted step counts must fail");
+        assert!(error.to_string().contains("must be strictly increasing"));
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_rejects_zero_step_count() {
+        let error =
+            run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(&[0], false)
+                .expect_err("zero step count must fail");
+        assert!(error.to_string().contains("must be positive"));
+    }
+
+    #[test]
+    fn phase30_source_bound_manifest_reuse_benchmark_shared_variant_flattens_manifest_surface() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3)
+            .expect("phase12 decoding family demo");
+        let input = phase30_source_bound_manifest_benchmark_input(&chain).expect("benchmark input");
+        let shared_row = measure_phase30_source_bound_manifest_shared(&chain, &input, false)
+            .expect("shared row");
+        let independent_row =
+            measure_phase30_source_bound_manifest_independent(&chain, &input, false)
+                .expect("independent row");
+        assert_eq!(shared_row.manifests, 1);
+        assert_eq!(independent_row.manifests, 3);
+        assert_eq!(shared_row.envelopes, 3);
+        assert_eq!(independent_row.envelopes, 3);
         assert!(independent_row.serialized_bytes > shared_row.serialized_bytes);
     }
 }

@@ -1,0 +1,82 @@
+{
+  "benchmark_version": "stwo-phase30-source-bound-manifest-reuse-benchmark-v1",
+  "semantic_scope": "phase30_source_bound_ordered_manifest_reuse_calibration",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 5,
+  "rows": [
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "shared_ordered_manifest",
+      "steps": 1,
+      "manifests": 1,
+      "envelopes": 1,
+      "relation": "one ordered Phase30 decoding-step manifest",
+      "serialized_bytes": 2188,
+      "verify_ms": 222.561,
+      "verified": true,
+      "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
+    },
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "independent_single_step_manifests",
+      "steps": 1,
+      "manifests": 1,
+      "envelopes": 1,
+      "relation": "independent one-step Phase30 manifests",
+      "serialized_bytes": 2188,
+      "verify_ms": 282.843,
+      "verified": true,
+      "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
+    },
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "shared_ordered_manifest",
+      "steps": 2,
+      "manifests": 1,
+      "envelopes": 2,
+      "relation": "one ordered Phase30 decoding-step manifest",
+      "serialized_bytes": 3443,
+      "verify_ms": 392.636,
+      "verified": true,
+      "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
+    },
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "independent_single_step_manifests",
+      "steps": 2,
+      "manifests": 2,
+      "envelopes": 2,
+      "relation": "independent one-step Phase30 manifests",
+      "serialized_bytes": 4376,
+      "verify_ms": 581.651,
+      "verified": true,
+      "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
+    },
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "shared_ordered_manifest",
+      "steps": 3,
+      "manifests": 1,
+      "envelopes": 3,
+      "relation": "one ordered Phase30 decoding-step manifest",
+      "serialized_bytes": 4698,
+      "verify_ms": 930.202,
+      "verified": true,
+      "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
+    },
+    {
+      "primitive": "phase30_decoding_step_manifest",
+      "backend_variant": "independent_single_step_manifests",
+      "steps": 3,
+      "manifests": 3,
+      "envelopes": 3,
+      "relation": "independent one-step Phase30 manifests",
+      "serialized_bytes": 6564,
+      "verify_ms": 1618.191,
+      "verified": true,
+      "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
+    }
+  ]
+}
