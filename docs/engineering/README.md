@@ -6,6 +6,8 @@ Contents:
 
 - `ai-review-security-setup.md`: first-party Anthropic and OpenAI review/security setup for this repository
 - `design/`: implementation and artifact-line design notes
+- `codex-repo-handoff-2026-04-24.md`: tracked mirror of the current local agent handoff
+- `codex-upgrade-and-handoff-2026-04-24.md`: continuity policy for upgrades, reinstalls, and fresh-clone resumes
 - `design/engineering-timeline.md`: detailed internal phase chronology moved out of the public README
 - `design/stwo-upstream-sync-audit-2026-04-21.md`: refreshed `stwo` / `stwo-cairo` upstream audit and pinning note
 - `hardening-policy.md`: local CI, hardening, and merge-gate policy
