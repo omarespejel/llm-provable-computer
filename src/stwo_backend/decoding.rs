@@ -2171,6 +2171,30 @@ pub fn phase12_prepare_decoding_chain(
     })
 }
 
+fn is_supported_phase12_decoding_backend_version(version: &str) -> bool {
+    matches!(
+        version,
+        crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            | crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+    )
+}
+
+fn verify_supported_phase12_decoding_step_proof(
+    proof: &VanillaStarkExecutionProof,
+) -> Result<bool> {
+    match proof.proof_backend_version.as_str() {
+        crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 => crate::proof::verify_execution_stark(proof),
+        crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL => {
+            crate::proof::verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(
+                proof,
+            )
+        }
+        other => Err(VmError::UnsupportedProof(format!(
+            "decoding chain proof backend version `{other}` is not a supported Phase 12 execution-proof surface"
+        ))),
+    }
+}
+
 pub fn verify_phase12_decoding_chain_structure(
     manifest: &Phase12DecodingChainManifest,
 ) -> Result<()> {
@@ -2195,11 +2219,12 @@ pub fn verify_phase12_decoding_chain_structure(
             manifest.semantic_scope
         )));
     }
-    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+    if !is_supported_phase12_decoding_backend_version(&manifest.proof_backend_version) {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported decoding proof backend version `{}` (expected `{}`)",
+            "unsupported decoding proof backend version `{}` (expected `{}` or `{}`)",
             manifest.proof_backend_version,
-            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
         )));
     }
     if manifest.steps.is_empty() {
@@ -2268,11 +2293,13 @@ pub fn verify_phase12_decoding_chain_structure(
                 step.proof.proof_backend
             )));
         }
-        if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        if !is_supported_phase12_decoding_backend_version(&step.proof.proof_backend_version) {
             return Err(VmError::InvalidConfig(format!(
-                "decoding step {step_index} proof backend version `{}` does not match the supported Phase 12 version `{}`",
+                "decoding step {step_index} proof backend version `{}` does not match a supported Phase 12 version (`{}` or `{}`)",
                 step.proof.proof_backend_version,
                 crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+                ,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
             )));
         }
         if step.proof.proof_backend_version != manifest.proof_backend_version {
@@ -2387,7 +2414,7 @@ pub fn verify_phase12_decoding_chain_with_proof_checks(
 ) -> Result<()> {
     verify_phase12_decoding_chain_structure(manifest)?;
     for (step_index, step) in manifest.steps.iter().enumerate() {
-        if !verify_execution_stark(&step.proof)? {
+        if !verify_supported_phase12_decoding_step_proof(&step.proof)? {
             return Err(VmError::UnsupportedProof(format!(
                 "decoding step {step_index} execution proof did not verify"
             )));
@@ -2514,11 +2541,12 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
             manifest.source_chain_semantic_scope
         )));
     }
-    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+    if !is_supported_phase12_decoding_backend_version(&manifest.proof_backend_version) {
         return Err(VmError::InvalidConfig(format!(
-            "decoding step envelope manifest backend version `{}` is not `{}`",
+            "decoding step envelope manifest backend version `{}` is not `{}` or `{}`",
             manifest.proof_backend_version,
-            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
         )));
     }
     if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
@@ -2888,7 +2916,7 @@ pub fn phase14_prepare_decoding_chain(
         proof_backend: StarkProofBackend::Stwo,
         chain_version: STWO_DECODING_CHAIN_VERSION_PHASE14.to_string(),
         semantic_scope: STWO_DECODING_CHAIN_SCOPE_PHASE14.to_string(),
-        proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+        proof_backend_version: chain.proof_backend_version.clone(),
         statement_version: chain.statement_version.clone(),
         layout: chain.layout.clone(),
         total_steps: steps.len(),
@@ -2921,11 +2949,12 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             manifest.semantic_scope
         )));
     }
-    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+    if !is_supported_phase12_decoding_backend_version(&manifest.proof_backend_version) {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported chunked decoding proof backend version `{}` (expected `{}`)",
+            "unsupported chunked decoding proof backend version `{}` (expected `{}` or `{}`)",
             manifest.proof_backend_version,
-            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
         )));
     }
     if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
@@ -3007,11 +3036,18 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
                 step.proof.proof_backend
             )));
         }
-        if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        if !is_supported_phase12_decoding_backend_version(&step.proof.proof_backend_version) {
             return Err(VmError::InvalidConfig(format!(
-                "chunked decoding step {step_index} proof backend version `{}` is not `{}`",
+                "chunked decoding step {step_index} proof backend version `{}` is not a supported Phase 12 version (`{}` or `{}`)",
                 step.proof.proof_backend_version,
-                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+            )));
+        }
+        if step.proof.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} proof backend version `{}` does not match manifest `{}`",
+                step.proof.proof_backend_version, manifest.proof_backend_version
             )));
         }
         if step.proof.claim.statement_version != manifest.statement_version {
@@ -3106,7 +3142,7 @@ pub fn verify_phase14_decoding_chain_with_proof_checks(
 ) -> Result<()> {
     verify_phase14_decoding_chain(manifest)?;
     for (step_index, step) in manifest.steps.iter().enumerate() {
-        if !verify_execution_stark(&step.proof)? {
+        if !verify_supported_phase12_decoding_step_proof(&step.proof)? {
             return Err(VmError::UnsupportedProof(format!(
                 "chunked decoding step {step_index} execution proof did not verify"
             )));
@@ -9998,6 +10034,18 @@ pub(crate) fn prove_phase12_decoding_demo_for_layout_steps_publication(
     )
 }
 
+pub(crate) fn prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    let initial_memories = phase12_demo_initial_memories_for_steps(layout, total_steps)?;
+    prove_phase12_decoding_demo_for_layout_initial_memories_phase12_carry_aware_experimental_with_stark_options(
+        layout,
+        &initial_memories,
+        publication_v1_stark_options(),
+    )
+}
+
 pub(crate) fn prove_phase12_decoding_demo_for_layout_initial_memories_publication(
     layout: &Phase12DecodingLayout,
     initial_memories: &[Vec<i16>],
@@ -10072,6 +10120,52 @@ fn prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options(
             StarkProofBackend::Stwo,
             stark_options.clone(),
         )?;
+        proofs.push(proof);
+    }
+    let manifest = phase12_prepare_decoding_chain(layout, &proofs)?;
+    verify_phase12_decoding_chain_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+fn prove_phase12_decoding_demo_for_layout_initial_memories_phase12_carry_aware_experimental_with_stark_options(
+    layout: &Phase12DecodingLayout,
+    initial_memories: &[Vec<i16>],
+    stark_options: crate::proof::VanillaStarkProofOptions,
+) -> Result<Phase12DecodingChainManifest> {
+    let total_steps = initial_memories.len();
+    if total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 decoding demo must contain at least one step".to_string(),
+        ));
+    }
+    if total_steps > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding demo requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
+        )));
+    }
+    let config = TransformerVmConfig {
+        num_layers: 1,
+        attention_mode: Attention2DMode::AverageHard,
+        ..TransformerVmConfig::default()
+    };
+    let mut proofs = Vec::with_capacity(total_steps);
+    let expected_memory_size = layout.memory_size()?;
+    for initial_memory in initial_memories.iter().cloned() {
+        if initial_memory.len() != expected_memory_size {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 decoding demo initial memory length {} does not match expected layout memory size {}",
+                initial_memory.len(),
+                expected_memory_size
+            )));
+        }
+        let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
+        let model = ProgramCompiler.compile_program(program, config.clone())?;
+        let proof =
+            crate::proof::prove_execution_stark_phase12_carry_aware_experimental_with_options(
+                &model,
+                128,
+                stark_options.clone(),
+            )?;
         proofs.push(proof);
     }
     let manifest = phase12_prepare_decoding_chain(layout, &proofs)?;
@@ -12927,8 +13021,11 @@ pub(crate) fn phase12_demo_initial_memories_for_steps_with_rescaling(
 
     let mut memories = Vec::with_capacity(total_steps);
     for position in 0..total_steps {
-        let incoming_values =
-            phase12_demo_incoming_values_rescaled(layout.pair_width, position, profile.incoming_divisor);
+        let incoming_values = phase12_demo_incoming_values_rescaled(
+            layout.pair_width,
+            position,
+            profile.incoming_divisor,
+        );
         let query_values = phase12_demo_query_values(layout.pair_width, position);
         let mut memory = vec![0; layout.memory_size()?];
         memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
@@ -12995,8 +13092,8 @@ fn rescale_i16_magnitude_preserving_nonzero(value: i16, divisor: i16) -> i16 {
         return value;
     }
     let sign = if value.is_negative() { -1i32 } else { 1i32 };
-    let scaled_abs = ((i32::from(value).unsigned_abs() as i32) + i32::from(divisor) - 1)
-        / i32::from(divisor);
+    let scaled_abs =
+        ((i32::from(value).unsigned_abs() as i32) + i32::from(divisor) - 1) / i32::from(divisor);
     let scaled = sign * scaled_abs.max(1);
     scaled as i16
 }
@@ -14363,8 +14460,12 @@ mod tests {
     fn phase12_execution_event_raw_acc(event: &ExecutionTraceEntry) -> i64 {
         match event.instruction {
             Instruction::LoadImmediate(value) => i64::from(value),
-            Instruction::Load(address) => i64::from(event.state_before.memory[usize::from(address)]),
-            Instruction::Pop => i64::from(event.state_before.memory[usize::from(event.state_before.sp)]),
+            Instruction::Load(address) => {
+                i64::from(event.state_before.memory[usize::from(address)])
+            }
+            Instruction::Pop => {
+                i64::from(event.state_before.memory[usize::from(event.state_before.sp)])
+            }
             Instruction::AddImmediate(value) => {
                 i64::from(event.state_before.acc) + i64::from(value)
             }
@@ -19349,14 +19450,11 @@ mod tests {
             .into_iter()
             .nth(3)
             .expect("fourth memory");
-        let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
-            .expect("program");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
         let step_limit = decoding_program_step_limit(&program).expect("step limit");
-        let mut native = NativeInterpreter::new(
-            program.clone(),
-            Attention2DMode::AverageHard,
-            step_limit,
-        );
+        let mut native =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, step_limit);
         let native_result = native.run().expect("native run");
         assert!(native_result.halted);
         let native_event = native
@@ -19391,8 +19489,14 @@ mod tests {
 
         assert_eq!(runtime_event.step, native_event.step);
         assert_eq!(runtime_event.instruction, native_event.instruction);
-        assert_eq!(runtime_event.state_before.acc, native_event.state_before.acc);
-        assert_eq!(runtime_event.state_before.memory[28], native_event.state_before.memory[28]);
+        assert_eq!(
+            runtime_event.state_before.acc,
+            native_event.state_before.acc
+        );
+        assert_eq!(
+            runtime_event.state_before.memory[28],
+            native_event.state_before.memory[28]
+        );
         assert_eq!(runtime_event.state_after.acc, native_event.state_after.acc);
         assert_eq!(
             phase12_execution_event_raw_acc(runtime_event),
@@ -19408,8 +19512,8 @@ mod tests {
             .into_iter()
             .nth(3)
             .expect("fourth memory");
-        let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
-            .expect("program");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
         let model = ProgramCompiler
             .compile_program(
                 program,
@@ -19428,9 +19532,9 @@ mod tests {
             production_v1_stark_options(),
         )
         .expect_err("4-step seed should hit the carry/overflow guard before proving");
-        assert!(error
-            .to_string()
-            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
+        assert!(error.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
     }
 
     #[test]

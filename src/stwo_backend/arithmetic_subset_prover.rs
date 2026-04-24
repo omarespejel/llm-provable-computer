@@ -673,8 +673,12 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
         eval.add_constraint(loaded_memory_aux.clone() - loaded_memory.clone());
 
         eval.add_constraint(non_acc_selector.clone() * raw_acc_active_aux.clone());
-        eval.add_constraint(load_immediate_selector.clone() * (raw_acc_active_aux.clone() - immediate.clone()));
-        eval.add_constraint(load_selector.clone() * (raw_acc_active_aux.clone() - loaded_memory_aux.clone()));
+        eval.add_constraint(
+            load_immediate_selector.clone() * (raw_acc_active_aux.clone() - immediate.clone()),
+        );
+        eval.add_constraint(
+            load_selector.clone() * (raw_acc_active_aux.clone() - loaded_memory_aux.clone()),
+        );
         eval.add_constraint(
             add_immediate_selector.clone()
                 * (raw_acc_active_aux.clone() - current_acc.clone() - immediate.clone()),
@@ -698,7 +702,9 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
                     - next_acc_active_aux.clone()
                     - wrap_delta_aux.clone() * wrap_basis.clone()),
         );
-        eval.add_constraint((one.clone() - carry_sensitive_selector.clone()) * wrap_delta_aux.clone());
+        eval.add_constraint(
+            (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_aux.clone(),
+        );
         eval.add_constraint(
             (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_inv_aux.clone(),
         );
@@ -719,8 +725,7 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
         );
         eval.add_constraint(carry_clearing_selector.clone() * next_carry_active_aux.clone());
         eval.add_constraint(
-            non_acc_selector.clone()
-                * (next_carry_active_aux.clone() - current_carry.clone()),
+            non_acc_selector.clone() * (next_carry_active_aux.clone() - current_carry.clone()),
         );
 
         let pc_plus_one = current_pc.clone() + one.clone();
@@ -954,7 +959,11 @@ pub(crate) fn prove_phase12_carry_aware_arithmetic_subset_experimental(
 ) -> Result<VanillaStarkExecutionProof> {
     validate_phase12_carry_aware_claim(&witness.claim)?;
     let trace = &witness.state_trace;
-    validate_phase12_carry_aware_subset_witness(&witness.claim.program, trace, witness.claim.steps)?;
+    validate_phase12_carry_aware_subset_witness(
+        &witness.claim.program,
+        trace,
+        witness.claim.steps,
+    )?;
 
     let trace_bundle = build_trace_bundle_with_mode(
         &witness.claim.program,
@@ -1027,8 +1036,7 @@ pub(crate) fn prove_phase12_carry_aware_arithmetic_subset_experimental(
 pub(crate) fn verify_phase12_carry_aware_arithmetic_subset_experimental(
     proof: &VanillaStarkExecutionProof,
 ) -> Result<bool> {
-    if proof.proof_backend_version != super::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
-    {
+    if proof.proof_backend_version != super::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL {
         return Err(VmError::InvalidConfig(format!(
             "experimental Phase12 carry-aware proof backend version `{}` does not match expected `{}`",
             proof.proof_backend_version,
@@ -2299,8 +2307,7 @@ fn validate_phase12_carry_aware_subset_witness(
 
     if states.is_empty() {
         return Err(VmError::UnsupportedProof(
-            "experimental Phase12 carry-aware proving requires a non-empty state trace"
-                .to_string(),
+            "experimental Phase12 carry-aware proving requires a non-empty state trace".to_string(),
         ));
     }
 
@@ -2856,10 +2863,7 @@ struct TraceBundle {
     base_trace: Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>,
 }
 
-fn build_trace_bundle(
-    program: &Program,
-    states: &[MachineState],
-) -> Result<TraceBundle> {
+fn build_trace_bundle(program: &Program, states: &[MachineState]) -> Result<TraceBundle> {
     build_trace_bundle_with_mode(program, states, ArithmeticSubsetProofMode::LegacyCarryFree)
 }
 
