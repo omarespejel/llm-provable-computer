@@ -1,0 +1,30 @@
+{
+  "benchmark_version": "stwo-phase44d-source-emission-benchmark-v1",
+  "semantic_scope": "phase44d_typed_source_emission_boundary_calibration",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 5,
+  "rows": [
+    {
+      "primitive": "phase44d_source_chain_public_output_boundary",
+      "backend_variant": "typed_source_boundary_plus_compact_projection",
+      "steps": 2,
+      "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
+      "serialized_bytes": 60089,
+      "verify_ms": 0.992,
+      "verified": true,
+      "note": "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface"
+    },
+    {
+      "primitive": "phase44d_source_chain_public_output_boundary",
+      "backend_variant": "phase30_manifest_plus_compact_projection_baseline",
+      "steps": 2,
+      "relation": "ordered Phase30 manifest plus one compact Phase43 projection proof",
+      "serialized_bytes": 57237,
+      "verify_ms": 16.57,
+      "verified": true,
+      "note": "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain as a lower-layer baseline"
+    }
+  ]
+}
