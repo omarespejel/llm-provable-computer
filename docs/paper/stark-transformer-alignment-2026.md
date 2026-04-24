@@ -870,6 +870,9 @@ The most defensible comparative claim is therefore:
 
 This is stronger than “STARKs have already won” because it is narrower and better
 evidenced. A supplementary appendix summarizes comparison details.
+The compact literature-facing snapshot is also pinned in
+`docs/paper/evidence/published-zkml-numbers-2026-04.tsv`; it should be read as
+workload-scope calibration, not as a matched primitive or end-to-end benchmark table.
 
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope
