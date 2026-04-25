@@ -31,6 +31,7 @@ Current paper-freeze addendum:
 - `evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
 - `evidence/published-zkml-numbers-2026-04.tsv`
 - `evidence/published-zkml-calibration-note-2026-04-24.md`
+- `evidence/obelyzk-sepolia-comparator-note-2026-04-25.md`
 
 This April 24 freeze extends the earlier carried-state publication package with the
 two higher-layer verifier-bound reuse calibrations and the refreshed workload-scope

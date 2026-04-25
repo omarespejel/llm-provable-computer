@@ -65,6 +65,7 @@ one monolithic benchmark claim.
   - `docs/paper/evidence/gemma-config-snapshots/`
   - `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`
   - `docs/paper/evidence/published-zkml-calibration-note-2026-04-24.md`
+  - `docs/paper/evidence/obelyzk-sepolia-comparator-note-2026-04-25.md`
 
 ## Claim posture
 
@@ -88,6 +89,10 @@ one monolithic benchmark claim.
   local regimes rather than one catch-all internal row: the Phase12 proving bundle,
   the Phase44D typed-boundary latency row, and the Phase71 handoff-receipt
   compactness row.
+- The April 25 comparator refresh upgrades the public STARK-native calibration
+  from a README-only Obelyzk benchmark line to a source-backed Starknet Sepolia
+  verifier-object note with exact contract, transaction, calldata, and paper
+  gas references; it still does **not** create a matched local verifier-time row.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
   publication-facing artifact bundle for the carried-state aggregation line.
