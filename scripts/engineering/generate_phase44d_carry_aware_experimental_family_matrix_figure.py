@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from pathlib import Path
 
 import matplotlib
@@ -122,8 +123,10 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
                 raise SystemExit(
                     f"non-numeric {field} in {source}: {row[field]!r}"
                 ) from exc
-            if value <= 0:
-                raise SystemExit(f"{field} must be > 0 in {source}; got {value}")
+            if not math.isfinite(value) or value <= 0:
+                raise SystemExit(
+                    f"{field} must be a positive finite number in {source}; got {row[field]!r}"
+                )
         families_seen[row["family"]] += 1
     missing_families = [
         family for family, count in families_seen.items() if count == 0
