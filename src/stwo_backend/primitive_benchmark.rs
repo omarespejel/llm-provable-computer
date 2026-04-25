@@ -162,6 +162,7 @@ const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS: [usize; 8] =
     [2, 4, 8, 16, 32, 64, 128, 256];
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS: usize = 256;
 const PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS: [usize; 1] = [2];
 const PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
@@ -1403,6 +1404,7 @@ pub fn run_stwo_phase44d_source_emission_experimental_benchmark(
         "phase44d source emission experimental benchmark",
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION,
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
         false,
         phase44d_experimental_measurement,
     )
@@ -1417,6 +1419,7 @@ pub fn run_stwo_phase44d_source_emission_experimental_benchmark_with_options(
         "phase44d source emission experimental benchmark",
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION,
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
         capture_timings,
         phase44d_experimental_measurement,
     )
@@ -1432,6 +1435,7 @@ pub fn run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(
         "phase44d source emission experimental benchmark",
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION,
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
         capture_timings,
         phase44d_experimental_measurement,
     )
@@ -1465,6 +1469,7 @@ pub fn run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps(
         "phase44d source emission experimental 3x3 benchmark",
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_VERSION,
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_SCOPE,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS,
         capture_timings,
         |row| phase44d_experimental_layout_measurement(row, &layout),
     )
@@ -1541,6 +1546,7 @@ fn run_stwo_phase44d_source_emission_experimental_benchmark_for_layout_step_coun
     benchmark_name: &str,
     benchmark_version: &str,
     semantic_scope: &str,
+    max_steps: usize,
     capture_timings: bool,
     map_row: F,
 ) -> Result<StwoPhase44DSourceEmissionBenchmarkReport>
@@ -1549,11 +1555,7 @@ where
         StwoPhase44DSourceEmissionBenchmarkMeasurement,
     ) -> StwoPhase44DSourceEmissionBenchmarkMeasurement,
 {
-    validate_phase44d_step_counts(
-        step_counts,
-        benchmark_name,
-        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
-    )?;
+    validate_phase44d_step_counts(step_counts, benchmark_name, max_steps)?;
     let mut rows = Vec::new();
     for &steps in step_counts {
         let chain =
@@ -6415,7 +6417,7 @@ mod tests {
     #[test]
     fn phase44d_source_emission_experimental_3x3_benchmark_rejects_oversized_step_counts() {
         let error = run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps(
-            &[2, 2048],
+            &[2, 512],
             false,
         )
         .expect_err(

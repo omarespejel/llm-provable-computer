@@ -14411,6 +14411,55 @@ mod cli_dispatch_tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_3x3_benchmark_command_rejects_identical_output_paths_before_run(
+    ) {
+        std::thread::Builder::new()
+            .name("phase44d-source-emission-experimental-3x3-cli-negative".to_string())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let cli = Cli::try_parse_from(normalize_args(
+                    [
+                        "tvm",
+                        "bench-stwo-phase44d-source-emission-experimental-3x3-reuse",
+                        "--output-tsv",
+                        "same.path",
+                        "--output-json",
+                        "same.path",
+                    ]
+                    .into_iter()
+                    .map(OsString::from),
+                ))
+                .expect("phase44d experimental 3x3 source emission command should parse");
+
+                let Command::BenchStwoPhase44dSourceEmissionExperimental3x3Reuse {
+                    output_tsv,
+                    output_json,
+                    step_counts,
+                    capture_timings,
+                } = cli.command
+                else {
+                    panic!("expected phase44d experimental 3x3 source emission benchmark command");
+                };
+
+                let err =
+                    super::bench_stwo_phase44d_source_emission_experimental_3x3_reuse_command(
+                        &output_tsv,
+                        output_json.as_deref(),
+                        &step_counts,
+                        capture_timings,
+                    )
+                    .expect_err("identical output paths must fail before benchmark execution");
+                assert!(err
+                    .to_string()
+                    .contains("`--output-json` must differ from `--output-tsv`"));
+            })
+            .expect("spawn phase44d experimental 3x3 negative-path test thread")
+            .join()
+            .expect("phase44d experimental 3x3 negative-path test thread should not panic");
+    }
+
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
     fn phase12_arithmetic_budget_map_command_is_hidden_without_stwo_backend() {

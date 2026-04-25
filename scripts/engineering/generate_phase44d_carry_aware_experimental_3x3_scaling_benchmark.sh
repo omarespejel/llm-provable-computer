@@ -17,19 +17,17 @@ SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-exp
 PNG_OUT="${PNG_OUT-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-experimental-3x3-scaling-2026-04.png}"
 PDF_OUT="${PDF_OUT-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-experimental-3x3-scaling-2026-04.pdf}"
 
-if [[ "$CAPTURE_TIMINGS" != "0" && "$CAPTURE_TIMINGS" != "1" ]]; then
-  echo "CAPTURE_TIMINGS must be 0 or 1" >&2
+if [[ "$CAPTURE_TIMINGS" != "1" ]]; then
+  echo "CAPTURE_TIMINGS must be 1 for the checked-in 3x3 benchmark because figure generation requires measured timings" >&2
   exit 1
 fi
-if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
-  if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
-    echo "BENCH_RUNS must be a positive odd integer" >&2
-    exit 1
-  fi
-  if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
-    echo "BENCH_RUNS must be an odd integer >= 3" >&2
-    exit 1
-  fi
+if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "BENCH_RUNS must be a positive odd integer" >&2
+  exit 1
+fi
+if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
+  echo "BENCH_RUNS must be an odd integer >= 3" >&2
+  exit 1
 fi
 
 if ! python3 - <<'PY' >/dev/null 2>&1
@@ -96,32 +94,24 @@ if [[ -n "$PDF_OUT" ]]; then
 fi
 
 RUN_DIR="$TMP_JSON_DIR/runs"
-if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
-  mkdir -p "$RUN_DIR"
-  RUN_INPUTS=()
-  for run_index in $(seq 1 "$BENCH_RUNS"); do
-    run_json="$RUN_DIR/run-$run_index.json"
-    run_tsv="$RUN_DIR/run-$run_index.tsv"
-    cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
-      bench-stwo-phase44d-source-emission-experimental-3x3-reuse \
-      --step-counts "$STEP_COUNTS" \
-      --capture-timings \
-      --output-tsv "$run_tsv" \
-      --output-json "$run_json"
-    RUN_INPUTS+=("$run_json")
-  done
-
-  python3 scripts/engineering/aggregate_phase44d_carry_aware_experimental_3x3_scaling.py \
-    --inputs "${RUN_INPUTS[@]}" \
-    --output-json "$TMP_JSON" \
-    --output-tsv "$TMP_TSV"
-else
+mkdir -p "$RUN_DIR"
+RUN_INPUTS=()
+for run_index in $(seq 1 "$BENCH_RUNS"); do
+  run_json="$RUN_DIR/run-$run_index.json"
+  run_tsv="$RUN_DIR/run-$run_index.tsv"
   cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
     bench-stwo-phase44d-source-emission-experimental-3x3-reuse \
     --step-counts "$STEP_COUNTS" \
-    --output-tsv "$TMP_TSV" \
-    --output-json "$TMP_JSON"
-fi
+    --capture-timings \
+    --output-tsv "$run_tsv" \
+    --output-json "$run_json"
+  RUN_INPUTS+=("$run_json")
+done
+
+python3 scripts/engineering/aggregate_phase44d_carry_aware_experimental_3x3_scaling.py \
+  --inputs "${RUN_INPUTS[@]}" \
+  --output-json "$TMP_JSON" \
+  --output-tsv "$TMP_TSV"
 
 FIGURE_ARGS=(
   --input-tsv "$TMP_TSV"
