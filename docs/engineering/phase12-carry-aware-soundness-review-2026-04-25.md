@@ -154,6 +154,33 @@ Added focused tamper tests:
    - loads the tampered boundary through the JSON surface
    - expects the typed boundary validator to reject the replay drift
 
+18. `phase44d_source_emission_recursive_handoff_json_round_trip_preserves_acceptance`
+   - saves a Phase44D recursive-verifier public-output handoff to JSON and loads it back
+   - confirms the loaded handoff still passes both standalone and source-bound verification
+
+19. `phase44d_source_emission_recursive_handoff_loaded_json_rejects_replay_flags`
+   - mutates the serialized replay flags on a saved Phase44D recursive handoff
+   - loads the tampered handoff through the JSON surface
+   - recommits the handoff and expects the boundary-width verifier contract to reject
+
+20. `phase45_public_input_bridge_json_round_trip_preserves_acceptance`
+   - saves a Phase45 recursive-verifier public-input bridge to JSON and loads it back
+   - confirms the loaded bridge still passes both standalone and source-bound verification
+
+21. `phase45_public_input_bridge_loaded_json_rejects_reordered_lanes`
+   - mutates the serialized ordered public-input lane list on a saved Phase45 bridge
+   - loads the tampered bridge through the JSON surface
+   - recommits the bridge and expects lane-order verification to reject
+
+22. `phase46_stwo_proof_adapter_receipt_json_round_trip_preserves_acceptance`
+   - saves a Phase46 Stwo proof-adapter receipt to JSON and loads it back
+   - confirms the loaded receipt still passes both standalone and source-bound verification
+
+23. `phase46_stwo_proof_adapter_receipt_loaded_json_rejects_interaction_claim_drift`
+   - mutates the serialized terminal interaction-claim limb on a saved Phase46 receipt
+   - loads the tampered receipt through the JSON surface
+   - recommits the receipt and expects terminal LogUp cancellation verification to reject
+
 1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
@@ -219,6 +246,9 @@ cargo +nightly-2025-07-14 test carry_aware_air_rejects_negative_wrap_delta_sign_
 cargo +nightly-2025-07-14 test carry_aware_phase12_eight_step_family_trace_satisfies_constraints --features stwo-backend --lib
 cargo +nightly-2025-07-14 test phase44d_source_emission_public_output_boundary_json_round_trip_preserves_acceptance --features stwo-backend --lib
 cargo +nightly-2025-07-14 test phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase44d_source_emission_recursive_handoff_ --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase45_public_input_bridge_ --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase46_stwo_proof_adapter_receipt_ --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:
