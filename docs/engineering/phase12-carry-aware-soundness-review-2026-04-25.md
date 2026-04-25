@@ -181,6 +181,24 @@ Added focused tamper tests:
    - loads the tampered receipt through the JSON surface
    - recommits the receipt and expects terminal LogUp cancellation verification to reject
 
+24. `phase47_recursive_verifier_wrapper_candidate_json_round_trip_preserves_acceptance`
+   - saves a Phase47 recursive-verifier wrapper candidate to JSON and loads it back
+   - confirms the loaded candidate still passes both standalone and Phase46-bound verification
+
+25. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_replay_flags`
+   - mutates the serialized replay flags on a saved Phase47 wrapper candidate
+   - loads the tampered candidate through the JSON surface
+   - recommits the candidate and expects the wrapper replay-input guard to reject
+
+26. `phase48_recursive_proof_wrapper_attempt_json_round_trip_preserves_acceptance`
+   - saves a Phase48 recursive proof-wrapper attempt to JSON and loads it back
+   - confirms the loaded attempt still passes both standalone and Phase47-bound verification
+
+27. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_blocking_reason_drift`
+   - mutates the serialized blocking-reason list on a saved Phase48 wrapper attempt
+   - loads the tampered attempt through the JSON surface
+   - recommits the attempt and expects the missing Phase43 Cairo AIR blocker guard to reject
+
 1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
@@ -249,6 +267,8 @@ cargo +nightly-2025-07-14 test phase44d_source_emission_public_output_boundary_l
 cargo +nightly-2025-07-14 test phase44d_source_emission_recursive_handoff_ --features stwo-backend --lib
 cargo +nightly-2025-07-14 test phase45_public_input_bridge_ --features stwo-backend --lib
 cargo +nightly-2025-07-14 test phase46_stwo_proof_adapter_receipt_ --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase47_recursive_verifier_wrapper_candidate_ --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase48_recursive_proof_wrapper_attempt_ --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:

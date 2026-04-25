@@ -4706,9 +4706,9 @@ mod tests {
         verify_phase68_independent_replay_audit_claim_against_sources,
         verify_phase69_symbolic_artifact_mapping_claim,
         verify_phase69_symbolic_artifact_mapping_claim_against_sources,
-        verify_phase69_symbolic_artifact_mapping_row, Phase48RecursiveProofWrapperAttempt,
-        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
-        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase69_symbolic_artifact_mapping_row, Phase47RecursiveVerifierWrapperCandidate,
+        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
+        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
         Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
@@ -5109,6 +5109,8 @@ mod tests {
         handoff: super::super::recursion::Phase44DRecursiveVerifierPublicOutputHandoff,
         bridge: super::super::recursion::Phase45RecursiveVerifierPublicInputBridge,
         receipt: super::super::recursion::Phase46StwoProofAdapterReceipt,
+        candidate: Phase47RecursiveVerifierWrapperCandidate,
+        attempt: Phase48RecursiveProofWrapperAttempt,
     }
 
     fn sample_phase44d_composed_artifact_fixture() -> &'static Phase44DComposedArtifactFixture {
@@ -5136,6 +5138,10 @@ mod tests {
             .expect("prepare cached Phase45 public-input bridge");
             let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
                 .expect("prepare cached Phase46 Stwo proof-adapter receipt");
+            let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
+                .expect("prepare cached Phase47 recursive-verifier wrapper candidate");
+            let attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
+                .expect("prepare cached Phase48 recursive proof-wrapper attempt");
 
             Phase44DComposedArtifactFixture {
                 compact_envelope,
@@ -5143,6 +5149,8 @@ mod tests {
                 handoff,
                 bridge,
                 receipt,
+                candidate,
+                attempt,
             }
         })
     }
@@ -6727,70 +6735,52 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_accepts_phase46_receipt() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
+        let fixture = sample_phase44d_composed_artifact_fixture();
 
-        let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
-        verify_phase47_recursive_verifier_wrapper_candidate(&candidate)
+        verify_phase47_recursive_verifier_wrapper_candidate(&fixture.candidate)
             .expect("verify standalone Phase47 wrapper candidate");
-        verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(&candidate, &receipt)
-            .expect("verify Phase47 wrapper candidate against Phase46 receipt");
+        verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
+            &fixture.candidate,
+            &fixture.receipt,
+        )
+        .expect("verify Phase47 wrapper candidate against Phase46 receipt");
 
         assert_eq!(
-            candidate.adapter_receipt_commitment,
-            receipt.adapter_receipt_commitment
+            fixture.candidate.adapter_receipt_commitment,
+            fixture.receipt.adapter_receipt_commitment
         );
         assert_eq!(
-            candidate.proof_commitment_roots.len(),
-            receipt.proof_commitment_roots.len()
+            fixture.candidate.proof_commitment_roots.len(),
+            fixture.receipt.proof_commitment_roots.len()
         );
-        assert!(candidate.consumes_phase46_receipt_only);
-        assert!(!candidate.recursive_proof_available);
-        assert!(!candidate.recursive_verification_claimed);
-        assert!(!candidate.cryptographic_compression_claimed);
+        assert!(fixture.candidate.consumes_phase46_receipt_only);
+        assert!(!fixture.candidate.recursive_proof_available);
+        assert!(!fixture.candidate.recursive_verification_claimed);
+        assert!(!fixture.candidate.cryptographic_compression_claimed);
+    }
+
+    #[test]
+    fn phase47_recursive_verifier_wrapper_candidate_json_round_trip_preserves_acceptance() {
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let loaded = round_trip_serialized_artifact(
+            "phase47-recursive-wrapper-candidate-roundtrip",
+            &fixture.candidate,
+        );
+
+        assert_eq!(&loaded, &fixture.candidate);
+        verify_phase47_recursive_verifier_wrapper_candidate(&loaded)
+            .expect("verify standalone loaded Phase47 wrapper candidate");
+        verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
+            &loaded,
+            &fixture.receipt,
+        )
+        .expect("verify loaded Phase47 wrapper candidate against Phase46 receipt");
     }
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_replay_flags_even_when_recommitted() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let mut candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut candidate = fixture.candidate.clone();
 
         candidate.wrapper_requires_phase43_trace = true;
         candidate.wrapper_requires_phase30_manifest = true;
@@ -6804,28 +6794,28 @@ mod tests {
     }
 
     #[test]
+    fn phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_replay_flags() {
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut loaded = load_tampered_serialized_artifact(
+            "phase47-recursive-wrapper-candidate-replay-flags",
+            &fixture.candidate,
+            |candidate_json| {
+                candidate_json["wrapper_requires_phase43_trace"] = serde_json::json!(true);
+                candidate_json["wrapper_requires_phase30_manifest"] = serde_json::json!(true);
+            },
+        );
+        loaded.candidate_commitment = commit_phase47_recursive_verifier_wrapper_candidate(&loaded)
+            .expect("recommit forged Phase47 wrapper candidate");
+
+        let error = verify_phase47_recursive_verifier_wrapper_candidate(&loaded)
+            .expect_err("serialized Phase47 wrapper candidate must reject replay flags");
+        assert!(error.to_string().contains("must not reintroduce"));
+    }
+
+    #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_false_compression_claim() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let mut candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut candidate = fixture.candidate.clone();
 
         candidate.recursive_proof_available = true;
         candidate.recursive_verification_claimed = true;
@@ -6841,27 +6831,8 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_proof_root_drift() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let mut candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut candidate = fixture.candidate.clone();
 
         candidate
             .proof_commitment_roots
@@ -6882,74 +6853,50 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_records_no_go_after_phase47() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
+        let fixture = sample_phase44d_composed_artifact_fixture();
 
-        let attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
-            .expect("prepare Phase48 recursive proof-wrapper attempt");
-        verify_phase48_recursive_proof_wrapper_attempt(&attempt)
+        verify_phase48_recursive_proof_wrapper_attempt(&fixture.attempt)
             .expect("verify standalone Phase48 recursive proof-wrapper attempt");
-        verify_phase48_recursive_proof_wrapper_attempt_against_phase47(&attempt, &candidate)
-            .expect("verify Phase48 recursive proof-wrapper attempt against Phase47");
+        verify_phase48_recursive_proof_wrapper_attempt_against_phase47(
+            &fixture.attempt,
+            &fixture.candidate,
+        )
+        .expect("verify Phase48 recursive proof-wrapper attempt against Phase47");
 
         assert_eq!(
-            attempt.phase47_candidate_commitment,
-            candidate.candidate_commitment
+            fixture.attempt.phase47_candidate_commitment,
+            fixture.candidate.candidate_commitment
         );
-        assert!(attempt.local_stwo_core_verifier_detected);
-        assert!(attempt.local_stwo_cairo_verifier_core_detected);
-        assert!(!attempt.local_phase43_projection_cairo_air_detected);
-        assert!(!attempt.actual_recursive_wrapper_available);
-        assert!(!attempt.recursive_proof_constructed);
-        assert!(attempt
+        assert!(fixture.attempt.local_stwo_core_verifier_detected);
+        assert!(fixture.attempt.local_stwo_cairo_verifier_core_detected);
+        assert!(!fixture.attempt.local_phase43_projection_cairo_air_detected);
+        assert!(!fixture.attempt.actual_recursive_wrapper_available);
+        assert!(!fixture.attempt.recursive_proof_constructed);
+        assert!(fixture
+            .attempt
             .decision
             .contains("missing_phase43_projection_cairo_air"));
     }
 
     #[test]
+    fn phase48_recursive_proof_wrapper_attempt_json_round_trip_preserves_acceptance() {
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let loaded = round_trip_serialized_artifact(
+            "phase48-recursive-proof-wrapper-attempt-roundtrip",
+            &fixture.attempt,
+        );
+
+        assert_eq!(&loaded, &fixture.attempt);
+        verify_phase48_recursive_proof_wrapper_attempt(&loaded)
+            .expect("verify standalone loaded Phase48 proof-wrapper attempt");
+        verify_phase48_recursive_proof_wrapper_attempt_against_phase47(&loaded, &fixture.candidate)
+            .expect("verify loaded Phase48 proof-wrapper attempt against Phase47");
+    }
+
+    #[test]
     fn phase48_recursive_proof_wrapper_attempt_rejects_false_recursive_claim() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
-        let mut attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
-            .expect("prepare Phase48 recursive proof-wrapper attempt");
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut attempt = fixture.attempt.clone();
 
         attempt.actual_recursive_wrapper_available = true;
         attempt.recursive_proof_constructed = true;
@@ -6965,29 +6912,8 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_requires_phase43_cairo_air_blocker() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
-        let mut attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
-            .expect("prepare Phase48 recursive proof-wrapper attempt");
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut attempt = fixture.attempt.clone();
 
         attempt.blocking_reasons = vec!["generic wrapper blocker".to_string()];
         attempt.attempt_commitment = commit_phase48_recursive_proof_wrapper_attempt(&attempt)
@@ -6998,30 +6924,27 @@ mod tests {
         assert!(error.to_string().contains("missing Phase43 Cairo AIR"));
     }
 
+    #[test]
+    fn phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_blocking_reason_drift() {
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let mut loaded = load_tampered_serialized_artifact(
+            "phase48-recursive-proof-wrapper-attempt-blocking-drift",
+            &fixture.attempt,
+            |attempt_json| {
+                attempt_json["blocking_reasons"] = serde_json::json!(["generic wrapper blocker"]);
+            },
+        );
+        loaded.attempt_commitment = commit_phase48_recursive_proof_wrapper_attempt(&loaded)
+            .expect("recommit forged Phase48 attempt");
+
+        let error = verify_phase48_recursive_proof_wrapper_attempt(&loaded).expect_err(
+            "serialized Phase48 proof-wrapper attempt must retain the Cairo AIR blocker",
+        );
+        assert!(error.to_string().contains("missing Phase43 Cairo AIR"));
+    }
+
     fn sample_phase48_attempt_for_phase49() -> Phase48RecursiveProofWrapperAttempt {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
-        let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-            .expect("prepare Phase47 recursive-verifier wrapper candidate");
-        phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
-            .expect("prepare Phase48 recursive proof-wrapper attempt")
+        sample_phase44d_composed_artifact_fixture().attempt.clone()
     }
 
     #[test]
