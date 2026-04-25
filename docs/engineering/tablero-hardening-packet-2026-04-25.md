@@ -23,14 +23,15 @@ Answer four questions cleanly:
 
 ## Read order
 
-1. `docs/engineering/tablero-soundness-note-2026-04-25.md`
-2. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-3. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-4. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-5. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
-6. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-7. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
-8. `docs/paper/stark-transformer-alignment-2026.md`
+1. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
+2. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+3. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
+4. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+5. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+6. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
+7. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+8. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
+9. `docs/paper/stark-transformer-alignment-2026.md`
 
 ## Exact code surfaces to review
 
@@ -174,6 +175,10 @@ This runs the Kani harnesses most directly tied to the theorem:
 - Phase47 receipt-only / no-replay / no-false-compression wrapper surface
 - Phase48 no-go / no-replay / no-false-recursion wrapper surface
 
+The carry-aware `wrap_delta` witness/divisibility properties are enforced in
+this packet by fast exhaustive Rust tests over the full supported `wrap_delta`
+range and representative wrapped-accumulator anchors, not by the Kani slice.
+
 The broader `scripts/run_formal_contract_suite.sh` still exists for repository-
 wide work, but it is not required for this packet.
 
@@ -186,6 +191,9 @@ This packet adds dedicated fuzz targets for:
 - Phase46 Stwo proof-adapter receipt
 - Phase47 recursive-verifier wrapper candidate
 - Phase48 recursive proof-wrapper attempt
+- one bounded differential mutator that starts from an accepted serialized
+  Phase44D→48 chain artifact, applies a semantic post-serialization drift, and
+  asserts verifier rejection at the mutated stage and its against-sources check
 
 This closes the earlier gap where the newer Tablero-shaped surfaces had strong
 deterministic tamper tests but no dedicated fuzz smoke.

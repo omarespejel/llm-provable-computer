@@ -247,6 +247,7 @@ pub use stwo_backend::{
     verify_phase44d_history_replay_projection_emitted_root_artifact_acceptance,
     verify_phase44d_history_replay_projection_external_source_root_acceptance,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
+    verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding,
     verify_phase44d_history_replay_projection_source_emission_acceptance,
     verify_phase44d_history_replay_projection_source_emission_public_output_acceptance,
     verify_phase44d_history_replay_projection_terminal_boundary_logup_closure,

@@ -13,15 +13,16 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-8. `docs/engineering/tablero-soundness-note-2026-04-25.md`
-9. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-10. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-11. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-12. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-13. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-14. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-15. `docs/engineering/reproducibility.md`
-16. `git status --short --branch`
+8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
+9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
+11. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+12. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+13. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+14. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+15. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+16. `docs/engineering/reproducibility.md`
+17. `git status --short --branch`
 
 ## Current lane split
 
@@ -63,6 +64,11 @@ This repository now has two live lanes.
 - A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
+- The April 26 follow-up adds a narrow witness-discipline note for `wrap_delta`,
+  exhaustive deterministic tests for the full supported range-witness and
+  quotient/divisibility family, one bounded differential serialized-artifact
+  mutator across Phase44D/45/46/47/48, and release-mode canonical-flag checks
+  on the Phase47/48 verifiers.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - The experimental Phase44D typed-boundary sweep over the `2x2` family also
   clears `2,4,8,16,32,64,128,256,512,1024`
@@ -141,6 +147,9 @@ Tablero boundary.
    - `scripts/run_tablero_formal_contract_suite.sh`
    - `scripts/run_tablero_hardening_preflight.sh --mode core`
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`
+   - The hardening packet now includes exhaustive deterministic `wrap_delta`
+     witness/divisibility checks, and the fuzz suite now includes a
+     serialized-artifact differential mutator across Phase44D→48.
 5. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts; it is not a current hardening
    blocker.

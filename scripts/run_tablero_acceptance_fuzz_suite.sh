@@ -16,10 +16,11 @@ FUZZ_TARGETS=(
   phase46_stwo_proof_adapter_receipt
   phase47_recursive_verifier_wrapper_candidate
   phase48_recursive_proof_wrapper_attempt
+  phase44d_phase48_serialized_chain_differential
 )
 
 if ! command -v cargo-fuzz >/dev/null 2>&1 && ! cargo fuzz --version >/dev/null 2>&1; then
-  echo "cargo-fuzz is required; install it with \\`cargo install cargo-fuzz\\`" >&2
+  echo "cargo-fuzz is required; install it with \`cargo install cargo-fuzz\`" >&2
   exit 1
 fi
 
@@ -37,7 +38,7 @@ require_safe_path_under() {
   local description="$3"
 
   if [[ -z "$candidate" || "$candidate" == "/" ]]; then
-    echo "refusing unsafe ${description} path: \\`${candidate}\\`" >&2
+    echo "refusing unsafe ${description} path: \`${candidate}\`" >&2
     exit 1
   fi
 
@@ -49,7 +50,7 @@ require_safe_path_under() {
   case "$resolved_candidate" in
     "$resolved_safe_root"|"$resolved_safe_root"/*) ;;
     *)
-      echo "refusing unsafe ${description} path: \\`${resolved_candidate}\\` is outside \\`${resolved_safe_root}\\`" >&2
+      echo "refusing unsafe ${description} path: \`${resolved_candidate}\` is outside \`${resolved_safe_root}\`" >&2
       exit 1
       ;;
   esac
@@ -68,7 +69,7 @@ require_strict_subpath_under() {
   resolved_safe_root="$(canonicalize_path "$safe_root")"
 
   if [[ "$resolved_candidate" == "$resolved_safe_root" ]]; then
-    echo "refusing unsafe ${description} path: \\`${resolved_candidate}\\` must be a strict child of \\`${resolved_safe_root}\\`" >&2
+    echo "refusing unsafe ${description} path: \`${resolved_candidate}\` must be a strict child of \`${resolved_safe_root}\`" >&2
     exit 1
   fi
 }

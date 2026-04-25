@@ -53,6 +53,9 @@ The active split is now:
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
+- Gate 2i: the carry-aware lane now has a narrow theorem-style note for the
+  `wrap_delta` witness discipline, plus exhaustive deterministic checks for the
+  full supported range-witness and quotient / divisibility surface.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - Gate 3b: the same Phase44D replay-avoidance mechanism now reproduces on the
   non-default `3x3` layout family through `2,4,8,16,32,64,128,256` under the
@@ -70,6 +73,10 @@ The active split is now:
   an internal hardening packet and preflight script. These are the primary
   entrypoints for closing fooling-ourselves risk on the Phase44D boundary and
   its higher wrapper surfaces before any stronger promotion.
+- Gate 6b: the Tablero hardening stack now also includes one bounded
+  differential serialized-artifact mutator across Phase44D/45/46/47/48, plus
+  release-mode canonical-flag checks on the Phase47/48 verifiers where the
+  repo previously relied on `debug_assert!` only.
 
 At `1024` steps, the experimental shared path records:
 
@@ -99,17 +106,18 @@ Use these in order of authority for current state:
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-8. `docs/engineering/tablero-soundness-note-2026-04-25.md`
-9. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-10. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-11. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
-12. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-13. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
-14. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-15. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-16. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-17. `docs/engineering/reproducibility.md`
-18. `git status --short --branch`
+8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
+9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
+11. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+12. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
+13. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+14. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
+15. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+16. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+17. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+18. `docs/engineering/reproducibility.md`
+19. `git status --short --branch`
 
 ## Merge culture
 
@@ -141,6 +149,9 @@ Use these in order of authority for current state:
    - `scripts/run_tablero_formal_contract_suite.sh`
    - `scripts/run_tablero_hardening_preflight.sh --mode core`
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`
+  - The hardening packet now includes exhaustive deterministic `wrap_delta`
+    witness/divisibility checks, and the fuzz suite now includes a
+    serialized-artifact differential mutator across Phase44D→48.
 5. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts. It is a deferred design lane, not a
    current paper or hardening blocker.

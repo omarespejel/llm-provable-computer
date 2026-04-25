@@ -3646,6 +3646,40 @@ fn carry_aware_wrap_delta_range_witness(
     Ok((abs, delta < 0, bits))
 }
 
+#[cfg(test)]
+fn wrap_delta_abs_bits_reconstruct(bits: &[bool; CARRY_AWARE_WRAP_DELTA_ABS_BITS]) -> u16 {
+    bits.iter().enumerate().fold(
+        0u16,
+        |acc, (bit_index, bit)| {
+            if *bit {
+                acc | (1u16 << bit_index)
+            } else {
+                acc
+            }
+        },
+    )
+}
+
+#[cfg(test)]
+fn wrap_delta_range_witness_is_canonical(
+    delta: i16,
+    abs: u16,
+    sign: bool,
+    bits: &[bool; CARRY_AWARE_WRAP_DELTA_ABS_BITS],
+) -> bool {
+    let reconstructed_abs = wrap_delta_abs_bits_reconstruct(bits);
+    let reconstructed_delta = if sign {
+        -i32::from(abs)
+    } else {
+        i32::from(abs)
+    };
+
+    abs == reconstructed_abs
+        && i32::from(abs) <= i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX)
+        && sign == (delta < 0)
+        && reconstructed_delta == i32::from(delta)
+}
+
 fn wrap_delta_inverse_base(delta: i16) -> BaseField {
     if delta == 0 {
         BaseField::zero()
@@ -4976,6 +5010,56 @@ mod tests {
             Ok(false) => {}
             Ok(true) => panic!("tampered carry-aware payload must not verify"),
             Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn carry_aware_wrap_delta_range_witness_is_canonical_across_full_supported_range() {
+        for delta in
+            -i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX)..=i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX)
+        {
+            let delta = delta as i16;
+            let (abs, sign, bits) = carry_aware_wrap_delta_range_witness(delta)
+                .expect("supported delta should witness");
+            assert!(
+                abs <= CARRY_AWARE_WRAP_DELTA_ABS_MAX,
+                "witness abs drifted outside supported range for delta {delta}"
+            );
+            assert!(
+                wrap_delta_range_witness_is_canonical(delta, abs, sign, &bits),
+                "non-canonical wrap-delta witness for delta {delta}"
+            );
+        }
+
+        assert!(
+            carry_aware_wrap_delta_range_witness(CARRY_AWARE_WRAP_DELTA_ABS_MAX as i16 + 1)
+                .is_err()
+        );
+        assert!(
+            carry_aware_wrap_delta_range_witness(-(CARRY_AWARE_WRAP_DELTA_ABS_MAX as i16) - 1)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn carry_aware_wrap_delta_divisibility_checks_hold_across_full_supported_range() {
+        let wrapped_acc_cases = [i16::MIN, -12345, -1, 0, 1, 12345, i16::MAX];
+        for &wrapped_acc in &wrapped_acc_cases {
+            for delta in -i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX)
+                ..=i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX)
+            {
+                let raw_acc = i32::from(wrapped_acc) + delta * (CARRY_AWARE_WRAP_BASIS as i32);
+                assert_eq!(
+                    carry_aware_wrap_delta(raw_acc, wrapped_acc)
+                        .expect("divisible supported difference should verify"),
+                    delta as i16,
+                    "supported divisible difference drifted for wrapped_acc={wrapped_acc}, delta={delta}",
+                );
+                assert!(
+                    carry_aware_wrap_delta(raw_acc + 1, wrapped_acc).is_err(),
+                    "non-divisible difference should reject for wrapped_acc={wrapped_acc}, delta={delta}",
+                );
+            }
         }
     }
 

@@ -139,5 +139,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase44d_phase48_serialized_chain_differential"
+path = "fuzz_targets/phase44d_phase48_serialized_chain_differential.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]
