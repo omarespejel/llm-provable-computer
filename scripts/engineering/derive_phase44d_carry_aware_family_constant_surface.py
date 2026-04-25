@@ -199,6 +199,10 @@ def row_map(rows: list[dict[str, str]], *, source: Path) -> dict[tuple[str, int]
     return out
 
 
+def row_locator(row: dict[str, str]) -> str:
+    return f"({row['backend_variant']}, steps={row['steps']})"
+
+
 def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, str, str, int]:
     timing_mode = rows[0].get("timing_mode", "").strip()
     timing_policy = rows[0].get("timing_policy", "").strip()
@@ -220,6 +224,31 @@ def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, st
     if timing_runs != 5:
         raise SystemExit(f"{spec.input_path} must use timing_runs=5")
     for row in rows:
+        row_timing_mode = row.get("timing_mode", "").strip()
+        row_timing_policy = row.get("timing_policy", "").strip()
+        row_timing_unit = row.get("timing_unit", "").strip()
+        row_timing_runs = parse_int(
+            row.get("timing_runs", "").strip(),
+            label="timing_runs",
+            path=spec.input_path,
+            min_value=1,
+        )
+        if row_timing_mode != timing_mode:
+            raise SystemExit(
+                f"timing_mode mismatch in {spec.input_path} at {row_locator(row)}"
+            )
+        if row_timing_policy != timing_policy:
+            raise SystemExit(
+                f"timing_policy mismatch in {spec.input_path} at {row_locator(row)}"
+            )
+        if row_timing_unit != timing_unit:
+            raise SystemExit(
+                f"timing_unit mismatch in {spec.input_path} at {row_locator(row)}"
+            )
+        if row_timing_runs != timing_runs:
+            raise SystemExit(
+                f"timing_runs mismatch in {spec.input_path} at {row_locator(row)}"
+            )
         if row["benchmark_version"] != spec.benchmark_version:
             raise SystemExit(
                 f"unexpected benchmark_version in {spec.input_path}: {row['benchmark_version']}"
@@ -235,9 +264,9 @@ def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, st
     return timing_mode, timing_policy, timing_unit, timing_runs
 
 
-def frontier_step(rows: list[dict[str, str]]) -> int:
+def frontier_step(rows: list[dict[str, str]], *, source: Path) -> int:
     typed_steps = [
-        parse_int(row["steps"], label="steps", path=Path("<rows>"), min_value=0)
+        parse_int(row["steps"], label="steps", path=source, min_value=0)
         for row in rows
         if row["backend_variant"] == VARIANT_TYPED
     ]
@@ -280,7 +309,7 @@ def summarize_family(spec: FamilySpec) -> dict[str, Any]:
     rows = read_rows(spec.input_path)
     timing_mode, timing_policy, timing_unit, timing_runs = validate_rows(rows, spec)
     mapping = row_map(rows, source=spec.input_path)
-    checked_frontier_step = frontier_step(rows)
+    checked_frontier_step = frontier_step(rows, source=spec.input_path)
     require_variant_rows(mapping, step=checked_frontier_step, path=spec.input_path)
 
     typed = mapping[(VARIANT_TYPED, checked_frontier_step)]
