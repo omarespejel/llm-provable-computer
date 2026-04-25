@@ -3731,6 +3731,7 @@ mod tests {
     };
     use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
     use crate::{ProgramCompiler, TransformerVm, TransformerVmConfig};
+    use std::collections::BTreeSet;
     use std::panic::{catch_unwind, AssertUnwindSafe};
     use std::sync::OnceLock;
     use stwo::core::pcs::utils::TreeVec;
@@ -4096,6 +4097,37 @@ mod tests {
         index.reverse_bits() >> (usize::BITS - log_size)
     }
 
+    fn phase12_carry_aware_family_fixture(
+        total_steps: usize,
+        seed_step_index: usize,
+    ) -> (
+        Program,
+        Vec<MachineState>,
+        Vec<CarryAwareArithmeticSubsetPrototypeRow>,
+    ) {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, total_steps)
+            .expect("memories")
+            .into_iter()
+            .nth(seed_step_index)
+            .unwrap_or_else(|| {
+                panic!("seed {seed_step_index} missing from {total_steps}-step family")
+            });
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted, "seed {seed_step_index} should halt");
+        let states = runtime.trace().to_vec();
+        let rows = collect_carry_aware_arithmetic_subset_prototype_rows(&program, &states)
+            .expect("prototype rows");
+        (program, states, rows)
+    }
+
     fn assert_carry_aware_four_step_overflow_trace_mutation_rejected(
         mutate: impl FnOnce(&CarryAwareTraceLayout, usize, &mut [Vec<BaseField>]),
         rejection_message: &str,
@@ -4161,6 +4193,67 @@ mod tests {
             base_u32(0),
             "fixture should contain a non-zero wrap_delta row"
         );
+        mutate(&carry_layout, row, &mut base);
+
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            assert_constraints_on_trace(
+                &tree,
+                trace.log_size,
+                |eval| {
+                    let _ = eval_state.evaluate(eval);
+                },
+                SecureField::zero(),
+            );
+        }));
+        assert!(result.is_err(), "{rejection_message}");
+    }
+
+    fn assert_carry_aware_phase12_family_trace_mutation_rejected(
+        total_steps: usize,
+        seed_step_index: usize,
+        row_selector: impl Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
+        mutate: impl FnOnce(&CarryAwareTraceLayout, usize, &mut [Vec<BaseField>]),
+        rejection_message: &str,
+    ) {
+        let (program, states, rows) =
+            phase12_carry_aware_family_fixture(total_steps, seed_step_index);
+        let selected_row = rows
+            .iter()
+            .find(|row| row_selector(row))
+            .unwrap_or_else(|| {
+                panic!(
+                    "seed {seed_step_index} should contain the requested carry-aware prototype row"
+                )
+            });
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            &states,
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let final_state = states.last().cloned().expect("final state");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let mut base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let row = bit_reversed_row_index(selected_row.step_index, trace.log_size);
+        let carry_layout = CarryAwareTraceLayout::new(program.memory_size());
         mutate(&carry_layout, row, &mut base);
 
         let tree = TreeVec(vec![
@@ -4728,6 +4821,61 @@ mod tests {
     }
 
     #[test]
+    fn carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family(
+    ) {
+        let mut carry_instruction_families = BTreeSet::new();
+        let mut wrap_deltas = BTreeSet::new();
+        let mut saw_positive_wrap = false;
+        let mut saw_negative_wrap = false;
+        let mut saw_non_unit_wrap = false;
+        let mut saw_store_with_live_carry = false;
+
+        for seed_step_index in 0..8 {
+            let (_, _, rows) = phase12_carry_aware_family_fixture(8, seed_step_index);
+            for row in rows.iter().filter(|row| row.carry_after) {
+                let family = row
+                    .instruction
+                    .split('(')
+                    .next()
+                    .expect("instruction family");
+                carry_instruction_families.insert(family.to_string());
+                wrap_deltas.insert(row.wrap_delta);
+                saw_positive_wrap |= row.wrap_delta > 0;
+                saw_negative_wrap |= row.wrap_delta < 0;
+                saw_non_unit_wrap |= row.wrap_delta.abs() > 1;
+                saw_store_with_live_carry |= family == "Store";
+            }
+        }
+
+        assert_eq!(
+            carry_instruction_families,
+            BTreeSet::from(["MulMemory".to_string(), "Store".to_string(),]),
+            "honest 8-step family should only surface multiply rows plus sticky-carry stores today"
+        );
+        assert!(
+            saw_positive_wrap,
+            "honest 8-step family should expose at least one positive wrap_delta row"
+        );
+        assert!(
+            saw_negative_wrap,
+            "honest 8-step family should expose at least one negative wrap_delta row"
+        );
+        assert!(
+            saw_non_unit_wrap,
+            "honest 8-step family should expose a non-unit wrap_delta magnitude"
+        );
+        assert!(
+            saw_store_with_live_carry,
+            "honest 8-step family should include store rows that preserve a live carry flag"
+        );
+        assert_eq!(
+            wrap_deltas,
+            BTreeSet::from([-41, -20, 0, 1, 3]),
+            "carry-aware 8-step family coverage drifted; update the review note before widening claims"
+        );
+    }
+
+    #[test]
     fn carry_aware_phase12_four_step_trace_satisfies_constraints() {
         assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed();
     }
@@ -4816,5 +4964,46 @@ mod tests {
             Err(err) => err,
         };
         assert!(err.to_string().contains("expected next carry true"));
+    }
+
+    #[test]
+    fn carry_aware_trace_builder_rejects_store_row_that_drops_live_carry() {
+        let (program, mut states, rows) = phase12_carry_aware_family_fixture(8, 4);
+        let store_row = rows
+            .iter()
+            .find(|row| row.instruction.starts_with("Store(") && row.carry_after)
+            .expect("seed 4 should contain a store row with live carry");
+        states[store_row.step_index + 1].carry_flag = false;
+
+        let err = match build_trace_bundle_with_mode(
+            &program,
+            &states,
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        ) {
+            Ok(_) => panic!("store row dropping a live carry must fail"),
+            Err(err) => err,
+        };
+        assert!(
+            err.to_string().contains("expected next carry true"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_negative_wrap_delta_sign_drift() {
+        assert_carry_aware_phase12_family_trace_mutation_rejected(
+            8,
+            4,
+            |row| row.instruction.starts_with("MulMemory(") && row.wrap_delta < 0,
+            |carry_layout, row, base| {
+                let current_sign = base[carry_layout.wrap_delta_sign()][row];
+                base[carry_layout.wrap_delta_sign()][row] = if current_sign == bool_base(true) {
+                    bool_base(false)
+                } else {
+                    bool_base(true)
+                };
+            },
+            "negative wrap_delta sign drift must violate carry-aware AIR constraints",
+        );
     }
 }

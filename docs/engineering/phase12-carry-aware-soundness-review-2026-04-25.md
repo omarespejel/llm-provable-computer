@@ -106,6 +106,23 @@ Added focused tamper tests:
    - loads the tampered file through the public proof loader
    - expects commitment validation to reject before proof acceptance
 
+8. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
+   - scans the honest `8`-step family and confirms the current carry-bearing
+     surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
+     that follow them
+   - pins the observed wrap-delta coverage to `{-41, -20, 0, 1, 3}` so future
+     claim-widening happens deliberately
+
+9. `carry_aware_trace_builder_rejects_store_row_that_drops_live_carry`
+   - mutates the post-multiply `Store` row in the honest `8`-step family to
+     clear a live carry flag
+   - expects the trace builder to reject before proving
+
+10. `carry_aware_air_rejects_negative_wrap_delta_sign_drift`
+   - mutates the sign witness on a negative-wrap `MulMemory` row from the
+     honest `8`-step family
+   - expects the AIR signed-reconstruction constraint to reject
+
 These complement the existing tests for out-of-range `wrap_delta`, ADD/SUB
 unit range, proof-payload tampering, backend-version isolation, and reexecution.
 
@@ -114,7 +131,8 @@ unit range, proof-payload tampering, backend-version isolation, and reexecution.
 This increment does not make the experimental backend publication-ready.
 Remaining review items before any promotion decision:
 
-1. Broaden op-pattern coverage beyond the current decoding-step family.
+1. Broaden coverage beyond the current multiply/store carry patterns and beyond
+   the current decoding-step family.
 2. Re-run the Phase44D scaling frontier after any material AIR or verifier
    change.
 3. Keep describing the 1024-step Phase44D result as manifest replay avoidance,
@@ -133,6 +151,9 @@ cargo +nightly-2025-07-14 test phase44d_source_emission_experimental_carry_aware
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_proof_serialization_round_trip --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family --features stwo-backend --lib
+cargo +nightly-2025-07-14 test carry_aware_trace_builder_rejects_store_row_that_drops_live_carry --features stwo-backend --lib
+cargo +nightly-2025-07-14 test carry_aware_air_rejects_negative_wrap_delta_sign_drift --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:
