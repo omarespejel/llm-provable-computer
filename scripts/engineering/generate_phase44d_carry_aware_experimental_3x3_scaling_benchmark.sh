@@ -11,6 +11,7 @@ NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
 CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
 STEP_COUNTS="${STEP_COUNTS:-2,4,8,16,32,64,128,256}"
+CANONICAL_STEP_COUNTS="2,4,8,16,32,64,128,256"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-experimental-3x3-scaling-2026-04.svg}"
@@ -27,6 +28,11 @@ if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
   echo "BENCH_RUNS must be an odd integer >= 3" >&2
+  exit 1
+fi
+NORMALIZED_STEP_COUNTS="$(printf '%s' "$STEP_COUNTS" | tr -d '[:space:]')"
+if [[ "$NORMALIZED_STEP_COUNTS" != "$CANONICAL_STEP_COUNTS" ]]; then
+  echo "STEP_COUNTS must match the canonical 3x3 sweep ($CANONICAL_STEP_COUNTS); got $STEP_COUNTS" >&2
   exit 1
 fi
 
@@ -99,7 +105,7 @@ RUN_INPUTS=()
 for run_index in $(seq 1 "$BENCH_RUNS"); do
   run_json="$RUN_DIR/run-$run_index.json"
   run_tsv="$RUN_DIR/run-$run_index.tsv"
-  cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
+  cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
     bench-stwo-phase44d-source-emission-experimental-3x3-reuse \
     --step-counts "$STEP_COUNTS" \
     --capture-timings \
