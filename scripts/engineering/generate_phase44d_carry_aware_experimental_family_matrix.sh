@@ -63,10 +63,16 @@ fi
 EVIDENCE_DIR="$(dirname "$TSV_OUT")"
 JSON_DIR="$(dirname "$JSON_OUT")"
 SVG_DIR="$(dirname "$SVG_OUT")"
+TMP_EVIDENCE_DIR=""
+TMP_JSON_DIR=""
+TMP_FIGURE_DIR=""
+cleanup() {
+  rm -rf "${TMP_EVIDENCE_DIR:-}" "${TMP_JSON_DIR:-}" "${TMP_FIGURE_DIR:-}"
+}
+trap cleanup EXIT
 TMP_EVIDENCE_DIR="$(mktemp -d "$EVIDENCE_DIR/phase44d-family-matrix.XXXXXX")"
 TMP_JSON_DIR="$(mktemp -d "$JSON_DIR/phase44d-family-matrix.XXXXXX")"
 TMP_FIGURE_DIR="$(mktemp -d "$SVG_DIR/phase44d-family-matrix.XXXXXX")"
-trap 'rm -rf "$TMP_EVIDENCE_DIR" "$TMP_JSON_DIR" "$TMP_FIGURE_DIR"' EXIT
 
 TMP_TSV="$TMP_EVIDENCE_DIR/$(basename "$TSV_OUT")"
 TMP_JSON="$TMP_JSON_DIR/$(basename "$JSON_OUT")"
