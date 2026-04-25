@@ -32,8 +32,10 @@ publication lane:
 - Evidence files:
   - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
   - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.json`
-- Paper evidence regeneration:
+- Paper evidence scripts:
   - `scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
+    (defaults to `CAPTURE_TIMINGS=0` and canonical tracked outputs; use the
+    reproduction block below for the measured-median env overrides)
   - `scripts/paper/aggregate_stwo_phase71_handoff_receipt_benchmark.py`
 
 | Steps | Shared Phase71 receipt | Phase30 manifest baseline |
