@@ -13954,8 +13954,8 @@ mod cli_dispatch_tests {
 
     #[cfg(feature = "stwo-backend")]
     #[test]
-    fn phase71_handoff_receipt_benchmark_command_preserves_step_counts() {
-        let normalized = normalize_args(
+    fn phase71_handoff_receipt_benchmark_command_parses_step_counts_values() {
+        let cli = Cli::try_parse_from(normalize_args(
             [
                 "tvm",
                 "bench-stwo-phase71-handoff-receipt-reuse",
@@ -13966,18 +13966,12 @@ mod cli_dispatch_tests {
             ]
             .into_iter()
             .map(OsString::from),
-        );
-        assert_eq!(
-            normalized,
-            vec![
-                OsString::from("tvm"),
-                OsString::from("bench-stwo-phase71-handoff-receipt-reuse"),
-                OsString::from("--step-counts"),
-                OsString::from("1,4,8"),
-                OsString::from("--output-tsv"),
-                OsString::from("phase71.tsv"),
-            ]
-        );
+        ))
+        .expect("phase71 handoff receipt benchmark command should parse");
+        let Command::BenchStwoPhase71HandoffReceiptReuse { step_counts, .. } = cli.command else {
+            panic!("expected phase71 handoff receipt benchmark command");
+        };
+        assert_eq!(step_counts, vec![1, 4, 8]);
     }
 
     #[cfg(not(feature = "stwo-backend"))]

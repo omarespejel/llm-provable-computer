@@ -22,6 +22,15 @@ the publication/default lane.
 The checked-in median-of-5 evidence already shows the relevant shape on the
 publication lane:
 
+- Backend version: `stwo-phase12-decoding-family-v9`
+- STARK profile: `publication-v1`
+- Timing mode: `measured_median`
+- Timing policy: `median_of_5_runs_from_microsecond_capture`
+- Step counts: `1, 2, 3`
+- Evidence files:
+  - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
+  - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.json`
+
 | Steps | Shared Phase71 receipt | Phase30 manifest baseline |
 |---|---:|---:|
 | 1 | `1533` bytes, `12.324 ms` | `2188` bytes, `8.598 ms` |
@@ -113,10 +122,18 @@ If a second Tablero-style reproduction is still the goal, pursue it either:
 
 ## Reproduction
 
+Backend configuration:
+
+- Backend version: `stwo-phase12-decoding-family-v9`
+- Lane: publication/default carry-free backend
+- Cargo feature: `--features stwo-backend`
+- Optional target-dir override:
+  `export CARGO_TARGET_DIR=\"${CARGO_TARGET_DIR:-target}\"`
+
 Validation:
 
 ```bash
-export CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/_pr_work/phase44d-1024-v1/target
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
 
 cargo +nightly-2025-07-14 test --features stwo-backend --lib \
   phase71_handoff_receipt_benchmark_
@@ -130,7 +147,7 @@ cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
 Bounded CLI sweep on supported publication-lane counts:
 
 ```bash
-export CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/_pr_work/phase44d-1024-v1/target
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
 
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   bench-stwo-phase71-handoff-receipt-reuse \
@@ -143,7 +160,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 Fail-closed overflow barrier:
 
 ```bash
-export CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/_pr_work/phase44d-1024-v1/target
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
 
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   bench-stwo-phase71-handoff-receipt-reuse \

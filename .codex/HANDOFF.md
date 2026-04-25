@@ -79,6 +79,7 @@ Use these in order of authority for current state:
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
 9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 10. `docs/engineering/reproducibility.md`
+11. `git status --short --branch`
 10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 
 ## Merge culture
