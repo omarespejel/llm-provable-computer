@@ -221,6 +221,69 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
             self.assertIn(str(bad_default), message)
             self.assertIn("steps must be an integer", message)
 
+    def test_script_rejects_missing_required_columns(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "missing-columns.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+            kept_fieldnames = [
+                field for field in rows[0].keys() if field != "verified"
+            ]
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=kept_fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(
+                    [{key: row[key] for key in kept_fieldnames} for row in rows]
+                )
+
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(temp / "out.json"),
+                "--output-tsv",
+                str(temp / "out.tsv"),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("missing required column(s)", completed.stderr + completed.stdout)
+            self.assertIn("verified", completed.stderr + completed.stdout)
+
+    def test_script_rejects_nonfinite_verify_time(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "nonfinite-verify.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+                fieldnames = rows[0].keys()
+            frontier = max(
+                int(row["steps"])
+                for row in rows
+                if row["backend_variant"] == MODULE.VARIANT_TYPED
+            )
+            typed_frontier = next(
+                row
+                for row in rows
+                if row["backend_variant"] == MODULE.VARIANT_TYPED
+                and int(row["steps"]) == frontier
+            )
+            typed_frontier["verify_ms"] = "nan"
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(temp / "out.json"),
+                "--output-tsv",
+                str(temp / "out.tsv"),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("must be finite", completed.stderr + completed.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
