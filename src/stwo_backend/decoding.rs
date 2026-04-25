@@ -18095,16 +18095,11 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
-    fn sample_phase12_carry_aware_chain() -> Phase12DecodingChainManifest {
-        sample_phase12_carry_aware_chain_fixture().clone()
-    }
-
-    #[cfg(feature = "stwo-backend")]
     fn load_tampered_phase12_carry_aware_chain(
         stem: &str,
         mutate: impl FnOnce(&mut serde_json::Value),
     ) -> Phase12DecodingChainManifest {
-        let manifest = sample_phase12_carry_aware_chain();
+        let manifest = sample_phase12_carry_aware_chain_fixture();
         let tempdir = tempfile::Builder::new()
             .prefix(&format!("llm-provable-computer-{stem}-"))
             .tempdir()
@@ -18129,7 +18124,7 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_chain_serialization_round_trip() {
-        let manifest = sample_phase12_carry_aware_chain();
+        let manifest = sample_phase12_carry_aware_chain_fixture();
         let tempdir = tempfile::Builder::new()
             .prefix("llm-provable-computer-phase12-carry-aware-chain-")
             .tempdir()
@@ -18139,7 +18134,7 @@ mod tests {
         save_phase12_decoding_chain(&manifest, &path).expect("save");
         let loaded = load_phase12_decoding_chain(&path).expect("load");
 
-        assert_eq!(loaded, manifest);
+        assert_eq!(&loaded, manifest);
         verify_phase12_decoding_chain_with_proof_checks(&loaded)
             .expect("verify loaded experimental chain");
     }
