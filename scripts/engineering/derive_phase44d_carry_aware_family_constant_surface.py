@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,20 @@ EXPECTED_VARIANTS = {
     VARIANT_COMPACT,
     VARIANT_REPLAY,
     VARIANT_BINDING,
+}
+REQUIRED_COLUMNS = {
+    "benchmark_version",
+    "semantic_scope",
+    "timing_mode",
+    "timing_policy",
+    "timing_unit",
+    "timing_runs",
+    "backend_variant",
+    "steps",
+    "serialized_bytes",
+    "emit_ms",
+    "verify_ms",
+    "verified",
 }
 
 PHASE12_OUTPUT_WIDTH = 3
@@ -154,7 +169,14 @@ def phase43_projection_columns(spec: FamilySpec) -> int:
 
 def read_rows(path: Path) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle, delimiter="\t"))
+        reader = csv.DictReader(handle, delimiter="\t")
+        fieldnames = set(reader.fieldnames or [])
+        missing = sorted(REQUIRED_COLUMNS - fieldnames)
+        if missing:
+            raise SystemExit(
+                f"missing required column(s) in {path}: {', '.join(missing)}"
+            )
+        rows = list(reader)
     if not rows:
         raise SystemExit(f"no rows found in {path}")
     return rows
@@ -165,6 +187,8 @@ def parse_float(raw: str, *, label: str, path: Path) -> float:
         value = float(raw)
     except ValueError as exc:
         raise SystemExit(f"{label} must be numeric in {path}; got {raw!r}") from exc
+    if not math.isfinite(value):
+        raise SystemExit(f"{label} must be finite in {path}; got {raw!r}")
     if value < 0:
         raise SystemExit(f"{label} must be non-negative in {path}; got {raw!r}")
     return value
@@ -200,7 +224,9 @@ def row_map(rows: list[dict[str, str]], *, source: Path) -> dict[tuple[str, int]
 
 
 def row_locator(row: dict[str, str]) -> str:
-    return f"({row['backend_variant']}, steps={row['steps']})"
+    backend_variant = row.get("backend_variant", "<missing backend_variant>")
+    steps = row.get("steps", "<missing steps>")
+    return f"({backend_variant}, steps={steps})"
 
 
 def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, str, str, int]:
@@ -489,7 +515,10 @@ def main() -> None:
         "semantic_scope": EXPECTED_SCOPE,
         "rows": rows,
     }
-    args.output_json.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    args.output_json.write_text(
+        json.dumps(payload, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
 
     header = [
         "benchmark_version",
