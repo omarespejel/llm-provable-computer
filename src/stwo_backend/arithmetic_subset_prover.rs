@@ -4090,6 +4090,64 @@ mod tests {
         index.reverse_bits() >> (usize::BITS - log_size)
     }
 
+    type CarryAwareFamilyFixture = (
+        usize,
+        Program,
+        Vec<MachineState>,
+        Vec<CarryAwareArithmeticSubsetPrototypeRow>,
+    );
+
+    fn build_phase12_carry_aware_family_fixtures(
+        total_steps: usize,
+    ) -> Vec<CarryAwareFamilyFixture> {
+        let layout = phase12_default_decoding_layout();
+        let initial_memories =
+            phase12_demo_initial_memories_for_steps(&layout, total_steps).expect("memories");
+        assert_eq!(
+            initial_memories.len(),
+            total_steps,
+            "requested {total_steps}-step family should yield {total_steps} demo seeds"
+        );
+        // `total_steps` is the number of demo seeds in the family, not the VM
+        // runtime length of each generated decoding-step program.
+        initial_memories
+            .into_iter()
+            .enumerate()
+            .map(|(seed_step_index, initial_memory)| {
+                let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+                    .expect("program");
+                let mut runtime = NativeInterpreter::new(
+                    program.clone(),
+                    Attention2DMode::AverageHard,
+                    program.instructions().len() + 1,
+                );
+                let result = runtime.run().expect("run");
+                assert!(result.halted, "seed {seed_step_index} should halt");
+                let states = runtime.trace().to_vec();
+                let rows = collect_carry_aware_arithmetic_subset_prototype_rows(&program, &states)
+                    .expect("prototype rows");
+                (seed_step_index, program, states, rows)
+            })
+            .collect()
+    }
+
+    fn cached_phase12_carry_aware_family_fixtures(
+        total_steps: usize,
+    ) -> Vec<CarryAwareFamilyFixture> {
+        static FOUR_STEP_FIXTURES: OnceLock<Vec<CarryAwareFamilyFixture>> = OnceLock::new();
+        static EIGHT_STEP_FIXTURES: OnceLock<Vec<CarryAwareFamilyFixture>> = OnceLock::new();
+
+        match total_steps {
+            4 => FOUR_STEP_FIXTURES
+                .get_or_init(|| build_phase12_carry_aware_family_fixtures(4))
+                .clone(),
+            8 => EIGHT_STEP_FIXTURES
+                .get_or_init(|| build_phase12_carry_aware_family_fixtures(8))
+                .clone(),
+            _ => build_phase12_carry_aware_family_fixtures(total_steps),
+        }
+    }
+
     fn phase12_carry_aware_family_fixture(
         total_steps: usize,
         seed_step_index: usize,
@@ -4098,26 +4156,14 @@ mod tests {
         Vec<MachineState>,
         Vec<CarryAwareArithmeticSubsetPrototypeRow>,
     ) {
-        let layout = phase12_default_decoding_layout();
-        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, total_steps)
-            .expect("memories")
+        let (_, program, states, rows) = cached_phase12_carry_aware_family_fixtures(total_steps)
             .into_iter()
-            .nth(seed_step_index)
+            .find(|(candidate_seed_step_index, _, _, _)| {
+                *candidate_seed_step_index == seed_step_index
+            })
             .unwrap_or_else(|| {
                 panic!("seed {seed_step_index} missing from {total_steps}-step family")
             });
-        let program =
-            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
-        let mut runtime = NativeInterpreter::new(
-            program.clone(),
-            Attention2DMode::AverageHard,
-            program.instructions().len() + 1,
-        );
-        let result = runtime.run().expect("run");
-        assert!(result.halted, "seed {seed_step_index} should halt");
-        let states = runtime.trace().to_vec();
-        let rows = collect_carry_aware_arithmetic_subset_prototype_rows(&program, &states)
-            .expect("prototype rows");
         (program, states, rows)
     }
 
@@ -4134,14 +4180,12 @@ mod tests {
     where
         F: Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
     {
-        for seed_step_index in 0..total_steps {
-            let (program, states, rows) =
-                phase12_carry_aware_family_fixture(total_steps, seed_step_index);
-            if rows.iter().any(row_selector) {
-                return (seed_step_index, program, states, rows);
-            }
-        }
-        panic!("honest {total_steps}-step family should contain {pattern_label}");
+        cached_phase12_carry_aware_family_fixtures(total_steps)
+            .into_iter()
+            .find(|(_, _, _, rows)| rows.iter().any(row_selector))
+            .unwrap_or_else(|| {
+                panic!("honest {total_steps}-step family should contain {pattern_label}")
+            })
     }
 
     fn assert_carry_aware_four_step_overflow_trace_mutation_rejected(
