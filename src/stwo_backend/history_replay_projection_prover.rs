@@ -5096,13 +5096,9 @@ mod tests {
 
     fn load_tampered_phase44d_source_chain_public_output_boundary(
         stem: &str,
+        boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
         mutate: impl FnOnce(&mut serde_json::Value),
     ) -> Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
         let tempdir = tempfile::Builder::new()
             .prefix(&format!("llm-provable-computer-{stem}-"))
             .tempdir()
@@ -6101,12 +6097,18 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags() {
-        let (trace, _) = sample_trace_and_phase30();
+        let (trace, phase30) = sample_trace_and_phase30();
         let compact_envelope =
             prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
                 .expect("prove Phase44 compact projection");
+        let original_boundary =
+            emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+                &trace, &phase30,
+            )
+            .expect("emit Phase44D source-chain public output boundary");
         let mut boundary = load_tampered_phase44d_source_chain_public_output_boundary(
             "phase44d-boundary-replay-flags",
+            &original_boundary,
             |boundary_json| {
                 boundary_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
                 boundary_json["verifier_embeds_expected_rows"] = serde_json::json!(true);
