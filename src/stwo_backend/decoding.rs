@@ -20015,27 +20015,25 @@ mod tests {
         Phase12DecodingChainManifest,
         Phase30DecodingStepProofEnvelopeManifest,
     ) {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
-        (chain, manifest)
+        static FIXTURE: OnceLock<(
+            Phase12DecodingChainManifest,
+            Phase30DecodingStepProofEnvelopeManifest,
+        )> = OnceLock::new();
+        FIXTURE
+            .get_or_init(|| {
+                let layout = phase12_default_decoding_layout();
+                let chain =
+                    prove_phase12_decoding_demo_for_layout_steps(&layout, 3).expect("chain");
+                let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+                    .expect("envelopes");
+                (chain, manifest)
+            })
+            .clone()
     }
 
     #[test]
     fn phase30_prepare_manifest_rejects_tampered_execution_proof_bytes() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let mut chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let (mut chain, _) = sample_phase30_chain_and_manifest();
         chain.steps[0].proof.proof[0] ^= 1;
 
         let err = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
@@ -20052,14 +20050,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_binds_phase12_chain_boundaries() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let (chain, manifest) = sample_phase30_chain_and_manifest();
 
         assert_eq!(
             manifest.manifest_version,
@@ -20446,15 +20437,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_empty_or_unsupported_versions() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let mut manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
 
         manifest.proof_backend_version.clear();
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
@@ -20527,15 +20510,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_excessive_envelope_count() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let mut manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
 
         let template = manifest.envelopes[0].clone();
         manifest.envelopes = vec![template; MAX_DECODING_CHAIN_STEPS + 1];
@@ -20551,15 +20526,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_source_chain_commitment_drift() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let mut manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
         manifest.envelopes[0].source_chain_commitment = "tampered-source-chain".to_string();
         manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&manifest.envelopes[0]);
@@ -20592,15 +20559,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_commitment_length_prefixes_variable_fields() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (_, manifest) = sample_phase30_chain_and_manifest();
         let mut left = manifest.envelopes[0].clone();
         let mut right = left.clone();
 
@@ -20681,15 +20640,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_tampered_chain_link() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let mut manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
         manifest.envelopes[0].output_boundary_commitment = "tampered".to_string();
         manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&manifest.envelopes[0]);
@@ -20706,15 +20657,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_against_chain_rejects_proof_commitment_drift() {
-        let layout = phase12_default_decoding_layout();
-        let memories = phase12_demo_initial_memories(&layout).expect("memories");
-        let proofs = memories
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(&layout, memory))
-            .collect::<Vec<_>>();
-        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let mut manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let (chain, mut manifest) = sample_phase30_chain_and_manifest();
         manifest.envelopes[0].proof_commitment = "tampered".to_string();
         manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&manifest.envelopes[0]);
