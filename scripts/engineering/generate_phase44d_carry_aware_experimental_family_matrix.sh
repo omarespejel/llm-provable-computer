@@ -67,7 +67,10 @@ TMP_EVIDENCE_DIR=""
 TMP_JSON_DIR=""
 TMP_FIGURE_DIR=""
 cleanup() {
-  rm -rf "${TMP_EVIDENCE_DIR:-}" "${TMP_JSON_DIR:-}" "${TMP_FIGURE_DIR:-}"
+  set +e
+  [[ -n "${TMP_EVIDENCE_DIR:-}" ]] && rm -rf -- "$TMP_EVIDENCE_DIR"
+  [[ -n "${TMP_JSON_DIR:-}" ]] && rm -rf -- "$TMP_JSON_DIR"
+  [[ -n "${TMP_FIGURE_DIR:-}" ]] && rm -rf -- "$TMP_FIGURE_DIR"
 }
 trap cleanup EXIT
 TMP_EVIDENCE_DIR="$(mktemp -d "$EVIDENCE_DIR/phase44d-family-matrix.XXXXXX")"

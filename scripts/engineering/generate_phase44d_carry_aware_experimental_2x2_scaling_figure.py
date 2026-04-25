@@ -153,11 +153,16 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
             raise SystemExit(
                 f"unexpected timing_policy for measured_median phase44d engineering rows: {policy!r}"
             )
-        policy_runs = int(
-            policy.removeprefix("median_of_").removesuffix(
-                "_runs_from_microsecond_capture"
-            )
+        policy_runs_raw = policy.removeprefix("median_of_").removesuffix(
+            "_runs_from_microsecond_capture"
         )
+        try:
+            policy_runs = int(policy_runs_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                "unexpected timing_policy for measured_median phase44d engineering rows; "
+                f"expected median_of_<odd_int>_runs_from_microsecond_capture, got {policy!r}"
+            ) from exc
         if runs != policy_runs:
             raise SystemExit(
                 "measured_median phase44d engineering rows must keep timing_runs aligned with timing_policy; "
@@ -191,7 +196,13 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
         variant = row["backend_variant"]
         if variant not in VARIANT_ORDER:
             raise SystemExit(f"unexpected backend_variant in {source}: {variant}")
-        steps = int(row["steps"])
+        steps_raw = row.get("steps", "").strip()
+        try:
+            steps = int(steps_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"non-integer step count in {source}: {steps_raw!r}"
+            ) from exc
         if steps < 2 or steps & (steps - 1) != 0:
             raise SystemExit(f"unexpected step count in {source}: {steps}")
         key = (variant, steps)

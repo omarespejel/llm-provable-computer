@@ -110,6 +110,20 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
             raise SystemExit(f"{source} must contain millisecond rows")
         if row["family"] not in FAMILY_ORDER:
             raise SystemExit(f"unexpected family in {source}: {row['family']}")
+        for field in (
+            "replay_ratio",
+            "compact_only_verify_ms",
+            "boundary_binding_only_verify_ms",
+            "manifest_replay_only_verify_ms",
+        ):
+            try:
+                value = float(row[field])
+            except ValueError as exc:
+                raise SystemExit(
+                    f"non-numeric {field} in {source}: {row[field]!r}"
+                ) from exc
+            if value <= 0:
+                raise SystemExit(f"{field} must be > 0 in {source}; got {value}")
         families_seen[row["family"]] += 1
     missing_families = [
         family for family, count in families_seen.items() if count == 0

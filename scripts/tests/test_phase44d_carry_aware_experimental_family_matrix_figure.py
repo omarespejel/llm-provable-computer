@@ -79,6 +79,16 @@ class Phase44dCarryAwareExperimentalFamilyMatrixFigureTests(unittest.TestCase):
         self.assertIn("missing required family rows", str(ctx.exception))
         self.assertIn("3x3", str(ctx.exception))
 
+    def test_validate_rows_rejects_non_positive_causal_verify_ms(self):
+        rows = [
+            self.sample_row(family="default", compact_only_verify_ms="0.000"),
+            self.sample_row(family="2x2"),
+            self.sample_row(family="3x3"),
+        ]
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(rows, source=Path("sample.tsv"))
+        self.assertIn("compact_only_verify_ms must be > 0", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

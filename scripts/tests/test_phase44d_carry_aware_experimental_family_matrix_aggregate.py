@@ -155,6 +155,67 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("typed verify_ms must be > 0", completed.stderr)
 
+    def test_replay_ratio_guard_rejects_zero_compact_verify_ms(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            output_json = temp / "out.json"
+            output_tsv = temp / "out.tsv"
+            inputs = []
+            header = [
+                "benchmark_version",
+                "semantic_scope",
+                "timing_mode",
+                "timing_policy",
+                "timing_unit",
+                "timing_runs",
+                "backend_variant",
+                "steps",
+                "verify_ms",
+                "serialized_bytes",
+                "verified",
+            ]
+            for spec in MODULE.FAMILY_SPECS:
+                path = temp / f"{spec.family}.tsv"
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=header, delimiter="\t")
+                    writer.writeheader()
+                    for variant in MODULE.EXPECTED_VARIANTS:
+                        verify_ms = "1.250"
+                        if spec.family == "default" and variant == MODULE.VARIANT_COMPACT:
+                            verify_ms = "0.000"
+                        writer.writerow(
+                            self.sample_row(
+                                variant=variant,
+                                benchmark_version=spec.benchmark_version,
+                                semantic_scope=spec.semantic_scope,
+                                verify_ms=verify_ms,
+                            )
+                        )
+                inputs.append(path)
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(AGGREGATOR),
+                    "--default-input",
+                    str(inputs[0]),
+                    "--input-2x2",
+                    str(inputs[1]),
+                    "--input-3x3",
+                    str(inputs[2]),
+                    "--output-json",
+                    str(output_json),
+                    "--output-tsv",
+                    str(output_tsv),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("compact verify_ms must be > 0", completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

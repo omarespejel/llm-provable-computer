@@ -302,9 +302,28 @@ def main() -> None:
             binding = row_map[(VARIANT_BINDING, step)]
             typed_verify_ms = float(typed["verify_ms"])
             baseline_verify_ms = float(baseline["verify_ms"])
+            compact_verify_ms = float(compact["verify_ms"])
+            replay_verify_ms = float(replay["verify_ms"])
+            binding_verify_ms = float(binding["verify_ms"])
             if typed_verify_ms <= 0:
                 raise SystemExit(
                     f"typed verify_ms must be > 0 in {spec.input_path} for step {step}; got {typed_verify_ms}"
+                )
+            if baseline_verify_ms <= 0:
+                raise SystemExit(
+                    f"baseline verify_ms must be > 0 in {spec.input_path} for step {step}; got {baseline_verify_ms}"
+                )
+            if compact_verify_ms <= 0:
+                raise SystemExit(
+                    f"compact verify_ms must be > 0 in {spec.input_path} for step {step}; got {compact_verify_ms}"
+                )
+            if replay_verify_ms <= 0:
+                raise SystemExit(
+                    f"replay verify_ms must be > 0 in {spec.input_path} for step {step}; got {replay_verify_ms}"
+                )
+            if binding_verify_ms <= 0:
+                raise SystemExit(
+                    f"binding verify_ms must be > 0 in {spec.input_path} for step {step}; got {binding_verify_ms}"
                 )
             rows_payload.append(
                 {
@@ -316,9 +335,9 @@ def main() -> None:
                     "replay_ratio": round3(baseline_verify_ms / typed_verify_ms),
                     "typed_serialized_bytes": int(typed["serialized_bytes"]),
                     "baseline_serialized_bytes": int(baseline["serialized_bytes"]),
-                    "compact_only_verify_ms": round3(float(compact["verify_ms"])),
-                    "boundary_binding_only_verify_ms": round3(float(binding["verify_ms"])),
-                    "manifest_replay_only_verify_ms": round3(float(replay["verify_ms"])),
+                    "compact_only_verify_ms": round3(compact_verify_ms),
+                    "boundary_binding_only_verify_ms": round3(binding_verify_ms),
+                    "manifest_replay_only_verify_ms": round3(replay_verify_ms),
                     "checked_frontier_step": checked_frontier_step,
                     "first_blocked_step": first_blocked_step,
                     "blocked_status": spec.blocked_status,

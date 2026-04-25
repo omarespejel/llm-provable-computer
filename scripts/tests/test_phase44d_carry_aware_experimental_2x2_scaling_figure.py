@@ -77,6 +77,26 @@ class Phase44dCarryAwareExperimental2x2ScalingFigureTests(unittest.TestCase):
             )
         self.assertIn("must include an integer timing_runs", str(ctx.exception))
 
+    def test_timing_metadata_rejects_non_integer_policy_runs(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.timing_metadata(
+                [
+                    self.sample_row(
+                        timing_policy="median_of_x_runs_from_microsecond_capture"
+                    )
+                ],
+                fallback_runs=5,
+            )
+        self.assertIn("expected median_of_<odd_int>", str(ctx.exception))
+
+    def test_validate_rows_rejects_non_integer_steps(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(
+                [self.sample_row(steps="two")],
+                source=Path("sample.tsv"),
+            )
+        self.assertIn("non-integer step count", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
