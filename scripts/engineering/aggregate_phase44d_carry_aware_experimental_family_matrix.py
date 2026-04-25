@@ -300,16 +300,20 @@ def main() -> None:
             compact = row_map[(VARIANT_COMPACT, step)]
             replay = row_map[(VARIANT_REPLAY, step)]
             binding = row_map[(VARIANT_BINDING, step)]
+            typed_verify_ms = float(typed["verify_ms"])
+            baseline_verify_ms = float(baseline["verify_ms"])
+            if typed_verify_ms <= 0:
+                raise SystemExit(
+                    f"typed verify_ms must be > 0 in {spec.input_path} for step {step}; got {typed_verify_ms}"
+                )
             rows_payload.append(
                 {
                     "family": spec.family,
                     "family_label": spec.label,
                     "steps": step,
-                    "typed_verify_ms": round3(float(typed["verify_ms"])),
-                    "baseline_verify_ms": round3(float(baseline["verify_ms"])),
-                    "replay_ratio": round3(
-                        float(baseline["verify_ms"]) / float(typed["verify_ms"])
-                    ),
+                    "typed_verify_ms": round3(typed_verify_ms),
+                    "baseline_verify_ms": round3(baseline_verify_ms),
+                    "replay_ratio": round3(baseline_verify_ms / typed_verify_ms),
                     "typed_serialized_bytes": int(typed["serialized_bytes"]),
                     "baseline_serialized_bytes": int(baseline["serialized_bytes"]),
                     "compact_only_verify_ms": round3(float(compact["verify_ms"])),
