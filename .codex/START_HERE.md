@@ -12,10 +12,11 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-10. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-11. `docs/engineering/reproducibility.md`
-12. `git status --short --branch`
+9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+12. `docs/engineering/reproducibility.md`
+13. `git status --short --branch`
 
 ## What this repository is now
 
@@ -32,14 +33,17 @@ This repository currently has two live lanes.
 
 Do not collapse these two lanes into one claim.
 
-## Current strongest experimental result
+## Current strongest experimental results
 
-The experimental carry-aware lane now has one real higher-layer scaling result:
+The experimental carry-aware lane now has two real higher-layer scaling results:
 
 - Phase44D typed source-chain public-output boundary reuse clears `2,4,8,16,32,64,128,256,512,1024`.
 - At `1024` steps, the typed Phase44D boundary plus compact proof verifies in `427.209 ms` versus `133430.237 ms` for the Phase30 replay baseline under the same experimental backend.
 - The latency gap is dominated by skipping Phase30 manifest JSON serialization, hashing, and replay work; do not describe it as a faster FRI or cryptographic verifier.
 - This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
+- The same Phase44D replay-avoidance mechanism now reproduces on the non-default `3x3` layout family through `2,4,8,16,32,64,128,256`.
+- At `256` steps on that `3x3` family, the typed boundary path verifies in `125.753 ms` versus `31511.802 ms` for the Phase30 replay baseline.
+- Treat the `3x3` result as cross-family transferability evidence, not as a second Tablero boundary.
 
 ## Current second-boundary read
 
@@ -55,11 +59,10 @@ The repo now has one explicit answer on the next-boundary question:
 1. Keep Phase43 in the explicit no-go bucket until the source side emits the
    proof-native projection commitments, row commitments/openings, and public
    inputs that the feasibility gate lists as missing.
-2. Reproduce the existing Phase44D typed-boundary result on a second real
-   workload family rather than spending more time on benchmark-only magnitude
-   tweaks.
-3. Add one narrow matched external comparator on the already-supported compact
+2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
+3. Track the layout-matrix follow-up explicitly now that the `3x3` family
+   reproduces the same replay-avoidance mechanism through `256` steps.
 4. Broaden experimental carry-aware review beyond the current decoding-step
    family, now that the honest `8`-step multiply/store carry patterns, the
    proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
@@ -91,5 +94,6 @@ git rev-parse origin/main
 sed -n '1,220p' docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md
 sed -n '1,220p' docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md
+sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md
 ```
