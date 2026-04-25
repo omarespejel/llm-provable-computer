@@ -9,6 +9,9 @@
 #   just fmt            # cargo fmt --all
 #   just clippy         # cargo clippy --lib --no-deps -- -D warnings
 #   just deps           # dependency check suite (cargo-audit + cargo-deny)
+#   just tablero-formal
+#   just tablero-hardening-core
+#   just tablero-hardening-deep
 #   just zizmor         # workflow-file lint
 #   just shellcheck     # shellcheck on tracked shell scripts
 #   just stwo-smoke     # nightly stwo backend smoke
@@ -84,6 +87,18 @@ spec-sync:
 #   cargo install --locked cargo-deny --version 0.19.4
 deps:
     bash scripts/run_dependency_audit_suite.sh
+
+# Narrow Kani suite for the Tablero theorem surface.
+tablero-formal:
+    bash scripts/run_tablero_formal_contract_suite.sh
+
+# Tablero internal hardening packet. `deep` adds dedicated fuzz smoke and Miri
+# on top of the deterministic theorem- and artifact-facing checks.
+tablero-hardening-core:
+    bash scripts/run_tablero_hardening_preflight.sh --mode core
+
+tablero-hardening-deep:
+    bash scripts/run_tablero_hardening_preflight.sh --mode deep
 
 # Workflow-file lint. Workflows are kept on disk for future re-enable; lint
 # them so they don't bit-rot.

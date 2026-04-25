@@ -49,6 +49,14 @@ So the honest sentence is:
 
 - “The `2x2` family wins because the underlying per-step layout geometry is much smaller, and both the compact-proof path and the typed-boundary binding path inherit that lighter surface even when the final serialized artifacts are nearly the same size.”
 
+The phrase "constant surface" in this note should be read narrowly. What is
+close to constant across the checked family frontiers is the **serialized
+boundary artifact size**, not the full verifier-side cost. The frontier
+`binding_serialized_bytes` rows stay within a few hundred bytes across families,
+while `binding_verify_ms` and `binding_emit_ms` still vary materially with the
+family-specific layout geometry. The transferable property here is
+constant-size boundary packaging; the time savings remain family-dependent.
+
 ## Layout geometry
 
 The source-level layout difference is large before Phase43 or Phase44D enters.

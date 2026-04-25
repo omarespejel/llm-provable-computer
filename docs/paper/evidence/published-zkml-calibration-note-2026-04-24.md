@@ -107,6 +107,14 @@ So the Obelyzk row now strengthens deployment/on-chain calibration and public
 STARK-native posture, but it does not turn the table into a same-regime verifier
 race.
 
+One further caveat matters for the repository's own large replay-avoidance
+ratios. On the current local path, the dominant lower-layer baseline cost is the
+ordered Phase30 manifest replay that this codebase actually pays, including
+canonical JSON serialization and Blake2b hashing inside that replay flow. That
+cost is real for this implementation, and it is exactly the work the typed
+boundary removes here, but it should not be read as a universal lower bound on
+manifest replay cost across every possible STARK stack or serialization design.
+
 ## Immediate consequence for paper positioning
 
 The defensible public claim is narrower than “STARKs are already faster for

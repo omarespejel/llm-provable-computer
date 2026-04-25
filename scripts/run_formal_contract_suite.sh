@@ -105,6 +105,22 @@ KANI_ARGS=(
   kani_phase33_public_input_lane_payload_wires_canonical_fields
   --harness
   kani_phase33_public_input_ordering_rejects_any_lane_drift
+  --harness
+  kani_phase45_bridge_flags_accept_canonical_boundary_width_bridge
+  --harness
+  kani_phase45_bridge_flags_reject_any_claim_replay_or_missing_verification
+  --harness
+  kani_phase45_public_input_lane_metadata_accepts_canonical_examples
+  --harness
+  kani_phase45_public_input_lane_metadata_rejects_index_or_label_drift
+  --harness
+  kani_phase47_wrapper_flags_accept_canonical_receipt_only_candidate
+  --harness
+  kani_phase47_wrapper_flags_reject_any_replay_or_false_claim
+  --harness
+  kani_phase48_attempt_flags_accept_canonical_no_go
+  --harness
+  kani_phase48_attempt_flags_reject_any_replay_or_false_claim
 )
 
 "${KANI_ARGS[@]}"
