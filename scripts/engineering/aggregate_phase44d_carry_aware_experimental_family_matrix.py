@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -224,6 +225,22 @@ def display_path(path: Path) -> str:
         return str(resolved)
 
 
+def parse_positive_finite_float(
+    raw_value: str, *, label: str, source: Path, step: int
+) -> float:
+    try:
+        value = float(raw_value)
+    except ValueError as exc:
+        raise SystemExit(
+            f"{label} must be numeric in {source} for step {step}; got {raw_value!r}"
+        ) from exc
+    if not math.isfinite(value) or value <= 0:
+        raise SystemExit(
+            f"{label} must be a positive finite number in {source} for step {step}; got {raw_value!r}"
+        )
+    return value
+
+
 def main() -> None:
     args = parse_args()
     first_blocked_overrides = build_override_map(
@@ -244,14 +261,16 @@ def main() -> None:
     rows_payload: list[dict[str, Any]] = []
     canonical_timing: tuple[str, str, str, int] | None = None
 
-    for spec in FAMILY_SPECS:
+    for base_spec in FAMILY_SPECS:
         spec = FamilySpec(
-            family=spec.family,
-            label=spec.label,
-            input_path=custom_inputs[spec.family],
-            benchmark_version=spec.benchmark_version,
-            semantic_scope=spec.semantic_scope,
-            blocked_status=blocked_status_overrides.get(spec.family, spec.blocked_status),
+            family=base_spec.family,
+            label=base_spec.label,
+            input_path=custom_inputs[base_spec.family],
+            benchmark_version=base_spec.benchmark_version,
+            semantic_scope=base_spec.semantic_scope,
+            blocked_status=blocked_status_overrides.get(
+                base_spec.family, base_spec.blocked_status
+            ),
         )
         rows = read_rows(spec.input_path)
         timing = validate_family_rows(rows, spec=spec)
@@ -300,31 +319,36 @@ def main() -> None:
             compact = row_map[(VARIANT_COMPACT, step)]
             replay = row_map[(VARIANT_REPLAY, step)]
             binding = row_map[(VARIANT_BINDING, step)]
-            typed_verify_ms = float(typed["verify_ms"])
-            baseline_verify_ms = float(baseline["verify_ms"])
-            compact_verify_ms = float(compact["verify_ms"])
-            replay_verify_ms = float(replay["verify_ms"])
-            binding_verify_ms = float(binding["verify_ms"])
-            if typed_verify_ms <= 0:
-                raise SystemExit(
-                    f"typed verify_ms must be > 0 in {spec.input_path} for step {step}; got {typed_verify_ms}"
-                )
-            if baseline_verify_ms <= 0:
-                raise SystemExit(
-                    f"baseline verify_ms must be > 0 in {spec.input_path} for step {step}; got {baseline_verify_ms}"
-                )
-            if compact_verify_ms <= 0:
-                raise SystemExit(
-                    f"compact verify_ms must be > 0 in {spec.input_path} for step {step}; got {compact_verify_ms}"
-                )
-            if replay_verify_ms <= 0:
-                raise SystemExit(
-                    f"replay verify_ms must be > 0 in {spec.input_path} for step {step}; got {replay_verify_ms}"
-                )
-            if binding_verify_ms <= 0:
-                raise SystemExit(
-                    f"binding verify_ms must be > 0 in {spec.input_path} for step {step}; got {binding_verify_ms}"
-                )
+            typed_verify_ms = parse_positive_finite_float(
+                typed["verify_ms"],
+                label="typed verify_ms",
+                source=spec.input_path,
+                step=step,
+            )
+            baseline_verify_ms = parse_positive_finite_float(
+                baseline["verify_ms"],
+                label="baseline verify_ms",
+                source=spec.input_path,
+                step=step,
+            )
+            compact_verify_ms = parse_positive_finite_float(
+                compact["verify_ms"],
+                label="compact verify_ms",
+                source=spec.input_path,
+                step=step,
+            )
+            replay_verify_ms = parse_positive_finite_float(
+                replay["verify_ms"],
+                label="replay verify_ms",
+                source=spec.input_path,
+                step=step,
+            )
+            binding_verify_ms = parse_positive_finite_float(
+                binding["verify_ms"],
+                label="binding verify_ms",
+                source=spec.input_path,
+                step=step,
+            )
             rows_payload.append(
                 {
                     "family": spec.family,

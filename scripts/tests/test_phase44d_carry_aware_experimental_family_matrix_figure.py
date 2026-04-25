@@ -87,7 +87,23 @@ class Phase44dCarryAwareExperimentalFamilyMatrixFigureTests(unittest.TestCase):
         ]
         with self.assertRaises(SystemExit) as ctx:
             MODULE.validate_rows(rows, source=Path("sample.tsv"))
-        self.assertIn("compact_only_verify_ms must be > 0", str(ctx.exception))
+        self.assertIn(
+            "compact_only_verify_ms must be a positive finite number",
+            str(ctx.exception),
+        )
+
+    def test_validate_rows_rejects_non_finite_replay_ratio(self):
+        rows = [
+            self.sample_row(family="default", replay_ratio="nan"),
+            self.sample_row(family="2x2"),
+            self.sample_row(family="3x3"),
+        ]
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(rows, source=Path("sample.tsv"))
+        self.assertIn(
+            "replay_ratio must be a positive finite number",
+            str(ctx.exception),
+        )
 
 
 if __name__ == "__main__":
