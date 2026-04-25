@@ -3889,7 +3889,6 @@ fn benchmark_output_paths_conflict(
     Ok(false)
 }
 
-#[cfg(feature = "stwo-backend")]
 fn prove_stwo_decoding_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
