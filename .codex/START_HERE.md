@@ -42,7 +42,9 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 ## Next likely technical steps
 
 1. Broaden experimental carry-aware review beyond the current decoding-step
-   family, now that the honest `8`-step multiply/store carry patterns and proof-file tamper checks are covered.
+   family, now that the honest `8`-step multiply/store carry patterns and the
+   proof-file tamper matrix (payload bytes, commitments, backend metadata,
+   steps/equivalence drift, final-state drift) are covered.
 2. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
 3. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after

@@ -35,7 +35,8 @@ This repository now has two live lanes.
   `wrap_delta_abs_bits`, `wrap_delta_sign`, and `wrap_delta_square` witness
   drift.
 - The follow-up serialized-proof review adds disk-backed round-trip and tamper
-  tests for experimental proof JSON payload bytes and outer claim commitments.
+  tests for experimental proof JSON payload bytes, outer claim commitments,
+  backend-version drift, steps/equivalence drift, and final-state drift.
 - A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
@@ -66,8 +67,8 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 ## Next sensible moves
 
 1. Broaden review of the experimental backend beyond the current decoding-step
-   family, now that proof-file tamper coverage and the honest `8`-step
-   multiply/store carry patterns are both checked.
+   family, now that the disk-backed proof-file tamper matrix and the honest
+   `8`-step multiply/store carry patterns are both checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after

@@ -106,6 +106,21 @@ Added focused tamper tests:
    - loads the tampered file through the public proof loader
    - expects commitment validation to reject before proof acceptance
 
+1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file`
+   - mutates the serialized outer `proof_backend_version`
+   - loads the tampered file through the public proof loader
+   - expects the experimental-only backend-version gate to reject
+
+1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file`
+   - mutates the serialized outer `claim.steps`
+   - loads the tampered file through the public proof loader
+   - expects the equivalence metadata guard to reject the claim drift before proof acceptance
+
+1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file`
+   - mutates the serialized outer `claim.final_state.acc`
+   - loads the tampered file through the public proof loader
+   - expects the equivalence fingerprint guard to reject the claim drift before proof acceptance
+
 1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
@@ -157,6 +172,9 @@ cargo +nightly-2025-07-14 test phase44d_source_emission_experimental_carry_aware
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_proof_serialization_round_trip --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_trace_builder_rejects_store_row_that_drops_live_carry --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_negative_wrap_delta_sign_drift --features stwo-backend --lib

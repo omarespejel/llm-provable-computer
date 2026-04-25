@@ -28,8 +28,9 @@ The active split is now:
   `wrap_delta_abs_bits`, `wrap_delta_sign`, and `wrap_delta_square` witness
   drift.
 - Gate 2d: the follow-up serialized-proof review adds disk-backed round-trip and
-  tamper tests for experimental proof JSON payload bytes and outer claim
-  commitments.
+  tamper tests for experimental proof JSON payload bytes, outer claim
+  commitments, backend-version drift, steps/equivalence drift, and final-state
+  drift.
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
@@ -77,8 +78,8 @@ Use these in order of authority for current state:
 ## Next sensible moves
 
 1. Broaden review of the experimental backend beyond the current decoding-step
-   family, now that proof-file tamper coverage and the honest `8`-step
-   multiply/store carry patterns are both checked.
+   family, now that the disk-backed proof-file tamper matrix and the honest
+   `8`-step multiply/store carry patterns are both checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
