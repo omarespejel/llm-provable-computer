@@ -102,6 +102,9 @@ use llm_provable_computer::{
     run_stwo_phase44d_source_emission_benchmark,
     run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
+    run_stwo_phase44d_source_emission_experimental_2x2_benchmark,
+    run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps,
+    run_stwo_phase44d_source_emission_experimental_2x2_benchmark_with_options,
     run_stwo_phase44d_source_emission_experimental_3x3_benchmark,
     run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps,
     run_stwo_phase44d_source_emission_experimental_3x3_benchmark_with_options,
@@ -573,6 +576,23 @@ enum Command {
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
         /// Optional comma-delimited step counts. Defaults to the 3x3 exploratory sweep.
+        #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
+        step_counts: Vec<usize>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Run the typed Phase44D source-emission benchmark on the experimental carry-aware Phase12 backend over the 2x2 decoding_step_v2 layout.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    #[command(name = "bench-stwo-phase44d-source-emission-experimental-2x2-reuse")]
+    BenchStwoPhase44dSourceEmissionExperimental2x2Reuse {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Optional comma-delimited step counts. Defaults to the 2x2 exploratory sweep.
         #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
         step_counts: Vec<usize>,
         /// Capture host-dependent wall-clock timings in the report output.
@@ -2125,6 +2145,17 @@ fn run() -> llm_provable_computer::Result<()> {
             step_counts,
             capture_timings,
         } => bench_stwo_phase44d_source_emission_experimental_3x3_reuse_command(
+            &output_tsv,
+            output_json.as_deref(),
+            &step_counts,
+            capture_timings,
+        )?,
+        Command::BenchStwoPhase44dSourceEmissionExperimental2x2Reuse {
+            output_tsv,
+            output_json,
+            step_counts,
+            capture_timings,
+        } => bench_stwo_phase44d_source_emission_experimental_2x2_reuse_command(
             &output_tsv,
             output_json.as_deref(),
             &step_counts,
@@ -3873,6 +3904,76 @@ fn bench_stwo_phase44d_source_emission_experimental_3x3_reuse_command(
         for row in &report.rows {
             println!(
                 "phase44d_source_emission_experimental_3x3_benchmark: {} {} steps={} serialized_bytes={} emit_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.serialized_bytes,
+                row.emit_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_phase44d_source_emission_experimental_2x2_reuse_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = step_counts;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase44D experimental 2x2 source emission benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase44D experimental 2x2 source emission benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if step_counts.is_empty() {
+            if capture_timings {
+                run_stwo_phase44d_source_emission_experimental_2x2_benchmark_with_options(true)?
+            } else {
+                run_stwo_phase44d_source_emission_experimental_2x2_benchmark()?
+            }
+        } else {
+            run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
+                step_counts,
+                capture_timings,
+            )?
+        };
+        save_stwo_phase44d_source_emission_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase44d_source_emission_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "phase44d_source_emission_experimental_2x2_benchmark: {} {} steps={} serialized_bytes={} emit_ms={} verify_ms={} verified={}",
                 row.primitive,
                 row.backend_variant,
                 row.steps,
@@ -14349,6 +14450,14 @@ mod cli_dispatch_tests {
         assert!(!help.contains("bench-stwo-phase44d-source-emission-experimental-3x3-reuse"));
     }
 
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_command_is_hidden_without_stwo_backend()
+    {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase44d-source-emission-experimental-2x2-reuse"));
+    }
+
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase44d_source_emission_experimental_3x3_benchmark_command_parses_directly_and_is_not_run_shorthand(
@@ -14458,6 +14567,117 @@ mod cli_dispatch_tests {
             .expect("spawn phase44d experimental 3x3 negative-path test thread")
             .join()
             .expect("phase44d experimental 3x3 negative-path test thread should not panic");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_command_parses_directly_and_is_not_run_shorthand(
+    ) {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase44d-source-emission-experimental-2x2-reuse"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-source-emission-experimental-2x2-reuse",
+                "--output-tsv",
+                "phase44d-2x2-experimental.tsv",
+                "--output-json",
+                "phase44d-2x2-experimental.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-source-emission-experimental-2x2-reuse"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d-2x2-experimental.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("phase44d-2x2-experimental.json"),
+            ]
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_command_preserves_step_counts_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase44d-source-emission-experimental-2x2-reuse",
+                "--step-counts",
+                "2,4,8",
+                "--capture-timings",
+                "--output-tsv",
+                "phase44d-2x2-experimental.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase44d-source-emission-experimental-2x2-reuse"),
+                OsString::from("--step-counts"),
+                OsString::from("2,4,8"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase44d-2x2-experimental.tsv"),
+            ]
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_command_rejects_identical_output_paths_before_run(
+    ) {
+        std::thread::Builder::new()
+            .name("phase44d-source-emission-experimental-2x2-cli-negative".to_string())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let cli = Cli::try_parse_from(normalize_args(
+                    [
+                        "tvm",
+                        "bench-stwo-phase44d-source-emission-experimental-2x2-reuse",
+                        "--output-tsv",
+                        "same.path",
+                        "--output-json",
+                        "same.path",
+                    ]
+                    .into_iter()
+                    .map(OsString::from),
+                ))
+                .expect("phase44d experimental 2x2 source emission command should parse");
+
+                let Command::BenchStwoPhase44dSourceEmissionExperimental2x2Reuse {
+                    output_tsv,
+                    output_json,
+                    step_counts,
+                    capture_timings,
+                } = cli.command
+                else {
+                    panic!("expected phase44d experimental 2x2 source emission benchmark command");
+                };
+
+                let err =
+                    super::bench_stwo_phase44d_source_emission_experimental_2x2_reuse_command(
+                        &output_tsv,
+                        output_json.as_deref(),
+                        &step_counts,
+                        capture_timings,
+                    )
+                    .expect_err("identical output paths must fail before benchmark execution");
+                assert!(err
+                    .to_string()
+                    .contains("`--output-json` must differ from `--output-tsv`"));
+            })
+            .expect("spawn phase44d experimental 2x2 negative-path test thread")
+            .join()
+            .expect("phase44d experimental 2x2 negative-path test thread should not panic");
     }
 
     #[cfg(not(feature = "stwo-backend"))]
@@ -15386,6 +15606,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-phase43-source-root-feasibility-experimental"
                 | "bench-stwo-phase44d-source-emission-reuse"
                 | "bench-stwo-phase44d-source-emission-experimental-reuse"
+                | "bench-stwo-phase44d-source-emission-experimental-2x2-reuse"
                 | "bench-stwo-phase44d-source-emission-experimental-3x3-reuse"
                 | "bench-stwo-phase12-arithmetic-budget-map"
                 | "bench-stwo-phase44d-rescaled-exploratory"

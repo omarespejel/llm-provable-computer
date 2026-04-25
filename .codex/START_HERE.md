@@ -61,8 +61,10 @@ The repo now has one explicit answer on the next-boundary question:
    inputs that the feasibility gate lists as missing.
 2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
-3. Track the layout-matrix follow-up explicitly now that the `3x3` family
-   reproduces the same replay-avoidance mechanism through `256` steps.
+3. Use the family-matrix gate note now that default, `2x2`, and `3x3` all
+   reproduce the same replay-avoidance mechanism on the experimental lane, and
+   treat issue `#255` as the next exploratory follow-up on the unexpectedly
+   strong `2x2` constants.
 4. Broaden experimental carry-aware review beyond the current decoding-step
    family, now that the honest `8`-step multiply/store carry patterns, the
    proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
@@ -94,6 +96,8 @@ git rev-parse origin/main
 sed -n '1,220p' docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md
 sed -n '1,220p' docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md
+sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md
+sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md
 ```
