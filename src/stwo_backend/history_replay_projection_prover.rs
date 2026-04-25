@@ -2056,6 +2056,12 @@ pub fn assess_phase43_second_boundary_feasibility(
             &source_claim,
             compact_envelope,
         )?;
+    if !source_root_compact_binding_verified_without_trace {
+        return Err(VmError::UnsupportedProof(
+            "Phase43 second-boundary feasibility requires the compact envelope to verify against the derived source-root claim"
+                .to_string(),
+        ));
+    }
     let useful_second_boundary_today = exposure.verifier_can_drop_full_phase43_trace
         && source_root_compact_binding_verified_without_trace;
 
@@ -11545,6 +11551,38 @@ mod tests {
         let error = assess_phase43_second_boundary_feasibility(&trace, &phase30, &compact_envelope)
             .expect_err("tampered compact claim must be rejected before feasibility assessment");
         assert!(error.to_string().contains("projection root"));
+    }
+
+    #[test]
+    fn phase43_second_boundary_feasibility_rejects_compact_payload_that_only_fails_stwo_verify() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let mut compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let mut payload: Phase43ProjectionProofPayload =
+            serde_json::from_slice(&compact_envelope.proof).expect("decode compact proof payload");
+        payload.stark_proof.0.commitments[2] =
+            parse_blake2s_hash("tampered interaction trace root", &hash32('d'))
+                .expect("parse tampered interaction trace root");
+        compact_envelope.proof = serde_json::to_vec(&payload).expect("encode tampered payload");
+
+        let source_claim =
+            derive_phase43_history_replay_projection_source_root_claim(&trace, &phase30)
+                .expect("derive Phase43 source-root claim");
+        let verification = verify_phase43_history_replay_projection_source_root_compact_envelope(
+            &source_claim,
+            &compact_envelope,
+        )
+        .expect("binding metadata stays intact, so verifier should return bool");
+        assert!(!verification);
+
+        let error = assess_phase43_second_boundary_feasibility(&trace, &phase30, &compact_envelope)
+            .expect_err(
+                "feasibility assessment must fail closed when compact verification returns false",
+            );
+        assert!(error
+            .to_string()
+            .contains("compact envelope to verify against the derived source-root claim"));
     }
 
     #[test]

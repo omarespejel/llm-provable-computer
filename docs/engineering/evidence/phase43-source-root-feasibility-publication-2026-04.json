@@ -12,8 +12,8 @@
       "steps": 2,
       "relation": "one emitted Phase43 source-root claim plus one compact Phase43 projection proof",
       "serialized_bytes": 57945,
-      "derive_ms": 11.107,
-      "verify_ms": 11.931,
+      "derive_ms": 0.0,
+      "verify_ms": 9.091,
       "verified": true,
       "note": "feasibility-only prototype row: assumes the source surface emitted the proof-native Phase43 source-root claim already derived from the same Phase43 trace and Phase30 manifest; this is not yet a shipped boundary"
     },
@@ -23,8 +23,8 @@
       "steps": 2,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 71436,
-      "derive_ms": 0.0,
-      "verify_ms": 28.647,
+      "derive_ms": 7.013,
+      "verify_ms": 9.138,
       "verified": true,
       "note": "baseline row: pays the exact source-root derivation work the verifier still needs today because the source chain does not emit proof-native source-root artifacts"
     },
@@ -35,7 +35,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 54939,
       "derive_ms": 0.0,
-      "verify_ms": 7.064,
+      "verify_ms": 5.417,
       "verified": true,
       "note": "causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -45,8 +45,8 @@
       "steps": 2,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 16497,
-      "derive_ms": 0.0,
-      "verify_ms": 9.606,
+      "derive_ms": 7.013,
+      "verify_ms": 0.0,
       "verified": true,
       "note": "causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
     },
@@ -56,8 +56,8 @@
       "steps": 2,
       "relation": "bind one emitted Phase43 source-root claim to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 3006,
-      "derive_ms": 11.107,
-      "verify_ms": 3.418,
+      "derive_ms": 0.0,
+      "verify_ms": 2.445,
       "verified": true,
       "note": "causal decomposition row: assumes the compact proof was already verified and measures only the source-root binding acceptance surface"
     }
