@@ -62,6 +62,23 @@ The hardening adds tests for the two concrete misuse classes:
 Existing tamper tests also cover proof payload bytes, canonical preprocessing,
 shared lookup scope, and false host-side carry construction.
 
+The follow-up review increment on April 25 adds three narrower AIR witness
+binding tests:
+
+1. `carry_aware_air_rejects_wrap_delta_abs_bit_reconstruction_drift`
+   - mutates the absolute-value bit decomposition while leaving the rest of the
+     row committed
+
+2. `carry_aware_air_rejects_wrap_delta_sign_drift`
+   - mutates the sign witness on a non-zero carry row
+
+3. `carry_aware_air_rejects_wrap_delta_square_drift`
+   - mutates the square witness on a non-zero carry row
+
+4. `phase44d_source_emission_experimental_carry_aware_benchmark_rejects_tampered_compact_proof`
+   - mutates the compact Phase43 proof bytes after building a Phase44D input
+     from the experimental carry-aware Phase12 chain
+
 ## Important Caveat
 
 This closes the known `wrap_delta` range gap. It does not promote the

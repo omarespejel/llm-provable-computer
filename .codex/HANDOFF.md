@@ -24,6 +24,9 @@ The active split is now:
 - Gate 1: the honest default `4`-step Phase12 seed now proves and verifies on the experimental backend.
 - Gate 2: the honest default `8`-step Phase12 family clears on the same backend.
 - Gate 2b: the concrete `wrap_delta` range gap is closed at the AIR layer with bit-decomposed magnitude, sign, square, and ADD/SUB unit-range constraints.
+- Gate 2c: the focused April 25 review adds negative AIR tests for
+  `wrap_delta_abs_bits`, `wrap_delta_sign`, and `wrap_delta_square` witness
+  drift.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 
 At `1024` steps, the experimental shared path records:
@@ -46,8 +49,9 @@ Use these in order of authority for current state:
 4. `docs/engineering/codex-repo-handoff-2026-04-24.md`
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
-7. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-8. `docs/engineering/reproducibility.md`
+7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
+8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+9. `docs/engineering/reproducibility.md`
 
 ## Merge culture
 
@@ -66,9 +70,12 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Raise the experimental Phase43/Phase44D ceiling beyond `1024`.
-2. Broaden review of the experimental backend before making any promotion decisions.
-3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+1. Continue broadening review of the experimental backend beyond the focused
+   `wrap_delta` witness-binding increment.
+2. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
+   review changes stay clean.
+3. Only after those steps decide whether any part of the experimental lane
+   should be promoted toward the paper/publication surface.
 
 ## Resume protocol
 

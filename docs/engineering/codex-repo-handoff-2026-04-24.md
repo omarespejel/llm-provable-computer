@@ -12,9 +12,10 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 4. `docs/engineering/codex-repo-handoff-2026-04-24.md`
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
-7. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-8. `docs/engineering/reproducibility.md`
-8. `git status --short --branch`
+7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
+8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+9. `docs/engineering/reproducibility.md`
+10. `git status --short --branch`
 
 ## Current lane split
 
@@ -30,6 +31,9 @@ This repository now has two live lanes.
 
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - The honest default `4`-step seed and honest `8`-step family clear on this backend.
+- The focused April 25 soundness-review increment adds negative AIR tests for
+  `wrap_delta_abs_bits`, `wrap_delta_sign`, and `wrap_delta_square` witness
+  drift.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - At `1024` steps, the experimental shared path records `427.209 ms` verification versus
   `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.
@@ -56,6 +60,8 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 
 ## Next sensible moves
 
-1. Raise the experimental Phase43/Phase44D ceiling beyond `1024`.
-2. Broaden review of the experimental backend before making any promotion decision.
+1. Continue broadening review of the experimental backend beyond the focused
+   `wrap_delta` witness-binding increment.
+2. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
+   review changes stay clean.
 3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
