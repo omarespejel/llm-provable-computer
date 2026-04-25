@@ -35,6 +35,7 @@ if [[ "$NORMALIZED_STEP_COUNTS" != "$CANONICAL_STEP_COUNTS" ]]; then
   echo "STEP_COUNTS must match the canonical 3x3 sweep ($CANONICAL_STEP_COUNTS); got $STEP_COUNTS" >&2
   exit 1
 fi
+STEP_COUNTS="$NORMALIZED_STEP_COUNTS"
 
 if ! python3 - <<'PY' >/dev/null 2>&1
 import matplotlib
@@ -89,14 +90,15 @@ trap 'rm -rf "$TMP_EVIDENCE_DIR" "$TMP_JSON_DIR" "$TMP_FIGURE_DIR"' EXIT
 
 TMP_TSV="$TMP_EVIDENCE_DIR/$(basename "$TSV_OUT")"
 TMP_JSON="$TMP_JSON_DIR/$(basename "$JSON_OUT")"
-TMP_SVG="$TMP_FIGURE_DIR/$(basename "$SVG_OUT")"
+FIGURE_PREFIX="$TMP_FIGURE_DIR/$(basename "${SVG_OUT%.svg}")"
+TMP_SVG="${FIGURE_PREFIX}.svg"
 TMP_PNG=""
 TMP_PDF=""
 if [[ -n "$PNG_OUT" ]]; then
-  TMP_PNG="$TMP_FIGURE_DIR/$(basename "$PNG_OUT")"
+  TMP_PNG="${FIGURE_PREFIX}.png"
 fi
 if [[ -n "$PDF_OUT" ]]; then
-  TMP_PDF="$TMP_FIGURE_DIR/$(basename "$PDF_OUT")"
+  TMP_PDF="${FIGURE_PREFIX}.pdf"
 fi
 
 RUN_DIR="$TMP_JSON_DIR/runs"
@@ -121,7 +123,7 @@ python3 scripts/engineering/aggregate_phase44d_carry_aware_experimental_3x3_scal
 
 FIGURE_ARGS=(
   --input-tsv "$TMP_TSV"
-  --output-prefix "$TMP_FIGURE_DIR/$(basename "${SVG_OUT%.svg}")"
+  --output-prefix "$FIGURE_PREFIX"
   --bench-runs "$BENCH_RUNS"
 )
 
