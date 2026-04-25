@@ -106,17 +106,17 @@ Added focused tamper tests:
    - loads the tampered file through the public proof loader
    - expects commitment validation to reject before proof acceptance
 
-1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file`
+8. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file`
    - mutates the serialized outer `proof_backend_version`
    - loads the tampered file through the public proof loader
    - expects the experimental-only backend-version gate to reject
 
-1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file`
+9. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file`
    - mutates the serialized outer `claim.steps`
    - loads the tampered file through the public proof loader
    - expects the equivalence metadata guard to reject the claim drift before proof acceptance
 
-1. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file`
+10. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file`
    - mutates the serialized outer `claim.final_state.acc`
    - loads the tampered file through the public proof loader
    - expects the equivalence fingerprint guard to reject the claim drift before proof acceptance

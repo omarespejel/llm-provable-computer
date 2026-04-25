@@ -1599,10 +1599,13 @@ HALT
         let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
             "phase12-carry-aware-proof-final-state",
             |proof_json| {
-                let acc = proof_json["claim"]["final_state"]["acc"]
-                    .as_i64()
-                    .expect("final-state acc as i64");
-                proof_json["claim"]["final_state"]["acc"] = serde_json::json!(acc + 1);
+                let acc = i16::try_from(
+                    proof_json["claim"]["final_state"]["acc"]
+                        .as_i64()
+                        .expect("final-state acc as i64"),
+                )
+                .expect("final-state acc should fit in i16");
+                proof_json["claim"]["final_state"]["acc"] = serde_json::json!(acc.wrapping_add(1));
             },
         );
         let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
