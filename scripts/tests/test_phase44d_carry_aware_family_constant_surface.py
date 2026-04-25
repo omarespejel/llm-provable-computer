@@ -164,6 +164,63 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
                 completed.stderr + completed.stdout,
             )
 
+    def test_script_rejects_mixed_timing_metadata(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "mixed-timing.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+                fieldnames = rows[0].keys()
+            rows[1]["timing_policy"] = "median_of_7_runs_from_microsecond_capture"
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            out_json = temp / "out.json"
+            out_tsv = temp / "out.tsv"
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(out_json),
+                "--output-tsv",
+                str(out_tsv),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("timing_policy mismatch", completed.stderr + completed.stdout)
+
+    def test_script_reports_actual_source_path_for_malformed_frontier_step(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "bad-step.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+                fieldnames = rows[0].keys()
+            typed_row = next(
+                row for row in rows if row["backend_variant"] == MODULE.VARIANT_TYPED
+            )
+            typed_row["steps"] = "not-an-int"
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            out_json = temp / "out.json"
+            out_tsv = temp / "out.tsv"
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(out_json),
+                "--output-tsv",
+                str(out_tsv),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            message = completed.stderr + completed.stdout
+            self.assertIn(str(bad_default), message)
+            self.assertIn("steps must be an integer", message)
+
 
 if __name__ == "__main__":
     unittest.main()
