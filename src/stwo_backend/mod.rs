@@ -317,6 +317,7 @@ pub use primitive_benchmark::{
     run_stwo_phase44d_source_emission_experimental_benchmark_for_steps,
     run_stwo_phase44d_source_emission_experimental_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
+    run_stwo_phase71_handoff_receipt_benchmark_for_steps,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
