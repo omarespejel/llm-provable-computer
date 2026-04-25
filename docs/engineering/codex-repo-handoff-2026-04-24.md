@@ -41,6 +41,10 @@ This repository now has two live lanes.
   experimental Phase12 chain JSON and Phase44D typed-boundary JSON, including
   nested proof payload drift, nested backend metadata drift, nested
   steps/final-state drift, and replay-flag drift on the typed boundary surface.
+- The follow-up composed-artifact increment extends serialized JSON coverage to
+  the Phase44D recursive handoff, the Phase45 public-input bridge, and the
+  Phase46 Stwo proof-adapter receipt, including replay-flag drift, reordered
+  public-input lanes, and terminal interaction-claim drift after recommit.
 - A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
@@ -72,8 +76,9 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 
 1. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
-   Phase12-chain and Phase44D-boundary tamper coverage, and the honest `8`-step
-   multiply/store carry patterns are both checked.
+   Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
+   coverage, and the honest `8`-step multiply/store carry patterns are both
+   checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after

@@ -4725,6 +4725,7 @@ mod tests {
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
     use crate::proof::CLAIM_STATEMENT_VERSION_V1;
+    use serde::de::DeserializeOwned;
     use stwo::core::pcs::TreeVec;
     use stwo_constraint_framework::assert_constraints_on_trace;
 
@@ -5099,30 +5100,48 @@ mod tests {
         boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
         mutate: impl FnOnce(&mut serde_json::Value),
     ) -> Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary {
+        load_tampered_serialized_artifact(stem, boundary, mutate)
+    }
+
+    fn load_tampered_serialized_artifact<T>(
+        stem: &str,
+        artifact: &T,
+        mutate: impl FnOnce(&mut serde_json::Value),
+    ) -> T
+    where
+        T: serde::Serialize + DeserializeOwned,
+    {
         let tempdir = tempfile::Builder::new()
             .prefix(&format!("llm-provable-computer-{stem}-"))
             .tempdir()
             .expect("create temp dir");
-        let boundary_path = tempdir.path().join("valid.json");
+        let artifact_path = tempdir.path().join("valid.json");
         let tampered_path = tempdir.path().join("tampered.json");
 
         std::fs::write(
-            &boundary_path,
-            serde_json::to_vec(&boundary).expect("encode boundary"),
+            &artifact_path,
+            serde_json::to_vec(artifact).expect("encode artifact"),
         )
-        .expect("write boundary");
-        let mut boundary_json: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&boundary_path).expect("read boundary"))
-                .expect("boundary json");
-        mutate(&mut boundary_json);
+        .expect("write artifact");
+        let mut artifact_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&artifact_path).expect("read artifact"))
+                .expect("artifact json");
+        mutate(&mut artifact_json);
         std::fs::write(
             &tampered_path,
-            serde_json::to_vec(&boundary_json).expect("encode tampered boundary"),
+            serde_json::to_vec(&artifact_json).expect("encode tampered artifact"),
         )
-        .expect("write tampered boundary");
+        .expect("write tampered artifact");
 
-        serde_json::from_slice(&std::fs::read(&tampered_path).expect("read tampered boundary"))
-            .expect("load tampered boundary")
+        serde_json::from_slice(&std::fs::read(&tampered_path).expect("read tampered artifact"))
+            .expect("load tampered artifact")
+    }
+
+    fn round_trip_serialized_artifact<T>(stem: &str, artifact: &T) -> T
+    where
+        T: serde::Serialize + DeserializeOwned,
+    {
+        load_tampered_serialized_artifact(stem, artifact, |_| {})
     }
 
     fn recommit_trace(trace: &mut Phase43HistoryReplayTrace) {
@@ -6229,6 +6248,33 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_recursive_handoff_json_round_trip_preserves_acceptance() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let loaded =
+            round_trip_serialized_artifact("phase44d-recursive-handoff-roundtrip", &handoff);
+
+        assert_eq!(loaded, handoff);
+        verify_phase44d_recursive_verifier_public_output_handoff(&loaded)
+            .expect("verify standalone loaded Phase44D recursive-verifier handoff");
+        verify_phase44d_recursive_verifier_public_output_handoff_against_boundary(
+            &loaded,
+            &boundary,
+            &compact_envelope,
+        )
+        .expect("verify loaded Phase44D recursive-verifier handoff against boundary");
+    }
+
+    #[test]
     fn phase44d_terminal_logup_closure_accepts_stwo_cancellation_shape() {
         let (trace, phase30) = sample_trace_and_phase30();
         let source_claim =
@@ -6389,6 +6435,40 @@ mod tests {
     }
 
     #[test]
+    fn phase45_public_input_bridge_json_round_trip_preserves_acceptance() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("prepare Phase45 public-input bridge");
+        let loaded =
+            round_trip_serialized_artifact("phase45-public-input-bridge-roundtrip", &bridge);
+
+        assert_eq!(loaded, bridge);
+        verify_phase45_recursive_verifier_public_input_bridge(&loaded)
+            .expect("verify standalone loaded Phase45 public-input bridge");
+        verify_phase45_recursive_verifier_public_input_bridge_against_sources(
+            &loaded,
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("verify loaded Phase45 public-input bridge against sources");
+    }
+
+    #[test]
     fn phase45_public_input_bridge_rejects_reordered_lanes_even_when_recommitted() {
         let (trace, phase30) = sample_trace_and_phase30();
         let compact_envelope =
@@ -6417,6 +6497,46 @@ mod tests {
 
         let error = verify_phase45_recursive_verifier_public_input_bridge(&bridge)
             .expect_err("reordered public-input lanes must reject");
+        assert!(error.to_string().contains("lane order"));
+    }
+
+    #[test]
+    fn phase45_public_input_bridge_loaded_json_rejects_reordered_lanes() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("prepare Phase45 public-input bridge");
+        let mut loaded = load_tampered_serialized_artifact(
+            "phase45-public-input-bridge-reordered-lanes",
+            &bridge,
+            |bridge_json| {
+                let lanes = bridge_json["ordered_public_input_lanes"]
+                    .as_array_mut()
+                    .expect("ordered public input lanes array");
+                lanes.swap(0, 1);
+            },
+        );
+        loaded.ordered_public_inputs_commitment =
+            commit_phase45_recursive_verifier_public_inputs(&loaded.ordered_public_input_lanes)
+                .expect("recommit reordered public inputs");
+        loaded.bridge_commitment = commit_phase45_recursive_verifier_public_input_bridge(&loaded)
+            .expect("recommit reordered bridge");
+
+        let error = verify_phase45_recursive_verifier_public_input_bridge(&loaded)
+            .expect_err("serialized reordered public-input lanes must reject");
         assert!(error.to_string().contains("lane order"));
     }
 
@@ -6495,6 +6615,45 @@ mod tests {
     }
 
     #[test]
+    fn phase46_stwo_proof_adapter_receipt_json_round_trip_preserves_acceptance() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("prepare Phase45 public-input bridge");
+        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
+            .expect("prepare Phase46 Stwo proof-adapter receipt");
+        let loaded = round_trip_serialized_artifact(
+            "phase46-stwo-proof-adapter-receipt-roundtrip",
+            &receipt,
+        );
+
+        assert_eq!(loaded, receipt);
+        verify_phase46_stwo_proof_adapter_receipt(&loaded)
+            .expect("verify standalone loaded Phase46 Stwo proof-adapter receipt");
+        verify_phase46_stwo_proof_adapter_receipt_against_sources(
+            &loaded,
+            &bridge,
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("verify loaded Phase46 Stwo proof-adapter receipt against sources");
+    }
+
+    #[test]
     fn phase46_stwo_proof_adapter_receipt_rejects_interaction_claim_drift_even_when_recommitted() {
         let (trace, phase30) = sample_trace_and_phase30();
         let compact_envelope =
@@ -6523,6 +6682,46 @@ mod tests {
 
         let error = verify_phase46_stwo_proof_adapter_receipt(&receipt)
             .expect_err("Phase46 receipt must reject terminal interaction-claim drift");
+        assert!(error.to_string().contains("does not cancel"));
+    }
+
+    #[test]
+    fn phase46_stwo_proof_adapter_receipt_loaded_json_rejects_interaction_claim_drift() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+            &boundary,
+            &compact_envelope,
+            &handoff,
+        )
+        .expect("prepare Phase45 public-input bridge");
+        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
+            .expect("prepare Phase46 Stwo proof-adapter receipt");
+        let mut loaded = load_tampered_serialized_artifact(
+            "phase46-stwo-proof-adapter-receipt-interaction-claim-drift",
+            &receipt,
+            |receipt_json| {
+                let claimed_sum = receipt_json["terminal_boundary_component_claimed_sum_limbs"][0]
+                    .as_u64()
+                    .expect("claimed sum limb as u64");
+                receipt_json["terminal_boundary_component_claimed_sum_limbs"][0] =
+                    serde_json::json!((claimed_sum + 1) % u64::from(M31_MODULUS));
+            },
+        );
+        loaded.adapter_receipt_commitment = commit_phase46_stwo_proof_adapter_receipt(&loaded)
+            .expect("recommit forged Phase46 receipt");
+
+        let error = verify_phase46_stwo_proof_adapter_receipt(&loaded)
+            .expect_err("serialized Phase46 receipt must reject terminal interaction-claim drift");
         assert!(error.to_string().contains("does not cancel"));
     }
 
@@ -10634,6 +10833,36 @@ mod tests {
 
         let error = verify_phase44d_recursive_verifier_public_output_handoff(&handoff)
             .expect_err("replay handoff must reject even when recommitted");
+        assert!(error.to_string().contains("must remain boundary-width"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_recursive_handoff_loaded_json_rejects_replay_flags() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let handoff =
+            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
+                .expect("prepare Phase44D recursive-verifier handoff");
+        let mut loaded = load_tampered_serialized_artifact(
+            "phase44d-recursive-handoff-replay-flags",
+            &handoff,
+            |handoff_json| {
+                handoff_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
+                handoff_json["verifier_embeds_expected_rows"] = serde_json::json!(true);
+            },
+        );
+        loaded.handoff_commitment =
+            commit_phase44d_recursive_verifier_public_output_handoff(&loaded)
+                .expect("recommit forged replay handoff");
+
+        let error = verify_phase44d_recursive_verifier_public_output_handoff(&loaded)
+            .expect_err("serialized replay handoff must reject even when recommitted");
         assert!(error.to_string().contains("must remain boundary-width"));
     }
 
