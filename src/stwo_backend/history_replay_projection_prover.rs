@@ -4726,6 +4726,7 @@ mod tests {
     use super::*;
     use crate::proof::CLAIM_STATEMENT_VERSION_V1;
     use serde::de::DeserializeOwned;
+    use std::sync::OnceLock;
     use stwo::core::pcs::TreeVec;
     use stwo_constraint_framework::assert_constraints_on_trace;
 
@@ -4984,7 +4985,13 @@ mod tests {
         Phase43HistoryReplayTrace,
         Phase30DecodingStepProofEnvelopeManifest,
     ) {
-        sample_trace_and_phase30_for_layout_steps(2, 2, 2)
+        static FIXTURE: OnceLock<(
+            Phase43HistoryReplayTrace,
+            Phase30DecodingStepProofEnvelopeManifest,
+        )> = OnceLock::new();
+        FIXTURE
+            .get_or_init(|| sample_trace_and_phase30_for_layout_steps(2, 2, 2))
+            .clone()
     }
 
     fn sample_trace_and_phase30_for_layout_steps(
@@ -5093,6 +5100,54 @@ mod tests {
         trace.trace_commitment = commit_phase43_history_replay_trace(&trace).expect("commit trace");
         verify_phase43_history_replay_trace(&trace).expect("sample trace verifies");
         (trace, phase30)
+    }
+
+    #[derive(Debug, Clone)]
+    struct Phase44DComposedArtifactFixture {
+        compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
+        boundary: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+        handoff: super::super::recursion::Phase44DRecursiveVerifierPublicOutputHandoff,
+        bridge: super::super::recursion::Phase45RecursiveVerifierPublicInputBridge,
+        receipt: super::super::recursion::Phase46StwoProofAdapterReceipt,
+    }
+
+    fn sample_phase44d_composed_artifact_fixture() -> Phase44DComposedArtifactFixture {
+        static FIXTURE: OnceLock<Phase44DComposedArtifactFixture> = OnceLock::new();
+        FIXTURE
+            .get_or_init(|| {
+                let (trace, phase30) = sample_trace_and_phase30();
+                let compact_envelope =
+                    prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                        .expect("prove cached Phase44 compact projection");
+                let boundary =
+                    emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+                        &trace, &phase30,
+                    )
+                    .expect("emit cached Phase44D source-chain public output boundary");
+                let handoff = phase44d_prepare_recursive_verifier_public_output_handoff(
+                    &boundary,
+                    &compact_envelope,
+                )
+                .expect("prepare cached Phase44D recursive-verifier handoff");
+                let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+                    &boundary,
+                    &compact_envelope,
+                    &handoff,
+                )
+                .expect("prepare cached Phase45 public-input bridge");
+                let receipt =
+                    phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
+                        .expect("prepare cached Phase46 Stwo proof-adapter receipt");
+
+                Phase44DComposedArtifactFixture {
+                    compact_envelope,
+                    boundary,
+                    handoff,
+                    bridge,
+                    receipt,
+                }
+            })
+            .clone()
     }
 
     fn load_tampered_phase44d_source_chain_public_output_boundary(
@@ -5997,14 +6052,7 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_public_output_boundary_json_round_trip_preserves_acceptance() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let tempdir = tempfile::Builder::new()
             .prefix("llm-provable-computer-phase44d-boundary-")
             .tempdir()
@@ -6013,22 +6061,22 @@ mod tests {
 
         std::fs::write(
             &path,
-            serde_json::to_vec(&boundary).expect("encode boundary"),
+            serde_json::to_vec(&fixture.boundary).expect("encode boundary"),
         )
         .expect("write boundary");
         let loaded: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary =
             serde_json::from_slice(&std::fs::read(&path).expect("read boundary"))
                 .expect("load boundary");
 
-        assert_eq!(loaded, boundary);
+        assert_eq!(&loaded, &fixture.boundary);
         verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
             &loaded,
-            &compact_envelope,
+            &fixture.compact_envelope,
         )
         .expect("loaded boundary acceptance should verify");
         verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
             &loaded,
-            &compact_envelope.claim,
+            &fixture.compact_envelope.claim,
         )
         .expect("loaded boundary binding should verify");
     }
@@ -6116,18 +6164,10 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let original_boundary =
-            emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-                &trace, &phase30,
-            )
-            .expect("emit Phase44D source-chain public output boundary");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let mut boundary = load_tampered_phase44d_source_chain_public_output_boundary(
             "phase44d-boundary-replay-flags",
-            &original_boundary,
+            &fixture.boundary,
             |boundary_json| {
                 boundary_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
                 boundary_json["verifier_embeds_expected_rows"] = serde_json::json!(true);
@@ -6142,7 +6182,7 @@ mod tests {
         let error =
             verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
                 &boundary,
-                &compact_envelope,
+                &fixture.compact_envelope,
             )
             .expect_err("serialized replay flag drift must reject source-chain boundary");
 
@@ -6249,27 +6289,19 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_recursive_handoff_json_round_trip_preserves_acceptance() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let loaded =
-            round_trip_serialized_artifact("phase44d-recursive-handoff-roundtrip", &handoff);
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let loaded = round_trip_serialized_artifact(
+            "phase44d-recursive-handoff-roundtrip",
+            &fixture.handoff,
+        );
 
-        assert_eq!(loaded, handoff);
+        assert_eq!(&loaded, &fixture.handoff);
         verify_phase44d_recursive_verifier_public_output_handoff(&loaded)
             .expect("verify standalone loaded Phase44D recursive-verifier handoff");
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary(
             &loaded,
-            &boundary,
-            &compact_envelope,
+            &fixture.boundary,
+            &fixture.compact_envelope,
         )
         .expect("verify loaded Phase44D recursive-verifier handoff against boundary");
     }
@@ -6436,34 +6468,20 @@ mod tests {
 
     #[test]
     fn phase45_public_input_bridge_json_round_trip_preserves_acceptance() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let loaded =
-            round_trip_serialized_artifact("phase45-public-input-bridge-roundtrip", &bridge);
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let loaded = round_trip_serialized_artifact(
+            "phase45-public-input-bridge-roundtrip",
+            &fixture.bridge,
+        );
 
-        assert_eq!(loaded, bridge);
+        assert_eq!(&loaded, &fixture.bridge);
         verify_phase45_recursive_verifier_public_input_bridge(&loaded)
             .expect("verify standalone loaded Phase45 public-input bridge");
         verify_phase45_recursive_verifier_public_input_bridge_against_sources(
             &loaded,
-            &boundary,
-            &compact_envelope,
-            &handoff,
+            &fixture.boundary,
+            &fixture.compact_envelope,
+            &fixture.handoff,
         )
         .expect("verify loaded Phase45 public-input bridge against sources");
     }
@@ -6502,26 +6520,10 @@ mod tests {
 
     #[test]
     fn phase45_public_input_bridge_loaded_json_rejects_reordered_lanes() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let mut loaded = load_tampered_serialized_artifact(
             "phase45-public-input-bridge-reordered-lanes",
-            &bridge,
+            &fixture.bridge,
             |bridge_json| {
                 let lanes = bridge_json["ordered_public_input_lanes"]
                     .as_array_mut()
@@ -6616,39 +6618,21 @@ mod tests {
 
     #[test]
     fn phase46_stwo_proof_adapter_receipt_json_round_trip_preserves_acceptance() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let loaded = round_trip_serialized_artifact(
             "phase46-stwo-proof-adapter-receipt-roundtrip",
-            &receipt,
+            &fixture.receipt,
         );
 
-        assert_eq!(loaded, receipt);
+        assert_eq!(&loaded, &fixture.receipt);
         verify_phase46_stwo_proof_adapter_receipt(&loaded)
             .expect("verify standalone loaded Phase46 Stwo proof-adapter receipt");
         verify_phase46_stwo_proof_adapter_receipt_against_sources(
             &loaded,
-            &bridge,
-            &boundary,
-            &compact_envelope,
-            &handoff,
+            &fixture.bridge,
+            &fixture.boundary,
+            &fixture.compact_envelope,
+            &fixture.handoff,
         )
         .expect("verify loaded Phase46 Stwo proof-adapter receipt against sources");
     }
@@ -6687,28 +6671,10 @@ mod tests {
 
     #[test]
     fn phase46_stwo_proof_adapter_receipt_loaded_json_rejects_interaction_claim_drift() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
-        let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-            &boundary,
-            &compact_envelope,
-            &handoff,
-        )
-        .expect("prepare Phase45 public-input bridge");
-        let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-            .expect("prepare Phase46 Stwo proof-adapter receipt");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let mut loaded = load_tampered_serialized_artifact(
             "phase46-stwo-proof-adapter-receipt-interaction-claim-drift",
-            &receipt,
+            &fixture.receipt,
             |receipt_json| {
                 let claimed_sum = receipt_json["terminal_boundary_component_claimed_sum_limbs"][0]
                     .as_u64()
@@ -10838,20 +10804,10 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_recursive_handoff_loaded_json_rejects_replay_flags() {
-        let (trace, phase30) = sample_trace_and_phase30();
-        let compact_envelope =
-            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                .expect("prove Phase44 compact projection");
-        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-            &trace, &phase30,
-        )
-        .expect("emit Phase44D source-chain public output boundary");
-        let handoff =
-            phase44d_prepare_recursive_verifier_public_output_handoff(&boundary, &compact_envelope)
-                .expect("prepare Phase44D recursive-verifier handoff");
+        let fixture = sample_phase44d_composed_artifact_fixture();
         let mut loaded = load_tampered_serialized_artifact(
             "phase44d-recursive-handoff-replay-flags",
-            &handoff,
+            &fixture.handoff,
             |handoff_json| {
                 handoff_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
                 handoff_json["verifier_embeds_expected_rows"] = serde_json::json!(true);
