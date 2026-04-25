@@ -23,14 +23,18 @@ The active split is now:
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - Gate 1: the honest default `4`-step Phase12 seed now proves and verifies on the experimental backend.
 - Gate 2: the honest default `8`-step Phase12 family clears on the same backend.
-- Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512`.
+- Gate 2b: the concrete `wrap_delta` range gap is closed at the AIR layer with bit-decomposed magnitude, sign, square, and ADD/SUB unit-range constraints.
+- Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 
-At `512` steps, the experimental shared path records:
+At `1024` steps, the experimental shared path records:
 
-- typed Phase44D boundary + compact proof: `236.107 ms`, `141,738` bytes
-- Phase30 replay baseline + compact proof: `77016.043 ms`, `793,166` bytes
+- typed Phase44D boundary + compact proof: `427.209 ms`, `156,614` bytes
+- Phase30 replay baseline + compact proof: `133430.237 ms`, `1,464,721` bytes
 
 This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
+The ratio is dominated by skipped Phase30 manifest JSON serialization, hashing,
+and replay work while the compact Phase43 proof envelope is still verified; do
+not quote it as a faster FRI or cryptographic-verifier result.
 
 ## Source-of-truth documents
 
@@ -41,8 +45,9 @@ Use these in order of authority for current state:
 3. this file
 4. `docs/engineering/codex-repo-handoff-2026-04-24.md`
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
-6. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-7. `docs/engineering/reproducibility.md`
+6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
+7. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+8. `docs/engineering/reproducibility.md`
 
 ## Merge culture
 
@@ -61,7 +66,7 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Raise the experimental Phase43/Phase44D ceiling beyond `512`.
+1. Raise the experimental Phase43/Phase44D ceiling beyond `1024`.
 2. Broaden review of the experimental backend before making any promotion decisions.
 3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
 

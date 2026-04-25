@@ -60,6 +60,9 @@ use crate::state::MachineState;
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with-lookup";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
+const CARRY_AWARE_WRAP_BASIS: i64 = 1i64 << 16;
+const CARRY_AWARE_WRAP_DELTA_ABS_BITS: usize = 15;
+const CARRY_AWARE_WRAP_DELTA_ABS_MAX: u16 = 1u16 << (CARRY_AWARE_WRAP_DELTA_ABS_BITS - 1);
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
 const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
 const GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX: usize = 15;
@@ -175,6 +178,10 @@ struct CarryAwareAuxiliaryState {
     raw_acc_active: i32,
     wrap_delta: i16,
     wrap_delta_inv: BaseField,
+    wrap_delta_square: BaseField,
+    wrap_delta_abs: u16,
+    wrap_delta_sign: bool,
+    wrap_delta_abs_bits: [bool; CARRY_AWARE_WRAP_DELTA_ABS_BITS],
     next_pc_active: u8,
     next_acc_active: i16,
     next_carry_active: bool,
@@ -253,7 +260,7 @@ struct CarryAwareTraceLayout {
 
 impl CarryAwareTraceLayout {
     const STATE_PREFIX_WIDTH: usize = 7;
-    const AUX_PREFIX_WIDTH: usize = 7;
+    const AUX_PREFIX_WIDTH: usize = 10 + CARRY_AWARE_WRAP_DELTA_ABS_BITS;
 
     fn new(memory_size: usize) -> Self {
         Self { memory_size }
@@ -291,16 +298,32 @@ impl CarryAwareTraceLayout {
         self.aux_prefix() + 3
     }
 
-    fn next_pc_active(&self) -> usize {
+    fn wrap_delta_square(&self) -> usize {
         self.aux_prefix() + 4
     }
 
-    fn next_acc_active(&self) -> usize {
+    fn wrap_delta_abs(&self) -> usize {
         self.aux_prefix() + 5
     }
 
-    fn next_carry_active(&self) -> usize {
+    fn wrap_delta_sign(&self) -> usize {
         self.aux_prefix() + 6
+    }
+
+    fn wrap_delta_abs_bit(&self, index: usize) -> usize {
+        self.aux_prefix() + 7 + index
+    }
+
+    fn next_pc_active(&self) -> usize {
+        self.aux_prefix() + 7 + CARRY_AWARE_WRAP_DELTA_ABS_BITS
+    }
+
+    fn next_acc_active(&self) -> usize {
+        self.aux_prefix() + 8 + CARRY_AWARE_WRAP_DELTA_ABS_BITS
+    }
+
+    fn next_carry_active(&self) -> usize {
+        self.aux_prefix() + 9 + CARRY_AWARE_WRAP_DELTA_ABS_BITS
     }
 
     fn next_memory_active(&self, index: usize) -> usize {
@@ -530,17 +553,18 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
     }
 
     fn max_constraint_log_degree_bound(&self) -> u32 {
-        // Keep the experimental subset within the same trace-degree envelope
-        // as the shipped carry-free path until the component is fully
-        // integrated with the prover's mask-point accounting.
+        // Keep the experimental subset within the same degree envelope as the
+        // shipped carry-free path. Range constraints use auxiliary columns
+        // rather than increasing the polynomial degree.
         self.log_size.saturating_add(1)
     }
 
     fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
         let layout = CarryAwareTraceLayout::new(self.memory_size);
         let one = E::F::from(BaseField::from(1u32));
+        let two = one.clone() + one.clone();
         let zero = E::F::zero();
-        let wrap_basis = E::F::from(base_i32(1 << 16));
+        let wrap_basis = E::F::from(base_i32(CARRY_AWARE_WRAP_BASIS as i32));
 
         let current_pc = eval.next_trace_mask();
         let current_acc = eval.next_trace_mask();
@@ -567,6 +591,12 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
         let raw_acc_active_aux = eval.next_trace_mask();
         let wrap_delta_aux = eval.next_trace_mask();
         let wrap_delta_inv_aux = eval.next_trace_mask();
+        let wrap_delta_square_aux = eval.next_trace_mask();
+        let wrap_delta_abs_aux = eval.next_trace_mask();
+        let wrap_delta_sign_aux = eval.next_trace_mask();
+        let wrap_delta_abs_bits_aux: Vec<_> = (0..CARRY_AWARE_WRAP_DELTA_ABS_BITS)
+            .map(|_| eval.next_trace_mask())
+            .collect();
         let next_pc_active_aux = eval.next_trace_mask();
         let next_acc_active_aux = eval.next_trace_mask();
         let next_carry_active_aux = eval.next_trace_mask();
@@ -597,11 +627,36 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
             next_carry.clone(),
             next_halted.clone(),
             next_carry_active_aux.clone(),
+            wrap_delta_sign_aux.clone(),
             is_first_row.clone(),
             is_last_row.clone(),
         ] {
             eval.add_constraint(bit.clone() * (bit - one.clone()));
         }
+
+        let mut wrap_delta_abs_reconstructed = zero.clone();
+        for (bit_index, bit_value) in wrap_delta_abs_bits_aux.iter().cloned().enumerate() {
+            eval.add_constraint(bit_value.clone() * (bit_value.clone() - one.clone()));
+            wrap_delta_abs_reconstructed =
+                wrap_delta_abs_reconstructed + bit_value * E::F::from(base_u32(1u32 << bit_index));
+        }
+        eval.add_constraint(wrap_delta_abs_aux.clone() - wrap_delta_abs_reconstructed);
+        let wrap_delta_high_bit =
+            wrap_delta_abs_bits_aux[CARRY_AWARE_WRAP_DELTA_ABS_BITS - 1].clone();
+        for bit_value in wrap_delta_abs_bits_aux
+            .iter()
+            .take(CARRY_AWARE_WRAP_DELTA_ABS_BITS - 1)
+        {
+            eval.add_constraint(wrap_delta_high_bit.clone() * bit_value.clone());
+        }
+        eval.add_constraint(
+            wrap_delta_aux.clone()
+                - wrap_delta_abs_aux.clone()
+                    * (one.clone() - two.clone() * wrap_delta_sign_aux.clone()),
+        );
+        eval.add_constraint(
+            wrap_delta_square_aux.clone() - wrap_delta_aux.clone() * wrap_delta_aux.clone(),
+        );
 
         for selector in opcode_flags
             .iter()
@@ -637,6 +692,9 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
             + add_memory_selector.clone()
             + sub_memory_selector.clone()
             + mul_memory_selector.clone();
+        let add_sub_selector = add_immediate_selector.clone()
+            + add_memory_selector.clone()
+            + sub_memory_selector.clone();
         let carry_clearing_selector = load_immediate_selector.clone() + load_selector.clone();
 
         let memory_operand_selector = load_selector.clone()
@@ -703,10 +761,19 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
                     - wrap_delta_aux.clone() * wrap_basis.clone()),
         );
         eval.add_constraint(
+            add_sub_selector * (wrap_delta_square_aux.clone() - next_carry_active_aux.clone()),
+        );
+        eval.add_constraint(
             (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_aux.clone(),
         );
         eval.add_constraint(
             (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_inv_aux.clone(),
+        );
+        eval.add_constraint(
+            (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_abs_aux.clone(),
+        );
+        eval.add_constraint(
+            (one.clone() - carry_sensitive_selector.clone()) * wrap_delta_sign_aux.clone(),
         );
         eval.add_constraint(
             carry_sensitive_selector.clone()
@@ -717,6 +784,16 @@ impl FrameworkEval for Phase12CarryAwareArithmeticSubsetEval {
             carry_sensitive_selector.clone()
                 * (one.clone() - next_carry_active_aux.clone())
                 * wrap_delta_inv_aux.clone(),
+        );
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (one.clone() - next_carry_active_aux.clone())
+                * wrap_delta_abs_aux.clone(),
+        );
+        eval.add_constraint(
+            carry_sensitive_selector.clone()
+                * (one.clone() - next_carry_active_aux.clone())
+                * wrap_delta_sign_aux.clone(),
         );
         eval.add_constraint(
             carry_sensitive_selector.clone()
@@ -3044,6 +3121,13 @@ fn carry_aware_base_trace(
         columns[layout.raw_acc_active()].set(row_index, base_i32(auxiliary.raw_acc_active));
         columns[layout.wrap_delta()].set(row_index, base_i16(auxiliary.wrap_delta));
         columns[layout.wrap_delta_inv()].set(row_index, auxiliary.wrap_delta_inv);
+        columns[layout.wrap_delta_square()].set(row_index, auxiliary.wrap_delta_square);
+        columns[layout.wrap_delta_abs()]
+            .set(row_index, base_u32(u32::from(auxiliary.wrap_delta_abs)));
+        columns[layout.wrap_delta_sign()].set(row_index, bool_base(auxiliary.wrap_delta_sign));
+        for (bit_index, bit_value) in auxiliary.wrap_delta_abs_bits.into_iter().enumerate() {
+            columns[layout.wrap_delta_abs_bit(bit_index)].set(row_index, bool_base(bit_value));
+        }
         columns[layout.next_pc_active()]
             .set(row_index, base_u32(u32::from(auxiliary.next_pc_active)));
         columns[layout.next_acc_active()].set(row_index, base_i16(auxiliary.next_acc_active));
@@ -3340,6 +3424,9 @@ fn carry_aware_auxiliary_values(
         _ => 0,
     };
     let wrap_delta_inv = wrap_delta_inverse_base(wrap_delta);
+    let wrap_delta_square = base_i16(wrap_delta) * base_i16(wrap_delta);
+    let (wrap_delta_abs, wrap_delta_sign, wrap_delta_abs_bits) =
+        carry_aware_wrap_delta_range_witness(wrap_delta)?;
     let next_acc_active = match instruction {
         Instruction::LoadImmediate(value) => value,
         Instruction::Load(_) => loaded_memory,
@@ -3399,6 +3486,10 @@ fn carry_aware_auxiliary_values(
         raw_acc_active,
         wrap_delta,
         wrap_delta_inv,
+        wrap_delta_square,
+        wrap_delta_abs,
+        wrap_delta_sign,
+        wrap_delta_abs_bits,
         next_pc_active,
         next_acc_active,
         next_carry_active,
@@ -3498,13 +3589,13 @@ fn prototype_raw_acc(
 #[cfg_attr(not(test), allow(dead_code))]
 fn prototype_wrap_delta(raw_acc: i64, wrapped_acc: i16) -> Result<i32> {
     let delta = raw_acc - i64::from(wrapped_acc);
-    if delta % (1i64 << 16) != 0 {
+    if delta % CARRY_AWARE_WRAP_BASIS != 0 {
         return Err(VmError::UnsupportedProof(format!(
             "carry-aware arithmetic-subset prototype wrap delta {} is not divisible by 2^16",
             delta
         )));
     }
-    i32::try_from(delta / (1i64 << 16)).map_err(|_| {
+    i32::try_from(delta / CARRY_AWARE_WRAP_BASIS).map_err(|_| {
         VmError::UnsupportedProof(format!(
             "carry-aware arithmetic-subset prototype wrap delta {} exceeds i32 range",
             delta
@@ -3514,18 +3605,45 @@ fn prototype_wrap_delta(raw_acc: i64, wrapped_acc: i16) -> Result<i32> {
 
 fn carry_aware_wrap_delta(raw_acc: i32, wrapped_acc: i16) -> Result<i16> {
     let delta = i64::from(raw_acc) - i64::from(wrapped_acc);
-    if delta % (1i64 << 16) != 0 {
+    if delta % CARRY_AWARE_WRAP_BASIS != 0 {
         return Err(VmError::UnsupportedProof(format!(
             "carry-aware arithmetic subset wrap delta {} is not divisible by 2^16",
             delta
         )));
     }
-    i16::try_from(delta / (1i64 << 16)).map_err(|_| {
+    let quotient = delta / CARRY_AWARE_WRAP_BASIS;
+    let max_abs = i64::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX);
+    if quotient.abs() > max_abs {
+        return Err(VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic subset wrap delta quotient {} exceeds AIR range [-{}, {}]",
+            quotient, max_abs, max_abs
+        )));
+    }
+    i16::try_from(quotient).map_err(|_| {
         VmError::UnsupportedProof(format!(
             "carry-aware arithmetic subset wrap delta {} exceeds i16 range",
             delta
         ))
     })
+}
+
+fn carry_aware_wrap_delta_range_witness(
+    delta: i16,
+) -> Result<(u16, bool, [bool; CARRY_AWARE_WRAP_DELTA_ABS_BITS])> {
+    let abs = i32::from(delta).abs();
+    let max_abs = i32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX);
+    if abs > max_abs {
+        return Err(VmError::UnsupportedProof(format!(
+            "carry-aware arithmetic subset wrap delta {} exceeds AIR range [-{}, {}]",
+            delta, max_abs, max_abs
+        )));
+    }
+    let abs = abs as u16;
+    let mut bits = [false; CARRY_AWARE_WRAP_DELTA_ABS_BITS];
+    for (bit_index, bit) in bits.iter_mut().enumerate() {
+        *bit = ((abs >> bit_index) & 1) == 1;
+    }
+    Ok((abs, delta < 0, bits))
 }
 
 fn wrap_delta_inverse_base(delta: i16) -> BaseField {
@@ -3603,12 +3721,16 @@ fn bool_field<E: EvalAtRow>(value: bool) -> E::F {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::proof::{
+        prove_execution_stark_phase12_carry_aware_experimental_with_options,
+        verify_execution_stark_phase12_carry_aware_experimental_with_reexecution,
+    };
     use crate::stwo_backend::decoding::{
         decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
         phase12_demo_initial_memories, phase12_demo_initial_memories_for_steps,
     };
     use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
-    use crate::{ProgramCompiler, TransformerVmConfig};
+    use crate::{ProgramCompiler, TransformerVm, TransformerVmConfig};
     use std::panic::{catch_unwind, AssertUnwindSafe};
     use std::sync::OnceLock;
     use stwo::core::pcs::utils::TreeVec;
@@ -3970,6 +4092,202 @@ mod tests {
         );
     }
 
+    fn bit_reversed_row_index(index: usize, log_size: u32) -> usize {
+        index.reverse_bits() >> (usize::BITS - log_size)
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_out_of_range_wrap_delta_witness() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+        let overflow_index = runtime
+            .trace()
+            .windows(2)
+            .position(|window| {
+                let current = &window[0];
+                let next = &window[1];
+                matches!(
+                    program.instruction_at(current.pc).expect("instruction"),
+                    Instruction::AddImmediate(_)
+                        | Instruction::AddMemory(_)
+                        | Instruction::SubMemory(_)
+                        | Instruction::MulMemory(_)
+                ) && next.carry_flag
+            })
+            .expect("overflow transition");
+
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            runtime.trace(),
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(result.final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let mut base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+
+        let row = bit_reversed_row_index(overflow_index, trace.log_size);
+        let carry_layout = CarryAwareTraceLayout::new(program.memory_size());
+        let tampered_delta = base_u32(u32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX) + 1);
+        let raw_acc = base[carry_layout.raw_acc_active()][row];
+        let tampered_next_acc = raw_acc - tampered_delta * base_i32(CARRY_AWARE_WRAP_BASIS as i32);
+
+        base[carry_layout.wrap_delta()][row] = tampered_delta;
+        base[carry_layout.wrap_delta_inv()][row] = tampered_delta.inverse();
+        base[carry_layout.wrap_delta_square()][row] = tampered_delta * tampered_delta;
+        base[carry_layout.wrap_delta_abs()][row] =
+            base_u32(u32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX) + 1);
+        base[carry_layout.wrap_delta_sign()][row] = bool_base(false);
+        for bit_index in 0..CARRY_AWARE_WRAP_DELTA_ABS_BITS {
+            let bit_value = ((u32::from(CARRY_AWARE_WRAP_DELTA_ABS_MAX) + 1) >> bit_index) & 1 == 1;
+            base[carry_layout.wrap_delta_abs_bit(bit_index)][row] = bool_base(bit_value);
+        }
+        base[carry_layout.next_acc_active()][row] = tampered_next_acc;
+        base[carry_layout.next_prefix() + 1][row] = tampered_next_acc;
+        base[carry_layout.next_prefix() + 3][row] = bool_base(false);
+        base[carry_layout.next_prefix() + 6][row] = tampered_next_acc.inverse();
+
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            assert_constraints_on_trace(
+                &tree,
+                trace.log_size,
+                |eval| {
+                    let _ = eval_state.evaluate(eval);
+                },
+                SecureField::zero(),
+            );
+        }));
+        assert!(
+            result.is_err(),
+            "out-of-range wrap_delta witness must violate carry-aware AIR constraints"
+        );
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_add_sub_wrap_delta_outside_unit_range() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+        let add_sub_index = runtime
+            .trace()
+            .windows(2)
+            .position(|window| {
+                matches!(
+                    program.instruction_at(window[0].pc).expect("instruction"),
+                    Instruction::AddImmediate(_)
+                        | Instruction::AddMemory(_)
+                        | Instruction::SubMemory(_)
+                )
+            })
+            .expect("add/sub transition");
+
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            runtime.trace(),
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(result.final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let mut base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+
+        let row = bit_reversed_row_index(add_sub_index, trace.log_size);
+        let carry_layout = CarryAwareTraceLayout::new(program.memory_size());
+        let tampered_delta = base_u32(2);
+        let raw_acc = base[carry_layout.raw_acc_active()][row];
+        let tampered_next_acc = raw_acc - tampered_delta * base_i32(CARRY_AWARE_WRAP_BASIS as i32);
+
+        base[carry_layout.wrap_delta()][row] = tampered_delta;
+        base[carry_layout.wrap_delta_inv()][row] = tampered_delta.inverse();
+        base[carry_layout.wrap_delta_square()][row] = tampered_delta * tampered_delta;
+        base[carry_layout.wrap_delta_abs()][row] = base_u32(2);
+        base[carry_layout.wrap_delta_sign()][row] = bool_base(false);
+        for bit_index in 0..CARRY_AWARE_WRAP_DELTA_ABS_BITS {
+            base[carry_layout.wrap_delta_abs_bit(bit_index)][row] =
+                bool_base(((2u32 >> bit_index) & 1) == 1);
+        }
+        base[carry_layout.next_acc_active()][row] = tampered_next_acc;
+        base[carry_layout.next_carry_active()][row] = bool_base(true);
+        base[carry_layout.next_prefix() + 1][row] = tampered_next_acc;
+        base[carry_layout.next_prefix() + 3][row] = bool_base(false);
+        base[carry_layout.next_prefix() + 4][row] = bool_base(true);
+        base[carry_layout.next_prefix() + 6][row] = tampered_next_acc.inverse();
+
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            assert_constraints_on_trace(
+                &tree,
+                trace.log_size,
+                |eval| {
+                    let _ = eval_state.evaluate(eval);
+                },
+                SecureField::zero(),
+            );
+        }));
+        assert!(
+            result.is_err(),
+            "ADD/SUB wrap_delta outside {{-1, 0, 1}} must violate carry-aware AIR constraints"
+        );
+    }
+
     fn assert_phase12_carry_aware_trace_polys_satisfy_constraints_for_four_step_overflow_seed() {
         let layout = phase12_default_decoding_layout();
         let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
@@ -4022,6 +4340,36 @@ mod tests {
             },
             SecureField::zero(),
         );
+    }
+
+    fn phase12_four_step_overflow_model() -> TransformerVm {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: 1,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile carry-aware model")
+    }
+
+    fn prove_phase12_four_step_carry_aware_experimental() -> VanillaStarkExecutionProof {
+        prove_execution_stark_phase12_carry_aware_experimental_with_options(
+            &phase12_four_step_overflow_model(),
+            256,
+            production_v1_stark_options(),
+        )
+        .expect("experimental carry-aware proof")
     }
 
     fn panic_payload_to_string(payload: Box<dyn std::any::Any + Send>) -> String {
@@ -4262,5 +4610,86 @@ mod tests {
     #[test]
     fn carry_aware_phase12_four_step_trace_polys_satisfy_constraints() {
         assert_phase12_carry_aware_trace_polys_satisfy_constraints_for_four_step_overflow_seed();
+    }
+
+    #[test]
+    fn carry_aware_phase12_verifier_rejects_tampered_payload_bytes() {
+        let mut proof = prove_phase12_four_step_carry_aware_experimental();
+        let index = proof.proof.len() / 2;
+        proof.proof[index] ^= 0x01;
+
+        match verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&proof) {
+            Ok(false) => {}
+            Ok(true) => panic!("tampered carry-aware payload must not verify"),
+            Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn carry_aware_phase12_verifier_rejects_tampered_preprocessed_rows() {
+        let mut proof = prove_phase12_four_step_carry_aware_experimental();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload.canonical_preprocessed_rows.swap(0, 1);
+        proof.proof = serde_json::to_vec(&payload).expect("encode tampered payload");
+
+        let err = verify_phase12_carry_aware_arithmetic_subset_experimental(&proof)
+            .expect_err("tampered canonical preprocessing must fail");
+        assert!(err.to_string().contains("non-canonical preprocessed rows"));
+    }
+
+    #[test]
+    fn carry_aware_phase12_verifier_rejects_tampered_shared_lookup_scope() {
+        let mut proof = prove_phase12_four_step_carry_aware_experimental();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload
+            .embedded_shared_activation_lookup
+            .as_mut()
+            .expect("embedded shared activation")
+            .semantic_scope = "tampered-shared-activation-scope".to_string();
+        proof.proof = serde_json::to_vec(&payload).expect("encode tampered payload");
+
+        let err = verify_phase12_carry_aware_arithmetic_subset_experimental(&proof)
+            .expect_err("tampered embedded shared activation scope must fail");
+        assert!(err.to_string().contains("tampered-shared-activation-scope"));
+    }
+
+    #[test]
+    fn carry_aware_trace_builder_rejects_false_carry_on_overflow_transition() {
+        let model = phase12_four_step_overflow_model();
+        let program = model.program().clone();
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        runtime.run().expect("run");
+        let mut states = runtime.trace().to_vec();
+        let overflow_index = states
+            .windows(2)
+            .position(|window| {
+                let current = &window[0];
+                let next = &window[1];
+                matches!(
+                    program.instruction_at(current.pc).expect("instruction"),
+                    Instruction::AddImmediate(_)
+                        | Instruction::AddMemory(_)
+                        | Instruction::SubMemory(_)
+                        | Instruction::MulMemory(_)
+                ) && next.carry_flag
+            })
+            .expect("overflow transition");
+        states[overflow_index + 1].carry_flag = false;
+
+        let err = match build_trace_bundle_with_mode(
+            &program,
+            &states,
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        ) {
+            Ok(_) => panic!("false carry on overflow transition must fail"),
+            Err(err) => err,
+        };
+        assert!(err.to_string().contains("expected next carry true"));
     }
 }

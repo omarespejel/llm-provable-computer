@@ -271,9 +271,11 @@ def main() -> None:
     )
     ratio = baseline_frontier / shared_frontier
     verify_ax.annotate(
-        f"{ratio:.1f}x lower verify latency at {frontier_step} steps",
+        f"{ratio:.1f}x lower measured latency at {frontier_step} steps\n"
+        "Phase30 manifest JSON/hash replay avoided\n"
+        "not a faster FRI verifier",
         (frontier_step, shared_frontier),
-        xytext=(-10, 14),
+        xytext=(-10, 18),
         textcoords="offset points",
         ha="right",
         va="bottom",

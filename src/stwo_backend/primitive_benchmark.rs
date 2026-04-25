@@ -140,9 +140,9 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
 const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
-const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 9] =
-    [2, 4, 8, 16, 32, 64, 128, 256, 512];
-const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
+    [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 1024;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
 const PHASE44D_RESCALED_EXPLORATORY_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
@@ -3317,7 +3317,7 @@ fn measure_phase44d_source_emission_shared(
         emit_ms: input.boundary_emit_ms,
         verify_ms,
         verified,
-        note: "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface; emit_ms reports boundary construction cost separately".to_string(),
+        note: "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately".to_string(),
     })
 }
 
@@ -3349,12 +3349,12 @@ fn measure_phase44d_source_emission_manifest_plus_compact_baseline(
         primitive: "phase44d_source_chain_public_output_boundary".to_string(),
         backend_variant: "phase30_manifest_plus_compact_projection_baseline".to_string(),
         steps: input.total_steps,
-        relation: "ordered Phase30 manifest plus one compact Phase43 projection proof".to_string(),
+        relation: "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof".to_string(),
         serialized_bytes,
         emit_ms: 0.0,
         verify_ms,
         verified,
-        note: "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain as a lower-layer baseline".to_string(),
+        note: "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids".to_string(),
     })
 }
 
@@ -3398,12 +3398,12 @@ fn measure_phase44d_source_emission_manifest_replay_only(
         primitive: "phase30_source_bound_manifest_replay".to_string(),
         backend_variant: "phase30_manifest_replay_only".to_string(),
         steps: input.total_steps,
-        relation: "ordered Phase30 manifest replay against the proof-checked Phase12 chain".to_string(),
+        relation: "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain".to_string(),
         serialized_bytes,
         emit_ms: 0.0,
         verify_ms,
         verified: true,
-        note: "causal decomposition row: isolates the ordered Phase30 manifest replay that the lower-layer baseline pays after compact proof verification".to_string(),
+        note: "causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification".to_string(),
     })
 }
 
@@ -5554,9 +5554,9 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_benchmark_rejects_oversized_step_counts() {
-        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 1024], false)
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 2048], false)
             .expect_err("oversized step counts must fail");
-        assert!(error.to_string().contains("supports at most 512 steps"));
+        assert!(error.to_string().contains("supports at most 1024 steps"));
     }
 
     #[test]
@@ -5700,6 +5700,19 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_experimental_benchmark_clears_honest_one_zero_two_four_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[1024], false)
+                .expect("experimental phase44d source emission benchmark should clear 1024 steps");
+        assert_eq!(report.rows.len(), 5);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 1024
+        }));
+    }
+
+    #[test]
     #[ignore = "expensive experimental phase44d full sweep"]
     fn phase44d_source_emission_experimental_benchmark_preserves_expected_row_shape() {
         let report = run_stwo_phase44d_source_emission_experimental_benchmark_with_options(false)
@@ -5713,7 +5726,7 @@ mod tests {
         assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
         assert!(report.rows.iter().any(|row| {
             row.backend_variant == "typed_source_boundary_plus_compact_projection"
-                && row.steps == 512
+                && row.steps == 1024
         }));
     }
 
