@@ -40,27 +40,29 @@ published numbers make three boundaries explicit:
   comparator row, but it is repo-reported and not a matched benchmark.
 - the current repository now exposes **three** literature-facing local calibration rows,
   each for a different regime:
-  - the checked Phase12-style shared lookup bundle at three paired rows:
+  - the checked `Phase12`-style shared lookup bundle as the local proving-surface row at
+    three paired rows:
     `4,968` raw proof bytes, `14.939 ms` prove, and `6.745 ms` verify from
     `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`;
-  - the checked Phase44D typed source-emission boundary at the current two-step
-    power-of-two point: `61,238` serialized bytes, `1.034 ms` boundary emission,
+  - the checked `Phase44D` typed source-emission boundary as the local latency row at
+    the current two-step power-of-two point: `61,238` serialized bytes, `1.034 ms` boundary emission,
     and `0.957 ms` verify from
     `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`; the same
     evidence file also records the causal split showing `0.456 ms` for the compact
     Phase43 proof alone, `15.856 ms` for ordered Phase30 manifest replay alone,
     and `0.399 ms` for typed-boundary binding after prior compact-proof verification;
-  - the checked Phase71 handoff receipt at three steps: `1,533` serialized bytes and
-    `34.613 ms` verify from
+  - the checked `Phase71` handoff receipt as the local compact-object row at three
+    steps: `1,533` serialized bytes and `34.613 ms` verify from
     `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`.
   These are still not full transformer benchmarks, but they now cover a proving-surface
-  row, a latency-oriented typed boundary row, and a size-oriented receipt row rather than
-  a single local artifact line.
+  row, a latency-oriented typed boundary row, and a compactness-oriented receipt row
+  rather than a single local artifact line.
 
 ## One narrow external comparator that is actually useful
 
 If the paper needs exactly one narrower external comparator rather than another
-full-model row, the best current choice is the compact verifier-object regime:
+full-model row, the only honest pairing in the current snapshot is the compact
+verifier-object regime, and it should be used only as compact-object calibration:
 
 - external row: `NANOZK` abstract layer proof at `d <= 128` -> `5.5 KB`, `24 ms`
   verification;
@@ -74,10 +76,10 @@ That comparison is interesting because it splits cleanly:
   compact proof object, but
 - it is **slower to verify** on the current path.
 
-This is still not a matched benchmark. The workloads and proof objects differ.
-But it is the most honest narrow comparator now available in public sources,
-and it reinforces the paper's actual position: different verifier-facing layers
-improve different costs.
+This is explicitly not a matched benchmark. The workloads and proof objects differ.
+But it is still the most honest narrow comparator now available in public sources, and
+it reinforces the paper's actual position: different verifier-facing layers improve
+different costs.
 
 ## Immediate consequence for paper positioning
 
@@ -88,8 +90,8 @@ The current defensible claim is:
 
 - lookup-friendly proof systems align with transformer non-arithmetic pressure,
 - the repository now provides one-shot and reuse-sensitive `stwo` calibration rows
-  across three different local surfaces: proving bundle, typed source boundary, and
-  handoff receipt, and
+  across three different local surfaces: `Phase12` proving, `Phase44D` typed-boundary
+  latency, and `Phase71` handoff-receipt compactness, and
 - external calibration should be read by workload regime, not as a matched wall-clock
   race.
 

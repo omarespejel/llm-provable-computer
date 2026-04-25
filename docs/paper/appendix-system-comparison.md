@@ -29,7 +29,7 @@ artifacts, and implementation scope.
 | Public onchain evidence   | Public materials emphasize production deployment more than named Starknet proof-demo identifiers | Public verifier docs name `D8`, `D9`, `D10`, and `D11` as accepted on Starknet Sepolia, and later describe single-transaction recursive verification plus a six-step streaming path | No public onchain proof-verification artifact set                                                                                                                              |
 | Recursion posture         | Present in system architecture, but details vary by release                                      | Publicly aligned with S-two / STWO recursion path                                                                                                                                   | Recursive cryptographic compression not implemented; repo stops at frozen narrow S-two execution proofs, proof-carrying decoding demos, and a pre-recursive aggregation ladder |
 | Paper relevance           | Main counterexample to categorical anti-SNARK claims                                             | Closest STARK-native comparator to the paper thesis                                                                                                                                 | Concrete local calibration and carried-state artifact surface that the paper can describe precisely                                                                             |
-| Main caveat               | Strong public claims, but not directly comparable to STARK systems on identical workloads        | Public materials mix benchmark claims, verification demos, and roadmap claims; verifier docs still show uneven component maturity (`Attention` remains `Prover only`)               | Narrow scope: local S-two wins now split by regime (proving bundle, typed boundary latency, and handoff-receipt size), not a matched full-model benchmark or universal win |
+| Main caveat               | Strong public claims, but not directly comparable to STARK systems on identical workloads        | Public materials mix benchmark claims, verification demos, and roadmap claims; verifier docs still show uneven component maturity (`Attention` remains `Prover only`)               | Narrow scope: local S-two wins now split by regime (`Phase12` proving, `Phase44D` typed-boundary latency, and `Phase71` handoff-receipt compactness), not a matched full-model benchmark or universal win |
 
 ## How to use this appendix
 
@@ -43,6 +43,6 @@ stronger qualifications in the main text:
   proof-architecture artifact with reproducible evidence and an explicit pre-recursive
   aggregation boundary.
 - If you need one narrow verifier-object comparison rather than another full-model row,
-  use the pinned snapshot's `NANOZK` abstract `d <= 128` layer-proof row against this
-  repo's `Phase71` handoff-receipt row as a compact-object calibration only, not a
-  matched benchmark.
+  the only honest cross-system pairing in the pinned snapshot is `NANOZK`'s abstract
+  `d <= 128` layer-proof row against this repo's `Phase71` handoff-receipt row. Use it
+  as compact-object calibration only. It is explicitly not a matched benchmark.
