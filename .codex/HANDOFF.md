@@ -30,6 +30,9 @@ The active split is now:
 - Gate 2d: the follow-up serialized-proof review adds disk-backed round-trip and
   tamper tests for experimental proof JSON payload bytes and outer claim
   commitments.
+- Gate 2e: the honest `8`-step family now has explicit coverage for signed and
+  non-unit `MulMemory` wrap deltas plus the sticky-carry `Store` rows that
+  follow them.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 
 At `1024` steps, the experimental shared path records:
@@ -74,7 +77,8 @@ Use these in order of authority for current state:
 ## Next sensible moves
 
 1. Broaden review of the experimental backend beyond the current decoding-step
-   family and proof-file tamper coverage.
+   family, now that proof-file tamper coverage and the honest `8`-step
+   multiply/store carry patterns are both checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
