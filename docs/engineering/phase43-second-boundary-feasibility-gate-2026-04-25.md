@@ -84,29 +84,29 @@ the current blocker is still missing proof-native source emission.
 
 At `2` steps on the publication lane:
 
-| Candidate verify | Current baseline verify | Ratio |
+| Candidate total verifier-side work | Current baseline total verifier-side work | Ratio |
 |---:|---:|---:|
-| 11.931 ms | 28.647 ms | 2.40x |
+| 9.091 ms | 16.151 ms | 1.78x |
 
 ### Experimental carry-aware results through 128 steps
 
 Single-run engineering timings on the experimental carry-aware Phase12 backend:
 
-| Steps | Candidate verify | Current baseline verify | Ratio |
+| Steps | Candidate total verifier-side work | Current baseline total verifier-side work | Ratio |
 |---|---:|---:|---:|
-| 2 | 8.884 ms | 16.055 ms | 1.81x |
-| 4 | 10.560 ms | 19.312 ms | 1.83x |
-| 8 | 11.125 ms | 26.531 ms | 2.38x |
-| 16 | 16.281 ms | 40.423 ms | 2.48x |
-| 32 | 18.391 ms | 62.614 ms | 3.40x |
-| 64 | 25.692 ms | 110.134 ms | 4.29x |
-| 128 | 55.495 ms | 389.573 ms | 7.02x |
+| 2 | 11.672 ms | 52.759 ms | 4.52x |
+| 4 | 9.858 ms | 19.512 ms | 1.98x |
+| 8 | 12.269 ms | 28.364 ms | 2.31x |
+| 16 | 14.699 ms | 40.390 ms | 2.75x |
+| 32 | 16.667 ms | 59.515 ms | 3.57x |
+| 64 | 24.966 ms | 110.273 ms | 4.42x |
+| 128 | 52.356 ms | 258.562 ms | 4.94x |
 
 Causal decomposition at 128 steps:
 
-- compact proof only: `25.496 ms`
-- source-root derivation only: `229.715 ms`
-- source-root binding only: `30.356 ms`
+- compact proof only: `22.077 ms`
+- source-root derivation only: `214.749 ms`
+- source-root binding only: `24.117 ms`
 
 So the gap is not a copy of Phase44D's huge manifest-replay elimination result, but it is also not flat noise.
 The avoided work grows with step count because the current baseline keeps paying local source-root derivation from the full trace and Phase30 surface.

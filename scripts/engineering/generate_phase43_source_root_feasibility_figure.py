@@ -100,23 +100,27 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
     seen = set()
     step_counts = set()
-    timing_mode = rows[0].get("timing_mode", "").strip()
-    timing_policy = rows[0].get("timing_policy", "").strip()
-    timing_unit = rows[0].get("timing_unit", "").strip()
-    timing_runs = rows[0].get("timing_runs", "").strip()
-    if timing_mode != "measured_single_run":
-        raise SystemExit(
-            f"expected measured_single_run timing_mode in {source}, got {timing_mode!r}"
-        )
-    if timing_policy != "single_run_from_microsecond_capture":
-        raise SystemExit(
-            f"expected single_run_from_microsecond_capture timing_policy in {source}, got {timing_policy!r}"
-        )
-    if timing_unit != "milliseconds" or timing_runs != "1":
-        raise SystemExit(
-            f"unexpected timing metadata in {source}: unit={timing_unit!r} runs={timing_runs!r}"
-        )
+    expected_timing_mode = "measured_single_run"
+    expected_timing_policy = "single_run_from_microsecond_capture"
+    expected_timing_unit = "milliseconds"
+    expected_timing_runs = "1"
     for row in rows:
+        timing_mode = row.get("timing_mode", "").strip()
+        timing_policy = row.get("timing_policy", "").strip()
+        timing_unit = row.get("timing_unit", "").strip()
+        timing_runs = row.get("timing_runs", "").strip()
+        if timing_mode != expected_timing_mode:
+            raise SystemExit(
+                f"expected {expected_timing_mode} timing_mode in {source}, got {timing_mode!r}"
+            )
+        if timing_policy != expected_timing_policy:
+            raise SystemExit(
+                f"expected {expected_timing_policy} timing_policy in {source}, got {timing_policy!r}"
+            )
+        if timing_unit != expected_timing_unit or timing_runs != expected_timing_runs:
+            raise SystemExit(
+                f"unexpected timing metadata in {source}: unit={timing_unit!r} runs={timing_runs!r}"
+            )
         if row["benchmark_version"] != EXPECTED_BENCHMARK_VERSION:
             raise SystemExit(
                 f"unexpected benchmark_version in {source}: {row['benchmark_version']}"
@@ -158,6 +162,17 @@ def rows_by_variant(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]
     return grouped
 
 
+def require_frontier_row(
+    rows: list[dict[str, str]], *, frontier_step: int, variant: str
+) -> dict[str, str]:
+    for row in rows:
+        if int(row["steps"]) == frontier_step:
+            return row
+    raise SystemExit(
+        f"missing frontier row for variant={variant!r} at steps={frontier_step}"
+    )
+
+
 def main() -> None:
     args = parse_args()
     rows = read_rows(args.input_tsv)
@@ -170,7 +185,9 @@ def main() -> None:
     for variant in VARIANT_ORDER:
         variant_rows = grouped[variant]
         x = [int(row["steps"]) for row in variant_rows]
-        verify_y = [float(row["verify_ms"]) for row in variant_rows]
+        verify_y = [
+            float(row["derive_ms"]) + float(row["verify_ms"]) for row in variant_rows
+        ]
         bytes_y = [int(row["serialized_bytes"]) for row in variant_rows]
         verify_ax.plot(
             x,
@@ -192,30 +209,32 @@ def main() -> None:
     verify_ax.set_xticks(steps)
     verify_ax.get_xaxis().set_major_formatter(ScalarFormatter())
     verify_ax.set_xlabel("Experimental carry-aware Phase12 steps")
-    verify_ax.set_ylabel("Verification latency (ms)")
+    verify_ax.set_ylabel("Total verifier-side work (ms)")
     verify_ax.set_title("Phase43 source-root feasibility scaling")
     verify_ax.grid(axis="y", color="#BBBBBB", linewidth=0.6, alpha=0.35)
     verify_ax.spines["top"].set_visible(False)
     verify_ax.spines["right"].set_visible(False)
 
     frontier_step = max(steps)
-    candidate_frontier = float(
-        next(
-            row["verify_ms"]
-            for row in grouped["emitted_source_root_claim_plus_compact_projection"]
-            if int(row["steps"]) == frontier_step
-        )
+    candidate_frontier_row = require_frontier_row(
+        grouped["emitted_source_root_claim_plus_compact_projection"],
+        frontier_step=frontier_step,
+        variant="emitted_source_root_claim_plus_compact_projection",
     )
-    baseline_frontier = float(
-        next(
-            row["verify_ms"]
-            for row in grouped["full_trace_plus_phase30_derivation_baseline"]
-            if int(row["steps"]) == frontier_step
-        )
+    baseline_frontier_row = require_frontier_row(
+        grouped["full_trace_plus_phase30_derivation_baseline"],
+        frontier_step=frontier_step,
+        variant="full_trace_plus_phase30_derivation_baseline",
+    )
+    candidate_frontier = float(candidate_frontier_row["derive_ms"]) + float(
+        candidate_frontier_row["verify_ms"]
+    )
+    baseline_frontier = float(baseline_frontier_row["derive_ms"]) + float(
+        baseline_frontier_row["verify_ms"]
     )
     ratio = baseline_frontier / candidate_frontier
     verify_ax.annotate(
-        f"{ratio:.1f}x lower measured verifier work at {frontier_step} steps\n"
+        f"{ratio:.1f}x lower measured total verifier work at {frontier_step} steps\n"
         "only if the source side emits proof-native source-root artifacts",
         (frontier_step, candidate_frontier),
         xytext=(-12, 18),

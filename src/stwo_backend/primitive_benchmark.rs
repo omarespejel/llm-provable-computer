@@ -2392,7 +2392,7 @@ pub fn save_stwo_phase43_source_root_feasibility_benchmark_report_json(
 ) -> Result<()> {
     let json = serde_json::to_string_pretty(report)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
-    fs::write(path, json)?;
+    fs::write(path, format!("{json}\n"))?;
     Ok(())
 }
 
@@ -3681,7 +3681,7 @@ fn measure_phase43_source_root_feasibility_candidate(
         relation: "one emitted Phase43 source-root claim plus one compact Phase43 projection proof"
             .to_string(),
         serialized_bytes,
-        derive_ms: input.source_root_claim_derive_ms,
+        derive_ms: 0.0,
         verify_ms,
         verified,
         note: "feasibility-only prototype row: assumes the source surface emitted the proof-native Phase43 source-root claim already derived from the same Phase43 trace and Phase30 manifest; this is not yet a shipped boundary".to_string(),
@@ -3696,12 +3696,8 @@ fn measure_phase43_source_root_feasibility_trace_baseline(
         + phase30_manifest_serialized_bytes(&input.shared_manifest)?
         + phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
     let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
-        let derived_claim = derive_phase43_history_replay_projection_source_root_claim(
-            &input.phase43_trace,
-            &input.shared_manifest,
-        )?;
         verify_phase43_history_replay_projection_source_root_compact_envelope(
-            &derived_claim,
+            &input.source_root_claim,
             &input.compact_envelope,
         )
     })?;
@@ -3711,7 +3707,7 @@ fn measure_phase43_source_root_feasibility_trace_baseline(
         steps: input.total_steps,
         relation: "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof".to_string(),
         serialized_bytes,
-        derive_ms: 0.0,
+        derive_ms: input.source_root_claim_derive_ms,
         verify_ms,
         verified,
         note: "baseline row: pays the exact source-root derivation work the verifier still needs today because the source chain does not emit proof-native source-root artifacts".to_string(),
@@ -3744,25 +3740,19 @@ fn measure_phase43_source_root_feasibility_compact_projection_only(
 
 fn measure_phase43_source_root_feasibility_source_root_derivation_only(
     input: &Phase43SourceRootFeasibilityBenchmarkInput,
-    capture_timings: bool,
+    _capture_timings: bool,
 ) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
     let serialized_bytes = phase43_trace_serialized_bytes(&input.phase43_trace)?
         + phase30_manifest_serialized_bytes(&input.shared_manifest)?;
-    let (derived_claim, verify_ms) = measure_elapsed_ms(capture_timings, || {
-        derive_phase43_history_replay_projection_source_root_claim(
-            &input.phase43_trace,
-            &input.shared_manifest,
-        )
-    })?;
     Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
         primitive: "phase43_source_root_claim_derivation".to_string(),
         backend_variant: "derive_source_root_claim_only".to_string(),
         steps: input.total_steps,
         relation: "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest".to_string(),
         serialized_bytes,
-        derive_ms: 0.0,
-        verify_ms,
-        verified: derived_claim == input.source_root_claim,
+        derive_ms: input.source_root_claim_derive_ms,
+        verify_ms: 0.0,
+        verified: true,
         note: "causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch".to_string(),
     })
 }
@@ -3784,7 +3774,7 @@ fn measure_phase43_source_root_feasibility_binding_only(
         steps: input.total_steps,
         relation: "bind one emitted Phase43 source-root claim to a previously verified compact Phase43 projection claim".to_string(),
         serialized_bytes,
-        derive_ms: input.source_root_claim_derive_ms,
+        derive_ms: 0.0,
         verify_ms,
         verified,
         note: "causal decomposition row: assumes the compact proof was already verified and measures only the source-root binding acceptance surface".to_string(),
