@@ -47,6 +47,23 @@ Pinned facts from Table 9 and Section 10.3:
 - full `40`-layer `Qwen3-14B` prove time on one `H100`:
   `~122s` end-to-end (`3.04s/layer`)
 
+## Verification handles
+
+The public verifier-object path exposes a concrete contract-call handle:
+
+```bash
+starkli call 0x1c208a5fe731c0d03b098b524f274c537587ea1d43d903838cc4a2bf90c40c7 \
+  is_verified 0x276c6a448829c0f3975080914a89c2a9611fc41912aff1fddfe29d8f3364ddc
+```
+
+In the current local environment, direct live replay of that call was blocked by missing
+working Starknet RPC configuration, so this note stays source-backed rather than claiming
+fresh live verification. The current evidence posture is therefore:
+
+- exact docs.rs contract and tx identifiers pinned,
+- exact paper gas figures pinned, and
+- live-call handle recorded, but not newly re-verified in this repo snapshot.
+
 ## Honest regime match
 
 This public Obelyzk artifact is useful as a **deployment and verifier-object

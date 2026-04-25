@@ -19,7 +19,7 @@ Supporting publication assets:
 - `submission-v4-2026-04-11/`
 - `artifacts/`
 
-Current paper-freeze addendum:
+Current paper-freeze addendum (April 24 freeze + April 25 comparator refresh):
 
 - `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
@@ -33,9 +33,9 @@ Current paper-freeze addendum:
 - `evidence/published-zkml-calibration-note-2026-04-24.md`
 - `evidence/obelyzk-sepolia-comparator-note-2026-04-25.md`
 
-This April 24 freeze extends the earlier carried-state publication package with the
-two higher-layer verifier-bound reuse calibrations and the refreshed workload-scope
-external calibration snapshot.
+This package keeps the April 24 freeze intact while adding an April 25 comparator
+refresh that sharpens the external calibration snapshot without promoting a new matched
+benchmark claim.
 
 Later bridge work remains implemented in-repo but is not yet part of the frozen
 publication-facing artifact bundle:

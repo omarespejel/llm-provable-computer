@@ -981,10 +981,10 @@ evidence, not matched benchmarks.
 
 ### 7.4 BitSage Obelyzk (obelyzk.rs) as the closest public STARK-native comparator
 
-BitSage Obelyzk is the closest public STARK-native comparator. According to the current
-docs.rs `0.3.0` page and the accompanying paper, it combines GKR/sumcheck/LogUp-style
-machinery on an S-two/STWO path with a deployed Starknet Sepolia recursive verifier
-[26, 27]. The public verifier page now pins an exact recursive verifier contract,
+BitSage Obelyzk is the closest public STARK-native comparator. According to the docs.rs
+`0.3.0` crate page and the accompanying paper PDF, it combines
+GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with a deployed Starknet
+Sepolia recursive verifier [26, 27]. The public verifier page now pins an exact recursive verifier contract,
 `0x1c208a5fe731c0d03b098b524f274c537587ea1d43d903838cc4a2bf90c40c7`, an exact verified
 Sepolia transaction,
 `0x276c6a448829c0f3975080914a89c2a9611fc41912aff1fddfe29d8f3364ddc`, and a `942`-felt
@@ -998,6 +998,10 @@ Obelyzk object is a recursive settlement proof over a GKR stack, while this
 repository's frozen rows remain narrower pre-recursive artifact surfaces. The same
 public materials still show uneven component maturity (`Attention` remains listed as
 `Prover only`).
+
+The pinned contract address, transaction hash, calldata width, paper gas figures, and
+the exact verification handles used for this comparator are recorded in the checked-in
+evidence note `docs/paper/evidence/obelyzk-sepolia-comparator-note-2026-04-25.md`.
 
 ### 7.5 LuminAIR and the custom-AIR path
 
@@ -1202,11 +1206,11 @@ ______________________________________________________________________
 25. Lagrange. “Engineering Update: September 2025.” *Lagrange Engineering Update*,
     published October 20, 2025.
     <https://www.lagrange.dev/engineering-updates/september-2025>
-26. BitSage Network. *obelyzk.rs* (formerly *stwo-ml*). GitHub repository. Accessed
-    April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs>
-27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in
-    *obelyzk.rs*. Accessed April 9, 2026.
-    <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
+26. BitSage Network. *obelyzk* `0.3.0`. Docs.rs crate page. Accessed April 25, 2026.
+    <https://docs.rs/crate/obelyzk/0.3.0>
+27. BitSage Network. “ObelyZK: Verifiable Linear-Trace Inference via GKR.”
+    Paper PDF distributed with `obelyzk` `0.3.0`. Accessed April 25, 2026.
+    <https://docs.rs/crate/obelyzk/0.3.0/source/obelyzk-paper.pdf>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026.
     <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*.
