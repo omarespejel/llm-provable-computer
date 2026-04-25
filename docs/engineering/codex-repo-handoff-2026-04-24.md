@@ -13,13 +13,15 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-12. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-13. `docs/engineering/reproducibility.md`
-14. `git status --short --branch`
+8. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+9. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
+10. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+11. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+12. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+13. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+14. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+15. `docs/engineering/reproducibility.md`
+16. `git status --short --branch`
 
 ## Current lane split
 
@@ -135,24 +137,30 @@ Tablero boundary.
    curve shape rather than any one frontier ratio.
 3. Treat the `2x2` constant-surface explanation as landed and use follow-up
    issue `#257` only if a deeper replay-only decomposition still looks useful.
-4. Move the next-wave exploratory focus to one narrow SNIP-36 Sepolia
-   deployment artifact.
-5. Keep the cross-backend Phase44D question in the explicit no-go bucket until
+4. Run the internal hardening packet before making stronger claims:
+   - `scripts/run_tablero_formal_contract_suite.sh`
+   - `scripts/run_tablero_hardening_preflight.sh --mode core`
+   - `scripts/run_tablero_hardening_preflight.sh --mode deep`
+5. Keep SNIP-36 parked until there is a real adapter path from local proof
+   objects to protocol-native proof facts; it is not a current hardening
+   blocker.
+6. Keep the cross-backend Phase44D question in the explicit no-go bucket until
    a new honest non-overflow carry-free source family or another bounded
    backend can drive the same benchmark beyond `2` steps.
-6. Re-run the experimental Phase44D frontier only after any material AIR or
+7. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-7. Broaden review of the experimental backend beyond the current decoding-step
+8. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-8. Keep the Phase43 second-boundary result in the explicit no-go bucket until
+9. Keep the Phase43 second-boundary result in the explicit no-go bucket until
    the source side emits the proof-native projection commitments, row
    commitments/openings, and public inputs listed in
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-9. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
-10. Do not spend more time pushing the current publication/default Phase71
+10. Only after those steps decide whether any part of the experimental lane
+    should be promoted toward the paper/publication surface.
+11. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.

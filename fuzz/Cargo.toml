@@ -104,5 +104,40 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase44d_source_chain_public_output_boundary_binding"
+path = "fuzz_targets/phase44d_source_chain_public_output_boundary_binding.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase45_recursive_verifier_public_input_bridge"
+path = "fuzz_targets/phase45_recursive_verifier_public_input_bridge.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase46_stwo_proof_adapter_receipt"
+path = "fuzz_targets/phase46_stwo_proof_adapter_receipt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase47_recursive_verifier_wrapper_candidate"
+path = "fuzz_targets/phase47_recursive_verifier_wrapper_candidate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase48_recursive_proof_wrapper_attempt"
+path = "fuzz_targets/phase48_recursive_proof_wrapper_attempt.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

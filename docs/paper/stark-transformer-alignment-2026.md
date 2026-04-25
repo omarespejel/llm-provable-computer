@@ -732,6 +732,53 @@ artifact structure, typed public-output binding, and receipt/source consistency.
 not claim recursive compression, full standard-softmax inference soundness, or a
 universal security theorem for every row in the experimental S-two tier.
 
+#### Tablero statement-preservation theorem
+
+The current paper can make one stronger formal claim about the typed-boundary
+pattern without overclaiming a new proof-system theorem.
+
+Let `R` be the underlying compact-proof relation, `V_R(c, π)` the upstream S-two
+verifier for compact claim `c` and proof `π`, `σ` the heavier replay surface
+that the baseline verifier would inspect directly, `U(σ, c)` the replay-derived
+public surface reconstructed from `σ`, and `β = Emit(σ, c)` a typed boundary
+artifact emitted from that same source surface. Let `Bind(β, c)` be the
+repository-local binding predicate that checks the fields of `β` which replace
+replay work: source-root binding, typed public-output binding, ordered
+public-input binding where applicable, replay-flag checks, and nested
+commitment consistency. The Tablero verifier shape is then
+
+```text
+TableroVerify(β, c, π) := Validate(β) and V_R(c, π) and Bind(β, c).
+```
+
+**Theorem 3 (Tablero statement preservation).** Assume: (1) upstream S-two
+soundness for `V_R`, (2) binding of the local Blake2b-based commitment surfaces,
+and (3) that the source side emits the proof-native fields that `Bind(β, c)`
+checks. Then accepting `(β, c, π)` through `TableroVerify` does not widen the
+accepted statement set relative to the replay verifier that checks `V_R(c, π)`
+and reconstructs the same public surface from `σ` directly, except with the sum
+of the upstream proof-system soundness error and the local commitment-collision
+probability.
+
+**Proof sketch.** If `V_R(c, π)` accepts, then by upstream S-two soundness the
+compact claim `c` is valid except with negligible probability. `Validate(β)`
+ensures the typed object itself is canonical for its layer: version, semantic
+scope, replay-elimination flags, and self-commitment are all checked. `Bind(β,
+c)` then checks that the fields of `β` that replace replay are the same fields
+the replay baseline would have derived from `σ` for the same compact claim `c`.
+Under the local commitment-binding assumption, the adversary cannot splice a
+different nested object under the same commitments except with negligible
+probability. So replacing replay with `β` changes verifier cost, but not the
+accepted compact statement. This is a statement-preservation theorem, not a new
+recursive-compression or proof-system soundness theorem.
+
+That final precondition matters. The theorem does not automatically make every
+candidate boundary real. Phase43 remains a recorded no-go because the current
+source side still does not emit the proof-native commitments and public inputs
+needed to make `Bind(β, c)` complete without full-trace replay. So the theorem
+explains both outcomes in the repository: why Phase44D is a real typed-boundary
+result today, and why Phase43 is not yet one.
+
 For shared lookup evidence, the artifact binds normalization and activation table
 identity into a static lookup-table registry commitment inside the shared lookup
 artifact; this is table-identity and provenance binding, not recursive cross-step

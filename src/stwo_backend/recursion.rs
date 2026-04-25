@@ -5197,6 +5197,96 @@ fn phase37_receipt_flag_surface_is_valid(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase45_bridge_flag_surface_is_valid(
+    public_output_boundary_verified: bool,
+    compact_envelope_verified: bool,
+    terminal_boundary_logup_closure_verified: bool,
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    verifier_requires_phase43_trace: bool,
+    verifier_requires_phase30_manifest: bool,
+    verifier_embeds_expected_rows: bool,
+    public_input_count: usize,
+    ordered_lane_count: usize,
+) -> bool {
+    public_output_boundary_verified
+        && compact_envelope_verified
+        && terminal_boundary_logup_closure_verified
+        && !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && !verifier_requires_phase43_trace
+        && !verifier_requires_phase30_manifest
+        && !verifier_embeds_expected_rows
+        && public_input_count == ordered_lane_count
+        && public_input_count == PHASE45_PUBLIC_INPUT_LANE_LABELS.len()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase45_public_input_lane_metadata_is_canonical(
+    expected_index: usize,
+    observed_index: usize,
+    observed_label: &str,
+) -> bool {
+    expected_index < PHASE45_PUBLIC_INPUT_LANE_LABELS.len()
+        && observed_index == expected_index
+        && observed_label == PHASE45_PUBLIC_INPUT_LANE_LABELS[expected_index]
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase47_wrapper_flag_surface_is_valid(
+    phase46_receipt_verified: bool,
+    stwo_core_verify_succeeded: bool,
+    terminal_logup_closed: bool,
+    consumes_phase46_receipt_only: bool,
+    wrapper_requires_phase43_trace: bool,
+    wrapper_requires_phase30_manifest: bool,
+    wrapper_embeds_expected_rows: bool,
+    recursive_proof_available: bool,
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+) -> bool {
+    phase46_receipt_verified
+        && stwo_core_verify_succeeded
+        && terminal_logup_closed
+        && consumes_phase46_receipt_only
+        && !wrapper_requires_phase43_trace
+        && !wrapper_requires_phase30_manifest
+        && !wrapper_embeds_expected_rows
+        && !recursive_proof_available
+        && !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase48_attempt_flag_surface_is_valid(
+    phase47_candidate_verified: bool,
+    local_stwo_core_verifier_detected: bool,
+    local_stwo_cairo_verifier_core_detected: bool,
+    local_stwo_cairo_air_verifier_detected: bool,
+    local_phase43_projection_cairo_air_detected: bool,
+    actual_recursive_wrapper_available: bool,
+    recursive_proof_constructed: bool,
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    wrapper_requires_phase43_trace: bool,
+    wrapper_requires_phase30_manifest: bool,
+    wrapper_embeds_expected_rows: bool,
+) -> bool {
+    phase47_candidate_verified
+        && local_stwo_core_verifier_detected
+        && local_stwo_cairo_verifier_core_detected
+        && local_stwo_cairo_air_verifier_detected
+        && !local_phase43_projection_cairo_air_detected
+        && !actual_recursive_wrapper_available
+        && !recursive_proof_constructed
+        && !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && !wrapper_requires_phase43_trace
+        && !wrapper_requires_phase30_manifest
+        && !wrapper_embeds_expected_rows
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
     if !phase37_is_hash32_lower_hex(value) {
         return Err(VmError::InvalidConfig(format!(
@@ -5221,9 +5311,12 @@ mod kani_phase36_phase37_proofs {
     use super::{
         phase33_public_input_lane_payload, phase33_public_input_lanes_are_canonical,
         phase36_receipt_flag_surface_is_valid, phase37_is_hash32_lower_hex,
-        phase37_is_lower_hex_byte, phase37_receipt_flag_surface_is_valid, Phase33PublicInputLane,
-        Phase33PublicInputLanePayload, Phase33RecursiveCompressionPublicInputManifest,
-        PHASE33_PUBLIC_INPUT_LANES,
+        phase37_is_lower_hex_byte, phase37_receipt_flag_surface_is_valid,
+        phase45_bridge_flag_surface_is_valid, phase45_public_input_lane_metadata_is_canonical,
+        phase47_wrapper_flag_surface_is_valid, phase48_attempt_flag_surface_is_valid,
+        Phase33PublicInputLane, Phase33PublicInputLanePayload,
+        Phase33RecursiveCompressionPublicInputManifest, PHASE33_PUBLIC_INPUT_LANES,
+        PHASE45_PUBLIC_INPUT_LANE_LABELS,
     };
     use crate::proof::StarkProofBackend;
 
@@ -5459,6 +5552,184 @@ mod kani_phase36_phase37_proofs {
             };
 
         assert!(!phase33_public_input_lanes_are_canonical(&observed));
+    }
+
+    #[kani::proof]
+    fn kani_phase45_bridge_flags_accept_canonical_boundary_width_bridge() {
+        assert!(phase45_bridge_flag_surface_is_valid(
+            true, true, true, false, false, false, false, false, 24, 24,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase45_bridge_flags_reject_any_claim_replay_or_missing_verification() {
+        let public_output_boundary_verified = kani::any::<bool>();
+        let compact_envelope_verified = kani::any::<bool>();
+        let terminal_boundary_logup_closure_verified = kani::any::<bool>();
+        let recursive_verification_claimed = kani::any::<bool>();
+        let cryptographic_compression_claimed = kani::any::<bool>();
+        let verifier_requires_phase43_trace = kani::any::<bool>();
+        let verifier_requires_phase30_manifest = kani::any::<bool>();
+        let verifier_embeds_expected_rows = kani::any::<bool>();
+        let count_ok = kani::any::<bool>();
+        let public_input_count = if count_ok { 24 } else { 23 };
+        let ordered_lane_count = if count_ok { 24 } else { 25 };
+        kani::assume(
+            !public_output_boundary_verified
+                || !compact_envelope_verified
+                || !terminal_boundary_logup_closure_verified
+                || recursive_verification_claimed
+                || cryptographic_compression_claimed
+                || verifier_requires_phase43_trace
+                || verifier_requires_phase30_manifest
+                || verifier_embeds_expected_rows
+                || public_input_count != ordered_lane_count
+                || public_input_count != PHASE45_PUBLIC_INPUT_LANE_LABELS.len(),
+        );
+
+        assert!(!phase45_bridge_flag_surface_is_valid(
+            public_output_boundary_verified,
+            compact_envelope_verified,
+            terminal_boundary_logup_closure_verified,
+            recursive_verification_claimed,
+            cryptographic_compression_claimed,
+            verifier_requires_phase43_trace,
+            verifier_requires_phase30_manifest,
+            verifier_embeds_expected_rows,
+            public_input_count,
+            ordered_lane_count,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase45_public_input_lane_metadata_accepts_canonical_examples() {
+        assert!(phase45_public_input_lane_metadata_is_canonical(
+            0,
+            0,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS[0],
+        ));
+        assert!(phase45_public_input_lane_metadata_is_canonical(
+            PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 1,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 1,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS[PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 1],
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase45_public_input_lane_metadata_rejects_index_or_label_drift() {
+        assert!(!phase45_public_input_lane_metadata_is_canonical(
+            0,
+            1,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS[0],
+        ));
+        assert!(!phase45_public_input_lane_metadata_is_canonical(
+            0,
+            0,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS[1],
+        ));
+        assert!(!phase45_public_input_lane_metadata_is_canonical(
+            PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 1,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 2,
+            PHASE45_PUBLIC_INPUT_LANE_LABELS[PHASE45_PUBLIC_INPUT_LANE_LABELS.len() - 1],
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase47_wrapper_flags_accept_canonical_receipt_only_candidate() {
+        assert!(phase47_wrapper_flag_surface_is_valid(
+            true, true, true, true, false, false, false, false, false, false,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase47_wrapper_flags_reject_any_replay_or_false_claim() {
+        let phase46_receipt_verified = kani::any::<bool>();
+        let stwo_core_verify_succeeded = kani::any::<bool>();
+        let terminal_logup_closed = kani::any::<bool>();
+        let consumes_phase46_receipt_only = kani::any::<bool>();
+        let wrapper_requires_phase43_trace = kani::any::<bool>();
+        let wrapper_requires_phase30_manifest = kani::any::<bool>();
+        let wrapper_embeds_expected_rows = kani::any::<bool>();
+        let recursive_proof_available = kani::any::<bool>();
+        let recursive_verification_claimed = kani::any::<bool>();
+        let cryptographic_compression_claimed = kani::any::<bool>();
+        kani::assume(
+            !phase46_receipt_verified
+                || !stwo_core_verify_succeeded
+                || !terminal_logup_closed
+                || !consumes_phase46_receipt_only
+                || wrapper_requires_phase43_trace
+                || wrapper_requires_phase30_manifest
+                || wrapper_embeds_expected_rows
+                || recursive_proof_available
+                || recursive_verification_claimed
+                || cryptographic_compression_claimed,
+        );
+
+        assert!(!phase47_wrapper_flag_surface_is_valid(
+            phase46_receipt_verified,
+            stwo_core_verify_succeeded,
+            terminal_logup_closed,
+            consumes_phase46_receipt_only,
+            wrapper_requires_phase43_trace,
+            wrapper_requires_phase30_manifest,
+            wrapper_embeds_expected_rows,
+            recursive_proof_available,
+            recursive_verification_claimed,
+            cryptographic_compression_claimed,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase48_attempt_flags_accept_canonical_no_go() {
+        assert!(phase48_attempt_flag_surface_is_valid(
+            true, true, true, true, false, false, false, false, false, false, false, false,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase48_attempt_flags_reject_any_replay_or_false_claim() {
+        let phase47_candidate_verified = kani::any::<bool>();
+        let local_stwo_core_verifier_detected = kani::any::<bool>();
+        let local_stwo_cairo_verifier_core_detected = kani::any::<bool>();
+        let local_stwo_cairo_air_verifier_detected = kani::any::<bool>();
+        let local_phase43_projection_cairo_air_detected = kani::any::<bool>();
+        let actual_recursive_wrapper_available = kani::any::<bool>();
+        let recursive_proof_constructed = kani::any::<bool>();
+        let recursive_verification_claimed = kani::any::<bool>();
+        let cryptographic_compression_claimed = kani::any::<bool>();
+        let wrapper_requires_phase43_trace = kani::any::<bool>();
+        let wrapper_requires_phase30_manifest = kani::any::<bool>();
+        let wrapper_embeds_expected_rows = kani::any::<bool>();
+        kani::assume(
+            !phase47_candidate_verified
+                || !local_stwo_core_verifier_detected
+                || !local_stwo_cairo_verifier_core_detected
+                || !local_stwo_cairo_air_verifier_detected
+                || local_phase43_projection_cairo_air_detected
+                || actual_recursive_wrapper_available
+                || recursive_proof_constructed
+                || recursive_verification_claimed
+                || cryptographic_compression_claimed
+                || wrapper_requires_phase43_trace
+                || wrapper_requires_phase30_manifest
+                || wrapper_embeds_expected_rows,
+        );
+
+        assert!(!phase48_attempt_flag_surface_is_valid(
+            phase47_candidate_verified,
+            local_stwo_core_verifier_detected,
+            local_stwo_cairo_verifier_core_detected,
+            local_stwo_cairo_air_verifier_detected,
+            local_phase43_projection_cairo_air_detected,
+            actual_recursive_wrapper_available,
+            recursive_proof_constructed,
+            recursive_verification_claimed,
+            cryptographic_compression_claimed,
+            wrapper_requires_phase43_trace,
+            wrapper_requires_phase30_manifest,
+            wrapper_embeds_expected_rows,
+        ));
     }
 }
 
@@ -10096,6 +10367,22 @@ pub fn verify_phase45_recursive_verifier_public_input_bridge(
                 .to_string(),
         ));
     }
+    if !phase45_bridge_flag_surface_is_valid(
+        bridge.public_output_boundary_verified,
+        bridge.compact_envelope_verified,
+        bridge.terminal_boundary_logup_closure_verified,
+        bridge.recursive_verification_claimed,
+        bridge.cryptographic_compression_claimed,
+        bridge.verifier_requires_phase43_trace,
+        bridge.verifier_requires_phase30_manifest,
+        bridge.verifier_embeds_expected_rows,
+        bridge.public_input_count,
+        bridge.ordered_public_input_lanes.len(),
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge has non-canonical public-input count".to_string(),
+        ));
+    }
     if bridge.verifier_side_complexity
         != STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_COMPLEXITY_PHASE45
     {
@@ -10103,15 +10390,8 @@ pub fn verify_phase45_recursive_verifier_public_input_bridge(
             "Phase 45 public-input bridge complexity drift".to_string(),
         ));
     }
-    if bridge.public_input_count != bridge.ordered_public_input_lanes.len()
-        || bridge.public_input_count != PHASE45_PUBLIC_INPUT_LANE_LABELS.len()
-    {
-        return Err(VmError::InvalidConfig(
-            "Phase 45 public-input bridge has non-canonical public-input count".to_string(),
-        ));
-    }
     for (index, lane) in bridge.ordered_public_input_lanes.iter().enumerate() {
-        if lane.index != index || lane.label != PHASE45_PUBLIC_INPUT_LANE_LABELS[index] {
+        if !phase45_public_input_lane_metadata_is_canonical(index, lane.index, &lane.label) {
             return Err(VmError::InvalidConfig(
                 "Phase 45 public-input bridge lane order is not canonical".to_string(),
             ));
@@ -10714,6 +10994,18 @@ pub fn verify_phase47_recursive_verifier_wrapper_candidate(
                 .to_string(),
         ));
     }
+    debug_assert!(phase47_wrapper_flag_surface_is_valid(
+        candidate.phase46_receipt_verified,
+        candidate.stwo_core_verify_succeeded,
+        candidate.terminal_logup_closed,
+        candidate.consumes_phase46_receipt_only,
+        candidate.wrapper_requires_phase43_trace,
+        candidate.wrapper_requires_phase30_manifest,
+        candidate.wrapper_embeds_expected_rows,
+        candidate.recursive_proof_available,
+        candidate.recursive_verification_claimed,
+        candidate.cryptographic_compression_claimed,
+    ));
     if candidate.verifier_side_complexity
         != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_COMPLEXITY_PHASE47
     {
@@ -10977,6 +11269,20 @@ pub fn verify_phase48_recursive_proof_wrapper_attempt(
                 .to_string(),
         ));
     }
+    debug_assert!(phase48_attempt_flag_surface_is_valid(
+        attempt.phase47_candidate_verified,
+        attempt.local_stwo_core_verifier_detected,
+        attempt.local_stwo_cairo_verifier_core_detected,
+        attempt.local_stwo_cairo_air_verifier_detected,
+        attempt.local_phase43_projection_cairo_air_detected,
+        attempt.actual_recursive_wrapper_available,
+        attempt.recursive_proof_constructed,
+        attempt.recursive_verification_claimed,
+        attempt.cryptographic_compression_claimed,
+        attempt.wrapper_requires_phase43_trace,
+        attempt.wrapper_requires_phase30_manifest,
+        attempt.wrapper_embeds_expected_rows,
+    ));
     if attempt.compact_proof_channel
         != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_COMPACT_PROOF_CHANNEL_PHASE48
         || attempt.recursive_verifier_channel
