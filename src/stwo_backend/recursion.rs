@@ -10994,7 +10994,7 @@ pub fn verify_phase47_recursive_verifier_wrapper_candidate(
                 .to_string(),
         ));
     }
-    debug_assert!(phase47_wrapper_flag_surface_is_valid(
+    if !phase47_wrapper_flag_surface_is_valid(
         candidate.phase46_receipt_verified,
         candidate.stwo_core_verify_succeeded,
         candidate.terminal_logup_closed,
@@ -11005,7 +11005,12 @@ pub fn verify_phase47_recursive_verifier_wrapper_candidate(
         candidate.recursive_proof_available,
         candidate.recursive_verification_claimed,
         candidate.cryptographic_compression_claimed,
-    ));
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate canonical flag surface drift"
+                .to_string(),
+        ));
+    }
     if candidate.verifier_side_complexity
         != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_COMPLEXITY_PHASE47
     {
@@ -11269,7 +11274,7 @@ pub fn verify_phase48_recursive_proof_wrapper_attempt(
                 .to_string(),
         ));
     }
-    debug_assert!(phase48_attempt_flag_surface_is_valid(
+    if !phase48_attempt_flag_surface_is_valid(
         attempt.phase47_candidate_verified,
         attempt.local_stwo_core_verifier_detected,
         attempt.local_stwo_cairo_verifier_core_detected,
@@ -11282,7 +11287,11 @@ pub fn verify_phase48_recursive_proof_wrapper_attempt(
         attempt.wrapper_requires_phase43_trace,
         attempt.wrapper_requires_phase30_manifest,
         attempt.wrapper_embeds_expected_rows,
-    ));
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt canonical flag surface drift".to_string(),
+        ));
+    }
     if attempt.compact_proof_channel
         != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_COMPACT_PROOF_CHANNEL_PHASE48
         || attempt.recursive_verifier_channel

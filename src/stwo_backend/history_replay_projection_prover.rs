@@ -7073,6 +7073,146 @@ mod tests {
         assert!(error.to_string().contains("commitment"));
     }
 
+    #[test]
+    fn phase44d_phase48_serialized_chain_rejects_post_serialization_semantic_drift() {
+        let fixture = sample_phase44d_composed_artifact_fixture();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+
+        let boundary = load_tampered_serialized_artifact(
+            "phase44d-boundary-post-serialization-drift",
+            &fixture.boundary,
+            |boundary_json| {
+                boundary_json["source_emission_public_output"]["source_emission"]["source_claim"]
+                    ["total_steps"] = serde_json::json!(
+                    fixture
+                        .boundary
+                        .source_emission_public_output
+                        .source_emission
+                        .source_claim
+                        .total_steps
+                        + 1
+                );
+            },
+        );
+        assert!(
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+                &boundary,
+                &fixture.compact_envelope,
+            )
+            .is_err()
+        );
+        assert!(
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                &boundary,
+                &fixture.compact_envelope.claim,
+            )
+            .is_err()
+        );
+
+        let mut handoff = load_tampered_serialized_artifact(
+            "phase44d-handoff-post-serialization-drift",
+            &fixture.handoff,
+            |handoff_json| {
+                handoff_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
+                handoff_json["verifier_requires_phase30_manifest"] = serde_json::json!(true);
+            },
+        );
+        handoff.handoff_commitment =
+            commit_phase44d_recursive_verifier_public_output_handoff(&handoff)
+                .expect("recommit tampered Phase44D handoff");
+        assert!(verify_phase44d_recursive_verifier_public_output_handoff(&handoff).is_err());
+        assert!(
+            verify_phase44d_recursive_verifier_public_output_handoff_against_boundary(
+                &handoff,
+                &fixture.boundary,
+                &fixture.compact_envelope,
+            )
+            .is_err()
+        );
+
+        let mut bridge = load_tampered_serialized_artifact(
+            "phase45-bridge-post-serialization-drift",
+            &fixture.bridge,
+            |bridge_json| {
+                bridge_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
+                bridge_json["verifier_requires_phase30_manifest"] = serde_json::json!(true);
+            },
+        );
+        bridge.bridge_commitment = commit_phase45_recursive_verifier_public_input_bridge(&bridge)
+            .expect("recommit tampered Phase45 bridge");
+        assert!(verify_phase45_recursive_verifier_public_input_bridge(&bridge).is_err());
+        assert!(
+            verify_phase45_recursive_verifier_public_input_bridge_against_sources(
+                &bridge,
+                &fixture.boundary,
+                &fixture.compact_envelope,
+                &fixture.handoff,
+            )
+            .is_err()
+        );
+
+        let mut receipt = load_tampered_serialized_artifact(
+            "phase46-receipt-post-serialization-drift",
+            &fixture.receipt,
+            |receipt_json| {
+                receipt_json["recursive_verification_claimed"] = serde_json::json!(true);
+                receipt_json["cryptographic_compression_claimed"] = serde_json::json!(true);
+            },
+        );
+        receipt.adapter_receipt_commitment = commit_phase46_stwo_proof_adapter_receipt(&receipt)
+            .expect("recommit tampered Phase46 receipt");
+        assert!(verify_phase46_stwo_proof_adapter_receipt(&receipt).is_err());
+        assert!(verify_phase46_stwo_proof_adapter_receipt_against_sources(
+            &receipt,
+            &fixture.bridge,
+            &fixture.boundary,
+            &fixture.compact_envelope,
+            &fixture.handoff,
+        )
+        .is_err());
+
+        let mut candidate = load_tampered_serialized_artifact(
+            "phase47-candidate-post-serialization-drift",
+            &wrapper_fixture.candidate,
+            |candidate_json| {
+                candidate_json["wrapper_requires_phase43_trace"] = serde_json::json!(true);
+                candidate_json["wrapper_requires_phase30_manifest"] = serde_json::json!(true);
+            },
+        );
+        candidate.candidate_commitment =
+            commit_phase47_recursive_verifier_wrapper_candidate(&candidate)
+                .expect("recommit tampered Phase47 candidate");
+        assert!(verify_phase47_recursive_verifier_wrapper_candidate(&candidate).is_err());
+        assert!(
+            verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
+                &candidate,
+                &fixture.receipt,
+            )
+            .is_err()
+        );
+
+        let mut attempt = load_tampered_serialized_artifact(
+            "phase48-attempt-post-serialization-drift",
+            &wrapper_fixture.attempt,
+            |attempt_json| {
+                attempt_json["actual_recursive_wrapper_available"] = serde_json::json!(true);
+                attempt_json["recursive_proof_constructed"] = serde_json::json!(true);
+                attempt_json["recursive_verification_claimed"] = serde_json::json!(true);
+                attempt_json["cryptographic_compression_claimed"] = serde_json::json!(true);
+            },
+        );
+        attempt.attempt_commitment = commit_phase48_recursive_proof_wrapper_attempt(&attempt)
+            .expect("recommit tampered Phase48 attempt");
+        assert!(verify_phase48_recursive_proof_wrapper_attempt(&attempt).is_err());
+        assert!(
+            verify_phase48_recursive_proof_wrapper_attempt_against_phase47(
+                &attempt,
+                &wrapper_fixture.candidate,
+            )
+            .is_err()
+        );
+    }
+
     fn sample_phase48_attempt_for_phase49() -> Phase48RecursiveProofWrapperAttempt {
         sample_phase47_phase48_wrapper_fixture().attempt.clone()
     }

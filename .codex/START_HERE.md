@@ -11,15 +11,16 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-8. `docs/engineering/tablero-soundness-note-2026-04-25.md`
-9. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-10. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-11. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-12. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-13. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-14. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-15. `docs/engineering/reproducibility.md`
-16. `git status --short --branch`
+8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
+9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
+11. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+12. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+13. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+14. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+15. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+16. `docs/engineering/reproducibility.md`
+17. `git status --short --branch`
 
 ## What this repository is now
 
@@ -32,7 +33,7 @@ This repository currently has two live lanes.
 2. Experimental core-proving lane
    - The carry-aware backend `stwo-phase12-decoding-family-v10-carry-aware-experimental` is the active upside research lane.
    - It clears the honest `8`-step Phase12 family, has AIR-level `wrap_delta` range constraints, and the experimental Phase44D scaling sweep currently clears through `2,4,8,16,32,64,128,256,512,1024`.
-   - The focused April 25 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, a full honest `8`-step trace sweep, serialized experimental proof-file tamper coverage, serialized proof-checked Phase12-chain tamper coverage, serialized Phase44D typed-boundary tamper coverage, serialized Phase44D handoff / Phase45 bridge / Phase46 receipt tamper coverage, and serialized Phase47 wrapper-candidate / Phase48 wrapper-attempt tamper coverage including stale-commitment rejection.
+   - The focused April 25-26 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, a full honest `8`-step trace sweep, serialized experimental proof-file tamper coverage, serialized proof-checked Phase12-chain tamper coverage, serialized Phase44D typed-boundary tamper coverage, serialized Phase44D handoff / Phase45 bridge / Phase46 receipt tamper coverage, serialized Phase47 wrapper-candidate / Phase48 wrapper-attempt tamper coverage including stale-commitment rejection, and one bounded differential serialized-artifact mutator across the full Phase44D→48 chain.
 
 Do not collapse these two lanes into one claim.
 
@@ -91,6 +92,7 @@ The repo now also has one explicit answer on the second-backend question:
    - `scripts/run_tablero_formal_contract_suite.sh`
    - `scripts/run_tablero_hardening_preflight.sh --mode core`
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`
+   - The hardening packet now includes exhaustive deterministic checks for the carry-aware `wrap_delta` witness/divisibility surface, not only the Tablero flag surfaces.
 6. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts; treat it as a deferred design lane,
    not a current paper or review blocker.

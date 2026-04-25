@@ -45,6 +45,10 @@ KANI_ARGS=(
   kani_phase48_attempt_flags_accept_canonical_no_go
   --harness
   kani_phase48_attempt_flags_reject_any_replay_or_false_claim
+  --harness
+  kani_carry_aware_wrap_delta_range_witness_accepts_in_range_deltas
+  --harness
+  kani_carry_aware_wrap_delta_range_witness_rejects_out_of_range_deltas
 )
 
 "${KANI_ARGS[@]}"
