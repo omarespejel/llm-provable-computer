@@ -149,13 +149,19 @@ Validation:
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
 
+just gate-fast
+
 cargo +nightly-2025-07-14 test --features stwo-backend --lib \
   phase71_handoff_receipt_benchmark_
 
 cargo +nightly-2025-07-14 test --features stwo-backend --bin tvm \
   phase71_handoff_receipt_benchmark_command_
 
+just integration
+
 cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
+
+just gate
 ```
 
 Checked-in median-of-5 paper evidence (`1,2,3` default step counts):
