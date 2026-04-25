@@ -110,6 +110,14 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
         raise SystemExit("phase44d engineering benchmark rows must include timing_policy")
     if unit != "milliseconds":
         raise SystemExit(f"unsupported timing_unit in phase44d engineering rows: {unit!r}")
+    if not runs_raw:
+        raise SystemExit("phase44d engineering benchmark rows must include timing_runs")
+    try:
+        runs = int(runs_raw)
+    except ValueError as exc:
+        raise SystemExit(
+            f"phase44d engineering benchmark rows must include an integer timing_runs; got {runs_raw!r}"
+        ) from exc
     for row in rows[1:]:
         if (
             row.get("timing_mode", "").strip() != mode
@@ -118,7 +126,6 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
             or row.get("timing_runs", "").strip() != runs_raw
         ):
             raise SystemExit("inconsistent timing metadata across phase44d engineering rows")
-    runs = int(runs_raw)
     if mode == "deterministic_zeroed":
         if policy != "zero_when_capture_disabled":
             raise SystemExit(

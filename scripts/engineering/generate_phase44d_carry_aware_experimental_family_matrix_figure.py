@@ -94,6 +94,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 
 def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
+    families_seen = {family: 0 for family in FAMILY_ORDER}
     for row in rows:
         if row["benchmark_version"] != EXPECTED_MATRIX_VERSION:
             raise SystemExit(
@@ -109,6 +110,14 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
             raise SystemExit(f"{source} must contain millisecond rows")
         if row["family"] not in FAMILY_ORDER:
             raise SystemExit(f"unexpected family in {source}: {row['family']}")
+        families_seen[row["family"]] += 1
+    missing_families = [
+        family for family, count in families_seen.items() if count == 0
+    ]
+    if missing_families:
+        raise SystemExit(
+            f"{source} is missing required family rows: {missing_families}"
+        )
 
 
 def group_rows(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:

@@ -18,9 +18,10 @@ PDF_OUT="${PDF_OUT-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-expe
 
 if ! python3 - <<'PY' >/dev/null 2>&1
 import matplotlib
+import numpy
 PY
 then
-  echo "python3 must have matplotlib installed before running the Phase44D family-matrix generator" >&2
+  echo "python3 must have matplotlib and numpy installed before running the Phase44D family-matrix generator" >&2
   exit 1
 fi
 
