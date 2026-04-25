@@ -33,6 +33,14 @@ MODULE = load_module()
 
 
 class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
+    def run_script(self, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-B", str(SCRIPT), *args],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
     def test_phase12_geometry_matches_layout_source(self):
         rows = {
             spec.family: {
@@ -51,19 +59,11 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
             temp = Path(tempdir)
             out_json = temp / "out.json"
             out_tsv = temp / "out.tsv"
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-B",
-                    str(SCRIPT),
-                    "--output-json",
-                    str(out_json),
-                    "--output-tsv",
-                    str(out_tsv),
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
+            completed = self.run_script(
+                "--output-json",
+                str(out_json),
+                "--output-tsv",
+                str(out_tsv),
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
 
@@ -96,6 +96,73 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
             row_2x2 = next(row for row in rows if row["family"] == "2x2")
             self.assertEqual(row_2x2["phase12_instruction_count"], "65")
             self.assertEqual(row_2x2["phase12_memory_cells"], "21")
+
+    def test_script_rejects_tampered_verified_flag(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "bad-default.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+                fieldnames = rows[0].keys()
+            rows[0]["verified"] = "false"
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+            out_json = temp / "out.json"
+            out_tsv = temp / "out.tsv"
+
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(out_json),
+                "--output-tsv",
+                str(out_tsv),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("unverified row", completed.stderr + completed.stdout)
+
+    def test_script_rejects_missing_frontier_variant_row(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = Path(tempdir)
+            bad_default = temp / "missing-baseline.tsv"
+            with MODULE.DEFAULT_INPUT.open(encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+                fieldnames = rows[0].keys()
+            frontier = max(
+                int(row["steps"])
+                for row in rows
+                if row["backend_variant"] == MODULE.VARIANT_TYPED
+            )
+            filtered_rows = [
+                row
+                for row in rows
+                if not (
+                    row["backend_variant"] == MODULE.VARIANT_BASELINE
+                    and int(row["steps"]) == frontier
+                )
+            ]
+            with bad_default.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(filtered_rows)
+
+            out_json = temp / "out.json"
+            out_tsv = temp / "out.tsv"
+            completed = self.run_script(
+                "--default-input",
+                str(bad_default),
+                "--output-json",
+                str(out_json),
+                "--output-tsv",
+                str(out_tsv),
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn(
+                f"missing {MODULE.VARIANT_BASELINE} row(s) at steps={frontier}",
+                completed.stderr + completed.stdout,
+            )
 
 
 if __name__ == "__main__":

@@ -170,11 +170,18 @@ def parse_float(raw: str, *, label: str, path: Path) -> float:
     return value
 
 
-def parse_int(raw: str, *, label: str, path: Path) -> int:
+def parse_int(
+    raw: str, *, label: str, path: Path, min_value: int | None = None
+) -> int:
     try:
-        return int(raw)
+        value = int(raw)
     except ValueError as exc:
         raise SystemExit(f"{label} must be an integer in {path}; got {raw!r}") from exc
+    if min_value is not None and value < min_value:
+        raise SystemExit(
+            f"{label} must be >= {min_value} in {path}; got {raw!r}"
+        )
+    return value
 
 
 def row_map(rows: list[dict[str, str]], *, source: Path) -> dict[tuple[str, int], dict[str, str]]:
@@ -184,7 +191,7 @@ def row_map(rows: list[dict[str, str]], *, source: Path) -> dict[tuple[str, int]
             raise SystemExit(
                 f"unexpected backend_variant in {source}: {row['backend_variant']}"
             )
-        step = parse_int(row["steps"], label="steps", path=source)
+        step = parse_int(row["steps"], label="steps", path=source, min_value=0)
         key = (row["backend_variant"], step)
         if key in out:
             raise SystemExit(f"duplicate row in {source}: {key}")
@@ -196,7 +203,12 @@ def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, st
     timing_mode = rows[0].get("timing_mode", "").strip()
     timing_policy = rows[0].get("timing_policy", "").strip()
     timing_unit = rows[0].get("timing_unit", "").strip()
-    timing_runs = parse_int(rows[0].get("timing_runs", "").strip(), label="timing_runs", path=spec.input_path)
+    timing_runs = parse_int(
+        rows[0].get("timing_runs", "").strip(),
+        label="timing_runs",
+        path=spec.input_path,
+        min_value=1,
+    )
     if timing_mode != "measured_median":
         raise SystemExit(f"{spec.input_path} must use measured_median timing_mode")
     if timing_policy != "median_of_5_runs_from_microsecond_capture":
@@ -225,7 +237,7 @@ def validate_rows(rows: list[dict[str, str]], spec: FamilySpec) -> tuple[str, st
 
 def frontier_step(rows: list[dict[str, str]]) -> int:
     typed_steps = [
-        parse_int(row["steps"], label="steps", path=Path("<rows>"))
+        parse_int(row["steps"], label="steps", path=Path("<rows>"), min_value=0)
         for row in rows
         if row["backend_variant"] == VARIANT_TYPED
     ]
@@ -234,11 +246,42 @@ def frontier_step(rows: list[dict[str, str]]) -> int:
     return max(typed_steps)
 
 
+def require_variant_rows(
+    mapping: dict[tuple[str, int], dict[str, str]],
+    *,
+    step: int,
+    path: Path,
+) -> None:
+    missing = [
+        variant for variant in (
+            VARIANT_TYPED,
+            VARIANT_BASELINE,
+            VARIANT_COMPACT,
+            VARIANT_REPLAY,
+            VARIANT_BINDING,
+        )
+        if (variant, step) not in mapping
+    ]
+    if missing:
+        raise SystemExit(
+            f"missing {', '.join(missing)} row(s) at steps={step} in {path}"
+        )
+
+
+def safe_ratio(numerator: float, denominator: float, *, label: str, path: Path) -> float:
+    if denominator <= 0:
+        raise SystemExit(
+            f"{label} denominator must be > 0 in {path}; got {denominator!r}"
+        )
+    return round3(numerator / denominator)
+
+
 def summarize_family(spec: FamilySpec) -> dict[str, Any]:
     rows = read_rows(spec.input_path)
     timing_mode, timing_policy, timing_unit, timing_runs = validate_rows(rows, spec)
     mapping = row_map(rows, source=spec.input_path)
     checked_frontier_step = frontier_step(rows)
+    require_variant_rows(mapping, step=checked_frontier_step, path=spec.input_path)
 
     typed = mapping[(VARIANT_TYPED, checked_frontier_step)]
     baseline = mapping[(VARIANT_BASELINE, checked_frontier_step)]
@@ -274,6 +317,15 @@ def summarize_family(spec: FamilySpec) -> dict[str, Any]:
         "timing_policy": timing_policy,
         "timing_unit": timing_unit,
         "timing_runs": timing_runs,
+        "_raw_timings": {
+            "typed_verify_ms": typed_verify_ms,
+            "typed_emit_ms": typed_emit_ms,
+            "baseline_verify_ms": baseline_verify_ms,
+            "compact_verify_ms": compact_verify_ms,
+            "replay_verify_ms": replay_verify_ms,
+            "binding_verify_ms": binding_verify_ms,
+            "binding_emit_ms": binding_emit_ms,
+        },
         "rolling_kv_pairs": spec.rolling_kv_pairs,
         "pair_width": spec.pair_width,
         "phase12_kv_cache_cells": spec.rolling_kv_pairs * spec.pair_width,
@@ -284,52 +336,85 @@ def summarize_family(spec: FamilySpec) -> dict[str, Any]:
         "typed_verify_ms": round3(typed_verify_ms),
         "typed_emit_ms": round3(typed_emit_ms),
         "typed_serialized_bytes": parse_int(
-            typed["serialized_bytes"], label="typed serialized_bytes", path=spec.input_path
+            typed["serialized_bytes"],
+            label="typed serialized_bytes",
+            path=spec.input_path,
+            min_value=0,
         ),
         "baseline_verify_ms": round3(baseline_verify_ms),
         "baseline_serialized_bytes": parse_int(
             baseline["serialized_bytes"],
             label="baseline serialized_bytes",
             path=spec.input_path,
+            min_value=0,
         ),
         "compact_verify_ms": round3(compact_verify_ms),
         "compact_serialized_bytes": parse_int(
-            compact["serialized_bytes"], label="compact serialized_bytes", path=spec.input_path
+            compact["serialized_bytes"],
+            label="compact serialized_bytes",
+            path=spec.input_path,
+            min_value=0,
         ),
         "replay_verify_ms": round3(replay_verify_ms),
         "replay_serialized_bytes": parse_int(
-            replay["serialized_bytes"], label="replay serialized_bytes", path=spec.input_path
+            replay["serialized_bytes"],
+            label="replay serialized_bytes",
+            path=spec.input_path,
+            min_value=0,
         ),
         "binding_verify_ms": round3(binding_verify_ms),
         "binding_emit_ms": round3(binding_emit_ms),
         "binding_serialized_bytes": parse_int(
-            binding["serialized_bytes"], label="binding serialized_bytes", path=spec.input_path
+            binding["serialized_bytes"],
+            label="binding serialized_bytes",
+            path=spec.input_path,
+            min_value=0,
         ),
     }
 
 
 def enrich_against_default(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     default = next(row for row in rows if row["family"] == "default")
+    default_raw = default["_raw_timings"]
     enriched = []
     for row in rows:
-        out = dict(row)
-        out["typed_verify_ratio_vs_default"] = round3(
-            default["typed_verify_ms"] / row["typed_verify_ms"]
+        row_raw = row["_raw_timings"]
+        out = {key: value for key, value in row.items() if key != "_raw_timings"}
+        out["typed_verify_ratio_vs_default"] = safe_ratio(
+            default_raw["typed_verify_ms"],
+            row_raw["typed_verify_ms"],
+            label=f"{row['family']} typed_verify_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
-        out["typed_emit_ratio_vs_default"] = round3(
-            default["typed_emit_ms"] / row["typed_emit_ms"]
+        out["typed_emit_ratio_vs_default"] = safe_ratio(
+            default_raw["typed_emit_ms"],
+            row_raw["typed_emit_ms"],
+            label=f"{row['family']} typed_emit_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
-        out["compact_verify_ratio_vs_default"] = round3(
-            default["compact_verify_ms"] / row["compact_verify_ms"]
+        out["compact_verify_ratio_vs_default"] = safe_ratio(
+            default_raw["compact_verify_ms"],
+            row_raw["compact_verify_ms"],
+            label=f"{row['family']} compact_verify_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
-        out["binding_verify_ratio_vs_default"] = round3(
-            default["binding_verify_ms"] / row["binding_verify_ms"]
+        out["binding_verify_ratio_vs_default"] = safe_ratio(
+            default_raw["binding_verify_ms"],
+            row_raw["binding_verify_ms"],
+            label=f"{row['family']} binding_verify_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
-        out["binding_emit_ratio_vs_default"] = round3(
-            default["binding_emit_ms"] / row["binding_emit_ms"]
+        out["binding_emit_ratio_vs_default"] = safe_ratio(
+            default_raw["binding_emit_ms"],
+            row_raw["binding_emit_ms"],
+            label=f"{row['family']} binding_emit_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
-        out["replay_verify_ratio_vs_default"] = round3(
-            default["replay_verify_ms"] / row["replay_verify_ms"]
+        out["replay_verify_ratio_vs_default"] = safe_ratio(
+            default_raw["replay_verify_ms"],
+            row_raw["replay_verify_ms"],
+            label=f"{row['family']} replay_verify_ratio_vs_default",
+            path=Path(row["input_path"]),
         )
         out["typed_bytes_delta_vs_default"] = (
             row["typed_serialized_bytes"] - default["typed_serialized_bytes"]
