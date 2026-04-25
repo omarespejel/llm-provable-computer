@@ -35,9 +35,16 @@ published numbers make three boundaries explicit:
   `~0.25M`-parameter `nanoGPT` model, and `~38s` end-to-end for `GPT-2 (125M)`.
 - `EZKL`, as quoted by `Jolt Atlas` on the same `nanoGPT` workload, reports
   `237s` proof time and `0.34s` verify time.
-- `BitSage obelyzk.rs` reports a `41.4s` warm-cache proof for one
-  `Qwen2.5-14B` token on `H100`; this is the closest public STARK-native
-  comparator row, but it is repo-reported and not a matched benchmark.
+- `BitSage Obelyzk` now has a source-backed Starknet Sepolia verifier-object row:
+  docs.rs pins recursive verifier contract
+  `0x1c208a5fe731c0d03b098b524f274c537587ea1d43d903838cc4a2bf90c40c7`,
+  verified tx
+  `0x276c6a448829c0f3975080914a89c2a9611fc41912aff1fddfe29d8f3364ddc`,
+  and `942` felt calldata for a 30-layer `SmolLM2-135M` recursive proof; the
+  same page reports `3.55s` recursive compression on top of a `102s` GKR proof
+  on `A10G`, and the accompanying paper reports `~280K` gas for one-layer GKR
+  verify and `~2.5M` gas (`~$0.01`) for the full 40-layer Starknet Sepolia
+  path. This sharpens deployment calibration, not a matched local verifier row.
 - the current repository now exposes **three** literature-facing local calibration rows,
   each for a different regime:
   - the checked `Phase12`-style shared lookup bundle as the local proving-surface row at
@@ -80,6 +87,25 @@ This is explicitly not a matched benchmark. The workloads and proof objects diff
 But it is still the most honest narrow comparator now available in public sources, and
 it reinforces the paper's actual position: different verifier-facing layers improve
 different costs.
+
+## What the Obelyzk row now does and does not buy us
+
+The refreshed `BitSage Obelyzk` row is useful because it upgrades the public
+STARK-native comparator from a repo-reported README benchmark to a source-backed
+Starknet Sepolia verifier-object record with an exact contract address, an exact
+verified transaction hash, and an exact recursive calldata width.
+
+What it still does **not** buy us is a matched local verifier-time row:
+
+- the public Obelyzk object is a recursive STARK settlement proof over a GKR
+  stack,
+- the local `Phase44D` row is a pre-recursive typed-boundary latency surface,
+  and
+- the local `Phase71` row is a pre-recursive compact handoff surface.
+
+So the Obelyzk row now strengthens deployment/on-chain calibration and public
+STARK-native posture, but it does not turn the table into a same-regime verifier
+race.
 
 ## Immediate consequence for paper positioning
 

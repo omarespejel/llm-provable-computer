@@ -979,17 +979,25 @@ proving stress concentrates in repeated non-arithmetic machinery such as softmax
 normalization, and attention-specific lookup structure. Here they are architectural
 evidence, not matched benchmarks.
 
-### 7.4 BitSage obelyzk.rs (formerly stwo-ml) as the closest public STARK-native comparator
+### 7.4 BitSage Obelyzk (obelyzk.rs) as the closest public STARK-native comparator
 
-BitSage obelyzk.rs (formerly stwo-ml) is the closest public STARK-native comparator.
-According to current project-reported public materials, it combines
-GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification
-paths, including a single-transaction recursive STARK verification claim for a 30-layer
-SmolLM2-135M proof and a six-step streaming verification path for a Qwen2-0.5B one-layer
-model [26, 27]. Its README also reports a warm-cache `41.4s` proof for one
-`Qwen2.5-14B` token on `H100` [26]. These remain project-reported evidence, not
-normalized benchmarks, and the same public materials still show uneven component
-maturity (`Attention` remains listed as `Prover only`).
+BitSage Obelyzk is the closest public STARK-native comparator. According to the current
+docs.rs `0.3.0` page and the accompanying paper, it combines GKR/sumcheck/LogUp-style
+machinery on an S-two/STWO path with a deployed Starknet Sepolia recursive verifier
+[26, 27]. The public verifier page now pins an exact recursive verifier contract,
+`0x1c208a5fe731c0d03b098b524f274c537587ea1d43d903838cc4a2bf90c40c7`, an exact verified
+Sepolia transaction,
+`0x276c6a448829c0f3975080914a89c2a9611fc41912aff1fddfe29d8f3364ddc`, and a `942`-felt
+recursive calldata object for a 30-layer `SmolLM2-135M` proof. The same source reports
+`3.55s` recursive compression on top of a `102s` GKR proof on `A10G` (`~106s` total),
+while the paper separately reports `~280K` gas for one-layer GKR verification and
+`~2.5M` gas (`~$0.01`) for the full 40-layer Starknet Sepolia path [26, 27]. This is
+stronger public deployment evidence than a repo README benchmark line, but it is still
+not a matched comparison to this repository's `Phase44D` or `Phase71` rows: the public
+Obelyzk object is a recursive settlement proof over a GKR stack, while this
+repository's frozen rows remain narrower pre-recursive artifact surfaces. The same
+public materials still show uneven component maturity (`Attention` remains listed as
+`Prover only`).
 
 ### 7.5 LuminAIR and the custom-AIR path
 
