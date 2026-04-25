@@ -264,6 +264,7 @@ pub(crate) fn prove_execution_stark_phase12_carry_aware_experimental_with_option
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
+#[allow(dead_code)]
 #[cfg(not(feature = "stwo-backend"))]
 pub(crate) fn prove_execution_stark_phase12_carry_aware_experimental_with_options(
     _model: &TransformerVm,
@@ -305,6 +306,7 @@ pub(crate) fn verify_execution_stark_phase12_carry_aware_experimental_with_reexe
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
+#[allow(dead_code)]
 #[cfg(not(feature = "stwo-backend"))]
 pub(crate) fn verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(
     _proof: &VanillaStarkExecutionProof,
@@ -1178,12 +1180,14 @@ fn execution_fingerprint(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{ProgramCompiler, TransformerVmConfig};
+    use serde::Deserialize;
+
+    #[cfg(feature = "stwo-backend")]
     use crate::stwo_backend::{
         decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
         phase12_demo_initial_memories_for_steps,
     };
-    use crate::{ProgramCompiler, TransformerVmConfig};
-    use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
     struct StatementSpecFile {
@@ -1202,6 +1206,7 @@ mod tests {
             .expect("prove")
     }
 
+    #[cfg(feature = "stwo-backend")]
     fn phase12_models_for_steps(total_steps: usize) -> Vec<(usize, crate::model::TransformerVm)> {
         let layout = phase12_default_decoding_layout();
         phase12_demo_initial_memories_for_steps(&layout, total_steps)
@@ -1226,6 +1231,7 @@ mod tests {
             .collect()
     }
 
+    #[cfg(feature = "stwo-backend")]
     fn phase12_four_step_overflow_model() -> crate::model::TransformerVm {
         phase12_models_for_steps(4)
             .into_iter()
@@ -1306,6 +1312,7 @@ HALT
         assert!(matches!(err, VmError::UnsupportedProof(_)));
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn legacy_execution_surface_rejects_honest_phase12_four_step_overflow_seed() {
         let model = phase12_four_step_overflow_model();
@@ -1316,6 +1323,7 @@ HALT
         ));
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_surface_proves_honest_four_step_seed() {
         let model = phase12_four_step_overflow_model();
@@ -1352,6 +1360,7 @@ HALT
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_surface_proves_honest_eight_step_family() {
         let mut carry_bearing_seed_count = 0usize;
@@ -1403,6 +1412,7 @@ HALT
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn legacy_verifier_rejects_experimental_phase12_carry_aware_proof() {
         let model = phase12_four_step_overflow_model();
@@ -1419,6 +1429,7 @@ HALT
             .contains("does not match expected `stwo-phase12-decoding-family-v9`"));
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_verifier_rejects_tampered_backend_version() {
         let model = phase12_four_step_overflow_model();
