@@ -61,8 +61,14 @@ This repository now has two live lanes.
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
+- The experimental Phase44D typed-boundary sweep over the `2x2` family also
+  clears `2,4,8,16,32,64,128,256,512,1024`.
 - The same Phase44D replay-avoidance mechanism now reproduces on the non-default
   `3x3` layout family through `2,4,8,16,32,64,128,256`.
+- The family-matrix gate now records all three checked families together and
+  shows the strongest checked constants so far on the `2x2` family:
+  `925.097x` at `1024` steps, versus `312.330x` on the default family at the
+  same checked frontier.
 - The Phase43 second-boundary feasibility gate records a real source-root
   binding mechanism but an explicit **NO-GO** for claiming a second Tablero
   boundary today because the source side still does not emit the proof-native
@@ -103,8 +109,8 @@ Tablero boundary.
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
 2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
-3. Track the layout-matrix follow-up explicitly now that the `3x3` family
-   reproduces the same replay-avoidance mechanism through `256` steps.
+3. Use issue `#255` to explain why the `2x2` family has a much lighter
+   high-step constant surface than the default and `3x3` families.
 4. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 5. Broaden review of the experimental backend beyond the current decoding-step

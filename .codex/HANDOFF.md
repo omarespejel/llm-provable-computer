@@ -91,11 +91,13 @@ Use these in order of authority for current state:
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-12. `docs/engineering/reproducibility.md`
-13. `git status --short --branch`
+9. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
+10. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+11. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
+12. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+13. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+14. `docs/engineering/reproducibility.md`
+15. `git status --short --branch`
 
 ## Merge culture
 
@@ -120,8 +122,9 @@ Use these in order of authority for current state:
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
 2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
-3. Track the layout-matrix follow-up explicitly now that the `3x3` family
-   reproduces the same replay-avoidance mechanism through `256` steps.
+3. Treat the family-matrix result as landed: default, `2x2`, and `3x3` now all
+   reproduce the same replay-avoidance mechanism on the experimental lane, and
+   use issue `#255` for the follow-up on the much stronger `2x2` constants.
 4. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt

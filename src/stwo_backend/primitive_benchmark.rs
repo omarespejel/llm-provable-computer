@@ -118,6 +118,10 @@ pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION: &str =
     "stwo-phase44d-source-emission-experimental-benchmark-v1";
 pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE: &str =
     "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend";
+pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_VERSION: &str =
+    "stwo-phase44d-source-emission-experimental-2x2-layout-benchmark-v1";
+pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_SCOPE: &str =
+    "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_2x2_layout";
 pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_VERSION: &str =
     "stwo-phase44d-source-emission-experimental-3x3-layout-benchmark-v1";
 pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_SCOPE: &str =
@@ -158,10 +162,13 @@ const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS: [usize; 10] =
+    [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS: [usize; 8] =
     [2, 4, 8, 16, 32, 64, 128, 256];
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_MAX_STEPS: usize = 1024;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS: usize = 256;
 const PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS: [usize; 1] = [2];
 const PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
@@ -1470,6 +1477,40 @@ pub fn run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps(
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_VERSION,
         STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_SCOPE,
         PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS,
+        capture_timings,
+        |row| phase44d_experimental_layout_measurement(row, &layout),
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_experimental_2x2_benchmark(
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
+        &PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_experimental_2x2_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
+        &PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    let layout = Phase12DecodingLayout::new(2, 2)?;
+    run_stwo_phase44d_source_emission_experimental_benchmark_for_layout_step_counts(
+        &layout,
+        step_counts,
+        "phase44d source emission experimental 2x2 benchmark",
+        STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_VERSION,
+        STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_SCOPE,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_MAX_STEPS,
         capture_timings,
         |row| phase44d_experimental_layout_measurement(row, &layout),
     )
@@ -6478,6 +6519,98 @@ mod tests {
                 .last()
                 .expect("3x3 experimental step surface must be non-empty")
         );
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_rejects_oversized_step_counts() {
+        let error = run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
+            &[2, 2048],
+            false,
+        )
+        .expect_err(
+            "2x2 experimental phase44d source emission benchmark must reject oversized steps",
+        );
+        assert!(error.to_string().contains("supports at most"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_clears_honest_sixteen_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(&[16], false)
+                .expect(
+                    "2x2 experimental phase44d source emission benchmark should clear 16 steps",
+                );
+        assert_eq!(report.rows.len(), 5);
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_SCOPE
+        );
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| {
+            row.note.contains(
+                "carry-aware execution-proof backend over the decoding_step_v2 2x2 layout",
+            )
+        }));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 16
+        }));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_scales_through_eight_and_sixteen_steps()
+    {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(&[8, 16], false)
+                .expect("2x2 experimental phase44d source emission benchmark should run");
+        assert_eq!(report.rows.len(), 10);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| row.steps == 8));
+        assert!(report.rows.iter().any(|row| row.steps == 16));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_2x2_benchmark_pins_canonical_step_surface() {
+        assert_eq!(
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS,
+            [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+        );
+        assert_eq!(
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_MAX_STEPS,
+            *PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS
+                .last()
+                .expect("2x2 experimental step surface must be non-empty")
+        );
+    }
+
+    #[test]
+    #[ignore = "expensive experimental phase44d 2x2 full sweep"]
+    fn phase44d_source_emission_experimental_2x2_benchmark_preserves_expected_row_shape() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_2x2_benchmark_with_options(false)
+                .expect("2x2 experimental phase44d source emission benchmark should run");
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_BENCHMARK_SCOPE
+        );
+        assert_eq!(
+            report.rows.len(),
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS.len() * 5
+        );
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 1024
+        }));
     }
 
     #[test]
