@@ -192,6 +192,14 @@ def round3(value: float) -> float:
     return round(value, 3)
 
 
+def display_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def main() -> None:
     args = parse_args()
     first_blocked_overrides = {family: value for family, value in args.first_blocked_step}
@@ -243,7 +251,7 @@ def main() -> None:
             {
                 "family": spec.family,
                 "family_label": spec.label,
-                "input_path": str(spec.input_path),
+                "input_path": display_path(spec.input_path),
                 "benchmark_version": spec.benchmark_version,
                 "semantic_scope": spec.semantic_scope,
                 "checked_frontier_step": checked_frontier_step,

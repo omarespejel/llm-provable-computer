@@ -59,32 +59,67 @@ if [[ -n "$PDF_OUT" ]]; then
   mkdir -p "$(dirname "$PDF_OUT")"
 fi
 
+EVIDENCE_DIR="$(dirname "$TSV_OUT")"
+JSON_DIR="$(dirname "$JSON_OUT")"
+SVG_DIR="$(dirname "$SVG_OUT")"
+TMP_EVIDENCE_DIR="$(mktemp -d "$EVIDENCE_DIR/phase44d-family-matrix.XXXXXX")"
+TMP_JSON_DIR="$(mktemp -d "$JSON_DIR/phase44d-family-matrix.XXXXXX")"
+TMP_FIGURE_DIR="$(mktemp -d "$SVG_DIR/phase44d-family-matrix.XXXXXX")"
+trap 'rm -rf "$TMP_EVIDENCE_DIR" "$TMP_JSON_DIR" "$TMP_FIGURE_DIR"' EXIT
+
+TMP_TSV="$TMP_EVIDENCE_DIR/$(basename "$TSV_OUT")"
+TMP_JSON="$TMP_JSON_DIR/$(basename "$JSON_OUT")"
+FIGURE_PREFIX="$TMP_FIGURE_DIR/$(basename "${SVG_OUT%.svg}")"
+TMP_SVG="${FIGURE_PREFIX}.svg"
+TMP_PNG=""
+TMP_PDF=""
+if [[ -n "$PNG_OUT" ]]; then
+  TMP_PNG="${FIGURE_PREFIX}.png"
+fi
+if [[ -n "$PDF_OUT" ]]; then
+  TMP_PDF="${FIGURE_PREFIX}.pdf"
+fi
+
 python3 scripts/engineering/aggregate_phase44d_carry_aware_experimental_family_matrix.py \
   --default-input "$DEFAULT_INPUT" \
   --input-2x2 "$INPUT_2X2" \
   --input-3x3 "$INPUT_3X3" \
-  --output-json "$JSON_OUT" \
-  --output-tsv "$TSV_OUT"
+  --output-json "$TMP_JSON" \
+  --output-tsv "$TMP_TSV"
 
 python3 scripts/engineering/generate_phase44d_carry_aware_experimental_family_matrix_figure.py \
-  --input-tsv "$TSV_OUT" \
-  --output-prefix "${SVG_OUT%.svg}"
+  --input-tsv "$TMP_TSV" \
+  --output-prefix "$FIGURE_PREFIX"
 
-if [[ -n "$PNG_OUT" && ! -f "$PNG_OUT" ]]; then
+if [[ -n "$PNG_OUT" && ! -f "$TMP_PNG" ]]; then
   echo "phase44d family matrix figure generation did not produce requested PNG output: $PNG_OUT" >&2
   exit 1
 fi
-if [[ -n "$PDF_OUT" && ! -f "$PDF_OUT" ]]; then
+if [[ -n "$PDF_OUT" && ! -f "$TMP_PDF" ]]; then
   echo "phase44d family matrix figure generation did not produce requested PDF output: $PDF_OUT" >&2
   exit 1
+fi
+
+mv "$TMP_TSV" "$TSV_OUT"
+mv "$TMP_JSON" "$JSON_OUT"
+mv "$TMP_SVG" "$SVG_OUT"
+WROTE_PNG=0
+WROTE_PDF=0
+if [[ -f "$TMP_PNG" ]]; then
+  mv "$TMP_PNG" "$PNG_OUT"
+  WROTE_PNG=1
+fi
+if [[ -f "$TMP_PDF" ]]; then
+  mv "$TMP_PDF" "$PDF_OUT"
+  WROTE_PDF=1
 fi
 
 echo "wrote $TSV_OUT"
 echo "wrote $JSON_OUT"
 echo "wrote $SVG_OUT"
-if [[ -n "$PNG_OUT" ]]; then
+if [[ "$WROTE_PNG" -eq 1 ]]; then
   echo "wrote $PNG_OUT"
 fi
-if [[ -n "$PDF_OUT" ]]; then
+if [[ "$WROTE_PDF" -eq 1 ]]; then
   echo "wrote $PDF_OUT"
 fi

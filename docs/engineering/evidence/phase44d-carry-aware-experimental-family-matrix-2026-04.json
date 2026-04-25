@@ -9,7 +9,7 @@
     {
       "family": "default",
       "family_label": "Default layout",
-      "input_path": "/Users/espejelomar/StarkNet/provable-transformer-vm/_pr_work/phase44d-family-matrix-v1/docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.tsv",
+      "input_path": "docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.tsv",
       "benchmark_version": "stwo-phase44d-source-emission-experimental-benchmark-v1",
       "semantic_scope": "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend",
       "checked_frontier_step": 1024,
@@ -19,7 +19,7 @@
     {
       "family": "2x2",
       "family_label": "2x2 layout",
-      "input_path": "/Users/espejelomar/StarkNet/provable-transformer-vm/_pr_work/phase44d-family-matrix-v1/docs/engineering/evidence/phase44d-carry-aware-experimental-2x2-scaling-2026-04.tsv",
+      "input_path": "docs/engineering/evidence/phase44d-carry-aware-experimental-2x2-scaling-2026-04.tsv",
       "benchmark_version": "stwo-phase44d-source-emission-experimental-2x2-layout-benchmark-v1",
       "semantic_scope": "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_2x2_layout",
       "checked_frontier_step": 1024,
@@ -29,7 +29,7 @@
     {
       "family": "3x3",
       "family_label": "3x3 layout",
-      "input_path": "/Users/espejelomar/StarkNet/provable-transformer-vm/_pr_work/phase44d-family-matrix-v1/docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv",
+      "input_path": "docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv",
       "benchmark_version": "stwo-phase44d-source-emission-experimental-3x3-layout-benchmark-v1",
       "semantic_scope": "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_3x3_layout",
       "checked_frontier_step": 256,
