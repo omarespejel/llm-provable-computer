@@ -46,12 +46,16 @@ use super::decoding::{
     Phase30DecodingStepProofEnvelopeManifest,
 };
 use super::history_replay_projection_prover::{
+    derive_phase43_history_replay_projection_source_root_claim,
     emit_phase44d_history_replay_projection_source_chain_public_output_boundary,
     prove_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_compact_claim_envelope,
+    verify_phase43_history_replay_projection_source_root_binding,
+    verify_phase43_history_replay_projection_source_root_compact_envelope,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding,
     Phase43HistoryReplayProjectionCompactProofEnvelope,
+    Phase43HistoryReplayProjectionSourceRootClaim,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
@@ -114,6 +118,14 @@ pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_VERSION: &str =
     "stwo-phase44d-source-emission-experimental-benchmark-v1";
 pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_BENCHMARK_SCOPE: &str =
     "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend";
+pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
+    "stwo-phase43-source-root-feasibility-benchmark-v1";
+pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
+    "phase43_source_root_compact_binding_feasibility_calibration";
+pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_VERSION: &str =
+    "stwo-phase43-source-root-feasibility-experimental-benchmark-v1";
+pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_SCOPE: &str =
+    "phase43_source_root_compact_binding_feasibility_over_phase12_carry_aware_experimental_backend";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION: &str =
     "stwo-phase71-handoff-receipt-benchmark-v1";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE: &str =
@@ -144,6 +156,9 @@ const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
+const PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS: [usize; 1] = [2];
+const PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
+    [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT: usize = 6;
 const PHASE71_HANDOFF_RECEIPT_MAX_TOTAL_STEPS: usize = 6;
@@ -351,6 +366,30 @@ pub struct StwoPhase44DSourceEmissionBenchmarkReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub relation: String,
+    pub serialized_bytes: usize,
+    pub derive_ms: f64,
+    pub verify_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase43SourceRootFeasibilityBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPhase71HandoffReceiptBenchmarkMeasurement {
     pub primitive: String,
     pub backend_variant: String,
@@ -523,6 +562,16 @@ struct Phase44DSourceEmissionBenchmarkInput {
     compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
     boundary: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
     boundary_emit_ms: f64,
+}
+
+#[derive(Clone)]
+struct Phase43SourceRootFeasibilityBenchmarkInput {
+    total_steps: usize,
+    shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    phase43_trace: Phase43HistoryReplayTrace,
+    compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
+    source_root_claim: Phase43HistoryReplayProjectionSourceRootClaim,
+    source_root_claim_derive_ms: f64,
 }
 
 #[derive(Clone)]
@@ -1116,6 +1165,198 @@ fn run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
     Ok(StwoPhase30SourceBoundManifestReuseBenchmarkReport {
         benchmark_version: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_benchmark(
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_benchmark_for_step_counts(
+        &PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_benchmark_for_step_counts(
+        &PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_benchmark_for_step_counts(step_counts, capture_timings)
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_experimental_benchmark(
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_step_counts(
+        &PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_experimental_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_step_counts(
+        &PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+pub fn run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_step_counts(
+        step_counts,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase43_source_root_feasibility_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    validate_phase44d_step_counts(
+        step_counts,
+        "phase43 source-root feasibility benchmark",
+        PHASE44D_SOURCE_EMISSION_MAX_STEPS,
+    )?;
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "phase43 source-root feasibility benchmark cannot construct {}-step proof-checked source chain on the current execution-proof surface: {}",
+                    steps, error
+                ))
+            })?;
+        let benchmark_input =
+            phase43_source_root_feasibility_benchmark_input(&chain, capture_timings)?;
+        rows.push(measure_phase43_source_root_feasibility_candidate(
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(measure_phase43_source_root_feasibility_trace_baseline(
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(
+            measure_phase43_source_root_feasibility_compact_projection_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        );
+        rows.push(
+            measure_phase43_source_root_feasibility_source_root_derivation_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        );
+        rows.push(measure_phase43_source_root_feasibility_binding_only(
+            &benchmark_input,
+            capture_timings,
+        )?);
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase43 source-root feasibility benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkReport {
+        benchmark_version: STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+fn run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkReport> {
+    validate_phase44d_step_counts(
+        step_counts,
+        "phase43 source-root feasibility experimental benchmark",
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
+    )?;
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout,
+                steps,
+            )
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "phase43 source-root feasibility experimental benchmark cannot construct {}-step proof-checked source chain on the carry-aware execution-proof surface: {}",
+                    steps, error
+                ))
+            })?;
+        let benchmark_input =
+            phase43_source_root_feasibility_benchmark_input(&chain, capture_timings)?;
+        rows.push(phase43_source_root_feasibility_experimental_measurement(
+            measure_phase43_source_root_feasibility_candidate(&benchmark_input, capture_timings)?,
+        ));
+        rows.push(phase43_source_root_feasibility_experimental_measurement(
+            measure_phase43_source_root_feasibility_trace_baseline(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase43_source_root_feasibility_experimental_measurement(
+            measure_phase43_source_root_feasibility_compact_projection_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase43_source_root_feasibility_experimental_measurement(
+            measure_phase43_source_root_feasibility_source_root_derivation_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+        rows.push(phase43_source_root_feasibility_experimental_measurement(
+            measure_phase43_source_root_feasibility_binding_only(
+                &benchmark_input,
+                capture_timings,
+            )?,
+        ));
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase43 source-root feasibility experimental benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkReport {
+        benchmark_version: STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_VERSION
+            .to_string(),
+        semantic_scope: STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_SCOPE
+            .to_string(),
         timing_mode: timing_surface.mode.to_string(),
         timing_policy: timing_surface.policy.to_string(),
         timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
@@ -2136,6 +2377,47 @@ pub fn save_stwo_phase44d_source_emission_benchmark_report_tsv(
             row.relation,
             row.serialized_bytes,
             format_timing_ms(row.emit_ms),
+            format_timing_ms(row.verify_ms),
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase43_source_root_feasibility_benchmark_report_json(
+    report: &StwoPhase43SourceRootFeasibilityBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase43_source_root_feasibility_benchmark_report_tsv(
+    report: &StwoPhase43SourceRootFeasibilityBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\tderive_ms\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.primitive,
+            row.backend_variant,
+            row.steps,
+            row.relation,
+            row.serialized_bytes,
+            format_timing_ms(row.derive_ms),
             format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
@@ -3292,6 +3574,41 @@ fn phase44d_source_emission_benchmark_input(
     })
 }
 
+fn phase43_source_root_feasibility_benchmark_input(
+    chain: &Phase12DecodingChainManifest,
+    capture_timings: bool,
+) -> Result<Phase43SourceRootFeasibilityBenchmarkInput> {
+    let shared_manifest = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
+    let phase43_trace = phase44d_prepare_benchmark_trace_from_sources(chain, &shared_manifest)?;
+    let compact_envelope =
+        prove_phase43_history_replay_projection_compact_claim_envelope(&phase43_trace)?;
+    let (source_root_claim, source_root_claim_derive_ms) =
+        measure_elapsed_ms(capture_timings, || {
+            derive_phase43_history_replay_projection_source_root_claim(
+                &phase43_trace,
+                &shared_manifest,
+            )
+        })?;
+    Ok(Phase43SourceRootFeasibilityBenchmarkInput {
+        total_steps: chain.total_steps,
+        shared_manifest,
+        phase43_trace,
+        compact_envelope,
+        source_root_claim,
+        source_root_claim_derive_ms,
+    })
+}
+
+fn phase43_source_root_feasibility_experimental_measurement(
+    mut row: StwoPhase43SourceRootFeasibilityBenchmarkMeasurement,
+) -> StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+    row.note = format!(
+        "experimental Phase12 source chain uses the carry-aware execution-proof backend. {}",
+        row.note
+    );
+    row
+}
+
 fn phase44d_experimental_measurement(
     mut row: StwoPhase44DSourceEmissionBenchmarkMeasurement,
 ) -> StwoPhase44DSourceEmissionBenchmarkMeasurement {
@@ -3314,6 +3631,20 @@ fn phase44d_source_emission_serialized_bytes(
             .len())
 }
 
+fn phase43_trace_serialized_bytes(trace: &Phase43HistoryReplayTrace) -> Result<usize> {
+    Ok(serde_json::to_vec(trace)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
+}
+
+fn phase43_source_root_claim_serialized_bytes(
+    source_root_claim: &Phase43HistoryReplayProjectionSourceRootClaim,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(source_root_claim)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
+}
+
 fn phase44d_boundary_serialized_bytes(
     boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 ) -> Result<usize> {
@@ -3328,6 +3659,136 @@ fn phase43_compact_projection_serialized_bytes(
     Ok(serde_json::to_vec(compact_envelope)
         .map_err(|error| VmError::Serialization(error.to_string()))?
         .len())
+}
+
+fn measure_phase43_source_root_feasibility_candidate(
+    input: &Phase43SourceRootFeasibilityBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
+    debug_assert_eq!(input.phase43_trace.total_steps, input.total_steps);
+    let serialized_bytes = phase43_source_root_claim_serialized_bytes(&input.source_root_claim)?
+        + phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase43_history_replay_projection_source_root_compact_envelope(
+            &input.source_root_claim,
+            &input.compact_envelope,
+        )
+    })?;
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
+        backend_variant: "emitted_source_root_claim_plus_compact_projection".to_string(),
+        steps: input.total_steps,
+        relation: "one emitted Phase43 source-root claim plus one compact Phase43 projection proof"
+            .to_string(),
+        serialized_bytes,
+        derive_ms: input.source_root_claim_derive_ms,
+        verify_ms,
+        verified,
+        note: "feasibility-only prototype row: assumes the source surface emitted the proof-native Phase43 source-root claim already derived from the same Phase43 trace and Phase30 manifest; this is not yet a shipped boundary".to_string(),
+    })
+}
+
+fn measure_phase43_source_root_feasibility_trace_baseline(
+    input: &Phase43SourceRootFeasibilityBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
+    let serialized_bytes = phase43_trace_serialized_bytes(&input.phase43_trace)?
+        + phase30_manifest_serialized_bytes(&input.shared_manifest)?
+        + phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        let derived_claim = derive_phase43_history_replay_projection_source_root_claim(
+            &input.phase43_trace,
+            &input.shared_manifest,
+        )?;
+        verify_phase43_history_replay_projection_source_root_compact_envelope(
+            &derived_claim,
+            &input.compact_envelope,
+        )
+    })?;
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
+        backend_variant: "full_trace_plus_phase30_derivation_baseline".to_string(),
+        steps: input.total_steps,
+        relation: "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof".to_string(),
+        serialized_bytes,
+        derive_ms: 0.0,
+        verify_ms,
+        verified,
+        note: "baseline row: pays the exact source-root derivation work the verifier still needs today because the source chain does not emit proof-native source-root artifacts".to_string(),
+    })
+}
+
+fn measure_phase43_source_root_feasibility_compact_projection_only(
+    input: &Phase43SourceRootFeasibilityBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
+    let serialized_bytes = phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase43_history_replay_projection_compact_claim_envelope(
+            &input.compact_envelope.claim,
+            &input.compact_envelope.proof,
+        )
+    })?;
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+        primitive: "phase43_compact_projection_proof".to_string(),
+        backend_variant: "compact_phase43_projection_proof_only".to_string(),
+        steps: input.total_steps,
+        relation: "one compact Phase43 projection proof envelope".to_string(),
+        serialized_bytes,
+        derive_ms: 0.0,
+        verify_ms,
+        verified,
+        note: "causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on".to_string(),
+    })
+}
+
+fn measure_phase43_source_root_feasibility_source_root_derivation_only(
+    input: &Phase43SourceRootFeasibilityBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
+    let serialized_bytes = phase43_trace_serialized_bytes(&input.phase43_trace)?
+        + phase30_manifest_serialized_bytes(&input.shared_manifest)?;
+    let (derived_claim, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        derive_phase43_history_replay_projection_source_root_claim(
+            &input.phase43_trace,
+            &input.shared_manifest,
+        )
+    })?;
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+        primitive: "phase43_source_root_claim_derivation".to_string(),
+        backend_variant: "derive_source_root_claim_only".to_string(),
+        steps: input.total_steps,
+        relation: "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest".to_string(),
+        serialized_bytes,
+        derive_ms: 0.0,
+        verify_ms,
+        verified: derived_claim == input.source_root_claim,
+        note: "causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch".to_string(),
+    })
+}
+
+fn measure_phase43_source_root_feasibility_binding_only(
+    input: &Phase43SourceRootFeasibilityBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
+    let serialized_bytes = phase43_source_root_claim_serialized_bytes(&input.source_root_claim)?;
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase43_history_replay_projection_source_root_binding(
+            &input.source_root_claim,
+            &input.compact_envelope.claim,
+        )
+    })?;
+    Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
+        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
+        backend_variant: "source_root_binding_only".to_string(),
+        steps: input.total_steps,
+        relation: "bind one emitted Phase43 source-root claim to a previously verified compact Phase43 projection claim".to_string(),
+        serialized_bytes,
+        derive_ms: input.source_root_claim_derive_ms,
+        verify_ms,
+        verified,
+        note: "causal decomposition row: assumes the compact proof was already verified and measures only the source-root binding acceptance surface".to_string(),
+    })
 }
 
 fn measure_phase44d_source_emission_shared(
@@ -5523,6 +5984,97 @@ mod tests {
         assert!(error
             .to_string()
             .contains("does not match the derived Phase 12 chain"));
+    }
+
+    #[test]
+    #[ignore = "expensive phase43 source-root feasibility benchmark"]
+    fn phase43_source_root_feasibility_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase43_source_root_feasibility_benchmark_with_options(false)
+            .expect("phase43 source-root feasibility benchmark should run");
+        assert_eq!(
+            report.rows.len(),
+            PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS.len() * 5
+        );
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.derive_ms >= 0.0));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "emitted_source_root_claim_plus_compact_projection"
+                && row.steps == 2
+        }));
+    }
+
+    #[test]
+    fn phase43_source_root_feasibility_benchmark_defaults_to_zero_timings_without_capture() {
+        let report = run_stwo_phase43_source_root_feasibility_benchmark_for_steps(&[2], false)
+            .expect("phase43 source-root feasibility benchmark should run");
+        assert_eq!(report.rows.len(), 5);
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE
+        );
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.derive_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verified));
+    }
+
+    #[test]
+    fn phase43_source_root_feasibility_benchmark_surfaces_execution_proof_overflow_at_four_steps() {
+        let error = run_stwo_phase43_source_root_feasibility_benchmark_for_steps(&[4], false)
+            .expect_err(
+                "four-step Phase43 source-root feasibility benchmark should surface current execution-proof overflow",
+            );
+        assert!(error
+            .to_string()
+            .contains("cannot construct 4-step proof-checked source chain"));
+        assert!(error.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
+    }
+
+    #[test]
+    fn phase43_source_root_feasibility_experimental_benchmark_clears_honest_eight_steps() {
+        let report =
+            run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_steps(&[8], false)
+                .expect("experimental phase43 source-root feasibility benchmark should run");
+        assert_eq!(report.rows.len(), 5);
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_SCOPE
+        );
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| {
+            row.note.contains(
+                "experimental Phase12 source chain uses the carry-aware execution-proof backend",
+            )
+        }));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "emitted_source_root_claim_plus_compact_projection"
+                && row.steps == 8
+        }));
+    }
+
+    #[test]
+    fn phase43_source_root_feasibility_experimental_benchmark_rejects_oversized_step_counts() {
+        let error = run_stwo_phase43_source_root_feasibility_experimental_benchmark_for_steps(
+            &[2, 2048],
+            false,
+        )
+        .expect_err("oversized experimental step counts must fail");
+        assert!(error.to_string().contains("supports at most 1024 steps"));
     }
 
     #[test]

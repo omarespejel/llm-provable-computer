@@ -52,6 +52,10 @@ pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43: &str
     "phase43-proof-native-source-exposure-assessment-v1";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43: &str =
     "source_exposure_insufficient_legacy_hash_only";
+pub const STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_VERSION_PHASE43: &str =
+    "phase43-second-boundary-feasibility-assessment-v1";
+pub const STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43: &str =
+    "no_go_missing_proof_native_source_emission";
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44: &str =
     "phase44-history-replay-projection-compact-claim-v1";
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44: &str =
@@ -181,6 +185,30 @@ pub struct Phase43HistoryReplayProofNativeSourceExposureAssessment {
     pub exposes_projection_commitment: bool,
     pub exposes_projection_rows: bool,
     pub verifier_can_drop_full_phase43_trace: bool,
+    pub missing_proof_native_inputs: Vec<String>,
+    pub decision: String,
+    pub required_next_step: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplaySecondBoundaryFeasibilityAssessment {
+    pub assessment_version: String,
+    pub phase43_trace_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub pair_width: usize,
+    pub projection_commitment: String,
+    pub compact_proof_size_bytes: usize,
+    pub source_root_claim_candidate_available: bool,
+    pub source_root_compact_binding_verified_without_trace: bool,
+    pub source_surface_exposes_stwo_public_inputs: bool,
+    pub source_surface_exposes_stwo_trace_commitments: bool,
+    pub source_surface_exposes_projection_commitment: bool,
+    pub source_surface_exposes_projection_rows: bool,
+    pub verifier_can_drop_full_phase43_trace_today: bool,
+    pub useful_second_boundary_today: bool,
     pub missing_proof_native_inputs: Vec<String>,
     pub decision: String,
     pub required_next_step: String,
@@ -2012,6 +2040,46 @@ pub fn assess_phase43_proof_native_source_exposure(
         required_next_step:
             "Patch the source side to emit projection_commitment plus Stwo-field public inputs/openings for the carried replay rows; if that requires proving Blake2b/string commitments or full replay, pivot to layerwise/tensor proving."
                 .to_string(),
+    })
+}
+
+pub fn assess_phase43_second_boundary_feasibility(
+    trace: &Phase43HistoryReplayTrace,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<Phase43HistoryReplaySecondBoundaryFeasibilityAssessment> {
+    validate_phase43_projection_compact_claim(&compact_envelope.claim)?;
+    let exposure = assess_phase43_proof_native_source_exposure(trace, phase30)?;
+    let source_claim = derive_phase43_history_replay_projection_source_root_claim(trace, phase30)?;
+    let source_root_compact_binding_verified_without_trace =
+        verify_phase43_history_replay_projection_source_root_compact_envelope(
+            &source_claim,
+            compact_envelope,
+        )?;
+    let useful_second_boundary_today = exposure.verifier_can_drop_full_phase43_trace
+        && source_root_compact_binding_verified_without_trace;
+
+    Ok(Phase43HistoryReplaySecondBoundaryFeasibilityAssessment {
+        assessment_version: STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_VERSION_PHASE43
+            .to_string(),
+        phase43_trace_commitment: trace.trace_commitment.clone(),
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: trace.total_steps,
+        pair_width: trace.pair_width,
+        projection_commitment: compact_envelope.claim.projection_commitment.clone(),
+        compact_proof_size_bytes: compact_envelope.proof.len(),
+        source_root_claim_candidate_available: true,
+        source_root_compact_binding_verified_without_trace,
+        source_surface_exposes_stwo_public_inputs: exposure.exposes_stwo_public_inputs,
+        source_surface_exposes_stwo_trace_commitments: exposure.exposes_stwo_trace_commitments,
+        source_surface_exposes_projection_commitment: exposure.exposes_projection_commitment,
+        source_surface_exposes_projection_rows: exposure.exposes_projection_rows,
+        verifier_can_drop_full_phase43_trace_today: exposure.verifier_can_drop_full_phase43_trace,
+        useful_second_boundary_today,
+        missing_proof_native_inputs: exposure.missing_proof_native_inputs.clone(),
+        decision: STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43.to_string(),
+        required_next_step: exposure.required_next_step,
     })
 }
 
@@ -11413,6 +11481,70 @@ mod tests {
             error.to_string().contains("input boundary commitment"),
             "unexpected error: {error}"
         );
+    }
+
+    #[test]
+    fn phase43_second_boundary_feasibility_records_real_binding_but_current_no_go() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let assessment =
+            assess_phase43_second_boundary_feasibility(&trace, &phase30, &compact_envelope)
+                .expect("assess Phase43 second-boundary feasibility");
+
+        assert_eq!(
+            assessment.assessment_version,
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_VERSION_PHASE43
+        );
+        assert_eq!(
+            assessment.decision,
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43
+        );
+        assert_eq!(assessment.phase43_trace_commitment, trace.trace_commitment);
+        assert_eq!(
+            assessment.phase30_source_chain_commitment,
+            phase30.source_chain_commitment
+        );
+        assert_eq!(
+            assessment.phase30_step_envelopes_commitment,
+            phase30.step_envelopes_commitment
+        );
+        assert_eq!(
+            assessment.projection_commitment,
+            compact_envelope.claim.projection_commitment
+        );
+        assert!(assessment.compact_proof_size_bytes > 0);
+        assert!(assessment.source_root_claim_candidate_available);
+        assert!(assessment.source_root_compact_binding_verified_without_trace);
+        assert!(!assessment.source_surface_exposes_stwo_public_inputs);
+        assert!(!assessment.source_surface_exposes_stwo_trace_commitments);
+        assert!(!assessment.source_surface_exposes_projection_commitment);
+        assert!(!assessment.source_surface_exposes_projection_rows);
+        assert!(!assessment.verifier_can_drop_full_phase43_trace_today);
+        assert!(!assessment.useful_second_boundary_today);
+        assert!(assessment
+            .missing_proof_native_inputs
+            .contains(&"projection_commitment_emitted_by_source_chain".to_string()));
+        assert!(assessment
+            .missing_proof_native_inputs
+            .contains(&"non_blake2b_source_commitment_path_for_verifier".to_string()));
+        assert!(assessment
+            .required_next_step
+            .contains("projection_commitment"));
+    }
+
+    #[test]
+    fn phase43_second_boundary_feasibility_rejects_tampered_compact_binding() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let mut compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        compact_envelope.claim.stwo_projection_trace_root = hash32('c');
+
+        let error = assess_phase43_second_boundary_feasibility(&trace, &phase30, &compact_envelope)
+            .expect_err("tampered compact claim must be rejected before feasibility assessment");
+        assert!(error.to_string().contains("projection root"));
     }
 
     #[test]
