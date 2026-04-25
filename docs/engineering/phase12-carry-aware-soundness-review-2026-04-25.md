@@ -123,6 +123,12 @@ Added focused tamper tests:
      honest `8`-step family
    - expects the AIR signed-reconstruction constraint to reject
 
+11. `carry_aware_phase12_eight_step_family_trace_satisfies_constraints`
+   - runs the carry-aware trace-constraint path across every honest seed in the
+     `8`-step family
+   - ensures the widened family-level coverage claim is backed by the real
+     positive trace path, not just prototype-row inspection
+
 These complement the existing tests for out-of-range `wrap_delta`, ADD/SUB
 unit range, proof-payload tampering, backend-version isolation, and reexecution.
 
@@ -154,6 +160,7 @@ cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rej
 cargo +nightly-2025-07-14 test carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_trace_builder_rejects_store_row_that_drops_live_carry --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_negative_wrap_delta_sign_drift --features stwo-backend --lib
+cargo +nightly-2025-07-14 test carry_aware_phase12_eight_step_family_trace_satisfies_constraints --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:

@@ -31,8 +31,8 @@ The active split is now:
   tamper tests for experimental proof JSON payload bytes and outer claim
   commitments.
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
-  non-unit `MulMemory` wrap deltas plus the sticky-carry `Store` rows that
-  follow them.
+  non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
+  them, and a full positive trace-constraint sweep across all eight seeds.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 
 At `1024` steps, the experimental shared path records:
