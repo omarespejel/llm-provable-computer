@@ -116,25 +116,32 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Keep the Phase43 second-boundary result in the explicit no-go bucket until
-   the source side emits the proof-native projection commitments, row
-   commitments/openings, and public inputs listed in
-   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-2. Add one narrow matched external comparator on the already-supported compact
-   artifact regime.
-3. Treat the family-matrix result as landed: default, `2x2`, and `3x3` now all
+1. Add one narrow matched external comparator on the already-supported compact
+   artifact regime, with a source-backed Obelyzk Sepolia verifier-object row as
+   the first target and an explicit no-go note if that row cannot be aligned
+   honestly enough for the paper.
+2. Treat the family-matrix result as landed: default, `2x2`, and `3x3` all now
    reproduce the same replay-avoidance mechanism on the experimental lane, and
-   use issue `#255` for the follow-up on the much stronger `2x2` constants.
-4. Broaden review of the experimental backend beyond the current decoding-step
+   lead with the growing-in-`N` curve shape rather than any one frontier ratio.
+3. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
+   it is not the highest-leverage next paper move ahead of the comparator.
+4. Track the heavier next-wave research separately:
+   - cross-backend Phase44D reproduction after the comparator lands
+   - one SNIP-36 Sepolia deployment artifact after the comparator lands
+5. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are all checked.
-5. Re-run the experimental Phase44D frontier only after any material AIR or
+6. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-6. Only after those steps decide whether any part of the experimental lane
+7. Keep the Phase43 second-boundary result in the explicit no-go bucket until
+   the source side emits the proof-native projection commitments, row
+   commitments/openings, and public inputs listed in
+   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+8. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
-7. Do not spend more time pushing the current publication/default Phase71
+9. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.

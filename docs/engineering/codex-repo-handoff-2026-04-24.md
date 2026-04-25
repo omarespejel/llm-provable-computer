@@ -98,6 +98,10 @@ That result is real, but it is still engineering evidence under a median-of-5 ti
 The latency gap is dominated by avoided Phase30 manifest JSON serialization,
 hashing, and replay work while the compact Phase43 proof envelope is still
 verified. Do not describe it as a faster FRI or cryptographic verifier.
+The strongest experimental takeaway is the curve shape across checked families:
+the replay-avoidance ratio keeps growing with `N`, which means the typed
+boundary is removing a linearly growing replay surface rather than merely
+improving a constant factor.
 The `3x3` result is a cross-family transferability result, not a second
 Tablero boundary.
 
@@ -118,23 +122,30 @@ Tablero boundary.
 
 ## Next sensible moves
 
-1. Keep the Phase43 second-boundary result in the explicit no-go bucket until
-   the source side emits the proof-native projection commitments, row
-   commitments/openings, and public inputs listed in
-   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-2. Add one narrow matched external comparator on the already-supported compact
-   artifact regime.
-3. Use issue `#255` to explain why the `2x2` family has a much lighter
-   high-step constant surface than the default and `3x3` families.
-4. Re-run the experimental Phase44D frontier only after any material AIR or
+1. Add one narrow matched external comparator on the already-supported compact
+   artifact regime, with a source-backed Obelyzk Sepolia verifier-object row as
+   the first target and an explicit no-go note if that row cannot be aligned
+   honestly enough for the paper.
+2. Treat the family-matrix result as landed and lead with the growing-in-`N`
+   curve shape rather than any one frontier ratio.
+3. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
+   it is not the highest-leverage next paper move ahead of the comparator.
+4. Track the heavier next-wave research separately:
+   - cross-backend Phase44D reproduction after the comparator lands
+   - one SNIP-36 Sepolia deployment artifact after the comparator lands
+5. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-5. Broaden review of the experimental backend beyond the current decoding-step
+6. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-6. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
-7. Do not spend more time pushing the current publication/default Phase71
+7. Keep the Phase43 second-boundary result in the explicit no-go bucket until
+   the source side emits the proof-native projection commitments, row
+   commitments/openings, and public inputs listed in
+   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+8. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+9. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
