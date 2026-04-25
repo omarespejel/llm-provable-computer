@@ -191,7 +191,7 @@ Added focused tamper tests:
    - recommits the candidate and expects the wrapper replay-input guard to reject
 
 1. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_stale_commitment`
-   - mutates the serialized replay flags on a saved Phase47 wrapper candidate
+   - mutates the serialized `compact_envelope_commitment` on a saved Phase47 wrapper candidate
    - loads the tampered candidate through the JSON surface without recommitting it
    - expects the stale top-level commitment to reject before any wrapper-surface drift could pass
 
@@ -205,7 +205,7 @@ Added focused tamper tests:
    - recommits the attempt and expects the missing Phase43 Cairo AIR blocker guard to reject
 
 1. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_stale_commitment`
-   - mutates the serialized blocking-reason list on a saved Phase48 wrapper attempt
+   - mutates the serialized `compact_envelope_commitment` on a saved Phase48 wrapper attempt
    - loads the tampered attempt through the JSON surface without recommitting it
    - expects the stale top-level commitment to reject before the blocker drift could be masked
 
