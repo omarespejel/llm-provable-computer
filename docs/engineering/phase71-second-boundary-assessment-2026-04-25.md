@@ -16,6 +16,8 @@ the publication/default lane.
 
 ## Checked-in evidence
 
+- Gate note: this file,
+  `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
 - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.json`
 
@@ -79,8 +81,10 @@ selected step counts without widening the default paper-facing sweep:
 The bounded follow-up encodes two important facts:
 
 1. The custom sweep path itself works for supported publication-lane counts.
-2. The current publication/default execution-proof surface still fails closed at
-   `4` steps and above.
+2. The first blocked point on the current publication/default execution-proof
+   surface is `4` steps.
+3. The custom step-count surface stays resource-bounded: at most `6` steps per
+   point and at most `6` total requested steps per run.
 
 The fail-closed regression is now explicit in:
 
@@ -106,7 +110,8 @@ What it is:
 What it is not:
 
 - a Phase44D-style replay-elimination boundary on the current publication lane
-- a clean `4+` scaling path on the current carry-free execution-proof surface
+- a clean scaling path beyond the first blocked point on the current carry-free
+  execution-proof surface
 
 ## Next step
 
@@ -115,7 +120,11 @@ surface into the “second boundary” role.
 
 If a second Tablero-style reproduction is still the goal, pursue it either:
 
-1. on the experimental carry-aware lane, where higher step counts already clear,
+1. on the experimental carry-aware lane, where the checked-in Phase44D scaling
+   gate already clears `2,4,8,16,32,64,128,256,512,1024`:
+   `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+   and
+   `docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.tsv`,
    or
 2. on a different boundary surface that actually removes verifier-side replay
    dependencies instead of compacting them.
@@ -128,7 +137,7 @@ Backend configuration:
 - Lane: publication/default carry-free backend
 - Cargo feature: `--features stwo-backend`
 - Optional target-dir override:
-  `export CARGO_TARGET_DIR=\"${CARGO_TARGET_DIR:-target}\"`
+  `export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"`
 
 Validation:
 

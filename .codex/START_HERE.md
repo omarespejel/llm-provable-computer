@@ -62,8 +62,8 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 - Do not switch the default backend away from the shipped carry-free path without an explicit promotion task.
 - Do not keep trying to turn the current publication/default Phase71 handoff
   receipt into a second Tablero-style boundary result; it still depends on the
-  ordered Phase30 manifest and the publication-lane surface fails closed at
-  `4+` steps.
+  ordered Phase30 manifest and the first blocked point on the
+  publication-lane surface is `4` steps.
 - Do not merge PRs with live review threads or by merge commit.
 
 ## First commands after a resume

@@ -145,7 +145,7 @@ const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
-const PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT: usize = 4;
+const PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT: usize = 6;
 const PHASE71_HANDOFF_RECEIPT_MAX_TOTAL_STEPS: usize = 6;
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
 const PHASE44D_RESCALED_EXPLORATORY_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
@@ -5887,11 +5887,11 @@ mod tests {
 
     #[test]
     fn phase71_handoff_receipt_benchmark_rejects_step_count_above_supported_cap() {
-        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[5], false)
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[7], false)
             .expect_err("step counts above the supported cap must fail");
         assert!(error
             .to_string()
-            .contains("supports at most 4 steps per point"));
+            .contains("supports at most 6 steps per point"));
     }
 
     #[test]
@@ -5918,6 +5918,17 @@ mod tests {
     fn phase71_handoff_receipt_benchmark_reports_publication_surface_overflow_barrier() {
         let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[4], false).expect_err(
             "4-step Phase71 publication sweep should hit the current execution barrier",
+        );
+        assert!(error.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_reports_publication_surface_overflow_barrier_above_first_blocked_point(
+    ) {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[5], false).expect_err(
+            "5-step Phase71 publication sweep should still hit the current execution barrier",
         );
         assert!(error.to_string().contains(
             "overflowing arithmetic is not supported by the current execution-proof surface"
