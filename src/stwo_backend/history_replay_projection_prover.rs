@@ -5111,43 +5111,40 @@ mod tests {
         receipt: super::super::recursion::Phase46StwoProofAdapterReceipt,
     }
 
-    fn sample_phase44d_composed_artifact_fixture() -> Phase44DComposedArtifactFixture {
+    fn sample_phase44d_composed_artifact_fixture() -> &'static Phase44DComposedArtifactFixture {
         static FIXTURE: OnceLock<Phase44DComposedArtifactFixture> = OnceLock::new();
-        FIXTURE
-            .get_or_init(|| {
-                let (trace, phase30) = sample_trace_and_phase30();
-                let compact_envelope =
-                    prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
-                        .expect("prove cached Phase44 compact projection");
-                let boundary =
-                    emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
-                        &trace, &phase30,
-                    )
-                    .expect("emit cached Phase44D source-chain public output boundary");
-                let handoff = phase44d_prepare_recursive_verifier_public_output_handoff(
-                    &boundary,
-                    &compact_envelope,
+        FIXTURE.get_or_init(|| {
+            let (trace, phase30) = sample_trace_and_phase30();
+            let compact_envelope =
+                prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                    .expect("prove cached Phase44 compact projection");
+            let boundary =
+                emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+                    &trace, &phase30,
                 )
-                .expect("prepare cached Phase44D recursive-verifier handoff");
-                let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
-                    &boundary,
-                    &compact_envelope,
-                    &handoff,
-                )
-                .expect("prepare cached Phase45 public-input bridge");
-                let receipt =
-                    phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
-                        .expect("prepare cached Phase46 Stwo proof-adapter receipt");
+                .expect("emit cached Phase44D source-chain public output boundary");
+            let handoff = phase44d_prepare_recursive_verifier_public_output_handoff(
+                &boundary,
+                &compact_envelope,
+            )
+            .expect("prepare cached Phase44D recursive-verifier handoff");
+            let bridge = phase45_prepare_recursive_verifier_public_input_bridge(
+                &boundary,
+                &compact_envelope,
+                &handoff,
+            )
+            .expect("prepare cached Phase45 public-input bridge");
+            let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
+                .expect("prepare cached Phase46 Stwo proof-adapter receipt");
 
-                Phase44DComposedArtifactFixture {
-                    compact_envelope,
-                    boundary,
-                    handoff,
-                    bridge,
-                    receipt,
-                }
-            })
-            .clone()
+            Phase44DComposedArtifactFixture {
+                compact_envelope,
+                boundary,
+                handoff,
+                bridge,
+                receipt,
+            }
+        })
     }
 
     fn load_tampered_phase44d_source_chain_public_output_boundary(
