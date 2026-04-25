@@ -6467,6 +6467,47 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_experimental_3x3_benchmark_pins_canonical_step_surface() {
+        assert_eq!(
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS,
+            [2, 4, 8, 16, 32, 64, 128, 256]
+        );
+        assert_eq!(
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS,
+            *PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS
+                .last()
+                .expect("3x3 experimental step surface must be non-empty")
+        );
+    }
+
+    #[test]
+    #[ignore = "expensive experimental phase44d 3x3 full sweep"]
+    fn phase44d_source_emission_experimental_3x3_benchmark_preserves_expected_row_shape() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_3x3_benchmark_with_options(false)
+                .expect("3x3 experimental phase44d source emission benchmark should run");
+        assert_eq!(
+            report.benchmark_version,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_SCOPE
+        );
+        assert_eq!(
+            report.rows.len(),
+            PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS.len() * 5
+        );
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS
+        }));
+    }
+
+    #[test]
     fn phase12_arithmetic_budget_map_surfaces_first_blocked_four_step_seed() {
         let report = run_stwo_phase12_arithmetic_budget_map_for_max_steps(4)
             .expect("phase12 arithmetic budget map should run");

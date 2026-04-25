@@ -98,7 +98,9 @@ def read_rows(path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[str, int]:
+def timing_metadata(
+    rows: list[dict[str, str]], *, fallback_runs: int, source: Path
+) -> tuple[str, int]:
     first = rows[0]
     mode = first.get("timing_mode", "").strip()
     policy = first.get("timing_policy", "").strip()
@@ -109,7 +111,13 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
     if not policy:
         raise SystemExit("phase44d engineering benchmark rows must include timing_policy")
     if unit != "milliseconds":
-        raise SystemExit(f"unsupported timing_unit in phase44d engineering rows: {unit!r}")
+        raise SystemExit(
+            f"unsupported timing_unit in phase44d engineering rows from {source}: {unit!r}"
+        )
+    if not runs_raw:
+        raise SystemExit(
+            f"phase44d engineering benchmark rows from {source} must include timing_runs"
+        )
     for row in rows[1:]:
         if (
             row.get("timing_mode", "").strip() != mode
@@ -118,7 +126,13 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
             or row.get("timing_runs", "").strip() != runs_raw
         ):
             raise SystemExit("inconsistent timing metadata across phase44d engineering rows")
-    runs = int(runs_raw)
+    try:
+        runs = int(runs_raw)
+    except ValueError as exc:
+        raise SystemExit(
+            f"phase44d engineering benchmark rows from {source} must include an integer timing_runs; "
+            f"got {runs_raw!r}"
+        ) from exc
     if mode == "deterministic_zeroed":
         if policy != "zero_when_capture_disabled":
             raise SystemExit(
@@ -221,7 +235,9 @@ def rows_by_variant(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]
 def main() -> None:
     args = parse_args()
     rows = read_rows(args.input_tsv)
-    timing_mode, timing_runs = timing_metadata(rows, fallback_runs=args.bench_runs)
+    timing_mode, timing_runs = timing_metadata(
+        rows, fallback_runs=args.bench_runs, source=args.input_tsv
+    )
     if timing_mode == "deterministic_zeroed":
         raise SystemExit(
             "phase44d engineering figures require measured timings; rerun with CAPTURE_TIMINGS=1"
