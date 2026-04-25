@@ -15,8 +15,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
 10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-12. `docs/engineering/reproducibility.md`
-13. `git status --short --branch`
+12. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+13. `docs/engineering/reproducibility.md`
+14. `git status --short --branch`
 
 ## What this repository is now
 
@@ -57,28 +58,36 @@ The repo now has one explicit answer on the next-boundary question:
 - The bounded engineering gate is recorded in `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
 - Do not describe Phase43 as a second Tablero demonstration until a source-emission patch lands and the same gate reruns cleanly.
 
+## Current cross-backend read
+
+The repo now also has one explicit answer on the second-backend question:
+
+- The shipped carry-free backend reproduces the Phase44D replay-avoidance
+  mechanism at the single checked `2`-step point.
+- It still does **not** support an honest `4+` proof-checked source chain, even
+  under the bounded carry-free rescaling search.
+- The bounded engineering gate is recorded in
+  `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`.
+- Do not describe Phase44D as backend-independent today; the scalable
+  growing-in-`N` result is still limited to the experimental carry-aware lane.
+
 ## Next likely technical steps
 
-1. Add one narrow matched external comparator on the already-supported compact
-   artifact regime, with a source-backed Obelyzk Sepolia verifier-object row as
-   the first target and an explicit no-go note if that row cannot be aligned
-   honestly enough for the paper.
+1. Treat the narrow source-backed Obelyzk Sepolia comparator as landed and keep
+   it in the paper lane as a deployment calibration, not a matched local
+   verifier-time row.
 2. Use the family-matrix gate note now that default, `2x2`, and `3x3` all
    reproduce the same replay-avoidance mechanism on the experimental lane, and
    treat the curve shape as the main experimental takeaway rather than any one
    frontier ratio.
-3. Treat issue `#255` as the next explanatory follow-up on the unexpectedly
-   strong `2x2` constants, not as the main paper-strengthening move ahead of
-   the external comparator.
-4. Track the heavier next-wave research separately:
-   - cross-backend Phase44D reproduction after the comparator lands
-   - one SNIP-36 Sepolia deployment artifact after the comparator lands
-5. Broaden experimental carry-aware review beyond the current decoding-step
-   family, now that the honest `8`-step multiply/store carry patterns, the
-   proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
-   matrix, the serialized Phase44D boundary / handoff / bridge / receipt
-   tamper checks, and the serialized Phase47 / Phase48 wrapper checks are
-   covered.
+3. Treat the `2x2` constant-surface explanation as landed and use follow-up
+   issue `#257` only if a deeper replay-only decomposition still looks useful.
+4. Keep the cross-backend question in the explicit no-go bucket until a new
+   honest non-overflow carry-free source family or another bounded backend can
+   drive the same benchmark beyond `2` steps.
+5. Move the next-wave exploratory focus to one narrow SNIP-36 Sepolia
+   deployment artifact, then back to broader experimental carry-aware review if
+   the deployment path stays honest.
 6. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
 7. Keep Phase43 in the explicit no-go bucket until the source side emits the

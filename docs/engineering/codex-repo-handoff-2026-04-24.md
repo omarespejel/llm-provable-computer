@@ -17,8 +17,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
 10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-12. `docs/engineering/reproducibility.md`
-13. `git status --short --branch`
+12. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+13. `docs/engineering/reproducibility.md`
+14. `git status --short --branch`
 
 ## Current lane split
 
@@ -88,6 +89,11 @@ This repository now has two live lanes.
   binding mechanism but an explicit **NO-GO** for claiming a second Tablero
   boundary today because the source side still does not emit the proof-native
   inputs needed to drop the full Phase43 trace honestly.
+- The Phase44D second-backend feasibility gate records a real carry-free
+  `2`-step checkpoint on the shipped backend but an explicit **NO-GO** for
+  claiming backend transferability today because the carry-free Phase12 source
+  family still cannot clear an honest proof-checked `4+` source chain, even
+  under the bounded rescaling probe.
 - At `1024` steps, the experimental shared path records `427.209 ms` verification versus
   `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.
 - At `256` steps on the `3x3` family, the experimental shared path records
@@ -122,30 +128,31 @@ Tablero boundary.
 
 ## Next sensible moves
 
-1. Add one narrow matched external comparator on the already-supported compact
-   artifact regime, with a source-backed Obelyzk Sepolia verifier-object row as
-   the first target and an explicit no-go note if that row cannot be aligned
-   honestly enough for the paper.
+1. Treat the narrow source-backed Obelyzk Sepolia comparator as landed and keep
+   it in the paper lane as a deployment calibration, not a matched local
+   verifier-time row.
 2. Treat the family-matrix result as landed and lead with the growing-in-`N`
    curve shape rather than any one frontier ratio.
-3. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
-   it is not the highest-leverage next paper move ahead of the comparator.
-4. Track the heavier next-wave research separately:
-   - cross-backend Phase44D reproduction after the comparator lands
-   - one SNIP-36 Sepolia deployment artifact after the comparator lands
-5. Re-run the experimental Phase44D frontier only after any material AIR or
+3. Treat the `2x2` constant-surface explanation as landed and use follow-up
+   issue `#257` only if a deeper replay-only decomposition still looks useful.
+4. Move the next-wave exploratory focus to one narrow SNIP-36 Sepolia
+   deployment artifact.
+5. Keep the cross-backend Phase44D question in the explicit no-go bucket until
+   a new honest non-overflow carry-free source family or another bounded
+   backend can drive the same benchmark beyond `2` steps.
+6. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-6. Broaden review of the experimental backend beyond the current decoding-step
+7. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-7. Keep the Phase43 second-boundary result in the explicit no-go bucket until
+8. Keep the Phase43 second-boundary result in the explicit no-go bucket until
    the source side emits the proof-native projection commitments, row
    commitments/openings, and public inputs listed in
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-8. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
-9. Do not spend more time pushing the current publication/default Phase71
+9. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+10. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
