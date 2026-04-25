@@ -41,6 +41,11 @@ The active split is now:
   Phase45 public-input bridge, and the Phase46 Stwo proof-adapter receipt,
   including replay-flag drift, reordered public-input lanes, and terminal
   interaction-claim drift after recommit.
+- Gate 2h: the next wrapper-surface increment extends serialized JSON coverage
+  one layer higher again to the Phase47 recursive-verifier wrapper candidate
+  and the Phase48 recursive proof-wrapper attempt, including replay-flag drift
+  on the wrapper candidate and blocking-reason drift on the Phase48 no-go
+  artifact after recommit.
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
@@ -90,8 +95,8 @@ Use these in order of authority for current state:
 1. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
-   coverage, and the honest `8`-step multiply/store carry patterns are all
-   checked.
+   coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
+   multiply/store carry patterns are all checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after

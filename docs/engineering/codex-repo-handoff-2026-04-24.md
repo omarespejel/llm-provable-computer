@@ -45,6 +45,11 @@ This repository now has two live lanes.
   the Phase44D recursive handoff, the Phase45 public-input bridge, and the
   Phase46 Stwo proof-adapter receipt, including replay-flag drift, reordered
   public-input lanes, and terminal interaction-claim drift after recommit.
+- The next wrapper-surface increment extends serialized JSON coverage one layer
+  higher to the Phase47 recursive-verifier wrapper candidate and the Phase48
+  recursive proof-wrapper attempt, including replay-flag drift on the wrapper
+  candidate and blocking-reason drift on the Phase48 no-go artifact after
+  recommit.
 - A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
@@ -77,8 +82,8 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 1. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
-   coverage, and the honest `8`-step multiply/store carry patterns are both
-   checked.
+   coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
+   multiply/store carry patterns are both checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
