@@ -4039,34 +4039,23 @@ mod tests {
         assert_trace_polys_satisfy_constraints_for_program(compile_program(path));
     }
 
-    fn assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed() {
-        let layout = phase12_default_decoding_layout();
-        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
-            .expect("memories")
-            .into_iter()
-            .nth(3)
-            .expect("fourth memory");
-        let program =
-            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
-        let mut runtime = NativeInterpreter::new(
-            program.clone(),
-            Attention2DMode::AverageHard,
-            program.instructions().len() + 1,
-        );
-        let result = runtime.run().expect("run");
-        assert!(result.halted);
-
+    fn assert_phase12_carry_aware_trace_satisfies_constraints_for_seed(
+        total_steps: usize,
+        seed_step_index: usize,
+    ) {
+        let (program, states, _) = phase12_carry_aware_family_fixture(total_steps, seed_step_index);
         let trace = build_trace_bundle_with_mode(
             &program,
-            runtime.trace(),
+            &states,
             ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
         )
         .expect("trace bundle");
+        let final_state = states.last().cloned().expect("final state");
         let eval_state = Phase12CarryAwareArithmeticSubsetEval {
             log_size: trace.log_size,
             memory_size: program.memory_size(),
             initial_state: PublicState::from_initial_memory(program.initial_memory()),
-            final_state: PublicState::from_machine_state(result.final_state.clone()),
+            final_state: PublicState::from_machine_state(final_state),
         };
         let preprocessed = trace
             .preprocessed_trace
@@ -4091,6 +4080,10 @@ mod tests {
             },
             SecureField::zero(),
         );
+    }
+
+    fn assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed() {
+        assert_phase12_carry_aware_trace_satisfies_constraints_for_seed(4, 3);
     }
 
     fn bit_reversed_row_index(index: usize, log_size: u32) -> usize {
@@ -4126,6 +4119,29 @@ mod tests {
         let rows = collect_carry_aware_arithmetic_subset_prototype_rows(&program, &states)
             .expect("prototype rows");
         (program, states, rows)
+    }
+
+    fn phase12_carry_aware_family_fixture_matching<F>(
+        total_steps: usize,
+        row_selector: &F,
+        pattern_label: &str,
+    ) -> (
+        usize,
+        Program,
+        Vec<MachineState>,
+        Vec<CarryAwareArithmeticSubsetPrototypeRow>,
+    )
+    where
+        F: Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
+    {
+        for seed_step_index in 0..total_steps {
+            let (program, states, rows) =
+                phase12_carry_aware_family_fixture(total_steps, seed_step_index);
+            if rows.iter().any(row_selector) {
+                return (seed_step_index, program, states, rows);
+            }
+        }
+        panic!("honest {total_steps}-step family should contain {pattern_label}");
     }
 
     fn assert_carry_aware_four_step_overflow_trace_mutation_rejected(
@@ -4212,15 +4228,17 @@ mod tests {
         assert!(result.is_err(), "{rejection_message}");
     }
 
-    fn assert_carry_aware_phase12_family_trace_mutation_rejected(
+    fn assert_carry_aware_phase12_family_trace_mutation_rejected<F>(
         total_steps: usize,
-        seed_step_index: usize,
-        row_selector: impl Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
+        row_selector: F,
+        pattern_label: &str,
         mutate: impl FnOnce(&CarryAwareTraceLayout, usize, &mut [Vec<BaseField>]),
         rejection_message: &str,
-    ) {
-        let (program, states, rows) =
-            phase12_carry_aware_family_fixture(total_steps, seed_step_index);
+    ) where
+        F: Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
+    {
+        let (seed_step_index, program, states, rows) =
+            phase12_carry_aware_family_fixture_matching(total_steps, &row_selector, pattern_label);
         let selected_row = rows
             .iter()
             .find(|row| row_selector(row))
@@ -4876,6 +4894,13 @@ mod tests {
     }
 
     #[test]
+    fn carry_aware_phase12_eight_step_family_trace_satisfies_constraints() {
+        for seed_step_index in 0..8 {
+            assert_phase12_carry_aware_trace_satisfies_constraints_for_seed(8, seed_step_index);
+        }
+    }
+
+    #[test]
     fn carry_aware_phase12_four_step_trace_satisfies_constraints() {
         assert_phase12_carry_aware_trace_satisfies_constraints_for_four_step_overflow_seed();
     }
@@ -4968,11 +4993,15 @@ mod tests {
 
     #[test]
     fn carry_aware_trace_builder_rejects_store_row_that_drops_live_carry() {
-        let (program, mut states, rows) = phase12_carry_aware_family_fixture(8, 4);
+        let (_, program, mut states, rows) = phase12_carry_aware_family_fixture_matching(
+            8,
+            &|row| row.instruction.starts_with("Store(") && row.carry_after,
+            "a store row with live carry",
+        );
         let store_row = rows
             .iter()
             .find(|row| row.instruction.starts_with("Store(") && row.carry_after)
-            .expect("seed 4 should contain a store row with live carry");
+            .expect("selected seed should contain a store row with live carry");
         states[store_row.step_index + 1].carry_flag = false;
 
         let err = match build_trace_bundle_with_mode(
@@ -4993,8 +5022,8 @@ mod tests {
     fn carry_aware_air_rejects_negative_wrap_delta_sign_drift() {
         assert_carry_aware_phase12_family_trace_mutation_rejected(
             8,
-            4,
             |row| row.instruction.starts_with("MulMemory(") && row.wrap_delta < 0,
+            "a negative-wrap multiply row",
             |carry_layout, row, base| {
                 let current_sign = base[carry_layout.wrap_delta_sign()][row];
                 base[carry_layout.wrap_delta_sign()][row] = if current_sign == bool_base(true) {

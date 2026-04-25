@@ -36,8 +36,9 @@ This repository now has two live lanes.
   drift.
 - The follow-up serialized-proof review adds disk-backed round-trip and tamper
   tests for experimental proof JSON payload bytes and outer claim commitments.
-- A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns
-  plus sticky-carry `Store` preservation on the honest `8`-step family.
+- A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
+  sticky-carry `Store` preservation, and a full positive trace sweep on the
+  honest `8`-step family.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - At `1024` steps, the experimental shared path records `427.209 ms` verification versus
   `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.

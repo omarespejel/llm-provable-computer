@@ -26,7 +26,7 @@ This repository currently has two live lanes.
 2. Experimental core-proving lane
    - The carry-aware backend `stwo-phase12-decoding-family-v10-carry-aware-experimental` is the active upside research lane.
    - It clears the honest `8`-step Phase12 family, has AIR-level `wrap_delta` range constraints, and the experimental Phase44D scaling sweep currently clears through `2,4,8,16,32,64,128,256,512,1024`.
-   - The focused April 25 follow-up now covers signed/non-unit `MulMemory` wrap patterns plus sticky-carry `Store` preservation on the honest `8`-step family.
+   - The focused April 25 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, and a full honest `8`-step trace sweep.
 
 Do not collapse these two lanes into one claim.
 
