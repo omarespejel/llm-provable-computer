@@ -160,11 +160,16 @@ def timing_metadata(
             raise SystemExit(
                 f"unexpected timing_policy for measured_median phase44d engineering rows: {policy!r}"
             )
-        policy_runs = int(
-            policy.removeprefix("median_of_").removesuffix(
-                "_runs_from_microsecond_capture"
-            )
+        policy_runs_raw = policy.removeprefix("median_of_").removesuffix(
+            "_runs_from_microsecond_capture"
         )
+        try:
+            policy_runs = int(policy_runs_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                "unexpected timing_policy for measured_median phase44d engineering rows: "
+                f"{policy!r} (invalid run count {policy_runs_raw!r})"
+            ) from exc
         if runs != policy_runs:
             raise SystemExit(
                 "measured_median phase44d engineering rows must keep timing_runs aligned with timing_policy; "
@@ -294,6 +299,11 @@ def main() -> None:
             if int(row["steps"]) == frontier_step
         )
     )
+    if shared_frontier <= 0.0:
+        raise SystemExit(
+            "frontier verify_ms for shared projection must be > 0; "
+            f"got {shared_frontier} at {frontier_step} steps"
+        )
     ratio = baseline_frontier / shared_frontier
     verify_ax.annotate(
         f"{ratio:.1f}x lower measured latency at {frontier_step} steps\n"

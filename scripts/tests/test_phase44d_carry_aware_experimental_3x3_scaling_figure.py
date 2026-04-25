@@ -3,6 +3,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,16 +22,28 @@ class DummyScalarFormatter:
 
 
 ticker.ScalarFormatter = DummyScalarFormatter
-sys.modules.setdefault("matplotlib", matplotlib)
-sys.modules.setdefault("matplotlib.pyplot", pyplot)
-sys.modules.setdefault("matplotlib.ticker", ticker)
 
-SPEC = importlib.util.spec_from_file_location(
-    "phase44d_carry_aware_experimental_3x3_scaling_figure", FIGURE
-)
-MODULE = importlib.util.module_from_spec(SPEC)
-assert SPEC.loader is not None
-SPEC.loader.exec_module(MODULE)
+
+def load_module():
+    with mock.patch.dict(
+        sys.modules,
+        {
+            "matplotlib": matplotlib,
+            "matplotlib.pyplot": pyplot,
+            "matplotlib.ticker": ticker,
+        },
+    ):
+        spec = importlib.util.spec_from_file_location(
+            "phase44d_carry_aware_experimental_3x3_scaling_figure", FIGURE
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError(f"unable to load figure module from {FIGURE}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+
+MODULE = load_module()
 
 
 class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
@@ -66,6 +79,19 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
                 source=Path("sample.tsv"),
             )
         self.assertIn("must include an integer timing_runs", str(ctx.exception))
+
+    def test_timing_metadata_rejects_malformed_median_policy_run_count(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.timing_metadata(
+                [
+                    self.sample_row(
+                        timing_policy="median_of_x_runs_from_microsecond_capture"
+                    )
+                ],
+                fallback_runs=5,
+                source=Path("sample.tsv"),
+            )
+        self.assertIn("invalid run count", str(ctx.exception))
 
 
 if __name__ == "__main__":
