@@ -1249,6 +1249,30 @@ mod tests {
         .expect("experimental carry-aware proof")
     }
 
+    #[cfg(feature = "stwo-backend")]
+    fn load_tampered_phase12_four_step_overflow_carry_aware_proof(
+        stem: &str,
+        mutate: impl FnOnce(&mut serde_json::Value),
+    ) -> VanillaStarkExecutionProof {
+        let proof = prove_phase12_four_step_overflow_carry_aware_proof();
+        let tempdir = temp_proof_dir(stem);
+        let proof_path = tempdir.path().join("valid.json");
+        let tampered_path = tempdir.path().join("tampered.json");
+
+        save_execution_stark_proof(&proof, &proof_path).expect("save");
+        let mut proof_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof"))
+                .expect("proof json");
+        mutate(&mut proof_json);
+        std::fs::write(
+            &tampered_path,
+            serde_json::to_vec(&proof_json).expect("encode tampered proof"),
+        )
+        .expect("write tampered proof");
+
+        load_execution_stark_proof(&tampered_path).expect("load tampered proof")
+    }
+
     fn temp_proof_dir(stem: &str) -> tempfile::TempDir {
         tempfile::Builder::new()
             .prefix(&format!("llm-provable-computer-{stem}-"))
@@ -1509,23 +1533,12 @@ HALT
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file() {
-        let proof = prove_phase12_four_step_overflow_carry_aware_proof();
-        let tempdir = temp_proof_dir("phase12-carry-aware-proof-bad-payload");
-        let proof_path = tempdir.path().join("valid.json");
-        let tampered_path = tempdir.path().join("tampered.json");
-
-        save_execution_stark_proof(&proof, &proof_path).expect("save");
-        let mut proof_json: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof"))
-                .expect("proof json");
-        proof_json["proof"] = serde_json::json!([0]);
-        std::fs::write(
-            &tampered_path,
-            serde_json::to_vec(&proof_json).expect("encode bad proof"),
-        )
-        .expect("write bad proof");
-
-        let loaded = load_execution_stark_proof(&tampered_path).expect("load tampered proof");
+        let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
+            "phase12-carry-aware-proof-bad-payload",
+            |proof_json| {
+                proof_json["proof"] = serde_json::json!([0]);
+            },
+        );
         let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
             .expect_err("tampered payload file should fail");
         assert!(matches!(err, VmError::Serialization(_)), "{err}");
@@ -1534,27 +1547,71 @@ HALT
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file() {
-        let proof = prove_phase12_four_step_overflow_carry_aware_proof();
-        let tempdir = temp_proof_dir("phase12-carry-aware-proof-commitments");
-        let proof_path = tempdir.path().join("valid.json");
-        let tampered_path = tempdir.path().join("tampered.json");
-
-        save_execution_stark_proof(&proof, &proof_path).expect("save");
-        let mut proof_json: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof"))
-                .expect("proof json");
-        proof_json["claim"]["commitments"]["program_hash"] =
-            serde_json::Value::String("00".repeat(32));
-        std::fs::write(
-            &tampered_path,
-            serde_json::to_vec(&proof_json).expect("encode bad proof"),
-        )
-        .expect("write bad proof");
-
-        let loaded = load_execution_stark_proof(&tampered_path).expect("load tampered proof");
+        let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
+            "phase12-carry-aware-proof-commitments",
+            |proof_json| {
+                proof_json["claim"]["commitments"]["program_hash"] =
+                    serde_json::Value::String("00".repeat(32));
+            },
+        );
         let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
             .expect_err("tampered commitment file should fail");
         assert!(err.to_string().contains("invalid program_hash commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file() {
+        let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
+            "phase12-carry-aware-proof-backend-version",
+            |proof_json| {
+                proof_json["proof_backend_version"] =
+                    serde_json::Value::String(stwo_backend::STWO_BACKEND_VERSION_PHASE12.into());
+            },
+        );
+        let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
+            .expect_err("tampered backend version file should fail");
+        assert!(err
+            .to_string()
+            .contains("experimental Phase12 carry-aware proof backend version"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file() {
+        let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
+            "phase12-carry-aware-proof-steps",
+            |proof_json| {
+                let steps = proof_json["claim"]["steps"]
+                    .as_u64()
+                    .expect("claim steps as u64");
+                proof_json["claim"]["steps"] = serde_json::json!(steps + 1);
+            },
+        );
+        let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
+            .expect_err("tampered steps file should fail");
+        assert!(err.to_string().contains("equivalence checked_steps"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file() {
+        let loaded = load_tampered_phase12_four_step_overflow_carry_aware_proof(
+            "phase12-carry-aware-proof-final-state",
+            |proof_json| {
+                let acc = proof_json["claim"]["final_state"]["acc"]
+                    .as_i64()
+                    .expect("final-state acc as i64");
+                proof_json["claim"]["final_state"]["acc"] = serde_json::json!(acc + 1);
+            },
+        );
+        let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
+            .expect_err("tampered final-state file should fail");
+        assert!(
+            err.to_string()
+                .contains("invalid transformer equivalence fingerprint"),
+            "{err}"
+        );
     }
 
     #[test]
