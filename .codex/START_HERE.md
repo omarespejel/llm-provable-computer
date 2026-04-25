@@ -26,7 +26,7 @@ This repository currently has two live lanes.
 2. Experimental core-proving lane
    - The carry-aware backend `stwo-phase12-decoding-family-v10-carry-aware-experimental` is the active upside research lane.
    - It clears the honest `8`-step Phase12 family, has AIR-level `wrap_delta` range constraints, and the experimental Phase44D scaling sweep currently clears through `2,4,8,16,32,64,128,256,512,1024`.
-   - The focused April 25 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, and a full honest `8`-step trace sweep.
+   - The focused April 25 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, a full honest `8`-step trace sweep, serialized experimental proof-file tamper coverage, serialized proof-checked Phase12-chain tamper coverage, and serialized Phase44D typed-boundary tamper coverage.
 
 Do not collapse these two lanes into one claim.
 
@@ -42,9 +42,10 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 ## Next likely technical steps
 
 1. Broaden experimental carry-aware review beyond the current decoding-step
-   family, now that the honest `8`-step multiply/store carry patterns and the
-   proof-file tamper matrix (payload bytes, commitments, backend metadata,
-   steps/equivalence drift, final-state drift) are covered.
+   family, now that the honest `8`-step multiply/store carry patterns, the
+   proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
+   matrix, and the serialized Phase44D typed-boundary tamper checks are
+   covered.
 2. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
 3. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after

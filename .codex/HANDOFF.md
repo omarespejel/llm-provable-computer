@@ -31,6 +31,11 @@ The active split is now:
   tamper tests for experimental proof JSON payload bytes, outer claim
   commitments, backend-version drift, steps/equivalence drift, and final-state
   drift.
+- Gate 2f: the next serialized-artifact increment extends that coverage one
+  layer up to proof-checked experimental Phase12 chain JSON and Phase44D typed
+  boundary JSON, including nested proof payload drift, nested backend metadata
+  drift, nested steps/final-state drift, and replay-flag drift on the typed
+  boundary surface.
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
@@ -78,8 +83,9 @@ Use these in order of authority for current state:
 ## Next sensible moves
 
 1. Broaden review of the experimental backend beyond the current decoding-step
-   family, now that the disk-backed proof-file tamper matrix and the honest
-   `8`-step multiply/store carry patterns are both checked.
+   family, now that the disk-backed proof-file tamper matrix, serialized
+   Phase12-chain and Phase44D-boundary tamper coverage, and the honest `8`-step
+   multiply/store carry patterns are all checked.
 2. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after

@@ -5094,6 +5094,41 @@ mod tests {
         (trace, phase30)
     }
 
+    fn load_tampered_phase44d_source_chain_public_output_boundary(
+        stem: &str,
+        mutate: impl FnOnce(&mut serde_json::Value),
+    ) -> Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let tempdir = tempfile::Builder::new()
+            .prefix(&format!("llm-provable-computer-{stem}-"))
+            .tempdir()
+            .expect("create temp dir");
+        let boundary_path = tempdir.path().join("valid.json");
+        let tampered_path = tempdir.path().join("tampered.json");
+
+        std::fs::write(
+            &boundary_path,
+            serde_json::to_vec(&boundary).expect("encode boundary"),
+        )
+        .expect("write boundary");
+        let mut boundary_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&boundary_path).expect("read boundary"))
+                .expect("boundary json");
+        mutate(&mut boundary_json);
+        std::fs::write(
+            &tampered_path,
+            serde_json::to_vec(&boundary_json).expect("encode tampered boundary"),
+        )
+        .expect("write tampered boundary");
+
+        serde_json::from_slice(&std::fs::read(&tampered_path).expect("read tampered boundary"))
+            .expect("load tampered boundary")
+    }
+
     fn recommit_trace(trace: &mut Phase43HistoryReplayTrace) {
         trace.appended_pairs_commitment = test_commit_appended_pairs(trace);
         trace.lookup_rows_commitments_commitment = test_commit_lookup_rows(trace);
@@ -5946,6 +5981,44 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_public_output_boundary_json_round_trip_preserves_acceptance() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+        let tempdir = tempfile::Builder::new()
+            .prefix("llm-provable-computer-phase44d-boundary-")
+            .tempdir()
+            .expect("create temp dir");
+        let path = tempdir.path().join("boundary.json");
+
+        std::fs::write(
+            &path,
+            serde_json::to_vec(&boundary).expect("encode boundary"),
+        )
+        .expect("write boundary");
+        let loaded: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary =
+            serde_json::from_slice(&std::fs::read(&path).expect("read boundary"))
+                .expect("load boundary");
+
+        assert_eq!(loaded, boundary);
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+            &loaded,
+            &compact_envelope,
+        )
+        .expect("loaded boundary acceptance should verify");
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+            &loaded,
+            &compact_envelope.claim,
+        )
+        .expect("loaded boundary binding should verify");
+    }
+
+    #[test]
     fn phase44d_source_emission_public_output_boundary_binding_matches_full_acceptance() {
         let (trace, phase30) = sample_trace_and_phase30();
         let compact_envelope =
@@ -6022,6 +6095,35 @@ mod tests {
                 &compact_envelope,
             )
             .expect_err("replay flags must reject source-chain public output boundary");
+
+        assert!(error.to_string().contains("without verifier trace replay"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags() {
+        let (trace, _) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove Phase44 compact projection");
+        let mut boundary = load_tampered_phase44d_source_chain_public_output_boundary(
+            "phase44d-boundary-replay-flags",
+            |boundary_json| {
+                boundary_json["verifier_requires_phase43_trace"] = serde_json::json!(true);
+                boundary_json["verifier_embeds_expected_rows"] = serde_json::json!(true);
+            },
+        );
+        boundary.source_chain_public_output_boundary_commitment =
+            commit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+                &boundary,
+            )
+            .expect("recommit replay flag drift");
+
+        let error =
+            verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+                &boundary,
+                &compact_envelope,
+            )
+            .expect_err("serialized replay flag drift must reject source-chain boundary");
 
         assert!(error.to_string().contains("without verifier trace replay"));
     }

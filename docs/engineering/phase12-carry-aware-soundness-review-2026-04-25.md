@@ -121,6 +121,39 @@ Added focused tamper tests:
    - loads the tampered file through the public proof loader
    - expects the equivalence fingerprint guard to reject the claim drift before proof acceptance
 
+11. `experimental_phase12_carry_aware_chain_serialization_round_trip`
+   - saves a proof-checked experimental Phase12 decoding chain to JSON and loads it back
+   - confirms the loaded chain still verifies through the full chain verifier path
+
+12. `experimental_phase12_carry_aware_loaded_chain_rejects_tampered_payload_file`
+   - mutates serialized inner execution-proof bytes inside a saved experimental Phase12 chain
+   - loads the tampered chain through the public chain loader
+   - expects the proof-checked chain verifier to reject the malformed inner payload
+
+13. `experimental_phase12_carry_aware_loaded_chain_rejects_tampered_step_backend_version_file`
+   - mutates a serialized nested step `proof_backend_version` inside the saved chain
+   - loads the tampered chain through the public chain loader
+   - expects manifest-vs-step backend metadata binding to reject
+
+14. `experimental_phase12_carry_aware_loaded_chain_rejects_tampered_steps_file`
+   - mutates a serialized nested step `claim.steps` inside the saved chain
+   - loads the tampered chain through the public chain loader
+   - expects the nested proof equivalence metadata guard to reject before chain acceptance
+
+15. `experimental_phase12_carry_aware_loaded_chain_rejects_tampered_final_state_file`
+   - mutates a serialized nested step `claim.final_state.acc` inside the saved chain
+   - loads the tampered chain through the public chain loader
+   - expects the nested proof equivalence fingerprint guard to reject before chain acceptance
+
+16. `phase44d_source_emission_public_output_boundary_json_round_trip_preserves_acceptance`
+   - saves a Phase44D typed source-chain public-output boundary to JSON and loads it back
+   - confirms the loaded boundary still passes both acceptance and binding verification
+
+17. `phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags`
+   - mutates the serialized replay flags on a saved Phase44D boundary artifact
+   - loads the tampered boundary through the JSON surface
+   - expects the typed boundary validator to reject the replay drift
+
 1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
@@ -175,10 +208,17 @@ cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rej
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_backend_version_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_steps_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_final_state_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_chain_serialization_round_trip --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_chain_rejects_tampered_payload_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_chain_rejects_tampered_step_backend_version_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_chain_rejects_tampered_steps_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_chain_rejects_tampered_final_state_file --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_trace_builder_rejects_store_row_that_drops_live_carry --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_negative_wrap_delta_sign_drift --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_phase12_eight_step_family_trace_satisfies_constraints --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase44d_source_emission_public_output_boundary_json_round_trip_preserves_acceptance --features stwo-backend --lib
+cargo +nightly-2025-07-14 test phase44d_source_emission_public_output_boundary_loaded_json_rejects_replay_flags --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:

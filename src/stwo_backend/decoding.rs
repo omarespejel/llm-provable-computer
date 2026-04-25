@@ -18082,6 +18082,159 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase12_carry_aware_chain_fixture() -> &'static Phase12DecodingChainManifest {
+        static FIXTURE: OnceLock<Phase12DecodingChainManifest> = OnceLock::new();
+        FIXTURE.get_or_init(|| {
+            let layout = phase12_default_decoding_layout();
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout, 4,
+            )
+            .expect("experimental Phase12 carry-aware chain fixture")
+        })
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase12_carry_aware_chain() -> Phase12DecodingChainManifest {
+        sample_phase12_carry_aware_chain_fixture().clone()
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn load_tampered_phase12_carry_aware_chain(
+        stem: &str,
+        mutate: impl FnOnce(&mut serde_json::Value),
+    ) -> Phase12DecodingChainManifest {
+        let manifest = sample_phase12_carry_aware_chain();
+        let tempdir = tempfile::Builder::new()
+            .prefix(&format!("llm-provable-computer-{stem}-"))
+            .tempdir()
+            .expect("create temp dir");
+        let manifest_path = tempdir.path().join("valid.json");
+        let tampered_path = tempdir.path().join("tampered.json");
+
+        save_phase12_decoding_chain(&manifest, &manifest_path).expect("save");
+        let mut manifest_json: serde_json::Value =
+            serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+                .expect("manifest json");
+        mutate(&mut manifest_json);
+        fs::write(
+            &tampered_path,
+            serde_json::to_vec(&manifest_json).expect("encode tampered manifest"),
+        )
+        .expect("write tampered manifest");
+
+        load_phase12_decoding_chain(&tampered_path).expect("load tampered manifest")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_chain_serialization_round_trip() {
+        let manifest = sample_phase12_carry_aware_chain();
+        let tempdir = tempfile::Builder::new()
+            .prefix("llm-provable-computer-phase12-carry-aware-chain-")
+            .tempdir()
+            .expect("create temp dir");
+        let path = tempdir.path().join("chain.json");
+
+        save_phase12_decoding_chain(&manifest, &path).expect("save");
+        let loaded = load_phase12_decoding_chain(&path).expect("load");
+
+        assert_eq!(loaded, manifest);
+        verify_phase12_decoding_chain_with_proof_checks(&loaded)
+            .expect("verify loaded experimental chain");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_chain_rejects_tampered_payload_file() {
+        let loaded = load_tampered_phase12_carry_aware_chain(
+            "phase12-carry-aware-chain-bad-payload",
+            |manifest_json| {
+                manifest_json["steps"][0]["proof"]["proof"] = serde_json::json!([0]);
+            },
+        );
+
+        let err = verify_phase12_decoding_chain_with_proof_checks(&loaded)
+            .expect_err("tampered proof payload in serialized chain should fail");
+        let message = err.to_string();
+        assert!(
+            message.contains("failed to deserialize")
+                || message.contains("serialization")
+                || message.contains("deserial"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_chain_rejects_tampered_step_backend_version_file() {
+        let loaded = load_tampered_phase12_carry_aware_chain(
+            "phase12-carry-aware-chain-backend-version",
+            |manifest_json| {
+                manifest_json["steps"][0]["proof"]["proof_backend_version"] =
+                    serde_json::Value::String(
+                        crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+                    );
+            },
+        );
+
+        let err = verify_phase12_decoding_chain_with_proof_checks(&loaded)
+            .expect_err("tampered step backend version in serialized chain should fail");
+        assert!(
+            err.to_string().contains("does not match manifest"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_chain_rejects_tampered_steps_file() {
+        let loaded = load_tampered_phase12_carry_aware_chain(
+            "phase12-carry-aware-chain-steps",
+            |manifest_json| {
+                let steps = manifest_json["steps"][0]["proof"]["claim"]["steps"]
+                    .as_u64()
+                    .expect("claim steps as u64");
+                manifest_json["steps"][0]["proof"]["claim"]["steps"] = serde_json::json!(steps + 1);
+            },
+        );
+
+        let err = verify_phase12_decoding_chain_with_proof_checks(&loaded)
+            .expect_err("tampered step count in serialized chain should fail");
+        let message = err.to_string();
+        assert!(
+            message.contains("checked_steps") || message.contains("claim steps"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn experimental_phase12_carry_aware_loaded_chain_rejects_tampered_final_state_file() {
+        let loaded = load_tampered_phase12_carry_aware_chain(
+            "phase12-carry-aware-chain-final-state",
+            |manifest_json| {
+                let acc = i16::try_from(
+                    manifest_json["steps"][0]["proof"]["claim"]["final_state"]["acc"]
+                        .as_i64()
+                        .expect("final-state acc as i64"),
+                )
+                .expect("final-state acc should fit in i16");
+                manifest_json["steps"][0]["proof"]["claim"]["final_state"]["acc"] =
+                    serde_json::json!(acc.wrapping_add(1));
+            },
+        );
+
+        let err = verify_phase12_decoding_chain_with_proof_checks(&loaded)
+            .expect_err("tampered final state in serialized chain should fail");
+        let message = err.to_string();
+        assert!(
+            message.contains("invalid transformer equivalence fingerprint")
+                || message.contains("final_state"),
+            "unexpected error: {message}"
+        );
+    }
+
     #[test]
     fn save_phase14_decoding_chain_rejects_manifest_exceeding_json_budget() {
         let layout = phase12_default_decoding_layout();
