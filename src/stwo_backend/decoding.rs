@@ -20008,10 +20008,10 @@ mod tests {
 
     fn sample_phase30_decoding_step_proof_envelope_manifest(
     ) -> Phase30DecodingStepProofEnvelopeManifest {
-        sample_phase30_chain_and_manifest().1
+        sample_phase30_manifest()
     }
 
-    fn sample_phase30_chain_and_manifest() -> (
+    fn sample_phase30_fixture() -> &'static (
         Phase12DecodingChainManifest,
         Phase30DecodingStepProofEnvelopeManifest,
     ) {
@@ -20019,16 +20019,24 @@ mod tests {
             Phase12DecodingChainManifest,
             Phase30DecodingStepProofEnvelopeManifest,
         )> = OnceLock::new();
-        FIXTURE
-            .get_or_init(|| {
-                let layout = phase12_default_decoding_layout();
-                let chain =
-                    prove_phase12_decoding_demo_for_layout_steps(&layout, 3).expect("chain");
-                let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
-                    .expect("envelopes");
-                (chain, manifest)
-            })
-            .clone()
+        FIXTURE.get_or_init(|| {
+            let layout = phase12_default_decoding_layout();
+            let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3).expect("chain");
+            let manifest =
+                phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+            (chain, manifest)
+        })
+    }
+
+    fn sample_phase30_chain_and_manifest() -> (
+        Phase12DecodingChainManifest,
+        Phase30DecodingStepProofEnvelopeManifest,
+    ) {
+        sample_phase30_fixture().clone()
+    }
+
+    fn sample_phase30_manifest() -> Phase30DecodingStepProofEnvelopeManifest {
+        sample_phase30_fixture().1.clone()
     }
 
     #[test]
@@ -20437,7 +20445,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_empty_or_unsupported_versions() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
 
         manifest.proof_backend_version.clear();
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
@@ -20510,7 +20518,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_excessive_envelope_count() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
 
         let template = manifest.envelopes[0].clone();
         manifest.envelopes = vec![template; MAX_DECODING_CHAIN_STEPS + 1];
@@ -20526,7 +20534,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_source_chain_commitment_drift() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         manifest.envelopes[0].source_chain_commitment = "tampered-source-chain".to_string();
         manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&manifest.envelopes[0]);
@@ -20542,7 +20550,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_list_commitment_binds_ordering() {
-        let (_, manifest) = sample_phase30_chain_and_manifest();
+        let manifest = sample_phase30_manifest();
         assert!(
             manifest.envelopes.len() >= 2,
             "fixture must provide at least two envelopes"
@@ -20559,7 +20567,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_commitment_length_prefixes_variable_fields() {
-        let (_, manifest) = sample_phase30_chain_and_manifest();
+        let manifest = sample_phase30_manifest();
         let mut left = manifest.envelopes[0].clone();
         let mut right = left.clone();
 
@@ -20577,7 +20585,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_tampered_start_boundary() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         manifest.chain_start_boundary_commitment = "tampered-start-boundary".to_string();
 
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
@@ -20591,7 +20599,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_tampered_end_boundary() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         manifest.chain_end_boundary_commitment = "tampered-end-boundary".to_string();
 
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
@@ -20605,7 +20613,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_step_envelope_list_commitment_drift() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         manifest.step_envelopes_commitment = "tampered-step-envelope-list".to_string();
 
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
@@ -20619,7 +20627,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_step_index_drift() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         assert!(
             manifest.envelopes.len() >= 3,
             "fixture must provide a non-boundary envelope"
@@ -20640,7 +20648,7 @@ mod tests {
 
     #[test]
     fn phase30_step_envelope_manifest_rejects_tampered_chain_link() {
-        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        let mut manifest = sample_phase30_manifest();
         manifest.envelopes[0].output_boundary_commitment = "tampered".to_string();
         manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&manifest.envelopes[0]);

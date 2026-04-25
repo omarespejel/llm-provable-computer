@@ -47,19 +47,20 @@ The honest default `4`-step seed is now split as follows:
 
 ## What This Does Not Yet Prove
 
-- no claim yet about `8+` honest steps
-- no claim yet about Phase44D honest scaling rerun on the experimental backend
-- no claim yet about integrating carry-aware traces into Phase30 manifests or
-  later recursive/history surfaces
+- `8+` honest steps and the Phase44D scaling rerun now exist only on the
+  experimental carry-aware lane, including the 1024-step gate
+- no claim yet about promoting carry-aware Phase30 manifests or later
+  recursive/history surfaces into the default/publication lane
 - no claim yet about making the experimental backend the default
 - no claim that Phase44D large ratios are cryptographic-verifier speedups; the measured saving is dominated by skipped manifest serialization and hashing
 
 ## Next Sensible Moves
 
-1. Measure whether the experimental backend can prove the honest `8`-step seed.
-2. If `8` clears, rerun the Phase44D scaling experiment on the experimental backend.
-3. Only then decide whether the carry-aware lane is strong enough to become the
-   main research program.
+1. Broaden soundness review of the experimental carry-aware backend.
+2. Raise the Phase44D experimental ceiling beyond `1024` only after that review
+   stays clean.
+3. Only then decide whether any part of the carry-aware lane should be promoted
+   toward the paper/default surface.
 
 ## Validation Commands
 

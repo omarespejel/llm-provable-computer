@@ -142,7 +142,8 @@ const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
-const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 1024;
+const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
 const PHASE44D_RESCALED_EXPLORATORY_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
@@ -1244,7 +1245,7 @@ fn run_stwo_phase44d_source_emission_experimental_benchmark_for_step_counts(
     validate_phase44d_step_counts(
         step_counts,
         "phase44d source emission experimental benchmark",
-        PHASE44D_SOURCE_EMISSION_MAX_STEPS,
+        PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS,
     )?;
     let layout = phase12_default_decoding_layout();
     let mut rows = Vec::new();
@@ -5556,6 +5557,14 @@ mod tests {
     fn phase44d_source_emission_benchmark_rejects_oversized_step_counts() {
         let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 2048], false)
             .expect_err("oversized step counts must fail");
+        assert!(error.to_string().contains("supports at most 512 steps"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_rejects_oversized_step_counts() {
+        let error =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[2, 2048], false)
+                .expect_err("oversized experimental step counts must fail");
         assert!(error.to_string().contains("supports at most 1024 steps"));
     }
 
