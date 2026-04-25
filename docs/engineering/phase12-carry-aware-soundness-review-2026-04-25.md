@@ -125,6 +125,7 @@ Remaining review items before any promotion decision:
 Targeted tests:
 
 ```bash
+just proof-tests
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_abs_bit_reconstruction_drift --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_sign_drift --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_square_drift --features stwo-backend --lib
@@ -141,4 +142,6 @@ cargo +nightly-2025-07-14 test carry_aware --features stwo-backend
 cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
 cargo +nightly-2025-07-14 fmt --check
 git diff --check
+just gate
+# or: just gate-no-nightly
 ```
