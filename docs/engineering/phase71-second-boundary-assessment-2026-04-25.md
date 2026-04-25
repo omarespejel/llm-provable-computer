@@ -32,6 +32,9 @@ publication lane:
 - Evidence files:
   - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
   - `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.json`
+- Paper evidence regeneration:
+  - `scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
+  - `scripts/paper/aggregate_stwo_phase71_handoff_receipt_benchmark.py`
 
 | Steps | Shared Phase71 receipt | Phase30 manifest baseline |
 |---|---:|---:|
@@ -153,7 +156,29 @@ cargo +nightly-2025-07-14 test --features stwo-backend --bin tvm \
 cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
 ```
 
-Bounded CLI sweep on supported publication-lane counts:
+Checked-in median-of-5 paper evidence (`1,2,3` default step counts):
+
+```bash
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
+
+CAPTURE_TIMINGS=1 \
+BENCH_RUNS=5 \
+TSV_OUT=target/phase71-second-boundary/paper-phase71-median.tsv \
+JSON_OUT=target/phase71-second-boundary/paper-phase71-median.json \
+SVG_OUT=target/phase71-second-boundary/paper-phase71-median.svg \
+PNG_OUT= \
+PDF_OUT= \
+bash scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh
+```
+
+The generator above is the exact median pipeline for the checked-in paper
+evidence: it runs the default `bench-stwo-phase71-handoff-receipt-reuse`
+surface five times with `--capture-timings`, keeps the paper step counts
+`1,2,3`, and then aggregates the five single-run JSON payloads through
+`scripts/paper/aggregate_stwo_phase71_handoff_receipt_benchmark.py` into
+`measured_median` TSV/JSON outputs.
+
+Bounded single-run CLI probe on supported publication-lane counts:
 
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
@@ -166,7 +191,12 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --output-json target/phase71-second-boundary/phase71-1-3.json
 ```
 
-Fail-closed overflow barrier:
+That bounded `--step-counts 1,3` command is only an engineering probe for the
+new custom-step path added in this branch. Because it is a single
+`--capture-timings` run, it produces `measured_single_run`, not the checked-in
+paper median outputs above.
+
+Fail-closed overflow barrier at the first blocked publication-lane point:
 
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}"
