@@ -181,56 +181,58 @@ Added focused tamper tests:
    - loads the tampered receipt through the JSON surface
    - recommits the receipt and expects terminal LogUp cancellation verification to reject
 
-1. `phase47_recursive_verifier_wrapper_candidate_json_round_trip_preserves_acceptance`
+<!-- markdownlint-disable MD029 -->
+24. `phase47_recursive_verifier_wrapper_candidate_json_round_trip_preserves_acceptance`
    - saves a Phase47 recursive-verifier wrapper candidate to JSON and loads it back
    - confirms the loaded candidate still passes both standalone and Phase46-bound verification
 
-1. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_replay_flags`
+25. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_replay_flags`
    - mutates the serialized replay flags on a saved Phase47 wrapper candidate
    - loads the tampered candidate through the JSON surface
    - recommits the candidate and expects the wrapper replay-input guard to reject
 
-1. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_stale_commitment`
+26. `phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_stale_commitment`
    - mutates the serialized `compact_envelope_commitment` on a saved Phase47 wrapper candidate
    - loads the tampered candidate through the JSON surface without recommitting it
-   - expects the stale top-level commitment to reject before any wrapper-surface drift could pass
+   - expects the stale top-level commitment to reject the serialized tampering
 
-1. `phase48_recursive_proof_wrapper_attempt_json_round_trip_preserves_acceptance`
+27. `phase48_recursive_proof_wrapper_attempt_json_round_trip_preserves_acceptance`
    - saves a Phase48 recursive proof-wrapper attempt to JSON and loads it back
    - confirms the loaded attempt still passes both standalone and Phase47-bound verification
 
-1. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_blocking_reason_drift`
+28. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_blocking_reason_drift`
    - mutates the serialized blocking-reason list on a saved Phase48 wrapper attempt
    - loads the tampered attempt through the JSON surface
    - recommits the attempt and expects the missing Phase43 Cairo AIR blocker guard to reject
 
-1. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_stale_commitment`
+29. `phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_stale_commitment`
    - mutates the serialized `compact_envelope_commitment` on a saved Phase48 wrapper attempt
    - loads the tampered attempt through the JSON surface without recommitting it
-   - expects the stale top-level commitment to reject before the blocker drift could be masked
+   - expects the stale top-level commitment to reject the serialized tampering
 
-1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
+30. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
      that follow them
    - pins the observed wrap-delta coverage to `{-41, -20, 0, 1, 3}` so future
      claim-widening happens deliberately
 
-1. `carry_aware_trace_builder_rejects_store_row_that_drops_live_carry`
+31. `carry_aware_trace_builder_rejects_store_row_that_drops_live_carry`
    - mutates the post-multiply `Store` row in the honest `8`-step family to
      clear a live carry flag
    - expects the trace builder to reject before proving
 
-1. `carry_aware_air_rejects_negative_wrap_delta_sign_drift`
+32. `carry_aware_air_rejects_negative_wrap_delta_sign_drift`
    - mutates the sign witness on a negative-wrap `MulMemory` row from the
      honest `8`-step family
    - expects the AIR signed-reconstruction constraint to reject
 
-1. `carry_aware_phase12_eight_step_family_trace_satisfies_constraints`
+33. `carry_aware_phase12_eight_step_family_trace_satisfies_constraints`
    - runs the carry-aware trace-constraint path across every honest seed in the
      `8`-step family
    - ensures the widened family-level coverage claim is backed by the
      positive trace path, not just prototype-row inspection
+<!-- markdownlint-enable MD029 -->
 
 These complement the existing tests for out-of-range `wrap_delta`, ADD/SUB
 unit range, proof-payload tampering, backend-version isolation, and reexecution.
