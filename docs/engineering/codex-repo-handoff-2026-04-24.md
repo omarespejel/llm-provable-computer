@@ -47,9 +47,9 @@ This repository now has two live lanes.
   public-input lanes, and terminal interaction-claim drift after recommit.
 - The next wrapper-surface increment extends serialized JSON coverage one layer
   higher to the Phase47 recursive-verifier wrapper candidate and the Phase48
-  recursive proof-wrapper attempt, including replay-flag drift on the wrapper
-  candidate and blocking-reason drift on the Phase48 no-go artifact after
-  recommit.
+  recursive proof-wrapper attempt, including replay-flag drift and
+  stale-commitment rejection on the wrapper candidate plus blocking-reason
+  drift and stale-commitment rejection on the Phase48 no-go artifact.
 - A second April 25 follow-up covers signed/non-unit `MulMemory` wrap patterns,
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.

@@ -44,8 +44,8 @@ The active split is now:
 - Gate 2h: the next wrapper-surface increment extends serialized JSON coverage
   one layer higher again to the Phase47 recursive-verifier wrapper candidate
   and the Phase48 recursive proof-wrapper attempt, including replay-flag drift
-  on the wrapper candidate and blocking-reason drift on the Phase48 no-go
-  artifact after recommit.
+  and stale-commitment rejection on the wrapper candidate plus blocking-reason
+  drift and stale-commitment rejection on the Phase48 no-go artifact.
 - Gate 2e: the honest `8`-step family now has explicit coverage for signed and
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
