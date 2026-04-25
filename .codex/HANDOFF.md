@@ -61,6 +61,11 @@ The active split is now:
   source-root binding mechanism but an explicit **NO-GO** for claiming a second
   Tablero boundary today because the source side still does not emit the
   proof-native inputs needed to drop the full Phase43 trace honestly.
+- Gate 5: the Phase44D second-backend feasibility gate records a real carry-free
+  `2`-step checkpoint on the shipped backend but an explicit **NO-GO** for
+  claiming backend transferability today because the carry-free Phase12 source
+  family still cannot clear an honest proof-checked `4+` source chain, even
+  under the bounded rescaling probe.
 
 At `1024` steps, the experimental shared path records:
 
@@ -96,8 +101,9 @@ Use these in order of authority for current state:
 11. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
 12. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 13. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-14. `docs/engineering/reproducibility.md`
-15. `git status --short --branch`
+14. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+15. `docs/engineering/reproducibility.md`
+16. `git status --short --branch`
 
 ## Merge culture
 
@@ -126,8 +132,10 @@ Use these in order of authority for current state:
 3. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
    it is not the highest-leverage next paper move ahead of the comparator.
 4. Track the heavier next-wave research separately:
-   - cross-backend Phase44D reproduction after the comparator lands
-   - one SNIP-36 Sepolia deployment artifact after the comparator lands
+   - one SNIP-36 Sepolia deployment artifact
+   - only then revisit cross-backend Phase44D reproduction if a new honest
+     carry-free non-overflow source family or another bounded backend actually
+     exists
 5. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
@@ -139,9 +147,12 @@ Use these in order of authority for current state:
    the source side emits the proof-native projection commitments, row
    commitments/openings, and public inputs listed in
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-8. Only after those steps decide whether any part of the experimental lane
+8. Keep the Phase44D second-backend question in the explicit no-go bucket until
+   the shipped carry-free path can drive the same benchmark beyond `2` steps or
+   another bounded backend lands first.
+9. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
-9. Do not spend more time pushing the current publication/default Phase71
+10. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
