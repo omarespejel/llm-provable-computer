@@ -145,6 +145,8 @@ const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
+const PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT: usize = 4;
+const PHASE71_HANDOFF_RECEIPT_MAX_TOTAL_STEPS: usize = 6;
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
 const PHASE44D_RESCALED_EXPLORATORY_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
 const PHASE44D_RESEARCH_INCOMING_DIVISOR_CANDIDATES: [i16; 10] =
@@ -1541,6 +1543,29 @@ fn run_stwo_phase71_handoff_receipt_benchmark_for_step_counts_internal(
         return Err(VmError::InvalidConfig(
             "phase71 handoff receipt benchmark step counts must be strictly increasing".to_string(),
         ));
+    }
+    if step_counts
+        .iter()
+        .any(|&steps| steps > PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT)
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "phase71 handoff receipt benchmark supports at most {} steps per point",
+            PHASE71_HANDOFF_RECEIPT_MAX_STEP_COUNT
+        )));
+    }
+    let total_steps = step_counts
+        .iter()
+        .try_fold(0usize, |acc, &steps| acc.checked_add(steps))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "phase71 handoff receipt benchmark total requested steps overflowed".to_string(),
+            )
+        })?;
+    if total_steps > PHASE71_HANDOFF_RECEIPT_MAX_TOTAL_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "phase71 handoff receipt benchmark supports at most {} total requested steps",
+            PHASE71_HANDOFF_RECEIPT_MAX_TOTAL_STEPS
+        )));
     }
 
     let layout = phase12_default_decoding_layout();
@@ -5858,6 +5883,24 @@ mod tests {
         let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[0], false)
             .expect_err("zero step count must fail");
         assert!(error.to_string().contains("must be positive"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_step_count_above_supported_cap() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[5], false)
+            .expect_err("step counts above the supported cap must fail");
+        assert!(error
+            .to_string()
+            .contains("supports at most 4 steps per point"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_total_requested_steps_above_cap() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[1, 2, 4], false)
+            .expect_err("total requested steps above the bounded surface must fail");
+        assert!(error
+            .to_string()
+            .contains("supports at most 6 total requested steps"));
     }
 
     #[test]
