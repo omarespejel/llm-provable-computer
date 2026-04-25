@@ -93,6 +93,14 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
             )
         self.assertIn("invalid run count", str(ctx.exception))
 
+    def test_validate_rows_rejects_non_integer_steps(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(
+                [self.sample_row(steps="two")],
+                source=Path("sample.tsv"),
+            )
+        self.assertIn("unexpected non-integer step count", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

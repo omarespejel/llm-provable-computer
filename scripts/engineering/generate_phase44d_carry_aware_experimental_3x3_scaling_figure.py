@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from pathlib import Path
 
 import matplotlib
@@ -203,7 +204,13 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
         variant = row["backend_variant"]
         if variant not in VARIANT_ORDER:
             raise SystemExit(f"unexpected backend_variant in {source}: {variant}")
-        steps = int(row["steps"])
+        steps_raw = row.get("steps", "").strip()
+        try:
+            steps = int(steps_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"unexpected non-integer step count in {source}: {steps_raw!r}"
+            ) from exc
         if steps < 2 or steps & (steps - 1) != 0:
             raise SystemExit(f"unexpected step count in {source}: {steps}")
         key = (variant, steps)
@@ -299,9 +306,14 @@ def main() -> None:
             if int(row["steps"]) == frontier_step
         )
     )
-    if shared_frontier <= 0.0:
+    if not math.isfinite(baseline_frontier) or baseline_frontier <= 0.0:
         raise SystemExit(
-            "frontier verify_ms for shared projection must be > 0; "
+            "frontier verify_ms for baseline projection must be finite and > 0; "
+            f"got {baseline_frontier} at {frontier_step} steps"
+        )
+    if not math.isfinite(shared_frontier) or shared_frontier <= 0.0:
+        raise SystemExit(
+            "frontier verify_ms for shared projection must be finite and > 0; "
             f"got {shared_frontier} at {frontier_step} steps"
         )
     ratio = baseline_frontier / shared_frontier
