@@ -19,8 +19,8 @@ The active split is now:
 - Do not widen publication claims using experimental engineering evidence without a deliberate promotion pass.
 - The bounded April 25 Phase71 follow-up shows the existing handoff receipt is
   a compactness surface, not a second Tablero-style replay-elimination
-  boundary, and the publication-lane execution-proof surface still fails closed
-  at `4+` steps.
+  boundary, and the first blocked point on the publication-lane
+  execution-proof surface is `4` steps.
 
 ### Experimental carry-aware lane
 

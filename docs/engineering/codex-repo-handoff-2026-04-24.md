@@ -29,8 +29,8 @@ This repository now has two live lanes.
 - Do not silently import experimental engineering results into publication docs.
 - The bounded April 25 Phase71 follow-up shows the existing handoff receipt is
   a compactness surface, not a second Tablero-style replay-elimination
-  boundary, and the publication-lane execution-proof surface still fails closed
-  at `4+` steps.
+  boundary, and the first blocked point on the publication-lane
+  execution-proof surface is `4` steps.
 
 ### 2. Experimental carry-aware lane
 
