@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-04-24
-Repository: `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex`
-Mainline reference at refresh: `6b4b435cfef6764faa991a0e9228012094f4f6c0`
+Last refreshed: 2026-04-25
+Repository: `/Users/espejelomar/StarkNet/zk-ai`
+Mainline reference at refresh: `203b3bc763e9f7683fa1505e7b9cc0a6d1ca3395`
 
 ## Immediate orientation
 
@@ -17,6 +17,10 @@ The active split is now:
 - Keep the current paper package and shipped default backend on the conservative carry-free route.
 - Use `docs/paper/` plus `docs/paper/PUBLICATION_RELEASE.md` as the source of truth for paper-facing claims.
 - Do not widen publication claims using experimental engineering evidence without a deliberate promotion pass.
+- The bounded April 25 Phase71 follow-up shows the existing handoff receipt is
+  a compactness surface, not a second Tablero-style replay-elimination
+  boundary, and the publication-lane execution-proof surface still fails closed
+  at `4+` steps.
 
 ### Experimental carry-aware lane
 
@@ -73,7 +77,9 @@ Use these in order of authority for current state:
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/reproducibility.md`
+9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+10. `docs/engineering/reproducibility.md`
+10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 
 ## Merge culture
 
@@ -103,6 +109,10 @@ Use these in order of authority for current state:
    review changes stay clean.
 4. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
+5. Do not spend more time pushing the current publication/default Phase71
+   surface as a second-boundary reproduction; if that question matters, move it
+   to the experimental lane or a boundary that actually removes replay
+   dependencies.
 
 ## Resume protocol
 

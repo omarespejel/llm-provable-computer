@@ -12,8 +12,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/reproducibility.md`
-10. `git status --short --branch`
+9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+10. `docs/engineering/reproducibility.md`
+11. `git status --short --branch`
 
 ## What this repository is now
 
@@ -59,6 +60,10 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 - Do not revive the deleted tensor-native or Gemma-window line as the current main route.
 - Do not move experimental carry-aware numbers into `docs/paper/` just because they are large.
 - Do not switch the default backend away from the shipped carry-free path without an explicit promotion task.
+- Do not keep trying to turn the current publication/default Phase71 handoff
+  receipt into a second Tablero-style boundary result; it still depends on the
+  ordered Phase30 manifest and the publication-lane surface fails closed at
+  `4+` steps.
 - Do not merge PRs with live review threads or by merge commit.
 
 ## First commands after a resume

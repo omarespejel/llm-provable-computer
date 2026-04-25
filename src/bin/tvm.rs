@@ -100,6 +100,7 @@ use llm_provable_computer::{
     run_stwo_phase44d_source_emission_experimental_benchmark_for_steps,
     run_stwo_phase44d_source_emission_experimental_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
+    run_stwo_phase71_handoff_receipt_benchmark_for_steps,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
@@ -562,6 +563,9 @@ enum Command {
         /// Optional file where the benchmark JSON will be written.
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
+        /// Optional comma-delimited step counts. Defaults to the Phase71 calibration sweep.
+        #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
+        step_counts: Vec<usize>,
         /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
@@ -2060,10 +2064,12 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::BenchStwoPhase71HandoffReceiptReuse {
             output_tsv,
             output_json,
+            step_counts,
             capture_timings,
         } => bench_stwo_phase71_handoff_receipt_reuse_command(
             &output_tsv,
             output_json.as_deref(),
+            &step_counts,
             capture_timings,
         )?,
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
@@ -3730,12 +3736,14 @@ fn bench_stwo_phase44d_rescaled_exploratory_command(
 fn bench_stwo_phase71_handoff_receipt_reuse_command(
     output_tsv: &Path,
     output_json: Option<&Path>,
+    step_counts: &[usize],
     capture_timings: bool,
 ) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
         let _ = output_tsv;
         let _ = output_json;
+        let _ = step_counts;
         let _ = capture_timings;
         return Err(VmError::UnsupportedProof(
             "S-two Phase71 handoff receipt benchmark requires building with `--features stwo-backend`"
@@ -3759,10 +3767,14 @@ fn bench_stwo_phase71_handoff_receipt_reuse_command(
                 }
             }
         }
-        let report = if capture_timings {
-            run_stwo_phase71_handoff_receipt_benchmark_with_options(true)?
+        let report = if step_counts.is_empty() {
+            if capture_timings {
+                run_stwo_phase71_handoff_receipt_benchmark_with_options(true)?
+            } else {
+                run_stwo_phase71_handoff_receipt_benchmark()?
+            }
         } else {
-            run_stwo_phase71_handoff_receipt_benchmark()?
+            run_stwo_phase71_handoff_receipt_benchmark_for_steps(step_counts, capture_timings)?
         };
         save_stwo_phase71_handoff_receipt_benchmark_report_tsv(&report, output_tsv)?;
         if let Some(path) = output_json {
@@ -13940,6 +13952,34 @@ mod cli_dispatch_tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase71_handoff_receipt_benchmark_command_preserves_step_counts() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase71-handoff-receipt-reuse",
+                "--step-counts",
+                "1,4,8",
+                "--output-tsv",
+                "phase71.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase71-handoff-receipt-reuse"),
+                OsString::from("--step-counts"),
+                OsString::from("1,4,8"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase71.tsv"),
+            ]
+        );
+    }
+
     #[cfg(not(feature = "stwo-backend"))]
     #[test]
     fn phase12_shared_lookup_artifact_reuse_benchmark_command_is_hidden_without_stwo_backend() {
@@ -14202,6 +14242,7 @@ mod cli_dispatch_tests {
                 let Command::BenchStwoPhase71HandoffReceiptReuse {
                     output_tsv,
                     output_json,
+                    step_counts,
                     capture_timings,
                 } = cli.command
                 else {
@@ -14211,6 +14252,7 @@ mod cli_dispatch_tests {
                 let err = super::bench_stwo_phase71_handoff_receipt_reuse_command(
                     &output_tsv,
                     output_json.as_deref(),
+                    &step_counts,
                     capture_timings,
                 )
                 .expect_err("identical output paths must fail before benchmark execution");

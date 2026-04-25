@@ -14,8 +14,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/reproducibility.md`
-10. `git status --short --branch`
+9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+10. `docs/engineering/reproducibility.md`
+11. `git status --short --branch`
 
 ## Current lane split
 
@@ -26,6 +27,10 @@ This repository now has two live lanes.
 - Source of truth: `docs/paper/` and the shipped carry-free backend path.
 - Keep paper-facing claims conservative and tied to the frozen bundle and evidence set.
 - Do not silently import experimental engineering results into publication docs.
+- The bounded April 25 Phase71 follow-up shows the existing handoff receipt is
+  a compactness surface, not a second Tablero-style replay-elimination
+  boundary, and the publication-lane execution-proof surface still fails closed
+  at `4+` steps.
 
 ### 2. Experimental carry-aware lane
 
@@ -89,3 +94,7 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
    review changes stay clean.
 4. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+5. Do not spend more time pushing the current publication/default Phase71
+   surface as a second-boundary reproduction; if that question matters, move it
+   to the experimental lane or a boundary that actually removes replay
+   dependencies.

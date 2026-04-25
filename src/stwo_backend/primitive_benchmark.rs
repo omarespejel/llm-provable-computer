@@ -1498,22 +1498,32 @@ pub fn run_stwo_phase44d_rescaled_exploratory_benchmark_for_steps(
 
 pub fn run_stwo_phase71_handoff_receipt_benchmark(
 ) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
-    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts_internal(
         &PHASE71_HANDOFF_RECEIPT_STEP_COUNTS,
         false,
+    )
+}
+
+pub fn run_stwo_phase71_handoff_receipt_benchmark_for_steps(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
+    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts_internal(
+        step_counts,
+        capture_timings,
     )
 }
 
 pub fn run_stwo_phase71_handoff_receipt_benchmark_with_options(
     capture_timings: bool,
 ) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
-    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts_internal(
         &PHASE71_HANDOFF_RECEIPT_STEP_COUNTS,
         capture_timings,
     )
 }
 
-fn run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+fn run_stwo_phase71_handoff_receipt_benchmark_for_step_counts_internal(
     step_counts: &[usize],
     capture_timings: bool,
 ) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
@@ -5816,7 +5826,7 @@ mod tests {
 
     #[test]
     fn phase71_handoff_receipt_benchmark_defaults_to_zero_timings_without_capture() {
-        let report = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[1], false)
+        let report = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[1], false)
             .expect("phase71 handoff receipt benchmark should run");
         assert_eq!(report.rows.len(), 2);
         assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
@@ -5829,7 +5839,7 @@ mod tests {
 
     #[test]
     fn phase71_handoff_receipt_benchmark_rejects_empty_step_counts() {
-        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[], false)
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[], false)
             .expect_err("empty step counts must fail");
         assert!(error
             .to_string()
@@ -5838,16 +5848,37 @@ mod tests {
 
     #[test]
     fn phase71_handoff_receipt_benchmark_rejects_non_monotonic_step_counts() {
-        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[1, 4, 2], false)
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[1, 4, 2], false)
             .expect_err("unsorted step counts must fail");
         assert!(error.to_string().contains("must be strictly increasing"));
     }
 
     #[test]
     fn phase71_handoff_receipt_benchmark_rejects_zero_step_count() {
-        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[0], false)
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[0], false)
             .expect_err("zero step count must fail");
         assert!(error.to_string().contains("must be positive"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_accepts_custom_step_counts() {
+        let report = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[1, 3], false)
+            .expect("custom step counts should run");
+        assert_eq!(report.rows.len(), 4);
+        assert_eq!(report.rows[0].steps, 1);
+        assert_eq!(report.rows[1].steps, 1);
+        assert_eq!(report.rows[2].steps, 3);
+        assert_eq!(report.rows[3].steps, 3);
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_reports_publication_surface_overflow_barrier() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_steps(&[4], false).expect_err(
+            "4-step Phase71 publication sweep should hit the current execution barrier",
+        );
+        assert!(error.to_string().contains(
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+        ));
     }
 
     #[test]
