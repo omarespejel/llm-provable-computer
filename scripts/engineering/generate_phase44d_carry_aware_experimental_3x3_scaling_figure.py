@@ -216,6 +216,30 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
         key = (variant, steps)
         if key in seen:
             raise SystemExit(f"duplicate benchmark row in {source}: {key}")
+        verify_ms_raw = row.get("verify_ms", "").strip()
+        try:
+            verify_ms = float(verify_ms_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"unexpected non-numeric verify_ms in {source}: {verify_ms_raw!r} for {key}"
+            ) from exc
+        if not math.isfinite(verify_ms) or verify_ms <= 0.0:
+            raise SystemExit(
+                "unexpected verify_ms in "
+                f"{source}: {verify_ms_raw!r} for {key}; expected a finite value > 0"
+            )
+        serialized_bytes_raw = row.get("serialized_bytes", "").strip()
+        try:
+            serialized_bytes = int(serialized_bytes_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                "unexpected non-integer serialized_bytes in "
+                f"{source}: {serialized_bytes_raw!r} for {key}"
+            ) from exc
+        if serialized_bytes <= 0:
+            raise SystemExit(
+                f"unexpected serialized_bytes in {source}: {serialized_bytes} for {key}; expected > 0"
+            )
         seen.add(key)
         step_counts.add(steps)
         if row["verified"].strip().lower() != "true":

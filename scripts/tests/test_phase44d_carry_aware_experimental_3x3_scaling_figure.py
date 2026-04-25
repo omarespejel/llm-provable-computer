@@ -57,6 +57,8 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
             "timing_runs": "5",
             "backend_variant": MODULE.VARIANT_ORDER[0],
             "steps": "2",
+            "verify_ms": "1.250",
+            "serialized_bytes": "2048",
             "verified": "true",
         }
         row.update(overrides)
@@ -100,6 +102,22 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
                 source=Path("sample.tsv"),
             )
         self.assertIn("unexpected non-integer step count", str(ctx.exception))
+
+    def test_validate_rows_rejects_non_numeric_verify_ms(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(
+                [self.sample_row(verify_ms="not-a-number")],
+                source=Path("sample.tsv"),
+            )
+        self.assertIn("unexpected non-numeric verify_ms", str(ctx.exception))
+
+    def test_validate_rows_rejects_non_positive_serialized_bytes(self):
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(
+                [self.sample_row(serialized_bytes="0")],
+                source=Path("sample.tsv"),
+            )
+        self.assertIn("unexpected serialized_bytes", str(ctx.exception))
 
 
 if __name__ == "__main__":
