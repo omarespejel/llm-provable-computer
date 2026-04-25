@@ -348,10 +348,12 @@ rows, the shared-table path can flatten sharply while the independent baselines
 continue to scale with `N`. Figure 4B shows that the same reuse-sensitive behavior
 survives in a verifier-bound two-table bundle. Figures 4E and 4F then sharpen the
 higher-layer story: the typed Phase44D boundary helps local verification latency, while
-the Phase71 handoff receipt helps serialized handoff size. External comparisons should
-therefore track regime, not backend branding. The one-shot rows calibrate current
-implementation constants; the repeated-step rows calibrate the architectural claim about
-carried lookup identity and higher-layer packaging tradeoffs.
+the Phase71 handoff receipt helps serialized handoff compactness. External comparisons
+should therefore track regime, not backend branding: `Phase12` is a proving-surface
+calibration, `Phase44D` is a latency calibration, and `Phase71` is a compact-object
+calibration. The one-shot rows calibrate current implementation constants; the
+repeated-step rows calibrate the architectural claim about carried lookup identity and
+higher-layer packaging tradeoffs.
 
 ### 4.5 Inference layer versus settlement layer
 
@@ -1008,13 +1010,14 @@ evidenced. A supplementary appendix summarizes comparison details.
 The compact literature-facing snapshot is also pinned in
 `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`; it should be read as
 workload-scope calibration, not as a matched primitive or end-to-end benchmark table.
-That snapshot now includes three local rows on different internal surfaces: a Phase12
-proving-bundle row, a Phase44D typed-boundary latency row, and a Phase71 handoff-receipt
-size row. If one narrower external comparator is forced, the best current choice is the
-compact verifier-object regime already pinned in that snapshot: the `NANOZK` abstract
-layer-proof row [39] against the local `Phase71` handoff-receipt row. That is not a
-matched workload benchmark, but it is still informative: the local receipt surface is
-smaller, while the public `NANOZK` compact proof verifies faster.
+That snapshot now includes three local rows on different internal surfaces: a `Phase12`
+proving row, a `Phase44D` typed-boundary latency row, and a `Phase71`
+handoff-receipt compactness row. If one narrower external comparator is forced, the
+only honest pairing already pinned in that snapshot is the compact-object regime: the
+`NANOZK` abstract layer-proof row [39] against the local `Phase71` handoff-receipt row.
+Use that pairing as compact-object calibration only. It is explicitly not a matched
+workload benchmark, but it is still informative: the local receipt surface is smaller,
+while the public `NANOZK` compact proof verifies faster.
 
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope
