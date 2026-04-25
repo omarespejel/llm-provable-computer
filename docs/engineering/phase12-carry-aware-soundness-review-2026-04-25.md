@@ -106,27 +106,27 @@ Added focused tamper tests:
    - loads the tampered file through the public proof loader
    - expects commitment validation to reject before proof acceptance
 
-8. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
+1. `carry_aware_subset_prototype_maps_signed_multi_wrap_and_store_patterns_on_honest_eight_step_family`
    - scans the honest `8`-step family and confirms the current carry-bearing
      surface consists of `MulMemory` rows plus the sticky-carry `Store` rows
      that follow them
    - pins the observed wrap-delta coverage to `{-41, -20, 0, 1, 3}` so future
      claim-widening happens deliberately
 
-9. `carry_aware_trace_builder_rejects_store_row_that_drops_live_carry`
+1. `carry_aware_trace_builder_rejects_store_row_that_drops_live_carry`
    - mutates the post-multiply `Store` row in the honest `8`-step family to
      clear a live carry flag
    - expects the trace builder to reject before proving
 
-10. `carry_aware_air_rejects_negative_wrap_delta_sign_drift`
+1. `carry_aware_air_rejects_negative_wrap_delta_sign_drift`
    - mutates the sign witness on a negative-wrap `MulMemory` row from the
      honest `8`-step family
    - expects the AIR signed-reconstruction constraint to reject
 
-11. `carry_aware_phase12_eight_step_family_trace_satisfies_constraints`
+1. `carry_aware_phase12_eight_step_family_trace_satisfies_constraints`
    - runs the carry-aware trace-constraint path across every honest seed in the
      `8`-step family
-   - ensures the widened family-level coverage claim is backed by the real
+   - ensures the widened family-level coverage claim is backed by the
      positive trace path, not just prototype-row inspection
 
 These complement the existing tests for out-of-range `wrap_delta`, ADD/SUB
