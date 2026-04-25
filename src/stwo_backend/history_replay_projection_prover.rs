@@ -5109,6 +5109,10 @@ mod tests {
         handoff: super::super::recursion::Phase44DRecursiveVerifierPublicOutputHandoff,
         bridge: super::super::recursion::Phase45RecursiveVerifierPublicInputBridge,
         receipt: super::super::recursion::Phase46StwoProofAdapterReceipt,
+    }
+
+    #[derive(Debug, Clone)]
+    struct Phase47Phase48WrapperFixture {
         candidate: Phase47RecursiveVerifierWrapperCandidate,
         attempt: Phase48RecursiveProofWrapperAttempt,
     }
@@ -5138,10 +5142,6 @@ mod tests {
             .expect("prepare cached Phase45 public-input bridge");
             let receipt = phase46_prepare_stwo_proof_adapter_receipt(&bridge, &compact_envelope)
                 .expect("prepare cached Phase46 Stwo proof-adapter receipt");
-            let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&receipt)
-                .expect("prepare cached Phase47 recursive-verifier wrapper candidate");
-            let attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
-                .expect("prepare cached Phase48 recursive proof-wrapper attempt");
 
             Phase44DComposedArtifactFixture {
                 compact_envelope,
@@ -5149,9 +5149,19 @@ mod tests {
                 handoff,
                 bridge,
                 receipt,
-                candidate,
-                attempt,
             }
+        })
+    }
+
+    fn sample_phase47_phase48_wrapper_fixture() -> &'static Phase47Phase48WrapperFixture {
+        static FIXTURE: OnceLock<Phase47Phase48WrapperFixture> = OnceLock::new();
+        FIXTURE.get_or_init(|| {
+            let fixture = sample_phase44d_composed_artifact_fixture();
+            let candidate = phase47_prepare_recursive_verifier_wrapper_candidate(&fixture.receipt)
+                .expect("prepare cached Phase47 recursive-verifier wrapper candidate");
+            let attempt = phase48_prepare_recursive_proof_wrapper_attempt(&candidate)
+                .expect("prepare cached Phase48 recursive proof-wrapper attempt");
+            Phase47Phase48WrapperFixture { candidate, attempt }
         })
     }
 
@@ -6735,39 +6745,41 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_accepts_phase46_receipt() {
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
         let fixture = sample_phase44d_composed_artifact_fixture();
 
-        verify_phase47_recursive_verifier_wrapper_candidate(&fixture.candidate)
+        verify_phase47_recursive_verifier_wrapper_candidate(&wrapper_fixture.candidate)
             .expect("verify standalone Phase47 wrapper candidate");
         verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
-            &fixture.candidate,
+            &wrapper_fixture.candidate,
             &fixture.receipt,
         )
         .expect("verify Phase47 wrapper candidate against Phase46 receipt");
 
         assert_eq!(
-            fixture.candidate.adapter_receipt_commitment,
+            wrapper_fixture.candidate.adapter_receipt_commitment,
             fixture.receipt.adapter_receipt_commitment
         );
         assert_eq!(
-            fixture.candidate.proof_commitment_roots.len(),
+            wrapper_fixture.candidate.proof_commitment_roots.len(),
             fixture.receipt.proof_commitment_roots.len()
         );
-        assert!(fixture.candidate.consumes_phase46_receipt_only);
-        assert!(!fixture.candidate.recursive_proof_available);
-        assert!(!fixture.candidate.recursive_verification_claimed);
-        assert!(!fixture.candidate.cryptographic_compression_claimed);
+        assert!(wrapper_fixture.candidate.consumes_phase46_receipt_only);
+        assert!(!wrapper_fixture.candidate.recursive_proof_available);
+        assert!(!wrapper_fixture.candidate.recursive_verification_claimed);
+        assert!(!wrapper_fixture.candidate.cryptographic_compression_claimed);
     }
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_json_round_trip_preserves_acceptance() {
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
         let fixture = sample_phase44d_composed_artifact_fixture();
         let loaded = round_trip_serialized_artifact(
             "phase47-recursive-wrapper-candidate-roundtrip",
-            &fixture.candidate,
+            &wrapper_fixture.candidate,
         );
 
-        assert_eq!(&loaded, &fixture.candidate);
+        assert_eq!(&loaded, &wrapper_fixture.candidate);
         verify_phase47_recursive_verifier_wrapper_candidate(&loaded)
             .expect("verify standalone loaded Phase47 wrapper candidate");
         verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
@@ -6779,8 +6791,8 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_replay_flags_even_when_recommitted() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
-        let mut candidate = fixture.candidate.clone();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let mut candidate = wrapper_fixture.candidate.clone();
 
         candidate.wrapper_requires_phase43_trace = true;
         candidate.wrapper_requires_phase30_manifest = true;
@@ -6795,10 +6807,10 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_replay_flags() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
         let mut loaded = load_tampered_serialized_artifact(
             "phase47-recursive-wrapper-candidate-replay-flags",
-            &fixture.candidate,
+            &wrapper_fixture.candidate,
             |candidate_json| {
                 candidate_json["wrapper_requires_phase43_trace"] = serde_json::json!(true);
                 candidate_json["wrapper_requires_phase30_manifest"] = serde_json::json!(true);
@@ -6813,9 +6825,25 @@ mod tests {
     }
 
     #[test]
+    fn phase47_recursive_verifier_wrapper_candidate_loaded_json_rejects_stale_commitment() {
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let loaded = load_tampered_serialized_artifact(
+            "phase47-recursive-wrapper-candidate-stale-commitment",
+            &wrapper_fixture.candidate,
+            |candidate_json| {
+                candidate_json["compact_envelope_commitment"] = serde_json::json!(hash32('c'));
+            },
+        );
+
+        let error = verify_phase47_recursive_verifier_wrapper_candidate(&loaded)
+            .expect_err("serialized Phase47 wrapper candidate with stale commitment must reject");
+        assert!(error.to_string().contains("commitment"));
+    }
+
+    #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_false_compression_claim() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
-        let mut candidate = fixture.candidate.clone();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let mut candidate = wrapper_fixture.candidate.clone();
 
         candidate.recursive_proof_available = true;
         candidate.recursive_verification_claimed = true;
@@ -6831,8 +6859,8 @@ mod tests {
 
     #[test]
     fn phase47_recursive_verifier_wrapper_candidate_rejects_proof_root_drift() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
-        let mut candidate = fixture.candidate.clone();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let mut candidate = wrapper_fixture.candidate.clone();
 
         candidate
             .proof_commitment_roots
@@ -6853,26 +6881,34 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_records_no_go_after_phase47() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
 
-        verify_phase48_recursive_proof_wrapper_attempt(&fixture.attempt)
+        verify_phase48_recursive_proof_wrapper_attempt(&wrapper_fixture.attempt)
             .expect("verify standalone Phase48 recursive proof-wrapper attempt");
         verify_phase48_recursive_proof_wrapper_attempt_against_phase47(
-            &fixture.attempt,
-            &fixture.candidate,
+            &wrapper_fixture.attempt,
+            &wrapper_fixture.candidate,
         )
         .expect("verify Phase48 recursive proof-wrapper attempt against Phase47");
 
         assert_eq!(
-            fixture.attempt.phase47_candidate_commitment,
-            fixture.candidate.candidate_commitment
+            wrapper_fixture.attempt.phase47_candidate_commitment,
+            wrapper_fixture.candidate.candidate_commitment
         );
-        assert!(fixture.attempt.local_stwo_core_verifier_detected);
-        assert!(fixture.attempt.local_stwo_cairo_verifier_core_detected);
-        assert!(!fixture.attempt.local_phase43_projection_cairo_air_detected);
-        assert!(!fixture.attempt.actual_recursive_wrapper_available);
-        assert!(!fixture.attempt.recursive_proof_constructed);
-        assert!(fixture
+        assert!(wrapper_fixture.attempt.local_stwo_core_verifier_detected);
+        assert!(
+            wrapper_fixture
+                .attempt
+                .local_stwo_cairo_verifier_core_detected
+        );
+        assert!(
+            !wrapper_fixture
+                .attempt
+                .local_phase43_projection_cairo_air_detected
+        );
+        assert!(!wrapper_fixture.attempt.actual_recursive_wrapper_available);
+        assert!(!wrapper_fixture.attempt.recursive_proof_constructed);
+        assert!(wrapper_fixture
             .attempt
             .decision
             .contains("missing_phase43_projection_cairo_air"));
@@ -6880,23 +6916,26 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_json_round_trip_preserves_acceptance() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
         let loaded = round_trip_serialized_artifact(
             "phase48-recursive-proof-wrapper-attempt-roundtrip",
-            &fixture.attempt,
+            &wrapper_fixture.attempt,
         );
 
-        assert_eq!(&loaded, &fixture.attempt);
+        assert_eq!(&loaded, &wrapper_fixture.attempt);
         verify_phase48_recursive_proof_wrapper_attempt(&loaded)
             .expect("verify standalone loaded Phase48 proof-wrapper attempt");
-        verify_phase48_recursive_proof_wrapper_attempt_against_phase47(&loaded, &fixture.candidate)
-            .expect("verify loaded Phase48 proof-wrapper attempt against Phase47");
+        verify_phase48_recursive_proof_wrapper_attempt_against_phase47(
+            &loaded,
+            &wrapper_fixture.candidate,
+        )
+        .expect("verify loaded Phase48 proof-wrapper attempt against Phase47");
     }
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_rejects_false_recursive_claim() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
-        let mut attempt = fixture.attempt.clone();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let mut attempt = wrapper_fixture.attempt.clone();
 
         attempt.actual_recursive_wrapper_available = true;
         attempt.recursive_proof_constructed = true;
@@ -6912,8 +6951,8 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_requires_phase43_cairo_air_blocker() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
-        let mut attempt = fixture.attempt.clone();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let mut attempt = wrapper_fixture.attempt.clone();
 
         attempt.blocking_reasons = vec!["generic wrapper blocker".to_string()];
         attempt.attempt_commitment = commit_phase48_recursive_proof_wrapper_attempt(&attempt)
@@ -6926,10 +6965,10 @@ mod tests {
 
     #[test]
     fn phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_blocking_reason_drift() {
-        let fixture = sample_phase44d_composed_artifact_fixture();
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
         let mut loaded = load_tampered_serialized_artifact(
             "phase48-recursive-proof-wrapper-attempt-blocking-drift",
-            &fixture.attempt,
+            &wrapper_fixture.attempt,
             |attempt_json| {
                 attempt_json["blocking_reasons"] = serde_json::json!(["generic wrapper blocker"]);
             },
@@ -6943,8 +6982,25 @@ mod tests {
         assert!(error.to_string().contains("missing Phase43 Cairo AIR"));
     }
 
+    #[test]
+    fn phase48_recursive_proof_wrapper_attempt_loaded_json_rejects_stale_commitment() {
+        let wrapper_fixture = sample_phase47_phase48_wrapper_fixture();
+        let loaded = load_tampered_serialized_artifact(
+            "phase48-recursive-proof-wrapper-attempt-stale-commitment",
+            &wrapper_fixture.attempt,
+            |attempt_json| {
+                attempt_json["compact_envelope_commitment"] = serde_json::json!(hash32('d'));
+            },
+        );
+
+        let error = verify_phase48_recursive_proof_wrapper_attempt(&loaded).expect_err(
+            "serialized Phase48 proof-wrapper attempt with stale commitment must reject",
+        );
+        assert!(error.to_string().contains("commitment"));
+    }
+
     fn sample_phase48_attempt_for_phase49() -> Phase48RecursiveProofWrapperAttempt {
-        sample_phase44d_composed_artifact_fixture().attempt.clone()
+        sample_phase47_phase48_wrapper_fixture().attempt.clone()
     }
 
     #[test]
