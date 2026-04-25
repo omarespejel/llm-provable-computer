@@ -181,15 +181,16 @@ def main() -> None:
 
     x = np.arange(len(FAMILY_ORDER))
     width = 0.22
+    frontier_rows = {
+        family: max(grouped[family], key=lambda row: int(row["steps"]))
+        for family in FAMILY_ORDER
+    }
+    tick_labels = [
+        f"{FAMILY_LABELS[family]}\n{int(frontier_rows[family]['checked_frontier_step'])} steps"
+        for family in FAMILY_ORDER
+    ]
     for offset, (field, label, color) in enumerate(CAUSAL_FIELDS):
-        values = []
-        tick_labels = []
-        for family in FAMILY_ORDER:
-            frontier_row = max(grouped[family], key=lambda row: int(row["steps"]))
-            values.append(float(frontier_row[field]))
-            tick_labels.append(
-                f"{FAMILY_LABELS[family]}\n{int(frontier_row['checked_frontier_step'])} steps"
-            )
+        values = [float(frontier_rows[family][field]) for family in FAMILY_ORDER]
         frontier_ax.bar(x + (offset - 1) * width, values, width=width, color=color, label=label)
     frontier_ax.set_xticks(x)
     frontier_ax.set_xticklabels(tick_labels)

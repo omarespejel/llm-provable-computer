@@ -33,6 +33,20 @@ MODULE = load_module()
 
 
 class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase):
+    TSV_HEADER = [
+        "benchmark_version",
+        "semantic_scope",
+        "timing_mode",
+        "timing_policy",
+        "timing_unit",
+        "timing_runs",
+        "backend_variant",
+        "steps",
+        "verify_ms",
+        "serialized_bytes",
+        "verified",
+    ]
+
     def sample_row(
         self,
         *,
@@ -99,24 +113,13 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
             temp = Path(tempdir)
             output_json = temp / "out.json"
             output_tsv = temp / "out.tsv"
-            inputs = []
-            header = [
-                "benchmark_version",
-                "semantic_scope",
-                "timing_mode",
-                "timing_policy",
-                "timing_unit",
-                "timing_runs",
-                "backend_variant",
-                "steps",
-                "verify_ms",
-                "serialized_bytes",
-                "verified",
-            ]
+            inputs = {}
             for spec in MODULE.FAMILY_SPECS:
                 path = temp / f"{spec.family}.tsv"
                 with path.open("w", encoding="utf-8", newline="") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=header, delimiter="\t")
+                    writer = csv.DictWriter(
+                        handle, fieldnames=self.TSV_HEADER, delimiter="\t"
+                    )
                     writer.writeheader()
                     for variant in MODULE.EXPECTED_VARIANTS:
                         verify_ms = "1.250"
@@ -130,7 +133,7 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                                 verify_ms=verify_ms,
                             )
                         )
-                inputs.append(path)
+                inputs[spec.family] = path
 
             completed = subprocess.run(
                 [
@@ -138,11 +141,11 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                     "-B",
                     str(AGGREGATOR),
                     "--default-input",
-                    str(inputs[0]),
+                    str(inputs["default"]),
                     "--input-2x2",
-                    str(inputs[1]),
+                    str(inputs["2x2"]),
                     "--input-3x3",
-                    str(inputs[2]),
+                    str(inputs["3x3"]),
                     "--output-json",
                     str(output_json),
                     "--output-tsv",
@@ -163,24 +166,13 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
             temp = Path(tempdir)
             output_json = temp / "out.json"
             output_tsv = temp / "out.tsv"
-            inputs = []
-            header = [
-                "benchmark_version",
-                "semantic_scope",
-                "timing_mode",
-                "timing_policy",
-                "timing_unit",
-                "timing_runs",
-                "backend_variant",
-                "steps",
-                "verify_ms",
-                "serialized_bytes",
-                "verified",
-            ]
+            inputs = {}
             for spec in MODULE.FAMILY_SPECS:
                 path = temp / f"{spec.family}.tsv"
                 with path.open("w", encoding="utf-8", newline="") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=header, delimiter="\t")
+                    writer = csv.DictWriter(
+                        handle, fieldnames=self.TSV_HEADER, delimiter="\t"
+                    )
                     writer.writeheader()
                     for variant in MODULE.EXPECTED_VARIANTS:
                         verify_ms = "1.250"
@@ -194,7 +186,7 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                                 verify_ms=verify_ms,
                             )
                         )
-                inputs.append(path)
+                inputs[spec.family] = path
 
             completed = subprocess.run(
                 [
@@ -202,11 +194,11 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                     "-B",
                     str(AGGREGATOR),
                     "--default-input",
-                    str(inputs[0]),
+                    str(inputs["default"]),
                     "--input-2x2",
-                    str(inputs[1]),
+                    str(inputs["2x2"]),
                     "--input-3x3",
-                    str(inputs[2]),
+                    str(inputs["3x3"]),
                     "--output-json",
                     str(output_json),
                     "--output-tsv",
@@ -227,24 +219,13 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
             temp = Path(tempdir)
             output_json = temp / "out.json"
             output_tsv = temp / "out.tsv"
-            inputs = []
-            header = [
-                "benchmark_version",
-                "semantic_scope",
-                "timing_mode",
-                "timing_policy",
-                "timing_unit",
-                "timing_runs",
-                "backend_variant",
-                "steps",
-                "verify_ms",
-                "serialized_bytes",
-                "verified",
-            ]
+            inputs = {}
             for spec in MODULE.FAMILY_SPECS:
                 path = temp / f"{spec.family}.tsv"
                 with path.open("w", encoding="utf-8", newline="") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=header, delimiter="\t")
+                    writer = csv.DictWriter(
+                        handle, fieldnames=self.TSV_HEADER, delimiter="\t"
+                    )
                     writer.writeheader()
                     for variant in MODULE.EXPECTED_VARIANTS:
                         verify_ms = "1.250"
@@ -258,7 +239,7 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                                 verify_ms=verify_ms,
                             )
                         )
-                inputs.append(path)
+                inputs[spec.family] = path
 
             completed = subprocess.run(
                 [
@@ -266,11 +247,11 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                     "-B",
                     str(AGGREGATOR),
                     "--default-input",
-                    str(inputs[0]),
+                    str(inputs["default"]),
                     "--input-2x2",
-                    str(inputs[1]),
+                    str(inputs["2x2"]),
                     "--input-3x3",
-                    str(inputs[2]),
+                    str(inputs["3x3"]),
                     "--output-json",
                     str(output_json),
                     "--output-tsv",
@@ -288,24 +269,13 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
             temp = Path(tempdir)
             output_json = temp / "out.json"
             output_tsv = temp / "out.tsv"
-            inputs = []
-            header = [
-                "benchmark_version",
-                "semantic_scope",
-                "timing_mode",
-                "timing_policy",
-                "timing_unit",
-                "timing_runs",
-                "backend_variant",
-                "steps",
-                "verify_ms",
-                "serialized_bytes",
-                "verified",
-            ]
+            inputs = {}
             for spec in MODULE.FAMILY_SPECS:
                 path = temp / f"{spec.family}.tsv"
                 with path.open("w", encoding="utf-8", newline="") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=header, delimiter="\t")
+                    writer = csv.DictWriter(
+                        handle, fieldnames=self.TSV_HEADER, delimiter="\t"
+                    )
                     writer.writeheader()
                     for variant in MODULE.EXPECTED_VARIANTS:
                         verify_ms = "1.250"
@@ -319,7 +289,7 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                                 verify_ms=verify_ms,
                             )
                         )
-                inputs.append(path)
+                inputs[spec.family] = path
 
             completed = subprocess.run(
                 [
@@ -327,11 +297,11 @@ class Phase44dCarryAwareExperimentalFamilyMatrixAggregateTests(unittest.TestCase
                     "-B",
                     str(AGGREGATOR),
                     "--default-input",
-                    str(inputs[0]),
+                    str(inputs["default"]),
                     "--input-2x2",
-                    str(inputs[1]),
+                    str(inputs["2x2"]),
                     "--input-3x3",
-                    str(inputs[2]),
+                    str(inputs["3x3"]),
                     "--output-json",
                     str(output_json),
                     "--output-tsv",

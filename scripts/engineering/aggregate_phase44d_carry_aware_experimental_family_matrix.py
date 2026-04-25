@@ -370,7 +370,8 @@ def main() -> None:
                 }
             )
 
-    assert canonical_timing is not None
+    if canonical_timing is None:
+        raise SystemExit("no families processed; FAMILY_SPECS is empty")
     timing_mode, timing_policy, timing_unit, timing_runs = canonical_timing
     payload = {
         "benchmark_version": EXPECTED_MATRIX_VERSION,
