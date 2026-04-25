@@ -43,6 +43,9 @@ The experimental carry-aware lane now has two real higher-layer scaling results:
 - This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
 - The same Phase44D replay-avoidance mechanism now reproduces on the non-default `3x3` layout family through `2,4,8,16,32,64,128,256`.
 - At `256` steps on that `3x3` family, the typed boundary path verifies in `125.753 ms` versus `31511.802 ms` for the Phase30 replay baseline.
+- The main experimental fact is the growing-in-`N` curve shape across checked
+  families, not any single frontier ratio: the typed boundary removes a
+  linearly growing replay cost rather than merely shaving a constant factor.
 - Treat the `3x3` result as cross-family transferability evidence, not as a second Tablero boundary.
 
 ## Current second-boundary read
@@ -56,24 +59,32 @@ The repo now has one explicit answer on the next-boundary question:
 
 ## Next likely technical steps
 
-1. Keep Phase43 in the explicit no-go bucket until the source side emits the
-   proof-native projection commitments, row commitments/openings, and public
-   inputs that the feasibility gate lists as missing.
-2. Add one narrow matched external comparator on the already-supported compact
-   artifact regime.
-3. Use the family-matrix gate note now that default, `2x2`, and `3x3` all
+1. Add one narrow matched external comparator on the already-supported compact
+   artifact regime, with a source-backed Obelyzk Sepolia verifier-object row as
+   the first target and an explicit no-go note if that row cannot be aligned
+   honestly enough for the paper.
+2. Use the family-matrix gate note now that default, `2x2`, and `3x3` all
    reproduce the same replay-avoidance mechanism on the experimental lane, and
-   treat issue `#255` as the next exploratory follow-up on the unexpectedly
-   strong `2x2` constants.
-4. Broaden experimental carry-aware review beyond the current decoding-step
+   treat the curve shape as the main experimental takeaway rather than any one
+   frontier ratio.
+3. Treat issue `#255` as the next explanatory follow-up on the unexpectedly
+   strong `2x2` constants, not as the main paper-strengthening move ahead of
+   the external comparator.
+4. Track the heavier next-wave research separately:
+   - cross-backend Phase44D reproduction after the comparator lands
+   - one SNIP-36 Sepolia deployment artifact after the comparator lands
+5. Broaden experimental carry-aware review beyond the current decoding-step
    family, now that the honest `8`-step multiply/store carry patterns, the
    proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
    matrix, the serialized Phase44D boundary / handoff / bridge / receipt
    tamper checks, and the serialized Phase47 / Phase48 wrapper checks are
    covered.
-5. Re-run the Phase44D experimental frontier only after any material AIR or
+6. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
-6. Keep the experimental backend isolated from the default/publication lane
+7. Keep Phase43 in the explicit no-go bucket until the source side emits the
+   proof-native projection commitments, row commitments/openings, and public
+   inputs that the feasibility gate lists as missing.
+8. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 
 ## What not to do

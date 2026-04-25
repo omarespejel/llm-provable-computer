@@ -43,7 +43,12 @@ precise than “family-invariant constants.”
    - It overtakes default by `16` steps.
    - By `1024` steps it reaches `925.1x`, versus `312.3x` for default.
 
-3. The right paper sentence is:
+3. The main experimental fact is the curve shape.
+   - On every checked family, the replay-avoidance ratio grows with `N`.
+   - That means the typed boundary is removing a linearly growing replay cost,
+     not merely improving a constant factor.
+
+4. The right paper sentence is:
    - “Phase44D replay avoidance is a layout-family pattern on the experimental
      carry-aware backend, with materially family-dependent constants.”
 
@@ -86,6 +91,8 @@ This is why the matrix matters.
 
 - The mechanism is shared: remove verifier-side manifest replay and the ratio
   opens.
+- The shape is shared: on every checked family, the ratio keeps widening as
+  `N` grows.
 - The constants differ sharply: `2x2` has a far lighter compact-proof and
   boundary-binding surface than the other checked families.
 
