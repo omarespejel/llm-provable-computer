@@ -40,11 +40,13 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 
 ## Next likely technical steps
 
-1. Continue broadening the experimental backend review beyond the focused
-   `wrap_delta` witness-binding checks.
-2. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after
+1. Broaden experimental carry-aware review beyond the current decoding-step
+   family and proof-file tamper checks.
+2. Re-run the Phase44D experimental frontier only after any material AIR or
+   verifier change.
+3. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after
    review changes stay clean.
-3. Keep the experimental backend isolated from the default/publication lane
+4. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 
 ## What not to do

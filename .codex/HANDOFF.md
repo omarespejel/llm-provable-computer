@@ -27,6 +27,9 @@ The active split is now:
 - Gate 2c: the focused April 25 review adds negative AIR tests for
   `wrap_delta_abs_bits`, `wrap_delta_sign`, and `wrap_delta_square` witness
   drift.
+- Gate 2d: the follow-up serialized-proof review adds disk-backed round-trip and
+  tamper tests for experimental proof JSON payload bytes and outer claim
+  commitments.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 
 At `1024` steps, the experimental shared path records:
@@ -70,11 +73,13 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Continue broadening review of the experimental backend beyond the focused
-   `wrap_delta` witness-binding increment.
-2. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
+1. Broaden review of the experimental backend beyond the current decoding-step
+   family and proof-file tamper coverage.
+2. Re-run the experimental Phase44D frontier only after any material AIR or
+   verifier change.
+3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
    review changes stay clean.
-3. Only after those steps decide whether any part of the experimental lane
+4. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 
 ## Resume protocol
