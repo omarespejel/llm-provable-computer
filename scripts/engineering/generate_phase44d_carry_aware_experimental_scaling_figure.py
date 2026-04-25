@@ -217,6 +217,10 @@ def main() -> None:
     args = parse_args()
     rows = read_rows(args.input_tsv)
     timing_mode, timing_runs = timing_metadata(rows, fallback_runs=args.bench_runs)
+    if timing_mode == "deterministic_zeroed":
+        raise SystemExit(
+            "phase44d engineering figures require measured timings; rerun with CAPTURE_TIMINGS=1"
+        )
     steps = validate_rows(rows, source=args.input_tsv)
     grouped = rows_by_variant(rows)
 
