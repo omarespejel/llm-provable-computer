@@ -4096,6 +4096,90 @@ mod tests {
         index.reverse_bits() >> (usize::BITS - log_size)
     }
 
+    fn assert_carry_aware_four_step_overflow_trace_mutation_rejected(
+        mutate: impl FnOnce(&CarryAwareTraceLayout, usize, &mut [Vec<BaseField>]),
+        rejection_message: &str,
+    ) {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("fourth memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            program.instructions().len() + 1,
+        );
+        let result = runtime.run().expect("run");
+        assert!(result.halted);
+        let overflow_index = runtime
+            .trace()
+            .windows(2)
+            .position(|window| {
+                let current = &window[0];
+                let next = &window[1];
+                matches!(
+                    program.instruction_at(current.pc).expect("instruction"),
+                    Instruction::AddImmediate(_)
+                        | Instruction::AddMemory(_)
+                        | Instruction::SubMemory(_)
+                        | Instruction::MulMemory(_)
+                ) && next.carry_flag
+            })
+            .expect("overflow transition");
+
+        let trace = build_trace_bundle_with_mode(
+            &program,
+            runtime.trace(),
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        )
+        .expect("trace bundle");
+        let eval_state = Phase12CarryAwareArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(result.final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let mut base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+
+        let row = bit_reversed_row_index(overflow_index, trace.log_size);
+        let carry_layout = CarryAwareTraceLayout::new(program.memory_size());
+        assert_ne!(
+            base[carry_layout.wrap_delta_abs()][row],
+            base_u32(0),
+            "fixture should contain a non-zero wrap_delta row"
+        );
+        mutate(&carry_layout, row, &mut base);
+
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            assert_constraints_on_trace(
+                &tree,
+                trace.log_size,
+                |eval| {
+                    let _ = eval_state.evaluate(eval);
+                },
+                SecureField::zero(),
+            );
+        }));
+        assert!(result.is_err(), "{rejection_message}");
+    }
+
     #[test]
     fn carry_aware_air_rejects_out_of_range_wrap_delta_witness() {
         let layout = phase12_default_decoding_layout();
@@ -4285,6 +4369,47 @@ mod tests {
         assert!(
             result.is_err(),
             "ADD/SUB wrap_delta outside {{-1, 0, 1}} must violate carry-aware AIR constraints"
+        );
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_wrap_delta_abs_bit_reconstruction_drift() {
+        assert_carry_aware_four_step_overflow_trace_mutation_rejected(
+            |carry_layout, row, base| {
+                let bit_index = (0..CARRY_AWARE_WRAP_DELTA_ABS_BITS)
+                    .find(|index| {
+                        base[carry_layout.wrap_delta_abs_bit(*index)][row] == bool_base(true)
+                    })
+                    .expect("overflow row should set at least one abs bit");
+                base[carry_layout.wrap_delta_abs_bit(bit_index)][row] = bool_base(false);
+            },
+            "wrap_delta abs-bit drift must violate carry-aware AIR constraints",
+        );
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_wrap_delta_sign_drift() {
+        assert_carry_aware_four_step_overflow_trace_mutation_rejected(
+            |carry_layout, row, base| {
+                let current_sign = base[carry_layout.wrap_delta_sign()][row];
+                base[carry_layout.wrap_delta_sign()][row] = if current_sign == bool_base(true) {
+                    bool_base(false)
+                } else {
+                    bool_base(true)
+                };
+            },
+            "wrap_delta sign drift must violate carry-aware AIR constraints",
+        );
+    }
+
+    #[test]
+    fn carry_aware_air_rejects_wrap_delta_square_drift() {
+        assert_carry_aware_four_step_overflow_trace_mutation_rejected(
+            |carry_layout, row, base| {
+                base[carry_layout.wrap_delta_square()][row] =
+                    base[carry_layout.wrap_delta_square()][row] + base_u32(1);
+            },
+            "wrap_delta square drift must violate carry-aware AIR constraints",
         );
     }
 

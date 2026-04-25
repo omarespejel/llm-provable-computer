@@ -5633,6 +5633,24 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_experimental_carry_aware_benchmark_rejects_tampered_compact_proof()
+    {
+        let layout = phase12_default_decoding_layout();
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout, 4,
+            )
+            .expect("experimental carry-aware phase12 decoding family demo");
+        let mut input =
+            phase44d_source_emission_benchmark_input(&chain, false).expect("benchmark input");
+        input.compact_envelope.proof[0] ^= 0x01;
+
+        let error = measure_phase44d_source_emission_shared(&input, false)
+            .expect_err("tampered experimental compact proof must fail");
+        assert!(!error.to_string().is_empty());
+    }
+
+    #[test]
     fn phase44d_source_emission_experimental_benchmark_clears_honest_eight_steps() {
         let report =
             run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[8], false)

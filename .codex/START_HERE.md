@@ -10,9 +10,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 4. `docs/engineering/codex-repo-handoff-2026-04-24.md`
 5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
-7. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-8. `docs/engineering/reproducibility.md`
-8. `git status --short --branch`
+7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
+8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+9. `docs/engineering/reproducibility.md`
+10. `git status --short --branch`
 
 ## What this repository is now
 
@@ -39,9 +40,12 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 
 ## Next likely technical steps
 
-1. Raise the Phase43/Phase44D experimental ceiling beyond `1024`.
-2. Keep the experimental backend isolated from the default/publication lane until it survives broader review.
-3. Only then decide whether any piece of the experimental lane is mature enough for explicit promotion work.
+1. Continue broadening the experimental backend review beyond the focused
+   `wrap_delta` witness-binding checks.
+2. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after
+   review changes stay clean.
+3. Keep the experimental backend isolated from the default/publication lane
+   until a deliberate promotion pass.
 
 ## What not to do
 
@@ -57,5 +61,6 @@ git status --short --branch
 git rev-parse HEAD
 git rev-parse origin/main
 sed -n '1,220p' docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md
+sed -n '1,220p' docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md
 ```
