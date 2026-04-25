@@ -3731,6 +3731,7 @@ mod tests {
     };
     use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
     use crate::{ProgramCompiler, TransformerVm, TransformerVmConfig};
+    use std::borrow::Cow;
     use std::collections::BTreeSet;
     use std::panic::{catch_unwind, AssertUnwindSafe};
     use std::sync::OnceLock;
@@ -4040,10 +4041,11 @@ mod tests {
     }
 
     fn assert_phase12_carry_aware_trace_satisfies_constraints_for_seed(
-        total_steps: usize,
+        family_seed_count: usize,
         seed_step_index: usize,
     ) {
-        let (program, states, _) = phase12_carry_aware_family_fixture(total_steps, seed_step_index);
+        let (program, states, _) =
+            phase12_carry_aware_family_fixture(family_seed_count, seed_step_index);
         let trace = build_trace_bundle_with_mode(
             &program,
             &states,
@@ -4098,18 +4100,18 @@ mod tests {
     );
 
     fn build_phase12_carry_aware_family_fixtures(
-        total_steps: usize,
+        family_seed_count: usize,
     ) -> Vec<CarryAwareFamilyFixture> {
         let layout = phase12_default_decoding_layout();
         let initial_memories =
-            phase12_demo_initial_memories_for_steps(&layout, total_steps).expect("memories");
+            phase12_demo_initial_memories_for_steps(&layout, family_seed_count).expect("memories");
         assert_eq!(
             initial_memories.len(),
-            total_steps,
-            "requested {total_steps}-step family should yield {total_steps} demo seeds"
+            family_seed_count,
+            "requested {family_seed_count}-step family should yield {family_seed_count} demo seeds"
         );
-        // `total_steps` is the number of demo seeds in the family, not the VM
-        // runtime length of each generated decoding-step program.
+        // `family_seed_count` is the number of demo seeds in the family, not
+        // the VM runtime length of each generated decoding-step program.
         initial_memories
             .into_iter()
             .enumerate()
@@ -4132,43 +4134,49 @@ mod tests {
     }
 
     fn cached_phase12_carry_aware_family_fixtures(
-        total_steps: usize,
-    ) -> Vec<CarryAwareFamilyFixture> {
+        family_seed_count: usize,
+    ) -> Cow<'static, [CarryAwareFamilyFixture]> {
         static FOUR_STEP_FIXTURES: OnceLock<Vec<CarryAwareFamilyFixture>> = OnceLock::new();
         static EIGHT_STEP_FIXTURES: OnceLock<Vec<CarryAwareFamilyFixture>> = OnceLock::new();
 
-        match total_steps {
-            4 => FOUR_STEP_FIXTURES
-                .get_or_init(|| build_phase12_carry_aware_family_fixtures(4))
-                .clone(),
-            8 => EIGHT_STEP_FIXTURES
-                .get_or_init(|| build_phase12_carry_aware_family_fixtures(8))
-                .clone(),
-            _ => build_phase12_carry_aware_family_fixtures(total_steps),
+        match family_seed_count {
+            4 => Cow::Borrowed(
+                FOUR_STEP_FIXTURES
+                    .get_or_init(|| build_phase12_carry_aware_family_fixtures(4))
+                    .as_slice(),
+            ),
+            8 => Cow::Borrowed(
+                EIGHT_STEP_FIXTURES
+                    .get_or_init(|| build_phase12_carry_aware_family_fixtures(8))
+                    .as_slice(),
+            ),
+            _ => Cow::Owned(build_phase12_carry_aware_family_fixtures(family_seed_count)),
         }
     }
 
     fn phase12_carry_aware_family_fixture(
-        total_steps: usize,
+        family_seed_count: usize,
         seed_step_index: usize,
     ) -> (
         Program,
         Vec<MachineState>,
         Vec<CarryAwareArithmeticSubsetPrototypeRow>,
     ) {
-        let (_, program, states, rows) = cached_phase12_carry_aware_family_fixtures(total_steps)
-            .into_iter()
-            .find(|(candidate_seed_step_index, _, _, _)| {
-                *candidate_seed_step_index == seed_step_index
-            })
-            .unwrap_or_else(|| {
-                panic!("seed {seed_step_index} missing from {total_steps}-step family")
-            });
+        let (_, program, states, rows) =
+            cached_phase12_carry_aware_family_fixtures(family_seed_count)
+                .iter()
+                .find(|(candidate_seed_step_index, _, _, _)| {
+                    *candidate_seed_step_index == seed_step_index
+                })
+                .cloned()
+                .unwrap_or_else(|| {
+                    panic!("seed {seed_step_index} missing from {family_seed_count}-step family")
+                });
         (program, states, rows)
     }
 
     fn phase12_carry_aware_family_fixture_matching<F>(
-        total_steps: usize,
+        family_seed_count: usize,
         row_selector: &F,
         pattern_label: &str,
     ) -> (
@@ -4180,11 +4188,12 @@ mod tests {
     where
         F: Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
     {
-        cached_phase12_carry_aware_family_fixtures(total_steps)
-            .into_iter()
+        cached_phase12_carry_aware_family_fixtures(family_seed_count)
+            .iter()
             .find(|(_, _, _, rows)| rows.iter().any(row_selector))
+            .cloned()
             .unwrap_or_else(|| {
-                panic!("honest {total_steps}-step family should contain {pattern_label}")
+                panic!("honest {family_seed_count}-step family should contain {pattern_label}")
             })
     }
 
@@ -4273,7 +4282,7 @@ mod tests {
     }
 
     fn assert_carry_aware_phase12_family_trace_mutation_rejected<F>(
-        total_steps: usize,
+        family_seed_count: usize,
         row_selector: F,
         pattern_label: &str,
         mutate: impl FnOnce(&CarryAwareTraceLayout, usize, &mut [Vec<BaseField>]),
@@ -4281,8 +4290,11 @@ mod tests {
     ) where
         F: Fn(&CarryAwareArithmeticSubsetPrototypeRow) -> bool,
     {
-        let (seed_step_index, program, states, rows) =
-            phase12_carry_aware_family_fixture_matching(total_steps, &row_selector, pattern_label);
+        let (seed_step_index, program, states, rows) = phase12_carry_aware_family_fixture_matching(
+            family_seed_count,
+            &row_selector,
+            pattern_label,
+        );
         let selected_row = rows
             .iter()
             .find(|row| row_selector(row))
