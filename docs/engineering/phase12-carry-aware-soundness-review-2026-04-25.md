@@ -91,6 +91,21 @@ Added focused tamper tests:
    - expects the typed Phase44D boundary-plus-compact verification path to
      reject
 
+5. `experimental_phase12_carry_aware_proof_serialization_round_trip`
+   - saves an experimental carry-aware execution proof to JSON and loads it back
+   - confirms the loaded proof still verifies on the experimental route and is
+     still rejected by the legacy verifier route
+
+6. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file`
+   - mutates the serialized `proof` bytes in the outer JSON artifact
+   - loads the tampered file through the public proof loader
+   - expects the experimental verifier to reject the malformed inner payload
+
+7. `experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file`
+   - mutates the serialized outer `claim.commitments.program_hash`
+   - loads the tampered file through the public proof loader
+   - expects commitment validation to reject before proof acceptance
+
 These complement the existing tests for out-of-range `wrap_delta`, ADD/SUB
 unit range, proof-payload tampering, backend-version isolation, and reexecution.
 
@@ -100,11 +115,9 @@ This increment does not make the experimental backend publication-ready.
 Remaining review items before any promotion decision:
 
 1. Broaden op-pattern coverage beyond the current decoding-step family.
-2. Add more end-to-end tamper tests around serialized experimental execution
-   proofs, not only row-local AIR witness mutations.
-3. Re-run the Phase44D scaling frontier after any material AIR or verifier
+2. Re-run the Phase44D scaling frontier after any material AIR or verifier
    change.
-4. Keep describing the 1024-step Phase44D result as manifest replay avoidance,
+3. Keep describing the 1024-step Phase44D result as manifest replay avoidance,
    not as faster FRI or faster cryptographic verification.
 
 ## Validation
@@ -116,6 +129,9 @@ cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_abs_bit_recons
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_sign_drift --features stwo-backend --lib
 cargo +nightly-2025-07-14 test carry_aware_air_rejects_wrap_delta_square_drift --features stwo-backend --lib
 cargo +nightly-2025-07-14 test phase44d_source_emission_experimental_carry_aware_benchmark_rejects_tampered_compact_proof --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_proof_serialization_round_trip --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file --features stwo-backend --lib
+cargo +nightly-2025-07-14 test experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file --features stwo-backend --lib
 ```
 
 Recommended merge gate for this increment:
