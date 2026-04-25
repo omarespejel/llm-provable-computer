@@ -13,8 +13,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
 9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-10. `docs/engineering/reproducibility.md`
-11. `git status --short --branch`
+10. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+11. `docs/engineering/reproducibility.md`
+12. `git status --short --branch`
 
 ## What this repository is now
 
@@ -40,19 +41,34 @@ The experimental carry-aware lane now has one real higher-layer scaling result:
 - The latency gap is dominated by skipping Phase30 manifest JSON serialization, hashing, and replay work; do not describe it as a faster FRI or cryptographic verifier.
 - This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
 
+## Current second-boundary read
+
+The repo now has one explicit answer on the next-boundary question:
+
+- Phase43 source-root binding is a real mechanism, but it is **not** a real second boundary today.
+- The current blocker is missing proof-native source emission from the source side.
+- The bounded engineering gate is recorded in `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+- Do not describe Phase43 as a second Tablero demonstration until a source-emission patch lands and the same gate reruns cleanly.
+
 ## Next likely technical steps
 
-1. Broaden experimental carry-aware review beyond the current decoding-step
+1. Keep Phase43 in the explicit no-go bucket until the source side emits the
+   proof-native projection commitments, row commitments/openings, and public
+   inputs that the feasibility gate lists as missing.
+2. Reproduce the existing Phase44D typed-boundary result on a second real
+   workload family rather than spending more time on benchmark-only magnitude
+   tweaks.
+3. Add one narrow matched external comparator on the already-supported compact
+   artifact regime.
+4. Broaden experimental carry-aware review beyond the current decoding-step
    family, now that the honest `8`-step multiply/store carry patterns, the
    proof-file tamper matrix, the serialized proof-checked Phase12-chain tamper
    matrix, the serialized Phase44D boundary / handoff / bridge / receipt
    tamper checks, and the serialized Phase47 / Phase48 wrapper checks are
    covered.
-2. Re-run the Phase44D experimental frontier only after any material AIR or
+5. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
-3. Raise the Phase43/Phase44D experimental ceiling beyond `1024` only after
-   review changes stay clean.
-4. Keep the experimental backend isolated from the default/publication lane
+6. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 
 ## What not to do
@@ -75,4 +91,5 @@ git rev-parse origin/main
 sed -n '1,220p' docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md
 sed -n '1,220p' docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md
 sed -n '1,260p' docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md
+sed -n '1,260p' docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md
 ```

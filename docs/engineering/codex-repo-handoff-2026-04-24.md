@@ -15,8 +15,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
 9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-10. `docs/engineering/reproducibility.md`
-11. `git status --short --branch`
+10. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+11. `docs/engineering/reproducibility.md`
+12. `git status --short --branch`
 
 ## Current lane split
 
@@ -59,6 +60,10 @@ This repository now has two live lanes.
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
+- The Phase43 second-boundary feasibility gate records a real source-root
+  binding mechanism but an explicit **NO-GO** for claiming a second Tablero
+  boundary today because the source side still does not emit the proof-native
+  inputs needed to drop the full Phase43 trace honestly.
 - At `1024` steps, the experimental shared path records `427.209 ms` verification versus
   `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.
 
@@ -84,17 +89,23 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
 
 ## Next sensible moves
 
-1. Broaden review of the experimental backend beyond the current decoding-step
+1. Keep the Phase43 second-boundary result in the explicit no-go bucket until
+   the source side emits the proof-native projection commitments, row
+   commitments/openings, and public inputs listed in
+   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+2. Reproduce the current Phase44D typed-boundary result on a second real
+   workload family instead of pushing more benchmark-only magnitude tweaks.
+3. Add one narrow matched external comparator on the already-supported compact
+   artifact regime.
+4. Re-run the experimental Phase44D frontier only after any material AIR or
+   verifier change.
+5. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-2. Re-run the experimental Phase44D frontier only after any material AIR or
-   verifier change.
-3. Raise the experimental Phase43/Phase44D ceiling beyond `1024` only after
-   review changes stay clean.
-4. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
-5. Do not spend more time pushing the current publication/default Phase71
+6. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+7. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
