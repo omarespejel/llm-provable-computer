@@ -129,7 +129,7 @@ The honest research position is now:
 
 ## Reproduction
 
-Generate the three family slices and then the matrix:
+Regenerate the `2x2` slice and then rebuild the matrix from checked-in family evidence:
 
 ```bash
 PYTHON3_BIN=/usr/bin/python3

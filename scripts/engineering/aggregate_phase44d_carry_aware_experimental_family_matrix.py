@@ -91,6 +91,7 @@ FAMILY_SPECS = (
         ),
     ),
 )
+VALID_FAMILIES = {spec.family for spec in FAMILY_SPECS}
 
 
 def parse_family_value(raw: str) -> tuple[str, str]:
@@ -100,6 +101,21 @@ def parse_family_value(raw: str) -> tuple[str, str]:
             f"expected FAMILY=VALUE override, got {raw!r}"
         )
     return family, value
+
+
+def build_override_map(
+    pairs: list[tuple[str, str]], *, flag_name: str
+) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    for family, value in pairs:
+        if family not in VALID_FAMILIES:
+            raise SystemExit(
+                f"unknown family for {flag_name}: {family!r}; expected one of {sorted(VALID_FAMILIES)}"
+            )
+        if family in overrides:
+            raise SystemExit(f"duplicate override for {flag_name}: {family!r}")
+        overrides[family] = value
+    return overrides
 
 
 def parse_args() -> argparse.Namespace:
@@ -139,7 +155,15 @@ def validate_family_rows(rows: list[dict[str, str]], *, spec: FamilySpec) -> tup
     timing_mode = rows[0].get("timing_mode", "").strip()
     timing_policy = rows[0].get("timing_policy", "").strip()
     timing_unit = rows[0].get("timing_unit", "").strip()
-    timing_runs = int(rows[0].get("timing_runs", "0"))
+    timing_runs_raw = rows[0].get("timing_runs", "").strip()
+    if not timing_runs_raw:
+        raise SystemExit(f"{spec.input_path} must include timing_runs")
+    try:
+        timing_runs = int(timing_runs_raw)
+    except ValueError as exc:
+        raise SystemExit(
+            f"{spec.input_path} must include an integer timing_runs; got {timing_runs_raw!r}"
+        ) from exc
     if timing_mode != "measured_median":
         raise SystemExit(
             f"{spec.input_path} must contain measured_median rows; got {timing_mode!r}"
@@ -202,8 +226,14 @@ def display_path(path: Path) -> str:
 
 def main() -> None:
     args = parse_args()
-    first_blocked_overrides = {family: value for family, value in args.first_blocked_step}
-    blocked_status_overrides = {family: value for family, value in args.blocked_status}
+    first_blocked_overrides = build_override_map(
+        args.first_blocked_step,
+        flag_name="--first-blocked-step",
+    )
+    blocked_status_overrides = build_override_map(
+        args.blocked_status,
+        flag_name="--blocked-status",
+    )
     custom_inputs = {
         "default": args.default_input,
         "2x2": args.input_2x2,
@@ -242,11 +272,15 @@ def main() -> None:
             )
 
         checked_frontier_step = max(steps)
-        first_blocked_step = (
-            int(first_blocked_overrides[spec.family])
-            if spec.family in first_blocked_overrides
-            else None
-        )
+        if spec.family in first_blocked_overrides:
+            try:
+                first_blocked_step = int(first_blocked_overrides[spec.family])
+            except ValueError as exc:
+                raise SystemExit(
+                    f"--first-blocked-step for family {spec.family!r} must be an integer"
+                ) from exc
+        else:
+            first_blocked_step = None
         families_payload.append(
             {
                 "family": spec.family,

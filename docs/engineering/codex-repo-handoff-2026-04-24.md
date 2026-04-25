@@ -62,13 +62,28 @@ This repository now has two live lanes.
   honest `8`-step family.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - The experimental Phase44D typed-boundary sweep over the `2x2` family also
-  clears `2,4,8,16,32,64,128,256,512,1024`.
+  clears `2,4,8,16,32,64,128,256,512,1024`
+  (`stwo-phase44d-source-emission-experimental-2x2-layout-benchmark-v1`,
+  `measured_median`, evidence:
+  `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`,
+  `docs/engineering/evidence/phase44d-carry-aware-experimental-2x2-scaling-2026-04.tsv`,
+  `docs/engineering/figures/phase44d-carry-aware-experimental-2x2-scaling-2026-04.svg`,
+  reproduce with `BENCH_RUNS=5 CAPTURE_TIMINGS=1 scripts/engineering/generate_phase44d_carry_aware_experimental_2x2_scaling_benchmark.sh`).
 - The same Phase44D replay-avoidance mechanism now reproduces on the non-default
-  `3x3` layout family through `2,4,8,16,32,64,128,256`.
+  `3x3` layout family through `2,4,8,16,32,64,128,256`
+  (`stwo-phase44d-source-emission-experimental-3x3-layout-benchmark-v1`,
+  `measured_median`, evidence:
+  `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`,
+  `docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv`).
 - The family-matrix gate now records all three checked families together and
   shows the strongest checked constants so far on the `2x2` family:
   `925.097x` at `1024` steps, versus `312.330x` on the default family at the
-  same checked frontier.
+  same checked frontier (`phase44d-carry-aware-experimental-family-matrix-v1`,
+  `measured_median`, evidence:
+  `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`,
+  `docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.tsv`,
+  `docs/engineering/figures/phase44d-carry-aware-experimental-family-matrix-2026-04.svg`,
+  reproduce with `scripts/engineering/generate_phase44d_carry_aware_experimental_family_matrix.sh`).
 - The Phase43 second-boundary feasibility gate records a real source-root
   binding mechanism but an explicit **NO-GO** for claiming a second Tablero
   boundary today because the source side still does not emit the proof-native
