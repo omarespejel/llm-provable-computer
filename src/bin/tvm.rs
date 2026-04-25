@@ -13266,22 +13266,19 @@ mod tests {
 
 #[cfg(test)]
 mod cli_dispatch_tests {
-    #[cfg(feature = "stwo-backend")]
     use super::{
-        needs_run_subcommand, normalize_args, validate_distinct_benchmark_output_paths,
+        needs_run_subcommand, normalize_args, validate_distinct_benchmark_output_paths, Cli,
         CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
-        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
     };
-    use super::{Cli, Command};
+    #[cfg(feature = "stwo-backend")]
+    use super::{Command, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS};
+    #[cfg(not(feature = "stwo-backend"))]
+    use clap::CommandFactory;
     #[cfg(feature = "stwo-backend")]
     use clap::Parser;
-    #[cfg(not(feature = "stwo-backend"))]
-    use clap::{CommandFactory, Parser};
     use std::ffi::OsString;
-    #[cfg(feature = "stwo-backend")]
     use std::path::Path;
-    #[cfg(not(feature = "stwo-backend"))]
-    use std::path::{Path, PathBuf};
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {
