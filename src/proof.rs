@@ -1249,8 +1249,11 @@ mod tests {
         .expect("experimental carry-aware proof")
     }
 
-    fn unique_temp_proof_path(stem: &str) -> std::path::PathBuf {
-        std::env::temp_dir().join(format!("llm-provable-computer-{stem}.json"))
+    fn temp_proof_dir(stem: &str) -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix(&format!("llm-provable-computer-{stem}-"))
+            .tempdir()
+            .expect("create temp dir")
     }
 
     #[test]
@@ -1472,14 +1475,11 @@ HALT
     #[test]
     fn proof_serialization_round_trip() {
         let proof = prove_program("programs/addition.tvm", 32);
-        let path = std::env::temp_dir().join(format!(
-            "llm-provable-computer-proof-{}.json",
-            std::process::id()
-        ));
+        let tempdir = temp_proof_dir("proof");
+        let path = tempdir.path().join("proof.json");
 
         save_execution_stark_proof(&proof, &path).expect("save");
         let loaded = load_execution_stark_proof(&path).expect("load");
-        let _ = std::fs::remove_file(&path);
 
         assert_eq!(loaded, proof);
         assert!(verify_execution_stark(&loaded).expect("verify"));
@@ -1489,12 +1489,11 @@ HALT
     #[test]
     fn experimental_phase12_carry_aware_proof_serialization_round_trip() {
         let proof = prove_phase12_four_step_overflow_carry_aware_proof();
-        let path = unique_temp_proof_path("phase12-carry-aware-proof");
-        let _ = std::fs::remove_file(&path);
+        let tempdir = temp_proof_dir("phase12-carry-aware-proof");
+        let path = tempdir.path().join("proof.json");
 
         save_execution_stark_proof(&proof, &path).expect("save");
         let loaded = load_execution_stark_proof(&path).expect("load");
-        let _ = std::fs::remove_file(&path);
 
         assert_eq!(loaded, proof);
         assert!(
@@ -1511,10 +1510,9 @@ HALT
     #[test]
     fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_payload_file() {
         let proof = prove_phase12_four_step_overflow_carry_aware_proof();
-        let proof_path = unique_temp_proof_path("phase12-carry-aware-proof-valid");
-        let tampered_path = unique_temp_proof_path("phase12-carry-aware-proof-bad-payload");
-        let _ = std::fs::remove_file(&proof_path);
-        let _ = std::fs::remove_file(&tampered_path);
+        let tempdir = temp_proof_dir("phase12-carry-aware-proof-bad-payload");
+        let proof_path = tempdir.path().join("valid.json");
+        let tampered_path = tempdir.path().join("tampered.json");
 
         save_execution_stark_proof(&proof, &proof_path).expect("save");
         let mut proof_json: serde_json::Value =
@@ -1531,20 +1529,15 @@ HALT
         let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
             .expect_err("tampered payload file should fail");
         assert!(matches!(err, VmError::Serialization(_)), "{err}");
-
-        let _ = std::fs::remove_file(&proof_path);
-        let _ = std::fs::remove_file(&tampered_path);
     }
 
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn experimental_phase12_carry_aware_loaded_proof_rejects_tampered_commitment_file() {
         let proof = prove_phase12_four_step_overflow_carry_aware_proof();
-        let proof_path = unique_temp_proof_path("phase12-carry-aware-proof-commitments");
-        let tampered_path =
-            unique_temp_proof_path("phase12-carry-aware-proof-commitments-tampered");
-        let _ = std::fs::remove_file(&proof_path);
-        let _ = std::fs::remove_file(&tampered_path);
+        let tempdir = temp_proof_dir("phase12-carry-aware-proof-commitments");
+        let proof_path = tempdir.path().join("valid.json");
+        let tampered_path = tempdir.path().join("tampered.json");
 
         save_execution_stark_proof(&proof, &proof_path).expect("save");
         let mut proof_json: serde_json::Value =
@@ -1562,9 +1555,6 @@ HALT
         let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&loaded)
             .expect_err("tampered commitment file should fail");
         assert!(err.to_string().contains("invalid program_hash commitment"));
-
-        let _ = std::fs::remove_file(&proof_path);
-        let _ = std::fs::remove_file(&tampered_path);
     }
 
     #[test]
