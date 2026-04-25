@@ -5924,7 +5924,7 @@ mod tests {
         ));
     }
 
-    #[ignore = "expensive publication proving path; keep the 4-step barrier in default CI"]
+    #[ignore = "expensive 5-step publication proving path; keep the 4-step barrier test in default CI"]
     #[test]
     fn phase71_handoff_receipt_benchmark_reports_publication_surface_overflow_barrier_above_first_blocked_point(
     ) {
