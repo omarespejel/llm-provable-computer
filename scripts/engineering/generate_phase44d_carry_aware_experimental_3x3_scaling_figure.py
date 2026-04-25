@@ -27,6 +27,7 @@ EXPECTED_BENCHMARK_VERSION = "stwo-phase44d-source-emission-experimental-3x3-lay
 EXPECTED_SEMANTIC_SCOPE = (
     "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_3x3_layout"
 )
+CANONICAL_STEPS = [2, 4, 8, 16, 32, 64, 128, 256]
 VARIANT_ORDER = [
     "typed_source_boundary_plus_compact_projection",
     "phase30_manifest_plus_compact_projection_baseline",
@@ -194,6 +195,10 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
         if row["verified"].strip().lower() != "true":
             raise SystemExit(f"unverified benchmark row in {source}: {key}")
     ordered_steps = sorted(step_counts)
+    if ordered_steps != CANONICAL_STEPS:
+        raise SystemExit(
+            f"unexpected step counts in {source}: {ordered_steps}; expected {CANONICAL_STEPS}"
+        )
     expected = {(variant, step) for variant in VARIANT_ORDER for step in ordered_steps}
     if seen != expected:
         missing = sorted(expected - seen)

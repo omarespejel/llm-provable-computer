@@ -142,6 +142,39 @@ class Phase44DCarryAwareExperimental3x3ScalingAggregatorTests(unittest.TestCase)
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("deterministic field mismatch", completed.stderr)
 
+    def test_aggregator_rejects_unexpected_timing_unit(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = pathlib.Path(tempdir)
+            inputs = []
+            for index, verify_base in enumerate((10.0, 11.0, 12.0), start=1):
+                payload = sample_payload(verify_base=verify_base, emit_base=float(index))
+                if index == 1:
+                    payload["timing_unit"] = "microseconds"
+                path = temp / f"run-{index}.json"
+                path.write_text(json.dumps(payload), encoding="utf-8")
+                inputs.append(path)
+
+            output_json = temp / "out.json"
+            output_tsv = temp / "out.tsv"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(AGGREGATOR),
+                    "--inputs",
+                    *(str(path) for path in inputs),
+                    "--output-json",
+                    str(output_json),
+                    "--output-tsv",
+                    str(output_tsv),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("must report timing_unit", completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

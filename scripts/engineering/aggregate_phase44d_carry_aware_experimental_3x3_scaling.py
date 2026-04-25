@@ -19,6 +19,7 @@ DETERMINISTIC_FIELDS = (
 )
 EXPECTED_INPUT_TIMING_MODE = "measured_single_run"
 EXPECTED_INPUT_TIMING_POLICY = "single_run_from_microsecond_capture"
+EXPECTED_INPUT_TIMING_UNIT = "milliseconds"
 
 
 def key_for(row: dict[str, Any]) -> tuple[str, str, int]:
@@ -94,7 +95,11 @@ def main() -> None:
         if benchmark_version is None:
             benchmark_version = payload["benchmark_version"]
             semantic_scope = payload["semantic_scope"]
-            timing_unit = payload.get("timing_unit", "milliseconds")
+            timing_unit = payload.get("timing_unit", EXPECTED_INPUT_TIMING_UNIT)
+            if timing_unit != EXPECTED_INPUT_TIMING_UNIT:
+                raise SystemExit(
+                    f"{input_path} must report timing_unit {EXPECTED_INPUT_TIMING_UNIT!r}; got {timing_unit!r}"
+                )
             canonical_rows = payload["rows"]
             build_row_map(canonical_rows, source=input_path)
             for row in canonical_rows:
@@ -108,9 +113,16 @@ def main() -> None:
                 raise SystemExit(
                     f"semantic_scope mismatch in {input_path}: {payload['semantic_scope']} != {semantic_scope}"
                 )
-            if payload.get("timing_unit", "milliseconds") != timing_unit:
+            current_timing_unit = payload.get(
+                "timing_unit", EXPECTED_INPUT_TIMING_UNIT
+            )
+            if current_timing_unit != EXPECTED_INPUT_TIMING_UNIT:
                 raise SystemExit(
-                    f"timing_unit mismatch in {input_path}: {payload.get('timing_unit')!r} != {timing_unit!r}"
+                    f"{input_path} must report timing_unit {EXPECTED_INPUT_TIMING_UNIT!r}; got {current_timing_unit!r}"
+                )
+            if current_timing_unit != timing_unit:
+                raise SystemExit(
+                    f"timing_unit mismatch in {input_path}: {current_timing_unit!r} != {timing_unit!r}"
                 )
             if len(payload["rows"]) != len(canonical_rows or []):
                 raise SystemExit(
