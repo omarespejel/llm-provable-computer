@@ -1,8 +1,8 @@
 # HANDOFF
 
 Last refreshed: 2026-04-25
-Repository: `/Users/espejelomar/StarkNet/zk-ai`
-Mainline reference at refresh: `203b3bc763e9f7683fa1505e7b9cc0a6d1ca3395`
+Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
+Mainline reference at refresh: `e3ca8876ee4f643335e4456aab48423e4bce9471`
 
 ## Immediate orientation
 
@@ -54,6 +54,9 @@ The active split is now:
   non-unit `MulMemory` wrap deltas, the sticky-carry `Store` rows that follow
   them, and a full positive trace-constraint sweep across all eight seeds.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
+- Gate 3b: the same Phase44D replay-avoidance mechanism now reproduces on the
+  non-default `3x3` layout family through `2,4,8,16,32,64,128,256` under the
+  same backend and median-of-5 timing policy.
 - Gate 4: the Phase43 second-boundary feasibility gate records a real
   source-root binding mechanism but an explicit **NO-GO** for claiming a second
   Tablero boundary today because the source side still does not emit the
@@ -64,10 +67,17 @@ At `1024` steps, the experimental shared path records:
 - typed Phase44D boundary + compact proof: `427.209 ms`, `156,614` bytes
 - Phase30 replay baseline + compact proof: `133430.237 ms`, `1,464,721` bytes
 
+At `256` steps on the `3x3` family, the experimental shared path records:
+
+- typed Phase44D boundary + compact proof: `125.753 ms`, `127,787` bytes
+- Phase30 replay baseline + compact proof: `31511.802 ms`, `450,773` bytes
+
 This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 The ratio is dominated by skipped Phase30 manifest JSON serialization, hashing,
 and replay work while the compact Phase43 proof envelope is still verified; do
 not quote it as a faster FRI or cryptographic-verifier result.
+The `3x3` result is a cross-family transferability result, not a second
+Tablero boundary.
 
 ## Source-of-truth documents
 
@@ -81,10 +91,11 @@ Use these in order of authority for current state:
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-10. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-11. `docs/engineering/reproducibility.md`
-12. `git status --short --branch`
+9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+12. `docs/engineering/reproducibility.md`
+13. `git status --short --branch`
 
 ## Merge culture
 
@@ -107,10 +118,10 @@ Use these in order of authority for current state:
    the source side emits the proof-native projection commitments, row
    commitments/openings, and public inputs listed in
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-2. Reproduce the current Phase44D typed-boundary result on a second real
-   workload family instead of pushing more benchmark-only magnitude tweaks.
-3. Add one narrow matched external comparator on the already-supported compact
+2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
+3. Track the layout-matrix follow-up explicitly now that the `3x3` family
+   reproduces the same replay-avoidance mechanism through `256` steps.
 4. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt

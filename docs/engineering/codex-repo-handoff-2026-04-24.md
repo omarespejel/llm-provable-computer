@@ -14,10 +14,11 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
 7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-9. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-10. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-11. `docs/engineering/reproducibility.md`
-12. `git status --short --branch`
+9. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+10. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+11. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+12. `docs/engineering/reproducibility.md`
+13. `git status --short --branch`
 
 ## Current lane split
 
@@ -60,17 +61,24 @@ This repository now has two live lanes.
   sticky-carry `Store` preservation, and a full positive trace sweep on the
   honest `8`-step family.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256,512,1024`.
+- The same Phase44D replay-avoidance mechanism now reproduces on the non-default
+  `3x3` layout family through `2,4,8,16,32,64,128,256`.
 - The Phase43 second-boundary feasibility gate records a real source-root
   binding mechanism but an explicit **NO-GO** for claiming a second Tablero
   boundary today because the source side still does not emit the proof-native
   inputs needed to drop the full Phase43 trace honestly.
 - At `1024` steps, the experimental shared path records `427.209 ms` verification versus
   `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.
+- At `256` steps on the `3x3` family, the experimental shared path records
+  `125.753 ms` verification versus `31511.802 ms` for the Phase30 replay
+  baseline, with `127,787` bytes versus `450,773` bytes.
 
 That result is real, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 The latency gap is dominated by avoided Phase30 manifest JSON serialization,
 hashing, and replay work while the compact Phase43 proof envelope is still
 verified. Do not describe it as a faster FRI or cryptographic verifier.
+The `3x3` result is a cross-family transferability result, not a second
+Tablero boundary.
 
 ## Merge and review culture
 
@@ -93,10 +101,10 @@ verified. Do not describe it as a faster FRI or cryptographic verifier.
    the source side emits the proof-native projection commitments, row
    commitments/openings, and public inputs listed in
    `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-2. Reproduce the current Phase44D typed-boundary result on a second real
-   workload family instead of pushing more benchmark-only magnitude tweaks.
-3. Add one narrow matched external comparator on the already-supported compact
+2. Add one narrow matched external comparator on the already-supported compact
    artifact regime.
+3. Track the layout-matrix follow-up explicitly now that the `3x3` family
+   reproduces the same replay-avoidance mechanism through `256` steps.
 4. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
 5. Broaden review of the experimental backend beyond the current decoding-step
