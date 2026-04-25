@@ -31,6 +31,7 @@ The successful experimental path did **not** require a full VM redesign.
 It required:
 
 - explicit wrap/carry witness columns on the arithmetic subset
+- AIR-level range constraints for `wrap_delta`, including bit-decomposed magnitude and ADD/SUB unit-range checks
 - a quadratic carry gate (`wrap_delta * wrap_delta_inv = next_carry_active`)
 - an isolated proof path so checked publication artifacts remain pinned to the
   existing backend family
@@ -51,6 +52,7 @@ The honest default `4`-step seed is now split as follows:
 - no claim yet about integrating carry-aware traces into Phase30 manifests or
   later recursive/history surfaces
 - no claim yet about making the experimental backend the default
+- no claim that Phase44D large ratios are cryptographic-verifier speedups; the measured saving is dominated by skipped manifest serialization and hashing
 
 ## Next Sensible Moves
 

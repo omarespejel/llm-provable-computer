@@ -10,7 +10,7 @@ cd "$REPO_ROOT"
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
 CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
-STEP_COUNTS="${STEP_COUNTS:-2,4,8,16,32,64,128,256,512}"
+STEP_COUNTS="${STEP_COUNTS:-2,4,8,16,32,64,128,256,512,1024}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/engineering/figures/phase44d-carry-aware-experimental-scaling-2026-04.svg}"
@@ -30,6 +30,14 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
     echo "BENCH_RUNS must be an odd integer >= 3" >&2
     exit 1
   fi
+fi
+
+if ! python3 - <<'PY' >/dev/null 2>&1
+import matplotlib
+PY
+then
+  echo "python3 must have matplotlib installed before running the Phase44D figure/evidence generator" >&2
+  exit 1
 fi
 
 OUTPUT_PATH_ARGS=("$TSV_OUT" "$JSON_OUT" "$SVG_OUT")
