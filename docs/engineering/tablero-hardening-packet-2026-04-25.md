@@ -83,8 +83,9 @@ Key properties to confirm:
    assumptions.
 3. Default, `2x2`, and `3x3` layout families all reproduce the same
    replay-avoidance mechanism on the experimental lane.
-4. Phase43 is a bounded no-go for a second boundary today because the source
-   side still lacks proof-native emission.
+4. Phase43 now clears as a real second boundary on the emitted proof-native
+   source surface; the earlier prototype note remains only as a bounded
+   historical partial result.
 
 ### Claims not supported today
 

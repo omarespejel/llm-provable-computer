@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""Render a publication-style figure for the Phase43 source-root feasibility sweep."""
+"""Render a dependency-light figure for the Phase43 emitted-boundary sweep."""
 
 from __future__ import annotations
 
 import argparse
 import csv
+import math
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = (
@@ -23,59 +21,31 @@ DEFAULT_INPUT = (
 )
 DEFAULT_OUTDIR = ROOT / "docs" / "engineering" / "figures"
 
-EXPECTED_BENCHMARK_VERSION = "stwo-phase43-source-root-feasibility-experimental-benchmark-v1"
+EXPECTED_BENCHMARK_VERSION = "stwo-phase43-source-root-feasibility-experimental-benchmark-v2"
 EXPECTED_SEMANTIC_SCOPE = (
-    "phase43_source_root_compact_binding_feasibility_over_phase12_carry_aware_experimental_backend"
+    "phase43_emitted_source_boundary_feasibility_over_phase12_carry_aware_experimental_backend"
 )
 VARIANT_ORDER = [
-    "emitted_source_root_claim_plus_compact_projection",
+    "emitted_source_boundary_plus_compact_projection",
     "full_trace_plus_phase30_derivation_baseline",
     "compact_phase43_projection_proof_only",
     "derive_source_root_claim_only",
-    "source_root_binding_only",
+    "source_boundary_binding_only",
 ]
 COLORS = {
-    "emitted_source_root_claim_plus_compact_projection": "#2563EB",
+    "emitted_source_boundary_plus_compact_projection": "#2563EB",
     "full_trace_plus_phase30_derivation_baseline": "#D97706",
     "compact_phase43_projection_proof_only": "#475569",
     "derive_source_root_claim_only": "#B45309",
-    "source_root_binding_only": "#059669",
+    "source_boundary_binding_only": "#059669",
 }
 LABELS = {
-    "emitted_source_root_claim_plus_compact_projection": "Emitted source-root claim + compact proof",
+    "emitted_source_boundary_plus_compact_projection": "Emitted source boundary + compact proof",
     "full_trace_plus_phase30_derivation_baseline": "Full trace + Phase30 derivation baseline",
     "compact_phase43_projection_proof_only": "Compact Phase43 proof only",
     "derive_source_root_claim_only": "Source-root derivation only",
-    "source_root_binding_only": "Source-root binding only",
+    "source_boundary_binding_only": "Source-boundary binding only",
 }
-
-
-def strip_svg_trailing_whitespace(path: Path) -> None:
-    lines = path.read_text(encoding="utf-8").splitlines()
-    path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
-
-
-plt.style.use("tableau-colorblind10")
-plt.rcParams.update(
-    {
-        "font.family": "serif",
-        "font.serif": ["STIX Two Text", "Times New Roman", "DejaVu Serif"],
-        "mathtext.fontset": "stix",
-        "font.size": 8,
-        "axes.labelsize": 8,
-        "axes.titlesize": 9,
-        "legend.fontsize": 7,
-        "xtick.labelsize": 7,
-        "ytick.labelsize": 7,
-        "axes.linewidth": 0.8,
-        "lines.linewidth": 1.8,
-        "lines.markersize": 4.5,
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
-        "svg.fonttype": "none",
-        "savefig.bbox": "tight",
-    }
-)
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,21 +75,21 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
     expected_timing_unit = "milliseconds"
     expected_timing_runs = "1"
     for row in rows:
-        timing_mode = row.get("timing_mode", "").strip()
-        timing_policy = row.get("timing_policy", "").strip()
-        timing_unit = row.get("timing_unit", "").strip()
-        timing_runs = row.get("timing_runs", "").strip()
-        if timing_mode != expected_timing_mode:
+        if row.get("timing_mode", "").strip() != expected_timing_mode:
             raise SystemExit(
-                f"expected {expected_timing_mode} timing_mode in {source}, got {timing_mode!r}"
+                f"expected {expected_timing_mode} timing_mode in {source}, got {row.get('timing_mode')!r}"
             )
-        if timing_policy != expected_timing_policy:
+        if row.get("timing_policy", "").strip() != expected_timing_policy:
             raise SystemExit(
-                f"expected {expected_timing_policy} timing_policy in {source}, got {timing_policy!r}"
+                f"expected {expected_timing_policy} timing_policy in {source}, got {row.get('timing_policy')!r}"
             )
-        if timing_unit != expected_timing_unit or timing_runs != expected_timing_runs:
+        if row.get("timing_unit", "").strip() != expected_timing_unit:
             raise SystemExit(
-                f"unexpected timing metadata in {source}: unit={timing_unit!r} runs={timing_runs!r}"
+                f"expected {expected_timing_unit} timing_unit in {source}, got {row.get('timing_unit')!r}"
+            )
+        if row.get("timing_runs", "").strip() != expected_timing_runs:
+            raise SystemExit(
+                f"expected timing_runs={expected_timing_runs} in {source}, got {row.get('timing_runs')!r}"
             )
         if row["benchmark_version"] != EXPECTED_BENCHMARK_VERSION:
             raise SystemExit(
@@ -173,53 +143,111 @@ def require_frontier_row(
     )
 
 
-def main() -> None:
-    args = parse_args()
-    rows = read_rows(args.input_tsv)
-    steps = validate_rows(rows, source=args.input_tsv)
+def svg_escape(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def line_path(points: list[tuple[float, float]]) -> str:
+    if not points:
+        return ""
+    parts = [f"M {points[0][0]:.2f} {points[0][1]:.2f}"]
+    parts.extend(f"L {x:.2f} {y:.2f}" for x, y in points[1:])
+    return " ".join(parts)
+
+
+def map_log_x(steps: int, step_min: int, step_max: int, x0: float, x1: float) -> float:
+    span = math.log2(step_max) - math.log2(step_min)
+    if span == 0:
+        return (x0 + x1) / 2.0
+    return x0 + (math.log2(steps) - math.log2(step_min)) * (x1 - x0) / span
+
+
+def map_log_y(value: float, y_min: float, y_max: float, y0: float, y1: float) -> float:
+    span = math.log10(y_max) - math.log10(y_min)
+    if span == 0:
+        return (y0 + y1) / 2.0
+    return y1 - (math.log10(value) - math.log10(y_min)) * (y1 - y0) / span
+
+
+def map_linear_y(value: float, y_min: float, y_max: float, y0: float, y1: float) -> float:
+    span = y_max - y_min
+    if span == 0:
+        return (y0 + y1) / 2.0
+    return y1 - (value - y_min) * (y1 - y0) / span
+
+
+def format_ms_tick(value: float) -> str:
+    if value >= 10:
+        return f"{value:.0f}"
+    if value >= 1:
+        return f"{value:.1f}"
+    return f"{value:.2f}"
+
+
+def format_bytes_tick(value: float) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"{value / 1_000:.0f}k"
+    return f"{value:.0f}"
+
+
+def build_svg(rows: list[dict[str, str]], steps: list[int]) -> str:
     grouped = rows_by_variant(rows)
+    width = 980
+    height = 430
+    margin_left = 72
+    margin_right = 28
+    plot_top = 96
+    plot_bottom = 72
+    gap = 64
+    plot_width = (width - margin_left - margin_right - gap) / 2.0
+    plot_height = height - plot_top - plot_bottom
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.2), constrained_layout=True)
-    verify_ax, bytes_ax = axes
+    verify_x0 = margin_left
+    verify_x1 = verify_x0 + plot_width
+    bytes_x0 = verify_x1 + gap
+    bytes_x1 = bytes_x0 + plot_width
+    y0 = plot_top
+    y1 = plot_top + plot_height
 
-    for variant in VARIANT_ORDER:
-        variant_rows = grouped[variant]
-        x = [int(row["steps"]) for row in variant_rows]
-        verify_y = [
-            float(row["derive_ms"]) + float(row["verify_ms"]) for row in variant_rows
+    verify_series = {
+        variant: [
+            (
+                int(row["steps"]),
+                float(row["derive_ms"]) + float(row["verify_ms"]),
+            )
+            for row in grouped[variant]
         ]
-        bytes_y = [int(row["serialized_bytes"]) for row in variant_rows]
-        verify_ax.plot(
-            x,
-            verify_y,
-            marker="o",
-            color=COLORS[variant],
-            label=LABELS[variant],
-        )
-        bytes_ax.plot(
-            x,
-            bytes_y,
-            marker="o",
-            color=COLORS[variant],
-            label=LABELS[variant],
-        )
-
-    verify_ax.set_xscale("log", base=2)
-    verify_ax.set_yscale("log")
-    verify_ax.set_xticks(steps)
-    verify_ax.get_xaxis().set_major_formatter(ScalarFormatter())
-    verify_ax.set_xlabel("Experimental carry-aware Phase12 steps")
-    verify_ax.set_ylabel("Total verifier-side work (ms)")
-    verify_ax.set_title("Phase43 source-root feasibility scaling")
-    verify_ax.grid(axis="y", color="#BBBBBB", linewidth=0.6, alpha=0.35)
-    verify_ax.spines["top"].set_visible(False)
-    verify_ax.spines["right"].set_visible(False)
+        for variant in VARIANT_ORDER
+    }
+    bytes_series = {
+        variant: [
+            (
+                int(row["steps"]),
+                float(row["serialized_bytes"]),
+            )
+            for row in grouped[variant]
+        ]
+        for variant in VARIANT_ORDER
+    }
+    verify_values = [value for series in verify_series.values() for _, value in series]
+    bytes_values = [value for series in bytes_series.values() for _, value in series]
+    verify_min = min(verify_values) * 0.85
+    verify_max = max(verify_values) * 1.15
+    bytes_min = 0.0
+    bytes_max = max(bytes_values) * 1.12
 
     frontier_step = max(steps)
     candidate_frontier_row = require_frontier_row(
-        grouped["emitted_source_root_claim_plus_compact_projection"],
+        grouped["emitted_source_boundary_plus_compact_projection"],
         frontier_step=frontier_step,
-        variant="emitted_source_root_claim_plus_compact_projection",
+        variant="emitted_source_boundary_plus_compact_projection",
     )
     baseline_frontier_row = require_frontier_row(
         grouped["full_trace_plus_phase30_derivation_baseline"],
@@ -233,57 +261,206 @@ def main() -> None:
         baseline_frontier_row["verify_ms"]
     )
     ratio = baseline_frontier / candidate_frontier
-    verify_ax.annotate(
-        f"{ratio:.1f}x lower measured total verifier work at {frontier_step} steps\n"
-        "only if the source side emits proof-native source-root artifacts",
-        (frontier_step, candidate_frontier),
-        xytext=(-12, 18),
-        textcoords="offset points",
-        ha="right",
-        va="bottom",
-        fontsize=7,
-        color="#1F2937",
+
+    verify_ticks = [0.1, 0.2, 0.5, 1, 2, 5, 10]
+    verify_ticks = [tick for tick in verify_ticks if verify_min <= tick <= verify_max]
+    if not verify_ticks:
+        verify_ticks = [verify_min, verify_max]
+    bytes_ticks = [0, 250_000, 500_000, 750_000, 1_000_000]
+    bytes_ticks = [tick for tick in bytes_ticks if bytes_min <= tick <= bytes_max]
+    if bytes_ticks[-1] != bytes_max:
+        bytes_ticks.append(bytes_max)
+
+    lines: list[str] = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="white"/>',
+        '<style>',
+        "text { font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; fill: #1F2937; }",
+        ".axis { stroke: #111827; stroke-width: 1; }",
+        ".grid { stroke: #D1D5DB; stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; }",
+        ".legend-line { stroke-width: 2.5; fill: none; }",
+        ".series-line { stroke-width: 2.1; fill: none; }",
+        ".series-point { stroke: white; stroke-width: 1.2; }",
+        "</style>",
+        f'<text x="{width / 2:.1f}" y="26" text-anchor="middle" font-size="15">Phase43 emitted-source boundary scaling</text>',
+    ]
+
+    legend_x = 120
+    legend_y = 48
+    legend_gap_x = 260
+    legend_gap_y = 18
+    for index, variant in enumerate(VARIANT_ORDER):
+        column = index % 2
+        row = index // 2
+        lx = legend_x + column * legend_gap_x
+        ly = legend_y + row * legend_gap_y
+        lines.append(
+            f'<path class="legend-line" d="M {lx:.1f} {ly:.1f} L {lx + 18:.1f} {ly:.1f}" stroke="{COLORS[variant]}"/>'
+        )
+        lines.append(
+            f'<circle cx="{lx + 9:.1f}" cy="{ly:.1f}" r="3.1" fill="{COLORS[variant]}" stroke="white" stroke-width="1"/>'
+        )
+        lines.append(
+            f'<text x="{lx + 26:.1f}" y="{ly + 3:.1f}" font-size="11">{svg_escape(LABELS[variant])}</text>'
+        )
+
+    for tick in steps:
+        vx = map_log_x(tick, steps[0], steps[-1], verify_x0, verify_x1)
+        bx = map_log_x(tick, steps[0], steps[-1], bytes_x0, bytes_x1)
+        lines.append(
+            f'<line class="grid" x1="{vx:.2f}" y1="{y0:.2f}" x2="{vx:.2f}" y2="{y1:.2f}"/>'
+        )
+        lines.append(
+            f'<line class="grid" x1="{bx:.2f}" y1="{y0:.2f}" x2="{bx:.2f}" y2="{y1:.2f}"/>'
+        )
+        lines.append(
+            f'<text x="{vx:.2f}" y="{y1 + 18:.2f}" text-anchor="middle" font-size="10">{tick}</text>'
+        )
+        lines.append(
+            f'<text x="{bx:.2f}" y="{y1 + 18:.2f}" text-anchor="middle" font-size="10">{tick}</text>'
+        )
+
+    for tick in verify_ticks:
+        y = map_log_y(tick, verify_min, verify_max, y0, y1)
+        lines.append(
+            f'<line class="grid" x1="{verify_x0:.2f}" y1="{y:.2f}" x2="{verify_x1:.2f}" y2="{y:.2f}"/>'
+        )
+        lines.append(
+            f'<text x="{verify_x0 - 8:.2f}" y="{y + 3:.2f}" text-anchor="end" font-size="10">{format_ms_tick(tick)}</text>'
+        )
+    for tick in bytes_ticks:
+        y = map_linear_y(tick, bytes_min, bytes_max, y0, y1)
+        lines.append(
+            f'<line class="grid" x1="{bytes_x0:.2f}" y1="{y:.2f}" x2="{bytes_x1:.2f}" y2="{y:.2f}"/>'
+        )
+        lines.append(
+            f'<text x="{bytes_x0 - 8:.2f}" y="{y + 3:.2f}" text-anchor="end" font-size="10">{format_bytes_tick(tick)}</text>'
+        )
+
+    for x0, x1 in [(verify_x0, verify_x1), (bytes_x0, bytes_x1)]:
+        lines.append(f'<line class="axis" x1="{x0:.2f}" y1="{y1:.2f}" x2="{x1:.2f}" y2="{y1:.2f}"/>')
+        lines.append(f'<line class="axis" x1="{x0:.2f}" y1="{y0:.2f}" x2="{x0:.2f}" y2="{y1:.2f}"/>')
+
+    lines.append(
+        f'<text x="{(verify_x0 + verify_x1) / 2:.2f}" y="{y0 - 12:.2f}" text-anchor="middle" font-size="12">Total verifier-side work (ms)</text>'
+    )
+    lines.append(
+        f'<text x="{(bytes_x0 + bytes_x1) / 2:.2f}" y="{y0 - 12:.2f}" text-anchor="middle" font-size="12">Verifier surface size by boundary path</text>'
+    )
+    lines.append(
+        f'<text x="{(verify_x0 + verify_x1) / 2:.2f}" y="{height - 24:.2f}" text-anchor="middle" font-size="11">Experimental carry-aware Phase12 steps</text>'
+    )
+    lines.append(
+        f'<text x="{(bytes_x0 + bytes_x1) / 2:.2f}" y="{height - 24:.2f}" text-anchor="middle" font-size="11">Experimental carry-aware Phase12 steps</text>'
+    )
+    lines.append(
+        f'<text x="20" y="{(y0 + y1) / 2:.2f}" transform="rotate(-90 20 {(y0 + y1) / 2:.2f})" text-anchor="middle" font-size="11">Total verifier-side work (ms)</text>'
+    )
+    lines.append(
+        f'<text x="{bytes_x0 - 52:.2f}" y="{(y0 + y1) / 2:.2f}" transform="rotate(-90 {bytes_x0 - 52:.2f} {(y0 + y1) / 2:.2f})" text-anchor="middle" font-size="11">Serialized surface (bytes)</text>'
     )
 
-    bytes_ax.set_xscale("log", base=2)
-    bytes_ax.set_xticks(steps)
-    bytes_ax.get_xaxis().set_major_formatter(ScalarFormatter())
-    bytes_ax.set_xlabel("Experimental carry-aware Phase12 steps")
-    bytes_ax.set_ylabel("Serialized surface (bytes)")
-    bytes_ax.set_title("Verifier surface size by prototype path")
-    bytes_ax.grid(axis="y", color="#BBBBBB", linewidth=0.6, alpha=0.35)
-    bytes_ax.spines["top"].set_visible(False)
-    bytes_ax.spines["right"].set_visible(False)
+    for variant in VARIANT_ORDER:
+        verify_points = [
+            (
+                map_log_x(step, steps[0], steps[-1], verify_x0, verify_x1),
+                map_log_y(value, verify_min, verify_max, y0, y1),
+            )
+            for step, value in verify_series[variant]
+        ]
+        bytes_points = [
+            (
+                map_log_x(step, steps[0], steps[-1], bytes_x0, bytes_x1),
+                map_linear_y(value, bytes_min, bytes_max, y0, y1),
+            )
+            for step, value in bytes_series[variant]
+        ]
+        lines.append(
+            f'<path class="series-line" d="{line_path(verify_points)}" stroke="{COLORS[variant]}"/>'
+        )
+        lines.append(
+            f'<path class="series-line" d="{line_path(bytes_points)}" stroke="{COLORS[variant]}"/>'
+        )
+        for x, y in verify_points:
+            lines.append(
+                f'<circle class="series-point" cx="{x:.2f}" cy="{y:.2f}" r="3.2" fill="{COLORS[variant]}"/>'
+            )
+        for x, y in bytes_points:
+            lines.append(
+                f'<circle class="series-point" cx="{x:.2f}" cy="{y:.2f}" r="3.2" fill="{COLORS[variant]}"/>'
+            )
 
-    fig.text(
-        0.5,
-        0.01,
+    frontier_x = map_log_x(frontier_step, steps[0], steps[-1], verify_x0, verify_x1)
+    frontier_y = map_log_y(candidate_frontier, verify_min, verify_max, y0, y1)
+    note_x = frontier_x - 18
+    note_y = frontier_y - 34
+    lines.append(
+        f'<line x1="{note_x:.2f}" y1="{note_y + 8:.2f}" x2="{frontier_x:.2f}" y2="{frontier_y:.2f}" stroke="#1F2937" stroke-width="1"/>'
+    )
+    lines.append(
+        f'<text x="{note_x:.2f}" y="{note_y:.2f}" text-anchor="end" font-size="10">{ratio:.1f}x lower total verifier work</text>'
+    )
+    lines.append(
+        f'<text x="{note_x:.2f}" y="{note_y + 13:.2f}" text-anchor="end" font-size="10">at {frontier_step} steps using the emitted boundary</text>'
+    )
+
+    footer = (
         "Timings are measured from one host run using microsecond capture. "
-        "This figure is engineering-only prototype evidence, not a paper-facing promoted result.",
-        ha="center",
-        va="bottom",
-        fontsize=7,
-        color="#4B5563",
+        "This figure is engineering-only emitted-boundary evidence, not a paper-facing promoted result."
+    )
+    lines.append(
+        f'<text x="{width / 2:.1f}" y="{height - 6:.1f}" text-anchor="middle" font-size="10" fill="#4B5563">{svg_escape(footer)}</text>'
+    )
+    lines.append("</svg>")
+    return "\n".join(lines) + "\n"
+
+
+def write_svg(path: Path, svg: str) -> None:
+    path.write_text(svg, encoding="utf-8")
+
+
+def render_png(svg_path: Path, png_path: Path) -> None:
+    qlmanage = shutil.which("qlmanage")
+    if qlmanage is None:
+        raise SystemExit("qlmanage is required to render the PNG figure from the SVG")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        subprocess.run(
+            [qlmanage, "-t", "-s", "2200", "-o", tmpdir, str(svg_path)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        rendered = Path(tmpdir) / f"{svg_path.name}.png"
+        if not rendered.exists():
+            raise SystemExit(f"qlmanage did not produce {rendered}")
+        shutil.copyfile(rendered, png_path)
+
+
+def render_pdf(svg_path: Path, pdf_path: Path) -> None:
+    sips = shutil.which("sips")
+    if sips is None:
+        raise SystemExit("sips is required to render the PDF figure from the SVG")
+    subprocess.run(
+        [sips, "-s", "format", "pdf", str(svg_path), "--out", str(pdf_path)],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
-    handles, labels = verify_ax.get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        ncol=2,
-        frameon=False,
-        bbox_to_anchor=(0.5, 1.10),
-    )
+
+def main() -> None:
+    args = parse_args()
+    rows = read_rows(args.input_tsv)
+    steps = validate_rows(rows, source=args.input_tsv)
+    svg = build_svg(rows, steps)
 
     args.output_prefix.parent.mkdir(parents=True, exist_ok=True)
     svg_path = args.output_prefix.with_suffix(".svg")
     png_path = args.output_prefix.with_suffix(".png")
     pdf_path = args.output_prefix.with_suffix(".pdf")
-    fig.savefig(svg_path)
-    strip_svg_trailing_whitespace(svg_path)
-    fig.savefig(png_path, dpi=300)
-    fig.savefig(pdf_path)
+    write_svg(svg_path, svg)
+    render_png(svg_path, png_path)
+    render_pdf(svg_path, pdf_path)
     print(f"wrote {svg_path}")
     print(f"wrote {png_path}")
     print(f"wrote {pdf_path}")

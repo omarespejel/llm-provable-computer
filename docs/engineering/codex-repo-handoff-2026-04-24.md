@@ -92,10 +92,10 @@ This repository now has two live lanes.
   `docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.tsv`,
   `docs/engineering/figures/phase44d-carry-aware-experimental-family-matrix-2026-04.svg`,
   reproduce with `scripts/engineering/generate_phase44d_carry_aware_experimental_family_matrix.sh`).
-- The Phase43 second-boundary feasibility gate records a real source-root
-  binding mechanism but an explicit **NO-GO** for claiming a second Tablero
-  boundary today because the source side still does not emit the proof-native
-  inputs needed to drop the full Phase43 trace honestly.
+- The Phase43 second-boundary feasibility gate now records a real **GO** on the
+  emitted proof-native source boundary: the source side emits the proof-native
+  commitments and public inputs needed for the verifier to drop the full
+  Phase43 trace honestly.
 - The Phase44D second-backend feasibility gate records a real carry-free
   `2`-step checkpoint on the shipped backend but an explicit **NO-GO** for
   claiming backend transferability today because the carry-free Phase12 source
@@ -165,10 +165,11 @@ Tablero boundary.
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-9. Keep the Phase43 second-boundary result in the explicit no-go bucket until
-   the source side emits the proof-native projection commitments, row
-   commitments/openings, and public inputs listed in
-   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+9. Treat the Phase43 second-boundary result as landed on the emitted source
+   surface, but keep the claim scoped honestly: it is a real second boundary
+   with modest verifier-side gains (`1.20x` on the publication row and `3.68x`
+   at the checked `128`-step experimental frontier), not a replay-elimination
+   headline on the scale of Phase44D.
 10. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 11. Do not spend more time pushing the current publication/default Phase71

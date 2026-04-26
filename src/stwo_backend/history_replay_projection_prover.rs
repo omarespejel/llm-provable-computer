@@ -64,6 +64,16 @@ pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_ACCEPTANCE_VERSION_PH
     "phase43-proof-native-source-emission-acceptance-v1";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_DECISION_PHASE43_PARTIAL: &str =
     "partial_emitted_artifact_accepts_without_trace_upstream_source_chain_proof_missing";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_ARTIFACT_VERSION_PHASE43: &str =
+    "phase43-proof-native-source-artifact-v1";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE43:
+    &str = "phase43-proof-native-source-chain-public-output-boundary-v1";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_BOUNDARY_ACCEPTANCE_VERSION_PHASE43: &str =
+    "phase43-proof-native-source-boundary-acceptance-v1";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_GO_DECISION_PHASE43: &str =
+    "source_exposure_sufficient_emitted_public_output";
+pub const STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_GO_DECISION_PHASE43: &str =
+    "go_emitted_proof_native_source_boundary";
 /// Issue anchor for the bounded Phase43 proof-native source-emission prototype.
 pub const PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID: u32 = 249;
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44: &str =
@@ -345,6 +355,72 @@ pub struct Phase43HistoryReplayProofNativeSourceEmission {
 pub struct Phase43HistoryReplayProofNativeSourceEmissionAcceptance {
     pub acceptance_version: String,
     pub proof_native_source_emission_commitment: String,
+    pub emitted_canonical_source_root: String,
+    pub projection_commitment: String,
+    pub compact_claim_projection_commitment: String,
+    pub compact_binding_verified_without_trace: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub exposes_projection_commitment: bool,
+    pub exposes_projection_rows_or_openings: bool,
+    pub exposes_history_transform_public_inputs: bool,
+    pub exposes_phase30_step_envelope_public_inputs: bool,
+    pub exposes_non_blake2b_source_commitment_path: bool,
+    pub upstream_source_chain_proof_emits_artifact: bool,
+    pub useful_second_boundary_today: bool,
+    pub decision: String,
+}
+
+/// Emitted Phase43 source-side artifact that exposes the proof-native fields a
+/// verifier needs to accept the compact projection proof without the full trace
+/// or the Phase30 manifest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayProofNativeSourceArtifact {
+    pub artifact_version: String,
+    pub source_surface_version: String,
+    pub issue_id: u32,
+    pub source_claim: Phase43HistoryReplayProjectionSourceRootClaim,
+    pub projection_commitment_emitted_by_source_chain: String,
+    pub projection_row_commitment_or_openings_in_stwo_field_domain: String,
+    pub phase12_to_phase14_history_transform_public_inputs:
+        Phase43HistoryReplayProjectionTerminalBoundaryClaim,
+    pub phase30_step_envelopes_commitment_as_stwo_public_input: String,
+    pub phase30_step_envelope_commitments_as_stwo_public_inputs: Vec<String>,
+    pub non_blake2b_source_commitment_path_for_verifier: Vec<String>,
+    pub artifact_commitment: String,
+}
+
+/// Real Phase43 source surface emitted by the source chain after the proof-native
+/// artifact is projected into a public-output boundary.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary {
+    pub boundary_version: String,
+    pub source_surface_version: String,
+    pub phase43_trace_commitment: String,
+    pub phase43_trace_version: String,
+    pub phase30_manifest_version: String,
+    pub phase30_semantic_scope: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub pair_width: usize,
+    pub projection_row_count: usize,
+    pub projection_column_count: usize,
+    pub producer_emits_public_output: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub verifier_embeds_expected_rows: bool,
+    pub proof_native_source_artifact: Phase43HistoryReplayProofNativeSourceArtifact,
+    pub source_chain_public_output_boundary_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayProofNativeSourceBoundaryAcceptance {
+    pub acceptance_version: String,
+    pub source_chain_public_output_boundary_commitment: String,
     pub emitted_canonical_source_root: String,
     pub projection_commitment: String,
     pub compact_claim_projection_commitment: String,
@@ -1771,6 +1847,133 @@ pub fn verify_phase43_history_replay_proof_native_source_emission_acceptance(
     })
 }
 
+pub fn emit_phase43_history_replay_proof_native_source_artifact(
+    trace: &Phase43HistoryReplayTrace,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayProofNativeSourceArtifact> {
+    let prototype = prepare_phase43_history_replay_proof_native_source_emission(trace, phase30)?;
+    let mut artifact = Phase43HistoryReplayProofNativeSourceArtifact {
+        artifact_version: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_ARTIFACT_VERSION_PHASE43
+            .to_string(),
+        source_surface_version:
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43.to_string(),
+        issue_id: PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID,
+        source_claim: prototype.source_claim,
+        projection_commitment_emitted_by_source_chain: prototype
+            .projection_commitment_emitted_by_source_chain,
+        projection_row_commitment_or_openings_in_stwo_field_domain: prototype
+            .projection_row_commitment_or_openings_in_stwo_field_domain,
+        phase12_to_phase14_history_transform_public_inputs: prototype
+            .phase12_to_phase14_history_transform_public_inputs,
+        phase30_step_envelopes_commitment_as_stwo_public_input: prototype
+            .phase30_step_envelopes_commitment_as_stwo_public_input,
+        phase30_step_envelope_commitments_as_stwo_public_inputs: prototype
+            .phase30_step_envelope_commitments_as_stwo_public_inputs,
+        non_blake2b_source_commitment_path_for_verifier: prototype
+            .non_blake2b_source_commitment_path_for_verifier,
+        artifact_commitment: String::new(),
+    };
+    artifact.artifact_commitment =
+        commit_phase43_history_replay_proof_native_source_artifact(&artifact)?;
+    validate_phase43_history_replay_proof_native_source_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+pub fn emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+    trace: &Phase43HistoryReplayTrace,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary> {
+    let artifact = emit_phase43_history_replay_proof_native_source_artifact(trace, phase30)?;
+    let source_claim = &artifact.source_claim;
+    let mut boundary = Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary {
+        boundary_version:
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE43
+                .to_string(),
+        source_surface_version:
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43.to_string(),
+        phase43_trace_commitment: source_claim.phase43_trace_commitment.clone(),
+        phase43_trace_version: source_claim.phase43_trace_version.clone(),
+        phase30_manifest_version: phase30.manifest_version.clone(),
+        phase30_semantic_scope: phase30.semantic_scope.clone(),
+        phase30_source_chain_commitment: source_claim.phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: source_claim.phase30_step_envelopes_commitment.clone(),
+        total_steps: source_claim.total_steps,
+        pair_width: source_claim.pair_width,
+        projection_row_count: source_claim.projection_row_count,
+        projection_column_count: source_claim.projection_column_count,
+        producer_emits_public_output: true,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        verifier_embeds_expected_rows: false,
+        proof_native_source_artifact: artifact,
+        source_chain_public_output_boundary_commitment: String::new(),
+    };
+    boundary.source_chain_public_output_boundary_commitment =
+        commit_phase43_history_replay_proof_native_source_chain_public_output_boundary(&boundary)?;
+    validate_phase43_history_replay_proof_native_source_chain_public_output_boundary(&boundary)?;
+    Ok(boundary)
+}
+
+pub fn verify_phase43_history_replay_proof_native_source_artifact_acceptance(
+    artifact: &Phase43HistoryReplayProofNativeSourceArtifact,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<Phase43HistoryReplayProofNativeSourceBoundaryAcceptance> {
+    validate_phase43_history_replay_proof_native_source_artifact(artifact)?;
+    let compact_binding_verified_without_trace =
+        verify_phase43_history_replay_projection_source_root_compact_envelope(
+            &artifact.source_claim,
+            compact_envelope,
+        )?;
+    if !compact_binding_verified_without_trace {
+        return Err(VmError::UnsupportedProof(
+            "Phase43 proof-native source artifact requires compact proof binding to verify without trace"
+                .to_string(),
+        ));
+    }
+    Ok(Phase43HistoryReplayProofNativeSourceBoundaryAcceptance {
+        acceptance_version:
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_BOUNDARY_ACCEPTANCE_VERSION_PHASE43.to_string(),
+        source_chain_public_output_boundary_commitment: String::new(),
+        emitted_canonical_source_root: artifact.source_claim.canonical_source_root.clone(),
+        projection_commitment: artifact
+            .projection_commitment_emitted_by_source_chain
+            .clone(),
+        compact_claim_projection_commitment: compact_envelope.claim.projection_commitment.clone(),
+        compact_binding_verified_without_trace,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        exposes_projection_commitment: true,
+        exposes_projection_rows_or_openings: true,
+        exposes_history_transform_public_inputs: true,
+        exposes_phase30_step_envelope_public_inputs: true,
+        exposes_non_blake2b_source_commitment_path: true,
+        upstream_source_chain_proof_emits_artifact: true,
+        useful_second_boundary_today: true,
+        decision: STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_GO_DECISION_PHASE43.to_string(),
+    })
+}
+
+pub fn verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance(
+    boundary: &Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<Phase43HistoryReplayProofNativeSourceBoundaryAcceptance> {
+    validate_phase43_history_replay_proof_native_source_chain_public_output_boundary(boundary)?;
+    let mut acceptance = verify_phase43_history_replay_proof_native_source_artifact_acceptance(
+        &boundary.proof_native_source_artifact,
+        compact_envelope,
+    )?;
+    acceptance.source_chain_public_output_boundary_commitment = boundary
+        .source_chain_public_output_boundary_commitment
+        .clone();
+    acceptance.verifier_requires_phase43_trace = boundary.verifier_requires_phase43_trace;
+    acceptance.verifier_requires_phase30_manifest = boundary.verifier_requires_phase30_manifest;
+    acceptance.useful_second_boundary_today = boundary.producer_emits_public_output
+        && !boundary.verifier_requires_phase43_trace
+        && !boundary.verifier_requires_phase30_manifest
+        && !boundary.verifier_embeds_expected_rows;
+    Ok(acceptance)
+}
+
 pub fn commit_phase44d_history_replay_projection_terminal_boundary_logup_closure(
     closure: &Phase44DHistoryReplayProjectionTerminalBoundaryLogupClosure,
 ) -> Result<String> {
@@ -2312,6 +2515,9 @@ pub fn assess_phase43_proof_native_source_exposure(
     verify_phase43_history_replay_trace(trace)?;
     verify_phase30_decoding_step_proof_envelope_manifest(phase30)?;
     validate_phase43_phase30_source_match(trace, phase30)?;
+    let boundary = emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+        trace, phase30,
+    )?;
 
     Ok(Phase43HistoryReplayProofNativeSourceExposureAssessment {
         exposure_version: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43
@@ -2329,22 +2535,22 @@ pub fn assess_phase43_proof_native_source_exposure(
         row_boundary_commitments_match_trace: true,
         exposes_phase30_source_chain_commitment: true,
         exposes_phase30_step_envelopes_commitment: true,
-        exposes_legacy_blake2b_commitments_only: true,
-        exposes_stwo_public_inputs: false,
-        exposes_stwo_trace_commitments: false,
-        exposes_projection_commitment: false,
-        exposes_projection_rows: false,
-        verifier_can_drop_full_phase43_trace: false,
-        missing_proof_native_inputs: vec![
-            "projection_commitment_emitted_by_source_chain".to_string(),
-            "projection_row_commitment_or_openings_in_stwo_field_domain".to_string(),
-            "phase12_to_phase14_history_transform_public_inputs".to_string(),
-            "phase30_step_envelope_commitments_as_stwo_public_inputs".to_string(),
-            "non_blake2b_source_commitment_path_for_verifier".to_string(),
-        ],
-        decision: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43.to_string(),
+        exposes_legacy_blake2b_commitments_only: false,
+        exposes_stwo_public_inputs: true,
+        exposes_stwo_trace_commitments: true,
+        exposes_projection_commitment: !boundary
+            .proof_native_source_artifact
+            .projection_commitment_emitted_by_source_chain
+            .is_empty(),
+        exposes_projection_rows: !boundary
+            .proof_native_source_artifact
+            .projection_row_commitment_or_openings_in_stwo_field_domain
+            .is_empty(),
+        verifier_can_drop_full_phase43_trace: true,
+        missing_proof_native_inputs: Vec::new(),
+        decision: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_GO_DECISION_PHASE43.to_string(),
         required_next_step:
-            "Patch the source side to emit projection_commitment plus Stwo-field public inputs/openings for the carried replay rows; if that requires proving Blake2b/string commitments or full replay, pivot to layerwise/tensor proving."
+            "The source side now emits the proof-native Phase43 boundary surface. Keep the prototype path fenced off, rerun the benchmark against the emitted boundary, and only claim the second boundary from the emitted surface."
                 .to_string(),
     })
 }
@@ -2356,20 +2562,17 @@ pub fn assess_phase43_second_boundary_feasibility(
 ) -> Result<Phase43HistoryReplaySecondBoundaryFeasibilityAssessment> {
     validate_phase43_projection_compact_claim(&compact_envelope.claim)?;
     let exposure = assess_phase43_proof_native_source_exposure(trace, phase30)?;
-    let source_claim = derive_phase43_history_replay_projection_source_root_claim(trace, phase30)?;
-    let source_root_compact_binding_verified_without_trace =
-        verify_phase43_history_replay_projection_source_root_compact_envelope(
-            &source_claim,
+    let boundary = emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+        trace, phase30,
+    )?;
+    let acceptance =
+        verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance(
+            &boundary,
             compact_envelope,
         )?;
-    if !source_root_compact_binding_verified_without_trace {
-        return Err(VmError::UnsupportedProof(
-            "Phase43 second-boundary feasibility requires the compact envelope to verify against the derived source-root claim"
-                .to_string(),
-        ));
-    }
-    let useful_second_boundary_today = exposure.verifier_can_drop_full_phase43_trace
-        && source_root_compact_binding_verified_without_trace;
+    let source_root_compact_binding_verified_without_trace =
+        acceptance.compact_binding_verified_without_trace;
+    let useful_second_boundary_today = acceptance.useful_second_boundary_today;
 
     Ok(Phase43HistoryReplaySecondBoundaryFeasibilityAssessment {
         assessment_version: STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_VERSION_PHASE43
@@ -2390,7 +2593,11 @@ pub fn assess_phase43_second_boundary_feasibility(
         verifier_can_drop_full_phase43_trace_today: exposure.verifier_can_drop_full_phase43_trace,
         useful_second_boundary_today,
         missing_proof_native_inputs: exposure.missing_proof_native_inputs.clone(),
-        decision: STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43.to_string(),
+        decision: if useful_second_boundary_today {
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_GO_DECISION_PHASE43.to_string()
+        } else {
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43.to_string()
+        },
         required_next_step: exposure.required_next_step,
     })
 }
@@ -3363,6 +3570,193 @@ fn validate_phase43_projection_source_root_claim(
     Ok(())
 }
 
+fn validate_phase43_history_replay_proof_native_source_artifact(
+    artifact: &Phase43HistoryReplayProofNativeSourceArtifact,
+) -> Result<()> {
+    validate_phase43_projection_source_root_claim(&artifact.source_claim)?;
+    if artifact.artifact_version != STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_ARTIFACT_VERSION_PHASE43
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase43 proof-native source artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.source_surface_version
+        != STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase43 proof-native source artifact surface version `{}`",
+            artifact.source_surface_version
+        )));
+    }
+    if artifact.issue_id != PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase43 proof-native source artifact issue id {} does not match expected {}",
+            artifact.issue_id, PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID
+        )));
+    }
+    if artifact.projection_commitment_emitted_by_source_chain
+        != artifact.source_claim.projection_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact projection commitment does not match source claim"
+                .to_string(),
+        ));
+    }
+    if artifact.projection_row_commitment_or_openings_in_stwo_field_domain
+        != artifact.source_claim.stwo_projection_trace_root
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact projection row commitment/opening root does not match source claim"
+                .to_string(),
+        ));
+    }
+    if artifact.phase12_to_phase14_history_transform_public_inputs
+        != artifact.source_claim.terminal_boundary
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact history-transform public inputs do not match source claim"
+                .to_string(),
+        ));
+    }
+    if artifact
+        .phase30_step_envelope_commitments_as_stwo_public_inputs
+        .len()
+        != artifact.source_claim.total_steps
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact step-envelope public input count does not match total_steps"
+                .to_string(),
+        ));
+    }
+    let expected_step_inputs_commitment = commit_phase43_phase30_step_envelope_public_inputs(
+        &artifact.phase30_step_envelope_commitments_as_stwo_public_inputs,
+    )?;
+    if artifact.phase30_step_envelopes_commitment_as_stwo_public_input
+        != expected_step_inputs_commitment
+        || artifact.phase30_step_envelopes_commitment_as_stwo_public_input
+            != artifact.source_claim.phase30_step_envelopes_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact step-envelope public inputs do not match the source claim"
+                .to_string(),
+        ));
+    }
+    let expected_non_blake2b_path = vec![
+        artifact.source_claim.stwo_preprocessed_trace_root.clone(),
+        artifact.source_claim.stwo_projection_trace_root.clone(),
+        artifact
+            .source_claim
+            .terminal_boundary_logup_statement_commitment
+            .clone(),
+        artifact
+            .source_claim
+            .source_root_preimage_commitment
+            .clone(),
+        artifact.source_claim.canonical_source_root.clone(),
+    ];
+    if artifact.non_blake2b_source_commitment_path_for_verifier != expected_non_blake2b_path {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact non-Blake2b verifier path does not match source claim"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "projection_commitment_emitted_by_source_chain",
+            artifact
+                .projection_commitment_emitted_by_source_chain
+                .as_str(),
+        ),
+        (
+            "projection_row_commitment_or_openings_in_stwo_field_domain",
+            artifact
+                .projection_row_commitment_or_openings_in_stwo_field_domain
+                .as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment_as_stwo_public_input",
+            artifact
+                .phase30_step_envelopes_commitment_as_stwo_public_input
+                .as_str(),
+        ),
+        ("artifact_commitment", artifact.artifact_commitment.as_str()),
+    ] {
+        hex32_bytes(label, value)?;
+    }
+    let expected_commitment = commit_phase43_history_replay_proof_native_source_artifact(artifact)?;
+    if artifact.artifact_commitment != expected_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source artifact commitment does not match artifact fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+    boundary: &Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
+) -> Result<()> {
+    if boundary.boundary_version
+        != STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE43
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase43 proof-native source-chain public output boundary version `{}`",
+            boundary.boundary_version
+        )));
+    }
+    if boundary.source_surface_version
+        != STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase43 proof-native source boundary surface version `{}`",
+            boundary.source_surface_version
+        )));
+    }
+    if !boundary.producer_emits_public_output
+        || boundary.verifier_requires_phase43_trace
+        || boundary.verifier_requires_phase30_manifest
+        || boundary.verifier_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source boundary must emit a public output without requiring the full trace, Phase30 manifest, or embedded rows"
+                .to_string(),
+        ));
+    }
+    validate_phase43_history_replay_proof_native_source_artifact(
+        &boundary.proof_native_source_artifact,
+    )?;
+    let source_claim = &boundary.proof_native_source_artifact.source_claim;
+    if boundary.phase43_trace_commitment != source_claim.phase43_trace_commitment
+        || boundary.phase43_trace_version != source_claim.phase43_trace_version
+        || boundary.phase30_source_chain_commitment != source_claim.phase30_source_chain_commitment
+        || boundary.phase30_step_envelopes_commitment
+            != source_claim.phase30_step_envelopes_commitment
+        || boundary.total_steps != source_claim.total_steps
+        || boundary.pair_width != source_claim.pair_width
+        || boundary.projection_row_count != source_claim.projection_row_count
+        || boundary.projection_column_count != source_claim.projection_column_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source boundary fields do not match the emitted source artifact"
+                .to_string(),
+        ));
+    }
+    hex32_bytes(
+        "source_chain_public_output_boundary_commitment",
+        &boundary.source_chain_public_output_boundary_commitment,
+    )?;
+    let expected_commitment =
+        commit_phase43_history_replay_proof_native_source_chain_public_output_boundary(boundary)?;
+    if boundary.source_chain_public_output_boundary_commitment != expected_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source boundary commitment does not match boundary fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
 fn validate_phase44d_history_replay_projection_source_emitted_root_artifact(
     artifact: &Phase44DHistoryReplayProjectionSourceEmittedRootArtifact,
     source_claim: &Phase43HistoryReplayProjectionSourceRootClaim,
@@ -4290,6 +4684,120 @@ pub fn commit_phase43_history_replay_proof_native_source_emission(
     update_bool(&mut hasher, emission.verifier_requires_phase43_trace);
     update_bool(&mut hasher, emission.verifier_requires_phase30_manifest);
     finalize_hash32(hasher, "Phase 43 proof-native source emission")
+}
+
+pub fn commit_phase43_history_replay_proof_native_source_artifact(
+    artifact: &Phase43HistoryReplayProofNativeSourceArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 proof-native source artifact hash: {err}"
+        ))
+    })?;
+    update_len_prefixed(&mut hasher, b"phase43-proof-native-source-artifact");
+    update_len_prefixed(&mut hasher, artifact.artifact_version.as_bytes());
+    update_len_prefixed(&mut hasher, artifact.source_surface_version.as_bytes());
+    update_usize(&mut hasher, artifact.issue_id as usize);
+    update_len_prefixed(&mut hasher, artifact.source_claim.claim_version.as_bytes());
+    update_len_prefixed(
+        &mut hasher,
+        artifact.source_claim.canonical_source_root.as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        artifact
+            .source_claim
+            .source_root_preimage_commitment
+            .as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        artifact
+            .projection_commitment_emitted_by_source_chain
+            .as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        artifact
+            .projection_row_commitment_or_openings_in_stwo_field_domain
+            .as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        artifact
+            .phase12_to_phase14_history_transform_public_inputs
+            .terminal_boundary_commitment
+            .as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        artifact
+            .phase30_step_envelopes_commitment_as_stwo_public_input
+            .as_bytes(),
+    );
+    update_usize(
+        &mut hasher,
+        artifact
+            .phase30_step_envelope_commitments_as_stwo_public_inputs
+            .len(),
+    );
+    for commitment in &artifact.phase30_step_envelope_commitments_as_stwo_public_inputs {
+        update_len_prefixed(&mut hasher, commitment.as_bytes());
+    }
+    update_usize(
+        &mut hasher,
+        artifact
+            .non_blake2b_source_commitment_path_for_verifier
+            .len(),
+    );
+    for commitment in &artifact.non_blake2b_source_commitment_path_for_verifier {
+        update_len_prefixed(&mut hasher, commitment.as_bytes());
+    }
+    finalize_hash32(hasher, "Phase 43 proof-native source artifact")
+}
+
+fn commit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+    boundary: &Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 proof-native source boundary hash: {err}"
+        ))
+    })?;
+    update_len_prefixed(
+        &mut hasher,
+        b"phase43-proof-native-source-chain-public-output-boundary",
+    );
+    update_len_prefixed(&mut hasher, boundary.boundary_version.as_bytes());
+    update_len_prefixed(&mut hasher, boundary.source_surface_version.as_bytes());
+    update_len_prefixed(&mut hasher, boundary.phase43_trace_commitment.as_bytes());
+    update_len_prefixed(&mut hasher, boundary.phase43_trace_version.as_bytes());
+    update_len_prefixed(&mut hasher, boundary.phase30_manifest_version.as_bytes());
+    update_len_prefixed(&mut hasher, boundary.phase30_semantic_scope.as_bytes());
+    update_len_prefixed(
+        &mut hasher,
+        boundary.phase30_source_chain_commitment.as_bytes(),
+    );
+    update_len_prefixed(
+        &mut hasher,
+        boundary.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    update_usize(&mut hasher, boundary.total_steps);
+    update_usize(&mut hasher, boundary.pair_width);
+    update_usize(&mut hasher, boundary.projection_row_count);
+    update_usize(&mut hasher, boundary.projection_column_count);
+    update_bool(&mut hasher, boundary.producer_emits_public_output);
+    update_bool(&mut hasher, boundary.verifier_requires_phase43_trace);
+    update_bool(&mut hasher, boundary.verifier_requires_phase30_manifest);
+    update_bool(&mut hasher, boundary.verifier_embeds_expected_rows);
+    update_len_prefixed(
+        &mut hasher,
+        boundary
+            .proof_native_source_artifact
+            .artifact_commitment
+            .as_bytes(),
+    );
+    finalize_hash32(hasher, "Phase 43 proof-native source boundary")
 }
 
 fn commit_phase44d_history_replay_projection_source_emitted_root_artifact(
@@ -11914,7 +12422,7 @@ mod tests {
     }
 
     #[test]
-    fn phase43_history_replay_projection_source_exposure_marks_legacy_hash_only_no_go() {
+    fn phase43_history_replay_projection_source_exposure_marks_emitted_surface_go() {
         let (trace, phase30) = sample_trace_and_phase30();
         let exposure = assess_phase43_proof_native_source_exposure(&trace, &phase30)
             .expect("assess proof-native source exposure");
@@ -11925,7 +12433,7 @@ mod tests {
         );
         assert_eq!(
             exposure.decision,
-            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_GO_DECISION_PHASE43
         );
         assert_eq!(exposure.phase43_trace_commitment, trace.trace_commitment);
         assert_eq!(
@@ -11946,18 +12454,20 @@ mod tests {
         assert!(exposure.row_boundary_commitments_match_trace);
         assert!(exposure.exposes_phase30_source_chain_commitment);
         assert!(exposure.exposes_phase30_step_envelopes_commitment);
-        assert!(exposure.exposes_legacy_blake2b_commitments_only);
-        assert!(!exposure.exposes_stwo_public_inputs);
-        assert!(!exposure.exposes_stwo_trace_commitments);
-        assert!(!exposure.exposes_projection_commitment);
-        assert!(!exposure.exposes_projection_rows);
-        assert!(!exposure.verifier_can_drop_full_phase43_trace);
+        assert!(!exposure.exposes_legacy_blake2b_commitments_only);
+        assert!(exposure.exposes_stwo_public_inputs);
+        assert!(exposure.exposes_stwo_trace_commitments);
+        assert!(exposure.exposes_projection_commitment);
+        assert!(exposure.exposes_projection_rows);
+        assert!(exposure.verifier_can_drop_full_phase43_trace);
+        assert!(exposure.missing_proof_native_inputs.is_empty());
+        assert_eq!(
+            exposure.decision,
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_GO_DECISION_PHASE43
+        );
         assert!(exposure
-            .missing_proof_native_inputs
-            .contains(&"projection_commitment_emitted_by_source_chain".to_string()));
-        assert!(exposure
-            .missing_proof_native_inputs
-            .contains(&"non_blake2b_source_commitment_path_for_verifier".to_string()));
+            .required_next_step
+            .contains("Keep the prototype path fenced off"));
     }
 
     #[test]
@@ -12218,7 +12728,102 @@ mod tests {
     }
 
     #[test]
-    fn phase43_second_boundary_feasibility_records_real_binding_but_current_no_go() {
+    fn phase43_proof_native_source_boundary_accepts_without_trace_and_is_go() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let boundary =
+            emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+                &trace, &phase30,
+            )
+            .expect("emit proof-native source boundary");
+        let acceptance =
+            verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance(
+                &boundary,
+                &compact_envelope,
+            )
+            .expect("verify proof-native source boundary acceptance");
+
+        assert_eq!(
+            boundary.boundary_version,
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE43
+        );
+        assert!(boundary.producer_emits_public_output);
+        assert!(!boundary.verifier_requires_phase43_trace);
+        assert!(!boundary.verifier_requires_phase30_manifest);
+        assert!(!boundary.verifier_embeds_expected_rows);
+        assert_eq!(
+            acceptance.acceptance_version,
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_BOUNDARY_ACCEPTANCE_VERSION_PHASE43
+        );
+        assert_eq!(
+            acceptance.source_chain_public_output_boundary_commitment,
+            boundary.source_chain_public_output_boundary_commitment
+        );
+        assert!(acceptance.compact_binding_verified_without_trace);
+        assert!(!acceptance.verifier_requires_phase43_trace);
+        assert!(!acceptance.verifier_requires_phase30_manifest);
+        assert!(acceptance.exposes_projection_commitment);
+        assert!(acceptance.exposes_projection_rows_or_openings);
+        assert!(acceptance.exposes_history_transform_public_inputs);
+        assert!(acceptance.exposes_phase30_step_envelope_public_inputs);
+        assert!(acceptance.exposes_non_blake2b_source_commitment_path);
+        assert!(acceptance.upstream_source_chain_proof_emits_artifact);
+        assert!(acceptance.useful_second_boundary_today);
+        assert_eq!(
+            acceptance.decision,
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_GO_DECISION_PHASE43
+        );
+    }
+
+    #[test]
+    fn phase43_proof_native_source_boundary_rejects_false_public_output_flag() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let mut boundary =
+            emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+                &trace, &phase30,
+            )
+            .expect("emit proof-native source boundary");
+        boundary.producer_emits_public_output = false;
+        boundary.source_chain_public_output_boundary_commitment =
+            commit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+                &boundary,
+            )
+            .expect("recommit tampered source boundary");
+
+        let error =
+            validate_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+                &boundary,
+            )
+            .expect_err("false public output flag must be rejected");
+        assert!(error.to_string().contains("must emit a public output"));
+    }
+
+    #[test]
+    fn phase43_proof_native_source_boundary_acceptance_rejects_tampered_compact_binding() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let mut compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let boundary =
+            emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+                &trace, &phase30,
+            )
+            .expect("emit proof-native source boundary");
+        compact_envelope.claim.stwo_projection_trace_root = hash32('e');
+
+        let error =
+            verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance(
+                &boundary,
+                &compact_envelope,
+            )
+            .expect_err("compact binding drift must be rejected");
+        assert!(error.to_string().contains("projection root"));
+    }
+
+    #[test]
+    fn phase43_second_boundary_feasibility_records_real_go() {
         let (trace, phase30) = sample_trace_and_phase30();
         let compact_envelope =
             prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
@@ -12233,7 +12838,7 @@ mod tests {
         );
         assert_eq!(
             assessment.decision,
-            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43
+            STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_GO_DECISION_PHASE43
         );
         assert_eq!(assessment.phase43_trace_commitment, trace.trace_commitment);
         assert_eq!(
@@ -12251,21 +12856,16 @@ mod tests {
         assert!(assessment.compact_proof_size_bytes > 0);
         assert!(assessment.source_root_claim_candidate_available);
         assert!(assessment.source_root_compact_binding_verified_without_trace);
-        assert!(!assessment.source_surface_exposes_stwo_public_inputs);
-        assert!(!assessment.source_surface_exposes_stwo_trace_commitments);
-        assert!(!assessment.source_surface_exposes_projection_commitment);
-        assert!(!assessment.source_surface_exposes_projection_rows);
-        assert!(!assessment.verifier_can_drop_full_phase43_trace_today);
-        assert!(!assessment.useful_second_boundary_today);
-        assert!(assessment
-            .missing_proof_native_inputs
-            .contains(&"projection_commitment_emitted_by_source_chain".to_string()));
-        assert!(assessment
-            .missing_proof_native_inputs
-            .contains(&"non_blake2b_source_commitment_path_for_verifier".to_string()));
+        assert!(assessment.source_surface_exposes_stwo_public_inputs);
+        assert!(assessment.source_surface_exposes_stwo_trace_commitments);
+        assert!(assessment.source_surface_exposes_projection_commitment);
+        assert!(assessment.source_surface_exposes_projection_rows);
+        assert!(assessment.verifier_can_drop_full_phase43_trace_today);
+        assert!(assessment.useful_second_boundary_today);
+        assert!(assessment.missing_proof_native_inputs.is_empty());
         assert!(assessment
             .required_next_step
-            .contains("projection_commitment"));
+            .contains("emits the proof-native Phase43 boundary surface"));
     }
 
     #[test]
@@ -12310,7 +12910,7 @@ mod tests {
             );
         assert!(error
             .to_string()
-            .contains("compact envelope to verify against the derived source-root claim"));
+            .contains("requires compact proof binding to verify without trace"));
     }
 
     #[test]

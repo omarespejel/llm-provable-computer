@@ -88,10 +88,11 @@ cryptographic construction.
 For a Tablero boundary to replace replay honestly, the source side must emit the
 proof-native fields that `Bind(β, c)` checks.
 
-This assumption is exactly why Phase44D clears and Phase43 currently does not:
-Phase43's feasibility gate records a real mechanism but a current no-go because
-its source side does not yet emit the proof-native inputs needed to drop the full
-trace honestly.
+This assumption is exactly why Phase44D clears and why the earlier Phase43
+prototype did not:
+the earlier Phase43 prototype remained partial because its source side did not
+yet emit the proof-native inputs needed to drop the full trace honestly. The
+current emitted Phase43 source boundary now clears this precondition.
 
 ## The statement-preservation theorem
 
@@ -145,15 +146,21 @@ For the checked Phase44D path, the theorem says the following narrower sentence:
 This is the strongest soundness sentence the current repository can defend for
 Tablero today.
 
-## Why Phase43 currently remains a no-go
+## Why the earlier Phase43 prototype was a no-go
 
 The theorem has a real precondition: the source side must emit the proof-native
 inputs that the binding predicate checks.
 
-Phase43 fails that precondition today. The source-root mechanism is real, but the
-current source surface does not emit the proof-native commitments and public
-inputs required to drop the full Phase43 trace honestly. So Phase43 is a valid
-engineering no-go, not a contradiction of the theorem.
+The earlier Phase43 prototype failed that precondition. Its source-root
+mechanism was real, but the source surface it exercised did not yet emit the
+proof-native commitments and public inputs required to drop the full Phase43
+trace honestly.
+
+That is no longer the current state. The emitted Phase43 source boundary now
+provides those proof-native commitments and public inputs, so the same theorem
+explains why the repository now has a real second boundary on this path. The
+historical prototype remains useful only as a bounded partial result that
+motivated the emitted-boundary patch.
 
 ## What this theorem does not claim
 

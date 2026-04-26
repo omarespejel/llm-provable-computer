@@ -48,15 +48,18 @@ use super::decoding::{
 };
 use super::history_replay_projection_prover::{
     derive_phase43_history_replay_projection_source_root_claim,
+    emit_phase43_history_replay_proof_native_source_chain_public_output_boundary,
     emit_phase44d_history_replay_projection_source_chain_public_output_boundary,
     prove_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_source_root_binding,
     verify_phase43_history_replay_projection_source_root_compact_envelope,
+    verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
     verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding,
     Phase43HistoryReplayProjectionCompactProofEnvelope,
     Phase43HistoryReplayProjectionSourceRootClaim,
+    Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
@@ -132,13 +135,13 @@ pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_VERSION: &str =
 pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE: &str =
     "tablero_replay_baseline_causal_decomposition_over_checked_layout_families";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
-    "stwo-phase43-source-root-feasibility-benchmark-v1";
+    "stwo-phase43-source-root-feasibility-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
-    "phase43_source_root_compact_binding_feasibility_calibration";
+    "phase43_emitted_source_boundary_feasibility_calibration";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_VERSION: &str =
-    "stwo-phase43-source-root-feasibility-experimental-benchmark-v1";
+    "stwo-phase43-source-root-feasibility-experimental-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_BENCHMARK_SCOPE: &str =
-    "phase43_source_root_compact_binding_feasibility_over_phase12_carry_aware_experimental_backend";
+    "phase43_emitted_source_boundary_feasibility_over_phase12_carry_aware_experimental_backend";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION: &str =
     "stwo-phase71-handoff-receipt-benchmark-v1";
 pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE: &str =
@@ -619,6 +622,8 @@ struct Phase43SourceRootFeasibilityBenchmarkInput {
     shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
     phase43_trace: Phase43HistoryReplayTrace,
     compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
+    boundary: Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
+    boundary_emit_ms: f64,
     source_root_claim: Phase43HistoryReplayProjectionSourceRootClaim,
     source_root_claim_derive_ms: f64,
 }
@@ -3842,6 +3847,12 @@ fn phase43_source_root_feasibility_benchmark_input(
     let phase43_trace = phase44d_prepare_benchmark_trace_from_sources(chain, &shared_manifest)?;
     let compact_envelope =
         prove_phase43_history_replay_projection_compact_claim_envelope(&phase43_trace)?;
+    let (boundary, boundary_emit_ms) = measure_elapsed_ms(capture_timings, || {
+        emit_phase43_history_replay_proof_native_source_chain_public_output_boundary(
+            &phase43_trace,
+            &shared_manifest,
+        )
+    })?;
     let (source_root_claim, source_root_claim_derive_ms) =
         measure_elapsed_ms(capture_timings, || {
             derive_phase43_history_replay_projection_source_root_claim(
@@ -3854,6 +3865,8 @@ fn phase43_source_root_feasibility_benchmark_input(
         shared_manifest,
         phase43_trace,
         compact_envelope,
+        boundary,
+        boundary_emit_ms,
         source_root_claim,
         source_root_claim_derive_ms,
     })
@@ -3908,10 +3921,10 @@ fn phase43_trace_serialized_bytes(trace: &Phase43HistoryReplayTrace) -> Result<u
         .len())
 }
 
-fn phase43_source_root_claim_serialized_bytes(
-    source_root_claim: &Phase43HistoryReplayProjectionSourceRootClaim,
+fn phase43_boundary_serialized_bytes(
+    boundary: &Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
 ) -> Result<usize> {
-    Ok(serde_json::to_vec(source_root_claim)
+    Ok(serde_json::to_vec(boundary)
         .map_err(|error| VmError::Serialization(error.to_string()))?
         .len())
 }
@@ -3937,25 +3950,30 @@ fn measure_phase43_source_root_feasibility_candidate(
     capture_timings: bool,
 ) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
     debug_assert_eq!(input.phase43_trace.total_steps, input.total_steps);
-    let serialized_bytes = phase43_source_root_claim_serialized_bytes(&input.source_root_claim)?
+    let serialized_bytes = phase43_boundary_serialized_bytes(&input.boundary)?
         + phase43_compact_projection_serialized_bytes(&input.compact_envelope)?;
-    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
-        verify_phase43_history_replay_projection_source_root_compact_envelope(
-            &input.source_root_claim,
+    let (acceptance, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase43_history_replay_proof_native_source_chain_public_output_boundary_acceptance(
+            &input.boundary,
             &input.compact_envelope,
         )
     })?;
+    let verified = acceptance.useful_second_boundary_today;
     Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
-        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
-        backend_variant: "emitted_source_root_claim_plus_compact_projection".to_string(),
+        primitive: "phase43_proof_native_source_boundary".to_string(),
+        backend_variant: "emitted_source_boundary_plus_compact_projection".to_string(),
         steps: input.total_steps,
-        relation: "one emitted Phase43 source-root claim plus one compact Phase43 projection proof"
-            .to_string(),
+        relation:
+            "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof"
+                .to_string(),
         serialized_bytes,
         derive_ms: 0.0,
         verify_ms,
         verified,
-        note: "feasibility-only prototype row: assumes the source surface emitted the proof-native Phase43 source-root claim already derived from the same Phase43 trace and Phase30 manifest; this is not yet a shipped boundary".to_string(),
+        note: format!(
+            "real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at {:.3} ms",
+            input.boundary_emit_ms
+        ),
     })
 }
 
@@ -3973,7 +3991,7 @@ fn measure_phase43_source_root_feasibility_trace_baseline(
         )
     })?;
     Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
-        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
+        primitive: "phase43_proof_native_source_boundary".to_string(),
         backend_variant: "full_trace_plus_phase30_derivation_baseline".to_string(),
         steps: input.total_steps,
         relation: "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof".to_string(),
@@ -3981,7 +3999,7 @@ fn measure_phase43_source_root_feasibility_trace_baseline(
         derive_ms: input.source_root_claim_derive_ms,
         verify_ms,
         verified,
-        note: "baseline row: pays the exact source-root derivation work the verifier still needs today because the source chain does not emit proof-native source-root artifacts".to_string(),
+        note: "baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary".to_string(),
     })
 }
 
@@ -4032,23 +4050,23 @@ fn measure_phase43_source_root_feasibility_binding_only(
     input: &Phase43SourceRootFeasibilityBenchmarkInput,
     capture_timings: bool,
 ) -> Result<StwoPhase43SourceRootFeasibilityBenchmarkMeasurement> {
-    let serialized_bytes = phase43_source_root_claim_serialized_bytes(&input.source_root_claim)?;
+    let serialized_bytes = phase43_boundary_serialized_bytes(&input.boundary)?;
     let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
         verify_phase43_history_replay_projection_source_root_binding(
-            &input.source_root_claim,
+            &input.boundary.proof_native_source_artifact.source_claim,
             &input.compact_envelope.claim,
         )
     })?;
     Ok(StwoPhase43SourceRootFeasibilityBenchmarkMeasurement {
-        primitive: "phase43_source_root_compact_binding_candidate".to_string(),
-        backend_variant: "source_root_binding_only".to_string(),
+        primitive: "phase43_proof_native_source_boundary".to_string(),
+        backend_variant: "source_boundary_binding_only".to_string(),
         steps: input.total_steps,
-        relation: "bind one emitted Phase43 source-root claim to a previously verified compact Phase43 projection claim".to_string(),
+        relation: "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim".to_string(),
         serialized_bytes,
         derive_ms: 0.0,
         verify_ms,
         verified,
-        note: "causal decomposition row: assumes the compact proof was already verified and measures only the source-root binding acceptance surface".to_string(),
+        note: "causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface".to_string(),
     })
 }
 

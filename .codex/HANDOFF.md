@@ -60,10 +60,10 @@ The active split is now:
 - Gate 3b: the same Phase44D replay-avoidance mechanism now reproduces on the
   non-default `3x3` layout family through `2,4,8,16,32,64,128,256` under the
   same backend and median-of-5 timing policy.
-- Gate 4: the Phase43 second-boundary feasibility gate records a real
-  source-root binding mechanism but an explicit **NO-GO** for claiming a second
-  Tablero boundary today because the source side still does not emit the
-  proof-native inputs needed to drop the full Phase43 trace honestly.
+- Gate 4: the Phase43 second-boundary feasibility gate now records a real
+  **GO** on the emitted proof-native source boundary: the source side emits the
+  proof-native commitments and public inputs needed for the verifier to drop the
+  full Phase43 trace honestly.
 - Gate 5: the Phase44D second-backend feasibility gate records a real carry-free
   `2`-step checkpoint on the shipped backend but an explicit **NO-GO** for
   claiming backend transferability today because the carry-free Phase12 source
@@ -160,10 +160,11 @@ Use these in order of authority for current state:
    multiply/store carry patterns are all checked.
 7. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-8. Keep the Phase43 second-boundary result in the explicit no-go bucket until
-   the source side emits the proof-native projection commitments, row
-   commitments/openings, and public inputs listed in
-   `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
+8. Treat the Phase43 second-boundary result as landed on the emitted source
+   surface, but keep the claim scoped honestly: it is a real second boundary
+   with modest verifier-side gains (`1.20x` on the publication row and `3.68x`
+   at the checked `128`-step experimental frontier), not a replay-elimination
+   headline on the scale of Phase44D.
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
