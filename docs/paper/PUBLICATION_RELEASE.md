@@ -8,8 +8,10 @@ Primary presentation title:
 
 Primary presentation files:
 
+- `docs/paper/abstract-tablero-2026.md`
 - `docs/paper/tablero-typed-verifier-boundaries-2026.md`
 - `docs/paper/appendix-tablero-claim-boundary.md`
+- `docs/paper/appendix-methodology-and-reproducibility.md`
 - `docs/paper/appendix-system-comparison.md`
 
 Supporting package directories:
@@ -29,6 +31,7 @@ It supports the following presentation posture:
 - the formal core is a statement-preservation theorem under explicit assumptions,
 - the empirical lab is one transformer-shaped STARK-zkML stack,
 - the main positive evidence is replay avoidance across three layout families,
+- the main presentation figure is the cross-family results overview generated from checked evidence,
 - the main negative evidence is one bounded no-go on a second candidate boundary,
 - the external calibration is source-backed but not presented as a matched verifier race.
 

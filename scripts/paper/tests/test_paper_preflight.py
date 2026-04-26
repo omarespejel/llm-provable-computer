@@ -1085,7 +1085,40 @@ class PaperPreflightTests(unittest.TestCase):
                 any("missing docs/paper directory" in msg for msg in findings.errors),
                 findings.errors,
             )
+    def test_primary_presentation_guardrails_reject_internal_phase_language(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            for rel_path in MOD.PRIMARY_PRESENTATION_FILES:
+                write_text(repo / rel_path, "# Placeholder\n")
+            write_text(
+                repo / 'docs/paper/tablero-typed-verifier-boundaries-2026.md',
+                "See [abstract](abstract-tablero-2026.md) and [method]"
+                "(appendix-methodology-and-reproducibility.md) and "
+                "![overview](figures/tablero-results-overview-2026-04.svg).\n"
+                "Phase44D leaks here.\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_primary_presentation_guardrails(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertIn("internal phase-style terminology leaked", findings.errors[0])
 
+    def test_primary_presentation_guardrails_require_core_links(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            for rel_path in MOD.PRIMARY_PRESENTATION_FILES:
+                write_text(repo / rel_path, "# Placeholder\n")
+            write_text(
+                repo / "docs/paper/tablero-typed-verifier-boundaries-2026.md",
+                "No required links here.\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_primary_presentation_guardrails(repo, findings)
+            self.assertTrue(
+                any(
+                    "missing required presentation link" in error
+                    for error in findings.errors
+                )
+            )
 
 if __name__ == "__main__":
     unittest.main()

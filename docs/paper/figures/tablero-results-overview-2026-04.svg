@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
+<rect width="100%" height="100%" fill="#F8FAFC" />
+<text x="900.0" y="60.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="32" font-weight="700" fill="#0F172A">Tablero Results Overview</text>
+<text x="900.0" y="95.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">Growing replay-avoidance curves across checked families, with a near-constant frontier artifact-size band.</text>
+<rect x="60" y="120" width="1680" height="470" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />
+<text x="520.0" y="150.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="700" fill="#0F172A">Replay-avoidance ratio vs checked input length</text>
+<line x1="90" y1="170" x2="90" y2="590" stroke="#94A3B8" stroke-width="1.5" />
+<line x1="90" y1="590" x2="1010" y2="590" stroke="#94A3B8" stroke-width="1.5" />
+<line x1="90" y1="590.0" x2="1010" y2="590.0" stroke="#E2E8F0" stroke-width="1" />
+<text x="78.0" y="595.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">18x</text>
+<line x1="90" y1="485.0" x2="1010" y2="485.0" stroke="#E2E8F0" stroke-width="1" />
+<text x="78.0" y="490.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">245x</text>
+<line x1="90" y1="380.0" x2="1010" y2="380.0" stroke="#E2E8F0" stroke-width="1" />
+<text x="78.0" y="385.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">471x</text>
+<line x1="90" y1="275.0" x2="1010" y2="275.0" stroke="#E2E8F0" stroke-width="1" />
+<text x="78.0" y="280.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">698x</text>
+<line x1="90" y1="170.0" x2="1010" y2="170.0" stroke="#E2E8F0" stroke-width="1" />
+<text x="78.0" y="175.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">925x</text>
+<line x1="90.0" y1="590" x2="90.0" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="90.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">2</text>
+<line x1="192.2" y1="590" x2="192.2" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="192.2" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">4</text>
+<line x1="294.4" y1="590" x2="294.4" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="294.4" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">8</text>
+<line x1="396.7" y1="590" x2="396.7" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="396.7" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">16</text>
+<line x1="498.9" y1="590" x2="498.9" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="498.9" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">32</text>
+<line x1="601.1" y1="590" x2="601.1" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="601.1" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">64</text>
+<line x1="703.3" y1="590" x2="703.3" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="703.3" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">128</text>
+<line x1="805.6" y1="590" x2="805.6" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="805.6" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">256</text>
+<line x1="907.8" y1="590" x2="907.8" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="907.8" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">512</text>
+<line x1="1010.0" y1="590" x2="1010.0" y2="598" stroke="#64748B" stroke-width="1.5" />
+<text x="1010.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">1024</text>
+<text x="550.0" y="650.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Checked input length</text>
+<text x="20.0" y="380.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Replay ratio</text>
+<polyline fill="none" stroke="#059669" stroke-width="4" points="90.0,590.0 192.2,585.6 294.4,571.1 396.7,548.0 498.9,516.8 601.1,455.8 703.3,375.5 805.6,345.3 907.8,269.1 1010.0,170.0" />
+<circle cx="90.0" cy="590.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="585.6" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="571.1" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="548.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="516.8" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="455.8" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="375.5" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="345.3" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="907.8" cy="269.1" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="1010.0" cy="170.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<line x1="120" y1="545" x2="148" y2="545" stroke="#059669" stroke-width="4" />
+<text x="160.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">2x2 layout</text>
+<polyline fill="none" stroke="#D97706" stroke-width="4" points="90.0,589.4 192.2,583.8 294.4,575.8 396.7,555.3 498.9,533.9 601.1,513.1 703.3,493.8 805.6,482.2" />
+<circle cx="90.0" cy="589.4" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="583.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="575.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="555.3" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="533.9" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="513.1" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="493.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="482.2" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<line x1="340" y1="545" x2="368" y2="545" stroke="#D97706" stroke-width="4" />
+<text x="380.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">3x3 layout</text>
+<polyline fill="none" stroke="#1D4ED8" stroke-width="4" points="90.0,588.4 192.2,581.6 294.4,568.8 396.7,551.1 498.9,528.9 601.1,504.7 703.3,484.3 805.6,470.6 907.8,464.1 1010.0,453.7" />
+<circle cx="90.0" cy="588.4" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="581.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="568.8" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="551.1" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="528.9" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="504.7" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="484.3" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="470.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="907.8" cy="464.1" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="1010.0" cy="453.7" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<line x1="560" y1="545" x2="588" y2="545" stroke="#1D4ED8" stroke-width="4" />
+<text x="600.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Default layout</text>
+<text x="1390.0" y="150.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="700" fill="#0F172A">Frontier summary</text>
+<rect x="1060" y="180" width="640" height="360" rx="18" fill="#F8FAFC" stroke="#CBD5E1" />
+<text x="1110.0" y="220.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="700" fill="#0F172A">Family</text>
+<text x="1340.0" y="220.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="700" fill="#0F172A">Frontier</text>
+<text x="1510.0" y="220.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="700" fill="#0F172A">Ratio</text>
+<text x="1650.0" y="220.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="700" fill="#0F172A">Typed verify</text>
+<rect x="1085" y="240" width="10" height="10" rx="2" fill="#059669" />
+<text x="1110.0" y="250.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">2x2 layout</text>
+<text x="1340.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">1024</text>
+<text x="1510.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">925.1x</text>
+<text x="1650.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">11.133 ms</text>
+<text x="1110.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 10299.110 ms</text>
+<text x="1410.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 156,308</text>
+<rect x="1085" y="332" width="10" height="10" rx="2" fill="#D97706" />
+<text x="1110.0" y="342.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">3x3 layout</text>
+<text x="1340.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">256</text>
+<text x="1510.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">250.6x</text>
+<text x="1650.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">125.753 ms</text>
+<text x="1110.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 31511.802 ms</text>
+<text x="1410.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 127,787</text>
+<rect x="1085" y="424" width="10" height="10" rx="2" fill="#1D4ED8" />
+<text x="1110.0" y="434.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">Default layout</text>
+<text x="1340.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">1024</text>
+<text x="1510.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">312.3x</text>
+<text x="1650.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">427.209 ms</text>
+<text x="1110.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 133430.237 ms</text>
+<text x="1410.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 156,614</text>
+<rect x="60" y="630" width="1680" height="390" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />
+<text x="900.0" y="670.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="700" fill="#0F172A">How to read the result</text>
+<text x="120.0" y="730.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">1. The main result is the curve shape: every checked family shows a replay-avoidance ratio that grows with input length.</text>
+<text x="120.0" y="770.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">2. Frontier boundary artifact size stays in a narrow band: 127,787 to 156,614 bytes.</text>
+<text x="120.0" y="810.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">3. Boundary verify cost is not family-constant; the artifact size is the near-constant property.</text>
+<text x="120.0" y="850.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">4. Large ratios come from removing verifier-side replay work in the current implementation, not from faster FRI.</text>
+<text x="120.0" y="890.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">5. The strongest claim is replay replacement with preserved statement scope, not a universal speedup story.</text>
+<text x="120.0" y="955.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#475569">Checked evidence source: machine-readable family-matrix benchmark with median-of-five timings.</text>
+</svg>

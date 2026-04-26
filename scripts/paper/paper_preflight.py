@@ -29,10 +29,22 @@ PUBLICATION_METADATA_FILES = [
 ]
 
 PAPER_FILES = [
+    "docs/paper/abstract-tablero-2026.md",
     "docs/paper/tablero-typed-verifier-boundaries-2026.md",
     "docs/paper/appendix-tablero-claim-boundary.md",
+    "docs/paper/appendix-methodology-and-reproducibility.md",
     "docs/paper/appendix-system-comparison.md",
     *PUBLICATION_METADATA_FILES,
+]
+
+PRIMARY_PRESENTATION_FILES = [
+    "docs/paper/abstract-tablero-2026.md",
+    "docs/paper/tablero-typed-verifier-boundaries-2026.md",
+    "docs/paper/appendix-tablero-claim-boundary.md",
+    "docs/paper/appendix-methodology-and-reproducibility.md",
+    "docs/paper/appendix-system-comparison.md",
+    "docs/paper/PUBLICATION_RELEASE.md",
+    "docs/paper/README.md",
 ]
 
 SNAPSHOT_FIELD_PREFIXES = (
@@ -169,6 +181,15 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+
+INTERNAL_PHASE_PATTERN = re.compile(r"\b[Pp]hase\d+[A-Za-z]?\b")
+REQUIRED_PRIMARY_LINKS = {
+    "docs/paper/tablero-typed-verifier-boundaries-2026.md": [
+        "abstract-tablero-2026.md",
+        "appendix-methodology-and-reproducibility.md",
+        "figures/tablero-results-overview-2026-04.svg",
+    ],
+}
 
 
 @dataclass
@@ -339,6 +360,29 @@ def run_file_checks(file_path: pathlib.Path, repo_root: pathlib.Path, findings: 
     links = extract_markdown_links(text)
     check_local_relative_links(file_path, links, findings)
     check_immutable_local_repo_links(file_path, links, repo_root, findings)
+
+
+def check_primary_presentation_guardrails(repo_root: pathlib.Path, findings: Findings) -> None:
+    for rel_path in PRIMARY_PRESENTATION_FILES:
+        path = repo_root / rel_path
+        if not path.exists():
+            findings.error(f"{path}: missing primary presentation file.")
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            findings.error(f"{path}: failed to read primary presentation file: {exc}")
+            continue
+        match = INTERNAL_PHASE_PATTERN.search(text)
+        if match:
+            findings.error(
+                f"{path}: internal phase-style terminology leaked into primary presentation copy: {match.group(0)}"
+            )
+        for required_link in REQUIRED_PRIMARY_LINKS.get(rel_path, []):
+            if required_link not in text:
+                findings.error(
+                    f"{path}: missing required presentation link `{required_link}`."
+                )
 
 
 def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> None:
@@ -1514,6 +1558,7 @@ def main() -> int:
             continue
         run_file_checks(path, repo_root, findings)
 
+    check_primary_presentation_guardrails(repo_root, findings)
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)

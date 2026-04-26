@@ -1,0 +1,203 @@
+{
+  "artifact_size_band_bytes": {
+    "max": 156614,
+    "min": 127787
+  },
+  "families": [
+    {
+      "binding_only_ms": 5.116,
+      "checked_frontier": 1024,
+      "compact_only_ms": 2.35,
+      "family": "2x2",
+      "family_label": "2x2 layout",
+      "first_checked_step": 2,
+      "first_ratio": 17.795,
+      "frontier_ratio": 925.097,
+      "ratio_growth": 51.986,
+      "replay_only_ms": 8996.324,
+      "replay_verify_ms": 10299.11,
+      "timing_mode": "measured_median",
+      "timing_policy": "median_of_5_runs_from_microsecond_capture",
+      "timing_runs": 5,
+      "typed_serialized_bytes": 156308,
+      "typed_verify_ms": 11.133
+    },
+    {
+      "binding_only_ms": 79.561,
+      "checked_frontier": 256,
+      "compact_only_ms": 26.649,
+      "family": "3x3",
+      "family_label": "3x3 layout",
+      "first_checked_step": 2,
+      "first_ratio": 19.164,
+      "frontier_ratio": 250.585,
+      "ratio_growth": 13.076,
+      "replay_only_ms": 32233.963,
+      "replay_verify_ms": 31511.802,
+      "timing_mode": "measured_median",
+      "timing_policy": "median_of_5_runs_from_microsecond_capture",
+      "timing_runs": 5,
+      "typed_serialized_bytes": 127787,
+      "typed_verify_ms": 125.753
+    },
+    {
+      "binding_only_ms": 277.236,
+      "checked_frontier": 1024,
+      "compact_only_ms": 77.942,
+      "family": "default",
+      "family_label": "Default layout",
+      "first_checked_step": 2,
+      "first_ratio": 21.312,
+      "frontier_ratio": 312.33,
+      "ratio_growth": 14.655,
+      "replay_only_ms": 137423.421,
+      "replay_verify_ms": 133430.237,
+      "timing_mode": "measured_median",
+      "timing_policy": "median_of_5_runs_from_microsecond_capture",
+      "timing_runs": 5,
+      "typed_serialized_bytes": 156614,
+      "typed_verify_ms": 427.209
+    }
+  ],
+  "interpretation": [
+    "The main claim is the growing-in-input-size replay-avoidance curve across checked families.",
+    "Typed-boundary artifact size stays in a narrow frontier band while verifier cost remains family dependent.",
+    "Large ratios are against the current implementation's replay baseline, not a universal lower bound and not faster FRI."
+  ],
+  "ratio_curves": [
+    {
+      "family": "2x2",
+      "family_label": "2x2 layout",
+      "points": [
+        {
+          "ratio": 17.795,
+          "steps": 2
+        },
+        {
+          "ratio": 27.399,
+          "steps": 4
+        },
+        {
+          "ratio": 58.714,
+          "steps": 8
+        },
+        {
+          "ratio": 108.569,
+          "steps": 16
+        },
+        {
+          "ratio": 175.994,
+          "steps": 32
+        },
+        {
+          "ratio": 307.645,
+          "steps": 64
+        },
+        {
+          "ratio": 481.213,
+          "steps": 128
+        },
+        {
+          "ratio": 546.511,
+          "steps": 256
+        },
+        {
+          "ratio": 711.002,
+          "steps": 512
+        },
+        {
+          "ratio": 925.097,
+          "steps": 1024
+        }
+      ]
+    },
+    {
+      "family": "3x3",
+      "family_label": "3x3 layout",
+      "points": [
+        {
+          "ratio": 19.164,
+          "steps": 2
+        },
+        {
+          "ratio": 31.227,
+          "steps": 4
+        },
+        {
+          "ratio": 48.514,
+          "steps": 8
+        },
+        {
+          "ratio": 92.817,
+          "steps": 16
+        },
+        {
+          "ratio": 139.005,
+          "steps": 32
+        },
+        {
+          "ratio": 183.875,
+          "steps": 64
+        },
+        {
+          "ratio": 225.716,
+          "steps": 128
+        },
+        {
+          "ratio": 250.585,
+          "steps": 256
+        }
+      ]
+    },
+    {
+      "family": "default",
+      "family_label": "Default layout",
+      "points": [
+        {
+          "ratio": 21.312,
+          "steps": 2
+        },
+        {
+          "ratio": 36.022,
+          "steps": 4
+        },
+        {
+          "ratio": 63.545,
+          "steps": 8
+        },
+        {
+          "ratio": 101.766,
+          "steps": 16
+        },
+        {
+          "ratio": 149.827,
+          "steps": 32
+        },
+        {
+          "ratio": 202.15,
+          "steps": 64
+        },
+        {
+          "ratio": 246.234,
+          "steps": 128
+        },
+        {
+          "ratio": 275.707,
+          "steps": 256
+        },
+        {
+          "ratio": 289.667,
+          "steps": 512
+        },
+        {
+          "ratio": 312.33,
+          "steps": 1024
+        }
+      ]
+    }
+  ],
+  "source_timing_mode": "measured_median",
+  "source_timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "source_timing_runs": 5,
+  "summary_version": "tablero-results-overview-v1"
+}

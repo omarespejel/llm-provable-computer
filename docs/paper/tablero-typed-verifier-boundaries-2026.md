@@ -8,6 +8,8 @@ Starknet Foundation</p>
 
 *April 2026 draft*
 
+Short submission abstract: [`abstract-tablero-2026.md`](abstract-tablero-2026.md).
+
 ## Abstract
 
 Layered proof systems often pay a verifier-side replay cost long after the core
@@ -299,7 +301,9 @@ ______________________________________________________________________
 The empirical demonstrations in this paper come from one transformer-shaped STARK-zkML
 laboratory. They are not a matched benchmark against external systems. They are measured
 median-of-five results on one experimental backend, used to study the behavior of typed
-replay replacement under controlled variations in layout geometry.
+replay replacement under controlled variations in layout geometry. The measurement policy,
+reproducibility handles, and public wording rules are summarized in
+[`appendix-methodology-and-reproducibility.md`](appendix-methodology-and-reproducibility.md).
 
 The main comparison is always the same:
 
@@ -333,6 +337,12 @@ This is the strongest empirical claim the current paper should make.
 
 That means the typed boundary is removing a linearly growing replay surface rather than
 merely shaving a constant factor.
+
+![Tablero results overview across checked families](figures/tablero-results-overview-2026-04.svg)
+
+**Figure 1.** The main empirical fact is the curve shape across the three checked
+families. The frontier artifact size stays in a narrow band, while verifier cost remains
+family dependent.
 
 ### 6.3 What is constant and what is not
 
