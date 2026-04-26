@@ -504,7 +504,7 @@ enum Command {
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
     },
-    /// Run a Phase43 source-root feasibility benchmark over one emitted-source-claim prototype versus the current full-trace derivation baseline.
+    /// Run a Phase43 source-root feasibility benchmark over one emitted proof-native source boundary versus the current full-trace derivation baseline.
     #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
     BenchStwoPhase43SourceRootFeasibility {
         /// File where the benchmark TSV will be written.

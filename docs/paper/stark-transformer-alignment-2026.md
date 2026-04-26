@@ -773,11 +773,13 @@ accepted compact statement. This is a statement-preservation theorem, not a new
 recursive-compression or proof-system soundness theorem.
 
 That final precondition matters. The theorem does not automatically make every
-candidate boundary real. Phase43 remains a recorded no-go because the current
-source side still does not emit the proof-native commitments and public inputs
-needed to make `Bind(β, c)` complete without full-trace replay. So the theorem
-explains both outcomes in the repository: why Phase44D is a real typed-boundary
-result today, and why Phase43 is not yet one.
+candidate boundary real. The earlier Phase43 prototype was a bounded no-go
+because the source side it exercised did not yet emit the proof-native
+commitments and public inputs needed to make `Bind(β, c)` complete without
+full-trace replay. The current emitted Phase43 source boundary clears that
+precondition, so the theorem now explains both outcomes in the repository: why
+the earlier prototype was only partial, and why the emitted Phase43 boundary is
+now a real second typed-boundary result.
 
 For shared lookup evidence, the artifact binds normalization and activation table
 identity into a static lookup-table registry commitment inside the shared lookup

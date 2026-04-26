@@ -55,10 +55,10 @@ The experimental carry-aware lane now has two real higher-layer scaling results:
 
 The repo now has one explicit answer on the next-boundary question:
 
-- Phase43 source-root binding is a real mechanism, but it is **not** a real second boundary today.
-- The current blocker is missing proof-native source emission from the source side.
+- Phase43 source-root binding now clears as a real second boundary on the current emitted proof-native source surface.
+- The verifier can now drop the full Phase43 trace honestly on that emitted surface.
 - The bounded engineering gate is recorded in `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`.
-- Do not describe Phase43 as a second Tablero demonstration until a source-emission patch lands and the same gate reruns cleanly.
+- The earlier prototype note remains useful only as a bounded historical partial result; do not cite it as the current state.
 
 ## Current cross-backend read
 
@@ -97,9 +97,11 @@ The repo now also has one explicit answer on the second-backend question:
    not a current paper or review blocker.
 7. Re-run the Phase44D experimental frontier only after any material AIR or
    verifier change.
-8. Keep Phase43 in the explicit no-go bucket until the source side emits the
-   proof-native projection commitments, row commitments/openings, and public
-   inputs that the feasibility gate lists as missing.
+8. Treat Phase43 as landed on the emitted source surface, but keep the claim
+   scoped honestly: this is a real second boundary with modest verifier-side
+   gains (`1.20x` on the publication row and `3.68x` at the checked
+   `128`-step experimental frontier), not a replay-elimination headline on the
+   scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 
