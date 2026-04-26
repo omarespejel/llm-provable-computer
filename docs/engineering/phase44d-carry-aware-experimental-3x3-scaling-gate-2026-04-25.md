@@ -9,7 +9,7 @@ execution-proof surface.
 - Source family: Phase12 decoding-step `3x3` layout family
 - Execution backend: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - Higher layer: Phase44D typed source-chain public-output boundary
-- Sweep: `steps = 2, 4, 8, 16, 32, 64, 128, 256`
+- Sweep: `steps = 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024`
 - Timing mode: `measured_median`
 - Timing policy: `median_of_5_runs_from_microsecond_capture`
 
@@ -25,14 +25,17 @@ execution-proof surface.
 
 The hard gate cleared on a second canonical layout family.
 
-1. The 3x3 carry-aware Phase12 family proves and verifies through `256` honest
-   steps on the current checked frontier.
+1. The 3x3 carry-aware Phase12 family proves and verifies through `1024` honest
+   steps on the current checked frontier (same power-of-two cap as default and
+   `2x2`).
 2. The Phase44D typed-boundary path still opens a widening verifier-latency gap
    against the Phase30 manifest replay baseline on this non-default family,
-   from `19.2x` at `2` steps to `250.6x` at `256` steps.
+   from `17.7x` at `2` steps to `1011.9x` at `1024` steps (median of five timed
+   runs; see checked TSV).
 3. The replay-avoidance thesis is no longer confined to the default layout
-   family; it survives a second pinned canonical layout, although with slightly
-   weaker constants than the default-family `1024` sweep.
+   family; it survives a second pinned canonical layout at the shared `1024`
+   frontier, with headline ratios in the same order of magnitude as the default
+   family on this backend.
 
 ## Main measured rows
 
@@ -40,25 +43,31 @@ These ratios measure verifier wall-clock avoided by skipping ordered Phase30
 manifest JSON serialization, hashing, and replay work. They are not claims that
 compact Phase43/Fri verification itself became faster.
 
+Latency columns use **verify_ms** from the typed Phase44D row and the Phase30
+replay baseline row (boundary construction emit_ms is tracked separately in the
+TSV).
+
 | Steps | Typed Phase44D boundary + compact proof | Phase30 replay baseline + compact proof | Replay-avoidance ratio |
 |---|---:|---:|---:|
-| 2 | `14.388 ms`, `60,952` bytes | `275.731 ms`, `58,182` bytes | `19.2x` |
-| 4 | `16.308 ms`, `68,103` bytes | `509.255 ms`, `67,893` bytes | `31.2x` |
-| 8 | `22.210 ms`, `75,475` bytes | `1,077.491 ms`, `80,387` bytes | `48.5x` |
-| 16 | `21.624 ms`, `81,753` bytes | `2,007.074 ms`, `96,912` bytes | `92.8x` |
-| 32 | `28.208 ms`, `88,013` bytes | `3,921.067 ms`, `123,682` bytes | `139.0x` |
-| 64 | `43.002 ms`, `100,964` bytes | `7,907.005 ms`, `177,661` bytes | `183.9x` |
-| 128 | `69.665 ms`, `108,642` bytes | `15,724.535 ms`, `267,402` bytes | `225.7x` |
-| 256 | `125.753 ms`, `127,787` bytes | `31,511.802 ms`, `450,773` bytes | `250.6x` |
+| 2 | `0.951 ms`, `60,952` bytes | `16.869 ms`, `58,182` bytes | `17.7x` |
+| 4 | `0.996 ms`, `68,103` bytes | `34.477 ms`, `67,893` bytes | `34.6x` |
+| 8 | `1.015 ms`, `75,475` bytes | `61.228 ms`, `80,387` bytes | `60.3x` |
+| 16 | `1.131 ms`, `81,753` bytes | `122.137 ms`, `96,912` bytes | `108.0x` |
+| 32 | `1.291 ms`, `88,013` bytes | `270.727 ms`, `123,682` bytes | `209.7x` |
+| 64 | `1.639 ms`, `100,964` bytes | `489.544 ms`, `177,661` bytes | `298.7x` |
+| 128 | `2.210 ms`, `108,642` bytes | `952.696 ms`, `267,402` bytes | `431.1x` |
+| 256 | `3.415 ms`, `127,787` bytes | `1,942.247 ms`, `450,773` bytes | `568.7x` |
+| 512 | `5.767 ms`, `141,802` bytes | `4,034.607 ms`, `793,236` bytes | `699.6x` |
+| 1024 | `8.311 ms`, `152,463` bytes | `8,410.230 ms`, `1,460,574` bytes | `1011.9x` |
 
 ## Causal read
 
 The causal decomposition rows keep telling the same story as the default
 family:
 
-- At `256` steps, the compact Phase43 proof alone verifies in `26.649 ms`.
-- The typed Phase44D boundary binding alone verifies in `79.561 ms`.
-- The Phase30 manifest replay alone costs `32,233.963 ms`.
+- At `1024` steps, the compact Phase43 proof alone verifies in `1.936 ms`.
+- The typed Phase44D boundary binding alone verifies in `5.048 ms`.
+- The Phase30 manifest replay alone costs `8,085.341 ms`.
 
 So the 3x3 family still behaves like:
 
@@ -107,16 +116,15 @@ The most honest next step after this gate is:
 
 ## April 27, 2026 refresh (Issue `#252`)
 
-The carry-aware Phase44D `3x3` benchmark now shares the same checked power-of-two
+The carry-aware Phase44D `3x3` benchmark shares the same checked power-of-two
 frontier as the default and `2x2` families:
 
 `2,4,8,16,32,64,128,256,512,1024` honest proof-checked steps.
 
-The reproduction harness below is unchanged except that its canonical
-`STEP_COUNTS` string now includes `512` and `1024`. Re-run it with
-`BENCH_RUNS=5` and `CAPTURE_TIMINGS=1` to refresh the median-of-5 TSV/JSON and
-figure artifacts checked into `docs/engineering/evidence/` and
-`docs/engineering/figures/`.
+The reproduction harness below uses that canonical `STEP_COUNTS` string. A
+median-of-five refresh with `BENCH_RUNS=5` and `CAPTURE_TIMINGS=1` landed on
+April 26, 2026 (including a figure-script canonical-step alignment fix), updating
+the checked-in TSV/JSON/SVG and the narrative table above.
 
 ## Reproduction
 
