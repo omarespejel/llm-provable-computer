@@ -39,10 +39,11 @@ The result should therefore be read as follows:
 The paper's large ratios are implementation grounded. They compare a typed verifier path
 against the replay baseline that this codebase actually pays today.
 
-That baseline performs ordered canonical serialization, hashing, and replay
-reconstruction work. The typed boundary removes that work from the verifier path by
-carrying the same public facts in a compact boundary object that is bound to the same
-accepted statement.
+That baseline re-verifies each embedded proof, rebuilds source-chain and per-step
+commitments from canonical serialized state, reconstructs the manifest, and then
+compares the reconstructed manifest to the supplied one. The typed boundary removes that
+bundle of replay work from the verifier path by carrying the same public facts in a
+compact boundary object that is bound to the same accepted statement.
 
 That is a real verifier-side improvement. It is **not** a claim that cryptographic STARK
 verification itself became hundreds of times faster, and it is **not** a universal lower
@@ -54,9 +55,9 @@ The strongest empirical result in the paper is not one frontier number. It is th
 same replay-avoidance mechanism reproduces across three checked layout families with the
 same qualitative shape.
 
-The families do **not** share the same constants. One family yields a much larger
-frontier ratio than the others. That does not weaken the paper's main point. It clarifies
-it:
+The families do **not** share identical constants. Their checked frontier ratios all
+reach the same order of magnitude, but they still vary materially by layout. That does
+not weaken the paper's main point. It clarifies it:
 
 - the **mechanism** is stable across the checked families,
 - the **magnitude** of the gain depends on family structure, and
@@ -73,6 +74,13 @@ Use these directories as the canonical handles:
 - `docs/paper/evidence/` for checked TSV and JSON values used in the paper package,
 - `docs/paper/figures/` for generated paper figures,
 - `scripts/paper/` for generation and preflight scripts.
+
+The current package relies in particular on:
+
+- `docs/paper/evidence/tablero-results-overview-2026-04.tsv`
+- `docs/paper/evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
+- `docs/paper/figures/tablero-results-overview-2026-04.svg`
+- `docs/paper/figures/tablero-replay-baseline-breakdown-2026-04.svg`
 
 The release gate for the paper package should always include:
 

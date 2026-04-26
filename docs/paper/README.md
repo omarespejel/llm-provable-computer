@@ -20,6 +20,13 @@ Supporting publication assets:
 - `artifacts/`
 - `submission-v4-2026-04-11/`
 
+Core paper-facing generated assets:
+
+- `figures/tablero-results-overview-2026-04.svg`
+- `figures/tablero-replay-baseline-breakdown-2026-04.svg`
+- `evidence/tablero-results-overview-2026-04.tsv`
+- `evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
+
 Recommended presentation order:
 
 1. `abstract-tablero-2026.md`

@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-04-25
+Last refreshed: 2026-04-26
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `e3ca8876ee4f643335e4456aab48423e4bce9471`
+Mainline reference at refresh: `a483026ab3467522d6e8dbad9e491fa72a4f9b73`
 
 ## Immediate orientation
 
@@ -78,21 +78,18 @@ The active split is now:
   release-mode canonical-flag checks on the Phase47/48 verifiers where the
   repo previously relied on `debug_assert!` only.
 
-At `1024` steps, the experimental shared path records:
+At the checked release-mode frontiers, the experimental shared path now records:
 
-- typed Phase44D boundary + compact proof: `427.209 ms`, `156,614` bytes
-- Phase30 replay baseline + compact proof: `133430.237 ms`, `1,464,721` bytes
+- default `1024`: typed boundary + compact proof `8.130 ms`, replay baseline + compact proof `8671.126 ms`, boundary object `6,561` bytes
+- `2x2` `1024`: typed boundary + compact proof `8.121 ms`, replay baseline + compact proof `7453.229 ms`, boundary object `6,545` bytes
+- `3x3` `256`: typed boundary + compact proof `3.453 ms`, replay baseline + compact proof `2012.564 ms`, boundary object `6,313` bytes
 
-At `256` steps on the `3x3` family, the experimental shared path records:
-
-- typed Phase44D boundary + compact proof: `125.753 ms`, `127,787` bytes
-- Phase30 replay baseline + compact proof: `31511.802 ms`, `450,773` bytes
-
-This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
-The ratio is dominated by skipped Phase30 manifest JSON serialization, hashing,
-and replay work while the compact Phase43 proof envelope is still verified; do
-not quote it as a faster FRI or cryptographic-verifier result.
-The `3x3` result is a cross-family transferability result, not a second
+This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a default-lane promotion.
+The replay-baseline breakdown now shows that the gap is distributed across repeated
+embedded-proof re-verification, source-chain commitment rebuild, per-step
+commitment rebuild, and manifest finalization; equality comparison is negligible.
+Do not quote it as a faster FRI or cryptographic-verifier result.
+The family result is a cross-family transferability result, not a second
 Tablero boundary.
 
 ## Source-of-truth documents

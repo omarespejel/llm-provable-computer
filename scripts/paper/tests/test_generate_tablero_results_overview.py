@@ -41,11 +41,28 @@ HEADERS = [
     "checked_frontier_step",
 ]
 
+CONSTANT_SURFACE_HEADERS = [
+    "benchmark_version",
+    "semantic_scope",
+    "family",
+    "checked_frontier_step",
+    "binding_serialized_bytes",
+]
+
 
 def write_rows(path: pathlib.Path, rows: list[dict[str, object]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, delimiter="\t", fieldnames=HEADERS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+def write_constant_surface_rows(path: pathlib.Path, rows: list[dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, delimiter="\t", fieldnames=CONSTANT_SURFACE_HEADERS)
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
@@ -68,22 +85,35 @@ def sample_rows() -> list[dict[str, object]]:
     ]
 
 
+def sample_constant_surface_rows() -> list[dict[str, object]]:
+    base = {
+        "benchmark_version": MOD.EXPECTED_CONSTANT_SURFACE_VERSION,
+        "semantic_scope": MOD.EXPECTED_CONSTANT_SURFACE_SCOPE,
+    }
+    return [
+        {**base, "family": "default", "checked_frontier_step": 4, "binding_serialized_bytes": 6561},
+        {**base, "family": "2x2", "checked_frontier_step": 4, "binding_serialized_bytes": 6545},
+    ]
+
+
 class GenerateTableroResultsOverviewTests(unittest.TestCase):
     def test_generate_writes_expected_outputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             source = root / "source.tsv"
+            constant_surface = root / "constant.tsv"
             out_tsv = root / "out.tsv"
             out_json = root / "out.json"
             out_svg = root / "out.svg"
             write_rows(source, sample_rows())
-            MOD.generate(source, out_tsv, out_json, out_svg)
+            write_constant_surface_rows(constant_surface, sample_constant_surface_rows())
+            MOD.generate(source, constant_surface, out_tsv, out_json, out_svg)
             self.assertTrue(out_tsv.exists())
             self.assertTrue(out_json.exists())
             self.assertTrue(out_svg.exists())
             summary = json.loads(out_json.read_text(encoding="utf-8"))
-            self.assertEqual(summary["artifact_size_band_bytes"]["min"], 6450)
-            self.assertEqual(summary["artifact_size_band_bytes"]["max"], 6600)
+            self.assertEqual(summary["artifact_size_band_bytes"]["min"], 6545)
+            self.assertEqual(summary["artifact_size_band_bytes"]["max"], 6561)
             self.assertEqual(len(summary["families"]), 2)
             self.assertIn("Replay-avoidance", out_svg.read_text(encoding="utf-8"))
 
@@ -91,11 +121,13 @@ class GenerateTableroResultsOverviewTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             source = root / "source.tsv"
+            constant_surface = root / "constant.tsv"
             rows = sample_rows()
             rows[1]["checked_frontier_step"] = 8
             write_rows(source, rows)
+            write_constant_surface_rows(constant_surface, sample_constant_surface_rows())
             with self.assertRaises(SystemExit) as ctx:
-                MOD.generate(source, root / "out.tsv", root / "out.json", root / "out.svg")
+                MOD.generate(source, constant_surface, root / "out.tsv", root / "out.json", root / "out.svg")
             self.assertIn("frontier", str(ctx.exception))
 
 

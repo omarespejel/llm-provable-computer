@@ -1,62 +1,62 @@
 {
   "artifact_size_band_bytes": {
-    "max": 156614,
-    "min": 127787
+    "max": 6561,
+    "min": 6313
   },
   "families": [
     {
-      "binding_only_ms": 5.116,
+      "binding_only_ms": 4.955,
+      "binding_serialized_bytes": 6545,
       "checked_frontier": 1024,
-      "compact_only_ms": 2.35,
+      "compact_only_ms": 1.853,
       "family": "2x2",
       "family_label": "2x2 layout",
       "first_checked_step": 2,
-      "first_ratio": 17.795,
-      "frontier_ratio": 925.097,
-      "ratio_growth": 51.986,
-      "replay_only_ms": 8996.324,
-      "replay_verify_ms": 10299.11,
+      "first_ratio": 17.377,
+      "frontier_ratio": 917.772,
+      "ratio_growth": 52.815,
+      "replay_only_ms": 7425.407,
+      "replay_verify_ms": 7453.229,
       "timing_mode": "measured_median",
       "timing_policy": "median_of_5_runs_from_microsecond_capture",
       "timing_runs": 5,
-      "typed_serialized_bytes": 156308,
-      "typed_verify_ms": 11.133
+      "typed_verify_ms": 8.121
     },
     {
-      "binding_only_ms": 79.561,
+      "binding_only_ms": 1.917,
+      "binding_serialized_bytes": 6313,
       "checked_frontier": 256,
-      "compact_only_ms": 26.649,
+      "compact_only_ms": 0.999,
       "family": "3x3",
       "family_label": "3x3 layout",
       "first_checked_step": 2,
-      "first_ratio": 19.164,
-      "frontier_ratio": 250.585,
-      "ratio_growth": 13.076,
-      "replay_only_ms": 32233.963,
-      "replay_verify_ms": 31511.802,
+      "first_ratio": 18.459,
+      "frontier_ratio": 582.845,
+      "ratio_growth": 31.575,
+      "replay_only_ms": 2012.066,
+      "replay_verify_ms": 2012.564,
       "timing_mode": "measured_median",
       "timing_policy": "median_of_5_runs_from_microsecond_capture",
       "timing_runs": 5,
-      "typed_serialized_bytes": 127787,
-      "typed_verify_ms": 125.753
+      "typed_verify_ms": 3.453
     },
     {
-      "binding_only_ms": 277.236,
+      "binding_only_ms": 5.013,
+      "binding_serialized_bytes": 6561,
       "checked_frontier": 1024,
-      "compact_only_ms": 77.942,
+      "compact_only_ms": 1.86,
       "family": "default",
       "family_label": "Default layout",
       "first_checked_step": 2,
-      "first_ratio": 21.312,
-      "frontier_ratio": 312.33,
-      "ratio_growth": 14.655,
-      "replay_only_ms": 137423.421,
-      "replay_verify_ms": 133430.237,
+      "first_ratio": 20.41,
+      "frontier_ratio": 1066.559,
+      "ratio_growth": 52.257,
+      "replay_only_ms": 8605.677,
+      "replay_verify_ms": 8671.126,
       "timing_mode": "measured_median",
       "timing_policy": "median_of_5_runs_from_microsecond_capture",
       "timing_runs": 5,
-      "typed_serialized_bytes": 156614,
-      "typed_verify_ms": 427.209
+      "typed_verify_ms": 8.13
     }
   ],
   "interpretation": [
@@ -70,43 +70,43 @@
       "family_label": "2x2 layout",
       "points": [
         {
-          "ratio": 17.795,
+          "ratio": 17.377,
           "steps": 2
         },
         {
-          "ratio": 27.399,
+          "ratio": 31.42,
           "steps": 4
         },
         {
-          "ratio": 58.714,
+          "ratio": 57.94,
           "steps": 8
         },
         {
-          "ratio": 108.569,
+          "ratio": 103.671,
           "steps": 16
         },
         {
-          "ratio": 175.994,
+          "ratio": 175.731,
           "steps": 32
         },
         {
-          "ratio": 307.645,
+          "ratio": 285.863,
           "steps": 64
         },
         {
-          "ratio": 481.213,
+          "ratio": 414.145,
           "steps": 128
         },
         {
-          "ratio": 546.511,
+          "ratio": 526.898,
           "steps": 256
         },
         {
-          "ratio": 711.002,
+          "ratio": 634.306,
           "steps": 512
         },
         {
-          "ratio": 925.097,
+          "ratio": 917.772,
           "steps": 1024
         }
       ]
@@ -116,35 +116,35 @@
       "family_label": "3x3 layout",
       "points": [
         {
-          "ratio": 19.164,
+          "ratio": 18.459,
           "steps": 2
         },
         {
-          "ratio": 31.227,
+          "ratio": 33.413,
           "steps": 4
         },
         {
-          "ratio": 48.514,
+          "ratio": 61.147,
           "steps": 8
         },
         {
-          "ratio": 92.817,
+          "ratio": 112.126,
           "steps": 16
         },
         {
-          "ratio": 139.005,
+          "ratio": 187.9,
           "steps": 32
         },
         {
-          "ratio": 183.875,
+          "ratio": 296.305,
           "steps": 64
         },
         {
-          "ratio": 225.716,
+          "ratio": 439.313,
           "steps": 128
         },
         {
-          "ratio": 250.585,
+          "ratio": 582.845,
           "steps": 256
         }
       ]
@@ -154,43 +154,43 @@
       "family_label": "Default layout",
       "points": [
         {
-          "ratio": 21.312,
+          "ratio": 20.41,
           "steps": 2
         },
         {
-          "ratio": 36.022,
+          "ratio": 36.096,
           "steps": 4
         },
         {
-          "ratio": 63.545,
+          "ratio": 66.891,
           "steps": 8
         },
         {
-          "ratio": 101.766,
+          "ratio": 117.321,
           "steps": 16
         },
         {
-          "ratio": 149.827,
+          "ratio": 207.493,
           "steps": 32
         },
         {
-          "ratio": 202.15,
+          "ratio": 334.434,
           "steps": 64
         },
         {
-          "ratio": 246.234,
+          "ratio": 480.595,
           "steps": 128
         },
         {
-          "ratio": 275.707,
+          "ratio": 638.925,
           "steps": 256
         },
         {
-          "ratio": 289.667,
+          "ratio": 742.855,
           "steps": 512
         },
         {
-          "ratio": 312.33,
+          "ratio": 1066.559,
           "steps": 1024
         }
       ]

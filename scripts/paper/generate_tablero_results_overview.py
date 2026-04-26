@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE_TSV = (
     ROOT / "docs" / "engineering" / "evidence" / "phase44d-carry-aware-experimental-family-matrix-2026-04.tsv"
 )
+DEFAULT_CONSTANT_SURFACE_TSV = (
+    ROOT / "docs" / "engineering" / "evidence" / "phase44d-carry-aware-family-constant-surface-2026-04.tsv"
+)
 DEFAULT_OUT_TSV = ROOT / "docs" / "paper" / "evidence" / "tablero-results-overview-2026-04.tsv"
 DEFAULT_OUT_JSON = ROOT / "docs" / "paper" / "evidence" / "tablero-results-overview-2026-04.json"
 DEFAULT_OUT_SVG = ROOT / "docs" / "paper" / "figures" / "tablero-results-overview-2026-04.svg"
@@ -41,6 +44,15 @@ REQUIRED_COLUMNS = {
 }
 EXPECTED_VERSION = "phase44d-carry-aware-experimental-family-matrix-v1"
 EXPECTED_SCOPE = "phase44d_typed_source_emission_boundary_layout_family_transferability_map"
+CONSTANT_SURFACE_REQUIRED_COLUMNS = {
+    "benchmark_version",
+    "semantic_scope",
+    "family",
+    "checked_frontier_step",
+    "binding_serialized_bytes",
+}
+EXPECTED_CONSTANT_SURFACE_VERSION = "phase44d-carry-aware-family-constant-surface-v1"
+EXPECTED_CONSTANT_SURFACE_SCOPE = "phase44d_carry_aware_layout_family_constant_surface_explanation"
 
 COLORS = {
     "default": "#1D4ED8",
@@ -66,11 +78,28 @@ class SourceRow:
     timing_runs: int
 
 
+@dataclass(frozen=True)
+class ConstantSurfaceRow:
+    family: str
+    checked_frontier_step: int
+    binding_serialized_bytes: int
+
+
 def read_rows(path: Path) -> List[dict[str, str]]:
     with path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         actual = set(reader.fieldnames or [])
         missing = sorted(REQUIRED_COLUMNS - actual)
+        if missing:
+            raise SystemExit(f"{path} missing required TSV columns: {missing}")
+        return list(reader)
+
+
+def read_constant_surface_rows(path: Path) -> List[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        actual = set(reader.fieldnames or [])
+        missing = sorted(CONSTANT_SURFACE_REQUIRED_COLUMNS - actual)
         if missing:
             raise SystemExit(f"{path} missing required TSV columns: {missing}")
         return list(reader)
@@ -155,7 +184,41 @@ def validate_and_parse(rows: List[dict[str, str]], *, source: Path) -> List[Sour
     return parsed
 
 
-def build_overview(rows: List[SourceRow]) -> dict[str, object]:
+def validate_constant_surface_rows(
+    rows: List[dict[str, str]], *, source: Path, matrix_rows: List[SourceRow]
+) -> Dict[str, ConstantSurfaceRow]:
+    parsed: Dict[str, ConstantSurfaceRow] = {}
+    expected_frontiers = {row.family: row.checked_frontier_step for row in matrix_rows if row.steps == row.checked_frontier_step}
+    for row in rows:
+        if row["benchmark_version"] != EXPECTED_CONSTANT_SURFACE_VERSION:
+            raise SystemExit(f"unexpected benchmark_version in {source}: {row['benchmark_version']}")
+        if row["semantic_scope"] != EXPECTED_CONSTANT_SURFACE_SCOPE:
+            raise SystemExit(f"unexpected semantic_scope in {source}: {row['semantic_scope']}")
+        item = ConstantSurfaceRow(
+            family=row["family"].strip(),
+            checked_frontier_step=parse_int(row["checked_frontier_step"], label="checked_frontier_step"),
+            binding_serialized_bytes=parse_int(
+                row["binding_serialized_bytes"], label="binding_serialized_bytes"
+            ),
+        )
+        if item.family in parsed:
+            raise SystemExit(f"duplicate family in {source}: {item.family}")
+        parsed[item.family] = item
+
+    if set(parsed) != set(expected_frontiers):
+        raise SystemExit(
+            f"constant-surface families {sorted(parsed)} do not match family-matrix families {sorted(expected_frontiers)}"
+        )
+    for family, frontier in expected_frontiers.items():
+        if parsed[family].checked_frontier_step != frontier:
+            raise SystemExit(
+                f"constant-surface frontier mismatch for {family}: "
+                f"{parsed[family].checked_frontier_step} vs {frontier}"
+            )
+    return parsed
+
+
+def build_overview(rows: List[SourceRow], binding_rows: Dict[str, ConstantSurfaceRow]) -> dict[str, object]:
     by_family: Dict[str, List[SourceRow]] = {}
     for row in rows:
         by_family.setdefault(row.family, []).append(row)
@@ -168,7 +231,8 @@ def build_overview(rows: List[SourceRow]) -> dict[str, object]:
     for family, family_rows in sorted(by_family.items(), key=lambda item: item[0]):
         first = family_rows[0]
         frontier = family_rows[-1]
-        frontier_bytes.append(frontier.typed_serialized_bytes)
+        binding = binding_rows[family]
+        frontier_bytes.append(binding.binding_serialized_bytes)
         overview_rows.append(
             {
                 "family": family,
@@ -183,7 +247,7 @@ def build_overview(rows: List[SourceRow]) -> dict[str, object]:
                 "compact_only_ms": round(frontier.compact_only_verify_ms, 3),
                 "binding_only_ms": round(frontier.boundary_binding_only_verify_ms, 3),
                 "replay_only_ms": round(frontier.manifest_replay_only_verify_ms, 3),
-                "typed_serialized_bytes": frontier.typed_serialized_bytes,
+                "binding_serialized_bytes": binding.binding_serialized_bytes,
                 "timing_mode": frontier.timing_mode,
                 "timing_policy": frontier.timing_policy,
                 "timing_runs": frontier.timing_runs,
@@ -231,13 +295,13 @@ def write_tsv(path: Path, summary: dict[str, object]) -> None:
         "compact_only_ms",
         "binding_only_ms",
         "replay_only_ms",
-        "typed_serialized_bytes",
+        "binding_serialized_bytes",
         "timing_mode",
         "timing_policy",
         "timing_runs",
     ]
     with path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, delimiter="\t", fieldnames=fields)
+        writer = csv.DictWriter(fh, delimiter="\t", fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for row in summary["families"]:
             writer.writerow(row)
@@ -288,7 +352,7 @@ def render_svg(path: Path, summary: dict[str, object]) -> None:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#F8FAFC" />',
         render_text(width / 2, 60, 'Tablero Results Overview', size=32, weight='700'),
-        render_text(width / 2, 95, 'Growing replay-avoidance curves across checked families, with a near-constant frontier artifact-size band.', size=16, fill='#334155'),
+        render_text(width / 2, 95, 'Growing replay-avoidance curves across checked families, with a near-constant frontier binding-object size band.', size=16, fill='#334155'),
         '<rect x="60" y="120" width="1680" height="470" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />',
         render_text(520, 150, 'Replay-avoidance ratio vs checked input length', size=20, weight='700'),
         '<line x1="90" y1="170" x2="90" y2="590" stroke="#94A3B8" stroke-width="1.5" />',
@@ -336,7 +400,7 @@ def render_svg(path: Path, summary: dict[str, object]) -> None:
         parts.append(render_text(1510, row_y - 10, f"{row['frontier_ratio']:.1f}x", size=15, weight='700'))
         parts.append(render_text(1650, row_y - 10, f"{row['typed_verify_ms']:.3f} ms", size=15))
         parts.append(render_text(1110, row_y + 14, f"Replay baseline {row['replay_verify_ms']:.3f} ms", size=13, anchor='start', fill='#475569'))
-        parts.append(render_text(1410, row_y + 14, f"Boundary bytes {row['typed_serialized_bytes']:,}", size=13, anchor='start', fill='#475569'))
+        parts.append(render_text(1410, row_y + 14, f"Binding bytes {row['binding_serialized_bytes']:,}", size=13, anchor='start', fill='#475569'))
         row_y += 92
 
     band = summary['artifact_size_band_bytes']
@@ -344,20 +408,31 @@ def render_svg(path: Path, summary: dict[str, object]) -> None:
         '<rect x="60" y="630" width="1680" height="390" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />',
         render_text(900, 670, 'How to read the result', size=22, weight='700'),
         render_text(120, 730, '1. The main result is the curve shape: every checked family shows a replay-avoidance ratio that grows with input length.', size=16, anchor='start', fill='#334155'),
-        render_text(120, 770, f"2. Frontier boundary artifact size stays in a narrow band: {band['min']:,} to {band['max']:,} bytes.", size=16, anchor='start', fill='#334155'),
-        render_text(120, 810, '3. Boundary verify cost is not family-constant; the artifact size is the near-constant property.', size=16, anchor='start', fill='#334155'),
+        render_text(120, 770, f"2. Frontier boundary-object size stays in a narrow band: {band['min']:,} to {band['max']:,} bytes.", size=16, anchor='start', fill='#334155'),
+        render_text(120, 810, '3. Boundary verify cost is not family-constant; the near-constant property is the binding-object size.', size=16, anchor='start', fill='#334155'),
         render_text(120, 850, '4. Large ratios come from removing verifier-side replay work in the current implementation, not from faster FRI.', size=16, anchor='start', fill='#334155'),
         render_text(120, 890, '5. The strongest claim is replay replacement with preserved statement scope, not a universal speedup story.', size=16, anchor='start', fill='#334155'),
-        render_text(120, 955, 'Checked evidence source: machine-readable family-matrix benchmark with median-of-five timings.', size=15, anchor='start', fill='#475569'),
+        render_text(120, 955, 'Checked evidence source: family-matrix timings plus constant-surface frontier binding bytes, all under median-of-five timing policy.', size=15, anchor='start', fill='#475569'),
     ])
     parts.append('</svg>')
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(parts) + "\n", encoding="utf-8")
 
 
-def generate(source_tsv: Path, out_tsv: Path, out_json: Path, out_svg: Path) -> None:
+def generate(
+    source_tsv: Path,
+    constant_surface_tsv: Path,
+    out_tsv: Path,
+    out_json: Path,
+    out_svg: Path,
+) -> None:
     rows = validate_and_parse(read_rows(source_tsv), source=source_tsv)
-    summary = build_overview(rows)
+    binding_rows = validate_constant_surface_rows(
+        read_constant_surface_rows(constant_surface_tsv),
+        source=constant_surface_tsv,
+        matrix_rows=rows,
+    )
+    summary = build_overview(rows, binding_rows)
     write_tsv(out_tsv, summary)
     write_json(out_json, summary)
     render_svg(out_svg, summary)
@@ -366,11 +441,18 @@ def generate(source_tsv: Path, out_tsv: Path, out_json: Path, out_svg: Path) -> 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-tsv", type=Path, default=DEFAULT_SOURCE_TSV)
+    parser.add_argument("--constant-surface-tsv", type=Path, default=DEFAULT_CONSTANT_SURFACE_TSV)
     parser.add_argument("--out-tsv", type=Path, default=DEFAULT_OUT_TSV)
     parser.add_argument("--out-json", type=Path, default=DEFAULT_OUT_JSON)
     parser.add_argument("--out-svg", type=Path, default=DEFAULT_OUT_SVG)
     args = parser.parse_args()
-    generate(args.source_tsv, args.out_tsv, args.out_json, args.out_svg)
+    generate(
+        args.source_tsv,
+        args.constant_surface_tsv,
+        args.out_tsv,
+        args.out_json,
+        args.out_svg,
+    )
     return 0
 
 

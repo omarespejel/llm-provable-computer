@@ -17,10 +17,12 @@ We study the pattern in one transformer-shaped STARK-zkML laboratory. Across thr
 checked layout families, the same typed-boundary mechanism exhibits a growing replay-
 avoidance curve: the typed verifier path stays comparatively small while the replay
 baseline grows sharply with input length. At the checked frontiers, the replay-avoidance
-ratio ranges from `250.6x` to `925.1x`, with the dominant avoided cost coming from the
-verifier-side replay path itself rather than faster cryptographic verification. The
-paper also includes a bounded negative result showing that the pattern does not apply
-honestly when the source side emits too little proof-native material or when the
-candidate replay surface is already cheap. The contribution is therefore a reusable
-verifier-boundary pattern, a statement-preservation criterion for deploying it safely,
-and an empirical study of when replay elimination materially changes verifier latency.
+ratio ranges from `582.8x` to `1066.6x`, and a replay-baseline breakdown shows that the
+avoided work is distributed across repeated embedded-proof re-verification,
+source-chain commitment rebuilds, per-step commitment rebuilds, and manifest
+finalization rather than one dominant equality check. The paper also includes a
+bounded negative result showing that the pattern does not apply honestly when the
+source side emits too little proof-native material or when the candidate replay
+surface is already cheap. The contribution is therefore a reusable verifier-boundary
+pattern, a statement-preservation criterion for deploying it safely, and an empirical
+study of when replay elimination materially changes verifier latency.

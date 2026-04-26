@@ -325,14 +325,14 @@ reproduces across three layout families with the same growing-in-`N` shape.
 
 | Family | Checked frontier | Replay-avoidance ratio at frontier | Typed-boundary verify | Replay baseline verify |
 | --- | ---: | ---: | ---: | ---: |
-| default | `1024` | `312.3x` | `427.209 ms` | `133,430.237 ms` |
-| `2x2` | `1024` | `925.1x` | `11.133 ms` | `10,299.110 ms` |
-| `3x3` | `256` | `250.6x` | `125.753 ms` | `31,511.802 ms` |
+| default | `1024` | `1066.6x` | `8.130 ms` | `8,671.126 ms` |
+| `2x2` | `1024` | `917.8x` | `8.121 ms` | `7,453.229 ms` |
+| `3x3` | `256` | `582.8x` | `3.453 ms` | `2,012.564 ms` |
 
 This is the strongest empirical claim the current paper should make.
 
 - The mechanism survives all three checked families.
-- The constants differ sharply.
+- The constants still differ materially.
 - The ratio grows with `N` on every checked family.
 
 That means the typed boundary is removing a linearly growing replay surface rather than
@@ -366,25 +366,30 @@ not show family-invariant verifier cost.
 The large ratios are easy to misread if we only quote the frontier numbers. The causal
 breakdown shows where the baseline actually spends time.
 
-#### Table 2. Frontier causal decomposition
+#### Table 2. Replay baseline decomposition at the checked frontier
 
-| Family | Compact proof only | Boundary binding only | Replay only |
-| --- | ---: | ---: | ---: |
-| default (`1024`) | `77.942 ms` | `277.236 ms` | `137,423.421 ms` |
-| `2x2` (`1024`) | `2.350 ms` | `5.116 ms` | `8,996.324 ms` |
-| `3x3` (`256`) | `26.649 ms` | `79.561 ms` | `32,233.963 ms` |
+| Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default (`1024`) | `2,183.233 ms` | `2,276.207 ms` | `2,261.602 ms` | `1,892.473 ms` | `0.063 ms` | `8,616.310 ms` |
+| `2x2` (`1024`) | `1,571.778 ms` | `2,042.833 ms` | `2,047.557 ms` | `1,697.322 ms` | `0.083 ms` | `7,361.383 ms` |
+| `3x3` (`256`) | `457.754 ms` | `534.562 ms` | `531.405 ms` | `442.385 ms` | `0.028 ms` | `1,971.227 ms` |
 
-This is the main empirical lesson:
+This is the stronger causal lesson:
 
-- the compact proof stays relatively small,
-- the typed boundary binding stays much smaller than the replay baseline, and
-- the replay baseline dominates because it performs ordered canonical serialization,
-  hashing, and manifest reconstruction work that the typed boundary removes from the
-  verifier path.
+- the replay baseline is not one monolithic serialization bottleneck,
+- proof re-verification, source-chain commitment rebuild, per-step commitment rebuild,
+  and manifest finalization each consume a comparable share of replay time, and
+- the final equality comparison is negligible.
 
-So a `925x` ratio is not a claim that STARK verification itself became `925x` faster.
-It is a claim that the current verifier-side replay surface became unnecessary once the
-same public facts were carried by a typed, commitment-bound boundary object.
+![Replay baseline breakdown across checked families](figures/tablero-replay-baseline-breakdown-2026-04.svg)
+
+**Figure 2.** At the checked frontiers, replay time is spread across repeated proof
+checks and commitment rebuilds rather than one dominant final comparison.
+
+At the same frontiers, compact-proof verification stays between `0.999 ms` and
+`1.860 ms`, and typed-boundary binding stays between `1.917 ms` and `5.013 ms`.
+The verifier gap therefore comes from removing a bundle of repeated replay work, not
+from accelerating cryptographic verification itself.
 
 ### 6.5 Bounded negative result
 

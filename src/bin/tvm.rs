@@ -111,6 +111,8 @@ use llm_provable_computer::{
     run_stwo_phase44d_source_emission_experimental_benchmark,
     run_stwo_phase44d_source_emission_experimental_benchmark_for_steps,
     run_stwo_phase44d_source_emission_experimental_benchmark_with_options,
+    run_stwo_tablero_replay_breakdown_benchmark,
+    run_stwo_tablero_replay_breakdown_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_for_steps,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
@@ -143,6 +145,8 @@ use llm_provable_computer::{
     save_stwo_phase44d_rescaled_exploratory_benchmark_report_tsv,
     save_stwo_phase44d_source_emission_benchmark_report_json,
     save_stwo_phase44d_source_emission_benchmark_report_tsv,
+    save_stwo_tablero_replay_breakdown_report_json,
+    save_stwo_tablero_replay_breakdown_report_tsv,
     save_stwo_phase71_handoff_receipt_benchmark_report_json,
     save_stwo_phase71_handoff_receipt_benchmark_report_tsv,
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
@@ -595,6 +599,20 @@ enum Command {
         /// Optional comma-delimited step counts. Defaults to the 2x2 exploratory sweep.
         #[arg(long = "step-counts", value_delimiter = ',', num_args = 1..)]
         step_counts: Vec<usize>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Decompose the replay baseline across the checked Tablero layout families.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    #[command(name = "bench-stwo-tablero-replay-breakdown")]
+    BenchStwoTableroReplayBreakdown {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
         /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
@@ -2159,6 +2177,15 @@ fn run() -> llm_provable_computer::Result<()> {
             &output_tsv,
             output_json.as_deref(),
             &step_counts,
+            capture_timings,
+        )?,
+        Command::BenchStwoTableroReplayBreakdown {
+            output_tsv,
+            output_json,
+            capture_timings,
+        } => bench_stwo_tablero_replay_breakdown_command(
+            &output_tsv,
+            output_json.as_deref(),
             capture_timings,
         )?,
         Command::BenchStwoPhase12ArithmeticBudgetMap {
@@ -3980,6 +4007,69 @@ fn bench_stwo_phase44d_source_emission_experimental_2x2_reuse_command(
                 row.serialized_bytes,
                 row.emit_ms,
                 row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_tablero_replay_breakdown_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Tablero replay breakdown benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Tablero replay breakdown benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if capture_timings {
+            run_stwo_tablero_replay_breakdown_benchmark_with_options(true)?
+        } else {
+            run_stwo_tablero_replay_breakdown_benchmark()?
+        };
+        save_stwo_tablero_replay_breakdown_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_tablero_replay_breakdown_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "tablero_replay_breakdown: family={} steps={} replay_total_ms={} proof_reverify_ms={} source_chain_commitment_ms={} step_proof_commitment_ms={} manifest_finalize_ms={} equality_check_ms={} verified={}",
+                row.family,
+                row.steps,
+                row.replay_total_ms,
+                row.embedded_proof_reverify_ms,
+                row.source_chain_commitment_ms,
+                row.step_proof_commitment_ms,
+                row.manifest_finalize_ms,
+                row.equality_check_ms,
                 row.verified
             );
         }
@@ -15608,6 +15698,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-phase44d-source-emission-experimental-reuse"
                 | "bench-stwo-phase44d-source-emission-experimental-2x2-reuse"
                 | "bench-stwo-phase44d-source-emission-experimental-3x3-reuse"
+                | "bench-stwo-tablero-replay-breakdown"
                 | "bench-stwo-phase12-arithmetic-budget-map"
                 | "bench-stwo-phase44d-rescaled-exploratory"
                 | "bench-stwo-phase71-handoff-receipt-reuse"

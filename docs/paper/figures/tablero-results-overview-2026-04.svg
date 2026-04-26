@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
 <rect width="100%" height="100%" fill="#F8FAFC" />
 <text x="900.0" y="60.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="32" font-weight="700" fill="#0F172A">Tablero Results Overview</text>
-<text x="900.0" y="95.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">Growing replay-avoidance curves across checked families, with a near-constant frontier artifact-size band.</text>
+<text x="900.0" y="95.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">Growing replay-avoidance curves across checked families, with a near-constant frontier binding-object size band.</text>
 <rect x="60" y="120" width="1680" height="470" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />
 <text x="520.0" y="150.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="700" fill="#0F172A">Replay-avoidance ratio vs checked input length</text>
 <line x1="90" y1="170" x2="90" y2="590" stroke="#94A3B8" stroke-width="1.5" />
 <line x1="90" y1="590" x2="1010" y2="590" stroke="#94A3B8" stroke-width="1.5" />
 <line x1="90" y1="590.0" x2="1010" y2="590.0" stroke="#E2E8F0" stroke-width="1" />
-<text x="78.0" y="595.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">18x</text>
+<text x="78.0" y="595.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">17x</text>
 <line x1="90" y1="485.0" x2="1010" y2="485.0" stroke="#E2E8F0" stroke-width="1" />
-<text x="78.0" y="490.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">245x</text>
+<text x="78.0" y="490.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">280x</text>
 <line x1="90" y1="380.0" x2="1010" y2="380.0" stroke="#E2E8F0" stroke-width="1" />
-<text x="78.0" y="385.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">471x</text>
+<text x="78.0" y="385.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">542x</text>
 <line x1="90" y1="275.0" x2="1010" y2="275.0" stroke="#E2E8F0" stroke-width="1" />
-<text x="78.0" y="280.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">698x</text>
+<text x="78.0" y="280.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">804x</text>
 <line x1="90" y1="170.0" x2="1010" y2="170.0" stroke="#E2E8F0" stroke-width="1" />
-<text x="78.0" y="175.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">925x</text>
+<text x="78.0" y="175.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">1067x</text>
 <line x1="90.0" y1="590" x2="90.0" y2="598" stroke="#64748B" stroke-width="1.5" />
 <text x="90.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">2</text>
 <line x1="192.2" y1="590" x2="192.2" y2="598" stroke="#64748B" stroke-width="1.5" />
@@ -38,41 +38,41 @@
 <text x="1010.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">1024</text>
 <text x="550.0" y="650.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Checked input length</text>
 <text x="20.0" y="380.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Replay ratio</text>
-<polyline fill="none" stroke="#059669" stroke-width="4" points="90.0,590.0 192.2,585.6 294.4,571.1 396.7,548.0 498.9,516.8 601.1,455.8 703.3,375.5 805.6,345.3 907.8,269.1 1010.0,170.0" />
+<polyline fill="none" stroke="#059669" stroke-width="4" points="90.0,590.0 192.2,584.4 294.4,573.8 396.7,555.5 498.9,526.6 601.1,482.5 703.3,431.2 805.6,386.0 907.8,343.0 1010.0,229.6" />
 <circle cx="90.0" cy="590.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="192.2" cy="585.6" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="294.4" cy="571.1" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="396.7" cy="548.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="498.9" cy="516.8" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="601.1" cy="455.8" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="703.3" cy="375.5" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="805.6" cy="345.3" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="907.8" cy="269.1" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="1010.0" cy="170.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="584.4" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="573.8" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="555.5" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="526.6" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="482.5" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="431.2" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="386.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="907.8" cy="343.0" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="1010.0" cy="229.6" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
 <line x1="120" y1="545" x2="148" y2="545" stroke="#059669" stroke-width="4" />
 <text x="160.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">2x2 layout</text>
-<polyline fill="none" stroke="#D97706" stroke-width="4" points="90.0,589.4 192.2,583.8 294.4,575.8 396.7,555.3 498.9,533.9 601.1,513.1 703.3,493.8 805.6,482.2" />
-<circle cx="90.0" cy="589.4" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="192.2" cy="583.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="294.4" cy="575.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="396.7" cy="555.3" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="498.9" cy="533.9" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="601.1" cy="513.1" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="703.3" cy="493.8" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="805.6" cy="482.2" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<polyline fill="none" stroke="#D97706" stroke-width="4" points="90.0,589.6 192.2,583.6 294.4,572.5 396.7,552.1 498.9,521.7 601.1,478.3 703.3,421.1 805.6,363.6" />
+<circle cx="90.0" cy="589.6" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="583.6" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="572.5" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="552.1" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="521.7" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="478.3" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="421.1" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="363.6" r="5.5" fill="#D97706" stroke="#ffffff" stroke-width="1.5" />
 <line x1="340" y1="545" x2="368" y2="545" stroke="#D97706" stroke-width="4" />
 <text x="380.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">3x3 layout</text>
-<polyline fill="none" stroke="#1D4ED8" stroke-width="4" points="90.0,588.4 192.2,581.6 294.4,568.8 396.7,551.1 498.9,528.9 601.1,504.7 703.3,484.3 805.6,470.6 907.8,464.1 1010.0,453.7" />
-<circle cx="90.0" cy="588.4" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="192.2" cy="581.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="294.4" cy="568.8" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="396.7" cy="551.1" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="498.9" cy="528.9" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="601.1" cy="504.7" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="703.3" cy="484.3" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="805.6" cy="470.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="907.8" cy="464.1" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
-<circle cx="1010.0" cy="453.7" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<polyline fill="none" stroke="#1D4ED8" stroke-width="4" points="90.0,588.8 192.2,582.5 294.4,570.2 396.7,550.0 498.9,513.9 601.1,463.1 703.3,404.6 805.6,341.2 907.8,299.6 1010.0,170.0" />
+<circle cx="90.0" cy="588.8" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="192.2" cy="582.5" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="294.4" cy="570.2" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="396.7" cy="550.0" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="498.9" cy="513.9" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="601.1" cy="463.1" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="703.3" cy="404.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="805.6" cy="341.2" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="907.8" cy="299.6" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
+<circle cx="1010.0" cy="170.0" r="5.5" fill="#1D4ED8" stroke="#ffffff" stroke-width="1.5" />
 <line x1="560" y1="545" x2="588" y2="545" stroke="#1D4ED8" stroke-width="4" />
 <text x="600.0" y="550.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="14" font-weight="400" fill="#334155">Default layout</text>
 <text x="1390.0" y="150.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="700" fill="#0F172A">Frontier summary</text>
@@ -84,30 +84,30 @@
 <rect x="1085" y="240" width="10" height="10" rx="2" fill="#059669" />
 <text x="1110.0" y="250.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">2x2 layout</text>
 <text x="1340.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">1024</text>
-<text x="1510.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">925.1x</text>
-<text x="1650.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">11.133 ms</text>
-<text x="1110.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 10299.110 ms</text>
-<text x="1410.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 156,308</text>
+<text x="1510.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">917.8x</text>
+<text x="1650.0" y="250.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">8.121 ms</text>
+<text x="1110.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 7453.229 ms</text>
+<text x="1410.0" y="274.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Binding bytes 6,545</text>
 <rect x="1085" y="332" width="10" height="10" rx="2" fill="#D97706" />
 <text x="1110.0" y="342.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">3x3 layout</text>
 <text x="1340.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">256</text>
-<text x="1510.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">250.6x</text>
-<text x="1650.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">125.753 ms</text>
-<text x="1110.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 31511.802 ms</text>
-<text x="1410.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 127,787</text>
+<text x="1510.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">582.8x</text>
+<text x="1650.0" y="342.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">3.453 ms</text>
+<text x="1110.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 2012.564 ms</text>
+<text x="1410.0" y="366.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Binding bytes 6,313</text>
 <rect x="1085" y="424" width="10" height="10" rx="2" fill="#1D4ED8" />
 <text x="1110.0" y="434.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">Default layout</text>
 <text x="1340.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">1024</text>
-<text x="1510.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">312.3x</text>
-<text x="1650.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">427.209 ms</text>
-<text x="1110.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 133430.237 ms</text>
-<text x="1410.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Boundary bytes 156,614</text>
+<text x="1510.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="700" fill="#0F172A">1066.6x</text>
+<text x="1650.0" y="434.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#0F172A">8.130 ms</text>
+<text x="1110.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Replay baseline 8671.126 ms</text>
+<text x="1410.0" y="458.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="13" font-weight="400" fill="#475569">Binding bytes 6,561</text>
 <rect x="60" y="630" width="1680" height="390" rx="22" fill="#FFFFFF" stroke="#CBD5E1" />
 <text x="900.0" y="670.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="700" fill="#0F172A">How to read the result</text>
 <text x="120.0" y="730.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">1. The main result is the curve shape: every checked family shows a replay-avoidance ratio that grows with input length.</text>
-<text x="120.0" y="770.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">2. Frontier boundary artifact size stays in a narrow band: 127,787 to 156,614 bytes.</text>
-<text x="120.0" y="810.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">3. Boundary verify cost is not family-constant; the artifact size is the near-constant property.</text>
+<text x="120.0" y="770.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">2. Frontier boundary-object size stays in a narrow band: 6,313 to 6,561 bytes.</text>
+<text x="120.0" y="810.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">3. Boundary verify cost is not family-constant; the near-constant property is the binding-object size.</text>
 <text x="120.0" y="850.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">4. Large ratios come from removing verifier-side replay work in the current implementation, not from faster FRI.</text>
 <text x="120.0" y="890.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="400" fill="#334155">5. The strongest claim is replay replacement with preserved statement scope, not a universal speedup story.</text>
-<text x="120.0" y="955.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#475569">Checked evidence source: machine-readable family-matrix benchmark with median-of-five timings.</text>
+<text x="120.0" y="955.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="15" font-weight="400" fill="#475569">Checked evidence source: family-matrix timings plus constant-surface frontier binding bytes, all under median-of-five timing policy.</text>
 </svg>

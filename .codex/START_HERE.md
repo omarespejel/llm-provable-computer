@@ -42,15 +42,14 @@ Do not collapse these two lanes into one claim.
 The experimental carry-aware lane now has two real higher-layer scaling results:
 
 - Phase44D typed source-chain public-output boundary reuse clears `2,4,8,16,32,64,128,256,512,1024`.
-- At `1024` steps, the typed Phase44D boundary plus compact proof verifies in `427.209 ms` versus `133430.237 ms` for the Phase30 replay baseline under the same experimental backend.
-- The latency gap is dominated by skipping Phase30 manifest JSON serialization, hashing, and replay work; do not describe it as a faster FRI or cryptographic verifier.
-- This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
-- The same Phase44D replay-avoidance mechanism now reproduces on the non-default `3x3` layout family through `2,4,8,16,32,64,128,256`.
-- At `256` steps on that `3x3` family, the typed boundary path verifies in `125.753 ms` versus `31511.802 ms` for the Phase30 replay baseline.
+- Under the corrected release-mode median-of-5 policy, the default checked frontier at `1024` steps now verifies in `8.130 ms` on the typed-boundary path versus `8671.126 ms` on the replay baseline.
+- The same checked policy gives `8.121 ms` versus `7453.229 ms` on the `2x2` family at `1024`, and `3.453 ms` versus `2012.564 ms` on the `3x3` family at `256`.
+- The replay-baseline breakdown now shows that the verifier gap is a bundle of repeated work: embedded-proof re-verification, source-chain commitment rebuild, per-step commitment rebuild, and manifest finalization. Equality comparison is negligible at the checked frontiers.
+- This evidence remains engineering-facing and is recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a default-lane promotion.
 - The main experimental fact is the growing-in-`N` curve shape across checked
   families, not any single frontier ratio: the typed boundary removes a
   linearly growing replay cost rather than merely shaving a constant factor.
-- Treat the `3x3` result as cross-family transferability evidence, not as a second Tablero boundary.
+- Treat the family result as cross-family transferability evidence, not as a second Tablero boundary.
 
 ## Current second-boundary read
 

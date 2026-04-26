@@ -84,12 +84,11 @@ This repository now has two live lanes.
   `measured_median`, evidence:
   `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`,
   `docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv`).
-- The family-matrix gate now records all three checked families together and
-  shows the strongest checked constants so far on the `2x2` family:
-  `925.097x` at `1024` steps, versus `312.330x` on the default family at the
-  same checked frontier (`phase44d-carry-aware-experimental-family-matrix-v1`,
-  `measured_median`, evidence:
-  `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`,
+- The family-matrix gate now records all three checked families together under a
+  corrected release-mode median-of-5 policy. The strongest checked frontier ratio is
+  now `1066.559x` on the default family at `1024` steps, with `917.772x` on the
+  `2x2` family at `1024` and `582.845x` on the `3x3` family at `256`
+  (`phase44d-carry-aware-experimental-family-matrix-v1`, `measured_median`, evidence:
   `docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.tsv`,
   `docs/engineering/figures/phase44d-carry-aware-experimental-family-matrix-2026-04.svg`,
   reproduce with `scripts/engineering/generate_phase44d_carry_aware_experimental_family_matrix.sh`).
@@ -102,16 +101,19 @@ This repository now has two live lanes.
   claiming backend transferability today because the carry-free Phase12 source
   family still cannot clear an honest proof-checked `4+` source chain, even
   under the bounded rescaling probe.
-- At `1024` steps, the experimental shared path records `427.209 ms` verification versus
-  `133430.237 ms` for the Phase30 replay baseline, with `156,614` bytes versus `1,464,721` bytes.
-- At `256` steps on the `3x3` family, the experimental shared path records
-  `125.753 ms` verification versus `31511.802 ms` for the Phase30 replay
-  baseline, with `127,787` bytes versus `450,773` bytes.
+- At `1024` steps, the default experimental shared path now records `8.130 ms`
+  verification versus `8671.126 ms` for the replay baseline, with a `6,561`-byte
+  boundary object.
+- At `1024` steps, the `2x2` family records `8.121 ms` versus `7453.229 ms`, with a
+  `6,545`-byte boundary object.
+- At `256` steps on the `3x3` family, the shared path records `3.453 ms` versus
+  `2012.564 ms`, with a `6,313`-byte boundary object.
 
 That result is real, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
-The latency gap is dominated by avoided Phase30 manifest JSON serialization,
-hashing, and replay work while the compact Phase43 proof envelope is still
-verified. Do not describe it as a faster FRI or cryptographic verifier.
+The replay-baseline breakdown now shows that the verifier gap is a bundle of repeated
+proof re-verification, source-chain commitment rebuild, per-step commitment rebuild,
+and manifest finalization. Equality comparison is negligible. Do not describe it as a
+faster FRI or cryptographic verifier.
 The strongest experimental takeaway is the curve shape across checked families:
 the replay-avoidance ratio keeps growing with `N`, which means the typed
 boundary is removing a linearly growing replay surface rather than merely

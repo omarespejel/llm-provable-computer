@@ -102,7 +102,7 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
   for run_index in $(seq 1 "$BENCH_RUNS"); do
     run_json="$RUN_DIR/run-$run_index.json"
     run_tsv="$RUN_DIR/run-$run_index.tsv"
-    cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
+    cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
       bench-stwo-phase44d-source-emission-experimental-reuse \
       --step-counts "$STEP_COUNTS" \
       --capture-timings \
@@ -116,7 +116,7 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
     --output-json "$TMP_JSON" \
     --output-tsv "$TMP_TSV"
 else
-  cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
+  cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
     bench-stwo-phase44d-source-emission-experimental-reuse \
     --step-counts "$STEP_COUNTS" \
     --output-tsv "$TMP_TSV" \
