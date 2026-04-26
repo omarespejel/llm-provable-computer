@@ -149,6 +149,27 @@ class AggregateTableroReplayBreakdownTests(unittest.TestCase):
                 float(row["replay_total_ms"]), sorted_totals[2], places=3
             )
 
+    def test_aggregation_metadata_advertises_representative_run_strategy(self):
+        totals_per_run = [
+            {"default": 8500.0},
+            {"default": 8662.094},
+            {"default": 9000.0},
+        ]
+        with TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            inputs = self.write_runs(tmp, totals_per_run)
+            payload = run_aggregator(inputs, tmp)
+            self.assertEqual(
+                payload["timing_aggregation_strategy"],
+                "median_total_representative_run",
+            )
+            tsv = (tmp / "out.tsv").read_text(encoding="utf-8")
+            header = tsv.splitlines()[0].split("\t")
+            self.assertIn("timing_aggregation_strategy", header)
+            data_row = tsv.splitlines()[1].split("\t")
+            strategy_index = header.index("timing_aggregation_strategy")
+            self.assertEqual(data_row[strategy_index], "median_total_representative_run")
+
 
 if __name__ == "__main__":
     unittest.main()

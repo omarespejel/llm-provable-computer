@@ -176,11 +176,13 @@ def main() -> None:
         aggregated_rows.append(aggregated)
 
     timing_policy = f"median_of_{len(args.inputs)}_runs_from_microsecond_capture"
+    timing_aggregation_strategy = "median_total_representative_run"
     output_payload = {
         "benchmark_version": benchmark_version,
         "semantic_scope": semantic_scope,
         "timing_mode": "measured_median",
         "timing_policy": timing_policy,
+        "timing_aggregation_strategy": timing_aggregation_strategy,
         "timing_unit": timing_unit,
         "timing_runs": len(args.inputs),
         "rows": aggregated_rows,
@@ -188,7 +190,7 @@ def main() -> None:
     args.output_json.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\trelation\tmanifest_serialized_bytes\treverified_proofs\tsource_chain_json_bytes\tstep_proof_json_bytes_total\treplay_total_ms\tembedded_proof_reverify_ms\tsource_chain_commitment_ms\tstep_proof_commitment_ms\tmanifest_finalize_ms\tequality_check_ms\tverified\tnote"
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_aggregation_strategy\ttiming_unit\ttiming_runs\tfamily\tsteps\trelation\tmanifest_serialized_bytes\treverified_proofs\tsource_chain_json_bytes\tstep_proof_json_bytes_total\treplay_total_ms\tembedded_proof_reverify_ms\tsource_chain_commitment_ms\tstep_proof_commitment_ms\tmanifest_finalize_ms\tequality_check_ms\tverified\tnote"
     ]
     for row in aggregated_rows:
         lines.append(
@@ -198,6 +200,7 @@ def main() -> None:
                     str(semantic_scope),
                     "measured_median",
                     timing_policy,
+                    timing_aggregation_strategy,
                     str(timing_unit),
                     str(len(args.inputs)),
                     row["family"],
