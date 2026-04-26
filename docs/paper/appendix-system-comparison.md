@@ -1,50 +1,35 @@
 # Appendix: Public System Comparison Snapshot
 
-Snapshot date: **April 24, 2026** with an **April 25, 2026** comparator refresh
+Snapshot date: **April 26, 2026**
 
-This appendix is a compact comparison table for the three systems most relevant to the
-argument in the main paper. It inherits its source posture from Sections 6 and 7:
-archival papers, official engineering/product materials, and commit-pinned repository
-artifacts are used for different claim types and should not be read as a single matched
-benchmark class.
+Sources: this appendix compares three systems using a mixed source posture: archival papers, official public engineering materials, and pinned local evidence artifacts. It is not a matched benchmark table on identical workloads.
 
-Sources: rows inherit the main paper’s source set from Sections 6 and 7, especially
-References 24-31, 35-40, 46, and 49.
+## Table A1. DeepProve vs. Obelyzk vs. this paper's local evidence package
 
-It should be read with one rule in mind: these are **not** matched end-to-end benchmarks
-on identical workloads. They are a structured comparison of public claims, committed
-artifacts, and implementation scope.
-
-## Table A1. DeepProve vs. BitSage Obelyzk (obelyzk.rs) vs. `provable-transformer-vm`
-
-| Dimension                 | Lagrange DeepProve                                                                               | BitSage Obelyzk (obelyzk.rs)                                                                                                                                                        | `provable-transformer-vm`                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Primary role              | Production-oriented zkML system                                                                  | Public STARK-native zkML stack                                                                                                                                                      | Semantics-and-proof research artifact                                                                                                                                          |
-| Proof family              | SNARK / SNARK-hybrid                                                                             | STARK-native on S-two / STWO                                                                                                                                                        | S-two / STWO only; narrow artifact-backed transformer and repeated-reuse research line                                                                                         |
-| Public transformer scope  | Public claims of full GPT-2 inference and later Gemma-class progress                             | Public repo/verifier claims transformer-block support, recursive verifier milestones, and aggressive single-block benchmarks                                                        | Deterministic transformer-shaped VM, not full learned transformer inference                                                                                                    |
-| Strongest public evidence | Official Lagrange product/blog materials                                                         | Docs.rs verifier page, Obelyzk paper, and Starknet Sepolia verification path                                                                                                        | Checked evidence files under `docs/paper/evidence/`, publication figures under `docs/paper/figures/`, and statement-versioned repo outputs                                  |
-| Non-arithmetic handling   | Custom circuits and lookup-oriented techniques                                                   | LogUp-style lookup machinery on STWO                                                                                                                                                | Lookup-backed calibration rows now exist for normalization, softmax-exp, and binary-step activation; full learned softmax/inference remains out of scope                      |
-| Backend maturity          | Strongest public deployment maturity of the three                                                | Strongest public STARK-native zkML signal                                                                                                                                           | Strongest semantics-portability story among the three                                                                                                                          |
-| Public onchain posture    | Production/prover maturity emphasized more than public Starknet verification demos               | Starknet verification path and public demos emphasized                                                                                                                              | No onchain verifier integration yet                                                                                                                                            |
-| Public onchain evidence   | Public materials emphasize production deployment more than named Starknet proof-demo identifiers | Pinned Starknet Sepolia recursive verifier object; exact contract, tx, calldata, and gas figures are recorded in `docs/paper/evidence/obelyzk-sepolia-comparator-note-2026-04-25.md` | No public onchain proof-verification artifact set                                                                                                                              |
-| Recursion posture         | Present in system architecture, but details vary by release                                      | Publicly aligned with S-two / STWO recursion path                                                                                                                                   | Recursive cryptographic compression not implemented; repo stops at frozen narrow S-two execution proofs, proof-carrying decoding demos, and a pre-recursive aggregation ladder |
-| Paper relevance           | Main counterexample to categorical anti-SNARK claims                                             | Closest STARK-native comparator to the paper thesis                                                                                                                                 | Concrete local calibration and carried-state artifact surface that the paper can describe precisely                                                                             |
-| Main caveat               | Strong public claims, but not directly comparable to STARK systems on identical workloads        | Public deployment evidence is stronger than the old README-only posture, but the public verifier object is still not a matched local comparator to this repo's pre-recursive artifacts; verifier docs still show uneven component maturity (`Attention` remains `Prover only`) | Narrow scope: local S-two wins now split by regime (`Phase12` proving, `Phase44D` typed-boundary latency, and `Phase71` handoff-receipt compactness), not a matched full-model benchmark or universal win |
+| Dimension | DeepProve | Obelyzk | This paper's local package |
+| --- | --- | --- | --- |
+| Primary role | Production-oriented zkML system | Public STARK-native recursive deployment stack | Research paper on typed verifier boundaries |
+| Proof family | SNARK / SNARK-hybrid | STARK-native recursive stack | STARK-native compact-proof plus typed-boundary settlement layer |
+| Public transformer scope | Strong public full-model posture | Strong public recursive deployment posture | Transformer-shaped empirical laboratory, not a full-model benchmark |
+| Strongest public evidence | Official product and engineering materials | Public docs.rs verifier page, public paper, and Starknet Sepolia verifier object | Checked evidence package with typed-boundary, compact-object, and proving-surface calibration rows |
+| What is most relevant here | Counterexample to categorical anti-SNARK claims | Strongest public STARK-native deployment comparator | Strongest formal and empirical replay-avoidance study in this package |
+| Public onchain posture | Not the main emphasis of the public materials | Explicit Starknet Sepolia verifier path | No typed-boundary onchain artifact claimed |
+| Best use in this paper | Broad external context | Source-backed deployment calibration | Main formal and empirical object |
+| Main caveat | Not directly matched to the local typed-boundary laboratory | Strong deployment evidence, but not a matched verifier-time comparator to the local typed-boundary path | Narrow claim boundary: one experimental backend, three layout families, explicit non-claims |
 
 ## How to use this appendix
 
-Use this appendix when the main paper needs one concise comparison object, but keep the
-stronger qualifications in the main text:
+This appendix is useful only if it is read conservatively.
 
-- DeepProve is the strongest counterexample to categorical anti-SNARK claims.
-- BitSage is the strongest public STARK-native comparator, and the pinned
-  evidence is now a source-backed Starknet Sepolia recursive verifier object
-  rather than a README-only benchmark line; it still needs to be separated into
-  benchmark claims, onchain demos, and broader roadmap scope.
-- `provable-transformer-vm` is not a frontier zkML prover; it is a trace-semantics and
-  proof-architecture artifact with reproducible evidence and an explicit pre-recursive
-  aggregation boundary.
-- If you need one narrow verifier-object comparison rather than another full-model row,
-  the only honest cross-system pairing in the pinned snapshot is `NANOZK`'s abstract
-  `d <= 128` layer-proof row against this repo's `Phase71` handoff-receipt row. Use it
-  as compact-object calibration only. It is explicitly not a matched benchmark.
+- DeepProve matters because it prevents the paper from turning into a simplistic
+  STARK-versus-SNARK slogan.
+- Obelyzk matters because it provides the strongest public STARK-native deployment
+  calibration currently available to this package.
+- The local paper package matters because it provides a theorem, a hardening stack, and a
+  replay-avoidance experiment, not because it wins a matched end-to-end system race.
+
+A narrower public comparator also exists in the compact-object regime. Public NANOZK
+materials report a small verifier-facing proof object with fast verification. The
+closest local compact handoff object is smaller but slower on its present path. That is
+useful precisely because it reinforces the paper's main lesson: different layers improve
+different costs.

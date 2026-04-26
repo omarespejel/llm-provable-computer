@@ -29,10 +29,9 @@ PUBLICATION_METADATA_FILES = [
 ]
 
 PAPER_FILES = [
-    "docs/paper/stark-transformer-alignment-2026.md",
+    "docs/paper/tablero-typed-verifier-boundaries-2026.md",
+    "docs/paper/appendix-tablero-claim-boundary.md",
     "docs/paper/appendix-system-comparison.md",
-    "docs/paper/appendix-scaling-companion.md",
-    "docs/paper/appendix-influence-realization.md",
     *PUBLICATION_METADATA_FILES,
 ]
 
