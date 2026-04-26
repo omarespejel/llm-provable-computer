@@ -99,9 +99,9 @@ The repo now also has one explicit answer on the second-backend question:
    verifier change.
 8. Treat Phase43 as landed on the emitted source surface, but keep the claim
    scoped honestly: this is a real second boundary with modest verifier-side
-   gains (`1.20x` on the publication row and `3.68x` at the checked
-   `128`-step experimental frontier), not a replay-elimination headline on the
-   scale of Phase44D.
+   gains (`1.22x` on the publication row and `6.66x` at the checked
+   `1024`-step experimental frontier under median-of-5 timing), not a
+   replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 

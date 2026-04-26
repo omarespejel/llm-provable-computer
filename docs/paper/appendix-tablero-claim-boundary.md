@@ -11,7 +11,8 @@ The paper claims only the following.
 | Typed verifier boundary | A verifier can replace an expensive replay surface with a typed boundary object when that object is complete, well formed, and commitment-bound to the same compact claim. |
 | Formal guarantee | Under upstream compact-proof soundness, commitment binding, and source-emission completeness, Tablero preserves the same accepted statement set as the replay verifier. |
 | Empirical evidence | In the current transformer-shaped empirical lab, the main typed boundary reproduces across three layout families with a growing-in-`N` replay-avoidance curve. |
-| Negative evidence | A second candidate boundary is reported honestly as a no-go because the required source emission and replay-cost conditions were not both satisfied. |
+| Supporting second boundary | A distinct emitted-source surface also clears as a real second typed boundary with smaller but still growing verifier-side gains. |
+| Negative evidence | A narrower compact handoff object is reported honestly as a compactness-only surface rather than a replay-avoidance win. |
 | Assurance posture | Deterministic tamper tests, bounded model checking, differential fuzzing, and fail-closed runtime guards materially reduce implementation-side self-deception risk. |
 
 ## Negative claim surface

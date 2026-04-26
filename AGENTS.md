@@ -31,6 +31,7 @@
 - Keep PRs tightly scoped. Separate publication-lane changes, experimental-lane changes, and agent-handoff cleanup unless coupling is required.
 - Use `gh pr merge --rebase`; do not create merge commits in this repository.
 - Do not merge while review threads are still actionable. Clear human and bot threads or explicitly confirm they are stale before merging.
+- After the latest AI-reviewer activity, wait at least `5` minutes before merging, then recheck that no actionable bot threads or findings appeared during the quiet window.
 
 ## Trusted-core paths
 

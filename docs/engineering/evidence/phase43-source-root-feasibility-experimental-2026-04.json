@@ -1,10 +1,10 @@
 {
   "benchmark_version": "stwo-phase43-source-root-feasibility-experimental-benchmark-v2",
   "semantic_scope": "phase43_emitted_source_boundary_feasibility_over_phase12_carry_aware_experimental_backend",
-  "timing_mode": "measured_single_run",
-  "timing_policy": "single_run_from_microsecond_capture",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
   "timing_unit": "milliseconds",
-  "timing_runs": 1,
+  "timing_runs": 5,
   "rows": [
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -13,9 +13,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 53641,
       "derive_ms": 0.0,
-      "verify_ms": 0.845,
+      "verify_ms": 0.83,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 0.737 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -23,8 +23,8 @@
       "steps": 2,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 63832,
-      "derive_ms": 0.435,
-      "verify_ms": 0.585,
+      "derive_ms": 0.43,
+      "verify_ms": 0.588,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -35,7 +35,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 47231,
       "derive_ms": 0.0,
-      "verify_ms": 0.341,
+      "verify_ms": 0.347,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -45,7 +45,7 @@
       "steps": 2,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 16601,
-      "derive_ms": 0.435,
+      "derive_ms": 0.43,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -57,7 +57,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 6410,
       "derive_ms": 0.0,
-      "verify_ms": 0.183,
+      "verify_ms": 0.163,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -68,9 +68,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 67167,
       "derive_ms": 0.0,
-      "verify_ms": 0.868,
+      "verify_ms": 0.842,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 0.943 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -78,8 +78,8 @@
       "steps": 4,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 90599,
-      "derive_ms": 0.58,
-      "verify_ms": 0.648,
+      "derive_ms": 0.524,
+      "verify_ms": 0.636,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -90,7 +90,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 60625,
       "derive_ms": 0.0,
-      "verify_ms": 0.379,
+      "verify_ms": 0.378,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -100,7 +100,7 @@
       "steps": 4,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 29974,
-      "derive_ms": 0.58,
+      "derive_ms": 0.524,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -112,7 +112,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 6542,
       "derive_ms": 0.0,
-      "verify_ms": 0.165,
+      "verify_ms": 0.167,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -123,9 +123,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 74516,
       "derive_ms": 0.0,
-      "verify_ms": 0.896,
+      "verify_ms": 0.937,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 1.050 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -133,8 +133,8 @@
       "steps": 8,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 124434,
-      "derive_ms": 0.7,
-      "verify_ms": 0.672,
+      "derive_ms": 0.704,
+      "verify_ms": 0.686,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -145,7 +145,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 67701,
       "derive_ms": 0.0,
-      "verify_ms": 0.397,
+      "verify_ms": 0.405,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -155,7 +155,7 @@
       "steps": 8,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 56733,
-      "derive_ms": 0.7,
+      "derive_ms": 0.704,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -167,7 +167,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 6815,
       "derive_ms": 0.0,
-      "verify_ms": 0.177,
+      "verify_ms": 0.179,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -178,9 +178,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 85672,
       "derive_ms": 0.0,
-      "verify_ms": 0.999,
+      "verify_ms": 1.009,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 1.440 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -188,8 +188,8 @@
       "steps": 16,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 188654,
-      "derive_ms": 1.056,
-      "verify_ms": 0.744,
+      "derive_ms": 1.057,
+      "verify_ms": 0.748,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -200,7 +200,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 78312,
       "derive_ms": 0.0,
-      "verify_ms": 0.442,
+      "verify_ms": 0.443,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -210,7 +210,7 @@
       "steps": 16,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 110342,
-      "derive_ms": 1.056,
+      "derive_ms": 1.057,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -222,7 +222,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 7360,
       "derive_ms": 0.0,
-      "verify_ms": 0.208,
+      "verify_ms": 0.202,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -233,9 +233,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 88102,
       "derive_ms": 0.0,
-      "verify_ms": 1.194,
+      "verify_ms": 1.156,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 2.272 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -243,8 +243,8 @@
       "steps": 32,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 297296,
-      "derive_ms": 1.888,
-      "verify_ms": 0.822,
+      "derive_ms": 1.793,
+      "verify_ms": 0.827,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -255,7 +255,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 79673,
       "derive_ms": 0.0,
-      "verify_ms": 0.46,
+      "verify_ms": 0.47,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -265,7 +265,7 @@
       "steps": 32,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 217623,
-      "derive_ms": 1.888,
+      "derive_ms": 1.793,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -277,7 +277,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 8429,
       "derive_ms": 0.0,
-      "verify_ms": 0.245,
+      "verify_ms": 0.249,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -288,9 +288,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 102434,
       "derive_ms": 0.0,
-      "verify_ms": 1.461,
+      "verify_ms": 1.49,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 3.921 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -298,8 +298,8 @@
       "steps": 64,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 524042,
-      "derive_ms": 3.243,
-      "verify_ms": 1.011,
+      "derive_ms": 3.268,
+      "verify_ms": 1.035,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -310,7 +310,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 91860,
       "derive_ms": 0.0,
-      "verify_ms": 0.537,
+      "verify_ms": 0.543,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -320,7 +320,7 @@
       "steps": 64,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 432182,
-      "derive_ms": 3.243,
+      "derive_ms": 3.268,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -332,7 +332,7 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 10574,
       "derive_ms": 0.0,
-      "verify_ms": 0.336,
+      "verify_ms": 0.342,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     },
@@ -343,9 +343,9 @@
       "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 111789,
       "derive_ms": 0.0,
-      "verify_ms": 2.055,
+      "verify_ms": 2.073,
       "verified": true,
-      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately at 7.375 ms"
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
     },
     {
       "primitive": "phase43_proof_native_source_boundary",
@@ -353,8 +353,8 @@
       "steps": 128,
       "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
       "serialized_bytes": 958691,
-      "derive_ms": 6.235,
-      "verify_ms": 1.32,
+      "derive_ms": 6.284,
+      "verify_ms": 1.367,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
     },
@@ -365,7 +365,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 96913,
       "derive_ms": 0.0,
-      "verify_ms": 0.642,
+      "verify_ms": 0.66,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
     },
@@ -375,7 +375,7 @@
       "steps": 128,
       "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
       "serialized_bytes": 861778,
-      "derive_ms": 6.235,
+      "derive_ms": 6.284,
       "verify_ms": 0.0,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
@@ -387,7 +387,172 @@
       "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
       "serialized_bytes": 14876,
       "derive_ms": 0.0,
-      "verify_ms": 0.525,
+      "verify_ms": 0.531,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "emitted_source_boundary_plus_compact_projection",
+      "steps": 256,
+      "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
+      "serialized_bytes": 126740,
+      "derive_ms": 0.0,
+      "verify_ms": 3.109,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "full_trace_plus_phase30_derivation_baseline",
+      "steps": 256,
+      "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
+      "serialized_bytes": 1825475,
+      "derive_ms": 12.14,
+      "verify_ms": 1.924,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
+    },
+    {
+      "primitive": "phase43_compact_projection_proof",
+      "backend_variant": "compact_phase43_projection_proof_only",
+      "steps": 256,
+      "relation": "one compact Phase43 projection proof envelope",
+      "serialized_bytes": 103289,
+      "derive_ms": 0.0,
+      "verify_ms": 0.851,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
+    },
+    {
+      "primitive": "phase43_source_root_claim_derivation",
+      "backend_variant": "derive_source_root_claim_only",
+      "steps": 256,
+      "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
+      "serialized_bytes": 1722186,
+      "derive_ms": 12.14,
+      "verify_ms": 0.0,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "source_boundary_binding_only",
+      "steps": 256,
+      "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
+      "serialized_bytes": 23451,
+      "derive_ms": 0.0,
+      "verify_ms": 0.914,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "emitted_source_boundary_plus_compact_projection",
+      "steps": 512,
+      "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
+      "serialized_bytes": 176002,
+      "derive_ms": 0.0,
+      "verify_ms": 5.337,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "full_trace_plus_phase30_derivation_baseline",
+      "steps": 512,
+      "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
+      "serialized_bytes": 3578675,
+      "derive_ms": 24.336,
+      "verify_ms": 3.262,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
+    },
+    {
+      "primitive": "phase43_compact_projection_proof",
+      "backend_variant": "compact_phase43_projection_proof_only",
+      "steps": 512,
+      "relation": "one compact Phase43 projection proof envelope",
+      "serialized_bytes": 135400,
+      "derive_ms": 0.0,
+      "verify_ms": 1.307,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
+    },
+    {
+      "primitive": "phase43_source_root_claim_derivation",
+      "backend_variant": "derive_source_root_claim_only",
+      "steps": 512,
+      "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
+      "serialized_bytes": 3443275,
+      "derive_ms": 24.336,
+      "verify_ms": 0.0,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "source_boundary_binding_only",
+      "steps": 512,
+      "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
+      "serialized_bytes": 40602,
+      "derive_ms": 0.0,
+      "verify_ms": 1.659,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "emitted_source_boundary_plus_compact_projection",
+      "steps": 1024,
+      "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
+      "serialized_bytes": 225089,
+      "derive_ms": 0.0,
+      "verify_ms": 7.879,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "full_trace_plus_phase30_derivation_baseline",
+      "steps": 1024,
+      "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
+      "serialized_bytes": 7035914,
+      "derive_ms": 47.974,
+      "verify_ms": 4.473,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
+    },
+    {
+      "primitive": "phase43_compact_projection_proof",
+      "backend_variant": "compact_phase43_projection_proof_only",
+      "steps": 1024,
+      "relation": "one compact Phase43 projection proof envelope",
+      "serialized_bytes": 150053,
+      "derive_ms": 0.0,
+      "verify_ms": 1.749,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
+    },
+    {
+      "primitive": "phase43_source_root_claim_derivation",
+      "backend_variant": "derive_source_root_claim_only",
+      "steps": 1024,
+      "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
+      "serialized_bytes": 6885861,
+      "derive_ms": 47.974,
+      "verify_ms": 0.0,
+      "verified": true,
+      "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "source_boundary_binding_only",
+      "steps": 1024,
+      "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
+      "serialized_bytes": 75036,
+      "derive_ms": 0.0,
+      "verify_ms": 2.424,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend. causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
     }

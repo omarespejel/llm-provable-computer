@@ -56,6 +56,8 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_OUTDIR / "phase43-source-root-feasibility-experimental-2026-04",
     )
+    parser.add_argument("--skip-png", action="store_true")
+    parser.add_argument("--skip-pdf", action="store_true")
     return parser.parse_args()
 
 
@@ -67,30 +69,85 @@ def read_rows(path: Path) -> list[dict[str, str]]:
     return rows
 
 
+def timing_metadata(rows: list[dict[str, str]], *, source: Path) -> tuple[str, int]:
+    first = rows[0]
+    mode = first.get("timing_mode", "").strip()
+    policy = first.get("timing_policy", "").strip()
+    unit = first.get("timing_unit", "").strip()
+    runs_raw = first.get("timing_runs", "").strip()
+    if not mode:
+        raise SystemExit(f"phase43 engineering rows from {source} must include timing_mode")
+    if not policy:
+        raise SystemExit(
+            f"phase43 engineering rows from {source} must include timing_policy"
+        )
+    if unit != "milliseconds":
+        raise SystemExit(
+            f"unsupported timing_unit in phase43 engineering rows from {source}: {unit!r}"
+        )
+    if not runs_raw:
+        raise SystemExit(
+            f"phase43 engineering rows from {source} must include timing_runs"
+        )
+    for row in rows[1:]:
+        if (
+            row.get("timing_mode", "").strip() != mode
+            or row.get("timing_policy", "").strip() != policy
+            or row.get("timing_unit", "").strip() != unit
+            or row.get("timing_runs", "").strip() != runs_raw
+        ):
+            raise SystemExit("inconsistent timing metadata across phase43 engineering rows")
+    try:
+        runs = int(runs_raw)
+    except ValueError as exc:
+        raise SystemExit(
+            f"phase43 engineering rows from {source} must include an integer timing_runs; got {runs_raw!r}"
+        ) from exc
+    if mode == "measured_single_run":
+        if policy != "single_run_from_microsecond_capture":
+            raise SystemExit(
+                f"unexpected timing_policy for measured_single_run phase43 engineering rows: {policy!r}"
+            )
+        if runs != 1:
+            raise SystemExit(
+                f"measured_single_run phase43 engineering rows must report timing_runs == 1; got {runs}"
+            )
+        return mode, runs
+    if mode == "measured_median":
+        if not policy.startswith("median_of_") or not policy.endswith(
+            "_runs_from_microsecond_capture"
+        ):
+            raise SystemExit(
+                f"unexpected timing_policy for measured_median phase43 engineering rows: {policy!r}"
+            )
+        policy_runs_raw = policy.removeprefix("median_of_").removesuffix(
+            "_runs_from_microsecond_capture"
+        )
+        try:
+            policy_runs = int(policy_runs_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                "unexpected timing_policy for measured_median phase43 engineering rows: "
+                f"{policy!r} (invalid run count {policy_runs_raw!r})"
+            ) from exc
+        if runs != policy_runs:
+            raise SystemExit(
+                "measured_median phase43 engineering rows must keep timing_runs aligned with timing_policy; "
+                f"got timing_runs={runs} and timing_policy={policy!r}"
+            )
+        if runs < 3 or runs % 2 == 0:
+            raise SystemExit(
+                f"measured_median phase43 engineering rows must report an odd timing_runs >= 3; got {runs}"
+            )
+        return mode, runs
+    raise SystemExit(f"unsupported timing_mode in phase43 engineering rows: {mode!r}")
+
+
 def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
     seen = set()
     step_counts = set()
-    expected_timing_mode = "measured_single_run"
-    expected_timing_policy = "single_run_from_microsecond_capture"
-    expected_timing_unit = "milliseconds"
-    expected_timing_runs = "1"
+    timing_metadata(rows, source=source)
     for row in rows:
-        if row.get("timing_mode", "").strip() != expected_timing_mode:
-            raise SystemExit(
-                f"expected {expected_timing_mode} timing_mode in {source}, got {row.get('timing_mode')!r}"
-            )
-        if row.get("timing_policy", "").strip() != expected_timing_policy:
-            raise SystemExit(
-                f"expected {expected_timing_policy} timing_policy in {source}, got {row.get('timing_policy')!r}"
-            )
-        if row.get("timing_unit", "").strip() != expected_timing_unit:
-            raise SystemExit(
-                f"expected {expected_timing_unit} timing_unit in {source}, got {row.get('timing_unit')!r}"
-            )
-        if row.get("timing_runs", "").strip() != expected_timing_runs:
-            raise SystemExit(
-                f"expected timing_runs={expected_timing_runs} in {source}, got {row.get('timing_runs')!r}"
-            )
         if row["benchmark_version"] != EXPECTED_BENCHMARK_VERSION:
             raise SystemExit(
                 f"unexpected benchmark_version in {source}: {row['benchmark_version']}"
@@ -102,7 +159,13 @@ def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
         variant = row["backend_variant"]
         if variant not in VARIANT_ORDER:
             raise SystemExit(f"unexpected backend_variant in {source}: {variant}")
-        steps = int(row["steps"])
+        steps_raw = row.get("steps", "").strip()
+        try:
+            steps = int(steps_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"unexpected step count in {source}: {steps_raw!r}"
+            ) from exc
         if steps < 2 or steps & (steps - 1) != 0:
             raise SystemExit(f"unexpected step count in {source}: {steps}")
         if row["verified"].strip().lower() != "true":
@@ -197,7 +260,7 @@ def format_bytes_tick(value: float) -> str:
     return f"{value:.0f}"
 
 
-def build_svg(rows: list[dict[str, str]], steps: list[int]) -> str:
+def build_svg(rows: list[dict[str, str]], steps: list[int], *, timing_mode: str, timing_runs: int) -> str:
     grouped = rows_by_variant(rows)
     width = 980
     height = 430
@@ -404,9 +467,13 @@ def build_svg(rows: list[dict[str, str]], steps: list[int]) -> str:
         f'<text x="{note_x:.2f}" y="{note_y + 13:.2f}" text-anchor="end" font-size="10">at {frontier_step} steps using the emitted boundary</text>'
     )
 
+    if timing_mode == "measured_median":
+        timing_label = f"Timings are median-of-{timing_runs} host runs using microsecond capture. "
+    else:
+        timing_label = "Timings are measured from one host run using microsecond capture. "
     footer = (
-        "Timings are measured from one host run using microsecond capture. "
-        "This figure is engineering-only emitted-boundary evidence, not a paper-facing promoted result."
+        timing_label
+        + "This figure is engineering-only emitted-boundary evidence, not a paper-facing promoted result."
     )
     lines.append(
         f'<text x="{width / 2:.1f}" y="{height - 6:.1f}" text-anchor="middle" font-size="10" fill="#4B5563">{svg_escape(footer)}</text>'
@@ -451,19 +518,22 @@ def render_pdf(svg_path: Path, pdf_path: Path) -> None:
 def main() -> None:
     args = parse_args()
     rows = read_rows(args.input_tsv)
+    timing_mode, timing_runs = timing_metadata(rows, source=args.input_tsv)
     steps = validate_rows(rows, source=args.input_tsv)
-    svg = build_svg(rows, steps)
+    svg = build_svg(rows, steps, timing_mode=timing_mode, timing_runs=timing_runs)
 
     args.output_prefix.parent.mkdir(parents=True, exist_ok=True)
     svg_path = args.output_prefix.with_suffix(".svg")
     png_path = args.output_prefix.with_suffix(".png")
     pdf_path = args.output_prefix.with_suffix(".pdf")
     write_svg(svg_path, svg)
-    render_png(svg_path, png_path)
-    render_pdf(svg_path, pdf_path)
     print(f"wrote {svg_path}")
-    print(f"wrote {png_path}")
-    print(f"wrote {pdf_path}")
+    if not args.skip_png:
+        render_png(svg_path, png_path)
+        print(f"wrote {png_path}")
+    if not args.skip_pdf:
+        render_pdf(svg_path, pdf_path)
+        print(f"wrote {pdf_path}")
 
 
 if __name__ == "__main__":

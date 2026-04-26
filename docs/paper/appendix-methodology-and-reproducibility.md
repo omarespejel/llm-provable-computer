@@ -10,10 +10,12 @@ The paper combines four evidence categories.
 1. **Formal claim surface.** The theorem in the main paper is a statement-preservation
    theorem for typed verifier boundaries under explicit assumptions.
 2. **Empirical typed-boundary evidence.** The main measurements compare a typed-boundary
-   verifier path against the heavier replay path it is designed to replace.
-3. **Negative evidence.** One candidate boundary is reported as a no-go because the
-   source side did not emit enough proof-native material and the eliminated dependency
-   was not expensive enough to justify the pattern.
+   verifier path against the heavier replay path it is designed to replace. A second
+   emitted-source surface is also included as supporting positive evidence with a
+   smaller but still growing verifier-side gap.
+3. **Negative evidence.** One narrower handoff object is reported as a bounded
+   compactness no-go because it shrinks bytes without removing replay from the
+   verifier path.
 4. **External calibration.** Public external rows are used only to position the work by
    verifier-facing regime, not to claim a matched race against another system.
 
