@@ -119,6 +119,47 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
             )
         self.assertIn("unexpected serialized_bytes", str(ctx.exception))
 
+    def _full_canonical_rows(self, exclude_steps=()):
+        rows = []
+        for steps in MODULE.CANONICAL_STEPS:
+            if steps in exclude_steps:
+                continue
+            for variant in MODULE.VARIANT_ORDER:
+                rows.append(
+                    self.sample_row(backend_variant=variant, steps=str(steps))
+                )
+        return rows
+
+    def test_validate_rows_rejects_step_set_missing_frontier(self):
+        rows = self._full_canonical_rows(exclude_steps=(1024,))
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(rows, source=Path("sample.tsv"))
+        self.assertIn("unexpected step counts", str(ctx.exception))
+        self.assertIn("1024", str(ctx.exception))
+
+    def test_validate_rows_rejects_step_set_missing_512(self):
+        rows = self._full_canonical_rows(exclude_steps=(512,))
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(rows, source=Path("sample.tsv"))
+        self.assertIn("unexpected step counts", str(ctx.exception))
+
+    def test_validate_rows_rejects_extra_non_canonical_step(self):
+        rows = self._full_canonical_rows()
+        for variant in MODULE.VARIANT_ORDER:
+            rows.append(self.sample_row(backend_variant=variant, steps="2048"))
+        with self.assertRaises(SystemExit) as ctx:
+            MODULE.validate_rows(rows, source=Path("sample.tsv"))
+        message = str(ctx.exception)
+        self.assertTrue(
+            "unexpected step count" in message or "unexpected step counts" in message,
+            msg=message,
+        )
+
+    def test_canonical_steps_match_benchmark_sweep(self):
+        self.assertEqual(
+            MODULE.CANONICAL_STEPS, [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
