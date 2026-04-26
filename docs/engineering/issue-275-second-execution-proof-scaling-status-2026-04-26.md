@@ -13,7 +13,7 @@ the same Phase44D typed-boundary benchmark **beyond** the shipped carry-free
 
 Two different readings matter for claims:
 
-1. **Distinct from shipped carry-free publication default**  
+1. **Distinct from shipped carry-free publication default**
    The Phase12 **carry-aware experimental** execution-proof surface already
    constructs proof-checked Phase12 decoding chains at `4` through `1024` steps
    and runs the Phase44D source-emission benchmark over that chain. Checked
@@ -26,7 +26,7 @@ Two different readings matter for claims:
 
    This is **experimental lane only** (not the publication default backend).
 
-2. **Distinct scalable surface that is also carry-free / publication-default**  
+2. **Distinct scalable surface that is also carry-free / publication-default**
    Still **no-go** for the default `decoding_step_v2` Phase12 demo family under
    bounded incoming and lookup rescaling. Verbatim blocker from
    `bench-stwo-phase44d-rescaled-exploratory` when the highest requested step

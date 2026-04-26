@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-04-26
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `a483026ab3467522d6e8dbad9e491fa72a4f9b73`
+Mainline reference at refresh: `a2216475d0ccd3c154e80059c8caf44eba323f3d`
 
 ## Immediate orientation
 
