@@ -17,9 +17,9 @@ We study the pattern in one transformer-shaped STARK-zkML laboratory. On the exp
 labeled carry-aware experimental backend, across three checked layout families, the same
 typed-boundary mechanism exhibits a growing replay-avoidance curve: the typed verifier
 path stays comparatively small while the replay baseline grows sharply with input length.
-At the checked frontiers, the replay-avoidance ratio ranges from `582.8x` to `1066.6x`.
+At the checked frontiers, the replay-avoidance ratio ranges from `917.8x` to `1066.6x`.
 A log-log fit over the checked experimental grids gives replay-baseline slopes of
-`0.9837-0.9921` and typed-path slopes of `0.2573-0.3567`, so the growing ratio is a
+`0.9899-0.9921` and typed-path slopes of `0.3508-0.3567`, so the growing ratio is a
 measured scaling effect in this regime rather than one isolated frontier point. A
 replay-baseline breakdown shows that the
 avoided work is distributed across repeated embedded-proof re-verification,

@@ -31,8 +31,8 @@ result. It is a theorem about when replay replacement is honest.
 We then study the pattern in a transformer-shaped STARK-zkML laboratory. On the
 current experimental backend, the main typed-boundary path reproduces across three
 layout families. At the checked frontier, the replay-avoidance ratio grows from
-`19.2x` to `250.6x` on the `3x3` family and reaches `312.3x` on the default family and
-`925.1x` on the `2x2` family at `1024` checked steps. The dominant avoided cost is not
+`17.7x` to `1011.9x` on the `3x3` family and reaches `1066.6x` on the default family and
+`917.8x` on the `2x2` family at `1024` checked steps. The dominant avoided cost is not
 faster FRI verification; it is the verifier-side replay path itself, especially
 ordered canonical serialization and hashing in the manifest baseline. A second typed
 boundary on a distinct emitted-source surface also clears as supporting positive
@@ -330,7 +330,7 @@ reproduces across three layout families with the same growing-in-`N` shape.
 | --- | ---: | ---: | ---: | ---: |
 | default | `1024` | `1066.6x` | `8.130 ms` | `8,671.126 ms` |
 | `2x2` | `1024` | `917.8x` | `8.121 ms` | `7,453.229 ms` |
-| `3x3` | `256` | `582.8x` | `3.453 ms` | `2,012.564 ms` |
+| `3x3` | `1024` | `1011.9x` | `8.311 ms` | `8,410.230 ms` |
 
 This is the strongest empirical claim the current paper should make.
 
@@ -361,7 +361,7 @@ an asymptotic theorem and not a claim about a default backend.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | default | `2-1024` | `0.3559` | `0.9921` | `0.6362` | `0.9706` |
 | `2x2` | `2-1024` | `0.3567` | `0.9899` | `0.6332` | `0.9704` |
-| `3x3` | `2-256` | `0.2573` | `0.9837` | `0.7265` | `0.9876` |
+| `3x3` | `2-1024` | `0.3508` | `0.9905` | `0.6397` | `0.9695` |
 
 The replay baseline is near-linear over the checked grids. The typed path grows much
 more slowly over the same grids, so the ratio grows for structural reasons in the
@@ -377,7 +377,7 @@ Reproducibility note for Table 2 and Figure 2: regenerate the machine-readable T
 JSON, and SVG with `python3 scripts/paper/generate_tablero_scaling_law.py`. The script
 uses only Python 3 standard-library code, reads median-of-five millisecond timing rows
 from the checked carry-aware experimental evidence, and requires the step grids
-`2-1024`, `2-1024`, and `2-256` for the three families. Its outputs are
+`2-1024`, `2-1024`, and `2-1024` for the three families. Its outputs are
 `docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`,
 `docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.json`, and
 `docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`.
@@ -408,9 +408,9 @@ breakdown shows where the baseline actually spends time.
 
 | Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| default (`1024`) | `2,183.233 ms` | `2,276.207 ms` | `2,261.602 ms` | `1,892.473 ms` | `0.063 ms` | `8,616.310 ms` |
-| `2x2` (`1024`) | `1,571.778 ms` | `2,042.833 ms` | `2,047.557 ms` | `1,697.322 ms` | `0.083 ms` | `7,361.383 ms` |
-| `3x3` (`256`) | `457.754 ms` | `534.562 ms` | `531.405 ms` | `442.385 ms` | `0.028 ms` | `1,971.227 ms` |
+| default (`1024`) | `2,037.447 ms` | `2,309.925 ms` | `2,272.194 ms` | `1,940.735 ms` | `0.252 ms` | `8,662.094 ms` |
+| `2x2` (`1024`) | `1,540.888 ms` | `2,079.332 ms` | `2,089.597 ms` | `1,718.026 ms` | `0.175 ms` | `7,392.294 ms` |
+| `3x3` (`1024`) | `2,098.439 ms` | `2,272.647 ms` | `2,203.535 ms` | `1,912.206 ms` | `0.192 ms` | `8,572.800 ms` |
 
 This is the stronger causal lesson:
 

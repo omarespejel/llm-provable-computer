@@ -1,7 +1,7 @@
 {
   "artifact_size_band_bytes": {
     "max": 6561,
-    "min": 6313
+    "min": 6545
   },
   "families": [
     {
@@ -23,22 +23,22 @@
       "typed_verify_ms": 8.121
     },
     {
-      "binding_only_ms": 1.917,
-      "binding_serialized_bytes": 6313,
-      "checked_frontier": 256,
-      "compact_only_ms": 0.999,
+      "binding_only_ms": 5.048,
+      "binding_serialized_bytes": 6557,
+      "checked_frontier": 1024,
+      "compact_only_ms": 1.936,
       "family": "3x3",
       "family_label": "3x3 layout",
       "first_checked_step": 2,
-      "first_ratio": 18.459,
-      "frontier_ratio": 582.845,
-      "ratio_growth": 31.575,
-      "replay_only_ms": 2012.066,
-      "replay_verify_ms": 2012.564,
+      "first_ratio": 17.738,
+      "frontier_ratio": 1011.94,
+      "ratio_growth": 57.049,
+      "replay_only_ms": 8085.341,
+      "replay_verify_ms": 8410.23,
       "timing_mode": "measured_median",
       "timing_policy": "median_of_5_runs_from_microsecond_capture",
       "timing_runs": 5,
-      "typed_verify_ms": 3.453
+      "typed_verify_ms": 8.311
     },
     {
       "binding_only_ms": 5.013,
@@ -116,36 +116,44 @@
       "family_label": "3x3 layout",
       "points": [
         {
-          "ratio": 18.459,
+          "ratio": 17.738,
           "steps": 2
         },
         {
-          "ratio": 33.413,
+          "ratio": 34.615,
           "steps": 4
         },
         {
-          "ratio": 61.147,
+          "ratio": 60.323,
           "steps": 8
         },
         {
-          "ratio": 112.126,
+          "ratio": 107.99,
           "steps": 16
         },
         {
-          "ratio": 187.9,
+          "ratio": 209.703,
           "steps": 32
         },
         {
-          "ratio": 296.305,
+          "ratio": 298.685,
           "steps": 64
         },
         {
-          "ratio": 439.313,
+          "ratio": 431.084,
           "steps": 128
         },
         {
-          "ratio": 582.845,
+          "ratio": 568.74,
           "steps": 256
+        },
+        {
+          "ratio": 699.602,
+          "steps": 512
+        },
+        {
+          "ratio": 1011.94,
+          "steps": 1024
         }
       ]
     },
