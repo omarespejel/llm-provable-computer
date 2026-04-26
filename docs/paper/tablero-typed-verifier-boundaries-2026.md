@@ -436,9 +436,9 @@ breakdown shows where the baseline actually spends time.
 
 | Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| default (`1024`) | `2,363.571 ms` | `2,277.583 ms` | `2,309.668 ms` | `1,956.754 ms` | `0.109 ms` | `8,907.685 ms` |
-| `2x2` (`1024`) | `1,717.496 ms` | `2,048.247 ms` | `2,047.802 ms` | `1,763.336 ms` | `0.234 ms` | `7,577.116 ms` |
-| `3x3` (`1024`) | `1,953.974 ms` | `2,150.994 ms` | `2,210.458 ms` | `1,782.693 ms` | `0.200 ms` | `8,098.320 ms` |
+| default (`1024`) | `1,910.784 ms` | `2,256.729 ms` | `2,280.080 ms` | `1,869.553 ms` | `0.122 ms` | `8,317.269 ms` |
+| `2x2` (`1024`) | `1,440.664 ms` | `2,036.751 ms` | `2,029.761 ms` | `1,675.663 ms` | `0.075 ms` | `7,182.913 ms` |
+| `3x3` (`1024`) | `1,733.076 ms` | `2,138.166 ms` | `2,114.333 ms` | `1,736.131 ms` | `0.271 ms` | `7,721.977 ms` |
 
 This is the stronger causal lesson:
 
