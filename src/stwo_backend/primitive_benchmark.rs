@@ -41,8 +41,8 @@ use super::decoding::{
     prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental,
     verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
-    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown,
     Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DemoRescalingProfile,
     Phase30DecodingStepProofEnvelopeManifest,
 };
@@ -1551,8 +1551,7 @@ pub fn run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
     )
 }
 
-pub fn run_stwo_tablero_replay_breakdown_benchmark(
-) -> Result<StwoTableroReplayBreakdownReport> {
+pub fn run_stwo_tablero_replay_breakdown_benchmark() -> Result<StwoTableroReplayBreakdownReport> {
     run_stwo_tablero_replay_breakdown_benchmark_with_options(false)
 }
 
@@ -1581,11 +1580,12 @@ pub fn run_stwo_tablero_replay_breakdown_benchmark_with_options(
             })?;
         let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)?;
         let manifest_serialized_bytes = phase30_manifest_serialized_bytes(&manifest)?;
-        let breakdown = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
-            &manifest,
-            &chain,
-            capture_timings,
-        )?;
+        let breakdown =
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
+                &manifest,
+                &chain,
+                capture_timings,
+            )?;
         rows.push(StwoTableroReplayBreakdownMeasurement {
             family: family.to_string(),
             steps,
@@ -2603,8 +2603,8 @@ pub fn save_stwo_tablero_replay_breakdown_report_json(
     report: &StwoTableroReplayBreakdownReport,
     path: &Path,
 ) -> Result<()> {
-    let json =
-        serde_json::to_vec_pretty(report).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let json = serde_json::to_vec_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
     fs::write(path, json)?;
     Ok(())
 }
