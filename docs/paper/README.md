@@ -7,7 +7,9 @@ This directory contains the presentation-facing paper package for:
 Primary presentation files:
 
 - `tablero-typed-verifier-boundaries-2026.md`
+- `abstract-tablero-2026.md`
 - `appendix-tablero-claim-boundary.md`
+- `appendix-methodology-and-reproducibility.md`
 - `appendix-system-comparison.md`
 - `PUBLICATION_RELEASE.md`
 
@@ -17,6 +19,14 @@ Supporting publication assets:
 - `evidence/`
 - `artifacts/`
 - `submission-v4-2026-04-11/`
+
+Recommended presentation order:
+
+1. `abstract-tablero-2026.md`
+2. `tablero-typed-verifier-boundaries-2026.md`
+3. `appendix-tablero-claim-boundary.md`
+4. `appendix-methodology-and-reproducibility.md`
+5. `appendix-system-comparison.md`
 
 Package posture:
 

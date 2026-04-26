@@ -1,0 +1,4 @@
+family	family_label	first_checked_step	checked_frontier	first_ratio	frontier_ratio	ratio_growth	typed_verify_ms	replay_verify_ms	compact_only_ms	binding_only_ms	replay_only_ms	typed_serialized_bytes	timing_mode	timing_policy	timing_runs
+2x2	2x2 layout	2	1024	17.795	925.097	51.986	11.133	10299.11	2.35	5.116	8996.324	156308	measured_median	median_of_5_runs_from_microsecond_capture	5
+3x3	3x3 layout	2	256	19.164	250.585	13.076	125.753	31511.802	26.649	79.561	32233.963	127787	measured_median	median_of_5_runs_from_microsecond_capture	5
+default	Default layout	2	1024	21.312	312.33	14.655	427.209	133430.237	77.942	277.236	137423.421	156614	measured_median	median_of_5_runs_from_microsecond_capture	5
