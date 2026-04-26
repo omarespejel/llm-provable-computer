@@ -36,7 +36,8 @@ precise than “family-invariant constants.”
 1. The replay-avoidance mechanism survives all three checked layout families.
    - default through `1024` checked steps
    - `2x2` through `1024` checked steps
-   - `3x3` through `256` checked steps
+   - `3x3` through `1024` checked steps (after regenerating the `3x3` scaling
+     evidence bundle; see `phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`)
 
 2. The constants are not family-invariant.
    - `2x2` is slightly weaker than default at `2` and `4` steps.
