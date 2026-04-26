@@ -28,7 +28,7 @@ use stwo_constraint_framework::{
 };
 
 use super::decoding::{
-    commit_phase12_layout, commit_phase30_step_envelope_commitment_list,
+    commit_phase12_layout, commit_phase30_step_envelope_commitment_vec,
     verify_phase30_decoding_step_proof_envelope_manifest, Phase30DecodingStepProofEnvelopeManifest,
 };
 use super::recursion::{
@@ -58,6 +58,8 @@ pub const STWO_HISTORY_REPLAY_SECOND_BOUNDARY_FEASIBILITY_DECISION_PHASE43: &str
     "no_go_missing_proof_native_source_emission";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_VERSION_PHASE43: &str =
     "phase43-proof-native-source-emission-v1";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43: &str =
+    "phase43-proof-native-source-emission-surface-v1";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_ACCEPTANCE_VERSION_PHASE43: &str =
     "phase43-proof-native-source-emission-acceptance-v1";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_DECISION_PHASE43_PARTIAL: &str =
@@ -1561,8 +1563,8 @@ pub fn prepare_phase43_history_replay_proof_native_source_emission(
     let mut emission = Phase43HistoryReplayProofNativeSourceEmission {
         emission_version: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_VERSION_PHASE43
             .to_string(),
-        source_surface_version: STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43
-            .to_string(),
+        source_surface_version:
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43.to_string(),
         issue_id: PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID,
         source_claim,
         projection_commitment_emitted_by_source_chain: projection_commitment,
@@ -1597,7 +1599,9 @@ pub fn verify_phase43_history_replay_proof_native_source_emission(
             emission.emission_version
         )));
     }
-    if emission.source_surface_version != STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43 {
+    if emission.source_surface_version
+        != STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_SURFACE_VERSION_PHASE43
+    {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase43 proof-native source surface version `{}`",
             emission.source_surface_version
@@ -4200,7 +4204,7 @@ fn commit_phase43_phase30_step_envelope_public_inputs(commitments: &[String]) ->
     for (index, commitment) in commitments.iter().enumerate() {
         hex32_bytes(&format!("phase30_step_envelope[{index}]"), commitment)?;
     }
-    Ok(commit_phase30_step_envelope_commitment_list(commitments))
+    Ok(commit_phase30_step_envelope_commitment_vec(commitments))
 }
 
 /// Commit to the Phase43 proof-native source-emission prototype fields.

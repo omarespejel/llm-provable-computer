@@ -49,6 +49,7 @@ The exploratory patch adds these verifier-side surfaces:
 
 The preparation helper is intentionally labeled as a prototype surface. It sets:
 
+- `source_surface_version = phase43-proof-native-source-emission-surface-v1`
 - `producer_emits_proof_native_public_inputs = true`
 - `derived_from_full_phase43_trace_in_current_prototype = true`
 - `upstream_source_chain_proof_emits_artifact = false`
@@ -134,7 +135,7 @@ A stable-toolchain reproduction command is also checked in:
 
 ```bash
 env CARGO_TARGET_DIR=/tmp/pvm-stable-repro-target \
-  cargo test --release --features stwo-backend --lib \
+  cargo +stable test --release --features stwo-backend --lib \
   phase43_proof_native_source_emission -- --nocapture
 ```
 
