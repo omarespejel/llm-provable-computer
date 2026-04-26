@@ -103,6 +103,21 @@ The most honest next step after this gate is:
 4. treat the 3x3 family as a transferability result, not as a second Tablero
    boundary result by itself
 
+---
+
+## April 27, 2026 refresh (Issue `#252`)
+
+The carry-aware Phase44D `3x3` benchmark now shares the same checked power-of-two
+frontier as the default and `2x2` families:
+
+`2,4,8,16,32,64,128,256,512,1024` honest proof-checked steps.
+
+The reproduction harness below is unchanged except that its canonical
+`STEP_COUNTS` string now includes `512` and `1024`. Re-run it with
+`BENCH_RUNS=5` and `CAPTURE_TIMINGS=1` to refresh the median-of-5 TSV/JSON and
+figure artifacts checked into `docs/engineering/evidence/` and
+`docs/engineering/figures/`.
+
 ## Reproduction
 
 Run:

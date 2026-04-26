@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `a2216475d0ccd3c154e80059c8caf44eba323f3d` (matches
+**Mainline tip at last refresh:** `d0dcd7dde82259f708e77efeb2f47eac77ec1373` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -19,13 +19,14 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
 9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
 10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-11. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-12. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-13. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-14. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-15. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-16. `docs/engineering/reproducibility.md`
-17. `git status --short --branch`
+11. `docs/engineering/serialized-stack-tamper-regression-index-2026-04-27.md`
+12. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+13. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+14. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+15. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+16. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+17. `docs/engineering/reproducibility.md`
+18. `git status --short --branch`
 
 ## Current lane split
 
@@ -82,15 +83,19 @@ This repository now has two live lanes.
   `docs/engineering/figures/phase44d-carry-aware-experimental-2x2-scaling-2026-04.svg`,
   reproduce with `BENCH_RUNS=5 CAPTURE_TIMINGS=1 scripts/engineering/generate_phase44d_carry_aware_experimental_2x2_scaling_benchmark.sh`).
 - The same Phase44D replay-avoidance mechanism now reproduces on the non-default
-  `3x3` layout family through `2,4,8,16,32,64,128,256`
+  `3x3` layout family through `2,4,8,16,32,64,128,256,512,1024`
   (`stwo-phase44d-source-emission-experimental-3x3-layout-benchmark-v1`,
   `measured_median`, evidence:
   `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`,
-  `docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv`).
+  `docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.tsv`
+  after re-running the `3x3` scaling harness so checked TSV/JSON match the code
+  frontier).
 - The family-matrix gate now records all three checked families together under a
   corrected release-mode median-of-5 policy. The strongest checked frontier ratio is
   now `1066.559x` on the default family at `1024` steps, with `917.772x` on the
-  `2x2` family at `1024` and `582.845x` on the `3x3` family at `256`
+  `2x2` family at `1024` and `582.845x` on the `3x3` family at `256` in the last
+  pinned bundle before the `3x3` frontier extension (re-run the family-matrix
+  script after refreshing the `3x3` scaling inputs for updated ratios)
   (`phase44d-carry-aware-experimental-family-matrix-v1`, `measured_median`, evidence:
   `docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.tsv`,
   `docs/engineering/figures/phase44d-carry-aware-experimental-family-matrix-2026-04.svg`,
@@ -109,8 +114,9 @@ This repository now has two live lanes.
   boundary object.
 - At `1024` steps, the `2x2` family records `8.121 ms` versus `7453.229 ms`, with a
   `6,545`-byte boundary object.
-- At `256` steps on the `3x3` family, the shared path records `3.453 ms` versus
-  `2012.564 ms`, with a `6,313`-byte boundary object.
+- At `256` steps on the `3x3` family, the last pinned median-of-5 bundle records
+  `3.453 ms` versus `2012.564 ms`, with a `6,313`-byte boundary object; larger
+  `3x3` step counts require regenerating the scaling evidence bundle.
 
 That result is real, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 The replay-baseline breakdown now shows that the verifier gap is a bundle of repeated

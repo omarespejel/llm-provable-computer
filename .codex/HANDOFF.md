@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-04-26
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `a2216475d0ccd3c154e80059c8caf44eba323f3d`
+Mainline reference at refresh: `d0dcd7dde82259f708e77efeb2f47eac77ec1373`
 
 ## Immediate orientation
 
@@ -58,8 +58,9 @@ The active split is now:
   full supported range-witness and quotient / divisibility surface.
 - Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512,1024`.
 - Gate 3b: the same Phase44D replay-avoidance mechanism now reproduces on the
-  non-default `3x3` layout family through `2,4,8,16,32,64,128,256` under the
-  same backend and median-of-5 timing policy.
+  non-default `3x3` layout family through `2,4,8,16,32,64,128,256,512,1024` under the
+  same backend and median-of-5 timing policy (refresh the `3x3` scaling bundle
+  after cap bumps so checked TSV/JSON match the code frontier).
 - Gate 4: the Phase43 second-boundary feasibility gate now records a real
   **GO** on the emitted proof-native source boundary: the source side emits the
   proof-native commitments and public inputs needed for the verifier to drop the
@@ -82,7 +83,9 @@ At the checked release-mode frontiers, the experimental shared path now records:
 
 - default `1024`: typed boundary + compact proof `8.130 ms`, replay baseline + compact proof `8671.126 ms`, boundary object `6,561` bytes
 - `2x2` `1024`: typed boundary + compact proof `8.121 ms`, replay baseline + compact proof `7453.229 ms`, boundary object `6,545` bytes
-- `3x3` `256`: typed boundary + compact proof `3.453 ms`, replay baseline + compact proof `2012.564 ms`, boundary object `6,313` bytes
+- `3x3` `1024`: typed boundary + compact proof and replay baseline timings are
+  produced by the median-of-5 `3x3` scaling harness after the Issue `#252` cap
+  extension; supersede the prior `256`-row snapshot in older evidence bundles.
 
 This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a default-lane promotion.
 The replay-baseline breakdown now shows that the gap is distributed across repeated
@@ -106,15 +109,16 @@ Use these in order of authority for current state:
 8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
 9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
 10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-11. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-12. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
-13. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-14. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
-15. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-16. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-17. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-18. `docs/engineering/reproducibility.md`
-19. `git status --short --branch`
+11. `docs/engineering/serialized-stack-tamper-regression-index-2026-04-27.md`
+12. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+13. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
+14. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+15. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
+16. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+17. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+18. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+19. `docs/engineering/reproducibility.md`
+20. `git status --short --branch`
 
 ## Merge culture
 

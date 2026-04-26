@@ -172,12 +172,12 @@ const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
-const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS: [usize; 8] =
-    [2, 4, 8, 16, 32, 64, 128, 256];
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS: [usize; 10] =
+    [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 512;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_MAX_STEPS: usize = 1024;
 const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_2X2_MAX_STEPS: usize = 1024;
-const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS: usize = 256;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS: usize = 1024;
 const PHASE43_SOURCE_ROOT_FEASIBILITY_STEP_COUNTS: [usize; 1] = [2];
 const PHASE43_SOURCE_ROOT_FEASIBILITY_EXPERIMENTAL_STEP_COUNTS: [usize; 10] =
     [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
@@ -1566,7 +1566,7 @@ pub fn run_stwo_tablero_replay_breakdown_benchmark_with_options(
     let cases = [
         ("default", phase12_default_decoding_layout(), 1024usize),
         ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
-        ("3x3", Phase12DecodingLayout::new(3, 3)?, 256usize),
+        ("3x3", Phase12DecodingLayout::new(3, 3)?, 1024usize),
     ];
     let mut rows = Vec::with_capacity(cases.len());
     for (family, layout, steps) in cases {
@@ -5718,6 +5718,7 @@ fn padded_activation_rows(
 mod tests {
     use super::*;
     use crate::stwo_backend::prove_phase12_decoding_demo_for_layout_steps;
+    use std::collections::HashMap;
 
     #[test]
     fn primitive_benchmark_runs_all_matched_paths() {
@@ -6626,7 +6627,7 @@ mod tests {
     #[test]
     fn phase44d_source_emission_experimental_3x3_benchmark_rejects_oversized_step_counts() {
         let error = run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps(
-            &[2, 512],
+            &[2, 2048],
             false,
         )
         .expect_err(
@@ -6679,7 +6680,7 @@ mod tests {
     fn phase44d_source_emission_experimental_3x3_benchmark_pins_canonical_step_surface() {
         assert_eq!(
             PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_STEP_COUNTS,
-            [2, 4, 8, 16, 32, 64, 128, 256]
+            [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
         );
         assert_eq!(
             PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_MAX_STEPS,
@@ -6687,6 +6688,21 @@ mod tests {
                 .last()
                 .expect("3x3 experimental step surface must be non-empty")
         );
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_3x3_benchmark_clears_honest_thirty_two_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_3x3_benchmark_for_steps(&[32], false)
+                .expect(
+                    "3x3 experimental phase44d source emission benchmark should clear 32 steps",
+                );
+        assert_eq!(report.rows.len(), 5);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 32
+        }));
     }
 
     #[test]
@@ -6699,6 +6715,29 @@ mod tests {
             "2x2 experimental phase44d source emission benchmark must reject oversized steps",
         );
         assert!(error.to_string().contains("supports at most"));
+    }
+
+    #[test]
+    fn tablero_replay_breakdown_benchmark_covers_three_layout_families_at_shared_frontier() {
+        let report = run_stwo_tablero_replay_breakdown_benchmark_with_options(false)
+            .expect("tablero replay breakdown benchmark should run");
+        assert_eq!(report.rows.len(), 3);
+        let mut by_family: HashMap<&str, &StwoTableroReplayBreakdownMeasurement> = HashMap::new();
+        for row in &report.rows {
+            by_family.insert(row.family.as_str(), row);
+        }
+        for family in ["default", "2x2", "3x3"] {
+            let row = by_family
+                .get(family)
+                .unwrap_or_else(|| panic!("missing tablero replay row for family {family}"));
+            assert!(row.verified, "{family}");
+            assert_eq!(row.steps, 1024, "{family}");
+            assert!(row.replay_total_ms >= 0.0, "{family}");
+            assert!(row.manifest_serialized_bytes > 0, "{family}");
+            assert!(row.source_chain_json_bytes > 0, "{family}");
+            assert!(row.step_proof_json_bytes_total > 0, "{family}");
+            assert_eq!(row.reverified_proofs, row.steps, "{family}");
+        }
     }
 
     #[test]
