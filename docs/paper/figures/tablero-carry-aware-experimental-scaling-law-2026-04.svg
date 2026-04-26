@@ -30,14 +30,14 @@
 <text x="538.0" y="174.3" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.63</text>
 <text x="482.0" y="358" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#0F172A">2x2 layout</text>
 <text x="482.0" y="376" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#64748B">frontier 1024, ratio 917.772x</text>
-<rect x="664.0" y="269.2" width="44" height="60.8" rx="3" fill="#2563EB"/>
-<text x="686.0" y="263.2" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.26</text>
-<rect x="720.0" y="97.5" width="44" height="232.5" rx="3" fill="#DC2626"/>
-<text x="742.0" y="91.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.98</text>
-<rect x="776.0" y="158.3" width="44" height="171.7" rx="3" fill="#059669"/>
-<text x="798.0" y="152.3" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.73</text>
+<rect x="664.0" y="247.1" width="44" height="82.9" rx="3" fill="#2563EB"/>
+<text x="686.0" y="241.1" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.35</text>
+<rect x="720.0" y="95.9" width="44" height="234.1" rx="3" fill="#DC2626"/>
+<text x="742.0" y="89.9" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.99</text>
+<rect x="776.0" y="178.8" width="44" height="151.2" rx="3" fill="#059669"/>
+<text x="798.0" y="172.8" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#0F172A">0.64</text>
 <text x="742.0" y="358" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#0F172A">3x3 layout</text>
-<text x="742.0" y="376" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#64748B">frontier 256, ratio 582.845x</text>
+<text x="742.0" y="376" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#64748B">frontier 1024, ratio 1011.94x</text>
 <rect x="102" y="402" width="14" height="14" rx="2" fill="#2563EB"/>
 <text x="124" y="414" font-family="Arial, sans-serif" font-size="13" fill="#334155">Typed path slope</text>
 <rect x="322" y="402" width="14" height="14" rx="2" fill="#DC2626"/>
