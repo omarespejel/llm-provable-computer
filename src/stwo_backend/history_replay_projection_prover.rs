@@ -28,8 +28,8 @@ use stwo_constraint_framework::{
 };
 
 use super::decoding::{
-    commit_phase12_layout, verify_phase30_decoding_step_proof_envelope_manifest,
-    Phase30DecodingStepProofEnvelopeManifest, STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
+    commit_phase12_layout, commit_phase30_step_envelope_commitment_list,
+    verify_phase30_decoding_step_proof_envelope_manifest, Phase30DecodingStepProofEnvelopeManifest,
 };
 use super::recursion::{
     commit_phase43_history_replay_trace, verify_phase43_history_replay_trace,
@@ -62,6 +62,8 @@ pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_ACCEPTANCE_VERSION_PH
     "phase43-proof-native-source-emission-acceptance-v1";
 pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_DECISION_PHASE43_PARTIAL: &str =
     "partial_emitted_artifact_accepts_without_trace_upstream_source_chain_proof_missing";
+/// Issue anchor for the bounded Phase43 proof-native source-emission prototype.
+pub const PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID: u32 = 249;
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44: &str =
     "phase44-history-replay-projection-compact-claim-v1";
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44: &str =
@@ -309,6 +311,8 @@ pub struct Phase43HistoryReplayProjectionSourceRootClaim {
     pub useful_compression_boundary_candidate: bool,
 }
 
+/// Prototype artifact exposing the Phase43 source-root inputs that a future
+/// source-chain proof would need to emit natively.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Phase43HistoryReplayProofNativeSourceEmission {
@@ -331,6 +335,9 @@ pub struct Phase43HistoryReplayProofNativeSourceEmission {
     pub proof_native_source_emission_commitment: String,
 }
 
+/// Verifier-side acceptance summary for the Phase43 proof-native emission
+/// prototype. This intentionally remains a PARTIAL result until provenance is
+/// supplied by an upstream source-chain proof.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Phase43HistoryReplayProofNativeSourceEmissionAcceptance {
@@ -1514,6 +1521,11 @@ pub fn verify_phase43_history_replay_projection_source_root_compact_envelope(
     )
 }
 
+/// Prepare the bounded Phase43 proof-native source-emission prototype from the
+/// existing full trace and Phase30 manifest.
+///
+/// This helper proves verifier shape only; the returned artifact is explicitly
+/// marked as not emitted by the upstream source-chain proof.
 pub fn prepare_phase43_history_replay_proof_native_source_emission(
     trace: &Phase43HistoryReplayTrace,
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
@@ -1551,7 +1563,7 @@ pub fn prepare_phase43_history_replay_proof_native_source_emission(
             .to_string(),
         source_surface_version: STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43
             .to_string(),
-        issue_id: 249,
+        issue_id: PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID,
         source_claim,
         projection_commitment_emitted_by_source_chain: projection_commitment,
         projection_row_commitment_or_openings_in_stwo_field_domain: projection_row_commitment,
@@ -1573,6 +1585,8 @@ pub fn prepare_phase43_history_replay_proof_native_source_emission(
     Ok(emission)
 }
 
+/// Verify the internal consistency of a Phase43 proof-native source-emission
+/// prototype and pin the prototype provenance flags fail-closed.
 pub fn verify_phase43_history_replay_proof_native_source_emission(
     emission: &Phase43HistoryReplayProofNativeSourceEmission,
 ) -> Result<()> {
@@ -1589,10 +1603,10 @@ pub fn verify_phase43_history_replay_proof_native_source_emission(
             emission.source_surface_version
         )));
     }
-    if emission.issue_id != 249 {
+    if emission.issue_id != PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID {
         return Err(VmError::InvalidConfig(format!(
-            "Phase43 proof-native source emission issue id {} does not match expected 249",
-            emission.issue_id
+            "Phase43 proof-native source emission issue id {} does not match expected {}",
+            emission.issue_id, PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID
         )));
     }
     validate_phase43_projection_source_root_claim(&emission.source_claim)?;
@@ -1605,6 +1619,18 @@ pub fn verify_phase43_history_replay_proof_native_source_emission(
     if emission.verifier_requires_phase43_trace || emission.verifier_requires_phase30_manifest {
         return Err(VmError::InvalidConfig(
             "Phase43 proof-native source emission verifier path must not require the full trace or Phase30 manifest"
+                .to_string(),
+        ));
+    }
+    if !emission.derived_from_full_phase43_trace_in_current_prototype {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source emission prototype must remain marked as derived from the full trace"
+                .to_string(),
+        ));
+    }
+    if emission.upstream_source_chain_proof_emits_artifact {
+        return Err(VmError::InvalidConfig(
+            "Phase43 proof-native source emission prototype must not self-report upstream source-chain proof emission"
                 .to_string(),
         ));
     }
@@ -1688,6 +1714,8 @@ pub fn verify_phase43_history_replay_proof_native_source_emission(
     Ok(())
 }
 
+/// Accept a Phase43 proof-native source-emission prototype against the compact
+/// projection proof without consuming the full trace or Phase30 manifest.
 pub fn verify_phase43_history_replay_proof_native_source_emission_acceptance(
     emission: &Phase43HistoryReplayProofNativeSourceEmission,
     compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
@@ -1733,8 +1761,7 @@ pub fn verify_phase43_history_replay_proof_native_source_emission_acceptance(
             .is_empty(),
         upstream_source_chain_proof_emits_artifact: emission
             .upstream_source_chain_proof_emits_artifact,
-        useful_second_boundary_today: emission.upstream_source_chain_proof_emits_artifact
-            && compact_binding_verified_without_trace,
+        useful_second_boundary_today: false,
         decision: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_DECISION_PHASE43_PARTIAL
             .to_string(),
     })
@@ -4170,21 +4197,13 @@ fn commit_phase43_projection_source_root(
 }
 
 fn commit_phase43_phase30_step_envelope_public_inputs(commitments: &[String]) -> Result<String> {
-    let mut hasher = Blake2bVar::new(32).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to initialize Phase 43 step-envelope public-input hash: {err}"
-        ))
-    })?;
-    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
-    hasher.update(b"step-envelope-list");
-    hasher.update(&(commitments.len() as u64).to_le_bytes());
     for (index, commitment) in commitments.iter().enumerate() {
         hex32_bytes(&format!("phase30_step_envelope[{index}]"), commitment)?;
-        hasher.update(commitment.as_bytes());
     }
-    finalize_hash32(hasher, "Phase 43 step-envelope public inputs")
+    Ok(commit_phase30_step_envelope_commitment_list(commitments))
 }
 
+/// Commit to the Phase43 proof-native source-emission prototype fields.
 pub fn commit_phase43_history_replay_proof_native_source_emission(
     emission: &Phase43HistoryReplayProofNativeSourceEmission,
 ) -> Result<String> {
@@ -12023,7 +12042,10 @@ mod tests {
             emission.emission_version,
             STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EMISSION_VERSION_PHASE43
         );
-        assert_eq!(emission.issue_id, 249);
+        assert_eq!(
+            emission.issue_id,
+            PHASE43_PROOF_NATIVE_SOURCE_EMISSION_ISSUE_ID
+        );
         assert!(emission.producer_emits_proof_native_public_inputs);
         assert!(emission.derived_from_full_phase43_trace_in_current_prototype);
         assert!(!emission.upstream_source_chain_proof_emits_artifact);
@@ -12119,6 +12141,52 @@ mod tests {
             .expect_err("false proof-native public input flag must be rejected");
         assert!(
             error.to_string().contains("proof-native public inputs"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase43_proof_native_source_emission_rejects_false_prototype_derivation_flag() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let mut emission =
+            prepare_phase43_history_replay_proof_native_source_emission(&trace, &phase30)
+                .expect("prepare proof-native source emission");
+        emission.derived_from_full_phase43_trace_in_current_prototype = false;
+        emission.proof_native_source_emission_commitment =
+            commit_phase43_history_replay_proof_native_source_emission(&emission)
+                .expect("recommit tampered source emission");
+
+        let error = verify_phase43_history_replay_proof_native_source_emission(&emission)
+            .expect_err("false prototype derivation flag must be rejected");
+        assert!(
+            error.to_string().contains("derived from the full trace"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase43_proof_native_source_emission_rejects_self_reported_upstream_emission_flag() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let mut emission =
+            prepare_phase43_history_replay_proof_native_source_emission(&trace, &phase30)
+                .expect("prepare proof-native source emission");
+        emission.upstream_source_chain_proof_emits_artifact = true;
+        emission.proof_native_source_emission_commitment =
+            commit_phase43_history_replay_proof_native_source_emission(&emission)
+                .expect("recommit tampered source emission");
+
+        let error = verify_phase43_history_replay_proof_native_source_emission_acceptance(
+            &emission,
+            &compact_envelope,
+        )
+        .expect_err("self-reported upstream emission flag must be rejected");
+        assert!(
+            error
+                .to_string()
+                .contains("must not self-report upstream source-chain proof emission"),
             "unexpected error: {error}"
         );
     }
