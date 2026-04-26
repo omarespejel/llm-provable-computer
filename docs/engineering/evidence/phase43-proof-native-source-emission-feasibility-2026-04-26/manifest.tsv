@@ -1,6 +1,6 @@
 name	exit_code	expected_exit	sha256	command
-phase43-proof-native-source-emission-test	0	0	09e6cdccbda7940fa6d7bebc2d1f401b824716f6fd4203feadef6abedd4fb6fd	env CARGO_TARGET_DIR=/tmp/pvm-gate-target cargo +nightly-2025-07-14 test --release --features stwo-backend --lib phase43_proof_native_source_emission -- --nocapture
+phase43-proof-native-source-emission-test	0	0	90ee9fd8973ab78191d8a958ebc84784ff3e19434a7432c8248c05d8ce49f177	env CARGO_TARGET_DIR=/tmp/pvm-gate-target cargo +nightly-2025-07-14 test --release --features stwo-backend --lib phase43_proof_native_source_emission -- --nocapture
 phase43-second-boundary-feasibility-test	0	0	c2974529235b524e24d1988fdb5eacc05dc6021cc8db51bc43a9716225b91663	env CARGO_TARGET_DIR=/tmp/pvm-gate-target cargo +nightly-2025-07-14 test --release --features stwo-backend --lib phase43_second_boundary_feasibility -- --nocapture
-nightly-stwo-check	0	0	7dba53ad71cb0d3b430b84e672fa38351dfd92bc5a7e6114a392795e4d27e70b	env CARGO_TARGET_DIR=/tmp/pvm-gate-target cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
-stable-toolchain-stwo-failure	101	101	28b405b71047186fcac1a898563813d817fb8cdd38f726d66445dbf655dd18e1	env CARGO_TARGET_DIR=/tmp/pvm-stable-repro-target cargo test --release --features stwo-backend --lib phase43_proof_native_source_emission -- --nocapture
+nightly-stwo-check	0	0	067069aaf0345b361149d3a1c726b3f2cd71ff615950ef93b37571082a8fb700	env CARGO_TARGET_DIR=/tmp/pvm-gate-target cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
+stable-toolchain-stwo-failure	101	101	28b405b71047186fcac1a898563813d817fb8cdd38f726d66445dbf655dd18e1	env CARGO_TARGET_DIR=/tmp/pvm-stable-repro-target cargo +stable test --release --features stwo-backend --lib phase43_proof_native_source_emission -- --nocapture
 local-release-gate	0	0	ee2a6d0514bc5c8e7b94dec446626d84d9c41129961c66781c61e0e87f6cd83f	env CARGO_TARGET_DIR=/tmp/pvm-gate-target bash scripts/local_release_gate.sh

@@ -12274,19 +12274,28 @@ fn phase30_hash_part(hasher: &mut Blake2bVar, bytes: &[u8]) {
 pub(crate) fn commit_phase30_step_envelope_list(
     envelopes: &[Phase30DecodingStepProofEnvelope],
 ) -> String {
-    let commitments = envelopes
-        .iter()
-        .map(|envelope| envelope.envelope_commitment.clone())
-        .collect::<Vec<_>>();
-    commit_phase30_step_envelope_commitment_list(&commitments)
+    commit_phase30_step_envelope_commitment_list(
+        envelopes
+            .iter()
+            .map(|envelope| envelope.envelope_commitment.as_str()),
+    )
 }
 
-pub(crate) fn commit_phase30_step_envelope_commitment_list(commitments: &[String]) -> String {
+pub(crate) fn commit_phase30_step_envelope_commitment_list<'a, I>(commitments: I) -> String
+where
+    I: IntoIterator<Item = &'a str>,
+    I::IntoIter: ExactSizeIterator,
+{
+    let commitments = commitments.into_iter();
+    let commitment_count = commitments.len();
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-envelope-list");
-    hasher.update(&(commitments.len() as u64).to_le_bytes());
+    hasher.update(&(commitment_count as u64).to_le_bytes());
     for commitment in commitments {
+        // Phase30 envelope commitments are fixed-width 32-byte digests encoded
+        // as 64-byte lowercase hex strings; verifier paths recompute each
+        // envelope commitment before accepting the manifest.
         hasher.update(commitment.as_bytes());
     }
     let mut out = [0u8; 32];
@@ -12294,6 +12303,10 @@ pub(crate) fn commit_phase30_step_envelope_commitment_list(commitments: &[String
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     lower_hex(&out)
+}
+
+pub(crate) fn commit_phase30_step_envelope_commitment_vec(commitments: &[String]) -> String {
+    commit_phase30_step_envelope_commitment_list(commitments.iter().map(String::as_str))
 }
 
 fn phase30_chain_boundary_pair(

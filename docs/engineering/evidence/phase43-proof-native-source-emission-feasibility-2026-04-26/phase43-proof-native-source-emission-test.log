@@ -1,11 +1,11 @@
    Compiling llm-provable-computer v0.1.0 (/Users/espejelomar/StarkNet/provable-transformer-vm/_pr_work/proof-native-source-emission-feasibility-v1)
-    Finished `release` profile [optimized] target(s) in 1m 04s
+    Finished `release` profile [optimized] target(s) in 1m 03s
      Running unittests src/lib.rs (/tmp/pvm-gate-target/release/deps/llm_provable_computer-78905dd298d47939)
 
 running 7 tests
+test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_false_prototype_derivation_flag ... ok
 test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_step_public_input_drift ... ok
 test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_false_public_input_flag ... ok
-test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_false_prototype_derivation_flag ... ok
 test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_projection_commitment_drift ... ok
 test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_rejects_self_reported_upstream_emission_flag ... ok
 test stwo_backend::history_replay_projection_prover::tests::phase43_proof_native_source_emission_acceptance_rejects_tampered_compact_binding ... ok
