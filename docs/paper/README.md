@@ -1,56 +1,32 @@
 # Paper Package
 
-This directory contains the publication-facing package for:
+This directory contains the presentation-facing paper package for:
 
-`On the Structural Fit of Transformer Workloads and STARK Proof Systems`
+`Tablero: Typed Verifier Boundaries for Layered STARK Systems, with Evidence from STARK-zkML`
 
-Primary files:
+Primary presentation files:
 
-- `stark-transformer-alignment-2026.md`
+- `tablero-typed-verifier-boundaries-2026.md`
+- `appendix-tablero-claim-boundary.md`
 - `appendix-system-comparison.md`
-- `appendix-scaling-companion.md`
-- `appendix-influence-realization.md`
 - `PUBLICATION_RELEASE.md`
 
 Supporting publication assets:
 
 - `figures/`
 - `evidence/`
-- `submission-v4-2026-04-11/`
 - `artifacts/`
+- `submission-v4-2026-04-11/`
 
-Current paper-freeze addendum (April 24 freeze + April 25 comparator refresh):
+Package posture:
 
-- `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
-- `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
-- `artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
-- `artifacts/stwo-transformer-shaped-v1-2026-04-21/`
-- `figures/stwo-phase44d-source-emission-2026-04.svg`
-- `figures/stwo-phase71-handoff-receipt-2026-04.svg`
-- `evidence/stwo-phase44d-source-emission-2026-04.tsv`
-- `evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
-- `evidence/published-zkml-numbers-2026-04.tsv`
-- `evidence/published-zkml-calibration-note-2026-04-24.md`
-- `evidence/obelyzk-sepolia-comparator-note-2026-04-25.md`
+- The presentation paper is about typed verifier boundaries, statement preservation,
+  replay avoidance, and explicit claim boundaries.
+- The transformer-shaped STARK-zkML stack is the empirical laboratory, not the scope of
+  the entire design claim.
+- The package keeps external language in the paper and appendices even when the tracked
+  evidence files and artifact directories retain older internal names for checksum and
+  provenance stability.
 
-This package keeps the April 24 freeze intact while adding an April 25 comparator
-refresh that sharpens the external calibration snapshot without promoting a new matched
-benchmark claim.
-
-Later bridge work remains implemented in-repo but is not yet part of the frozen
-publication-facing artifact bundle:
-
-- Phase81-84 translated Paper 3 seam surfaces
-
-Draft next-paper package:
-
-- `paper2/README.md`
-- `paper2/proof-carrying-decode-surfaces-2026.md`
-- `paper2/appendix-claim-boundary.md`
-- `paper2/appendix-ivc-positioning.md`
-- `paper2/appendix-engineering-gaps.md`
-- `paper2/appendix-artifact-map.md`
-
-For artifact-bundle scope, cited bundles, and archival provenance bundles, see:
-
-- `artifacts/README.md`
+Archived earlier drafts remain in this directory for provenance, but they are not the
+primary presentation path.
