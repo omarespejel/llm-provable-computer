@@ -188,6 +188,7 @@ REQUIRED_PRIMARY_LINKS = {
         "abstract-tablero-2026.md",
         "appendix-methodology-and-reproducibility.md",
         "figures/tablero-results-overview-2026-04.svg",
+        "figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg",
         "figures/tablero-replay-baseline-breakdown-2026-04.svg",
     ],
 }

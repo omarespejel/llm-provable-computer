@@ -31,7 +31,7 @@ It supports the following presentation posture:
 - the formal core is a statement-preservation theorem under explicit assumptions,
 - the empirical lab is one transformer-shaped STARK-zkML stack,
 - the main positive evidence is replay avoidance across three layout families,
-- the main presentation figures are the cross-family results overview and the replay-baseline breakdown generated from checked evidence,
+- the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
 - the main negative evidence is one bounded no-go on a second candidate boundary,
 - the external calibration is source-backed but not presented as a matched verifier race.
 

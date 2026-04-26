@@ -49,7 +49,23 @@ That is a real verifier-side improvement. It is **not** a claim that cryptograph
 verification itself became hundreds of times faster, and it is **not** a universal lower
 bound on all possible replay implementations.
 
-## 4. What the cross-family result means
+## 4. What the scaling-law fit means
+
+The scaling-law artifact is an explicitly labeled carry-aware experimental promotion:
+its inputs are engineering evidence from the experimental backend, and its paper-facing
+filename and metadata keep that source lane visible. It fits each checked curve in
+log-log space and is used only to summarize the measured grid, not to claim an
+asymptotic theorem or default-backend behavior. The safe reading is:
+
+- the replay baseline is near-linear over the checked grids,
+- the typed verifier path has a substantially lower measured growth slope, and
+- the ratio grows because the boundary removes replay work whose measured cost rises
+  much faster than the typed acceptance path.
+
+The fit should not be extrapolated beyond the checked grid without a separate frontier
+run or a formal cost model.
+
+## 5. What the cross-family result means
 
 The strongest empirical result in the paper is not one frontier number. It is that the
 same replay-avoidance mechanism reproduces across three checked layout families with the
@@ -64,7 +80,7 @@ not weaken the paper's main point. It clarifies it:
 - the typed boundary's artifact size stays in a narrow band while verifier cost remains
   family dependent.
 
-## 5. Reproducibility handles
+## 6. Reproducibility handles
 
 The paper package is designed so that the exact public-facing numbers come from checked
 machine-readable evidence and not from prose drift.
@@ -78,17 +94,21 @@ Use these directories as the canonical handles:
 The current package relies in particular on:
 
 - `docs/paper/evidence/tablero-results-overview-2026-04.tsv`
+- `docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`
+- `docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.json`
 - `docs/paper/evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
 - `docs/paper/figures/tablero-results-overview-2026-04.svg`
+- `docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
 - `docs/paper/figures/tablero-replay-baseline-breakdown-2026-04.svg`
 
 The release gate for the paper package should always include:
 
+- `python3 scripts/paper/generate_tablero_scaling_law.py`
 - `python3 scripts/paper/paper_preflight.py --repo-root .`
 - the unit tests for any paper-specific generation script that changed,
 - `git diff --check`
 
-## 6. Safe public wording
+## 7. Safe public wording
 
 The safest public wording is:
 

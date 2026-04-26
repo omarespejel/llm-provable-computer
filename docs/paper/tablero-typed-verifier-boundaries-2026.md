@@ -335,8 +335,8 @@ This is the strongest empirical claim the current paper should make.
 - The constants still differ materially.
 - The ratio grows with `N` on every checked family.
 
-That means the typed boundary is removing a linearly growing replay surface rather than
-merely shaving a constant factor.
+That means the typed boundary is removing a replay surface that is near-linear over the
+checked grid rather than merely shaving a constant factor.
 
 ![Tablero results overview across checked families](figures/tablero-results-overview-2026-04.svg)
 
@@ -344,7 +344,42 @@ merely shaving a constant factor.
 families. The frontier artifact size stays in a narrow band, while verifier cost remains
 family dependent.
 
-### 6.3 What is constant and what is not
+### 6.3 Checked scaling-law fit
+
+The frontier table is intentionally not the whole argument. We also fit the full checked
+curves in log-log space for each family. This is an explicitly labeled carry-aware
+experimental-backend artifact: the source evidence is promoted from the engineering lane
+with that label preserved in the filename and metadata. It is a measured-regime fit, not
+an asymptotic theorem and not a claim about a default backend.
+
+#### Table 2. Log-log slope fit over the checked grids
+
+| Family | Grid | Typed-path slope | Replay-baseline slope | Ratio slope | Ratio fit `R^2` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `2-1024` | `0.3559` | `0.9921` | `0.6362` | `0.9706` |
+| `2x2` | `2-1024` | `0.3567` | `0.9899` | `0.6332` | `0.9704` |
+| `3x3` | `2-256` | `0.2573` | `0.9837` | `0.7265` | `0.9876` |
+
+The replay baseline is near-linear over the checked grids. The typed path grows much
+more slowly over the same grids, so the ratio grows for structural reasons in the
+measured regime. This is a stronger statement than quoting a single high endpoint.
+
+![Tablero scaling-law fit across checked families](figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg)
+
+**Figure 2.** The checked scaling-law fit separates the typed path, the replay baseline,
+and the ratio curve on the carry-aware experimental backend. The result supports a
+measured-regime scaling claim, not an unbounded asymptotic or default-backend claim.
+
+Reproducibility note for Table 2 and Figure 2: regenerate the machine-readable TSV,
+JSON, and SVG with `python3 scripts/paper/generate_tablero_scaling_law.py`. The script
+uses only Python 3 standard-library code, reads median-of-five millisecond timing rows
+from the checked carry-aware experimental evidence, and requires the step grids
+`2-1024`, `2-1024`, and `2-256` for the three families. Its outputs are
+`docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`,
+`docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.json`, and
+`docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`.
+
+### 6.4 What is constant and what is not
 
 One subtle but important point must be stated explicitly.
 
@@ -361,12 +396,12 @@ So the right sentence is:
 This distinction matters. If we blur it, a reviewer can correctly object that the data do
 not show family-invariant verifier cost.
 
-### 6.4 Causal decomposition
+### 6.5 Causal decomposition
 
 The large ratios are easy to misread if we only quote the frontier numbers. The causal
 breakdown shows where the baseline actually spends time.
 
-#### Table 2. Replay baseline decomposition at the checked frontier
+#### Table 3. Replay baseline decomposition at the checked frontier
 
 | Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -383,7 +418,7 @@ This is the stronger causal lesson:
 
 ![Replay baseline breakdown across checked families](figures/tablero-replay-baseline-breakdown-2026-04.svg)
 
-**Figure 2.** At the checked frontiers, replay time is spread across repeated proof
+**Figure 3.** At the checked frontiers, replay time is spread across repeated proof
 checks and commitment rebuilds rather than one dominant final comparison.
 
 At the same frontiers, compact-proof verification stays between `0.999 ms` and
@@ -391,7 +426,7 @@ At the same frontiers, compact-proof verification stays between `0.999 ms` and
 The verifier gap therefore comes from removing a bundle of repeated replay work, not
 from accelerating cryptographic verification itself.
 
-### 6.5 Bounded negative result
+### 6.6 Bounded negative result
 
 The paper also includes one negative result because that is part of the pattern's honest
 boundary.
