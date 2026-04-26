@@ -28,7 +28,7 @@ EXPECTED_BENCHMARK_VERSION = "stwo-phase44d-source-emission-experimental-3x3-lay
 EXPECTED_SEMANTIC_SCOPE = (
     "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_3x3_layout"
 )
-CANONICAL_STEPS = [2, 4, 8, 16, 32, 64, 128, 256]
+CANONICAL_STEPS = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 VARIANT_ORDER = [
     "typed_source_boundary_plus_compact_projection",
     "phase30_manifest_plus_compact_projection_baseline",
