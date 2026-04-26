@@ -141,7 +141,9 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
         rows = self._full_canonical_rows(exclude_steps=(512,))
         with self.assertRaises(SystemExit) as ctx:
             MODULE.validate_rows(rows, source=Path("sample.tsv"))
-        self.assertIn("unexpected step counts", str(ctx.exception))
+        message = str(ctx.exception)
+        self.assertIn("unexpected step counts", message)
+        self.assertIn("512", message)
 
     def test_validate_rows_rejects_extra_non_canonical_step(self):
         rows = self._full_canonical_rows()
@@ -154,6 +156,7 @@ class Phase44dCarryAwareExperimental3x3ScalingFigureTests(unittest.TestCase):
             "unexpected step count" in message or "unexpected step counts" in message,
             msg=message,
         )
+        self.assertIn("2048", message)
 
     def test_canonical_steps_match_benchmark_sweep(self):
         self.assertEqual(

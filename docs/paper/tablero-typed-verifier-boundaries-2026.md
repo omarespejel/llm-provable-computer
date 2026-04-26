@@ -436,9 +436,9 @@ breakdown shows where the baseline actually spends time.
 
 | Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| default (`1024`) | `2,037.447 ms` | `2,309.925 ms` | `2,272.194 ms` | `1,940.735 ms` | `0.252 ms` | `8,662.094 ms` |
-| `2x2` (`1024`) | `1,540.888 ms` | `2,079.332 ms` | `2,089.597 ms` | `1,718.026 ms` | `0.175 ms` | `7,392.294 ms` |
-| `3x3` (`1024`) | `2,098.439 ms` | `2,272.647 ms` | `2,203.535 ms` | `1,912.206 ms` | `0.192 ms` | `8,572.800 ms` |
+| default (`1024`) | `2,363.571 ms` | `2,277.583 ms` | `2,309.668 ms` | `1,956.754 ms` | `0.109 ms` | `8,907.685 ms` |
+| `2x2` (`1024`) | `1,717.496 ms` | `2,048.247 ms` | `2,047.802 ms` | `1,763.336 ms` | `0.234 ms` | `7,577.116 ms` |
+| `3x3` (`1024`) | `1,953.974 ms` | `2,150.994 ms` | `2,210.458 ms` | `1,782.693 ms` | `0.200 ms` | `8,098.320 ms` |
 
 This is the stronger causal lesson:
 
@@ -452,10 +452,11 @@ This is the stronger causal lesson:
 **Figure 3.** At the checked frontiers, replay time is spread across repeated proof
 checks and commitment rebuilds rather than one dominant final comparison.
 
-At the same frontiers, compact-proof verification stays between `0.999 ms` and
-`1.860 ms`, and typed-boundary binding stays between `1.917 ms` and `5.013 ms`.
-The verifier gap therefore comes from removing a bundle of repeated replay work, not
-from accelerating cryptographic verification itself.
+At the same `1024`-step frontiers, compact-proof verification stays between
+`1.853 ms` (`2x2`) and `1.936 ms` (`3x3`), and typed-boundary binding stays
+between `4.955 ms` (`2x2`) and `5.048 ms` (`3x3`). The verifier gap therefore
+comes from removing a bundle of repeated replay work, not from accelerating
+cryptographic verification itself.
 
 ### 6.6 Supporting second boundary on a distinct source surface
 
