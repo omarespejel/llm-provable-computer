@@ -156,6 +156,10 @@ cargo +nightly careful test --features stwo-backend --lib phase45_public_input_b
 cargo llvm-cov --features stwo-backend --lib --lcov --output-path target/tablero-hardening/lcov.info
 ```
 
+The fuzz suite accepts optional checked-in seed corpora under `fuzz/corpus/<target>/`,
+but the default hardening packet does not require a corpus-refresh script or any
+pre-generated accepted-chain bundle.
+
 These are intentionally optional because the repository does not yet rely on
 those tools in the default merge flow.
 
@@ -191,6 +195,9 @@ This packet adds dedicated fuzz targets for:
 - Phase46 Stwo proof-adapter receipt
 - Phase47 recursive-verifier wrapper candidate
 - Phase48 recursive proof-wrapper attempt
+- one raw serialized Phase44D→48 against-sources bundle fuzzer that parses
+  an arbitrary artifact bundle and exercises every standalone and
+  `*_against_sources` acceptance step in the chain
 - one bounded differential mutator that starts from an accepted serialized
   Phase44D→48 chain artifact, applies a semantic post-serialization drift, and
   asserts verifier rejection at the mutated stage and its against-sources check
