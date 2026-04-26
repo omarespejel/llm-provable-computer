@@ -128,6 +128,7 @@ Tablero boundary.
 - Use `gh pr merge --rebase`.
 - Do not merge while review threads remain actionable.
 - When a bot leaves only a summary comment, check whether it actually opened review threads before treating it as a blocker.
+- After the latest AI-reviewer activity, wait at least `5` minutes, then recheck the review surface before merging.
 
 ## Research and evidence culture
 
@@ -167,9 +168,9 @@ Tablero boundary.
    multiply/store carry patterns are both checked.
 9. Treat the Phase43 second-boundary result as landed on the emitted source
    surface, but keep the claim scoped honestly: it is a real second boundary
-   with modest verifier-side gains (`1.20x` on the publication row and `3.68x`
-   at the checked `128`-step experimental frontier), not a replay-elimination
-   headline on the scale of Phase44D.
+   with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
+   at the checked `1024`-step experimental frontier under median-of-5 timing),
+   not a replay-elimination headline on the scale of Phase44D.
 10. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 11. Do not spend more time pushing the current publication/default Phase71

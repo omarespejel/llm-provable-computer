@@ -34,10 +34,13 @@ layout families. At the checked frontier, the replay-avoidance ratio grows from
 `19.2x` to `250.6x` on the `3x3` family and reaches `312.3x` on the default family and
 `925.1x` on the `2x2` family at `1024` checked steps. The dominant avoided cost is not
 faster FRI verification; it is the verifier-side replay path itself, especially
-ordered canonical serialization and hashing in the manifest baseline. A second
-candidate boundary is also reported honestly as a negative result: it did not clear
-as a meaningful replay-elimination boundary under the current source-emission and cost
-structure.
+ordered canonical serialization and hashing in the manifest baseline. A second typed
+boundary on a distinct emitted-source surface also clears as supporting positive
+evidence: `1.22x` on the conservative publication row and `6.66x` at the checked
+`1024`-step experimental frontier under median-of-five timing. The paper also reports
+one bounded compactness no-go: a narrower handoff object that shrinks bytes but not
+verifier latency because it compacts a replay-dependent path rather than eliminating
+replay.
 
 The contribution is therefore threefold: a reusable verifier-boundary pattern, a
 formal statement-preservation criterion for deploying it safely, and an empirical
@@ -88,8 +91,8 @@ The paper makes four claims.
    replay-avoidance curve.
 4. **Boundary claim.** The pattern is not universal. It only applies where the source
    side emits enough proof-native material and where the replay surface is expensive
-   enough to be worth removing. We include one bounded negative result to mark that
-   boundary explicitly.
+   enough to be worth removing. We include one smaller supporting second boundary and
+   one bounded compactness no-go to mark that boundary explicitly.
 
 We also state the non-claims up front. This paper does **not** claim a new STARK
 soundness theorem, backend independence, recursive proof compression, a full end-to-end
@@ -426,22 +429,58 @@ At the same frontiers, compact-proof verification stays between `0.999 ms` and
 The verifier gap therefore comes from removing a bundle of repeated replay work, not
 from accelerating cryptographic verification itself.
 
-### 6.6 Bounded negative result
+### 6.6 Supporting second boundary on a distinct source surface
 
-The paper also includes one negative result because that is part of the pattern's honest
+The paper should not rely on only one replay-avoidance surface. The current empirical
+lab also includes a second typed boundary on a distinct emitted-source surface.
+
+This second boundary is not the paper's timing headline. Its verifier-side savings are
+much smaller than the main replay baseline because the removed source-side derivation
+work is smaller. But it is still structurally important because it shows that the
+pattern is not singular to one replay surface.
+
+#### Table 4. Supporting second-boundary publication checkpoint
+
+| Surface | Checked point | Typed-boundary verify | Replay baseline verify | Ratio |
+| --- | ---: | ---: | ---: | ---: |
+| conservative publication row | `2` | `0.857 ms` | `1.045 ms` | `1.22x` |
+
+The supporting point matters because it is a distinct emitted-source surface, not
+because it is large. The paper-facing claim here is only that the second surface clears
+honestly on the conservative publication row.
+
+A broader engineering sweep over the same surface is checked in the engineering lane,
+but it is not promoted here as a paper-facing performance claim.
+
+The right interpretation is narrow:
+
+- the emitted-source boundary is a real second typed boundary,
+- the gain is modest compared with the paper's main replay-elimination result, and
+- the result is supporting transfer evidence rather than a second headline curve.
+
+So this second result is supporting transfer evidence, not a replacement headline.
+
+### 6.7 Bounded compactness no-go
+
+The paper also includes one bounded no-go because that is part of the pattern's honest
 boundary.
 
-We evaluated a second candidate boundary over a different source-binding surface. It did
-not clear as a meaningful replay-elimination boundary. Two problems blocked it:
+We evaluated a narrower handoff object on the conservative publication lane. It does
+reduce serialized bytes, but it does not remove the ordered replay dependency that
+dominates verifier time on that surface.
 
-1. the source side did not yet emit enough proof-native material to let the verifier bind
-   the boundary completely, and
-2. the dependency it would have eliminated was already too cheap to produce a meaningful
-   replay-avoidance gain.
+That means the handoff object is useful as a compactness result, but not as a
+replay-avoidance result. In the checked median-of-five publication evidence, it is
+smaller on bytes but slower on verifier time because the verifier still rebuilds the
+same ordered replay surface underneath the compact object.
 
-That is not a failure of the theorem. It is exactly the situation in which the theorem's
-preconditions do not hold, and the right result is a recorded no-go rather than an
-inflated second positive example.
+This is not a failure of the theorem. It is an example of the theorem's applicability
+boundary:
+
+1. a compact object alone is not enough if it does not remove replay from the verifier,
+   and
+2. not every smaller verifier-facing object should be promoted as a replay-elimination
+   boundary.
 
 ______________________________________________________________________
 
@@ -514,8 +553,8 @@ The paper does not claim that Tablero is always a win. A typed boundary only hel
 - the replay surface is expensive, and
 - the source side emits enough proof-native binding material.
 
-The recorded negative result exists precisely to show that we are not smoothing over this
-constraint.
+The recorded compactness no-go exists precisely to show that we are not smoothing over
+this constraint.
 
 ______________________________________________________________________
 
@@ -535,8 +574,8 @@ That gives a contribution at three levels.
 - At the formal level, it states a clean statement-preservation theorem with explicit
   preconditions.
 - At the empirical level, it shows a real replay-avoidance curve across three layout
-  families, together with a bounded negative result that marks where the pattern does not
-  yet apply.
+  families, a supporting second typed boundary on a distinct source surface, and one
+  bounded compactness no-go that marks where the pattern does not yet apply.
 
 This is not the end of the story. The next steps are clear: broader backend transfer,
 stronger external calibration, and eventually a recursive layer that preserves the same

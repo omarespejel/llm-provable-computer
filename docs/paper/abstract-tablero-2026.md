@@ -24,9 +24,12 @@ measured scaling effect in this regime rather than one isolated frontier point. 
 replay-baseline breakdown shows that the
 avoided work is distributed across repeated embedded-proof re-verification,
 source-chain commitment rebuilds, per-step commitment rebuilds, and manifest
-finalization rather than one dominant equality check. The paper also includes a
-bounded negative result showing that the pattern does not apply honestly when the
-source side emits too little proof-native material or when the candidate replay
-surface is already cheap. The contribution is therefore a reusable verifier-boundary
-pattern, a statement-preservation criterion for deploying it safely, and an empirical
-study of when replay elimination materially changes verifier latency.
+finalization rather than one dominant equality check. A second typed boundary on a
+distinct emitted-source surface also clears as supporting positive evidence on the
+conservative publication row. The broader engineering sweep on that surface remains
+checked in the engineering lane and is not promoted here as a paper-facing claim. The
+paper also includes one bounded compactness no-go: a narrower handoff object that
+reduces bytes but not verifier latency because it compacts a replay-dependent path
+rather than eliminating replay. The contribution is therefore a reusable
+verifier-boundary pattern, a statement-preservation criterion for deploying it safely,
+and an empirical study of when replay elimination materially changes verifier latency.

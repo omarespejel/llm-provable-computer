@@ -72,8 +72,8 @@ calibration row**.
 It is **not** a matched local comparator to this repo's current paper-facing rows:
 
 - the public Obelyzk object is a recursive STARK settlement proof over a GKR stack,
-- the local `Phase44D` row is a pre-recursive typed-boundary latency surface, and
-- the local `Phase71` row is a pre-recursive compact handoff surface.
+- the local typed-source-boundary row is a pre-recursive typed-boundary latency surface, and
+- the local compact-handoff row is a pre-recursive compact handoff surface.
 
 So the public row is stronger than the old README-only warm-cache proof anecdote, but it
 does not justify a sentence like "our verifier is faster than Obelyzk's verifier" or
@@ -105,5 +105,5 @@ If the paper needs one sentence from this note, the safe version is:
 > Obelyzk now provides a source-backed Starknet Sepolia recursive verifier object
 > (`942` felts, exact contract and verified transaction pinned), which sharpens the
 > public STARK-native deployment comparison, but it is still not a matched local
-> verifier-time comparator to this repo's pre-recursive `Phase44D` or `Phase71`
+> verifier-time comparator to this repo's pre-recursive typed-source-boundary or compact-handoff
 > artifact surfaces.

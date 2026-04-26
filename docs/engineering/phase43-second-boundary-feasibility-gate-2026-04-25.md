@@ -90,27 +90,30 @@ At `2` steps on the conservative carry-free publication lane:
 
 | Candidate total verifier-side work | Current baseline total verifier-side work | Ratio |
 |---:|---:|---:|
-| 0.848 ms | 1.020 ms | 1.20x |
+| 0.857 ms | 1.045 ms | 1.22x |
 
-### Experimental carry-aware results through 128 steps
+### Experimental carry-aware results through 1024 steps
 
-Single-run engineering timings on the experimental carry-aware backend:
+Checked median-of-5 engineering timings on the experimental carry-aware backend:
 
 | Steps | Candidate total verifier-side work | Current baseline total verifier-side work | Ratio |
 |---|---:|---:|---:|
-| 2 | 0.845 ms | 1.020 ms | 1.21x |
-| 4 | 0.868 ms | 1.228 ms | 1.42x |
-| 8 | 0.896 ms | 1.372 ms | 1.53x |
-| 16 | 0.999 ms | 1.800 ms | 1.80x |
-| 32 | 1.194 ms | 2.710 ms | 2.27x |
-| 64 | 1.461 ms | 4.254 ms | 2.91x |
-| 128 | 2.055 ms | 7.555 ms | 3.68x |
+| 2 | 0.830 ms | 1.018 ms | 1.23x |
+| 4 | 0.842 ms | 1.160 ms | 1.38x |
+| 8 | 0.937 ms | 1.390 ms | 1.48x |
+| 16 | 1.009 ms | 1.805 ms | 1.79x |
+| 32 | 1.156 ms | 2.620 ms | 2.27x |
+| 64 | 1.490 ms | 4.303 ms | 2.89x |
+| 128 | 2.073 ms | 7.651 ms | 3.69x |
+| 256 | 3.109 ms | 14.064 ms | 4.52x |
+| 512 | 5.337 ms | 27.598 ms | 5.17x |
+| 1024 | 7.879 ms | 52.447 ms | 6.66x |
 
-Causal decomposition at `128` steps:
+Causal decomposition at `1024` steps:
 
-- compact proof only: `0.642 ms`
-- source-root derivation only: `6.235 ms`
-- source-boundary binding only: `0.525 ms`
+- compact proof only: `1.749 ms`
+- source-root derivation only: `47.974 ms`
+- source-boundary binding only: `2.424 ms`
 
 This matters for the claim boundary:
 
@@ -143,7 +146,7 @@ That is enough for the second-boundary gate.
 
 ### Narrow caveat that stays in scope
 
-The emitted boundary is a real verifier surface, but its checked performance evidence is still single-run engineering timing, not a publication-grade timing policy.
+The emitted boundary is a real verifier surface, but its checked performance evidence is still engineering-lane evidence, not a publication-lane promotion.
 
 ### Next move
 
@@ -158,26 +161,23 @@ Keep the paper wording careful:
 Publication-lane checkpoint:
 
 ```bash
-cargo +nightly-2025-07-14 run --release --features stwo-backend --bin tvm -- \
-  bench-stwo-phase43-source-root-feasibility \
-  --capture-timings \
-  --output-tsv docs/engineering/evidence/phase43-source-root-feasibility-publication-2026-04.tsv \
-  --output-json docs/engineering/evidence/phase43-source-root-feasibility-publication-2026-04.json
+BENCH_RUNS=5 \
+CAPTURE_TIMINGS=1 \
+scripts/engineering/generate_phase43_source_root_feasibility_bundle.sh
 ```
 
 Experimental feasibility sweep:
 
 ```bash
-cargo +nightly-2025-07-14 run --release --features stwo-backend --bin tvm -- \
-  bench-stwo-phase43-source-root-feasibility-experimental \
-  --step-counts 2,4,8,16,32,64,128 \
-  --capture-timings \
-  --output-tsv docs/engineering/evidence/phase43-source-root-feasibility-experimental-2026-04.tsv \
-  --output-json docs/engineering/evidence/phase43-source-root-feasibility-experimental-2026-04.json
+BENCH_RUNS=5 \
+CAPTURE_TIMINGS=1 \
+STEP_COUNTS=2,4,8,16,32,64,128,256,512,1024 \
+scripts/engineering/generate_phase43_source_root_feasibility_bundle.sh
 ```
 
 Figure generation:
 
 ```bash
-python3 scripts/engineering/generate_phase43_source_root_feasibility_figure.py
+python3 scripts/engineering/generate_phase43_source_root_feasibility_figure.py \
+  --input-tsv docs/engineering/evidence/phase43-source-root-feasibility-experimental-2026-04.tsv
 ```

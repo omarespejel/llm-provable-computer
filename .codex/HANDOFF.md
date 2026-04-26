@@ -123,6 +123,7 @@ Use these in order of authority for current state:
 - Use `gh pr merge --rebase`.
 - Do not merge while review threads are still actionable.
 - Treat bot review summaries as non-blocking only after checking whether they produced actual review threads.
+- After the latest AI-reviewer activity, wait at least `5` minutes, then recheck threads and findings before merging.
 
 ## Research culture
 
@@ -162,9 +163,9 @@ Use these in order of authority for current state:
    verifier change.
 8. Treat the Phase43 second-boundary result as landed on the emitted source
    surface, but keep the claim scoped honestly: it is a real second boundary
-   with modest verifier-side gains (`1.20x` on the publication row and `3.68x`
-   at the checked `128`-step experimental frontier), not a replay-elimination
-   headline on the scale of Phase44D.
+   with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
+   at the checked `1024`-step experimental frontier under median-of-5 timing),
+   not a replay-elimination headline on the scale of Phase44D.
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
