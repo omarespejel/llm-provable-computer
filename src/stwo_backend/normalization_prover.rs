@@ -167,7 +167,7 @@ pub struct Phase92SharedNormalizationPrimitiveArtifact {
 
 pub fn prove_phase5_normalization_lookup_demo_envelope(
 ) -> Result<Phase5NormalizationLookupProofEnvelope> {
-    let bundle = build_normalization_demo_bundle();
+    let bundle = build_normalization_demo_bundle()?;
     Ok(Phase5NormalizationLookupProofEnvelope {
         proof_backend: StarkProofBackend::Stwo,
         proof_backend_version: STWO_NORMALIZATION_PROOF_VERSION_PHASE5.to_string(),
@@ -206,7 +206,7 @@ pub fn verify_phase5_normalization_lookup_demo_envelope(
         )));
     }
 
-    let bundle = build_normalization_demo_bundle();
+    let bundle = build_normalization_demo_bundle()?;
     if envelope.canonical_table_rows != bundle.table_rows {
         return Err(VmError::UnsupportedProof(
             "normalization demo proof envelope does not match the canonical Phase 5 lookup table"
@@ -472,7 +472,7 @@ pub fn load_phase92_shared_normalization_primitive_artifact(
 }
 
 pub fn prove_phase5_normalization_lookup_demo() -> Result<Vec<u8>> {
-    let bundle = build_normalization_demo_bundle();
+    let bundle = build_normalization_demo_bundle()?;
     let config = PcsConfig::default();
     let component = phase5_normalization_component(
         bundle.log_size,
@@ -533,7 +533,7 @@ pub fn prove_phase5_normalization_lookup_demo() -> Result<Vec<u8>> {
 }
 
 pub fn verify_phase5_normalization_lookup_demo(proof: &[u8]) -> Result<bool> {
-    let bundle = build_normalization_demo_bundle();
+    let bundle = build_normalization_demo_bundle()?;
     let payload: Phase5NormalizationProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     if payload.canonical_table_rows != bundle.table_rows {
@@ -582,29 +582,42 @@ struct SharedNormalizationBundle {
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 }
 
-fn build_normalization_demo_bundle() -> NormalizationDemoBundle {
+fn build_normalization_demo_bundle() -> Result<NormalizationDemoBundle> {
     let log_size = LOG_N_LANES.max(4);
     let row_count = 1usize << log_size;
-    let table_rows = padded_table_rows(row_count);
+    let table_rows = padded_table_rows(row_count)?;
     let preprocessed_trace = normalization_preprocessed_trace(log_size, &table_rows);
     let base_trace = normalization_base_trace(log_size, &table_rows);
-    NormalizationDemoBundle {
+    Ok(NormalizationDemoBundle {
         log_size,
         table_rows,
         preprocessed_trace,
         base_trace,
-    }
+    })
 }
 
-fn padded_table_rows(row_count: usize) -> Vec<(u16, u16)> {
+fn padded_table_rows(row_count: usize) -> Result<Vec<(u16, u16)>> {
     let base_rows: Vec<_> = phase5_normalization_table_rows()
         .into_iter()
         .map(|row| (row.norm_sq, row.inv_sqrt_q8))
         .collect();
-    let pad = *base_rows.last().expect("normalization table rows");
-    let mut rows = base_rows;
+    pad_normalization_rows(
+        base_rows,
+        row_count,
+        "normalization demo requires at least one canonical lookup table row",
+    )
+}
+
+fn pad_normalization_rows(
+    mut rows: Vec<(u16, u16)>,
+    row_count: usize,
+    missing_rows_message: &'static str,
+) -> Result<Vec<(u16, u16)>> {
+    let pad = *rows
+        .last()
+        .ok_or_else(|| VmError::InvalidConfig(missing_rows_message.to_string()))?;
     rows.resize(row_count, pad);
-    rows
+    Ok(rows)
 }
 
 fn normalization_preprocessed_trace(
@@ -664,6 +677,12 @@ fn build_shared_normalization_bundle(
         .into_iter()
         .map(|row| (row.norm_sq, row.inv_sqrt_q8))
         .collect();
+    if canonical_rows.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "shared normalization lookup requires at least one canonical lookup table row"
+                .to_string(),
+        ));
+    }
     let mut selected_positions = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let Some(position) = canonical_rows.iter().position(|candidate| candidate == row) else {
@@ -683,11 +702,11 @@ fn build_shared_normalization_bundle(
 
     let log_size = LOG_N_LANES.max(4);
     let row_count = 1usize << log_size;
-    let mut padded_canonical_rows = canonical_rows.clone();
-    let pad = *padded_canonical_rows
-        .last()
-        .expect("phase5 normalization table rows");
-    padded_canonical_rows.resize(row_count, pad);
+    let padded_canonical_rows = pad_normalization_rows(
+        canonical_rows.clone(),
+        row_count,
+        "shared normalization lookup requires at least one canonical lookup table row",
+    )?;
     let preprocessed_trace = normalization_preprocessed_trace(log_size, &padded_canonical_rows);
     let base_trace =
         shared_normalization_base_trace(log_size, &padded_canonical_rows, &selected_positions);
@@ -1252,5 +1271,16 @@ mod tests {
         let error = verify_phase92_shared_normalization_primitive_artifact(&artifact)
             .expect_err("multiplicity drift should fail");
         assert!(error.to_string().contains("multiplicity drift"));
+    }
+
+    #[test]
+    fn normalization_padding_rejects_empty_canonical_rows() {
+        let error = pad_normalization_rows(
+            Vec::new(),
+            16,
+            "normalization demo requires at least one canonical lookup table row",
+        )
+        .expect_err("empty canonical rows should fail");
+        assert!(error.to_string().contains("canonical lookup table row"));
     }
 }

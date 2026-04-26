@@ -113,7 +113,7 @@ pub struct Phase10SharedLookupProofEnvelope {
 }
 
 pub fn prove_phase3_binary_step_lookup_demo_envelope() -> Result<Phase3LookupProofEnvelope> {
-    let bundle = build_lookup_demo_bundle();
+    let bundle = build_lookup_demo_bundle()?;
     Ok(Phase3LookupProofEnvelope {
         proof_backend: StarkProofBackend::Stwo,
         proof_backend_version: STWO_LOOKUP_PROOF_VERSION_PHASE3.to_string(),
@@ -152,7 +152,7 @@ pub fn verify_phase3_binary_step_lookup_demo_envelope(
         )));
     }
 
-    let bundle = build_lookup_demo_bundle();
+    let bundle = build_lookup_demo_bundle()?;
     if envelope.canonical_table_rows != bundle.table_rows {
         return Err(VmError::UnsupportedProof(
             "binary-step lookup demo proof envelope does not match the canonical Phase 3 lookup table"
@@ -247,7 +247,7 @@ pub fn load_phase10_shared_binary_step_lookup_proof(
 }
 
 pub fn prove_phase3_binary_step_lookup_demo() -> Result<Vec<u8>> {
-    let bundle = build_lookup_demo_bundle();
+    let bundle = build_lookup_demo_bundle()?;
     let config = PcsConfig::default();
     let component = phase3_binary_step_lookup_component(
         bundle.log_size,
@@ -313,7 +313,7 @@ pub fn prove_phase3_binary_step_lookup_demo() -> Result<Vec<u8>> {
 }
 
 pub fn verify_phase3_binary_step_lookup_demo(proof: &[u8]) -> Result<bool> {
-    let bundle = build_lookup_demo_bundle();
+    let bundle = build_lookup_demo_bundle()?;
     let payload: Phase3LookupProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     if payload.canonical_table_rows != bundle.table_rows {
@@ -362,25 +362,39 @@ struct SharedLookupBundle {
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 }
 
-fn build_lookup_demo_bundle() -> LookupDemoBundle {
+fn build_lookup_demo_bundle() -> Result<LookupDemoBundle> {
     let log_size = LOG_N_LANES.max(4);
     let row_count = 1usize << log_size;
-    let table_rows = padded_table_rows(row_count);
+    let table_rows = padded_table_rows(row_count)?;
     let preprocessed_trace = lookup_preprocessed_trace(log_size, &table_rows);
     let base_trace = lookup_base_trace(log_size, &table_rows);
-    LookupDemoBundle {
+    Ok(LookupDemoBundle {
         log_size,
         table_rows,
         preprocessed_trace,
         base_trace,
-    }
+    })
 }
 
-fn padded_table_rows(row_count: usize) -> Vec<Phase3LookupTableRow> {
-    let mut rows = phase3_lookup_table_rows();
-    let pad = rows.last().cloned().expect("lookup table rows");
+fn padded_table_rows(row_count: usize) -> Result<Vec<Phase3LookupTableRow>> {
+    pad_lookup_rows(
+        phase3_lookup_table_rows(),
+        row_count,
+        "binary-step lookup demo requires at least one canonical lookup table row",
+    )
+}
+
+fn pad_lookup_rows(
+    mut rows: Vec<Phase3LookupTableRow>,
+    row_count: usize,
+    missing_rows_message: &'static str,
+) -> Result<Vec<Phase3LookupTableRow>> {
+    let pad = rows
+        .last()
+        .cloned()
+        .ok_or_else(|| VmError::InvalidConfig(missing_rows_message.to_string()))?;
     rows.resize(row_count, pad);
-    rows
+    Ok(rows)
 }
 
 fn lookup_preprocessed_trace(
@@ -440,6 +454,12 @@ fn build_shared_lookup_bundle(claimed_rows: &[Phase3LookupTableRow]) -> Result<S
         ));
     }
     let canonical_rows = phase3_lookup_table_rows();
+    if canonical_rows.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "shared binary-step lookup requires at least one canonical lookup table row"
+                .to_string(),
+        ));
+    }
     let mut selected_positions = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let Some(position) = canonical_rows.iter().position(|candidate| candidate == row) else {
@@ -459,12 +479,11 @@ fn build_shared_lookup_bundle(claimed_rows: &[Phase3LookupTableRow]) -> Result<S
 
     let log_size = LOG_N_LANES.max(4);
     let row_count = 1usize << log_size;
-    let mut padded_canonical_rows = canonical_rows.clone();
-    let pad = padded_canonical_rows
-        .last()
-        .cloned()
-        .expect("phase3 lookup table rows");
-    padded_canonical_rows.resize(row_count, pad);
+    let padded_canonical_rows = pad_lookup_rows(
+        canonical_rows.clone(),
+        row_count,
+        "shared binary-step lookup requires at least one canonical lookup table row",
+    )?;
     let preprocessed_trace = lookup_preprocessed_trace(log_size, &padded_canonical_rows);
     let base_trace =
         shared_lookup_base_trace(log_size, &padded_canonical_rows, &selected_positions);
@@ -775,5 +794,16 @@ mod tests {
         let error = verify_phase10_shared_binary_step_lookup_envelope(&envelope)
             .expect_err("tampered claimed rows should fail");
         assert!(error.to_string().contains("claimed row"));
+    }
+
+    #[test]
+    fn lookup_padding_rejects_empty_canonical_rows() {
+        let error = pad_lookup_rows(
+            Vec::new(),
+            16,
+            "binary-step lookup demo requires at least one canonical lookup table row",
+        )
+        .expect_err("empty canonical rows should fail");
+        assert!(error.to_string().contains("canonical lookup table row"));
     }
 }
