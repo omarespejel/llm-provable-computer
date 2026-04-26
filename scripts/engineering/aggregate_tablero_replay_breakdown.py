@@ -164,12 +164,16 @@ def main() -> None:
         # that run wholesale preserves internal additivity (component spans
         # genuinely sum to the outer span within instrumentation overhead),
         # which a per-column independent median does not.
+        #
+        # Tie-break is intentionally derived from row data only (component
+        # values in column order), so that a different `--inputs` argument
+        # ordering of the same run set produces the same representative.
         runs_sorted = sorted(
-            enumerate(runs),
-            key=lambda item: (float(item[1]["replay_total_ms"]), item[0]),
+            runs,
+            key=lambda run: tuple(float(run[field]) for field in TIMING_FIELDS),
         )
         median_index = len(runs_sorted) // 2
-        representative = runs_sorted[median_index][1]
+        representative = runs_sorted[median_index]
         aggregated = dict(row)
         for field in TIMING_FIELDS:
             aggregated[field] = round_milliseconds(float(representative[field]))
