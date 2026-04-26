@@ -2856,13 +2856,11 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_b
         Ok(derived_manifest)
     })?;
 
-    let (matches, equality_check_ms) = phase30_measure_result_ms(capture_timings, || {
-        Ok(manifest == &expected)
-    })?;
+    let (matches, equality_check_ms) =
+        phase30_measure_result_ms(capture_timings, || Ok(manifest == &expected))?;
     if !matches {
         return Err(VmError::InvalidConfig(
-            "decoding step envelope manifest does not match the derived Phase 12 chain"
-                .to_string(),
+            "decoding step envelope manifest does not match the derived Phase 12 chain".to_string(),
         ));
     }
 
