@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
@@ -469,6 +469,20 @@ pub struct Phase30DecodingStepProofEnvelopeManifest {
     pub chain_end_boundary_commitment: String,
     pub step_envelopes_commitment: String,
     pub envelopes: Vec<Phase30DecodingStepProofEnvelope>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase30DecodingStepProofEnvelopeReplayBreakdown {
+    pub total_steps: usize,
+    pub reverified_proofs: usize,
+    pub source_chain_json_bytes: usize,
+    pub step_proof_json_bytes_total: usize,
+    pub embedded_proof_reverify_ms: f64,
+    pub source_chain_commitment_ms: f64,
+    pub step_proof_commitment_ms: f64,
+    pub manifest_finalize_ms: f64,
+    pub equality_check_ms: f64,
+    pub total_verify_ms: f64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2738,13 +2752,136 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
     manifest: &Phase30DecodingStepProofEnvelopeManifest,
     chain: &Phase12DecodingChainManifest,
 ) -> Result<()> {
-    let expected = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
-    if manifest != &expected {
+    let _ = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
+        manifest, chain, false,
+    )?;
+    Ok(())
+}
+
+pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    chain: &Phase12DecodingChainManifest,
+    capture_timings: bool,
+) -> Result<Phase30DecodingStepProofEnvelopeReplayBreakdown> {
+    let total_started = capture_timings.then(Instant::now);
+
+    let ((), embedded_proof_reverify_ms) = phase30_measure_result_ms(capture_timings, || {
+        for (step_index, step) in chain.steps.iter().enumerate() {
+            if !verify_supported_phase12_decoding_step_proof(&step.proof)? {
+                return Err(VmError::UnsupportedProof(format!(
+                    "decoding step {step_index} execution proof did not verify"
+                )));
+            }
+        }
+        Ok(())
+    })?;
+
+    let ((source_chain_commitment, source_chain_json_bytes), source_chain_commitment_ms) =
+        phase30_measure_result_ms(capture_timings, || {
+            let committed = phase30_commit_phase12_decoding_chain_for_step_envelopes(chain)?;
+            Ok((committed.commitment, committed.json_bytes))
+        })?;
+
+    let ((proof_commitments, step_proof_json_bytes_total), step_proof_commitment_ms) =
+        phase30_measure_result_ms(capture_timings, || {
+            let mut proof_commitments = Vec::with_capacity(chain.steps.len());
+            let mut total_json_bytes = 0usize;
+            for step in &chain.steps {
+                let committed = phase30_commit_step_proof(&step.proof)?;
+                total_json_bytes = total_json_bytes
+                    .checked_add(committed.json_bytes)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(
+                            "Phase 30 replay proof JSON byte count overflowed".to_string(),
+                        )
+                    })?;
+                proof_commitments.push(committed.commitment);
+            }
+            Ok((proof_commitments, total_json_bytes))
+        })?;
+
+    let (expected, manifest_finalize_ms) = phase30_measure_result_ms(capture_timings, || {
+        verify_phase12_decoding_chain_structure(chain)?;
+        let layout_commitment = commit_phase12_layout(&chain.layout);
+        let artifact_index = chain
+            .shared_lookup_artifacts
+            .iter()
+            .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
+            .collect::<HashMap<_, _>>();
+        let envelopes = chain
+            .steps
+            .iter()
+            .zip(proof_commitments.iter())
+            .enumerate()
+            .map(|(step_index, (step, proof_commitment))| {
+                let artifact = artifact_index
+                    .get(step.shared_lookup_artifact_commitment.as_str())
+                    .copied()
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                            step.shared_lookup_artifact_commitment
+                        ))
+                    })?;
+                build_phase30_decoding_step_proof_envelope_with_commitment(
+                    step_index,
+                    step,
+                    &layout_commitment,
+                    &source_chain_commitment,
+                    artifact,
+                    proof_commitment,
+                )
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let step_envelopes_commitment = commit_phase30_step_envelope_list(&envelopes);
+        let (chain_start_boundary_commitment, chain_end_boundary_commitment) =
+            phase30_chain_boundary_pair(&envelopes)?;
+        let derived_manifest = Phase30DecodingStepProofEnvelopeManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            manifest_version: STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.to_string(),
+            semantic_scope: STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30.to_string(),
+            proof_backend_version: chain.proof_backend_version.clone(),
+            statement_version: chain.statement_version.clone(),
+            source_chain_version: chain.chain_version.clone(),
+            source_chain_semantic_scope: chain.semantic_scope.clone(),
+            source_chain_commitment: source_chain_commitment.clone(),
+            layout: chain.layout.clone(),
+            total_steps: envelopes.len(),
+            chain_start_boundary_commitment,
+            chain_end_boundary_commitment,
+            step_envelopes_commitment,
+            envelopes,
+        };
+        verify_phase30_decoding_step_proof_envelope_manifest(&derived_manifest)?;
+        Ok(derived_manifest)
+    })?;
+
+    let (matches, equality_check_ms) = phase30_measure_result_ms(capture_timings, || {
+        Ok(manifest == &expected)
+    })?;
+    if !matches {
         return Err(VmError::InvalidConfig(
-            "decoding step envelope manifest does not match the derived Phase 12 chain".to_string(),
+            "decoding step envelope manifest does not match the derived Phase 12 chain"
+                .to_string(),
         ));
     }
-    Ok(())
+
+    let total_verify_ms = total_started
+        .map(|started| phase30_elapsed_ms(started.elapsed()))
+        .unwrap_or(0.0);
+
+    Ok(Phase30DecodingStepProofEnvelopeReplayBreakdown {
+        total_steps: chain.steps.len(),
+        reverified_proofs: chain.steps.len(),
+        source_chain_json_bytes,
+        step_proof_json_bytes_total,
+        embedded_proof_reverify_ms,
+        source_chain_commitment_ms,
+        step_proof_commitment_ms,
+        manifest_finalize_ms,
+        equality_check_ms,
+        total_verify_ms,
+    })
 }
 
 pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
@@ -11923,6 +12060,24 @@ fn build_phase30_decoding_step_proof_envelope(
     shared_lookup_artifact: &Phase12SharedLookupArtifact,
 ) -> Result<Phase30DecodingStepProofEnvelope> {
     let proof_commitment = commit_phase30_step_proof(&step.proof)?;
+    build_phase30_decoding_step_proof_envelope_with_commitment(
+        step_index,
+        step,
+        layout_commitment,
+        source_chain_commitment,
+        shared_lookup_artifact,
+        &proof_commitment,
+    )
+}
+
+fn build_phase30_decoding_step_proof_envelope_with_commitment(
+    step_index: usize,
+    step: &Phase12DecodingStep,
+    layout_commitment: &str,
+    source_chain_commitment: &str,
+    shared_lookup_artifact: &Phase12SharedLookupArtifact,
+    proof_commitment: &str,
+) -> Result<Phase30DecodingStepProofEnvelope> {
     let mut envelope = Phase30DecodingStepProofEnvelope {
         envelope_version: STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.to_string(),
         semantic_scope: STWO_DECODING_STEP_ENVELOPE_SCOPE_PHASE30.to_string(),
@@ -11941,7 +12096,7 @@ fn build_phase30_decoding_step_proof_envelope(
         static_lookup_registry_commitment: shared_lookup_artifact
             .static_table_registry_commitment
             .clone(),
-        proof_commitment,
+        proof_commitment: proof_commitment.to_string(),
         envelope_commitment: String::new(),
     };
     envelope.envelope_commitment = commit_phase30_step_envelope(&envelope);
@@ -11951,30 +12106,60 @@ fn build_phase30_decoding_step_proof_envelope(
 pub(crate) fn commit_phase12_decoding_chain_for_step_envelopes(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<String> {
-    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
-    hasher.update(b"source-phase12-chain");
-    phase30_update_hasher_with_json(&mut hasher, chain)?;
-    let mut out = [0u8; 32];
-    hasher
-        .finalize_variable(&mut out)
-        .expect("blake2b finalize");
-    Ok(lower_hex(&out))
+    Ok(phase30_commit_phase12_decoding_chain_for_step_envelopes(chain)?.commitment)
 }
 
 fn commit_phase30_step_proof(proof: &VanillaStarkExecutionProof) -> Result<String> {
+    Ok(phase30_commit_step_proof(proof)?.commitment)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase30JsonCommitment {
+    commitment: String,
+    json_bytes: usize,
+}
+
+fn phase30_commit_phase12_decoding_chain_for_step_envelopes(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase30JsonCommitment> {
+    phase30_commit_json_value(
+        STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
+        b"source-phase12-chain",
+        chain,
+    )
+}
+
+fn phase30_commit_step_proof(proof: &VanillaStarkExecutionProof) -> Result<Phase30JsonCommitment> {
+    phase30_commit_json_value(
+        STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30,
+        b"step-proof",
+        proof,
+    )
+}
+
+fn phase30_commit_json_value<T: Serialize>(
+    version: &str,
+    domain: &[u8],
+    value: &T,
+) -> Result<Phase30JsonCommitment> {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
-    hasher.update(b"step-proof");
-    phase30_update_hasher_with_json(&mut hasher, proof)?;
+    hasher.update(version.as_bytes());
+    hasher.update(domain);
+    let json_bytes = phase30_update_hasher_with_json(&mut hasher, value)?;
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
-    Ok(lower_hex(&out))
+    Ok(Phase30JsonCommitment {
+        commitment: lower_hex(&out),
+        json_bytes,
+    })
 }
 
-fn phase30_update_hasher_with_json<T: Serialize>(hasher: &mut Blake2bVar, value: &T) -> Result<()> {
+fn phase30_update_hasher_with_json<T: Serialize>(
+    hasher: &mut Blake2bVar,
+    value: &T,
+) -> Result<usize> {
     // Frame large JSON values without buffering full proof JSON or traversing it twice.
     let mut writer = Phase30JsonDigestWriter {
         byte_len: 0,
@@ -11985,7 +12170,11 @@ fn phase30_update_hasher_with_json<T: Serialize>(hasher: &mut Blake2bVar, value:
     let (byte_len, json_digest) = writer.finalize();
     hasher.update(&byte_len.to_le_bytes());
     hasher.update(&json_digest);
-    Ok(())
+    usize::try_from(byte_len).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "Phase 30 JSON byte length {byte_len} does not fit in usize"
+        ))
+    })
 }
 
 struct Phase30JsonDigestWriter {
@@ -12024,6 +12213,22 @@ impl Write for Phase30JsonDigestWriter {
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
+}
+
+fn phase30_measure_result_ms<T, F>(capture_timings: bool, f: F) -> Result<(T, f64)>
+where
+    F: FnOnce() -> Result<T>,
+{
+    if !capture_timings {
+        return Ok((f()?, 0.0));
+    }
+    let started = Instant::now();
+    let value = f()?;
+    Ok((value, phase30_elapsed_ms(started.elapsed())))
+}
+
+fn phase30_elapsed_ms(duration: std::time::Duration) -> f64 {
+    duration.as_secs_f64() * 1_000.0
 }
 
 pub(crate) fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> String {
@@ -20259,6 +20464,28 @@ mod tests {
         verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
             .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_breakdown_surfaces_reverify_and_json_work() {
+        let (chain, manifest) = sample_phase30_chain_and_manifest();
+
+        let breakdown =
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
+                &manifest, &chain, false,
+            )
+            .expect("breakdown");
+
+        assert_eq!(breakdown.total_steps, chain.steps.len());
+        assert_eq!(breakdown.reverified_proofs, chain.steps.len());
+        assert!(breakdown.source_chain_json_bytes > 0);
+        assert!(breakdown.step_proof_json_bytes_total > 0);
+        assert_eq!(breakdown.embedded_proof_reverify_ms, 0.0);
+        assert_eq!(breakdown.source_chain_commitment_ms, 0.0);
+        assert_eq!(breakdown.step_proof_commitment_ms, 0.0);
+        assert_eq!(breakdown.manifest_finalize_ms, 0.0);
+        assert_eq!(breakdown.equality_check_ms, 0.0);
+        assert_eq!(breakdown.total_verify_ms, 0.0);
     }
 
     #[test]

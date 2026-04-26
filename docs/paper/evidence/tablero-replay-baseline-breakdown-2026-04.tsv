@@ -1,0 +1,4 @@
+family	family_label	checked_frontier	replay_total_ms	proof_reverify_ms	source_chain_commitment_ms	step_proof_commitment_ms	manifest_finalize_ms	equality_check_ms	proof_reverify_share	source_chain_commitment_share	step_proof_commitment_share	manifest_finalize_share	equality_check_share	reverified_proofs	manifest_serialized_bytes	source_chain_json_bytes	step_proof_json_bytes_total
+default	Default layout	1024	8616.31	2183.233	2276.207	2261.602	1892.473	0.063	0.2534	0.2642	0.2625	0.2196	0.0	1024	1314668	402335010	400256813
+2x2	2x2 layout	1024	7361.383	1571.778	2042.833	2047.557	1697.322	0.083	0.2135	0.2775	0.2781	0.2306	0.0	1024	1314668	362568789	360490604
+3x3	3x3 layout	256	1971.227	457.754	534.562	531.405	442.385	0.028	0.2322	0.2712	0.2696	0.2244	0.0	256	329299	94647846	94084305

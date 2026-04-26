@@ -1094,7 +1094,8 @@ class PaperPreflightTests(unittest.TestCase):
                 repo / 'docs/paper/tablero-typed-verifier-boundaries-2026.md',
                 "See [abstract](abstract-tablero-2026.md) and [method]"
                 "(appendix-methodology-and-reproducibility.md) and "
-                "![overview](figures/tablero-results-overview-2026-04.svg).\n"
+                "![overview](figures/tablero-results-overview-2026-04.svg) and "
+                "![breakdown](figures/tablero-replay-baseline-breakdown-2026-04.svg).\n"
                 "Phase44D leaks here.\n",
             )
             findings = MOD.Findings()

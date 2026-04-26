@@ -12,8 +12,8 @@
       "steps": 2,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 57822,
-      "emit_ms": 1.045,
-      "verify_ms": 0.98,
+      "emit_ms": 1.02,
+      "verify_ms": 0.906,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -24,7 +24,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 55060,
       "emit_ms": 0.0,
-      "verify_ms": 17.439,
+      "verify_ms": 15.744,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -35,7 +35,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 51539,
       "emit_ms": 0.0,
-      "verify_ms": 0.492,
+      "verify_ms": 0.396,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -46,7 +46,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 3521,
       "emit_ms": 0.0,
-      "verify_ms": 16.991,
+      "verify_ms": 15.575,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -56,8 +56,8 @@
       "steps": 2,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6283,
-      "emit_ms": 1.045,
-      "verify_ms": 0.406,
+      "emit_ms": 1.02,
+      "verify_ms": 0.382,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -67,8 +67,8 @@
       "steps": 4,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 67873,
-      "emit_ms": 1.206,
-      "verify_ms": 1.171,
+      "emit_ms": 1.125,
+      "verify_ms": 0.958,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -79,7 +79,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 67665,
       "emit_ms": 0.0,
-      "verify_ms": 32.084,
+      "verify_ms": 30.1,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -90,7 +90,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 61582,
       "emit_ms": 0.0,
-      "verify_ms": 0.52,
+      "verify_ms": 0.432,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -101,7 +101,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 6083,
       "emit_ms": 0.0,
-      "verify_ms": 35.968,
+      "verify_ms": 30.04,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -111,8 +111,8 @@
       "steps": 4,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6291,
-      "emit_ms": 1.206,
-      "verify_ms": 0.454,
+      "emit_ms": 1.125,
+      "verify_ms": 0.421,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -122,8 +122,8 @@
       "steps": 8,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 68696,
-      "emit_ms": 1.408,
-      "verify_ms": 1.063,
+      "emit_ms": 1.379,
+      "verify_ms": 1.03,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -134,7 +134,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 73612,
       "emit_ms": 0.0,
-      "verify_ms": 62.413,
+      "verify_ms": 59.678,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -145,7 +145,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 62405,
       "emit_ms": 0.0,
-      "verify_ms": 0.596,
+      "verify_ms": 0.486,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -156,7 +156,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 11207,
       "emit_ms": 0.0,
-      "verify_ms": 62.744,
+      "verify_ms": 58.656,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -166,8 +166,8 @@
       "steps": 8,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6291,
-      "emit_ms": 1.408,
-      "verify_ms": 0.454,
+      "emit_ms": 1.379,
+      "verify_ms": 0.45,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -177,8 +177,8 @@
       "steps": 16,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 78336,
-      "emit_ms": 1.801,
-      "verify_ms": 1.145,
+      "emit_ms": 1.761,
+      "verify_ms": 1.125,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -189,7 +189,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 93497,
       "emit_ms": 0.0,
-      "verify_ms": 124.311,
+      "verify_ms": 116.63,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -200,7 +200,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 72035,
       "emit_ms": 0.0,
-      "verify_ms": 0.594,
+      "verify_ms": 0.544,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -211,7 +211,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 21462,
       "emit_ms": 0.0,
-      "verify_ms": 119.959,
+      "verify_ms": 116.247,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -221,8 +221,8 @@
       "steps": 16,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6301,
-      "emit_ms": 1.801,
-      "verify_ms": 0.501,
+      "emit_ms": 1.761,
+      "verify_ms": 0.487,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -232,8 +232,8 @@
       "steps": 32,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 90901,
-      "emit_ms": 2.708,
-      "verify_ms": 1.428,
+      "emit_ms": 2.648,
+      "verify_ms": 1.316,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -244,7 +244,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 126578,
       "emit_ms": 0.0,
-      "verify_ms": 251.32,
+      "verify_ms": 231.262,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -255,7 +255,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 84604,
       "emit_ms": 0.0,
-      "verify_ms": 0.656,
+      "verify_ms": 0.586,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -266,7 +266,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 41974,
       "emit_ms": 0.0,
-      "verify_ms": 260.435,
+      "verify_ms": 230.434,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -276,8 +276,8 @@
       "steps": 32,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6297,
-      "emit_ms": 2.708,
-      "verify_ms": 0.629,
+      "emit_ms": 2.648,
+      "verify_ms": 0.572,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -287,8 +287,8 @@
       "steps": 64,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 96041,
-      "emit_ms": 4.575,
-      "verify_ms": 1.629,
+      "emit_ms": 4.389,
+      "verify_ms": 1.611,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -299,7 +299,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 172740,
       "emit_ms": 0.0,
-      "verify_ms": 501.153,
+      "verify_ms": 460.526,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -310,7 +310,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 89742,
       "emit_ms": 0.0,
-      "verify_ms": 0.728,
+      "verify_ms": 0.65,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -321,7 +321,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 82998,
       "emit_ms": 0.0,
-      "verify_ms": 484.765,
+      "verify_ms": 466.024,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -331,8 +331,8 @@
       "steps": 64,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6299,
-      "emit_ms": 4.575,
-      "verify_ms": 0.784,
+      "emit_ms": 4.389,
+      "verify_ms": 0.796,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -342,8 +342,8 @@
       "steps": 128,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 109397,
-      "emit_ms": 8.264,
-      "verify_ms": 2.308,
+      "emit_ms": 7.939,
+      "verify_ms": 2.243,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -354,7 +354,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 268163,
       "emit_ms": 0.0,
-      "verify_ms": 1110.64,
+      "verify_ms": 928.928,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -365,7 +365,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 103088,
       "emit_ms": 0.0,
-      "verify_ms": 0.834,
+      "verify_ms": 0.784,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -376,7 +376,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 165075,
       "emit_ms": 0.0,
-      "verify_ms": 967.243,
+      "verify_ms": 944.282,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -386,8 +386,8 @@
       "steps": 128,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6309,
-      "emit_ms": 8.264,
-      "verify_ms": 1.19,
+      "emit_ms": 7.939,
+      "verify_ms": 1.17,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -397,8 +397,8 @@
       "steps": 256,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 127539,
-      "emit_ms": 18.54,
-      "verify_ms": 3.833,
+      "emit_ms": 15.033,
+      "verify_ms": 3.523,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -409,7 +409,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 450529,
       "emit_ms": 0.0,
-      "verify_ms": 2094.775,
+      "verify_ms": 1856.263,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -420,7 +420,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 121230,
       "emit_ms": 0.0,
-      "verify_ms": 1.193,
+      "verify_ms": 1.039,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -431,7 +431,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 329299,
       "emit_ms": 0.0,
-      "verify_ms": 2143.941,
+      "verify_ms": 1865.441,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -441,8 +441,8 @@
       "steps": 256,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6309,
-      "emit_ms": 18.54,
-      "verify_ms": 2.292,
+      "emit_ms": 15.033,
+      "verify_ms": 1.913,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -452,8 +452,8 @@
       "steps": 512,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 130900,
-      "emit_ms": 30.921,
-      "verify_ms": 5.811,
+      "emit_ms": 29.251,
+      "verify_ms": 5.827,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -464,7 +464,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 782338,
       "emit_ms": 0.0,
-      "verify_ms": 4131.632,
+      "verify_ms": 3696.103,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -475,7 +475,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 124591,
       "emit_ms": 0.0,
-      "verify_ms": 1.449,
+      "verify_ms": 1.398,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -486,7 +486,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 657747,
       "emit_ms": 0.0,
-      "verify_ms": 3909.169,
+      "verify_ms": 3778.158,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -496,8 +496,8 @@
       "steps": 512,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6309,
-      "emit_ms": 30.921,
-      "verify_ms": 3.457,
+      "emit_ms": 29.251,
+      "verify_ms": 3.465,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     },
@@ -507,8 +507,8 @@
       "steps": 1024,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 156308,
-      "emit_ms": 65.688,
-      "verify_ms": 11.133,
+      "emit_ms": 55.329,
+      "verify_ms": 8.121,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest JSON-serialization-and-hash verifier surface; this measures replay avoidance, not faster FRI verification; emit_ms reports boundary construction cost separately"
     },
@@ -519,7 +519,7 @@
       "relation": "ordered Phase30 manifest serialization/hash replay plus one compact Phase43 projection proof",
       "serialized_bytes": 1464431,
       "emit_ms": 0.0,
-      "verify_ms": 10299.11,
+      "verify_ms": 7453.229,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain; this baseline includes the per-step JSON serialization and hashing work that Phase44D avoids"
     },
@@ -530,7 +530,7 @@
       "relation": "one compact Phase43 projection proof envelope",
       "serialized_bytes": 149763,
       "emit_ms": 0.0,
-      "verify_ms": 2.35,
+      "verify_ms": 1.853,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
     },
@@ -541,7 +541,7 @@
       "relation": "ordered Phase30 manifest JSON serialization/hash replay against the proof-checked Phase12 chain",
       "serialized_bytes": 1314668,
       "emit_ms": 0.0,
-      "verify_ms": 8996.324,
+      "verify_ms": 7425.407,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: isolates the ordered Phase30 manifest JSON serialization and hashing replay that the lower-layer baseline pays after compact proof verification"
     },
@@ -551,8 +551,8 @@
       "steps": 1024,
       "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
       "serialized_bytes": 6545,
-      "emit_ms": 65.688,
-      "verify_ms": 5.116,
+      "emit_ms": 55.329,
+      "verify_ms": 4.955,
       "verified": true,
       "note": "experimental Phase12 source chain uses the carry-aware execution-proof backend over the decoding_step_v2 2x2 layout. causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     }

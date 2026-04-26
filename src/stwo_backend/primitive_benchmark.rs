@@ -41,6 +41,7 @@ use super::decoding::{
     prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental,
     verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DemoRescalingProfile,
     Phase30DecodingStepProofEnvelopeManifest,
@@ -126,6 +127,10 @@ pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_VERSION: &str
     "stwo-phase44d-source-emission-experimental-3x3-layout-benchmark-v1";
 pub const STWO_PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_3X3_BENCHMARK_SCOPE: &str =
     "phase44d_typed_source_emission_boundary_scaling_over_phase12_carry_aware_experimental_backend_3x3_layout";
+pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_VERSION: &str =
+    "stwo-tablero-replay-breakdown-benchmark-v1";
+pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE: &str =
+    "tablero_replay_baseline_causal_decomposition_over_checked_layout_families";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
     "stwo-phase43-source-root-feasibility-benchmark-v1";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
@@ -377,6 +382,36 @@ pub struct StwoPhase44DSourceEmissionBenchmarkReport {
     pub timing_unit: String,
     pub timing_runs: usize,
     pub rows: Vec<StwoPhase44DSourceEmissionBenchmarkMeasurement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoTableroReplayBreakdownMeasurement {
+    pub family: String,
+    pub steps: usize,
+    pub relation: String,
+    pub manifest_serialized_bytes: usize,
+    pub reverified_proofs: usize,
+    pub source_chain_json_bytes: usize,
+    pub step_proof_json_bytes_total: usize,
+    pub replay_total_ms: f64,
+    pub embedded_proof_reverify_ms: f64,
+    pub source_chain_commitment_ms: f64,
+    pub step_proof_commitment_ms: f64,
+    pub manifest_finalize_ms: f64,
+    pub equality_check_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoTableroReplayBreakdownReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoTableroReplayBreakdownMeasurement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1516,6 +1551,74 @@ pub fn run_stwo_phase44d_source_emission_experimental_2x2_benchmark_for_steps(
     )
 }
 
+pub fn run_stwo_tablero_replay_breakdown_benchmark(
+) -> Result<StwoTableroReplayBreakdownReport> {
+    run_stwo_tablero_replay_breakdown_benchmark_with_options(false)
+}
+
+pub fn run_stwo_tablero_replay_breakdown_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoTableroReplayBreakdownReport> {
+    let cases = [
+        ("default", phase12_default_decoding_layout(), 1024usize),
+        ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
+        ("3x3", Phase12DecodingLayout::new(3, 3)?, 256usize),
+    ];
+    let mut rows = Vec::with_capacity(cases.len());
+    for (family, layout, steps) in cases {
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout,
+                steps,
+            )
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "tablero replay breakdown benchmark cannot construct {steps}-step proof-checked source chain on the carry-aware execution-proof surface for layout {}x{}: {}",
+                    layout.rolling_kv_pairs,
+                    layout.pair_width,
+                    error
+                ))
+            })?;
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)?;
+        let manifest_serialized_bytes = phase30_manifest_serialized_bytes(&manifest)?;
+        let breakdown = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown(
+            &manifest,
+            &chain,
+            capture_timings,
+        )?;
+        rows.push(StwoTableroReplayBreakdownMeasurement {
+            family: family.to_string(),
+            steps,
+            relation: "replay baseline verification over a proof-checked source chain".to_string(),
+            manifest_serialized_bytes,
+            reverified_proofs: breakdown.reverified_proofs,
+            source_chain_json_bytes: breakdown.source_chain_json_bytes,
+            step_proof_json_bytes_total: breakdown.step_proof_json_bytes_total,
+            replay_total_ms: breakdown.total_verify_ms,
+            embedded_proof_reverify_ms: breakdown.embedded_proof_reverify_ms,
+            source_chain_commitment_ms: breakdown.source_chain_commitment_ms,
+            step_proof_commitment_ms: breakdown.step_proof_commitment_ms,
+            manifest_finalize_ms: breakdown.manifest_finalize_ms,
+            equality_check_ms: breakdown.equality_check_ms,
+            verified: true,
+            note: format!(
+                "carry-aware experimental backend over the checked {}x{} decoding layout; the replay verifier re-verifies each embedded proof, rebuilds the source-chain commitment, rebuilds each step proof commitment, reconstructs the manifest, and then compares it to the supplied manifest",
+                layout.rolling_kv_pairs, layout.pair_width
+            ),
+        });
+    }
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoTableroReplayBreakdownReport {
+        benchmark_version: STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
 fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     step_counts: &[usize],
     capture_timings: bool,
@@ -2490,6 +2593,53 @@ pub fn save_stwo_phase44d_source_emission_benchmark_report_tsv(
             format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_tablero_replay_breakdown_report_json(
+    report: &StwoTableroReplayBreakdownReport,
+    path: &Path,
+) -> Result<()> {
+    let json =
+        serde_json::to_vec_pretty(report).map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_tablero_replay_breakdown_report_tsv(
+    report: &StwoTableroReplayBreakdownReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\trelation\tmanifest_serialized_bytes\treverified_proofs\tsource_chain_json_bytes\tstep_proof_json_bytes_total\treplay_total_ms\tembedded_proof_reverify_ms\tsource_chain_commitment_ms\tstep_proof_commitment_ms\tmanifest_finalize_ms\tequality_check_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.family,
+            row.steps,
+            row.relation,
+            row.manifest_serialized_bytes,
+            row.reverified_proofs,
+            row.source_chain_json_bytes,
+            row.step_proof_json_bytes_total,
+            row.replay_total_ms,
+            row.embedded_proof_reverify_ms,
+            row.source_chain_commitment_ms,
+            row.step_proof_commitment_ms,
+            row.manifest_finalize_ms,
+            row.equality_check_ms,
+            row.verified,
+            row.note,
         ));
     }
     fs::write(path, out)?;
