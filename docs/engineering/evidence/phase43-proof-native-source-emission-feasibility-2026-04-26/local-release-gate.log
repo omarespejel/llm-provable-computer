@@ -1,0 +1,35 @@
+[2mLocal release gate[0m (root=/Users/espejelomar/StarkNet/provable-transformer-vm/_pr_work/proof-native-source-emission-feasibility-v1)
+  cargo-audit pin: 0.22.1
+  cargo-deny pin:  0.19.4
+  zizmor pin:      1.24.1
+  nightly:         nightly-2025-07-14
+[2m[gate 01] rustfmt --check[0m
+[32m  ok[0m
+[2m[gate 02] lib clippy (-D warnings)[0m
+[32m  ok[0m
+[2m[gate 03] lib build[0m
+[32m  ok[0m
+[2m[gate 04] tvm bin build[0m
+[32m  ok[0m
+[2m[gate 05] lib statement-spec sync[0m
+[32m  ok[0m
+[2m[gate 06] lib proof::tests[0m
+[32m  ok[0m
+[2m[gate 07] test/assembly[0m
+[32m  ok[0m
+[2m[gate 08] test/e2e[0m
+[32m  ok[0m
+[2m[gate 09] test/interpreter[0m
+[32m  ok[0m
+[2m[gate 10] test/runtime[0m
+[32m  ok[0m
+[2m[gate 11] dependency check suite[0m
+[32m  ok[0m
+[2m[gate 12] zizmor (workflow lint)[0m
+[32m  ok[0m
+[2m[gate 13] shellcheck suite[0m
+[32m  ok[0m
+[2m[gate 14] stwo-backend nightly smoke[0m
+[32m  ok[0m
+
+[32mlocal release gate passed: 14 / 14 steps OK[0m

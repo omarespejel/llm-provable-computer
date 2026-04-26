@@ -12274,12 +12274,20 @@ fn phase30_hash_part(hasher: &mut Blake2bVar, bytes: &[u8]) {
 pub(crate) fn commit_phase30_step_envelope_list(
     envelopes: &[Phase30DecodingStepProofEnvelope],
 ) -> String {
+    let commitments = envelopes
+        .iter()
+        .map(|envelope| envelope.envelope_commitment.clone())
+        .collect::<Vec<_>>();
+    commit_phase30_step_envelope_commitment_list(&commitments)
+}
+
+pub(crate) fn commit_phase30_step_envelope_commitment_list(commitments: &[String]) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-envelope-list");
-    hasher.update(&(envelopes.len() as u64).to_le_bytes());
-    for envelope in envelopes {
-        hasher.update(envelope.envelope_commitment.as_bytes());
+    hasher.update(&(commitments.len() as u64).to_le_bytes());
+    for commitment in commitments {
+        hasher.update(commitment.as_bytes());
     }
     let mut out = [0u8; 32];
     hasher

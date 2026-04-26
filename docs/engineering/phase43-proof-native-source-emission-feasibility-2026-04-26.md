@@ -28,7 +28,7 @@ What now works:
 - The verifier accepts the emitted artifact plus the compact projection-proof envelope without consuming the full Phase43 trace or the Phase30 manifest.
 - The acceptance result records `compact_binding_verified_without_trace = true`.
 - The acceptance result records `verifier_requires_phase43_trace = false` and `verifier_requires_phase30_manifest = false`.
-- The acceptance result still records `useful_second_boundary_today = false` because `upstream_source_chain_proof_emits_artifact = false`.
+- The acceptance result still records `useful_second_boundary_today = false`, and the verifier rejects any recommitted prototype artifact that self-reports `upstream_source_chain_proof_emits_artifact = true`.
 
 What remains blocked:
 
@@ -63,16 +63,28 @@ The focused release-mode tests cover:
 - projection-commitment drift after recommitment;
 - step-envelope public-input drift after recommitment;
 - false proof-native-public-input flag after recommitment;
+- false prototype-derivation flag after recommitment;
+- self-reported upstream-source-emission flag after recommitment;
 - compact proof binding drift.
 
 These tests are deliberately recommitted after mutation where relevant, so the rejection checks the semantic invariant rather than only detecting stale outer commitments.
 
 ## Validation
 
+Checked-in evidence logs live under:
+
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/manifest.tsv`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/manifest.json`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/phase43-proof-native-source-emission-test.log`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/phase43-second-boundary-feasibility-test.log`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/nightly-stwo-check.log`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/stable-toolchain-stwo-failure.log`
+- `docs/engineering/evidence/phase43-proof-native-source-emission-feasibility-2026-04-26/local-release-gate.log`
+
 Targeted release-mode validation used the repo's pinned nightly Stwo toolchain:
 
 ```bash
-CARGO_TARGET_DIR=/tmp/pvm-gate-target \
+env CARGO_TARGET_DIR=/tmp/pvm-gate-target \
   cargo +nightly-2025-07-14 test --release --features stwo-backend --lib \
   phase43_proof_native_source_emission -- --nocapture
 ```
@@ -80,11 +92,53 @@ CARGO_TARGET_DIR=/tmp/pvm-gate-target \
 Result:
 
 ```text
-running 5 tests
-5 passed; 0 failed; 0 ignored
+running 7 tests
+7 passed; 0 failed; 0 ignored
 ```
 
-A stable-toolchain attempt failed before repo code compiled because upstream `stwo` uses nightly feature gates. That is an environment/toolchain check, not a verifier result.
+The original April 25 second-boundary gate tests were rerun unchanged:
+
+```bash
+env CARGO_TARGET_DIR=/tmp/pvm-gate-target \
+  cargo +nightly-2025-07-14 test --release --features stwo-backend --lib \
+  phase43_second_boundary_feasibility -- --nocapture
+```
+
+Result:
+
+```text
+running 3 tests
+3 passed; 0 failed; 0 ignored
+```
+
+The Stwo-enabled compile surface was checked with:
+
+```bash
+env CARGO_TARGET_DIR=/tmp/pvm-gate-target \
+  cargo +nightly-2025-07-14 check --features stwo-backend --lib --bin tvm
+```
+
+The full local release gate was rerun with:
+
+```bash
+env CARGO_TARGET_DIR=/tmp/pvm-gate-target bash scripts/local_release_gate.sh
+```
+
+Result:
+
+```text
+local release gate passed: 14 / 14 steps OK
+```
+
+A stable-toolchain reproduction command is also checked in:
+
+```bash
+env CARGO_TARGET_DIR=/tmp/pvm-stable-repro-target \
+  cargo test --release --features stwo-backend --lib \
+  phase43_proof_native_source_emission -- --nocapture
+```
+
+It exits `101` before repo code compiles because upstream `stwo` uses nightly feature gates. That is an environment/toolchain check, not a verifier result.
 
 ## Claim Boundary
 

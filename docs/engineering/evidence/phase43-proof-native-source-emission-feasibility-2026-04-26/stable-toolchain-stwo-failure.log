@@ -1,0 +1,209 @@
+   Compiling stwo v2.2.0
+error[E0554]: `#![feature]` may not be used on the stable release channel
+ --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/lib.rs:9:5
+  |
+9 |     feature(array_chunks, iter_array_chunks, portable_simd, slice_ptr_get)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0635]: unknown feature `array_chunks`
+ --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/lib.rs:9:13
+  |
+9 |     feature(array_chunks, iter_array_chunks, portable_simd, slice_ptr_get)
+  |             ^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks` found for struct `Vec<M31>` in the current scope
+   --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/cpu/circle.rs:267:14
+    |
+266 | /         twiddles
+267 | |             .array_chunks::<CHUNK_SIZE>()
+    | |             -^^^^^^^^^^^^ `Vec<M31>` is not an iterator
+    | |_____________|
+    |
+    |
+help: call `.into_iter()` first
+    |
+267 |             .into_iter().array_chunks::<CHUNK_SIZE>()
+    |              ++++++++++++
+
+error[E0599]: no method named `array_chunks_mut` found for struct `Vec<M31>` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/cpu/circle.rs:268:28
+     |
+ 268 |             .zip(itwiddles.array_chunks_mut::<CHUNK_SIZE>())
+     |                            ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: `&Mle<CpuBackend, QM31>` is not an iterator
+   --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/cpu/lookups/gkr.rs:234:21
+    |
+234 |     let res = layer.array_chunks().map(|&[a, b]| a * b).collect();
+    |                     ^^^^^^^^^^^^ `&Mle<CpuBackend, QM31>` is not an iterator
+    |
+   ::: /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/lookups/mle.rs:20:1
+    |
+ 20 | pub struct Mle<B: ColumnOps<F>, F: Field> {
+    | ----------------------------------------- doesn't satisfy `Mle<CpuBackend, QM31>: Iterator`
+    |
+   ::: /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:434:1
+    |
+434 | pub struct Vec<T, #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global> {
+    | ------------------------------------------------------------------------------------------------ doesn't satisfy `Vec<QM31>: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&Mle<CpuBackend, QM31>: Iterator`
+            which is required by `&mut &Mle<CpuBackend, QM31>: Iterator`
+            `Mle<CpuBackend, QM31>: Iterator`
+            which is required by `&mut Mle<CpuBackend, QM31>: Iterator`
+            `Vec<QM31>: Iterator`
+            which is required by `&mut Vec<QM31>: Iterator`
+            `[QM31]: Iterator`
+            which is required by `&mut [QM31]: Iterator`
+note: the trait `Iterator` must be implemented
+   --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:40:1
+    |
+ 40 | pub trait Iterator {
+    | ^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the trait `Iterator` defines an item `array_chunks`, but is explicitly unimplemented
+
+error[E0599]: no method named `array_chunks` found for reference `&[PackedM31]` in the current scope
+   --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/circle.rs:200:49
+    |
+200 |             for (i, coeff_chunk) in coeff_chunk.array_chunks::<N_LANES>().enumerate() {
+    |                                                 ^^^^^^^^^^^^ `&[PackedM31]` is not an iterator
+    |
+help: call `.into_iter()` first
+    |
+200 |             for (i, coeff_chunk) in coeff_chunk.into_iter().array_chunks::<N_LANES>().enumerate() {
+    |                                                 ++++++++++++
+
+error[E0599]: no method named `array_chunks` found for struct `Vec<PackedQM31>` in the current scope
+   --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/lookups/gkr.rs:137:10
+    |
+135 |       let data = layer
+    |  ________________-
+136 | |         .data
+137 | |         .array_chunks()
+    | |         -^^^^^^^^^^^^ `Vec<PackedQM31>` is not an iterator
+    | |_________|
+    |
+    |
+help: call `.into_iter()` first
+    |
+137 |         .into_iter().array_chunks()
+    |          ++++++++++++
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:36:46
+     |
+  36 |     for ([l0, l1], [r0, r1]) in izip!(l_half.array_chunks_mut(), r_half.array_chunks_mut().rev()) {
+     |                                              ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:36:73
+     |
+  36 |     for ([l0, l1], [r0, r1]) in izip!(l_half.array_chunks_mut(), r_half.array_chunks_mut().rev()) {
+     |                                                                         ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0282]: type annotations needed
+  --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:38:30
+   |
+38 |         let half_coset1_hi = half_coset1_hi_rev.reverse();
+   |                              ^^^^^^^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+  --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:40:30
+   |
+40 |         let half_coset1_lo = half_coset1_lo_rev.reverse();
+   |                              ^^^^^^^^^^^^^^^^^^ cannot infer type
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:59:18
+     |
+  59 |         zip(lows.array_chunks_mut(), highs.array_chunks())
+     |                  ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks` found for mutable reference `&mut [PackedM31]` in the current scope
+  --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:59:44
+   |
+59 |         zip(lows.array_chunks_mut(), highs.array_chunks())
+   |                                            ^^^^^^^^^^^^ `&mut [PackedM31]` is not an iterator
+   |
+help: call `.into_iter()` first
+   |
+59 |         zip(lows.array_chunks_mut(), highs.into_iter().array_chunks())
+   |                                            ++++++++++++
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:87:18
+     |
+  87 |         zip(lows.array_chunks_mut(), highs.array_chunks_mut())
+     |                  ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:87:44
+     |
+  87 |         zip(lows.array_chunks_mut(), highs.array_chunks_mut())
+     |                                            ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:101:46
+     |
+ 101 |     for ([l0, l1], [r0, r1]) in izip!(l_half.array_chunks_mut(), r_half.array_chunks_mut().rev()) {
+     |                                              ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `array_chunks_mut` found for mutable reference `&mut [PackedM31]` in the current scope
+    --> /Users/espejelomar/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/stwo-2.2.0/src/prover/backend/simd/prefix_sum.rs:101:73
+     |
+ 101 |     for ([l0, l1], [r0, r1]) in izip!(l_half.array_chunks_mut(), r_half.array_chunks_mut().rev()) {
+     |                                                                         ^^^^^^^^^^^^^^^^
+     |
+help: there is a method `rchunks_mut` with a similar name, but with different arguments
+    --> /Users/espejelomar/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1724:5
+     |
+1724 |     pub const fn rchunks_mut(&mut self, chunk_size: usize) -> RChunksMut<'_, T> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0282, E0554, E0599, E0635.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `stwo` (lib) due to 17 previous errors

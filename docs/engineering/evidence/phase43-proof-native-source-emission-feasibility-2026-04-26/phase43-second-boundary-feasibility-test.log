@@ -1,0 +1,10 @@
+    Finished `release` profile [optimized] target(s) in 0.52s
+     Running unittests src/lib.rs (/tmp/pvm-gate-target/release/deps/llm_provable_computer-78905dd298d47939)
+
+running 3 tests
+test stwo_backend::history_replay_projection_prover::tests::phase43_second_boundary_feasibility_rejects_tampered_compact_binding ... ok
+test stwo_backend::history_replay_projection_prover::tests::phase43_second_boundary_feasibility_records_real_binding_but_current_no_go ... ok
+test stwo_backend::history_replay_projection_prover::tests::phase43_second_boundary_feasibility_rejects_compact_payload_that_only_fails_stwo_verify ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 1011 filtered out; finished in 0.05s
+
