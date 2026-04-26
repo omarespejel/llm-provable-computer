@@ -23,8 +23,10 @@ Supporting publication assets:
 Core paper-facing generated assets:
 
 - `figures/tablero-results-overview-2026-04.svg`
+- `figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
 - `figures/tablero-replay-baseline-breakdown-2026-04.svg`
 - `evidence/tablero-results-overview-2026-04.tsv`
+- `evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`
 - `evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
 
 Recommended presentation order:

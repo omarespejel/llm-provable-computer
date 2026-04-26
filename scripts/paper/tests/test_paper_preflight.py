@@ -1095,6 +1095,7 @@ class PaperPreflightTests(unittest.TestCase):
                 "See [abstract](abstract-tablero-2026.md) and [method]"
                 "(appendix-methodology-and-reproducibility.md) and "
                 "![overview](figures/tablero-results-overview-2026-04.svg) and "
+                "![scaling](figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg) and "
                 "![breakdown](figures/tablero-replay-baseline-breakdown-2026-04.svg).\n"
                 "Phase44D leaks here.\n",
             )
@@ -1119,6 +1120,36 @@ class PaperPreflightTests(unittest.TestCase):
                     "missing required presentation link" in error
                     for error in findings.errors
                 )
+            )
+
+    def test_primary_presentation_guardrails_requires_scaling_law_figure_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            for rel_path in MOD.PRIMARY_PRESENTATION_FILES:
+                write_text(repo / rel_path, "# Placeholder\n")
+            write_text(
+                repo / "docs/paper/tablero-typed-verifier-boundaries-2026.md",
+                "See [abstract](abstract-tablero-2026.md) and "
+                "[method](appendix-methodology-and-reproducibility.md) and "
+                "![overview](figures/tablero-results-overview-2026-04.svg) and "
+                "![breakdown](figures/tablero-replay-baseline-breakdown-2026-04.svg).\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_primary_presentation_guardrails(repo, findings)
+            expected = (
+                "missing required presentation link "
+                "`figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`"
+            )
+            self.assertTrue(any(expected in error for error in findings.errors), findings.errors)
+            self.assertFalse(
+                any(
+                    "missing required presentation link `abstract-tablero-2026.md`" in error
+                    or "missing required presentation link `appendix-methodology-and-reproducibility.md`" in error
+                    or "missing required presentation link `figures/tablero-results-overview-2026-04.svg`" in error
+                    or "missing required presentation link `figures/tablero-replay-baseline-breakdown-2026-04.svg`" in error
+                    for error in findings.errors
+                ),
+                findings.errors,
             )
 
 if __name__ == "__main__":
