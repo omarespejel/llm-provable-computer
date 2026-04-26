@@ -2949,6 +2949,7 @@ fn build_trace_bundle_with_mode(
     states: &[MachineState],
     mode: ArithmeticSubsetProofMode,
 ) -> Result<TraceBundle> {
+    validate_trace_bundle_state_trace(states)?;
     let real_rows = states.len().max(1);
     let row_count = real_rows.next_power_of_two();
     let log_size = row_count.ilog2();
@@ -2971,12 +2972,25 @@ fn build_trace_bundle_with_mode(
     })
 }
 
+fn validate_trace_bundle_state_trace(states: &[MachineState]) -> Result<()> {
+    let Some(last_state) = states.last() else {
+        return Err(VmError::UnsupportedProof(
+            "arithmetic subset trace bundling requires a non-empty state trace".to_string(),
+        ));
+    };
+    if !last_state.halted {
+        return Err(VmError::UnsupportedProof(
+            "arithmetic subset trace bundling requires a halted final state".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 fn build_preprocessed_rows(
     program: &Program,
     states: &[MachineState],
     row_count: usize,
 ) -> Result<Vec<PreprocessedRow>> {
-    let last_state = states.last().expect("non-empty state trace");
     let mut rows = Vec::with_capacity(row_count);
     for row_index in 0..row_count {
         let row = if row_index + 1 < states.len() {
@@ -2997,7 +3011,6 @@ fn build_preprocessed_rows(
         };
         rows.push(row);
     }
-    debug_assert!(last_state.halted);
     Ok(rows)
 }
 
@@ -5154,6 +5167,40 @@ mod tests {
         };
         assert!(
             err.to_string().contains("expected next carry true"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn trace_bundle_builder_rejects_empty_state_trace() {
+        let err = match build_trace_bundle(&compile_program("programs/addition.tvm"), &[]) {
+            Ok(_) => panic!("empty state trace must fail"),
+            Err(err) => err,
+        };
+        assert!(
+            err.to_string()
+                .contains("arithmetic subset trace bundling requires a non-empty state trace"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn carry_aware_trace_builder_rejects_non_halted_final_state() {
+        let (program, mut states, _) = phase12_carry_aware_family_fixture(8, 0);
+        let last_state = states.last_mut().expect("non-empty states");
+        last_state.halted = false;
+
+        let err = match build_trace_bundle_with_mode(
+            &program,
+            &states,
+            ArithmeticSubsetProofMode::Phase12CarryAwareExperimental,
+        ) {
+            Ok(_) => panic!("non-halted final state must fail"),
+            Err(err) => err,
+        };
+        assert!(
+            err.to_string()
+                .contains("arithmetic subset trace bundling requires a halted final state"),
             "{err}"
         );
     }

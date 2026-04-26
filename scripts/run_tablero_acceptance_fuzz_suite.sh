@@ -9,6 +9,7 @@ FUZZ_TIME_PER_TARGET="${FUZZ_TIME_PER_TARGET:-20}"
 FUZZ_INPUT_TIMEOUT_SECONDS="${FUZZ_INPUT_TIMEOUT_SECONDS:-5}"
 FUZZ_WALL_CLOCK_GRACE_SECONDS="${FUZZ_WALL_CLOCK_GRACE_SECONDS:-10}"
 FUZZ_WORK_DIR="${FUZZ_WORK_DIR:-target/tablero-fuzz}"
+FUZZ_SOURCE_CORPUS_DIR="${FUZZ_SOURCE_CORPUS_DIR:-fuzz/corpus}"
 SAFE_TARGET_ROOT="${ROOT_DIR}/target"
 FUZZ_TARGETS=(
   phase44d_source_chain_public_output_boundary_binding
@@ -16,6 +17,7 @@ FUZZ_TARGETS=(
   phase46_stwo_proof_adapter_receipt
   phase47_recursive_verifier_wrapper_candidate
   phase48_recursive_proof_wrapper_attempt
+  phase44d_phase48_against_sources_chain
   phase44d_phase48_serialized_chain_differential
 )
 
@@ -75,6 +77,7 @@ require_strict_subpath_under() {
 }
 
 require_safe_path_under "$FUZZ_WORK_DIR" "$SAFE_TARGET_ROOT" "tablero fuzz work"
+require_safe_path_under "$FUZZ_SOURCE_CORPUS_DIR" "${ROOT_DIR}/fuzz/corpus" "source corpus"
 
 FUZZ_HOST_TRIPLE="$({ rustc +"${FUZZ_TOOLCHAIN}" -vV | sed -n 's/^host: //p'; } )"
 if [[ -z "$FUZZ_HOST_TRIPLE" ]]; then
@@ -83,12 +86,16 @@ if [[ -z "$FUZZ_HOST_TRIPLE" ]]; then
 fi
 
 for target in "${FUZZ_TARGETS[@]}"; do
+  corpus_dir="${FUZZ_SOURCE_CORPUS_DIR}/${target}"
   run_dir="${FUZZ_WORK_DIR}/${target}"
   run_corpus_dir="${run_dir}/corpus"
   artifact_dir="${run_dir}/artifacts"
   require_strict_subpath_under "$run_dir" "$FUZZ_WORK_DIR" "target run"
   rm -rf -- "$run_dir"
   mkdir -p "$run_corpus_dir" "$artifact_dir"
+  if [[ -d "$corpus_dir" ]]; then
+    cp -R "${corpus_dir}/." "$run_corpus_dir/"
+  fi
 
   cargo +"${FUZZ_TOOLCHAIN}" fuzz build "$target"
   fuzz_binary="fuzz/target/${FUZZ_HOST_TRIPLE}/release/${target}"

@@ -151,7 +151,8 @@ Use these in order of authority for current state:
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`
   - The hardening packet now includes exhaustive deterministic `wrap_delta`
     witness/divisibility checks, and the fuzz suite now includes a
-    serialized-artifact differential mutator across Phase44D→48.
+    serialized-artifact differential mutator across Phase44D→48 plus
+    raw serialized-bundle fuzzing of the full Phase44D→48 against-sources bundle.
 5. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts. It is a deferred design lane, not a
    current paper or hardening blocker.
