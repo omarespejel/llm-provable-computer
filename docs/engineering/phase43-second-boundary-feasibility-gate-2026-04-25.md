@@ -179,3 +179,13 @@ Figure generation:
 # requires matplotlib in the active Python environment
 python3 scripts/engineering/generate_phase43_source_root_feasibility_figure.py
 ```
+
+## April 26 proof-native source-emission follow-up
+
+Follow-up note: `docs/engineering/phase43-proof-native-source-emission-feasibility-2026-04-26.md`
+
+Issue #249 narrowed the blocker but did not clear the gate.
+The verifier-side proof-native source-emission shape now exists: an emitted artifact can expose the projection commitment, projection-row/opening root, history-transform public inputs, step-envelope public inputs, and non-Blake2b verifier path, and the verifier can accept that artifact plus the compact projection proof without the full Phase43 trace or Phase30 manifest.
+
+The result remains **PARTIAL**, not **GO**, because the current prototype still prepares the artifact from the full trace and manifest, while the upstream source-chain proof still does not emit it as a native public output.
+The honest second-boundary decision therefore remains unchanged: **NO-GO for claiming Phase43 as a second Tablero boundary today**.
