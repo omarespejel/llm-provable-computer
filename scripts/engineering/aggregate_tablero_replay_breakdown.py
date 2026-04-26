@@ -86,7 +86,7 @@ def main() -> None:
     semantic_scope = None
     timing_unit = None
     canonical_rows: list[dict[str, Any]] | None = None
-    timing_samples: dict[tuple[str, int], dict[str, list[float]]] = {}
+    run_rows: dict[tuple[str, int], list[dict[str, Any]]] = {}
 
     for input_path in args.inputs:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
@@ -114,7 +114,7 @@ def main() -> None:
             canonical_rows = payload["rows"]
             build_row_map(canonical_rows, source=input_path)
             for row in canonical_rows:
-                timing_samples[key_for(row)] = {field: [] for field in TIMING_FIELDS}
+                run_rows[key_for(row)] = []
         else:
             if payload["benchmark_version"] != benchmark_version:
                 raise SystemExit(
@@ -139,9 +139,9 @@ def main() -> None:
                 )
 
         row_map = build_row_map(payload["rows"], source=input_path)
-        if set(row_map) != set(timing_samples):
-            missing = sorted(set(timing_samples) - set(row_map))
-            extra = sorted(set(row_map) - set(timing_samples))
+        if set(row_map) != set(run_rows):
+            missing = sorted(set(run_rows) - set(row_map))
+            extra = sorted(set(row_map) - set(run_rows))
             raise SystemExit(f"row-key mismatch in {input_path}; missing={missing} extra={extra}")
 
         for row in canonical_rows or []:
@@ -152,16 +152,27 @@ def main() -> None:
                     raise SystemExit(
                         f"deterministic field mismatch for {key} field {field} in {input_path}: {current[field]!r} != {row[field]!r}"
                     )
-            for field in TIMING_FIELDS:
-                timing_samples[key][field].append(float(current[field]))
+            run_rows[key].append(current)
 
     assert canonical_rows is not None
     aggregated_rows: list[dict[str, Any]] = []
     for row in canonical_rows:
         key = key_for(row)
+        runs = run_rows[key]
+        # Median-total representative run: with an odd number of runs, the
+        # median replay_total_ms is exactly one of the per-run totals. Picking
+        # that run wholesale preserves internal additivity (component spans
+        # genuinely sum to the outer span within instrumentation overhead),
+        # which a per-column independent median does not.
+        runs_sorted = sorted(
+            enumerate(runs),
+            key=lambda item: (float(item[1]["replay_total_ms"]), item[0]),
+        )
+        median_index = len(runs_sorted) // 2
+        representative = runs_sorted[median_index][1]
         aggregated = dict(row)
         for field in TIMING_FIELDS:
-            aggregated[field] = round_milliseconds(statistics.median(timing_samples[key][field]))
+            aggregated[field] = round_milliseconds(float(representative[field]))
         aggregated_rows.append(aggregated)
 
     timing_policy = f"median_of_{len(args.inputs)}_runs_from_microsecond_capture"
