@@ -46,7 +46,7 @@ use super::decoding::{
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown,
     Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DemoRescalingProfile,
-    Phase30DecodingStepProofEnvelopeManifest,
+    Phase30DecodingStepProofEnvelopeManifest, VerifiedPhase12DecodingChainManifest,
 };
 use super::history_replay_projection_prover::{
     derive_phase43_history_replay_projection_source_root_claim,
@@ -139,7 +139,7 @@ pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE: &str =
 pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_VERSION: &str =
     "stwo-tablero-replay-breakdown-optimized-benchmark-v1";
 pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_SCOPE: &str =
-    "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families";
+    "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
     "stwo-phase43-source-root-feasibility-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
@@ -1670,14 +1670,46 @@ pub fn run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(
                     error
                 ))
             })?;
-        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)?;
+        let verified_chain = VerifiedPhase12DecodingChainManifest::verify(chain).map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "tablero optimized replay benchmark cannot proof-verify the {steps}-step source chain on layout {}x{}: {error}",
+                layout.rolling_kv_pairs,
+                layout.pair_width,
+            ))
+        })?;
+        let manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&verified_chain)?;
         let manifest_serialized_bytes = phase30_manifest_serialized_bytes(&manifest)?;
         let breakdown =
             verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
                 &manifest,
-                &chain,
+                &verified_chain,
                 capture_timings,
             )?;
+        if breakdown.total_steps != steps {
+            return Err(VmError::InvalidConfig(format!(
+                "tablero optimized replay benchmark expected {steps} verified steps for layout {}x{}, got {}",
+                layout.rolling_kv_pairs,
+                layout.pair_width,
+                breakdown.total_steps
+            )));
+        }
+        if breakdown.reverified_proofs != 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "tablero optimized replay benchmark expected zero embedded-proof re-verifications for layout {}x{}, got {}",
+                layout.rolling_kv_pairs,
+                layout.pair_width,
+                breakdown.reverified_proofs
+            )));
+        }
+        if breakdown.embedded_proof_reverify_ms != 0.0 {
+            return Err(VmError::InvalidConfig(format!(
+                "tablero optimized replay benchmark expected embedded_proof_reverify_ms == 0.0 for layout {}x{}, got {}",
+                layout.rolling_kv_pairs,
+                layout.pair_width,
+                breakdown.embedded_proof_reverify_ms
+            )));
+        }
         rows.push(StwoTableroReplayBreakdownMeasurement {
             family: family.to_string(),
             steps,
@@ -1696,7 +1728,7 @@ pub fn run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(
             equality_check_ms: breakdown.equality_check_ms,
             verified: true,
             note: format!(
-                "carry-aware experimental backend over the checked {}x{} decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290",
+                "carry-aware experimental backend over the checked {}x{} decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same; the chain has been proof-checked once via VerifiedPhase12DecodingChainManifest::verify before timing) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290",
                 layout.rolling_kv_pairs, layout.pair_width
             ),
         });
@@ -6826,6 +6858,55 @@ mod tests {
             assert!(row.source_chain_json_bytes > 0, "{family}");
             assert!(row.step_proof_json_bytes_total > 0, "{family}");
             assert_eq!(row.reverified_proofs, row.steps, "{family}");
+        }
+    }
+
+    #[test]
+    fn tablero_replay_breakdown_optimized_benchmark_covers_three_families_with_optimized_invariants(
+    ) {
+        let report = run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(false)
+            .expect("tablero optimized replay breakdown benchmark should run");
+        assert_eq!(report.rows.len(), 3);
+        assert_eq!(
+            report.benchmark_version, STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_VERSION,
+            "optimized benchmark must stamp the optimized benchmark version",
+        );
+        assert_eq!(
+            report.semantic_scope, STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_SCOPE,
+            "optimized benchmark must stamp the carry-aware-experimental scope",
+        );
+        let mut by_family: HashMap<&str, &StwoTableroReplayBreakdownMeasurement> = HashMap::new();
+        for row in &report.rows {
+            by_family.insert(row.family.as_str(), row);
+        }
+        for family in ["default", "2x2", "3x3"] {
+            let row = by_family.get(family).unwrap_or_else(|| {
+                panic!("missing tablero optimized replay row for family {family}")
+            });
+            assert!(row.verified, "{family}");
+            assert_eq!(row.steps, 1024, "{family}");
+            assert_eq!(
+                row.reverified_proofs, 0,
+                "optimized replay must report zero embedded-proof reverifications for {family}",
+            );
+            assert_eq!(
+                row.embedded_proof_reverify_ms, 0.0,
+                "optimized replay must report zero embedded-proof reverify latency for {family}",
+            );
+            assert_eq!(
+                row.source_chain_json_bytes, 0,
+                "optimized replay must surface no JSON byte counters for {family}",
+            );
+            assert_eq!(
+                row.step_proof_json_bytes_total, 0,
+                "optimized replay must surface no JSON byte counters for {family}",
+            );
+            assert!(row.replay_total_ms >= 0.0, "{family}");
+            assert!(row.manifest_serialized_bytes > 0, "{family}");
+            assert!(
+                row.note.contains("optimized replay verifier"),
+                "row note must label the optimized verifier for {family}",
+            );
         }
     }
 
