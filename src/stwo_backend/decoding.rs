@@ -2476,6 +2476,11 @@ impl VerifiedPhase12DecodingChainManifest {
     }
 
     /// Consume the wrapper and return the underlying chain manifest.
+    /// Currently unused by the in-tree call sites (the optimized replay
+    /// verifier holds the wrapper and only borrows via `as_chain`), but
+    /// kept on the public surface so external callers that own a
+    /// verified chain can hand it off without re-wrapping.
+    #[allow(dead_code)]
     pub fn into_chain(self) -> Phase12DecodingChainManifest {
         self.chain
     }

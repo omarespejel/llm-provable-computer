@@ -22,7 +22,10 @@ consumers cannot accidentally substitute one for the other.
 family-matrix and replay-decomposition evidence).
 - Timing mode: `measured_median`.
 - Timing unit: `milliseconds`.
-- Timing policy: `median_of_5_runs_from_microsecond_capture`.
+- Timing policy: `median_of_9_runs_from_microsecond_capture` (canonical;
+  the script also accepts `median_of_5_runs_from_microsecond_capture`
+  under the same canonical-path allow-list, used in the original
+  measurement; current canonical evidence is the median-of-nine band).
 - Aggregation strategy: `median_total_representative_run` (consistent with
 the existing replay-decomposition aggregator).
 - Benchmark identity: `benchmark_version = stwo-tablero-replay-breakdown-optimized-benchmark-v1`,
@@ -73,15 +76,19 @@ Median-of-five runs at `1024` steps:
 
 | Family  | Optimized replay total | Original replay total | Speedup | Optimized ratio (optimized replay total : typed-boundary verify) |
 | ------- | ---------------------- | --------------------- | ------- | ---------------------------------------------------------------- |
-| default | `3,496.950 ms`         | `8,317.269 ms`        | `2.4x`  | `430.1x`                                                         |
-| `2x2`   | `3,457.447 ms`         | `7,182.913 ms`        | `2.1x`  | `425.7x`                                                         |
-| `3x3`   | `5,911.703 ms`         | `7,721.977 ms`        | `1.3x`  | `711.3x`                                                         |
+| default | `2,684.106 ms`         | `8,317.269 ms`        | `3.1x`  | `330.1x`                                                         |
+| `2x2`   | `2,145.775 ms`         | `7,182.913 ms`        | `3.3x`  | `264.2x`                                                         |
+| `3x3`   | `2,170.899 ms`         | `7,721.977 ms`        | `3.6x`  | `261.2x`                                                         |
 
 
 The headline replay-avoidance ratio at the `1024`-step frontier moves from
 `917x`-`1066x` (Section 6.2 of the paper) to a host-noise-sensitive band of
-`~426x`-`~711x` once the JSON-tax components of the original replay path
-are removed.
+`~261x`-`~330x` once the JSON-tax components of the original replay path
+are removed. This is a median-of-nine measurement; an earlier median-of-five
+session on the same host produced a `~426x`-`~711x` band, with the `3x3`
+median in particular pulled high by an unlucky run; the present median-of-nine
+result is more representative of the underlying distribution and is the one
+the paper now reports.
 
 ## Causal decomposition of the optimized total
 
@@ -90,10 +97,10 @@ The optimization touches two of the four non-trivial replay buckets:
 
 | Bucket                               | Original (JSON-keyed) | Optimized (binary) | Change       |
 | ------------------------------------ | --------------------- | ------------------ | ------------ |
-| source-chain commitment              | `~2,260 ms`           | `~0.7-1.3 ms`      | `-99.9%`     |
-| per-step proof commitment            | `~2,250 ms`           | `~150-210 ms`      | `-90% to -93%` |
-| manifest finalize (state derivation) | `~1,860 ms`           | `~3,300-5,750 ms`  | `host-noise dominated` |
-| equality check                       | `~0.2 ms`             | `~0.3-3.7 ms`      | `noise band` |
+| source-chain commitment              | `~2,260 ms`           | `~0.8-1.3 ms`      | `-99.9%`     |
+| per-step proof commitment            | `~2,250 ms`           | `~110-140 ms`      | `-94% to -95%` |
+| manifest finalize (state derivation) | `~1,860 ms`           | `~2,030-2,545 ms`  | `host-noise dominated` |
+| equality check                       | `~0.2 ms`             | `~0.1-1.0 ms`      | `noise band` |
 
 
 The two binary-commitment buckets shrink by `>90%`, confirming that almost
@@ -113,21 +120,24 @@ not a tight number.
 1. The slope-difference structural claim (Section 6.3 of the paper) is
   unaffected. The optimized replay surface still scales linearly in `N`
    while the typed-boundary verify surface stays sublinear.
-2. The constant-factor headline tightens, but only modestly: the
+2. The constant-factor headline tightens by a meaningful factor: the
    implementation-cost component of the original `~1000x` figure is a
-   `~1.3-2.4x` factor in this measurement (and is itself the smaller
-   contributor); the implementation-independent component is a
-   `~430-710x` band at the checked frontier across the three families
-   and reflects work the typed boundary genuinely avoids by relying on
-   the compact projection proof's trace commitment instead of re-deriving
-   states from the chain.
+   `~3.1-3.6x` factor in this median-of-nine measurement; the
+   implementation-independent component is a `~261-330x` band at the
+   checked frontier across the three families and reflects work the
+   typed boundary genuinely avoids by relying on the compact projection
+   proof's trace commitment instead of re-deriving states from the chain.
 3. The optimized-replay total is host-noise sensitive at this scale.
-   Two independent median-of-five sessions on the same host can differ
-   by a factor of `~1.5-2.7x` on the optimized total; the structural
-   conclusions are robust to this noise (the slope, the residual order
-   of magnitude, the per-bucket savings) but the specific cell values in
-   Table 3a should be read as an order-of-magnitude band, not a tight
-   number.
+   The nine timed runs span `1,790-8,083 ms` for `2x2` (range factor
+   `4.52x`), `2,018-7,196 ms` for default (range factor `3.57x`), and
+   `1,865-4,906 ms` for `3x3` (range factor `2.63x`). The median
+   suppresses single-run outliers, but the underlying distribution is
+   wide and a quieter measurement environment (or a substantially larger
+   sample count) would be needed to tighten the constants further. The
+   structural conclusions are robust to this noise (the slope, the
+   residual order of magnitude, the per-bucket savings); the specific
+   cell values in Table 3a should be read as an order-of-magnitude band,
+   not a tight number.
 4. The headline number in the paper now leads with the slope claim and
    reports both the original and optimized constants explicitly.
 

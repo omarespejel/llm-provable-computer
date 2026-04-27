@@ -13,16 +13,21 @@ CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json}"
 
-# Canonical checked-in evidence paths must be regenerated under the pinned
-# median-of-5 timing policy; allowing arbitrary BENCH_RUNS or EXPECTED_*
-# overrides would let a future re-run silently overwrite the canonical
-# TSV/JSON with a drifted payload while still passing the post-aggregation
-# identity check. We detect the canonical-path case once here and use it to
-# (a) require BENCH_RUNS=5, (b) require *both* outputs to point at canonical
-# paths so the TSV/JSON evidence pair cannot drift apart, and (c) ignore
-# caller-supplied EXPECTED_* overrides further down. Non-canonical output
-# paths (e.g. variance studies under a different filename) remain freely
-# overridable as long as both outputs are non-canonical together.
+# Canonical checked-in evidence paths must be regenerated under a pinned
+# median-of-N timing policy with N drawn from a small allow-list; allowing
+# arbitrary BENCH_RUNS or EXPECTED_* overrides would let a future re-run
+# silently overwrite the canonical TSV/JSON with a drifted payload while
+# still passing the post-aggregation identity check. The current allow-list
+# is {5, 9}: 5 was the original sample count, and 9 was added after a
+# variance investigation showed 5 samples were undersampling the host-noise
+# band on the manifest_finalize bucket. Both produce structurally meaningful
+# evidence; values outside the allow-list must use a non-canonical output
+# path. We detect the canonical-path case once here and use it to (a)
+# require BENCH_RUNS in {5, 9}, (b) require *both* outputs to point at
+# canonical paths so the TSV/JSON evidence pair cannot drift apart, and
+# (c) ignore caller-supplied EXPECTED_* overrides further down. Non-canonical
+# output paths (e.g. variance studies under a different filename) remain
+# freely overridable as long as both outputs are non-canonical together.
 CANONICAL_TSV="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv"
 CANONICAL_JSON="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json"
 TSV_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$TSV_OUT")"
@@ -42,9 +47,17 @@ if [[ "$TSV_IS_CANONICAL" != "$JSON_IS_CANONICAL" ]]; then
   exit 1
 fi
 WRITES_CANONICAL_EVIDENCE=$TSV_IS_CANONICAL
+CANONICAL_BENCH_RUNS_ALLOWED=(5 9)
 if [[ "$WRITES_CANONICAL_EVIDENCE" == "1" ]]; then
-  if [[ "$BENCH_RUNS" != "5" ]]; then
-    echo "Canonical optimized evidence must be regenerated under BENCH_RUNS=5; got BENCH_RUNS=$BENCH_RUNS" >&2
+  canonical_run_count_allowed=0
+  for allowed in "${CANONICAL_BENCH_RUNS_ALLOWED[@]}"; do
+    if [[ "$BENCH_RUNS" == "$allowed" ]]; then
+      canonical_run_count_allowed=1
+      break
+    fi
+  done
+  if [[ "$canonical_run_count_allowed" -ne 1 ]]; then
+    echo "Canonical optimized evidence must be regenerated under BENCH_RUNS in {${CANONICAL_BENCH_RUNS_ALLOWED[*]}}; got BENCH_RUNS=$BENCH_RUNS" >&2
     exit 1
   fi
 fi
@@ -124,10 +137,10 @@ if [[ "$WRITES_CANONICAL_EVIDENCE" == "1" ]]; then
   EXPECTED_BENCHMARK_VERSION="stwo-tablero-replay-breakdown-optimized-benchmark-v1"
   EXPECTED_SEMANTIC_SCOPE="tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend"
   EXPECTED_TIMING_MODE="measured_median"
-  EXPECTED_TIMING_POLICY="median_of_5_runs_from_microsecond_capture"
+  EXPECTED_TIMING_POLICY="median_of_${BENCH_RUNS}_runs_from_microsecond_capture"
   EXPECTED_TIMING_AGGREGATION_STRATEGY="median_total_representative_run"
   EXPECTED_TIMING_UNIT="milliseconds"
-  EXPECTED_TIMING_RUNS="5"
+  EXPECTED_TIMING_RUNS="$BENCH_RUNS"
 else
   EXPECTED_BENCHMARK_VERSION="${EXPECTED_BENCHMARK_VERSION:-stwo-tablero-replay-breakdown-optimized-benchmark-v1}"
   EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
