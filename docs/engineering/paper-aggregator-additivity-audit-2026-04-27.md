@@ -1,9 +1,19 @@
 # Paper-side aggregator additivity audit, 2026-04-27
 
-This note extends `docs/engineering/aggregator-additivity-audit-2026-04-27.md`
-(which covered `scripts/engineering/aggregate_*.py`) to the seven
-paper-side aggregators under `scripts/paper/aggregate_*.py`. Every
-aggregator is checked against the same three points used in the
+This note is a follow-up to the engineering-side audit note
+`docs/engineering/aggregator-additivity-audit-2026-04-27.md`, which
+was added in PR #297 (`audit/aggregator-additivity-294`) and covers
+the five aggregators under `scripts/engineering/aggregate_*.py`. The
+present note extends that audit to the seven paper-side aggregators
+under `scripts/paper/aggregate_*.py`. The two notes are designed to
+land in sequence: PR #297 first (engineering side), then PR #299
+(this note, paper side). If you are reading this note from a
+work-tree where the engineering-side note is not yet present, it has
+not been merged to `main` yet; the methodology and bug classes
+referenced below are reproduced inline so this note still stands on
+its own.
+
+Every aggregator is checked against the same three points used in the
 engineering audit:
 
 1. _Overlapping timed-bucket hashing._ Whether any cryptographic
@@ -21,9 +31,10 @@ engineering audit:
 ## Scope: enumerating the in-scope paper aggregators
 
 `ls scripts/paper/aggregate_*.py` returns exactly seven files at the
-time of this audit (April 27, 2026):
+time of this audit (April 27, 2026, against repository commit
+`51ac0f6`):
 
-```
+```text
 scripts/paper/aggregate_stwo_phase12_shared_lookup_artifact_reuse_benchmark.py
 scripts/paper/aggregate_stwo_phase12_shared_lookup_bundle_benchmark.py
 scripts/paper/aggregate_stwo_phase30_source_bound_manifest_reuse_benchmark.py
@@ -48,6 +59,18 @@ scripts/paper/aggregate_stwo_shared_table_reuse_benchmark.py
 No additional code changes are required. The doc-string of each file
 has been updated to point at this note, so future readers see the
 audit conclusion at the source.
+
+## Reproducibility metadata
+
+| Aggregator                                                          | Pinned input `timing_mode`                  | Output identity contract                                                                                              | Canonical evidence path                                                                                            | Audited backend                                       |
+| ------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `aggregate_stwo_phase12_shared_lookup_artifact_reuse_benchmark.py`  | inline `measured_single_run`, `timing_runs == 1` | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-phase12-shared-lookup-artifact-reuse-2026-04.{tsv,json}`.                                | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_phase12_shared_lookup_bundle_benchmark.py`          | inline `measured_single_run`, `timing_runs == 1` | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.{tsv,json}`.                                  | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_phase30_source_bound_manifest_reuse_benchmark.py`   | `EXPECTED_INPUT_TIMING_MODE` and `EXPECTED_INPUT_TIMING_POLICY` (pinned constants) | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-phase30-source-bound-manifest-reuse-2026-04.{tsv,json}`.                                 | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_phase44d_source_emission_benchmark.py`              | `EXPECTED_INPUT_TIMING_MODE` and `EXPECTED_INPUT_TIMING_POLICY` (pinned constants) | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.{tsv,json}`.                                            | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_phase71_handoff_receipt_benchmark.py`               | `EXPECTED_INPUT_TIMING_MODE` and `EXPECTED_INPUT_TIMING_POLICY` (pinned constants) | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.{tsv,json}`.                                             | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_primitive_lookup_vs_naive_benchmark.py`             | inline `measured_single_run`, `timing_runs == 1` | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.{tsv,json}`.                                           | `STWO_BACKEND_VERSION_PHASE12`.                       |
+| `aggregate_stwo_shared_table_reuse_benchmark.py`                    | inline `measured_single_run`, `timing_runs == 1` | Synthesises `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.                          | `docs/paper/evidence/stwo-shared-table-reuse-2026-04.{tsv,json}`.                                                  | `STWO_BACKEND_VERSION_PHASE12`.                       |
 
 ## Aggregator-level summary
 
