@@ -18,18 +18,31 @@ JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseli
 # overrides would let a future re-run silently overwrite the canonical
 # TSV/JSON with a drifted payload while still passing the post-aggregation
 # identity check. We detect the canonical-path case once here and use it to
-# (a) require BENCH_RUNS=5 and (b) ignore caller-supplied EXPECTED_*
-# overrides further down. Non-canonical output paths (e.g. variance studies
-# under a different filename) remain freely overridable.
+# (a) require BENCH_RUNS=5, (b) require *both* outputs to point at canonical
+# paths so the TSV/JSON evidence pair cannot drift apart, and (c) ignore
+# caller-supplied EXPECTED_* overrides further down. Non-canonical output
+# paths (e.g. variance studies under a different filename) remain freely
+# overridable as long as both outputs are non-canonical together.
 CANONICAL_TSV="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv"
 CANONICAL_JSON="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json"
 TSV_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$TSV_OUT")"
 JSON_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$JSON_OUT")"
 CANONICAL_TSV_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_TSV")"
 CANONICAL_JSON_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_JSON")"
-WRITES_CANONICAL_EVIDENCE=0
-if [[ "$TSV_OUT_REAL" == "$CANONICAL_TSV_REAL" || "$JSON_OUT_REAL" == "$CANONICAL_JSON_REAL" ]]; then
-  WRITES_CANONICAL_EVIDENCE=1
+TSV_IS_CANONICAL=0
+JSON_IS_CANONICAL=0
+if [[ "$TSV_OUT_REAL" == "$CANONICAL_TSV_REAL" ]]; then
+  TSV_IS_CANONICAL=1
+fi
+if [[ "$JSON_OUT_REAL" == "$CANONICAL_JSON_REAL" ]]; then
+  JSON_IS_CANONICAL=1
+fi
+if [[ "$TSV_IS_CANONICAL" != "$JSON_IS_CANONICAL" ]]; then
+  echo "TSV_OUT and JSON_OUT must both point at the canonical evidence paths or both at non-canonical paths; the canonical TSV/JSON pair must not drift apart." >&2
+  exit 1
+fi
+WRITES_CANONICAL_EVIDENCE=$TSV_IS_CANONICAL
+if [[ "$WRITES_CANONICAL_EVIDENCE" == "1" ]]; then
   if [[ "$BENCH_RUNS" != "5" ]]; then
     echo "Canonical optimized evidence must be regenerated under BENCH_RUNS=5; got BENCH_RUNS=$BENCH_RUNS" >&2
     exit 1
@@ -112,6 +125,7 @@ if [[ "$WRITES_CANONICAL_EVIDENCE" == "1" ]]; then
   EXPECTED_SEMANTIC_SCOPE="tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend"
   EXPECTED_TIMING_MODE="measured_median"
   EXPECTED_TIMING_POLICY="median_of_5_runs_from_microsecond_capture"
+  EXPECTED_TIMING_AGGREGATION_STRATEGY="median_total_representative_run"
   EXPECTED_TIMING_UNIT="milliseconds"
   EXPECTED_TIMING_RUNS="5"
 else
@@ -119,6 +133,7 @@ else
   EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
   EXPECTED_TIMING_MODE="${EXPECTED_TIMING_MODE:-measured_median}"
   EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_${BENCH_RUNS}_runs_from_microsecond_capture}"
+  EXPECTED_TIMING_AGGREGATION_STRATEGY="${EXPECTED_TIMING_AGGREGATION_STRATEGY:-median_total_representative_run}"
   EXPECTED_TIMING_UNIT="${EXPECTED_TIMING_UNIT:-milliseconds}"
   EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-$BENCH_RUNS}"
 fi
@@ -128,6 +143,7 @@ python3 - "$TMP_JSON" \
   "$EXPECTED_SEMANTIC_SCOPE" \
   "$EXPECTED_TIMING_MODE" \
   "$EXPECTED_TIMING_POLICY" \
+  "$EXPECTED_TIMING_AGGREGATION_STRATEGY" \
   "$EXPECTED_TIMING_UNIT" \
   "$EXPECTED_TIMING_RUNS" <<'PY'
 import json
@@ -140,8 +156,9 @@ expected = {
     "semantic_scope": sys.argv[3],
     "timing_mode": sys.argv[4],
     "timing_policy": sys.argv[5],
-    "timing_unit": sys.argv[6],
-    "timing_runs": int(sys.argv[7]),
+    "timing_aggregation_strategy": sys.argv[6],
+    "timing_unit": sys.argv[7],
+    "timing_runs": int(sys.argv[8]),
 }
 for key, want in expected.items():
     got = payload.get(key)
