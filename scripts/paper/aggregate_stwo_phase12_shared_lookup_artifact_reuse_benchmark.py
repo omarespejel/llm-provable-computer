@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Aggregate repeated Phase12 shared lookup artifact reuse benchmark runs using median timings."""
+"""Aggregate repeated Phase12 shared lookup artifact reuse benchmark runs using median timings.
+
+Audit note (issue #294, post-#292): single timing column (`verify_ms`),
+no hashing, inline metadata validation (`timing_mode ==
+"measured_single_run"` and `timing_runs == 1`). All three bug classes
+fixed by PR #292 (overlapping-bucket hashing, additivity-invariant
+violation, reproducibility-metadata drift) are absent here. See
+`docs/engineering/paper-aggregator-additivity-audit-2026-04-27.md`.
+"""
 
 from __future__ import annotations
 
