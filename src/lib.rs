@@ -619,6 +619,8 @@ pub use stwo_backend::{
     run_stwo_shared_table_reuse_benchmark_with_options,
     run_stwo_tablero_replay_breakdown_benchmark,
     run_stwo_tablero_replay_breakdown_benchmark_with_options,
+    run_stwo_tablero_replay_breakdown_optimized_benchmark,
+    run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,

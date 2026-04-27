@@ -27,7 +27,12 @@ ratio therefore grows with `N` for structural reasons in the measured
 regime, not because of one favorable endpoint. The implementation-dependent
 frontier-ratio numbers, reported only to make that growth concrete, range
 from `917.8x` to `1066.6x` at `N = 1024` over our current ordered
-manifest-replay implementation. A replay-baseline breakdown shows that the
+manifest-replay implementation; an explicit red-team measurement against an
+honestly-optimized replay verifier that skips per-step embedded-proof
+re-verification and uses binary canonical commitments instead of
+JSON-serialize-then-hash tightens these to `~257x`-`~292x`, isolating an
+implementation-cost component of `~3.5x` and an implementation-independent
+component of `~270x`. A replay-baseline breakdown shows that the
 avoided work is distributed across repeated embedded-proof re-verification,
 source-chain commitment rebuilds, per-step commitment rebuilds, and
 manifest finalization rather than one dominant equality check. A second

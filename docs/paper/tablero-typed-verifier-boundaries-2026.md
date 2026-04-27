@@ -1,14 +1,14 @@
 # Tablero: Typed Verifier Boundaries for Layered STARK Systems, with Evidence from STARK-zkML
 
-<p><strong>Abdelhamid Bakhta</strong><br>
-StarkWare</p>
+**Abdelhamid Bakhta**  
+StarkWare
 
-<p><strong>Omar Espejel</strong><br>
-Starknet Foundation</p>
+**Omar Espejel**  
+Starknet Foundation
 
 *April 2026 draft*
 
-Short submission abstract: [`abstract-tablero-2026.md`](abstract-tablero-2026.md).
+Short submission abstract: `[abstract-tablero-2026.md](abstract-tablero-2026.md)`.
 
 ## Abstract
 
@@ -47,7 +47,7 @@ formal statement-preservation criterion for deploying it safely, and an empirica
 study showing when and why replay elimination opens a growing latency gap in a layered
 STARK stack.
 
-______________________________________________________________________
+---
 
 ## 1. Introduction
 
@@ -82,15 +82,15 @@ formal enough to study.
 The paper makes four claims.
 
 1. **Design claim.** Tablero is a reusable settlement-layer pattern for layered STARK
-   systems: replace verifier-side replay with a typed boundary whose fields are
+  systems: replace verifier-side replay with a typed boundary whose fields are
    commitment-bound to the compact statement.
 2. **Formal claim.** Under explicit assumptions, accepting the typed boundary preserves
-   the same accepted statement set as replaying the heavier source surface.
+  the same accepted statement set as replaying the heavier source surface.
 3. **Empirical claim.** In the current transformer-shaped empirical lab, the main typed
-   boundary reproduces across three layout families and exhibits a growing-in-`N`
+  boundary reproduces across three layout families and exhibits a growing-in-`N`
    replay-avoidance curve.
 4. **Boundary claim.** The pattern is not universal. It only applies where the source
-   side emits enough proof-native material and where the replay surface is expensive
+  side emits enough proof-native material and where the replay surface is expensive
    enough to be worth removing. We include one smaller supporting second boundary and
    one bounded compactness no-go to mark that boundary explicitly.
 
@@ -101,17 +101,17 @@ implementations. The empirical demonstrations remain in one transformer-shaped S
 lane, and the large latency ratios are implementation-grounded replay-avoidance ratios,
 not claims that cryptographic verification itself became hundreds of times faster.
 
-______________________________________________________________________
+---
 
 ## 2. Replay Surfaces in Layered STARK Systems
 
 Consider a layered verifier with two kinds of work.
 
 - **Compact-proof work.** Verify the claim and proof that define the compact
-  cryptographic statement.
+cryptographic statement.
 - **Replay work.** Reconstruct or recheck heavier source-side structure around that
-  compact statement: ordered manifests, source-chain objects, public-input lists,
-  receipt wrappers, or other derived commitments.
+compact statement: ordered manifests, source-chain objects, public-input lists,
+receipt wrappers, or other derived commitments.
 
 A verifier that performs both is often logically correct but architecturally
 inefficient. The replay path may dominate wall-clock cost even when the compact proof
@@ -128,7 +128,7 @@ compact statement.
 The question is not whether a smaller object exists. The question is whether accepting
 that smaller object preserves the same statement.
 
-______________________________________________________________________
+---
 
 ## 3. The Tablero Pattern
 
@@ -157,9 +157,9 @@ that:
 
 1. `β` is schema-valid and version-valid,
 2. `β` exposes the public boundary facts the replay verifier would otherwise derive
-   from `σ`, and
+  from `σ`, and
 3. `β` carries enough commitment-bound information for the verifier to check that
-   those facts belong to the same compact claim `c`.
+  those facts belong to the same compact claim `c`.
 
 ### 3.3 Definition: Tablero acceptance rule
 
@@ -178,22 +178,22 @@ Intuitively:
 - `V_R(c, π)` keeps the compact cryptographic statement honest,
 - `Validate(β)` prevents malformed or semantically invalid boundary objects, and
 - `Bind(β, c)` prevents stale or mismatched boundary data from being attached to the
-  wrong compact claim.
+wrong compact claim.
 
 ### 3.4 When the pattern applies
 
 Tablero is not a universal wrapper trick. It applies only when two conditions hold.
 
 1. **Replay worth removing.** The replay surface is expensive enough that replacing it
-   would materially change verifier cost.
+  would materially change verifier cost.
 2. **Source emission completeness.** The source side emits the proof-native data needed
-   for the binding predicate to recreate the same public boundary the replay verifier
+  for the binding predicate to recreate the same public boundary the replay verifier
    would have enforced.
 
 If either condition fails, the right outcome is not to force the pattern. It is to record
 an honest no-go.
 
-______________________________________________________________________
+---
 
 ## 4. Statement Preservation
 
@@ -205,11 +205,11 @@ typed boundary preserve the same accepted statement set?
 We assume:
 
 1. **Compact-proof soundness.** If `V_R(c, π)` accepts, then `c` is a true statement in
-   relation `R` except with negligible probability `ε_R`.
+  relation `R` except with negligible probability `ε_R`.
 2. **Commitment binding.** The commitment functions used inside the boundary object and
-   its nested objects are collision resistant except with negligible probability `ε_H`.
+  its nested objects are collision resistant except with negligible probability `ε_H`.
 3. **Emission completeness.** The source side emits enough proof-native data for
-   `Bind(β, c)` to check all boundary facts that the replay verifier would otherwise
+  `Bind(β, c)` to check all boundary facts that the replay verifier would otherwise
    derive from `σ`.
 
 These are deliberately ordinary assumptions. The theorem below is not claiming a new
@@ -235,15 +235,15 @@ checks `V_R(c, π)` and reconstructs the same public boundary facts directly fro
 The proof is straightforward.
 
 1. By compact-proof soundness, `V_R(c, π)` implies that `c` is a valid compact statement
-   except with probability `ε_R`.
+  except with probability `ε_R`.
 2. `Validate(β)` guarantees that the boundary object is structurally well formed, uses
-   the expected schema and semantic scope, and respects object-level invariants.
+  the expected schema and semantic scope, and respects object-level invariants.
 3. `Bind(β, c)` guarantees that the public facts carried by `β` are commitment-bound to
-   the same compact claim `c` rather than to some stale or semantically different object.
+  the same compact claim `c` rather than to some stale or semantically different object.
 4. By commitment binding, the adversary cannot substitute a semantically different nested
-   object under the same commitments except with probability `ε_H`.
+  object under the same commitments except with probability `ε_H`.
 5. Therefore the verifier that accepts `β` is accepting the same compact claim and the
-   same public boundary facts that the replay verifier would have enforced, but without
+  same public boundary facts that the replay verifier would have enforced, but without
    recomputing those facts from `σ` inside the verifier.
 
 So the accepted statement set is preserved up to `ε_R + ε_H`.
@@ -260,7 +260,7 @@ The theorem does **not** imply:
 It says only that when a boundary is emitted completely and bound correctly, replacing
 replay with that boundary does not widen the accepted statement set.
 
-______________________________________________________________________
+---
 
 ## 5. Implementation Boundary and Assurance
 
@@ -281,21 +281,21 @@ The implementation assurance stack used for this paper is intentionally auditor-
 It includes:
 
 - deterministic tamper tests for malformed, stale, reordered, and semantically drifted
-  serialized artifacts,
+serialized artifacts,
 - deterministic tests for witness-discipline failures in the experimental arithmetic
-  layer,
+layer,
 - bounded model checking on the narrow boundary and wrapper predicates that replace
-  replay,
+replay,
 - differential fuzzing on serialized boundary and wrapper inputs,
 - runtime hardening that converts panic-prone shape assumptions into fail-closed errors
-  on trusted-core paths.
+on trusted-core paths.
 
 This assurance stack does not replace the theorem. It complements it. The theorem says
 what claim is justified if the boundary path is implemented correctly; the assurance
 stack increases confidence that the implementation is not silently violating the
 conditions of the theorem.
 
-______________________________________________________________________
+---
 
 ## 6. Empirical Evaluation
 
@@ -306,13 +306,13 @@ laboratory. They are not a matched benchmark against external systems. They are 
 median-of-five results on one experimental backend, used to study the behavior of typed
 replay replacement under controlled variations in layout geometry. The measurement policy,
 reproducibility handles, and public wording rules are summarized in
-[`appendix-methodology-and-reproducibility.md`](appendix-methodology-and-reproducibility.md).
+`[appendix-methodology-and-reproducibility.md](appendix-methodology-and-reproducibility.md)`.
 
 The main comparison is always the same:
 
 - **Typed-boundary path.** Verify the compact proof and accept one typed boundary object.
 - **Replay baseline.** Verify the same compact proof and then replay the ordered manifest
-  that the typed boundary is designed to replace.
+that the typed boundary is designed to replace.
 
 The important interpretation rule is simple:
 
@@ -326,11 +326,13 @@ reproduces across three layout families with the same growing-in-`N` shape.
 
 #### Table 1. Frontier summary across checked layout families
 
-| Family | Checked frontier | Replay-avoidance ratio at frontier | Typed-boundary verify | Replay baseline verify |
-| --- | ---: | ---: | ---: | ---: |
-| default | `1024` | `1066.6x` | `8.130 ms` | `8,671.126 ms` |
-| `2x2` | `1024` | `917.8x` | `8.121 ms` | `7,453.229 ms` |
-| `3x3` | `1024` | `1011.9x` | `8.311 ms` | `8,410.230 ms` |
+
+| Family  | Checked frontier | Replay-avoidance ratio at frontier | Typed-boundary verify | Replay baseline verify |
+| ------- | ---------------- | ---------------------------------- | --------------------- | ---------------------- |
+| default | `1024`           | `1066.6x`                          | `8.130 ms`            | `8,671.126 ms`         |
+| `2x2`   | `1024`           | `917.8x`                           | `8.121 ms`            | `7,453.229 ms`         |
+| `3x3`   | `1024`           | `1011.9x`                          | `8.311 ms`            | `8,410.230 ms`         |
+
 
 The structural claim is the slope difference fitted in Section 6.3, not the
 constant-factor headline. The frontier ratios above are
@@ -377,11 +379,13 @@ an asymptotic theorem and not a claim about a default backend.
 
 #### Table 2. Log-log slope fit over the checked grids
 
-| Family | Grid | Typed-path slope | Replay-baseline slope | Ratio slope | Ratio fit `R^2` |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| default | `2-1024` | `0.3559` | `0.9921` | `0.6362` | `0.9706` |
-| `2x2` | `2-1024` | `0.3567` | `0.9899` | `0.6332` | `0.9704` |
-| `3x3` | `2-1024` | `0.3508` | `0.9905` | `0.6397` | `0.9695` |
+
+| Family  | Grid     | Typed-path slope | Replay-baseline slope | Ratio slope | Ratio fit `R^2` |
+| ------- | -------- | ---------------- | --------------------- | ----------- | --------------- |
+| default | `2-1024` | `0.3559`         | `0.9921`              | `0.6362`    | `0.9706`        |
+| `2x2`   | `2-1024` | `0.3567`         | `0.9899`              | `0.6332`    | `0.9704`        |
+| `3x3`   | `2-1024` | `0.3508`         | `0.9905`              | `0.6397`    | `0.9695`        |
+
 
 The replay baseline is near-linear over the checked grids. The typed path grows much
 more slowly over the same grids, so the ratio grows for structural reasons in the
@@ -395,7 +399,7 @@ itself stays in a narrow band (`R^2` between `0.9695` and `0.9706`) because
 the replay-baseline term dominates the log-log behavior of the ratio over
 this grid.
 
-![Tablero scaling-law fit across checked families](figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg)
+Tablero scaling-law fit across checked families
 
 **Figure 2.** The checked scaling-law fit separates the typed path, the replay baseline,
 and the ratio curve on the carry-aware experimental backend. The result supports a
@@ -434,17 +438,19 @@ breakdown shows where the baseline actually spends time.
 
 #### Table 3. Replay baseline decomposition at the checked frontier
 
-| Family | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| default (`1024`) | `1,910.784 ms` | `2,256.729 ms` | `2,280.080 ms` | `1,869.553 ms` | `0.122 ms` | `8,317.269 ms` |
-| `2x2` (`1024`) | `1,440.664 ms` | `2,036.751 ms` | `2,029.761 ms` | `1,675.663 ms` | `0.075 ms` | `7,182.913 ms` |
-| `3x3` (`1024`) | `1,733.076 ms` | `2,138.166 ms` | `2,114.333 ms` | `1,736.131 ms` | `0.271 ms` | `7,721.977 ms` |
+
+| Family           | Proof reverify | Source-chain commitment | Per-step commitment | Manifest finalize | Equality check | Replay total   |
+| ---------------- | -------------- | ----------------------- | ------------------- | ----------------- | -------------- | -------------- |
+| default (`1024`) | `1,910.784 ms` | `2,256.729 ms`          | `2,280.080 ms`      | `1,869.553 ms`    | `0.122 ms`     | `8,317.269 ms` |
+| `2x2` (`1024`)   | `1,440.664 ms` | `2,036.751 ms`          | `2,029.761 ms`      | `1,675.663 ms`    | `0.075 ms`     | `7,182.913 ms` |
+| `3x3` (`1024`)   | `1,733.076 ms` | `2,138.166 ms`          | `2,114.333 ms`      | `1,736.131 ms`    | `0.271 ms`     | `7,721.977 ms` |
+
 
 This is the stronger causal lesson:
 
 - the replay baseline is not one monolithic serialization bottleneck,
 - proof re-verification, source-chain commitment rebuild, per-step commitment rebuild,
-  and manifest finalization each consume a comparable share of replay time, and
+and manifest finalization each consume a comparable share of replay time, and
 - the final equality comparison is negligible.
 
 ![Replay baseline breakdown across checked families](figures/tablero-replay-baseline-breakdown-2026-04.svg)
@@ -458,7 +464,68 @@ between `4.955 ms` (`2x2`) and `5.048 ms` (`3x3`). The verifier gap therefore
 comes from removing a bundle of repeated replay work, not from accelerating
 cryptographic verification itself.
 
-### 6.6 Supporting second boundary on a distinct source surface
+### 6.6 Red-teaming the constant: an honestly-optimized replay verifier
+
+The frontier ratios in Section 6.2 are measured against the current ordered
+manifest-replay implementation. A natural reviewer objection is that the
+headline value reads partly as "how much work the typed boundary avoids" and
+partly as "how unoptimized the JSON-shaped replay path is." We measured this
+explicitly. We added an alternate replay verifier in the engineering lane
+that (a) skips per-step embedded proof re-verification (the typed boundary
+verifier does the same; the compact projection proof's trace commitment
+already binds the trace that includes every step proof's public-output
+surface) and (b) commits the chain summary and per-step proof commitments
+with a binary canonical encoding over fixed-size cryptographic identities
+and the raw stark-proof byte buffer, instead of serializing every nested
+proof structure to JSON before hashing. The verifier still rebuilds the
+manifest from the chain and equality-checks; only the implementation surface
+of the cryptographic-derivation and per-step-proof checks changes.
+
+#### Table 3a. Optimized replay verifier at the `1024`-step frontier
+
+Reproducibility note for Table 3a: the engineering evidence lives at the
+checked-in carry-aware experimental optimized replay-breakdown TSV under
+`docs/engineering/evidence/`, regenerated by
+`BENCH_RUNS=5 CAPTURE_TIMINGS=1 scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh`.
+This is an explicit experimental-to-paper promotion of an engineering-only
+red-team measurement; the optimized verifier is **not** the publication-default
+verifier and the manifest format it consumes uses binary commitments rather
+than the JSON-keyed commitments the publication path requires.
+
+| Family | Optimized replay total | Original replay total | Speedup | Ratio (typed boundary verify : optimized replay total) |
+| --- | ---: | ---: | ---: | ---: |
+| default (`1024`) | `2,371.934 ms` | `8,317.269 ms` | `3.5x` | `291.7x` |
+| `2x2` (`1024`) | `2,085.380 ms` | `7,182.913 ms` | `3.4x` | `256.8x` |
+| `3x3` (`1024`) | `2,202.230 ms` | `7,721.977 ms` | `3.5x` | `265.0x` |
+
+Two facts matter here.
+
+First, the headline replay-avoidance ratios in Section 6.2 (`917x`-`1066x` at
+`N = 1024`) tighten by roughly a factor of `~3.5x` to a band of
+`~257x`-`292x` once the JSON-tax component of the original replay path is
+removed. That is the implementation-cost component of the headline; the
+remaining ratio reflects work the typed boundary genuinely avoids that an
+optimized replay verifier still pays.
+
+Second, the optimized replay's cost decomposition shows that the residual
+cost is **not** the part of the replay surface our binary-commitment
+optimization touches. The `source-chain commitment` and `per-step proof
+commitment` buckets each drop from `~2.3 s` to `~0.12 s`, but
+`manifest_finalize` stays in the `~1.86`-`2.12 s` band because it includes
+the per-step state-derivation work that confirms every recorded
+`from_state`/`to_state` pair is consistent with the program's deterministic
+re-execution from the recorded initial state. That structural per-step work
+is the part of replay the typed boundary truly removes by relying on the
+compact projection proof's trace commitment instead of re-deriving states.
+
+Taken together, the slope claim (Section 6.3) is unaffected: the ratio still
+grows with `N` because the optimized replay surface still scales linearly in
+`N` while the typed-boundary verify surface stays sublinear. The
+constant-factor headline is honestly tightened: the implementation-dependent
+component of the original `~1000x` figure is roughly `~3.5x`, and the
+implementation-independent component is `~270x` at the checked frontier.
+
+### 6.7 Supporting second boundary on a distinct source surface
 
 The paper should not rely on only one replay-avoidance surface. The current empirical
 lab also includes a second typed boundary on a distinct emitted-source surface.
@@ -470,9 +537,11 @@ pattern is not singular to one replay surface.
 
 #### Table 4. Supporting second-boundary publication checkpoint
 
-| Surface | Checked point | Typed-boundary verify | Replay baseline verify | Ratio |
-| --- | ---: | ---: | ---: | ---: |
-| conservative publication row | `2` | `0.857 ms` | `1.045 ms` | `1.22x` |
+
+| Surface                      | Checked point | Typed-boundary verify | Replay baseline verify | Ratio   |
+| ---------------------------- | ------------- | --------------------- | ---------------------- | ------- |
+| conservative publication row | `2`           | `0.857 ms`            | `1.045 ms`             | `1.22x` |
+
 
 The supporting point matters because it is a distinct emitted-source surface, not
 because it is large. The paper-facing claim here is only that the second surface clears
@@ -489,7 +558,7 @@ The right interpretation is narrow:
 
 So this second result is supporting transfer evidence, not a replacement headline.
 
-### 6.7 Bounded compactness no-go
+### 6.8 Bounded compactness no-go
 
 The paper also includes one bounded no-go because that is part of the pattern's honest
 boundary.
@@ -507,11 +576,11 @@ This is not a failure of the theorem. It is an example of the theorem's applicab
 boundary:
 
 1. a compact object alone is not enough if it does not remove replay from the verifier,
-   and
+  and
 2. not every smaller verifier-facing object should be promoted as a replay-elimination
-   boundary.
+  boundary.
 
-______________________________________________________________________
+---
 
 ## 7. External Calibration
 
@@ -532,7 +601,7 @@ boundary results in this paper. The objects live at different layers:
 - the public Obelyzk object is a recursive settlement proof rather than a pre-recursive boundary object,
 - the main local object in this paper is a pre-recursive typed verifier boundary,
 - the narrower local compact handoff object is a compactness surface rather than a replay
-  avoidance surface.
+avoidance surface.
 
 That is why the external calibration should be read as deployment posture, not as an
 apples-to-apples verifier race.
@@ -543,7 +612,7 @@ small-width workload [1]. The closest local compact handoff object is smaller bu
 on its current path. That is another example of the paper's central claim: different
 verifier-facing layers improve different costs.
 
-______________________________________________________________________
+---
 
 ## 8. Threats to Validity and Explicit Non-Claims
 
@@ -562,7 +631,14 @@ The replay baseline in this paper is real, but it is also implementation grounde
 In the current codebase, the dominant replay cost comes from ordered canonical
 serialization, hashing, and manifest reconstruction. That is the cost Tablero removes in
 this system. It is not a theorem that every replay implementation in every system would
-pay the same constant factors.
+pay the same constant factors. Section 6.6 reports the explicit red-team
+measurement: an honestly-optimized replay verifier that skips per-step
+embedded proof re-verification and uses binary canonical commitments instead
+of JSON-serialize-then-hash tightens the headline ratio from `~1000x` to
+`~270x` at the checked frontier. The `~3.5x` reduction is the
+implementation-cost component of the headline; the residual `~270x` is
+implementation-independent within the constraints of this engineering
+laboratory and reflects work the typed boundary genuinely avoids.
 
 ### 8.3 No recursive-compression claim
 
@@ -585,7 +661,7 @@ The paper does not claim that Tablero is always a win. A typed boundary only hel
 The recorded compactness no-go exists precisely to show that we are not smoothing over
 this constraint.
 
-______________________________________________________________________
+---
 
 ## 9. Conclusion
 
@@ -599,22 +675,23 @@ boundary object and prove that accepting it preserves the same accepted statemen
 That gives a contribution at three levels.
 
 - At the design level, it names a settlement-layer pattern that appears whenever replay
-  dominates verification.
+dominates verification.
 - At the formal level, it states a clean statement-preservation theorem with explicit
-  preconditions.
+preconditions.
 - At the empirical level, it shows a real replay-avoidance curve across three layout
-  families, a supporting second typed boundary on a distinct source surface, and one
-  bounded compactness no-go that marks where the pattern does not yet apply.
+families, a supporting second typed boundary on a distinct source surface, and one
+bounded compactness no-go that marks where the pattern does not yet apply.
 
 This is not the end of the story. The next steps are clear: broader backend transfer,
 stronger external calibration, and eventually a recursive layer that preserves the same
 boundary semantics. But those are follow-on results. The present paper is about the
 strongest honest claim the current system can already defend.
 
-______________________________________________________________________
+---
 
 ## References
 
 1. NANOZK authors. *Public transformer-proof abstract and verifier-object metrics*. Public materials cited in the package calibration note.
 2. BitSage. *Obelyzk public verifier object on Starknet Sepolia*. Public docs.rs materials for `obelyzk` 0.3.0.
 3. BitSage. *Obelyzk paper and Starknet Sepolia gas figures*. Public paper linked from the `obelyzk` 0.3.0 docs.rs package.
+
