@@ -64,22 +64,7 @@ LOCAL_REPOS = {
     ("omarespejel", "provable-transformer-vm"),
 }
 
-CLAIM_EVIDENCE_FILE = "docs/engineering/paper2-claim-evidence.yml"
 PAPER3_CLAIM_EVIDENCE_FILE = "docs/engineering/paper3-claim-evidence.yml"
-
-REQUIRED_CLAIM_IDS = {
-    "phase29_recursive_input_contract",
-    "phase30_step_envelope_manifest",
-    "phase31_decode_boundary_bridge",
-    "phase32_recursive_statement_contract",
-    "phase33_public_input_manifest",
-    "phase34_shared_lookup_manifest",
-    "phase35_recursive_target_manifest",
-    "phase36_verifier_harness_receipt",
-    "phase37_artifact_chain_harness_receipt",
-    "bounded_runtime_semantic_agreement",
-    "release_provenance_boundary",
-}
 
 REQUIRED_PAPER3_CLAIM_IDS = {
     "phase38_source_validated_receipt_binding",
@@ -443,7 +428,7 @@ def unquote_claim_evidence_scalar(value: str) -> str:
 def parse_claim_evidence_records(
     path: pathlib.Path, findings: Findings
 ) -> list[dict[str, object]]:
-    """Parse the restricted YAML shape used by paper2-claim-evidence.yml.
+    """Parse the restricted YAML shape used by paper-claim-evidence ledgers.
 
     This is intentionally not a general YAML parser. The evidence ledger uses a
     small stdlib-friendly subset so preflight does not grow a PyYAML dependency.
@@ -664,13 +649,13 @@ def fragment_scoped_search_texts(text: str, location_anchor: str) -> list[str]:
     return scoped_sections
 
 
-def check_paper2_evidence_anchors(
+def check_paper_evidence_anchors(
     repo_root: pathlib.Path,
     evidence_path: pathlib.Path,
     records: list[dict[str, object]],
     findings: Findings,
 ) -> None:
-    """Require each evidence-ledger claim to be cited by Paper 2 prose.
+    """Require each evidence-ledger claim to be cited by paper prose.
 
     The evidence matrix says where a claim appears. The paper text must contain
     an explicit `evidence:<claim_id>` anchor in at least one declared location,
@@ -825,17 +810,7 @@ def check_claim_evidence_matrix_file(
         findings.warn(
             f"{evidence_path}: extra {paper_label} claim evidence ids not in required set: {extra_ids}"
         )
-    check_paper2_evidence_anchors(repo_root, evidence_path, records, findings)
-
-
-def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
-    check_claim_evidence_matrix_file(
-        repo_root,
-        findings,
-        CLAIM_EVIDENCE_FILE,
-        REQUIRED_CLAIM_IDS,
-        "paper-2",
-    )
+    check_paper_evidence_anchors(repo_root, evidence_path, records, findings)
 
 
 def check_paper3_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
@@ -1574,7 +1549,6 @@ def main() -> int:
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
-    check_claim_evidence_matrix(repo_root, findings)
     check_paper3_claim_evidence_matrix(repo_root, findings)
     check_paper_claim_language(repo_root, findings)
 

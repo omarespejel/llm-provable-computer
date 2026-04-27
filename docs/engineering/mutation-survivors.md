@@ -17,8 +17,8 @@ survivor report with the release evidence bundle.
 Use a dedicated output root so the run can be hashed and referenced later:
 
 ```bash
-MUTATION_OUTPUT_ROOT=target/mutation/paper2-checkpoint \
-MUTATION_SURVIVOR_REPORT=target/mutation/paper2-checkpoint/survivors.json \
+MUTATION_OUTPUT_ROOT=target/mutation/tablero-checkpoint \
+MUTATION_SURVIVOR_REPORT=target/mutation/tablero-checkpoint/survivors.json \
 scripts/run_mutation_suite.sh
 ```
 
@@ -76,7 +76,7 @@ When a survivor or timeout exists, add an object to the appropriate list:
   "target": "src/stwo_backend/decoding.rs",
   "outcome": "survived",
   "classification": "weak-test | equivalent | out-of-scope | tool-limitation",
-  "evidence": "target/mutation/paper2-checkpoint/survivors.json",
+  "evidence": "target/mutation/tablero-checkpoint/survivors.json",
   "next_action": "add rejection test for boundary mismatch",
   "paper_blocker": true
 }
