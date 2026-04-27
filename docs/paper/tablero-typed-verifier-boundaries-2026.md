@@ -361,7 +361,7 @@ laboratory. They are not a matched benchmark against external systems. They are 
 median-of-five results on one experimental backend, used to study the behavior of typed
 replay replacement under controlled variations in layout geometry. The measurement policy,
 reproducibility handles, and public wording rules are summarized in
-`[appendix-methodology-and-reproducibility.md](appendix-methodology-and-reproducibility.md)`.
+[appendix-methodology-and-reproducibility.md](appendix-methodology-and-reproducibility.md).
 
 The main comparison is always the same:
 

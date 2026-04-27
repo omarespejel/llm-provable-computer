@@ -79,15 +79,25 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
             self.assertEqual(two_by_two["typed_bytes_delta_vs_default"], -306)
             self.assertEqual(two_by_two["compact_bytes_delta_vs_default"], -290)
             self.assertEqual(two_by_two["binding_bytes_delta_vs_default"], -16)
-            self.assertAlmostEqual(two_by_two["typed_verify_ratio_vs_default"], 38.373, places=3)
+            # These ratios track the checked-in carry-aware-experimental
+            # family-matrix evidence and must be updated whenever that
+            # evidence is regenerated. After the median-of-five regeneration
+            # at the 1024-step shared frontier, the 2x2 family verifies in
+            # approximately the same wall-clock time as the default family
+            # (the replay-side bucket is slightly slower, the others are
+            # close to parity), so all four ratios sit near 1.0; the test
+            # pins them tightly enough to catch evidence drift but leaves
+            # one decimal place of headroom for sub-millisecond per-row
+            # noise.
+            self.assertAlmostEqual(two_by_two["typed_verify_ratio_vs_default"], 1.001, places=2)
             self.assertAlmostEqual(
-                two_by_two["compact_verify_ratio_vs_default"], 33.167, places=3
+                two_by_two["compact_verify_ratio_vs_default"], 1.004, places=2
             )
             self.assertAlmostEqual(
-                two_by_two["binding_verify_ratio_vs_default"], 54.190, places=3
+                two_by_two["binding_verify_ratio_vs_default"], 1.012, places=2
             )
             self.assertAlmostEqual(
-                two_by_two["replay_verify_ratio_vs_default"], 15.276, places=3
+                two_by_two["replay_verify_ratio_vs_default"], 1.159, places=2
             )
 
             with out_tsv.open(encoding="utf-8") as handle:
