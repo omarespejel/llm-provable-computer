@@ -13,6 +13,23 @@ CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json}"
 
+# Canonical checked-in evidence paths must be regenerated under the pinned
+# median-of-5 timing policy; allowing arbitrary BENCH_RUNS would let a future
+# re-run silently overwrite the canonical TSV/JSON with a different timing
+# policy while still passing the post-aggregation identity check.
+CANONICAL_TSV="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv"
+CANONICAL_JSON="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json"
+TSV_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$TSV_OUT")"
+JSON_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$JSON_OUT")"
+CANONICAL_TSV_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_TSV")"
+CANONICAL_JSON_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_JSON")"
+if [[ "$TSV_OUT_REAL" == "$CANONICAL_TSV_REAL" || "$JSON_OUT_REAL" == "$CANONICAL_JSON_REAL" ]]; then
+  if [[ "$BENCH_RUNS" != "5" ]]; then
+    echo "Canonical optimized evidence must be regenerated under BENCH_RUNS=5; got BENCH_RUNS=$BENCH_RUNS" >&2
+    exit 1
+  fi
+fi
+
 if [[ "$CAPTURE_TIMINGS" != "1" ]]; then
   echo "CAPTURE_TIMINGS must be 1 for the checked-in optimized replay breakdown benchmark" >&2
   exit 1
@@ -78,9 +95,13 @@ python3 scripts/engineering/aggregate_tablero_replay_breakdown.py \
 EXPECTED_BENCHMARK_VERSION="${EXPECTED_BENCHMARK_VERSION:-stwo-tablero-replay-breakdown-optimized-benchmark-v1}"
 EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
 EXPECTED_TIMING_MODE="${EXPECTED_TIMING_MODE:-measured_median}"
-EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_${BENCH_RUNS}_runs_from_microsecond_capture}"
+# Canonical regenerations always pin median_of_5; explorations that override
+# BENCH_RUNS (e.g. larger sample counts to study variance) must explicitly set
+# EXPECTED_TIMING_POLICY/EXPECTED_TIMING_RUNS *and* a non-canonical TSV_OUT /
+# JSON_OUT, otherwise the canonical-path BENCH_RUNS=5 guard above trips.
+EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_5_runs_from_microsecond_capture}"
 EXPECTED_TIMING_UNIT="${EXPECTED_TIMING_UNIT:-milliseconds}"
-EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-$BENCH_RUNS}"
+EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-5}"
 
 python3 - "$TMP_JSON" \
   "$EXPECTED_BENCHMARK_VERSION" \

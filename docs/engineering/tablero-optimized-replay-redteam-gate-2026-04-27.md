@@ -47,7 +47,7 @@ explicit ways:
    the proof-checked construction; the optimized replay inherits that
    trust.
 2. It uses
-  `phase30_commit_phase12_decoding_chain_for_step_envelopes_binary` and
+  `phase30_commit_phase12_decoding_chain_for_step_envelopes_binary_with_step_commitments` and
    `phase30_commit_step_proof_binary` instead of the JSON-keyed
    counterparts. The binary helpers hash only fixed-size cryptographic
    identities (chain version metadata, layout commitment, ordered list of
@@ -155,6 +155,6 @@ keeps run-to-run host noise low.
 `phase30_prepare_decoding_step_proof_envelope_manifest_optimized`,
 `verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown`,
 `phase30_commit_step_proof_binary`,
-`phase30_commit_phase12_decoding_chain_for_step_envelopes_binary`.
+`phase30_commit_phase12_decoding_chain_for_step_envelopes_binary_with_step_commitments`.
 - `docs/paper/tablero-typed-verifier-boundaries-2026.md` Section 6.6 ("Red-teaming the constant").
 
