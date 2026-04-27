@@ -8,7 +8,7 @@ Starknet Foundation
 
 *April 2026 draft*
 
-Short submission abstract: `[abstract-tablero-2026.md](abstract-tablero-2026.md)`.
+Short submission abstract: [abstract-tablero-2026.md](abstract-tablero-2026.md).
 
 ## Abstract
 
@@ -505,7 +505,7 @@ identifiers are pinned in
 `docs/engineering/tablero-optimized-replay-redteam-gate-2026-04-27.md`)
 that the publication path explicitly rejects.
 
-| Family | Optimized replay total | Original replay total | Speedup | Ratio (typed boundary verify : optimized replay total) |
+| Family | Optimized replay total | Original replay total | Speedup | Ratio (optimized replay total : typed boundary verify) |
 | --- | ---: | ---: | ---: | ---: |
 | default (`1024`) | `3,496.950 ms` | `8,317.269 ms` | `2.4x` | `430.1x` |
 | `2x2` (`1024`) | `3,457.447 ms` | `7,182.913 ms` | `2.1x` | `425.7x` |
