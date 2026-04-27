@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# Audit note (issue #294, post-#292): two orthogonal timing columns
+# (`emit_ms`, `verify_ms`) with no additive identity, no hashing, and
+# hard-pinned `EXPECTED_INPUT_TIMING_MODE` and
+# `EXPECTED_INPUT_TIMING_POLICY`. All three bug classes fixed by
+# PR #292 are absent here. See
+# `docs/engineering/paper-aggregator-additivity-audit-2026-04-27.md`.
 """Aggregate repeated Phase44D source-emission benchmark runs using median timings."""
 
 from __future__ import annotations
