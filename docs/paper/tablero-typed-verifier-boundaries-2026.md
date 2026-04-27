@@ -40,11 +40,13 @@ serialization) tightens the headline ratio at the checked frontier to a
 host-noise-sensitive band of `~426x`-`~711x`, isolating an implementation-cost
 component of `~1.3x`-`~2.4x` from a structural component of `~430x`-`~710x` that
 any honest replay verifier pays. A second typed boundary on a distinct
-emitted-source surface also clears as supporting positive evidence: `1.22x` on the
-conservative publication row and `6.66x` at the checked `1024`-step experimental
-frontier under median-of-five timing. The paper also reports one bounded
-compactness no-go: a narrower handoff object that shrinks bytes but not verifier
-latency because it compacts a replay-dependent path rather than eliminating replay.
+emitted-source surface also clears as supporting positive evidence at `1.22x`
+on the conservative publication row (Table 4); a broader engineering sweep
+over the same surface is checked in but is not promoted here as a
+paper-facing performance claim. The paper also reports one bounded
+compactness no-go: a narrower handoff object that shrinks bytes but not
+verifier latency because it compacts a replay-dependent path rather than
+eliminating replay.
 
 The contribution is therefore threefold: a reusable verifier-boundary pattern, a
 formal statement-preservation criterion for deploying it safely, and an empirical
