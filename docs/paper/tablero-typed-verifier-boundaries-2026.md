@@ -101,6 +101,54 @@ implementations. The empirical demonstrations remain in one transformer-shaped S
 lane, and the large latency ratios are implementation-grounded replay-avoidance ratios,
 not claims that cryptographic verification itself became hundreds of times faster.
 
+### 1.1 Research lineage
+
+Tablero is one step inside a multi-paper research line that takes the
+"transformers as computers" premise from architectural argument to operational
+deployment.
+
+The original premise — that a transformer in decode mode behaves like a
+computer running a deterministic program — was made concrete by Percepta's
+*Can LLMs Be Computers?* [4]. AbdelStark's follow-on note *Can LLMs be
+PROVABLE computers?* [5] asked the natural next question: if a transformer
+can execute a program, can that execution produce independently checkable
+evidence? His framing names the bridge directly: *the trace becomes the
+witness*.
+
+Earlier work [6] argues that STARK trace structure naturally fits
+transformer decode because the workload already exhibits repeated stateful
+local work over carried context, and that the proof artifact for one
+decode step should preserve the carried boundary, not just the visible
+output token. That argument establishes the *architectural fit* between
+trace-based STARK proving and transformer decode but does not give a
+verifier-side mechanism that exploits it: it argues that the carried
+boundary should be made visible, but it does not provide the verifier
+that accepts it in lieu of replay.
+
+This paper supplies that mechanism. Tablero is the verifier-side pattern
+that lets a layered STARK system deploy the LLMs-as-provable-computers
+premise without the verifier walking the source-chain replay surface
+itself. The structural fit between STARK traces and transformer decode is
+the precondition; the typed verifier-boundary pattern is the operational
+payoff. We do not contribute a new STARK construction or a new transformer
+arithmetization. The contribution is *systems-level*: a settlement-layer
+pattern that closes one specific cost gap between "we can prove transformer
+execution" and "the verifier can check that proof cheaply at deployment
+scale."
+
+In the surrounding zkML literature, related lines come at the same problem
+from different angles. zkLLM-style work introduces lookup machinery for
+non-arithmetic tensor operations and attention-specific proving;
+Jolt-Atlas brings a lookup-centric SNARK approach to ONNX tensor
+operations; NANOZK [1] argues for layerwise zero-knowledge proofs for LLM
+inference; Lagrange DeepProve-1 reports full GPT-2 inference proving as a
+SNARK-side existence proof; LuminAIR with Giza × S-two demonstrates a
+STARK-native graph-to-AIR path. These are valuable predecessors and
+parallel work; Tablero is orthogonal to them. None of them gives a
+verifier-side replay-elimination pattern with a stated soundness criterion
+and measured savings on the carried-state surface that transformer decode
+naturally exposes.
+
 ---
 
 ## 2. Replay Surfaces in Layered STARK Systems
@@ -712,8 +760,11 @@ bounded compactness no-go that marks where the pattern does not yet apply.
 
 This is not the end of the story. The next steps are clear: broader backend transfer,
 stronger external calibration, and eventually a recursive layer that preserves the same
-boundary semantics. But those are follow-on results. The present paper is about the
-strongest honest claim the current system can already defend.
+boundary semantics. Within the broader research lineage of Section 1.1
+(transformers as computers, then as provable computers, then as
+trace-shaped proof surfaces), Tablero is the verifier-side step that
+makes the deployment economics defensible; the prover-side, recursion,
+and second-backend pieces of the same program remain follow-on work.
 
 ---
 
@@ -722,4 +773,7 @@ strongest honest claim the current system can already defend.
 1. NANOZK authors. *Public transformer-proof abstract and verifier-object metrics*. Public materials cited in the package calibration note.
 2. BitSage. *Obelyzk public verifier object on Starknet Sepolia*. Public docs.rs materials for `obelyzk` 0.3.0.
 3. BitSage. *Obelyzk paper and Starknet Sepolia gas figures*. Public paper linked from the `obelyzk` 0.3.0 docs.rs package.
+4. Percepta. *Can LLMs Be Computers?* Public research note.
+5. Hakim AbdelStark. *Can LLMs be PROVABLE computers?* Public research note. Names the bridge as `the trace becomes the witness`.
+6. Omar Espejel. *Why STARK Execution Structure Fits Transformer Workloads*. `blog.espejel.lol`, 2026-04-15 (updated 2026-04-21).
 
