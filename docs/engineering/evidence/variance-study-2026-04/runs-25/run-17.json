@@ -1,0 +1,61 @@
+{
+  "benchmark_version": "stwo-tablero-replay-breakdown-optimized-benchmark-v1",
+  "semantic_scope": "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend",
+  "timing_mode": "measured_single_run",
+  "timing_policy": "single_run_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 1,
+  "rows": [
+    {
+      "family": "default",
+      "steps": 1024,
+      "relation": "optimized replay verifier (skip embedded-proof reverify, binary canonical commitments) over a proof-checked source chain",
+      "manifest_serialized_bytes": 1314707,
+      "reverified_proofs": 0,
+      "source_chain_json_bytes": 0,
+      "step_proof_json_bytes_total": 0,
+      "replay_total_ms": 4650.03225,
+      "embedded_proof_reverify_ms": 0.0,
+      "source_chain_commitment_ms": 0.676333,
+      "step_proof_commitment_ms": 122.380667,
+      "manifest_finalize_ms": 4525.4270830000005,
+      "equality_check_ms": 1.5475,
+      "verified": true,
+      "note": "carry-aware experimental backend over the checked 4x4 decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same; the chain has been proof-checked once via VerifiedPhase12DecodingChainManifest::verify before timing) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290"
+    },
+    {
+      "family": "2x2",
+      "steps": 1024,
+      "relation": "optimized replay verifier (skip embedded-proof reverify, binary canonical commitments) over a proof-checked source chain",
+      "manifest_serialized_bytes": 1314707,
+      "reverified_proofs": 0,
+      "source_chain_json_bytes": 0,
+      "step_proof_json_bytes_total": 0,
+      "replay_total_ms": 1795.867083,
+      "embedded_proof_reverify_ms": 0.0,
+      "source_chain_commitment_ms": 0.703083,
+      "step_proof_commitment_ms": 110.69095800000001,
+      "manifest_finalize_ms": 1684.3572089999998,
+      "equality_check_ms": 0.11545899999999999,
+      "verified": true,
+      "note": "carry-aware experimental backend over the checked 2x2 decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same; the chain has been proof-checked once via VerifiedPhase12DecodingChainManifest::verify before timing) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290"
+    },
+    {
+      "family": "3x3",
+      "steps": 1024,
+      "relation": "optimized replay verifier (skip embedded-proof reverify, binary canonical commitments) over a proof-checked source chain",
+      "manifest_serialized_bytes": 1314707,
+      "reverified_proofs": 0,
+      "source_chain_json_bytes": 0,
+      "step_proof_json_bytes_total": 0,
+      "replay_total_ms": 1906.812833,
+      "embedded_proof_reverify_ms": 0.0,
+      "source_chain_commitment_ms": 0.940084,
+      "step_proof_commitment_ms": 115.3065,
+      "manifest_finalize_ms": 1790.505834,
+      "equality_check_ms": 0.060208,
+      "verified": true,
+      "note": "carry-aware experimental backend over the checked 3x3 decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same; the chain has been proof-checked once via VerifiedPhase12DecodingChainManifest::verify before timing) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290"
+    }
+  ]
+}

@@ -10,73 +10,86 @@ representative-run picker.
 
 ## Method
 
-Captured 12 independent runs of
+Captured 25 independent runs of
 `bench-stwo-tablero-replay-breakdown-optimized` at `N=1024` for all
-three checked layout families, on the same host, in the same shell
-session, immediately after the PR-292 merge. Each run produced one row
-per family with `replay_total_ms` and the five component timings. Raw
-TSV is at
-`docs/engineering/evidence/variance-study-2026-04/optimized-replay-12-sample-2026-04-27.tsv`
-(36 rows: 12 runs × 3 families).
+three checked layout families, on the same host and in the same shell
+session, against repository commit `51ac0f6` (the post-PR-292 `main`
+HEAD as of 2026-04-27). Each run produced one row per family with
+`replay_total_ms` and the five component timings. The 25 raw run JSONs
+are checked in under
+`docs/engineering/evidence/variance-study-2026-04/runs-25/run-1.json`
+through `run-25.json` (each contains the full CLI TSV/JSON schema,
+including `embedded_proof_reverify_ms`). A flattened 75-row TSV view
+is checked in at
+`docs/engineering/evidence/variance-study-2026-04/optimized-replay-25-sample-2026-04-27.tsv`
+(25 runs × 3 families).
 
-The 12-sample target was originally a 25-sample run, but a `git stash
---include-untracked` mid-experiment swept the run output directory
-while the bench process was mid-flight on run 13, terminating the
-sample collection. The 12 runs that completed are sufficient to answer
-the question, because the variance signal turns out to be large enough
-that smoothing across 25 samples would not change the qualitative
-finding.
+This is a post-processed flattening of the raw run JSONs into a single
+table for the analysis below; the raw per-run files have the full CLI
+JSON schema with payload-level `benchmark_version`,
+`semantic_scope`, and `timing_*` metadata fields that the flattened
+TSV omits for compactness.
 
-## Per-family summary
+## Per-family summary (n = 25)
 
-| family    | n  |     min |     p25 |  median |     p75 |     max | IQR / median |
-| --------- | -: | ------: | ------: | ------: | ------: | ------: | -----------: |
-| `2x2`     | 12 | 1773.94 | 1779.29 | 1785.76 | 1980.99 | **10936.93** | 11.30% |
-| `3x3`     | 12 | 1850.99 | 1857.50 | 1883.08 | 2439.18 | 2727.48 | 30.89% |
-| `default` | 12 | 1971.29 | 1998.00 | 2012.94 | 2545.51 | 4916.12 | 27.20% |
+| family    | n  |     min |     p25 |  median |    mean |    stdev |     p75 |     max | IQR    |
+| --------- | -: | ------: | ------: | ------: | ------: | -------: | ------: | ------: | -----: |
+| `2x2`     | 25 | 1778.53 | 1795.87 | 1914.31 | 2387.56 |  1706.25 | 2115.77 | **10291.77** |  319.90 |
+| `3x3`     | 25 | 1856.32 | 1906.81 | 2015.23 | 2462.98 |  1102.27 | 2420.96 |  6795.47 |  514.15 |
+| `default` | 25 | 1980.88 | 2029.33 | 2155.38 | 2452.43 |   766.16 | 2455.64 |  4928.31 |  426.31 |
 
-The 12-sample medians (`2x2 1786 < 3x3 1883 < default 2013`) preserve
+The 25-sample medians (`2x2 1914 < 3x3 2015 < default 2155`) preserve
 the same ordering as the canonical median-of-9 evidence (`2x2 2146 <
-3x3 2171 < default 2684`), but the **per-family range is enormous**:
-the maximum `replay_total_ms` for `2x2` is `~6.1×` the median, and even
-the IQR alone overlaps both families' medians.
+3x3 2171 < default 2684`), but the **mean and stdev are dominated by
+extreme outliers**: the `2x2` family's stdev (`1706 ms`) is comparable
+to its median, and its maximum (`10291.77 ms`) is `5.4×` the median.
+
+Note that the family ordering between `2x2` and `3x3` at the median
+flips between sample sizes: median-of-9 puts the gap at `25 ms`, the
+12-sample run from the original (interrupted) capture put it at
+`97 ms`, and this 25-sample re-capture puts it at `101 ms`. All three
+gaps are well below the per-family IQR (`>=320 ms` for all three
+families) and the per-family stdev (`>=750 ms` for all three).
 
 ## Where the variance lives
 
-The `replay_total_ms` budget is dominated by `manifest_finalize_ms`
-(typically `>95%` of the total at `N=1024`). The variance is
-essentially all in this one bucket:
+`replay_total_ms` is dominated by `manifest_finalize_ms` (typically
+`>95%` of the total at `N=1024`). The variance is essentially all in
+this one bucket:
 
-| family    | manifest_finalize_ms median | min | max | range / median |
-| --------- | --------------------------: | --: | --: | -------------: |
-| `2x2`     | 1676.32 | 1664.77 | **10588.10** | **532.3%** |
-| `default` | 1889.06 | 1849.61 | 4759.62 | 154.0% |
-| `3x3`     | 1759.95 | 1736.33 | 2610.58 | 49.7% |
+| family    | manifest_finalize_ms median |    mean |    stdev |     min |     max | range / median |
+| --------- | --------------------------: | ------: | -------: | ------: | ------: | -------------: |
+| `2x2`     |                     1798.55 | 2273.55 |  1704.00 | 1669.07 | **10171.63** | **472.7%** |
+| `3x3`     |                     1897.18 | 2316.79 |  1053.47 | 1738.55 |  6419.07 | 246.7% |
+| `default` |                     2020.23 | 2319.62 |   756.12 | 1859.63 |  4745.79 | 142.9% |
 
-In runs 11 and 12 the `2x2` family hit a host-noise spike that
-inflated `manifest_finalize_ms` by `~6×` over the typical median,
-while `default` and `3x3` were closer to typical. This is consistent
-with whatever the host OS was doing during those runs (briefly
-co-scheduled background work, page-cache pressure, thermal throttling,
-etc.) and is not a structural property of the `2x2` family.
+The extreme spikes are concentrated in a single run (run 2) for both
+the `2x2` and `3x3` families — `2x2` hit `~5.7×` and `3x3` hit
+`~3.4×` the typical median in that run, while `default` was within
+its typical band that same run. No spike `>= 3×` median fired for the
+`default` family in any of the 25 runs. This is consistent with
+whatever the host OS was doing during run 2 (briefly co-scheduled
+background work, page-cache pressure, thermal throttling, etc.) and
+is not a structural property of the `2x2` or `3x3` family.
 
 ## What this means for issue #295
 
 The `25 ms` gap between `2x2` and `3x3` in the canonical median-of-9
-evidence is well below the host-noise band shown here. Concretely:
+evidence is well below the host-noise band shown here. Concretely
+(with `n = 25`):
 
-- `2x2` IQR width is `~201 ms` (8% of canonical median), `8×` the
-  observed gap;
-- `3x3` IQR width is `~582 ms`, `23×` the observed gap;
-- `default` IQR width is `~547 ms`, `21×` the observed gap.
+- `2x2` IQR width is `~320 ms` (17% of canonical median), `12.8×`
+  the canonical gap;
+- `3x3` IQR width is `~514 ms`, `20.6×` the canonical gap;
+- `default` IQR width is `~426 ms`, `17.0×` the canonical gap.
 
 Therefore the family ordering at the median is **not** a structural
 signal at this measurement precision. The `2x2 < 3x3 < default`
 ordering is the *direction* the median picks because the bulk of
-samples agree on it, but the *gaps* between families are smaller than
-the run-to-run noise on the dominant bucket. Any honest reading of
-this evidence is "all three families are within the host-noise band
-of each other for `manifest_finalize_ms` at `N=1024`."
+samples agree on it, but the *gaps* between families are smaller
+than the run-to-run noise on the dominant bucket. Any honest reading
+of this evidence is "all three families are within the host-noise
+band of each other for `manifest_finalize_ms` at `N=1024`."
 
 ## What this does NOT change
 
@@ -95,22 +108,37 @@ median-of-9 sampling.
 The canonical optimized-replay TSV/JSON evidence stays as-is (no
 re-aggregation). We add this note to the engineering corpus and close
 issue #295 referencing it. We do **not** modify the paper text on the
-basis of 12 ad-hoc samples; if a future submission requires a tighter
-bound on the family ordering, the right move is to rerun the
+basis of these 25 ad-hoc samples; if a future submission requires a
+tighter bound on the family ordering, the right move is to rerun the
 benchmark on a quieter host (or a constrained-environment runner) at
 `BENCH_RUNS in {25, 49}` and re-aggregate using the same
 `median_total_representative_run` strategy.
 
 ## Reproduction
 
+Checkout commit `51ac0f6` (the post-PR-292 `main` HEAD) on a host
+where `cargo +nightly-2025-07-14` is installed. Run the benchmark 25
+times into distinct output paths:
+
 ```sh
-# Single run, captures one row per family at N=1024:
-cargo +nightly-2025-07-14 run --release --features stwo-backend --bin tvm -- \
-    bench-stwo-tablero-replay-breakdown-optimized \
-    --capture-timings \
-    --output-tsv /tmp/run-XX.tsv \
-    --output-json /tmp/run-XX.json
+mkdir -p docs/engineering/evidence/variance-study-2026-04/runs-25
+for i in $(seq 1 25); do
+    cargo +nightly-2025-07-14 run --release --features stwo-backend --bin tvm -- \
+        bench-stwo-tablero-replay-breakdown-optimized \
+        --capture-timings \
+        --output-tsv docs/engineering/evidence/variance-study-2026-04/runs-25/run-$i.tsv \
+        --output-json docs/engineering/evidence/variance-study-2026-04/runs-25/run-$i.json
+done
 ```
 
-Then concatenate runs with `awk` / `python3` to reproduce the per-row
-TSV in `docs/engineering/evidence/variance-study-2026-04/`.
+No environment variables or host-quieting steps were used for the
+captured 25 runs; the host was running the user's normal interactive
+desktop session at the time of capture, which is also why the
+variance is wide. A future tighter capture should pin the host to a
+quiescent state and use a constrained-environment runner.
+
+The flattened 75-row analysis TSV is reproducible from the 25 raw
+run JSONs by extracting the four columns (`replay_total_ms`,
+`source_chain_commitment_ms`, `step_proof_commitment_ms`,
+`manifest_finalize_ms`, `equality_check_ms`) plus
+`embedded_proof_reverify_ms` per family per run.
