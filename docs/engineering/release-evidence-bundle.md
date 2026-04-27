@@ -24,7 +24,7 @@ its evidence directory:
 ```bash
 python3 scripts/collect_release_evidence.py collect \
   --output target/release-evidence/release-evidence.json \
-  --checkpoint paper2-candidate \
+  --checkpoint tablero-candidate \
   --checkpoint-kind paper-release \
   --merge-gate-evidence target/local-hardening/pr-<PR>-<HEAD>/evidence.json \
   --schema-artifact spec/benchmark-result.schema.json \

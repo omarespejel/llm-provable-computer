@@ -480,69 +480,6 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
-    def test_claim_evidence_matrix_accepts_complete_record_set(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            for rel_path in (
-                "docs/paper/paper2/appendix-artifact-map.md",
-                "docs/paper/paper2/proof-carrying-decode-surfaces-2026.md",
-                "src/stwo_backend/recursion.rs",
-                "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
-                "tests/phase37.rs",
-            ):
-                write_text(repo / rel_path, "")
-            write_text(
-                repo / "src/stwo_backend/recursion.rs",
-                (
-                    "fn phase37_prepare_recursive_artifact_chain_harness_receipt() {}\n"
-                    "fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources() {}\n"
-                ),
-            )
-            write_text(
-                repo / "tests/phase37.rs",
-                (
-                    "fn phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources() {}\n"
-                    "fn phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment() {}\n"
-                ),
-            )
-            records = []
-            for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS):
-                records.append(
-                    f"""- id: {claim_id}
-  claim: "Bounded claim for {claim_id}."
-  paper_locations:
-    - docs/paper/paper2/appendix-artifact-map.md
-  implementation:
-    - src/stwo_backend/recursion.rs:phase37_prepare_recursive_artifact_chain_harness_receipt
-    - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
-  specs:
-    - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
-  positive_tests:
-    - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
-  negative_tests:
-    - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
-  evidence_commands:
-    - cargo test -q phase37
-  non_claims:
-    - "Does not claim recursive proof closure."
-"""
-                )
-            write_text(
-                repo / "docs/paper/paper2/appendix-artifact-map.md",
-                "\n".join(
-                    f"`evidence:{claim_id}`"
-                    for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS)
-                ),
-            )
-            write_text(
-                repo / MOD.CLAIM_EVIDENCE_FILE,
-                "\n".join(records),
-            )
-
-            findings = MOD.Findings()
-            MOD.check_claim_evidence_matrix(repo, findings)
-            self.assertEqual(findings.errors, [])
-
     def test_paper3_claim_evidence_matrix_accepts_complete_record_set(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
@@ -616,181 +553,6 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_paper3_claim_evidence_matrix(repo, findings)
             self.assertEqual(findings.errors, [])
 
-    def test_paper2_evidence_anchor_honors_fragment_scope(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            path = repo / "docs/paper/paper2/paper.md"
-            write_text(
-                path,
-                (
-                    "`evidence:phase29_recursive_input_contract`\n\n"
-                    "## Target Section\n"
-                    "No scoped evidence here.\n\n"
-                    "## Later Section\n"
-                    "`evidence:phase29_recursive_input_contract`\n"
-                ),
-            )
-            records = [
-                {
-                    "id": "phase29_recursive_input_contract",
-                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
-                }
-            ]
-
-            findings = MOD.Findings()
-            MOD.check_paper2_evidence_anchors(
-                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
-            )
-            self.assertTrue(
-                any("not explicitly cited" in msg for msg in findings.errors),
-                findings.errors,
-            )
-
-            write_text(
-                path,
-                (
-                    "  ## Target Section\n"
-                    "Scoped evidence can live in this section.\n\n"
-                    "### Evidence paragraph\n"
-                    "`evidence:phase29_recursive_input_contract`\n\n"
-                    "## Later Section\n"
-                ),
-            )
-            findings = MOD.Findings()
-            MOD.check_paper2_evidence_anchors(
-                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
-            )
-            self.assertEqual(findings.errors, [])
-
-    def test_paper2_evidence_anchor_reports_missing_fragments_separately(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(repo / "docs/paper/paper2/paper.md", "## Other Section\n")
-            records = [
-                {
-                    "id": "phase29_recursive_input_contract",
-                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
-                }
-            ]
-
-            findings = MOD.Findings()
-            MOD.check_paper2_evidence_anchors(
-                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
-            )
-
-            self.assertTrue(findings.errors)
-            self.assertIn("missing fragments:", findings.errors[0])
-            self.assertNotIn("skipped invalid paths:", findings.errors[0])
-
-    def test_paper2_evidence_anchor_ignores_body_text_fragment_match(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(
-                repo / "docs/paper/paper2/paper.md",
-                (
-                    "# Paper\n"
-                    "The phrase Target Section appears in body text.\n\n"
-                    "## Target Section\n"
-                    "`evidence:phase29_recursive_input_contract`\n"
-                ),
-            )
-            records = [
-                {
-                    "id": "phase29_recursive_input_contract",
-                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
-                }
-            ]
-
-            findings = MOD.Findings()
-            MOD.check_paper2_evidence_anchors(
-                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
-            )
-
-            self.assertEqual(findings.errors, [])
-
-    def test_paper2_evidence_anchor_requires_fragment_to_be_heading(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(
-                repo / "docs/paper/paper2/paper.md",
-                (
-                    "# Paper\n"
-                    "The phrase Target Section appears in body text.\n\n"
-                    "## Later Section\n"
-                    "`evidence:phase29_recursive_input_contract`\n"
-                ),
-            )
-            records = [
-                {
-                    "id": "phase29_recursive_input_contract",
-                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
-                }
-            ]
-
-            findings = MOD.Findings()
-            MOD.check_paper2_evidence_anchors(
-                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
-            )
-
-            self.assertTrue(findings.errors)
-            self.assertIn("missing fragments:", findings.errors[0])
-            self.assertNotIn("invalid fragments:", findings.errors[0])
-
-    def test_claim_evidence_matrix_rejects_missing_required_claim_id(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(repo / MOD.CLAIM_EVIDENCE_FILE, "")
-
-            findings = MOD.Findings()
-            MOD.check_claim_evidence_matrix(repo, findings)
-            self.assertTrue(
-                any("missing required paper-2 claim evidence ids" in msg for msg in findings.errors),
-                findings.errors,
-            )
-
-    def test_claim_evidence_matrix_rejects_missing_anchor_and_test_token(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(repo / "docs/paper/paper2/appendix-artifact-map.md", "")
-            write_text(repo / "src/stwo_backend/recursion.rs", "fn other_symbol() {}\n")
-            write_text(
-                repo / "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
-                "{}\n",
-            )
-            records = []
-            for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS):
-                records.append(
-                    f"""- id: {claim_id}
-  claim: "Bounded claim for {claim_id}."
-  paper_locations:
-    - docs/paper/paper2/appendix-artifact-map.md
-  implementation:
-    - src/stwo_backend/recursion.rs:missing_symbol
-  specs:
-    - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
-  positive_tests:
-    - missing_positive_test
-  negative_tests:
-    - missing_negative_test
-  evidence_commands:
-    - cargo test -q phase37
-  non_claims:
-    - "Does not claim recursive proof closure."
-"""
-                )
-            write_text(repo / MOD.CLAIM_EVIDENCE_FILE, "\n".join(records))
-
-            findings = MOD.Findings()
-            MOD.check_claim_evidence_matrix(repo, findings)
-            self.assertTrue(
-                any("anchor `missing_symbol` not found" in msg for msg in findings.errors),
-                findings.errors,
-            )
-            self.assertTrue(
-                any("references missing test token: missing_positive_test" in msg for msg in findings.errors),
-                findings.errors,
-            )
-
     def test_claim_evidence_path_anchor_rejects_paths_outside_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp) / "repo"
@@ -801,7 +563,7 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_claim_evidence_path_anchor(
                 repo,
-                repo / MOD.CLAIM_EVIDENCE_FILE,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
                 "phase37_artifact_chain_harness_receipt",
                 "implementation",
                 f"{outside}:escaped_anchor",
@@ -815,7 +577,7 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_claim_evidence_path_anchor(
                 repo,
-                repo / MOD.CLAIM_EVIDENCE_FILE,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
                 "phase37_artifact_chain_harness_receipt",
                 "implementation",
                 "../outside.rs:escaped_anchor",
@@ -833,7 +595,7 @@ class PaperPreflightTests(unittest.TestCase):
                 findings = MOD.Findings()
                 MOD.check_claim_evidence_path_anchor(
                     repo,
-                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
                     "phase37_artifact_chain_harness_receipt",
                     "implementation",
                     windows_entry,
@@ -853,7 +615,7 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_claim_evidence_path_anchor(
                 repo,
-                repo / MOD.CLAIM_EVIDENCE_FILE,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
                 "phase37_artifact_chain_harness_receipt",
                 "implementation",
                 "inside-link.rs:escaped_anchor",
@@ -872,7 +634,7 @@ class PaperPreflightTests(unittest.TestCase):
             with mock.patch.object(pathlib.Path, "resolve", side_effect=OSError("loop")):
                 MOD.check_claim_evidence_path_anchor(
                     repo,
-                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
                     "phase37_artifact_chain_harness_receipt",
                     "implementation",
                     "src/lib.rs:anchor",
@@ -897,7 +659,7 @@ class PaperPreflightTests(unittest.TestCase):
 
     def test_parse_claim_evidence_records_reports_invalid_utf8(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp) / MOD.CLAIM_EVIDENCE_FILE
+            path = pathlib.Path(tmp) / MOD.PAPER3_CLAIM_EVIDENCE_FILE
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"\xff")
 

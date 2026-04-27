@@ -480,7 +480,6 @@ changed_path_is_phase_artifact_corpus_surface() {
 changed_path_is_reference_verifier_surface() {
   changed_path_has_prefix "tools/reference_verifier/" ||
     changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
-    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
     changed_path_has_prefix "spec/stwo-phase38-paper3-composition-prototype.schema.json" ||
@@ -495,7 +494,6 @@ changed_path_is_phase37_mutation_generator_surface() {
     changed_path_has_prefix "scripts/run_phase37_mutation_generator_suite.sh" ||
     changed_path_has_prefix "scripts/tests/test_generate_bad_phase37_artifacts.py" ||
     changed_path_has_prefix "tools/reference_verifier/" ||
-    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
@@ -508,7 +506,6 @@ changed_path_is_fuzz_surface() {
 
 changed_path_is_paper_preflight_surface() {
   changed_path_has_prefix "docs/paper/" ||
-    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/design/phase29-recursive-compression-input-contract-spec.md" ||
     changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||

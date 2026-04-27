@@ -55,7 +55,6 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         body = self._shell_function_body("changed_path_is_paper_preflight_surface")
         expected_triggers = [
             "docs/paper/",
-            "docs/engineering/paper2-claim-evidence.yml",
             "docs/engineering/paper3-claim-evidence.yml",
             "docs/engineering/design/phase29-recursive-compression-input-contract-spec.md",
             "docs/engineering/paper3-composition-prototype.md",
@@ -93,7 +92,6 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         expected_triggers = [
             "tools/reference_verifier/",
             "scripts/run_reference_verifier_suite.sh",
-            "docs/engineering/paper2-claim-evidence.yml",
             "docs/engineering/paper3-claim-evidence.yml",
             "docs/engineering/paper3-composition-prototype.md",
             "spec/stwo-phase38-paper3-composition-prototype.schema.json",
