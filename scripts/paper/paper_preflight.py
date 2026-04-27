@@ -182,7 +182,17 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
 )
 
-INTERNAL_PHASE_PATTERN = re.compile(r"\b[Pp]hase\d+[A-Za-z]?\b")
+# Match `Phase<N>` / `phase<N>` / `Phase<N><suffix>` (e.g., `Phase44D`) when it
+# appears as standalone prose, but NOT when it appears inside a hyphenated or
+# underscored technical identifier (e.g.,
+# `stwo-phase12-decoding-family-v10-carry-aware-experimental` or
+# `phase30_decoding_step_envelope_manifest`). The intent is to flag prose
+# leaks of internal naming, not to ban exact crypto identifiers that
+# paper-facing claims need to pin verbatim. The negative lookbehind/ahead
+# excludes word characters and hyphen so identifiers stay intact.
+INTERNAL_PHASE_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9\-_])[Pp]hase\d+[A-Za-z]?(?![A-Za-z0-9\-_])"
+)
 REQUIRED_PRIMARY_LINKS = {
     "docs/paper/tablero-typed-verifier-boundaries-2026.md": [
         "abstract-tablero-2026.md",
