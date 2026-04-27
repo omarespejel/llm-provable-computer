@@ -34,12 +34,13 @@ layout families. At the checked frontier, the replay-avoidance ratio grows from
 `17.7x` to `1011.9x` on the `3x3` family and reaches `1066.6x` on the default family and
 `917.8x` on the `2x2` family at `1024` checked steps. The dominant avoided cost is
 not faster FRI verification; it is per-step verifier-side replay work over the
-source-chain surface. An explicit red-team measurement against an honestly-optimized
-replay verifier (binary canonical commitments and no redundant per-step
-serialization) tightens the headline ratio at the checked frontier to a
-host-noise-sensitive band of `~426x`-`~711x`, isolating an implementation-cost
-component of `~1.3x`-`~2.4x` from a structural component of `~430x`-`~710x` that
-any honest replay verifier pays. A second typed boundary on a distinct
+source-chain surface. An explicit red-team measurement (median of nine
+runs) against an honestly-optimized replay verifier (binary canonical
+commitments and no redundant per-step serialization) tightens the headline
+ratio at the checked frontier to a host-noise-sensitive band of
+`~261x`-`~330x`, isolating an implementation-cost component of
+`~3.1x`-`~3.6x` from a structural component of `~261x`-`~330x` that any
+honest replay verifier pays. A second typed boundary on a distinct
 emitted-source surface also clears as supporting positive evidence at `1.22x`
 on the conservative publication row (Table 4); a broader engineering sweep
 over the same surface is checked in but is not promoted here as a
@@ -555,14 +556,14 @@ check runs.
 
 | Family | Optimized replay total | Original replay total | Speedup | Ratio (optimized replay total : typed boundary verify) |
 | --- | ---: | ---: | ---: | ---: |
-| default (`1024`) | `3,496.950 ms` | `8,317.269 ms` | `2.4x` | `430.1x` |
-| `2x2` (`1024`) | `3,457.447 ms` | `7,182.913 ms` | `2.1x` | `425.7x` |
-| `3x3` (`1024`) | `5,911.703 ms` | `7,721.977 ms` | `1.3x` | `711.3x` |
+| default (`1024`) | `2,684.106 ms` | `8,317.269 ms` | `3.1x` | `330.1x` |
+| `2x2` (`1024`) | `2,145.775 ms` | `7,182.913 ms` | `3.3x` | `264.2x` |
+| `3x3` (`1024`) | `2,170.899 ms` | `7,721.977 ms` | `3.6x` | `261.2x` |
 
 Three facts matter here.
 
 First, the headline replay-avoidance ratios in Section 6.2 (`917x`-`1066x`
-at `N = 1024`) tighten to a band of `~426x`-`~711x` once the
+at `N = 1024`) tighten to a band of `~261x`-`~330x` once the
 optimized-replay verifier replaces the JSON-tax components of the original
 path with binary canonical commitments. That is the implementation-cost
 component of the headline. The residual ratio is what the typed boundary
@@ -572,8 +573,8 @@ Second, the optimized replay's cost decomposition shows the part of the
 replay surface our binary-commitment optimization touches is genuinely
 removed: the `source-chain commitment` bucket drops from `~2.3 s` to under
 `~1.5 ms` (a `>99%` reduction) and the `per-step proof commitment` bucket
-drops from `~2.3 s` to `~150-210 ms` (a `>90%` reduction). What dominates
-the optimized-replay total is `manifest_finalize`, in the `~3.3-5.7 s`
+drops from `~2.3 s` to `~110-140 ms` (a `>93%` reduction). What dominates
+the optimized-replay total is `manifest_finalize`, in the `~2.0-2.5 s`
 band, because it includes the per-step state-derivation work that confirms
 every recorded `from_state`/`to_state` pair is consistent with the
 program's deterministic re-execution from the recorded initial state. That
@@ -587,18 +588,26 @@ with `N` because the optimized replay surface still scales linearly in `N`
 linear-in-`N`), while the typed-boundary verify surface stays sublinear in
 `N`. The constant-factor headline is honestly tightened: the
 implementation-dependent component of the original `~1000x` figure is a
-`~1.3-2.4x` factor, and the implementation-independent component is
-`~430-710x` at the checked frontier across the three layout families.
+`~3.1-3.6x` factor, and the implementation-independent component is
+`~261-330x` at the checked frontier across the three layout families.
 
-Variance disclosure: the `manifest_finalize` bucket is host-noise sensitive
-at this scale (per-step state derivation over `1024` steps does not fit
-comfortably in L2/L3 cache and is sensitive to background system load),
-and the optimized-replay total inherits that variance. Two independent
-median-of-five measurement sessions on the same host can differ by a
-factor of `~1.5x` to `~2.7x` on the optimized total even though the
-median policy suppresses single-run outliers. The conservative reading of
-Table 3a is the order-of-magnitude band (`~10^2-10^3` ratio at the checked
-frontier), not the specific cell values.
+Variance disclosure. The `manifest_finalize` bucket is host-noise
+sensitive at this scale: per-step state derivation over `1024` steps does
+not fit comfortably in L2/L3 cache on this host and is sensitive to
+background system load. The optimized-replay total inherits that
+variance. Across the nine timed runs that produced the median values
+above, the per-family ranges of `replay_total_ms` are: `2,018-7,196 ms`
+for default (range factor `3.57x`), `1,790-8,083 ms` for `2x2` (range
+factor `4.52x`), and `1,865-4,906 ms` for `3x3` (range factor `2.63x`);
+the median policy suppresses single-run outliers, but the underlying
+distribution is wide and the same nine runs would push the per-family
+ratio anywhere in the `~261x-~4,500x` interval at the worst-case extremes.
+The conservative reading of Table 3a is therefore the order-of-magnitude
+band (`~10^2-10^3` ratio at the checked frontier on this host), not the
+specific cell values, and a quieter measurement environment or a
+substantially larger sample count would be needed to tighten the constants
+further. We treat that as a measurement-quality limitation of the present
+study, not as an instability in the structural claim of Section 6.3.
 
 ### 6.7 Supporting second boundary on a distinct source surface
 
@@ -710,11 +719,11 @@ pay the same constant factors. Section 6.6 reports the explicit red-team
 measurement: an honestly-optimized replay verifier that skips per-step
 embedded proof re-verification and uses binary canonical commitments
 instead of JSON-serialize-then-hash narrows the headline ratio at the
-checked frontier to a host-noise band of `~426x`-`~711x`. The
-`~1.3x`-`~2.4x` reduction is the implementation-cost component of the
-headline; the residual `~430x`-`~710x` band is implementation-independent
-within the constraints of this engineering laboratory and reflects work
-the typed boundary genuinely avoids.
+checked frontier to a host-noise band of `~261x`-`~330x` at median of
+nine. The `~3.1x`-`~3.6x` reduction is the implementation-cost component
+of the headline; the residual `~261x`-`~330x` band is
+implementation-independent within the constraints of this engineering
+laboratory and reflects work the typed boundary genuinely avoids.
 
 ### 8.3 No recursive-compression claim
 
