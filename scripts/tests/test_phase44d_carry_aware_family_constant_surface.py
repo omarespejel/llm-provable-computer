@@ -86,9 +86,10 @@ class Phase44dCarryAwareFamilyConstantSurfaceTests(unittest.TestCase):
             # approximately the same wall-clock time as the default family
             # (the replay-side bucket is slightly slower, the others are
             # close to parity), so all four ratios sit near 1.0; the test
-            # pins them tightly enough to catch evidence drift but leaves
-            # one decimal place of headroom for sub-millisecond per-row
-            # noise.
+            # pins them to two decimal places (assertAlmostEqual treats
+            # places=N as "equal to N decimal places", so places=2 admits
+            # roughly +/-0.005 of headroom) which catches evidence drift
+            # while leaving room for sub-millisecond per-row noise.
             self.assertAlmostEqual(two_by_two["typed_verify_ratio_vs_default"], 1.001, places=2)
             self.assertAlmostEqual(
                 two_by_two["compact_verify_ratio_vs_default"], 1.004, places=2
