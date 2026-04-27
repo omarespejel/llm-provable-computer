@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Aggregate repeated Phase43 source-root feasibility runs using median timings."""
+"""Aggregate repeated Phase43 source-root feasibility runs using median timings.
+
+Audit note (issue #294, post-#292): this aggregator medians `derive_ms`
+and `verify_ms` independently across the input runs. The two columns are
+orthogonal independent measurements (source-root derivation time vs
+compact verification time) and are not components of a shared outer
+measurement, so there is no additive identity to preserve. The
+double-hash / per-column-median additivity bugs caught in
+`aggregate_tablero_replay_breakdown.py` cannot occur here. No
+representative-run picker is needed.
+"""
 
 from __future__ import annotations
 

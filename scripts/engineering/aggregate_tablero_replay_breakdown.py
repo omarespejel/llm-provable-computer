@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Aggregate repeated Tablero replay-breakdown runs using median timings."""
+"""Aggregate repeated Tablero replay-breakdown runs using median timings.
+
+Audit note (issue #294, post-#292): unlike the per-family scaling
+aggregators (which median orthogonal timing columns independently), this
+aggregator's input rows expose `replay_total_ms` together with five
+component timings that must sum to it within instrumentation noise. PR
+#292 tightened this script to use a `median_total_representative_run`
+strategy: it picks the single run whose `replay_total_ms` equals the
+median across runs, then emits all component timings from that
+representative run, preserving the additive identity. See
+`scripts/tests/test_aggregate_tablero_replay_breakdown.py` for the
+regression and tie-breaking tests.
+"""
 
 from __future__ import annotations
 

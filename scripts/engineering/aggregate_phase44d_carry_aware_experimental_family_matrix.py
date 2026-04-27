@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Aggregate Phase44D carry-aware experimental family sweeps into one transferability matrix."""
+"""Aggregate Phase44D carry-aware experimental family sweeps into one transferability matrix.
+
+Audit note (issue #294, post-#292): this script does not use
+`statistics.median` over per-run samples; it consumes already-aggregated
+TSVs (which are themselves produced by the per-family scaling aggregators
+that median `emit_ms` and `verify_ms` independently) and derives
+cross-family ratios. There is no additive-invariant relationship between
+the timing columns it reads (`typed_verify_ms`, `baseline_verify_ms`,
+`compact_only_verify_ms`, `boundary_binding_only_verify_ms`,
+`manifest_replay_only_verify_ms`), so the double-hash / per-column-median
+additivity bugs caught in `aggregate_tablero_replay_breakdown.py` do not
+have an analogue here.
+"""
 
 from __future__ import annotations
 
