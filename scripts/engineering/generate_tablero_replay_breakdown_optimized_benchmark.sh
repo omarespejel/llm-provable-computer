@@ -14,16 +14,22 @@ TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json}"
 
 # Canonical checked-in evidence paths must be regenerated under the pinned
-# median-of-5 timing policy; allowing arbitrary BENCH_RUNS would let a future
-# re-run silently overwrite the canonical TSV/JSON with a different timing
-# policy while still passing the post-aggregation identity check.
+# median-of-5 timing policy; allowing arbitrary BENCH_RUNS or EXPECTED_*
+# overrides would let a future re-run silently overwrite the canonical
+# TSV/JSON with a drifted payload while still passing the post-aggregation
+# identity check. We detect the canonical-path case once here and use it to
+# (a) require BENCH_RUNS=5 and (b) ignore caller-supplied EXPECTED_*
+# overrides further down. Non-canonical output paths (e.g. variance studies
+# under a different filename) remain freely overridable.
 CANONICAL_TSV="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv"
 CANONICAL_JSON="$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json"
 TSV_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$TSV_OUT")"
 JSON_OUT_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$JSON_OUT")"
 CANONICAL_TSV_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_TSV")"
 CANONICAL_JSON_REAL="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$CANONICAL_JSON")"
+WRITES_CANONICAL_EVIDENCE=0
 if [[ "$TSV_OUT_REAL" == "$CANONICAL_TSV_REAL" || "$JSON_OUT_REAL" == "$CANONICAL_JSON_REAL" ]]; then
+  WRITES_CANONICAL_EVIDENCE=1
   if [[ "$BENCH_RUNS" != "5" ]]; then
     echo "Canonical optimized evidence must be regenerated under BENCH_RUNS=5; got BENCH_RUNS=$BENCH_RUNS" >&2
     exit 1
@@ -92,16 +98,30 @@ python3 scripts/engineering/aggregate_tablero_replay_breakdown.py \
 # (e.g. a wrong benchmark_version or a wrong timing_policy from a stale
 # build) and lets the merge gate catch any future widening of this
 # experiment without an explicit doc update.
-EXPECTED_BENCHMARK_VERSION="${EXPECTED_BENCHMARK_VERSION:-stwo-tablero-replay-breakdown-optimized-benchmark-v1}"
-EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
-EXPECTED_TIMING_MODE="${EXPECTED_TIMING_MODE:-measured_median}"
-# Canonical regenerations always pin median_of_5; explorations that override
-# BENCH_RUNS (e.g. larger sample counts to study variance) must explicitly set
-# EXPECTED_TIMING_POLICY/EXPECTED_TIMING_RUNS *and* a non-canonical TSV_OUT /
-# JSON_OUT, otherwise the canonical-path BENCH_RUNS=5 guard above trips.
-EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_5_runs_from_microsecond_capture}"
-EXPECTED_TIMING_UNIT="${EXPECTED_TIMING_UNIT:-milliseconds}"
-EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-5}"
+# When overwriting canonical evidence, hard-pin every identity field. Caller
+# overrides via environment variables are silently ignored on this path; this
+# is intentional, because the script is the *only* sanctioned way to refresh
+# the checked-in TSV/JSON, and silently letting the caller relax the identity
+# check would defeat the post-aggregation guardrail.
+#
+# When writing to a non-canonical output path (variance studies, larger sample
+# counts), the caller is allowed to override the EXPECTED_* fields to match
+# whatever timing policy they are exploring.
+if [[ "$WRITES_CANONICAL_EVIDENCE" == "1" ]]; then
+  EXPECTED_BENCHMARK_VERSION="stwo-tablero-replay-breakdown-optimized-benchmark-v1"
+  EXPECTED_SEMANTIC_SCOPE="tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend"
+  EXPECTED_TIMING_MODE="measured_median"
+  EXPECTED_TIMING_POLICY="median_of_5_runs_from_microsecond_capture"
+  EXPECTED_TIMING_UNIT="milliseconds"
+  EXPECTED_TIMING_RUNS="5"
+else
+  EXPECTED_BENCHMARK_VERSION="${EXPECTED_BENCHMARK_VERSION:-stwo-tablero-replay-breakdown-optimized-benchmark-v1}"
+  EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
+  EXPECTED_TIMING_MODE="${EXPECTED_TIMING_MODE:-measured_median}"
+  EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_${BENCH_RUNS}_runs_from_microsecond_capture}"
+  EXPECTED_TIMING_UNIT="${EXPECTED_TIMING_UNIT:-milliseconds}"
+  EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-$BENCH_RUNS}"
+fi
 
 python3 - "$TMP_JSON" \
   "$EXPECTED_BENCHMARK_VERSION" \

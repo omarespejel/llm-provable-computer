@@ -71,7 +71,7 @@ commitments. This is an engineering-only red-team measurement.
 Median-of-five runs at `1024` steps:
 
 
-| Family  | Optimized replay total | Original replay total | Speedup | Optimized ratio (typed-boundary verify : optimized replay total) |
+| Family  | Optimized replay total | Original replay total | Speedup | Optimized ratio (optimized replay total : typed-boundary verify) |
 | ------- | ---------------------- | --------------------- | ------- | ---------------------------------------------------------------- |
 | default | `3,496.950 ms`         | `8,317.269 ms`        | `2.4x`  | `430.1x`                                                         |
 | `2x2`   | `3,457.447 ms`         | `7,182.913 ms`        | `2.1x`  | `425.7x`                                                         |
