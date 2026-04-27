@@ -7,6 +7,19 @@ binary canonical commitments over fixed-size cryptographic identities and
 the raw stark-proof byte buffer instead of JSON-serialize-then-hash for the
 chain summary and per-step proof commitments.
 
+The original PR-292 issue description scoped this experiment as a
+median-of-five measurement. During the in-PR review pass, an in-flight
+variance investigation showed that five samples were undersampling the
+host-noise band on the `manifest_finalize` bucket (the `3x3` family in
+particular swung by `2.7x` between two independent median-of-five sessions
+on the same host). The canonical evidence and this gate note therefore
+upgraded to a median-of-nine measurement. The benchmark shell script
+explicitly accepts both `BENCH_RUNS=5` and `BENCH_RUNS=9` for canonical
+output paths so that a future re-run can reproduce either number.
+Median-of-nine is what the paper currently reports; median-of-five is
+retained as a sanctioned regeneration mode and the result it produces is
+recorded below for full transparency.
+
 ## Scope
 
 - Source family: same three carry-aware experimental Phase12 layout families
