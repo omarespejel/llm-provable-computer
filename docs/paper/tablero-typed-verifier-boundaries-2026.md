@@ -543,9 +543,9 @@ Reproducibility note for Table 3a:
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental` (the carry-aware experimental execution-proof backend, distinct from the publication-default `stwo-phase12-decoding-family-v9`).
 - Optimized-replay manifest version: `stwo-phase30-decoding-step-proof-envelope-optimized-manifest-v1`; manifest scope: `stwo_execution_parameterized_decoding_step_proof_envelope_manifest_optimized_binary_commitments`.
 - Optimized-replay benchmark identity: `benchmark_version = stwo-tablero-replay-breakdown-optimized-benchmark-v1`; `semantic_scope = tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend`.
-- Timing mode: `measured_median`. Timing policy: `median_of_5_runs_from_microsecond_capture`. Timing unit: `milliseconds`. Step count: `1024`. Aggregation strategy: `median_total_representative_run`.
+- Timing mode: `measured_median`. Timing policy: `median_of_9_runs_from_microsecond_capture` (canonical; the script also accepts `median_of_5_runs_from_microsecond_capture` for the original measurement, retained for reproducibility). Timing unit: `milliseconds`. Step count: `1024`. Aggregation strategy: `median_total_representative_run`.
 - Engineering evidence: `docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv` and `.json`.
-- Regeneration: `cargo +nightly-2025-07-14 build --release --features stwo-backend --bin tvm` followed by `BENCH_RUNS=5 CAPTURE_TIMINGS=1 scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh`. The shell script fails closed if the regenerated payload's identity drifts from this scope, and pins every `EXPECTED_*` identity field when the output paths resolve to the canonical checked-in evidence paths.
+- Regeneration: `cargo +nightly-2025-07-14 build --release --features stwo-backend --bin tvm` followed by `BENCH_RUNS=9 CAPTURE_TIMINGS=1 scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh`. The shell script fails closed if the regenerated payload's identity drifts from this scope, and pins every `EXPECTED_*` identity field when the output paths resolve to the canonical checked-in evidence paths.
 
 This is an explicit experimental-to-paper promotion of an
 engineering-only red-team measurement. The optimized verifier is **not**
@@ -598,16 +598,18 @@ background system load. The optimized-replay total inherits that
 variance. Across the nine timed runs that produced the median values
 above, the per-family ranges of `replay_total_ms` are: `2,018-7,196 ms`
 for default (range factor `3.57x`), `1,790-8,083 ms` for `2x2` (range
-factor `4.52x`), and `1,865-4,906 ms` for `3x3` (range factor `2.63x`);
-the median policy suppresses single-run outliers, but the underlying
-distribution is wide and the same nine runs would push the per-family
-ratio anywhere in the `~261x-~4,500x` interval at the worst-case extremes.
-The conservative reading of Table 3a is therefore the order-of-magnitude
-band (`~10^2-10^3` ratio at the checked frontier on this host), not the
-specific cell values, and a quieter measurement environment or a
-substantially larger sample count would be needed to tighten the constants
-further. We treat that as a measurement-quality limitation of the present
-study, not as an instability in the structural claim of Section 6.3.
+factor `4.52x`), and `1,865-4,906 ms` for `3x3` (range factor `2.63x`).
+Combined with the family-matrix typed-boundary verify times
+(`8.121-8.311 ms`) those single-run extremes correspond to a
+worst-case-extreme ratio interval of roughly `~215x-~995x` across the
+three families; the median policy suppresses single-run outliers but the
+underlying distribution is wide. The conservative reading of Table 3a is
+therefore the order-of-magnitude band (`~10^2-10^3` ratio at the checked
+frontier on this host), not the specific cell values, and a quieter
+measurement environment or a substantially larger sample count would be
+needed to tighten the constants further. We treat that as a
+measurement-quality limitation of the present study, not as an
+instability in the structural claim of Section 6.3.
 
 ### 6.7 Supporting second boundary on a distinct source surface
 

@@ -24,9 +24,15 @@ formal, empirical, negative, and calibration evidence remain visibly distinct.
 
 ## 2. Timing policy
 
-The primary replay-avoidance curves in the paper use checked median-of-five timing
-capture from the local benchmark harness. The policy is intentionally stronger than a
-single-run anecdote and intentionally narrower than a cross-lab benchmarking campaign.
+The primary replay-avoidance curves in the paper (Section 6.2 family-matrix
+ratios; Section 6.3 scaling-law fit; Section 6.5 causal decomposition) use
+checked median-of-five timing capture from the local benchmark harness. The
+explicit red-team optimized-replay measurement in Section 6.6 (Table 3a) is
+checked at median-of-nine because an in-PR variance investigation showed
+that five samples were undersampling the host-noise band on the
+`manifest_finalize` bucket. Both policies are intentionally stronger than a
+single-run anecdote and intentionally narrower than a cross-lab benchmarking
+campaign.
 
 The result should therefore be read as follows:
 
