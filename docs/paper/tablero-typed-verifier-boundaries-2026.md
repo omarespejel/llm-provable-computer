@@ -1,10 +1,8 @@
 # Tablero: Typed Verifier Boundaries for Layered STARK Systems, with Evidence from STARK-zkML
 
-**Abdelhamid Bakhta**  
-StarkWare
+**Abdelhamid Bakhta**, StarkWare
 
-**Omar Espejel**  
-Starknet Foundation
+**Omar Espejel**, Starknet Foundation
 
 *April 2026 draft*
 
@@ -790,4 +788,3 @@ exposes.
 4. Percepta. *Can LLMs Be Computers?* Public research note.
 5. Hakim AbdelStark. *Can LLMs be PROVABLE computers?* Public research note. Names the bridge as `the trace becomes the witness`.
 6. Omar Espejel. *Why STARK Execution Structure Fits Transformer Workloads*. `blog.espejel.lol`, 2026-04-15 (updated 2026-04-21).
-

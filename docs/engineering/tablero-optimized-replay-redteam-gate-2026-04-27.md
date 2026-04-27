@@ -181,4 +181,3 @@ keeps run-to-run host noise low.
 `phase30_commit_step_proof_binary`,
 `phase30_commit_phase12_decoding_chain_for_step_envelopes_binary_with_step_commitments`.
 - `docs/paper/tablero-typed-verifier-boundaries-2026.md` Section 6.6 ("Red-teaming the constant").
-
