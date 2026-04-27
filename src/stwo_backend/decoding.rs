@@ -2899,6 +2899,210 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
     Ok(())
 }
 
+/// Build a Phase 30 decoding-step envelope manifest whose chain-summary and
+/// per-step proof commitments use a deliberately efficient binary canonical
+/// encoding (Blake2b over fixed-size cryptographic identities and the raw
+/// stark-proof byte buffer) instead of the JSON-serialize-then-hash path used
+/// by `phase30_prepare_decoding_step_proof_envelope_manifest`.
+///
+/// This is engineering-only: the resulting manifest is **not** accepted by the
+/// publication-default verifier. It exists to support the optimized-replay
+/// red-team experiment that asks "how much of the headline replay-avoidance
+/// ratio is implementation-cost (JSON tax) vs structural (typed-boundary
+/// avoids replay work the optimized verifier still has to do)?" Issue #290.
+pub fn phase30_prepare_decoding_step_proof_envelope_manifest_optimized(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    verify_phase12_decoding_chain_structure(chain)?;
+    let layout_commitment = commit_phase12_layout(&chain.layout);
+    let source_chain_commitment =
+        phase30_commit_phase12_decoding_chain_for_step_envelopes_binary(chain)?;
+    let artifact_index = chain
+        .shared_lookup_artifacts
+        .iter()
+        .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
+        .collect::<HashMap<_, _>>();
+    let envelopes = chain
+        .steps
+        .iter()
+        .enumerate()
+        .map(|(step_index, step)| {
+            let artifact = artifact_index
+                .get(step.shared_lookup_artifact_commitment.as_str())
+                .copied()
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                        step.shared_lookup_artifact_commitment
+                    ))
+                })?;
+            let proof_commitment = phase30_commit_step_proof_binary(&step.proof);
+            build_phase30_decoding_step_proof_envelope_with_commitment(
+                step_index,
+                step,
+                &layout_commitment,
+                &source_chain_commitment,
+                artifact,
+                &proof_commitment,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let step_envelopes_commitment = commit_phase30_step_envelope_list(&envelopes);
+    let (chain_start_boundary_commitment, chain_end_boundary_commitment) =
+        phase30_chain_boundary_pair(&envelopes)?;
+    let manifest = Phase30DecodingStepProofEnvelopeManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        manifest_version: STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.to_string(),
+        semantic_scope: STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30.to_string(),
+        proof_backend_version: chain.proof_backend_version.clone(),
+        statement_version: chain.statement_version.clone(),
+        source_chain_version: chain.chain_version.clone(),
+        source_chain_semantic_scope: chain.semantic_scope.clone(),
+        source_chain_commitment,
+        layout: chain.layout.clone(),
+        total_steps: envelopes.len(),
+        chain_start_boundary_commitment,
+        chain_end_boundary_commitment,
+        step_envelopes_commitment,
+        envelopes,
+    };
+    verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
+    Ok(manifest)
+}
+
+/// Verify a Phase 30 decoding-step envelope manifest against a proof-checked
+/// Phase 12 chain using the optimized-replay strategy: skip per-step embedded
+/// proof re-verification (the typed boundary verifier does the same) and use
+/// binary canonical commitments instead of JSON-serialize-then-hash for the
+/// chain summary and per-step proof commitments.
+///
+/// The accepted statement is "this manifest is structurally consistent with
+/// the supplied chain under the binary commitment scheme." It is **not** the
+/// same accepted statement as
+/// `verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown`
+/// because the manifest must have been built by
+/// `phase30_prepare_decoding_step_proof_envelope_manifest_optimized` to match.
+/// This is an experimental cost measurement, not a publication-default path.
+/// Issue #290.
+pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    chain: &Phase12DecodingChainManifest,
+    capture_timings: bool,
+) -> Result<Phase30DecodingStepProofEnvelopeReplayBreakdown> {
+    let total_started = capture_timings.then(Instant::now);
+
+    // [SKIPPED] embedded_proof_reverify
+    // Justification: the typed Phase44D boundary verifier does not re-verify
+    // embedded step proofs either; the compact projection proof's trace
+    // commitment already binds the trace that includes every step proof's
+    // public-output surface. The optimized replay verifier inherits that
+    // trust: the chain has been proof-checked once during construction, and
+    // the manifest-vs-chain consistency check below does not require
+    // re-running the per-step STARK verifier.
+    let embedded_proof_reverify_ms = 0.0;
+
+    // [OPTIMIZED] source-chain commitment via binary canonical encoding.
+    let (source_chain_commitment, source_chain_commitment_ms) =
+        phase30_measure_result_ms(capture_timings, || {
+            phase30_commit_phase12_decoding_chain_for_step_envelopes_binary(chain)
+        })?;
+
+    // [OPTIMIZED] per-step proof commitment via binary canonical encoding.
+    let (proof_commitments, step_proof_commitment_ms) =
+        phase30_measure_result_ms(capture_timings, || {
+            let mut commitments = Vec::with_capacity(chain.steps.len());
+            for step in &chain.steps {
+                commitments.push(phase30_commit_step_proof_binary(&step.proof));
+            }
+            Ok(commitments)
+        })?;
+
+    // [SAME shape as the JSON path] Build the derived manifest and verify it.
+    let (expected, manifest_finalize_ms) = phase30_measure_result_ms(capture_timings, || {
+        verify_phase12_decoding_chain_structure(chain)?;
+        let layout_commitment = commit_phase12_layout(&chain.layout);
+        let artifact_index = chain
+            .shared_lookup_artifacts
+            .iter()
+            .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
+            .collect::<HashMap<_, _>>();
+        let envelopes = chain
+            .steps
+            .iter()
+            .zip(proof_commitments.iter())
+            .enumerate()
+            .map(|(step_index, (step, proof_commitment))| {
+                let artifact = artifact_index
+                    .get(step.shared_lookup_artifact_commitment.as_str())
+                    .copied()
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                            step.shared_lookup_artifact_commitment
+                        ))
+                    })?;
+                build_phase30_decoding_step_proof_envelope_with_commitment(
+                    step_index,
+                    step,
+                    &layout_commitment,
+                    &source_chain_commitment,
+                    artifact,
+                    proof_commitment,
+                )
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let step_envelopes_commitment = commit_phase30_step_envelope_list(&envelopes);
+        let (chain_start_boundary_commitment, chain_end_boundary_commitment) =
+            phase30_chain_boundary_pair(&envelopes)?;
+        let derived_manifest = Phase30DecodingStepProofEnvelopeManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            manifest_version: STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.to_string(),
+            semantic_scope: STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30.to_string(),
+            proof_backend_version: chain.proof_backend_version.clone(),
+            statement_version: chain.statement_version.clone(),
+            source_chain_version: chain.chain_version.clone(),
+            source_chain_semantic_scope: chain.semantic_scope.clone(),
+            source_chain_commitment: source_chain_commitment.clone(),
+            layout: chain.layout.clone(),
+            total_steps: envelopes.len(),
+            chain_start_boundary_commitment,
+            chain_end_boundary_commitment,
+            step_envelopes_commitment,
+            envelopes,
+        };
+        verify_phase30_decoding_step_proof_envelope_manifest(&derived_manifest)?;
+        Ok(derived_manifest)
+    })?;
+
+    let (matches, equality_check_ms) =
+        phase30_measure_result_ms(capture_timings, || Ok(manifest == &expected))?;
+    if !matches {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest does not match the optimized derivation from the Phase 12 chain".to_string(),
+        ));
+    }
+
+    let total_verify_ms = total_started
+        .map(|started| phase30_elapsed_ms(started.elapsed()))
+        .unwrap_or(0.0);
+
+    Ok(Phase30DecodingStepProofEnvelopeReplayBreakdown {
+        total_steps: chain.steps.len(),
+        // The optimized replay does not re-verify embedded step proofs and
+        // does not exercise the JSON-serialization byte counters; report 0 to
+        // signal the absent surface rather than fabricate a number.
+        reverified_proofs: 0,
+        source_chain_json_bytes: 0,
+        step_proof_json_bytes_total: 0,
+        embedded_proof_reverify_ms,
+        source_chain_commitment_ms,
+        step_proof_commitment_ms,
+        manifest_finalize_ms,
+        equality_check_ms,
+        total_verify_ms,
+    })
+}
+
 pub fn verify_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
 ) -> Result<()> {
@@ -12135,6 +12339,88 @@ fn phase30_commit_step_proof(proof: &VanillaStarkExecutionProof) -> Result<Phase
     )
 }
 
+/// Binary canonical commitment of a single step's STARK proof, used by the
+/// optimized-replay red-team experiment (issue #290).
+///
+/// Captures the same cryptographic identity as `phase30_commit_step_proof`
+/// (same proof bytes -> same digest, distinct proof bytes -> distinct digest
+/// up to `Blake2b` collision resistance) without paying the cost of
+/// serializing the proof structure to JSON. Domain-separated from the JSON
+/// path with a distinct domain tag to avoid cross-format collision.
+pub(crate) fn phase30_commit_step_proof_binary(proof: &VanillaStarkExecutionProof) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-proof-binary");
+    let proof_backend = proof.proof_backend.to_string();
+    phase30_hash_part(&mut hasher, proof_backend.as_bytes());
+    phase30_hash_part(&mut hasher, proof.proof_backend_version.as_bytes());
+    phase30_hash_part(&mut hasher, proof.claim.statement_version.as_bytes());
+    phase30_hash_part(&mut hasher, &proof.proof);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+/// Binary canonical commitment of a Phase 12 decoding chain for the
+/// step-envelope manifest, used by the optimized-replay red-team experiment
+/// (issue #290).
+///
+/// Hashes only fixed-size cryptographic identities of the chain (version
+/// metadata, layout commitment, total step count, per-step boundary +
+/// shared-lookup commitments + binary proof commitment, and the registered
+/// shared-lookup artifact commitments). Avoids the JSON tax that
+/// `phase30_commit_phase12_decoding_chain_for_step_envelopes` pays by
+/// serializing every nested step proof as JSON before hashing.
+pub(crate) fn phase30_commit_phase12_decoding_chain_for_step_envelopes_binary(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
+    hasher.update(b"source-phase12-chain-binary");
+    let proof_backend = chain.proof_backend.to_string();
+    phase30_hash_part(&mut hasher, proof_backend.as_bytes());
+    phase30_hash_part(&mut hasher, chain.chain_version.as_bytes());
+    phase30_hash_part(&mut hasher, chain.semantic_scope.as_bytes());
+    phase30_hash_part(&mut hasher, chain.proof_backend_version.as_bytes());
+    phase30_hash_part(&mut hasher, chain.statement_version.as_bytes());
+    let layout_commitment = commit_phase12_layout(&chain.layout);
+    phase30_hash_part(&mut hasher, layout_commitment.as_bytes());
+    hasher.update(&(chain.total_steps as u64).to_le_bytes());
+    hasher.update(&(chain.shared_lookup_artifacts.len() as u64).to_le_bytes());
+    for artifact in &chain.shared_lookup_artifacts {
+        phase30_hash_part(&mut hasher, artifact.artifact_commitment.as_bytes());
+    }
+    hasher.update(&(chain.steps.len() as u64).to_le_bytes());
+    for step in &chain.steps {
+        phase30_hash_part(
+            &mut hasher,
+            step.from_state.public_state_commitment.as_bytes(),
+        );
+        phase30_hash_part(
+            &mut hasher,
+            step.to_state.public_state_commitment.as_bytes(),
+        );
+        phase30_hash_part(
+            &mut hasher,
+            step.from_state.lookup_rows_commitment.as_bytes(),
+        );
+        phase30_hash_part(&mut hasher, step.to_state.lookup_rows_commitment.as_bytes());
+        phase30_hash_part(
+            &mut hasher,
+            step.shared_lookup_artifact_commitment.as_bytes(),
+        );
+        let proof_commitment = phase30_commit_step_proof_binary(&step.proof);
+        phase30_hash_part(&mut hasher, proof_commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn phase30_commit_json_value<T: Serialize>(
     version: &str,
     domain: &[u8],
@@ -20505,6 +20791,123 @@ mod tests {
         assert_eq!(breakdown.manifest_finalize_ms, 0.0);
         assert_eq!(breakdown.equality_check_ms, 0.0);
         assert_eq!(breakdown.total_verify_ms, 0.0);
+    }
+
+    #[test]
+    fn phase30_optimized_replay_breakdown_skips_reverify_and_zeroes_json_byte_counters() {
+        let (chain, _) = sample_phase30_chain_and_manifest();
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)
+            .expect("optimized manifest");
+
+        let breakdown =
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+                &manifest, &chain, false,
+            )
+            .expect("optimized breakdown");
+
+        assert_eq!(breakdown.total_steps, chain.steps.len());
+        assert_eq!(
+            breakdown.reverified_proofs, 0,
+            "optimized replay must not re-verify embedded step proofs",
+        );
+        assert_eq!(
+            breakdown.source_chain_json_bytes, 0,
+            "optimized replay must not surface JSON byte counters",
+        );
+        assert_eq!(
+            breakdown.step_proof_json_bytes_total, 0,
+            "optimized replay must not surface JSON byte counters",
+        );
+        assert_eq!(
+            breakdown.embedded_proof_reverify_ms, 0.0,
+            "optimized replay must report zero embedded-proof reverify latency",
+        );
+    }
+
+    #[test]
+    fn phase30_optimized_replay_uses_distinct_commitments_from_json_path() {
+        let (chain, json_manifest) = sample_phase30_chain_and_manifest();
+        let optimized_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)
+                .expect("optimized manifest");
+
+        // Domain-separated binary commitments must produce values distinct
+        // from the JSON-keyed commitments, otherwise the optimized verifier
+        // could be tricked into accepting a JSON-keyed manifest that the
+        // publication-default verifier expects to bind to a different scheme.
+        assert_ne!(
+            optimized_manifest.source_chain_commitment, json_manifest.source_chain_commitment,
+            "optimized binary chain commitment collided with the JSON-keyed commitment",
+        );
+        for (optimized, json) in optimized_manifest
+            .envelopes
+            .iter()
+            .zip(json_manifest.envelopes.iter())
+        {
+            assert_ne!(
+                optimized.proof_commitment, json.proof_commitment,
+                "optimized step proof commitment collided with the JSON-keyed commitment at step {}",
+                optimized.step_index,
+            );
+        }
+    }
+
+    #[test]
+    fn phase30_optimized_replay_rejects_step_proof_byte_drift() {
+        let (mut chain, _) = sample_phase30_chain_and_manifest();
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)
+            .expect("optimized manifest");
+
+        // Tamper with the underlying step proof bytes after the manifest is
+        // built. The optimized verifier MUST reject the input. The exact
+        // rejection path is implementation-detail; what matters is that any
+        // mutation of the proof byte buffer the optimized commitments hash
+        // is not silently accepted.
+        let original = chain.steps[0].proof.proof.clone();
+        chain.steps[0]
+            .proof
+            .proof
+            .iter_mut()
+            .next()
+            .map(|b| *b = b.wrapping_add(1));
+
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+            &manifest, &chain, false,
+        )
+        .expect_err("optimized replay must reject mutated step proof bytes");
+
+        // Restore proof bytes and confirm the optimized replay accepts again.
+        chain.steps[0].proof.proof = original;
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+            &manifest, &chain, false,
+        )
+        .expect("optimized replay accepts the unmodified chain");
+    }
+
+    #[test]
+    fn phase30_optimized_replay_rejects_chain_with_swapped_step_states() {
+        let (chain, _) = sample_phase30_chain_and_manifest();
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)
+            .expect("optimized manifest");
+
+        // Permute step state ordering: the binary chain commitment binds the
+        // ordered list of public-state commitments, so swapping any two
+        // adjacent steps must trip the equality check even though the proof
+        // byte buffers are unchanged. The exact rejection path is again an
+        // implementation detail; the contract is "reject, do not silently
+        // accept."
+        let mut tampered_chain = chain.clone();
+        if tampered_chain.steps.len() >= 2 {
+            let lhs_from = tampered_chain.steps[0].from_state.clone();
+            tampered_chain.steps[0].from_state = tampered_chain.steps[1].from_state.clone();
+            tampered_chain.steps[1].from_state = lhs_from;
+        }
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+            &manifest,
+            &tampered_chain,
+            false,
+        )
+        .expect_err("optimized replay must reject swapped step states");
     }
 
     #[test]

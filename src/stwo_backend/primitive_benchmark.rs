@@ -36,11 +36,13 @@ use super::decoding::{
     phase12_demo_initial_memories_for_steps_with_rescaling, phase14_prepare_decoding_chain,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
+    phase30_prepare_decoding_step_proof_envelope_manifest_optimized,
     prove_phase12_decoding_demo_for_layout_initial_memories_publication,
     prove_phase12_decoding_demo_for_layout_steps_publication,
     prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental,
     verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_with_breakdown,
     Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DemoRescalingProfile,
@@ -134,6 +136,10 @@ pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_VERSION: &str =
     "stwo-tablero-replay-breakdown-benchmark-v1";
 pub const STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE: &str =
     "tablero_replay_baseline_causal_decomposition_over_checked_layout_families";
+pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_VERSION: &str =
+    "stwo-tablero-replay-breakdown-optimized-benchmark-v1";
+pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_SCOPE: &str =
+    "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
     "stwo-phase43-source-root-feasibility-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
@@ -1616,6 +1622,89 @@ pub fn run_stwo_tablero_replay_breakdown_benchmark_with_options(
     Ok(StwoTableroReplayBreakdownReport {
         benchmark_version: STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_TABLERO_REPLAY_BREAKDOWN_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+pub fn run_stwo_tablero_replay_breakdown_optimized_benchmark(
+) -> Result<StwoTableroReplayBreakdownReport> {
+    run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(false)
+}
+
+/// Engineering-only red-team measurement of an honestly-optimized replay
+/// verifier (issue #290). Uses the same three layout families and same
+/// `1024`-step frontier as `run_stwo_tablero_replay_breakdown_benchmark`,
+/// but the verifier-side path skips embedded-proof re-verification and uses
+/// binary canonical commitments instead of JSON-serialize-then-hash. The
+/// resulting `replay_total_ms` shows what an honestly-optimized replay
+/// verifier would cost on the *same* proof-checked chain; the typed-boundary
+/// path in
+/// `run_stwo_phase44d_source_emission_experimental_benchmark` measures the
+/// boundary verify cost on the same chain. The ratio of the typed-boundary
+/// verify and this optimized replay total is the *implementation-independent*
+/// component of the headline replay-avoidance ratio.
+pub fn run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoTableroReplayBreakdownReport> {
+    let cases = [
+        ("default", phase12_default_decoding_layout(), 1024usize),
+        ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
+        ("3x3", Phase12DecodingLayout::new(3, 3)?, 1024usize),
+    ];
+    let mut rows = Vec::with_capacity(cases.len());
+    for (family, layout, steps) in cases {
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout,
+                steps,
+            )
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "tablero optimized replay benchmark cannot construct {steps}-step proof-checked source chain on the carry-aware execution-proof surface for layout {}x{}: {}",
+                    layout.rolling_kv_pairs,
+                    layout.pair_width,
+                    error
+                ))
+            })?;
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest_optimized(&chain)?;
+        let manifest_serialized_bytes = phase30_manifest_serialized_bytes(&manifest)?;
+        let breakdown =
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain_optimized_replay_with_breakdown(
+                &manifest,
+                &chain,
+                capture_timings,
+            )?;
+        rows.push(StwoTableroReplayBreakdownMeasurement {
+            family: family.to_string(),
+            steps,
+            relation:
+                "optimized replay verifier (skip embedded-proof reverify, binary canonical commitments) over a proof-checked source chain"
+                    .to_string(),
+            manifest_serialized_bytes,
+            reverified_proofs: breakdown.reverified_proofs,
+            source_chain_json_bytes: breakdown.source_chain_json_bytes,
+            step_proof_json_bytes_total: breakdown.step_proof_json_bytes_total,
+            replay_total_ms: breakdown.total_verify_ms,
+            embedded_proof_reverify_ms: breakdown.embedded_proof_reverify_ms,
+            source_chain_commitment_ms: breakdown.source_chain_commitment_ms,
+            step_proof_commitment_ms: breakdown.step_proof_commitment_ms,
+            manifest_finalize_ms: breakdown.manifest_finalize_ms,
+            equality_check_ms: breakdown.equality_check_ms,
+            verified: true,
+            note: format!(
+                "carry-aware experimental backend over the checked {}x{} decoding layout; the optimized replay verifier skips per-step embedded proof re-verification (the typed boundary verifier does the same) and uses binary canonical commitments over fixed-size cryptographic identities and the raw stark-proof byte buffer instead of JSON-serialize-then-hash; engineering-only red-team measurement, issue #290",
+                layout.rolling_kv_pairs, layout.pair_width
+            ),
+        });
+    }
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoTableroReplayBreakdownReport {
+        benchmark_version: STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_SCOPE.to_string(),
         timing_mode: timing_surface.mode.to_string(),
         timing_policy: timing_surface.policy.to_string(),
         timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),

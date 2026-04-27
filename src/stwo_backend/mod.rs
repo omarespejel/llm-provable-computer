@@ -359,6 +359,8 @@ pub use primitive_benchmark::{
     run_stwo_shared_table_reuse_benchmark_with_options,
     run_stwo_tablero_replay_breakdown_benchmark,
     run_stwo_tablero_replay_breakdown_benchmark_with_options,
+    run_stwo_tablero_replay_breakdown_optimized_benchmark,
+    run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options,
     save_stwo_phase12_arithmetic_budget_map_report_json,
     save_stwo_phase12_arithmetic_budget_map_report_tsv,
     save_stwo_phase12_shared_lookup_artifact_reuse_benchmark_report_json,
