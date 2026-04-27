@@ -101,11 +101,11 @@ implementations. The empirical demonstrations remain in one transformer-shaped S
 lane, and the large latency ratios are implementation-grounded replay-avoidance ratios,
 not claims that cryptographic verification itself became hundreds of times faster.
 
-### 1.1 Research lineage
+### 1.1 Research context
 
-Tablero is one step inside a multi-paper research line that takes the
-"transformers as computers" premise from architectural argument to operational
-deployment.
+Tablero builds on a small set of related arguments that take the
+"transformers as computers" premise from architectural intuition to a
+checkable execution surface.
 
 The original premise — that a transformer in decode mode behaves like a
 computer running a deterministic program — was made concrete by Percepta's
@@ -115,26 +115,26 @@ can execute a program, can that execution produce independently checkable
 evidence? His framing names the bridge directly: *the trace becomes the
 witness*.
 
-Earlier work [6] argues that STARK trace structure naturally fits
-transformer decode because the workload already exhibits repeated stateful
-local work over carried context, and that the proof artifact for one
-decode step should preserve the carried boundary, not just the visible
-output token. That argument establishes the *architectural fit* between
-trace-based STARK proving and transformer decode but does not give a
-verifier-side mechanism that exploits it: it argues that the carried
-boundary should be made visible, but it does not provide the verifier
-that accepts it in lieu of replay.
+A separate argument [6] makes the structural case that STARK trace
+structure naturally fits transformer decode because the workload already
+exhibits repeated stateful local work over carried context, and that the
+proof artifact for one decode step should preserve the carried boundary,
+not just the visible output token. That argument establishes the
+*architectural fit* between trace-based STARK proving and transformer
+decode but does not provide a verifier-side mechanism that exploits it:
+it argues that the carried boundary should be made visible, but it does
+not provide the verifier that accepts it in lieu of replay.
 
-This paper supplies that mechanism. Tablero is the verifier-side pattern
-that lets a layered STARK system deploy the LLMs-as-provable-computers
-premise without the verifier walking the source-chain replay surface
-itself. The structural fit between STARK traces and transformer decode is
-the precondition; the typed verifier-boundary pattern is the operational
-payoff. We do not contribute a new STARK construction or a new transformer
-arithmetization. The contribution is *systems-level*: a settlement-layer
-pattern that closes one specific cost gap between "we can prove transformer
-execution" and "the verifier can check that proof cheaply at deployment
-scale."
+This paper provides one such mechanism. Tablero is a verifier-side pattern
+that lets a layered STARK system accept a typed certificate of the public
+boundary facts a replay path would have reconstructed, without the
+verifier walking the source-chain surface itself. The structural fit
+between STARK traces and transformer decode is treated as a precondition,
+not as a result of this paper. We do not contribute a new STARK
+construction or a new transformer arithmetization. The contribution is
+*systems-level*: a settlement-layer pattern that closes one specific cost
+gap between "this execution can be proved" and "the verifier can check
+that proof cheaply at deployment scale."
 
 In the surrounding zkML literature, related lines come at the same problem
 from different angles. zkLLM-style work introduces lookup machinery for
@@ -143,11 +143,11 @@ Jolt-Atlas brings a lookup-centric SNARK approach to ONNX tensor
 operations; NANOZK [1] argues for layerwise zero-knowledge proofs for LLM
 inference; Lagrange DeepProve-1 reports full GPT-2 inference proving as a
 SNARK-side existence proof; LuminAIR with Giza × S-two demonstrates a
-STARK-native graph-to-AIR path. These are valuable predecessors and
-parallel work; Tablero is orthogonal to them. None of them gives a
-verifier-side replay-elimination pattern with a stated soundness criterion
-and measured savings on the carried-state surface that transformer decode
-naturally exposes.
+STARK-native graph-to-AIR path. These are predecessors and parallel work
+in the broader zkML space. Tablero is orthogonal to them: none of them
+gives a verifier-side replay-elimination pattern with a stated soundness
+criterion and measured savings on the carried-state surface that
+transformer decode naturally exposes.
 
 ---
 
@@ -758,13 +758,16 @@ preconditions.
 families, a supporting second typed boundary on a distinct source surface, and one
 bounded compactness no-go that marks where the pattern does not yet apply.
 
-This is not the end of the story. The next steps are clear: broader backend transfer,
-stronger external calibration, and eventually a recursive layer that preserves the same
-boundary semantics. Within the broader research lineage of Section 1.1
-(transformers as computers, then as provable computers, then as
-trace-shaped proof surfaces), Tablero is the verifier-side step that
-makes the deployment economics defensible; the prover-side, recursion,
-and second-backend pieces of the same program remain follow-on work.
+This is not the end of the story. Several open directions remain in the
+broader space: broader cryptographic-backend transfer, stronger external
+calibration against deployed verifiers, a recursive layer that preserves
+the same boundary semantics, and prover-side cost reductions that make
+end-to-end transformer proving practical at production scale. Whether
+those directions are pursued by the authors of this paper or by other
+groups, the present contribution remains a self-contained verifier-side
+pattern with a stated soundness criterion and measured replay-avoidance
+evidence on the carried-state surface that transformer decode naturally
+exposes.
 
 ---
 
