@@ -27,10 +27,11 @@ aggregator is checked against three points:
 
 ## Scope: enumerating the in-scope aggregators
 
-`rg --files-with-matches "scripts/engineering" --glob 'aggregate_*.py'`
-returns exactly five files at the time of this audit (April 27, 2026):
+`ls scripts/engineering/aggregate_*.py` returns exactly five files at
+the time of this audit (April 27, 2026, against repository commit
+`51ac0f6`):
 
-```
+```text
 scripts/engineering/aggregate_phase43_source_root_feasibility.py
 scripts/engineering/aggregate_phase44d_carry_aware_experimental_3x3_scaling.py
 scripts/engineering/aggregate_phase44d_carry_aware_experimental_family_matrix.py
@@ -89,6 +90,18 @@ For each aggregator the audit:
    `timing_policy`, and `timing_unit` are hard-checked against pinned
    `EXPECTED_INPUT_*` constants (or per-row equality checks for the
    derivation-only family-matrix aggregator).
+
+## Reproducibility metadata
+
+| Aggregator                                                       | Pinned input `timing_mode` / `timing_policy`                          | Output identity contract                                                                                                              | Canonical evidence path                                                                                                | Audited backend / step counts                                                          |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `aggregate_phase44d_carry_aware_experimental_scaling.py`         | `measured_single_run` / `single_run_from_microsecond_capture`         | Synthesizes `timing_mode = "measured_median"` and `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output.    | `docs/engineering/evidence/phase44d-carry-aware-experimental-scaling-2026-04.{tsv,json}` (default and 2x2 families). | Stwo backend version `STWO_BACKEND_VERSION_PHASE12`; step counts `2..1024`.            |
+| `aggregate_phase44d_carry_aware_experimental_3x3_scaling.py`     | `measured_single_run` / `single_run_from_microsecond_capture`         | Same as above.                                                                                                                       | `docs/engineering/evidence/phase44d-carry-aware-experimental-3x3-scaling-2026-04.{tsv,json}`.                          | Stwo backend version `STWO_BACKEND_VERSION_PHASE12`; step counts `2..1024`.            |
+| `aggregate_phase43_source_root_feasibility.py`                   | `measured_single_run` / `single_run_from_microsecond_capture`         | Synthesizes `timing_mode = "measured_median"` for the output.                                                                        | `docs/engineering/evidence/phase43-source-root-feasibility-2026-04.{tsv,json}`.                                        | Stwo backend version `STWO_BACKEND_VERSION_PHASE12`; per-feasibility-row step counts. |
+| `aggregate_phase44d_carry_aware_experimental_family_matrix.py`   | inline equality over `timing_mode == "measured_median"` and `timing_unit == "milliseconds"` per input row | Emits one cross-family transferability matrix; no per-run resampling.                                                                | `docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.{tsv,json}`.                        | Reads the three per-family scaling TSVs above.                                         |
+| `aggregate_tablero_replay_breakdown.py`                          | `measured_single_run` / `single_run_from_microsecond_capture`         | Synthesizes `timing_mode = "measured_median"`, `timing_aggregation_strategy = "median_total_representative_run"`, and `timing_policy = "median_of_{N}_runs_from_microsecond_capture"` for the output. | `docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.{tsv,json}` (BENCH_RUNS in `{5, 9}`).   | Stwo backend version `STWO_BACKEND_VERSION_PHASE12`; pinned at `N=1024`.               |
+
+The wrapper script `scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh` additionally hard-pins the optimized-replay output's `EXPECTED_BENCHMARK_VERSION = "stwo-tablero-replay-breakdown-optimized-benchmark-v1"` and `EXPECTED_SEMANTIC_SCOPE = "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend"`, blocking identity drift on the canonical evidence path.
 
 ## Reproduction
 
