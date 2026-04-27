@@ -1,16 +1,36 @@
 #!/usr/bin/env python3
 """Aggregate repeated Tablero replay-breakdown runs using median timings.
 
-Audit note (issue #294, post-#292): unlike the per-family scaling
-aggregators (which median orthogonal timing columns independently), this
-aggregator's input rows expose `replay_total_ms` together with five
-component timings that must sum to it within instrumentation noise. PR
-#292 tightened this script to use a `median_total_representative_run`
-strategy: it picks the single run whose `replay_total_ms` equals the
-median across runs, then emits all component timings from that
-representative run, preserving the additive identity. See
-`scripts/tests/test_aggregate_tablero_replay_breakdown.py` for the
-regression and tie-breaking tests.
+Audit note (issue #294, post-#292) — three points covered:
+(1) overlapping timed-bucket hashing: this aggregator does not perform
+    cryptographic hashing. The double-hash bug fixed in
+    `src/stwo_backend/decoding.rs` was on the verifier-side prove-time
+    path (per-envelope JSON hashing of the same step-proof byte buffer
+    that was already hashed in the chain summary) and has no analogue
+    at this layer.
+(2) additivity invariant: unlike the per-family scaling aggregators
+    (which median orthogonal timing columns independently), this
+    aggregator's input rows expose `replay_total_ms` together with
+    five component timings that must sum to it within instrumentation
+    noise. PR #292 tightened this script to use a
+    `median_total_representative_run` strategy: it picks the single
+    run whose `replay_total_ms` equals the median across runs, then
+    emits all component timings from that representative run,
+    preserving the additive identity. See
+    `scripts/tests/test_aggregate_tablero_replay_breakdown.py` for the
+    regression and tie-breaking tests.
+(3) reproducibility-metadata drift: hard-pins
+    `EXPECTED_INPUT_TIMING_MODE`, `EXPECTED_INPUT_TIMING_POLICY`, and
+    `EXPECTED_INPUT_TIMING_UNIT`, and fails closed when any input
+    payload disagrees. `timing_policy` drift across the input runs
+    therefore cannot be silently absorbed into the aggregated output.
+    The wrapper script
+    `scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh`
+    additionally hard-pins
+    `EXPECTED_TIMING_AGGREGATION_STRATEGY="median_total_representative_run"`
+    and `BENCH_RUNS in {5, 9}` for canonical evidence paths, blocking
+    aggregation-strategy drift from silently corrupting the
+    checked-in TSV/JSON.
 """
 
 from __future__ import annotations

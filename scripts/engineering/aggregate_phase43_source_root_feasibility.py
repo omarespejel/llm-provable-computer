@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """Aggregate repeated Phase43 source-root feasibility runs using median timings.
 
-Audit note (issue #294, post-#292): this aggregator medians `derive_ms`
-and `verify_ms` independently across the input runs. The two columns are
-orthogonal independent measurements (source-root derivation time vs
-compact verification time) and are not components of a shared outer
-measurement, so there is no additive identity to preserve. The
-double-hash / per-column-median additivity bugs caught in
-`aggregate_tablero_replay_breakdown.py` cannot occur here. No
-representative-run picker is needed.
+Audit note (issue #294, post-#292) — three points covered:
+(1) overlapping timed-bucket hashing: this aggregator does not perform
+    cryptographic hashing; the double-hash bug fixed in
+    `src/stwo_backend/decoding.rs` has no analogue here.
+(2) additivity invariant: medians `derive_ms` and `verify_ms`
+    independently across the input runs. The two columns are orthogonal
+    independent measurements (source-root derivation time vs compact
+    verification time) and are not components of a shared outer
+    measurement, so there is no additive identity to preserve. The
+    per-column-median additivity bug caught in
+    `aggregate_tablero_replay_breakdown.py` cannot occur here. No
+    representative-run picker is needed.
+(3) reproducibility-metadata drift: hard-pins
+    `EXPECTED_INPUT_TIMING_MODE` and `EXPECTED_INPUT_TIMING_POLICY`,
+    and fails closed when any input payload disagrees. `timing_policy`
+    drift across the input runs therefore cannot be silently absorbed
+    into the aggregated output.
 """
 
 from __future__ import annotations
