@@ -10,8 +10,8 @@ cd "$REPO_ROOT"
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
 CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
-TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-replay-baseline-breakdown-optimized-2026-04.tsv}"
-JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/phase44d-carry-aware-experimental-replay-baseline-breakdown-optimized-2026-04.json}"
+TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv}"
+JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json}"
 
 if [[ "$CAPTURE_TIMINGS" != "1" ]]; then
   echo "CAPTURE_TIMINGS must be 1 for the checked-in optimized replay breakdown benchmark" >&2
@@ -29,12 +29,13 @@ fi
 if [[ "$(python3 - "$TSV_OUT" "$JSON_OUT" <<'PY'
 import os
 import sys
-lhs = os.path.normpath(os.path.abspath(sys.argv[1]))
-rhs = os.path.normpath(os.path.abspath(sys.argv[2]))
+# Use realpath to defeat symlink aliases that abspath/normpath miss.
+lhs = os.path.realpath(sys.argv[1])
+rhs = os.path.realpath(sys.argv[2])
 print(int(lhs == rhs))
 PY
 )" == "1" ]]; then
-  echo "TSV_OUT and JSON_OUT must be distinct" >&2
+  echo "TSV_OUT and JSON_OUT must resolve to distinct paths" >&2
   exit 1
 fi
 
@@ -67,6 +68,47 @@ python3 scripts/engineering/aggregate_tablero_replay_breakdown.py \
   --inputs "${RUN_INPUTS[@]}" \
   --output-json "$TMP_JSON" \
   --output-tsv "$TMP_TSV"
+
+# Fail closed if the aggregated payload's identity does not match the
+# expected optimized-benchmark lane. This prevents silently overwriting
+# checked-in evidence with a payload that drifted onto a different lane
+# (e.g. a wrong benchmark_version or a wrong timing_policy from a stale
+# build) and lets the merge gate catch any future widening of this
+# experiment without an explicit doc update.
+EXPECTED_BENCHMARK_VERSION="${EXPECTED_BENCHMARK_VERSION:-stwo-tablero-replay-breakdown-optimized-benchmark-v1}"
+EXPECTED_SEMANTIC_SCOPE="${EXPECTED_SEMANTIC_SCOPE:-tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend}"
+EXPECTED_TIMING_MODE="${EXPECTED_TIMING_MODE:-measured_median}"
+EXPECTED_TIMING_POLICY="${EXPECTED_TIMING_POLICY:-median_of_${BENCH_RUNS}_runs_from_microsecond_capture}"
+EXPECTED_TIMING_UNIT="${EXPECTED_TIMING_UNIT:-milliseconds}"
+EXPECTED_TIMING_RUNS="${EXPECTED_TIMING_RUNS:-$BENCH_RUNS}"
+
+python3 - "$TMP_JSON" \
+  "$EXPECTED_BENCHMARK_VERSION" \
+  "$EXPECTED_SEMANTIC_SCOPE" \
+  "$EXPECTED_TIMING_MODE" \
+  "$EXPECTED_TIMING_POLICY" \
+  "$EXPECTED_TIMING_UNIT" \
+  "$EXPECTED_TIMING_RUNS" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+expected = {
+    "benchmark_version": sys.argv[2],
+    "semantic_scope": sys.argv[3],
+    "timing_mode": sys.argv[4],
+    "timing_policy": sys.argv[5],
+    "timing_unit": sys.argv[6],
+    "timing_runs": int(sys.argv[7]),
+}
+for key, want in expected.items():
+    got = payload.get(key)
+    if got != want:
+        sys.exit(
+            f"benchmark identity drift on {key!r}: expected {want!r}, got {got!r}"
+        )
+PY
 
 mv "$TMP_TSV" "$TSV_OUT"
 mv "$TMP_JSON" "$JSON_OUT"

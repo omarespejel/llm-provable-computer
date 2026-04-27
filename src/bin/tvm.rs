@@ -15319,6 +15319,82 @@ mod cli_dispatch_tests {
     }
 
     #[test]
+    fn tablero_replay_breakdown_optimized_benchmark_command_parses_directly_and_is_not_run_shorthand(
+    ) {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-tablero-replay-breakdown-optimized"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-tablero-replay-breakdown-optimized",
+                "--output-tsv",
+                "optimized.tsv",
+                "--output-json",
+                "optimized.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-tablero-replay-breakdown-optimized"),
+                OsString::from("--output-tsv"),
+                OsString::from("optimized.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("optimized.json"),
+            ]
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn tablero_replay_breakdown_optimized_command_rejects_identical_output_paths_before_run() {
+        std::thread::Builder::new()
+            .name("tablero-optimized-cli-negative".to_string())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let cli = Cli::try_parse_from(normalize_args(
+                    [
+                        "tvm",
+                        "bench-stwo-tablero-replay-breakdown-optimized",
+                        "--output-tsv",
+                        "same.path",
+                        "--output-json",
+                        "same.path",
+                    ]
+                    .into_iter()
+                    .map(OsString::from),
+                ))
+                .expect("tablero optimized replay breakdown command should parse");
+
+                let Command::BenchStwoTableroReplayBreakdownOptimized {
+                    output_tsv,
+                    output_json,
+                    capture_timings,
+                } = cli.command
+                else {
+                    panic!("expected tablero optimized replay breakdown benchmark command");
+                };
+
+                let err = super::bench_stwo_tablero_replay_breakdown_optimized_command(
+                    &output_tsv,
+                    output_json.as_deref(),
+                    capture_timings,
+                )
+                .expect_err("identical output paths must fail before benchmark execution");
+                assert!(err
+                    .to_string()
+                    .contains("`--output-json` must differ from `--output-tsv`"));
+            })
+            .expect("spawn tablero optimized negative-path test thread")
+            .join()
+            .expect("tablero optimized negative-path test thread should not panic");
+    }
+
+    #[test]
     #[cfg(unix)]
     fn primitive_benchmark_rejects_dangling_symlink_output_paths() {
         use std::os::unix::fs::symlink;
