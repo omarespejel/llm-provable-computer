@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 """Publication preflight checks for the active docs/paper artifacts.
 
-Checks:
-1) active paper file existence and citation integrity,
-2) immutable-link policy for this repository's GitHub links (commit-pinned only),
-3) figure/link cross-reference existence for local file links,
-4) primary presentation guardrails and appendix-system-comparison source-note presence,
-5) active S-two bundle timing/size consistency against frozen artifact indices,
-6) unresolved publication snapshot placeholder detection,
-7) Paper 3 proof-carrying composition claim-evidence matrix completeness,
-8) paper claim-language guardrails for recursion/compression/PCS overclaims.
+The preflight covers the current two-paper presentation bundle, including the
+Transformer/STARK alignment paper, the Tablero paper, supporting appendices, and
+publication metadata files.  It fails closed on:
+
+1) missing active paper or metadata files,
+2) missing local numeric citation targets when a file has a References section,
+3) unpinned GitHub links to this repository or its predecessor repository,
+4) broken local Markdown links and figure references,
+5) missing primary-presentation links to the Tablero abstract, appendices, and
+   checked figures,
+6) missing source-note text in the system-comparison appendix,
+7) missing active S-two bundle indices or timing/size/hash drift inside those
+   frozen artifact indices,
+8) unresolved hard publication snapshot placeholders,
+9) incomplete Paper 3 proof-carrying composition claim-evidence metadata, and
+10) paper claim-language overreach around recursion, compression, PCS, and full
+    inference claims.
 """
 
 from __future__ import annotations
