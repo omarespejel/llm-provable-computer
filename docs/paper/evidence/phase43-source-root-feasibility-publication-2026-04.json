@@ -1,0 +1,65 @@
+{
+  "benchmark_version": "stwo-phase43-source-root-feasibility-benchmark-v2",
+  "semantic_scope": "phase43_emitted_source_boundary_feasibility_calibration",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 5,
+  "rows": [
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "emitted_source_boundary_plus_compact_projection",
+      "steps": 2,
+      "relation": "one emitted Phase43 proof-native source boundary plus one compact Phase43 projection proof",
+      "serialized_bytes": 61349,
+      "derive_ms": 0.0,
+      "verify_ms": 0.857,
+      "verified": true,
+      "note": "real emitted-surface row: the verifier accepts the emitted Phase43 proof-native source boundary against the same compact proof without the full trace or the Phase30 manifest; this measures verifier-side replay elimination, not faster FRI verification; boundary construction cost is tracked separately in the benchmark and excluded from verifier-side totals"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "full_trace_plus_phase30_derivation_baseline",
+      "steps": 2,
+      "relation": "derive the Phase43 source-root claim from full Phase43 trace plus Phase30 manifest, then verify one compact Phase43 projection proof",
+      "serialized_bytes": 71436,
+      "derive_ms": 0.434,
+      "verify_ms": 0.611,
+      "verified": true,
+      "note": "baseline row: pays the exact source-root derivation work the verifier would still need without the emitted proof-native Phase43 source boundary"
+    },
+    {
+      "primitive": "phase43_compact_projection_proof",
+      "backend_variant": "compact_phase43_projection_proof_only",
+      "steps": 2,
+      "relation": "one compact Phase43 projection proof envelope",
+      "serialized_bytes": 54939,
+      "derive_ms": 0.0,
+      "verify_ms": 0.361,
+      "verified": true,
+      "note": "causal decomposition row: verifies only the compact Phase43 projection proof that both feasibility variants already depend on"
+    },
+    {
+      "primitive": "phase43_source_root_claim_derivation",
+      "backend_variant": "derive_source_root_claim_only",
+      "steps": 2,
+      "relation": "derive the Phase43 source-root claim from the full Phase43 trace plus Phase30 manifest",
+      "serialized_bytes": 16497,
+      "derive_ms": 0.434,
+      "verify_ms": 0.0,
+      "verified": true,
+      "note": "causal decomposition row: isolates the local full-trace and Phase30 work that would disappear only after a source-emission patch"
+    },
+    {
+      "primitive": "phase43_proof_native_source_boundary",
+      "backend_variant": "source_boundary_binding_only",
+      "steps": 2,
+      "relation": "bind one emitted Phase43 proof-native source boundary to a previously verified compact Phase43 projection claim",
+      "serialized_bytes": 6410,
+      "derive_ms": 0.0,
+      "verify_ms": 0.16,
+      "verified": true,
+      "note": "causal decomposition row: assumes the compact proof was already verified and measures only the emitted boundary binding acceptance surface"
+    }
+  ]
+}
