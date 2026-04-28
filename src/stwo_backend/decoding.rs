@@ -15004,17 +15004,22 @@ mod tests {
 
     #[derive(Default)]
     struct SamplePhase12StepProofCache {
-        order: VecDeque<(String, Vec<i16>)>,
-        proofs: HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>,
+        order: VecDeque<(String, String)>,
+        proofs: HashMap<(String, String), VanillaStarkExecutionProof>,
     }
 
     impl SamplePhase12StepProofCache {
-        fn get(&self, key: &(String, Vec<i16>)) -> Option<VanillaStarkExecutionProof> {
-            self.proofs.get(key).cloned()
+        fn get(&mut self, key: &(String, String)) -> Option<VanillaStarkExecutionProof> {
+            let proof = self.proofs.get(key).cloned()?;
+            self.order.retain(|existing| existing != key);
+            self.order.push_back(key.clone());
+            Some(proof)
         }
 
-        fn insert(&mut self, key: (String, Vec<i16>), proof: VanillaStarkExecutionProof) {
+        fn insert(&mut self, key: (String, String), proof: VanillaStarkExecutionProof) {
             if self.proofs.contains_key(&key) {
+                self.order.retain(|existing| existing != &key);
+                self.order.push_back(key.clone());
                 self.proofs.insert(key, proof);
                 return;
             }
@@ -15034,6 +15039,16 @@ mod tests {
         decoding_program_step_limit(program)
             .expect("step limit")
             .max(128)
+    }
+
+    fn sample_phase12_step_proof_cache_key(
+        layout: &Phase12DecodingLayout,
+        initial_memory: &[i16],
+    ) -> (String, String) {
+        let layout_commitment = commit_phase12_layout(layout);
+        let initial_memory_commitment =
+            commit_phase12_named_slice("initial-memory", &layout_commitment, initial_memory);
+        (layout_commitment, initial_memory_commitment)
     }
 
     /// Cache real, proof-checked Phase 12 decoding step proofs keyed on
@@ -15064,8 +15079,7 @@ mod tests {
         layout: &Phase12DecodingLayout,
         initial_memory: Vec<i16>,
     ) -> VanillaStarkExecutionProof {
-        let layout_commitment = commit_phase12_layout(layout);
-        let cache_key = (layout_commitment, initial_memory.clone());
+        let cache_key = sample_phase12_step_proof_cache_key(layout, &initial_memory);
         if let Some(cached) = cached_phase12_step_proof_cache()
             .lock()
             .expect("phase12 step-proof cache poisoned")
@@ -15109,24 +15123,63 @@ mod tests {
         let proof = sample_step_proof(vec![0; 23], vec![0; 23]);
         for index in 0..(SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 3) {
             cache.insert(
-                (format!("layout-{index}"), vec![index as i16]),
+                (format!("layout-{index}"), format!("memory-{index}")),
                 proof.clone(),
             );
         }
 
         assert_eq!(cache.proofs.len(), SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY);
-        assert!(cache.get(&("layout-0".to_string(), vec![0])).is_none());
+        assert!(cache
+            .get(&("layout-0".to_string(), "memory-0".to_string()))
+            .is_none());
         assert!(cache
             .get(&(
                 format!("layout-{}", SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 2),
-                vec![(SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 2) as i16],
+                format!("memory-{}", SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 2),
             ))
             .is_some());
     }
 
     #[test]
+    fn sample_phase12_step_proof_cache_refreshes_recent_hits() {
+        let mut cache = SamplePhase12StepProofCache::default();
+        let proof = sample_step_proof(vec![0; 23], vec![0; 23]);
+        let hot_key = ("layout-hot".to_string(), "memory-hot".to_string());
+        cache.insert(hot_key.clone(), proof.clone());
+        for index in 0..(SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY - 1) {
+            cache.insert(
+                (format!("layout-{index}"), format!("memory-{index}")),
+                proof.clone(),
+            );
+        }
+
+        assert!(cache.get(&hot_key).is_some());
+        cache.insert(
+            ("layout-overflow".to_string(), "memory-overflow".to_string()),
+            proof,
+        );
+
+        assert!(cache.get(&hot_key).is_some());
+        assert!(cache
+            .get(&("layout-0".to_string(), "memory-0".to_string()))
+            .is_none());
+    }
+
+    #[test]
     fn sample_phase12_step_proof_uses_program_derived_step_bound() {
-        let layout = Phase12DecodingLayout::new(4, 8).expect("wide valid layout");
+        let layout = (1..=8)
+            .flat_map(|rolling_kv_pairs| {
+                (1..=16).filter_map(move |pair_width| {
+                    Phase12DecodingLayout::new(rolling_kv_pairs, pair_width).ok()
+                })
+            })
+            .find(|layout| {
+                decoding_step_v2_template_program(layout)
+                    .ok()
+                    .and_then(|program| decoding_program_step_limit(&program).ok())
+                    .is_some_and(|step_limit| step_limit > 128)
+            })
+            .expect("at least one valid layout should require a step bound above 128");
         let program = decoding_step_v2_template_program(&layout).expect("program");
         let derived = decoding_program_step_limit(&program).expect("step limit");
 
