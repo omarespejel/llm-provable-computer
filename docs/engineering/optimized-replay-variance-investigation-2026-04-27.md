@@ -57,7 +57,7 @@ the cited sample sizes. What changes is the gap magnitude: median-of-9
 puts the gap at `25 ms`, the 12-sample run from the original
 (interrupted) capture put it at `97 ms`, and this 25-sample re-capture
 puts it at `101 ms`. All three gaps are well below the per-family IQR
-(`>=320 ms` for all three families) and the per-family stdev
+(`~320 ms` or larger for all three families) and the per-family stdev
 (`>=750 ms` for all three).
 
 ## Where the variance lives
@@ -87,7 +87,7 @@ The `25 ms` gap between `2x2` and `3x3` in the canonical median-of-9
 evidence is well below the host-noise band shown here. Concretely
 (with `n = 25`):
 
-- `2x2` IQR width is `~320 ms` (17% of canonical median), `12.8×`
+- `2x2` IQR width is `319.90 ms` (17% of canonical median), `12.8×`
   the canonical gap;
 - `3x3` IQR width is `~514 ms`, `20.6×` the canonical gap;
 - `default` IQR width is `~426 ms`, `17.0×` the canonical gap.
