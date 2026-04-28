@@ -6400,7 +6400,7 @@ mod tests {
         assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
         assert!(report.rows.iter().all(|row| row.derive_ms >= 0.0));
         assert!(report.rows.iter().any(|row| {
-            row.backend_variant == "emitted_source_root_claim_plus_compact_projection"
+            row.backend_variant == "emitted_source_boundary_plus_compact_projection"
                 && row.steps == 2
         }));
     }
@@ -6463,7 +6463,7 @@ mod tests {
             )
         }));
         assert!(report.rows.iter().any(|row| {
-            row.backend_variant == "emitted_source_root_claim_plus_compact_projection"
+            row.backend_variant == "emitted_source_boundary_plus_compact_projection"
                 && row.steps == 8
         }));
     }

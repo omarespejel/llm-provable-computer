@@ -986,7 +986,7 @@ fn validate_commitment_field(name: &str, actual: &str, expected: &str) -> Result
     Ok(())
 }
 
-fn build_claim_commitments(
+pub(crate) fn build_claim_commitments(
     program: &Program,
     config: &TransformerVmConfig,
     options: &VanillaStarkProofOptions,
@@ -1142,7 +1142,7 @@ fn execution_fingerprint_from_result(
     )
 }
 
-fn execution_fingerprint(
+pub(crate) fn execution_fingerprint(
     engine: &str,
     checked_steps: usize,
     steps: usize,
