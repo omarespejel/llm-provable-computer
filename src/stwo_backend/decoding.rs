@@ -3284,13 +3284,19 @@ pub fn verify_phase13_decoding_layout_matrix_with_proof_checks(
 pub fn phase14_prepare_decoding_chain(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<Phase14DecodingChainManifest> {
-    verify_phase12_decoding_chain(chain)?;
+    // Cheap structural / policy check first, before expensive STARK
+    // re-verification. This matches the ordering used by the Phase 14
+    // verifier (`verify_phase14_decoding_chain`) and the related manifest
+    // verifier near line 17806, and ensures the explicit unsupported-version
+    // branch is reachable from tests that mutate only `chain.statement_version`
+    // without also having to invalidate every embedded step proof.
     if chain.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
         return Err(VmError::InvalidConfig(format!(
             "unsupported chunked decoding statement version `{}`",
             chain.statement_version
         )));
     }
+    verify_phase12_decoding_chain(chain)?;
 
     let layout = &chain.layout;
     let expected_layout_commitment = commit_phase12_layout(layout);
@@ -14993,39 +14999,72 @@ mod tests {
         }
     }
 
+    /// Cache real, proof-checked Phase 12 decoding step proofs keyed on
+    /// `(layout_commitment, initial_memory)`.
+    ///
+    /// Background: as of commit `e16d908` (April 24, 2026, "Harden
+    /// proof-checked decoding verification"), `verify_phase12_decoding_chain`
+    /// re-verifies the embedded S-two STARK proof inside every step. The
+    /// previous fixture path produced a fake JSON payload that was missing
+    /// the `stark_proof` field, so any test that walked through that
+    /// hardened verifier surface (Phase 14/15/16/17/21/22 chain manifests,
+    /// load/save round-trips, oracle-vs-production parity tests) panicked at
+    /// `Serialization("missing field 'stark_proof'")`.
+    ///
+    /// To keep all `sample_phase12_step_proof` call sites unchanged while
+    /// still producing real proofs that survive the hardened verifier, we
+    /// route the fixture through `prove_execution_stark_with_backend_and_options`
+    /// once per unique `(layout, initial_memory)` pair and cache the result.
+    /// This mirrors the `OnceLock`-cached pattern already used by
+    /// `sample_phase30_chain_and_manifest` after commit `4229d54`.
+    fn cached_phase12_step_proof_cache(
+    ) -> &'static std::sync::Mutex<HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>> {
+        static CACHE: OnceLock<
+            std::sync::Mutex<HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>>,
+        > = OnceLock::new();
+        CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()))
+    }
+
     fn sample_phase12_step_proof(
         layout: &Phase12DecodingLayout,
         initial_memory: Vec<i16>,
     ) -> VanillaStarkExecutionProof {
-        let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory.clone())
-            .expect("program");
-        let mut runtime = NativeInterpreter::new(
-            program.clone(),
-            Attention2DMode::AverageHard,
-            decoding_program_step_limit(&program).expect("step limit"),
-        );
-        let result = runtime.run().expect("run program");
-        assert!(result.halted);
-        let final_memory = result.final_state.memory.clone();
-        VanillaStarkExecutionProof {
-            proof_backend: StarkProofBackend::Stwo,
-            proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
-            stwo_auxiliary: None,
-            claim: VanillaStarkExecutionClaim {
-                statement_version: "statement-v1".to_string(),
-                semantic_scope: "native_isa_execution_with_transformer_native_equivalence_check"
-                    .to_string(),
-                program,
-                attention_mode: Attention2DMode::AverageHard,
-                transformer_config: None,
-                steps: runtime.trace().len(),
-                final_state: result.final_state,
-                options: production_v1_stark_options(),
-                equivalence: None,
-                commitments: Some(sample_commitments()),
-            },
-            proof: sample_phase12_proof_payload(layout, &final_memory),
+        let layout_commitment = commit_phase12_layout(layout);
+        let cache_key = (layout_commitment, initial_memory.clone());
+        if let Some(cached) = cached_phase12_step_proof_cache()
+            .lock()
+            .expect("phase12 step-proof cache poisoned")
+            .get(&cache_key)
+        {
+            return cached.clone();
         }
+        let program =
+            decoding_step_v2_program_with_initial_memory(layout, initial_memory).expect("program");
+        // Match the canonical demo prover wiring in
+        // `prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options`:
+        // single-layer percepta-reference config with `AverageHard` attention,
+        // the production-v1 stark options, and the same `128`-step bound the
+        // canonical demo uses.
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+        let model = ProgramCompiler
+            .compile_program(program, config)
+            .expect("compile model");
+        let proof = prove_execution_stark_with_backend_and_options(
+            &model,
+            128,
+            StarkProofBackend::Stwo,
+            production_v1_stark_options(),
+        )
+        .expect("prove phase12 decoding step");
+        cached_phase12_step_proof_cache()
+            .lock()
+            .expect("phase12 step-proof cache poisoned")
+            .insert(cache_key, proof.clone());
+        proof
     }
 
     fn phase12_first_execution_carry_for_steps(
@@ -15122,76 +15161,6 @@ mod tests {
             }
             _ => i64::from(event.state_after.acc),
         }
-    }
-
-    fn sample_phase12_proof_payload(
-        layout: &Phase12DecodingLayout,
-        final_memory: &[i16],
-    ) -> Vec<u8> {
-        let lookup = layout.lookup_range().expect("lookup range");
-        let normalization_envelope = prove_phase10_shared_normalization_lookup_envelope(&[
-            (
-                final_memory[lookup.start] as u16,
-                final_memory[lookup.start + 1] as u16,
-            ),
-            (
-                final_memory[lookup.start + 4] as u16,
-                final_memory[lookup.start + 5] as u16,
-            ),
-        ])
-        .expect("normalization envelope");
-        let activation_envelope = prove_phase10_shared_binary_step_lookup_envelope(&[
-            Phase3LookupTableRow {
-                input: final_memory[lookup.start + 2],
-                output: final_memory[lookup.start + 3] as u8,
-            },
-            Phase3LookupTableRow {
-                input: final_memory[lookup.start + 6],
-                output: final_memory[lookup.start + 7] as u8,
-            },
-        ])
-        .expect("activation envelope");
-        serde_json::to_vec(&serde_json::json!({
-            "embedded_shared_normalization": {
-                "statement_version": "stwo-shared-normalization-lookup-v1",
-                "semantic_scope": "stwo_decoding_step_v2_execution_with_shared_normalization_lookup",
-                "claimed_rows": [
-                    {
-                        "norm_sq_memory_index": lookup.start,
-                        "inv_sqrt_q8_memory_index": lookup.start + 1,
-                        "expected_norm_sq": final_memory[lookup.start],
-                        "expected_inv_sqrt_q8": final_memory[lookup.start + 1]
-                    },
-                    {
-                        "norm_sq_memory_index": lookup.start + 4,
-                        "inv_sqrt_q8_memory_index": lookup.start + 5,
-                        "expected_norm_sq": final_memory[lookup.start + 4],
-                        "expected_inv_sqrt_q8": final_memory[lookup.start + 5]
-                    }
-                ],
-                "proof_envelope": normalization_envelope
-            },
-            "embedded_shared_activation_lookup": {
-                "statement_version": "stwo-shared-binary-step-lookup-v1",
-                "semantic_scope": "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup",
-                "claimed_rows": [
-                    {
-                        "input_memory_index": lookup.start + 2,
-                        "output_memory_index": lookup.start + 3,
-                        "expected_input": final_memory[lookup.start + 2],
-                        "expected_output": final_memory[lookup.start + 3]
-                    },
-                    {
-                        "input_memory_index": lookup.start + 6,
-                        "output_memory_index": lookup.start + 7,
-                        "expected_input": final_memory[lookup.start + 6],
-                        "expected_output": final_memory[lookup.start + 7]
-                    }
-                ],
-                "proof_envelope": activation_envelope
-            }
-        }))
-        .expect("sample proof payload")
     }
 
     fn sample_phase12_valid_but_wrong_shared_lookup_artifact(
@@ -21821,10 +21790,14 @@ mod tests {
             .map(|memory| sample_phase12_step_proof(&layout, memory))
             .collect::<Vec<_>>();
         let mut phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        // Only mutate the outer chain `statement_version`. We deliberately do
+        // NOT also mutate `step.proof.claim.statement_version`, because doing so
+        // would invalidate the embedded STARK proof (claim hash drift) and the
+        // chain's own embedded-proof reverification would fail before the
+        // unsupported-version branch under test. The reordering in
+        // `phase14_prepare_decoding_chain` ensures the cheap version check
+        // fires first regardless.
         phase12.statement_version = "claim-v2".to_string();
-        for step in &mut phase12.steps {
-            step.proof.claim.statement_version = "claim-v2".to_string();
-        }
 
         let err = phase14_prepare_decoding_chain(&phase12).unwrap_err();
         assert!(err
