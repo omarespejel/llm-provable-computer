@@ -39,8 +39,9 @@ embedded-proof re-verification and uses binary canonical commitments
 instead of JSON-serialize-then-hash tightens these to a host-noise-sensitive
 band of `~261x`-`~330x` at the checked frontier (with per-run
 distributions spanning `~10^2-10^3.7` across nine timed runs), isolating
-an implementation-cost component of `~3.1x`-`~3.6x` and an
-implementation-independent component of `~261x`-`~330x`. A replay-baseline breakdown shows that the
+an implementation-cost component of `~3.1x`-`~3.6x` and a
+residual replay-work component of `~261x`-`~330x` for this
+source-derivation surface. A replay-baseline breakdown shows that the
 avoided work is distributed across repeated embedded-proof re-verification,
 source-chain commitment rebuilds, per-step commitment rebuilds, and
 manifest finalization rather than one dominant equality check. A second

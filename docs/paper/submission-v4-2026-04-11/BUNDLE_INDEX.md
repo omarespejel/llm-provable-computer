@@ -13,8 +13,10 @@ Planned publication tag after repository transfer:
 
 Canonical repository snapshot after transfer:
 
-- `paper-publication-v4-2026-04-11` once cut in the final publication repository. Until
-  that happens, the paper cites the staging commit-pinned snapshot for Reference `[30]`.
+- `paper-publication-v4-2026-04-11` once cut in the final publication repository.
+  Until that happens, Reference `[30]` remains only the staging commit-pinned
+  Phase63-65 carried-state bridge checkpoint. Later April benchmark and bundle rows
+  are cited by their own artifact-index references rather than by `[30]`.
 
 Carried-state aggregation provenance checkpoint:
 

@@ -18,9 +18,13 @@ about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows (`
 and shows that the dense-context ratio approaches a finite architecture-dependent
 ceiling. These are symbolic predictions, not wall-clock dominance claims.
 
-We pair the model with `provable-transformer-vm` [30], a reproducible artifact corpus
+We pair the model with `provable-transformer-vm`, a reproducible artifact corpus
 whose paper-facing line now runs through S-two transformer-shaped bundles, verifier-bound
-carried-state checkpoints, and repeated-reuse benchmark surfaces. The artifacts expose
+carried-state checkpoints, and repeated-reuse benchmark surfaces. Reference [30] pins
+the Phase 63-65 carried-state checkpoint specifically; newer paper-facing bundles are
+pinned separately where they are used, for example the shared-normalization primitive
+[40], proof-carrying aggregation bundle [46], and transformer-shaped bundle [49].
+The artifacts expose
 carried-state boundaries, shared lookup-table identity, and pre-recursive
 proof-carrying packaging on narrow relations. They do not prove full standard-softmax
 inference, recursive cryptographic compression, recursive shared-table accumulation, or
@@ -490,8 +494,10 @@ ______________________________________________________________________
 
 ## 5. Repository Artifact: Evidence Boundary
 
-The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In this
-paper it is treated as a **semantics-and-proof artifact**: deterministic
+The supporting implementation is `omarespejel/provable-transformer-vm`; reference [30]
+pins the Phase 63-65 carried-state bridge checkpoint, while later benchmark and bundle
+rows are cited by their own artifact indices. In this paper it is treated as a
+**semantics-and-proof artifact**: deterministic
 transformer-relevant execution is compiled into AIR-consumable traces and then organized
 into proof-carrying decoding artifacts with explicit carried-state boundaries. Here,
 "proof-carrying" means that each artifact carries enough public boundary data and proof
@@ -1268,8 +1274,9 @@ ______________________________________________________________________
 30. `omarespejel/provable-transformer-vm`. “Staging Repository Snapshot Discussed in
     Sections 5 and 8.” GitHub repository snapshot (pinned Phase 63-65
     proof-carrying artifact checkpoint), commit
-    `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`. This commit remains the citation
-    target until the final publication repository and release tag are cut.
+    `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`. This is an archival checkpoint for
+    the Phase 63-65 carried-state bridge, not the citation target for later April
+    benchmark and bundle rows, which are cited by their own artifact indices.
     <https://github.com/omarespejel/provable-transformer-vm/tree/03cc77f371275c8d9ef5f4244a23d3e35c98a41b>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).”
     GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with

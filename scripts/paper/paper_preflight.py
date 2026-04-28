@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Publication preflight checks for docs/paper artifacts.
+"""Publication preflight checks for the active docs/paper artifacts.
 
 Checks:
-1) citation integrity (numeric in-text citations must exist in local references section),
+1) active paper file existence and citation integrity,
 2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
-4) source-note presence in appendix-system-comparison,
+4) primary presentation guardrails and appendix-system-comparison source-note presence,
 5) active S-two bundle timing/size consistency against frozen artifact indices,
 6) unresolved publication snapshot placeholder detection,
-7) paper-2 claim evidence matrix completeness.
+7) Paper 3 proof-carrying composition claim-evidence matrix completeness,
+8) paper claim-language guardrails for recursion/compression/PCS overclaims.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ PUBLICATION_METADATA_FILES = [
 ]
 
 PAPER_FILES = [
+    "docs/paper/stark-transformer-alignment-2026.md",
     "docs/paper/abstract-tablero-2026.md",
     "docs/paper/tablero-typed-verifier-boundaries-2026.md",
     "docs/paper/appendix-tablero-claim-boundary.md",

@@ -12,7 +12,7 @@ The paper combines four evidence categories.
 2. **Empirical typed-boundary evidence.** The main measurements compare a typed-boundary
    verifier path against the heavier replay path it is designed to replace. A second
    emitted-source surface is also included as supporting positive evidence with a
-   smaller but still growing verifier-side gap.
+   modest verifier-side gain on the conservative publication row (checked point `2`, `1.22x`, timing policy `median_of_5_runs_from_microsecond_capture`; evidence: [TSV](evidence/phase43-source-root-feasibility-publication-2026-04.tsv), [JSON](evidence/phase43-source-root-feasibility-publication-2026-04.json)).
 3. **Negative evidence.** One narrower handoff object is reported as a bounded
    compactness no-go because it shrinks bytes without removing replay from the
    verifier path.

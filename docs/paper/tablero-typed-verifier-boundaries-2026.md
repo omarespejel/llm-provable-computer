@@ -586,8 +586,9 @@ with `N` because the optimized replay surface still scales linearly in `N`
 linear-in-`N`), while the typed-boundary verify surface stays sublinear in
 `N`. The constant-factor headline is honestly tightened: the
 implementation-dependent component of the original `~1000x` figure is a
-`~3.1-3.6x` factor, and the implementation-independent component is
-`~261-330x` at the checked frontier across the three layout families.
+`~3.1-3.6x` factor, and the residual replay-work component is
+`~261-330x` at the checked frontier across the three layout families for
+this source-derivation surface.
 
 Variance disclosure. The `manifest_finalize` bucket is host-noise
 sensitive at this scale: per-step state derivation over `1024` steps does
@@ -626,6 +627,9 @@ pattern is not singular to one replay surface.
 | ---------------------------- | ------------- | --------------------- | ---------------------- | ------- |
 | conservative publication row | `2`           | `0.857 ms`            | `1.045 ms`             | `1.22x` |
 
+
+Evidence handle: [TSV](evidence/phase43-source-root-feasibility-publication-2026-04.tsv)
+and [JSON](evidence/phase43-source-root-feasibility-publication-2026-04.json).
 
 The supporting point matters because it is a distinct emitted-source surface, not
 because it is large. The paper-facing claim here is only that the second surface clears
@@ -722,8 +726,9 @@ instead of JSON-serialize-then-hash narrows the headline ratio at the
 checked frontier to a host-noise band of `~261x`-`~330x` at median of
 nine. The `~3.1x`-`~3.6x` reduction is the implementation-cost component
 of the headline; the residual `~261x`-`~330x` band is
-implementation-independent within the constraints of this engineering
-laboratory and reflects work the typed boundary genuinely avoids.
+the remaining measured replay-work component for this implementation's
+source-derivation semantics and reflects work the typed boundary genuinely
+avoids.
 
 ### 8.3 No recursive-compression claim
 

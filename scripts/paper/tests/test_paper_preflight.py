@@ -143,6 +143,9 @@ def write_valid_backend_fixture(
 
 
 class PaperPreflightTests(unittest.TestCase):
+    def test_active_paper_file_set_includes_alignment_paper(self):
+        self.assertIn("docs/paper/stark-transformer-alignment-2026.md", MOD.PAPER_FILES)
+
     def test_parse_appendix_rows_handles_reordered_columns(self):
         variants = [
             ("Proof size", "`Artifact`", "backend"),
