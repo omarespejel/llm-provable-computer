@@ -48,10 +48,13 @@ use super::decoding::{
     Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DemoRescalingProfile,
     Phase30DecodingStepProofEnvelopeManifest, VerifiedPhase12DecodingChainManifest,
 };
+#[cfg(test)]
+use super::history_replay_projection_prover::Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent;
 use super::history_replay_projection_prover::{
     derive_phase43_history_replay_projection_source_root_claim,
     emit_phase43_history_replay_proof_native_source_chain_public_output_boundary,
     emit_phase44d_history_replay_projection_source_chain_public_output_boundary,
+    profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding,
     prove_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_compact_claim_envelope,
     verify_phase43_history_replay_projection_source_root_binding,
@@ -62,6 +65,7 @@ use super::history_replay_projection_prover::{
     Phase43HistoryReplayProjectionCompactProofEnvelope,
     Phase43HistoryReplayProjectionSourceRootClaim,
     Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
+    Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
@@ -140,6 +144,12 @@ pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_VERSION: &str =
     "stwo-tablero-replay-breakdown-optimized-benchmark-v1";
 pub const STWO_TABLERO_REPLAY_BREAKDOWN_OPTIMIZED_BENCHMARK_SCOPE: &str =
     "tablero_replay_baseline_optimized_decomposition_over_checked_layout_families_over_phase12_carry_aware_experimental_backend";
+pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION: &str =
+    "stwo-tablero-boundary-binding-microprofile-benchmark-v1";
+pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE: &str =
+    "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend";
+pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION: &str =
+    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
     "stwo-phase43-source-root-feasibility-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
@@ -201,6 +211,7 @@ const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
 const BENCHMARK_TIMING_UNIT_MILLISECONDS: &str = "milliseconds";
 const BENCHMARK_TIMING_MODE_DETERMINISTIC: &str = "deterministic_zeroed";
 const BENCHMARK_TIMING_MODE_SINGLE_RUN: &str = "measured_single_run";
+const BENCHMARK_TIMING_MODE_MICROPROFILE: &str = "measured_microprofile";
 const BENCHMARK_TIMING_POLICY_ZEROED: &str = "zero_when_capture_disabled";
 const BENCHMARK_TIMING_POLICY_SINGLE_RUN_MICROSECOND_CAPTURE: &str =
     "single_run_from_microsecond_capture";
@@ -421,6 +432,35 @@ pub struct StwoTableroReplayBreakdownReport {
     pub timing_unit: String,
     pub timing_runs: usize,
     pub rows: Vec<StwoTableroReplayBreakdownMeasurement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoTableroBoundaryBindingMicroprofileMeasurement {
+    pub family: String,
+    pub steps: usize,
+    pub profile_version: String,
+    pub relation: String,
+    pub component: String,
+    pub component_scope: String,
+    pub iterations: usize,
+    pub total_ms: f64,
+    pub mean_us: f64,
+    pub boundary_serialized_bytes: usize,
+    pub preprocessed_trace_log_size_count: usize,
+    pub projection_trace_log_size_count: usize,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoTableroBoundaryBindingMicroprofileReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoTableroBoundaryBindingMicroprofileMeasurement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1745,6 +1785,143 @@ pub fn run_stwo_tablero_replay_breakdown_optimized_benchmark_with_options(
     })
 }
 
+pub fn run_stwo_tablero_boundary_binding_microprofile_benchmark(
+    iterations: usize,
+) -> Result<StwoTableroBoundaryBindingMicroprofileReport> {
+    run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(iterations, false)
+}
+
+/// Engineering-only component microprofile for the Phase44D typed-boundary
+/// binding path after the compact proof has already been verified. Component
+/// rows are independent probes over the accepted boundary object; they are not
+/// an additive decomposition of the full verifier call because the production
+/// validators intentionally nest validation and recommit checks.
+pub fn run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(
+    iterations: usize,
+    capture_timings: bool,
+) -> Result<StwoTableroBoundaryBindingMicroprofileReport> {
+    if iterations == 0 {
+        return Err(VmError::InvalidConfig(
+            "tablero boundary-binding microprofile requires iterations > 0".to_string(),
+        ));
+    }
+
+    let cases = [
+        ("default", phase12_default_decoding_layout(), 1024usize),
+        ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
+        ("3x3", Phase12DecodingLayout::new(3, 3)?, 1024usize),
+    ];
+    let mut rows = Vec::new();
+    for (family, layout, steps) in cases {
+        let chain =
+            prove_phase12_decoding_demo_for_layout_steps_publication_phase12_carry_aware_experimental(
+                &layout,
+                steps,
+            )
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "tablero boundary-binding microprofile cannot construct {steps}-step proof-checked source chain on the carry-aware execution-proof surface for layout {}x{}: {}",
+                    layout.rolling_kv_pairs,
+                    layout.pair_width,
+                    error
+                ))
+            })?;
+        if chain.proof_backend_version != STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+            || !chain.steps.iter().all(|step| {
+                step.proof.proof_backend_version
+                    == STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+            })
+        {
+            return Err(VmError::UnsupportedProof(format!(
+                "tablero boundary-binding microprofile refuses to stamp `{}` for family {family} / {steps} steps unless every source proof uses backend `{}`",
+                STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE,
+                STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+            )));
+        }
+        let benchmark_input = phase44d_source_emission_benchmark_input(&chain, false)?;
+        if !verify_phase43_history_replay_projection_compact_claim_envelope(
+            &benchmark_input.compact_envelope.claim,
+            &benchmark_input.compact_envelope.proof,
+        )? {
+            return Err(VmError::UnsupportedProof(format!(
+                "tablero boundary-binding microprofile compact proof did not verify for family {family} / {steps} steps"
+            )));
+        }
+        let boundary_serialized_bytes =
+            phase44d_boundary_serialized_bytes(&benchmark_input.boundary)?;
+        let profile =
+            profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                &benchmark_input.boundary,
+                &benchmark_input.compact_envelope.claim,
+                iterations,
+                capture_timings,
+            )?;
+        append_tablero_boundary_binding_microprofile_rows(
+            &mut rows,
+            family,
+            steps,
+            boundary_serialized_bytes,
+            profile,
+        );
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "tablero boundary-binding microprofile component {} / {} / {} steps did not verify",
+            failed.family, failed.component, failed.steps
+        )));
+    }
+
+    Ok(StwoTableroBoundaryBindingMicroprofileReport {
+        benchmark_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: if capture_timings {
+            BENCHMARK_TIMING_MODE_MICROPROFILE.to_string()
+        } else {
+            BENCHMARK_TIMING_MODE_DETERMINISTIC.to_string()
+        },
+        timing_policy: if capture_timings {
+            format!("mean_of_{iterations}_iterations_from_microsecond_capture")
+        } else {
+            BENCHMARK_TIMING_POLICY_ZEROED.to_string()
+        },
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: if capture_timings { iterations } else { 0 },
+        rows,
+    })
+}
+
+fn append_tablero_boundary_binding_microprofile_rows(
+    rows: &mut Vec<StwoTableroBoundaryBindingMicroprofileMeasurement>,
+    family: &str,
+    steps: usize,
+    boundary_serialized_bytes: usize,
+    profile: Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
+) {
+    for component in profile.components {
+        rows.push(StwoTableroBoundaryBindingMicroprofileMeasurement {
+            family: family.to_string(),
+            steps,
+            profile_version: profile.profile_version.clone(),
+            relation: "typed Phase44D boundary-binding microprofile after compact proof verification"
+                .to_string(),
+            component: component.component,
+            component_scope: component.component_scope,
+            iterations: component.iterations,
+            total_ms: component.total_ms,
+            mean_us: component.mean_us,
+            boundary_serialized_bytes,
+            preprocessed_trace_log_size_count: profile.preprocessed_trace_log_size_count,
+            projection_trace_log_size_count: profile.projection_trace_log_size_count,
+            verified: component.verified,
+            note: format!(
+                "{} This row is an independent call-site probe over the accepted boundary object, not an exclusive/additive contribution to the full verifier.",
+                component.note
+            ),
+        });
+    }
+}
+
 fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
     step_counts: &[usize],
     capture_timings: bool,
@@ -2766,6 +2943,52 @@ pub fn save_stwo_tablero_replay_breakdown_report_tsv(
             row.equality_check_ms,
             row.verified,
             row.note,
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_tablero_boundary_binding_microprofile_report_json(
+    report: &StwoTableroBoundaryBindingMicroprofileReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, format!("{json}\n"))?;
+    Ok(())
+}
+
+pub fn save_stwo_tablero_boundary_binding_microprofile_report_tsv(
+    report: &StwoTableroBoundaryBindingMicroprofileReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\tprofile_version\trelation\tcomponent\tcomponent_scope\titerations\ttotal_ms\tmean_us\tboundary_serialized_bytes\tpreprocessed_trace_log_size_count\tprojection_trace_log_size_count\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.family,
+            row.steps,
+            row.profile_version,
+            row.relation,
+            row.component,
+            row.component_scope,
+            row.iterations,
+            format_timing_ms(row.total_ms),
+            format!("{:.3}", row.mean_us),
+            row.boundary_serialized_bytes,
+            row.preprocessed_trace_log_size_count,
+            row.projection_trace_log_size_count,
+            row.verified,
+            row.note.replace('\t', " "),
         ));
     }
     fs::write(path, out)?;
@@ -6908,6 +7131,50 @@ mod tests {
                 "row note must label the optimized verifier for {family}",
             );
         }
+    }
+
+    #[test]
+    fn tablero_boundary_binding_microprofile_rows_preserve_non_additive_scope() {
+        let profile = Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
+            profile_version: "phase44d-boundary-binding-microprofile-v1".to_string(),
+            total_steps: 1024,
+            pair_width: 2,
+            preprocessed_trace_log_size_count: 3,
+            projection_trace_log_size_count: 111,
+            components: vec![
+                Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
+                    component: "verify_phase44d_boundary_binding".to_string(),
+                    component_scope: "full_typed_boundary_binding_check".to_string(),
+                    iterations: 9,
+                    total_ms: 44.0,
+                    mean_us: 4888.889,
+                    verified: true,
+                    note: "full binding probe".to_string(),
+                },
+            ],
+        };
+        let mut rows = Vec::new();
+
+        append_tablero_boundary_binding_microprofile_rows(&mut rows, "2x2", 1024, 6545, profile);
+
+        assert_eq!(rows.len(), 1);
+        let row = &rows[0];
+        assert_eq!(row.family, "2x2");
+        assert_eq!(row.steps, 1024);
+        assert_eq!(row.iterations, 9);
+        assert_eq!(row.boundary_serialized_bytes, 6545);
+        assert!(row.verified);
+        assert!(
+            row.note.contains("not an exclusive/additive contribution"),
+            "microprofile row must reject additive interpretation"
+        );
+    }
+
+    #[test]
+    fn tablero_boundary_binding_microprofile_rejects_zero_iterations() {
+        let error = run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(0, false)
+            .expect_err("zero microprofile iterations must be rejected");
+        assert!(error.to_string().contains("iterations > 0"));
     }
 
     #[test]

@@ -4,6 +4,8 @@ use blake2::{
     Blake2bVar,
 };
 use serde::{Deserialize, Serialize};
+use std::hint::black_box;
+use std::time::{Duration, Instant};
 use stwo::core::air::Component;
 use stwo::core::channel::{Blake2sM31Channel, Channel, MerkleChannel};
 use stwo::core::fields::m31::BaseField;
@@ -449,6 +451,32 @@ pub struct Phase44DHistoryReplayProjectionExternalSourceRootAcceptance {
     pub terminal_boundary_logup_statement_commitment: String,
     pub compact_claim_useful_compression_boundary: bool,
     pub final_useful_compression_boundary: bool,
+}
+
+pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION: &str =
+    "phase44d-boundary-binding-microprofile-v1";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
+    pub component: String,
+    pub component_scope: String,
+    pub iterations: usize,
+    pub total_ms: f64,
+    pub mean_us: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
+    pub profile_version: String,
+    pub total_steps: usize,
+    pub pair_width: usize,
+    pub preprocessed_trace_log_size_count: usize,
+    pub projection_trace_log_size_count: usize,
+    pub components: Vec<Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -2464,6 +2492,211 @@ pub fn verify_phase44d_history_replay_projection_source_chain_public_output_boun
             .emitted_root_artifact
             .emitted_canonical_source_root,
     )
+}
+
+fn duration_ms(duration: Duration) -> f64 {
+    duration.as_secs_f64() * 1000.0
+}
+
+fn measure_phase44d_boundary_binding_microprofile_component<F>(
+    component: &str,
+    component_scope: &str,
+    iterations: usize,
+    capture_timings: bool,
+    note: &str,
+    mut verify_once: F,
+) -> Result<Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent>
+where
+    F: FnMut() -> Result<bool>,
+{
+    let effective_iterations = if capture_timings { iterations } else { 1 };
+    let mut elapsed = Duration::ZERO;
+    let mut verified = true;
+    for _ in 0..effective_iterations {
+        if capture_timings {
+            let started = Instant::now();
+            let ok = black_box(verify_once()?);
+            elapsed += started.elapsed();
+            verified &= ok;
+        } else {
+            verified &= black_box(verify_once()?);
+        }
+    }
+    let total_ms = if capture_timings {
+        duration_ms(elapsed)
+    } else {
+        0.0
+    };
+    let mean_us = if capture_timings {
+        (total_ms * 1000.0) / effective_iterations as f64
+    } else {
+        0.0
+    };
+    Ok(
+        Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
+            component: component.to_string(),
+            component_scope: component_scope.to_string(),
+            iterations: effective_iterations,
+            total_ms,
+            mean_us,
+            verified,
+            note: note.to_string(),
+        },
+    )
+}
+
+pub fn profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_claim: &Phase43HistoryReplayProjectionCompactClaim,
+    iterations: usize,
+    capture_timings: bool,
+) -> Result<Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile> {
+    if iterations == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase44D boundary-binding microprofile iterations must be greater than zero"
+                .to_string(),
+        ));
+    }
+
+    let public_output = &boundary.source_emission_public_output;
+    let source_emission = &public_output.source_emission;
+    let source_claim = &source_emission.source_claim;
+    let emitted_root_artifact = &source_emission.emitted_root_artifact;
+    let terminal_elements = phase44_terminal_boundary_elements_from_compact_claim(compact_claim)?;
+
+    let mut components = Vec::new();
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "source_emitted_root_artifact_recommit",
+        "phase44d_blake2b_nested_recommit",
+        iterations,
+        capture_timings,
+        "Recompute the Phase44D source-emitted root artifact commitment and compare it to the emitted artifact commitment.",
+        || {
+            Ok(commit_phase44d_history_replay_projection_source_emitted_root_artifact(
+                black_box(emitted_root_artifact),
+            )? == black_box(&emitted_root_artifact.artifact_commitment).as_str())
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "source_emission_recommit",
+        "phase44d_blake2b_nested_recommit",
+        iterations,
+        capture_timings,
+        "Recompute the Phase44D source-emission bundle commitment and compare it to the emitted bundle commitment.",
+        || {
+            Ok(commit_phase44d_history_replay_projection_source_emission(black_box(
+                source_emission,
+            ))? == black_box(&source_emission.emission_commitment).as_str())
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "source_emission_public_output_recommit",
+        "phase44d_blake2b_nested_recommit",
+        iterations,
+        capture_timings,
+        "Recompute the Phase44D source-emission public-output commitment and compare it to the emitted public-output commitment.",
+        || {
+            Ok(
+                commit_phase44d_history_replay_projection_source_emission_public_output(
+                    black_box(public_output),
+                )? == black_box(&public_output.public_output_commitment).as_str(),
+            )
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "source_chain_public_output_boundary_recommit",
+        "phase44d_blake2b_nested_recommit",
+        iterations,
+        capture_timings,
+        "Recompute the outer Phase44D typed-boundary commitment and compare it to the emitted boundary commitment.",
+        || {
+            Ok(
+                commit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+                    black_box(boundary),
+                )?
+                    == black_box(&boundary.source_chain_public_output_boundary_commitment).as_str(),
+            )
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "compact_claim_from_source_root_claim",
+        "compact_claim_reconstruction",
+        iterations,
+        capture_timings,
+        "Reconstruct the compact projection claim from the emitted source-root claim and compare it to the supplied compact claim.",
+        || Ok(&compact_claim_from_source_root_claim(black_box(source_claim)) == black_box(compact_claim)),
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "validate_phase43_projection_compact_claim",
+        "compact_claim_validation",
+        iterations,
+        capture_timings,
+        "Validate the compact Phase43 projection claim schema, versions, flags, shapes, roots, and terminal boundary.",
+        || {
+            validate_phase43_projection_compact_claim(black_box(compact_claim))?;
+            Ok(true)
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "phase44_terminal_public_boundary_logup_sum",
+        "terminal_boundary_public_sum",
+        iterations,
+        capture_timings,
+        "Recompute the terminal-boundary public LogUp contribution using precomputed transcript elements; this is a fixed-width boundary-row operation, not a per-step replay.",
+        || {
+            let public_sum = phase44_terminal_public_boundary_logup_sum(
+                black_box(compact_claim.total_steps),
+                black_box(&compact_claim.terminal_boundary),
+                black_box(&terminal_elements),
+            )?;
+            Ok(secure_field_limbs(public_sum).as_slice()
+                == black_box(&source_claim.terminal_boundary_public_logup_sum_limbs).as_slice())
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "verify_phase43_source_root_binding",
+        "source_root_binding_compact_claim_check",
+        iterations,
+        capture_timings,
+        "Run the complete source-root-to-compact-claim binding check used by Phase44D after compact proof verification; this component intentionally includes its internal validation and LogUp statement recomputation.",
+        || {
+            verify_phase43_history_replay_projection_source_root_binding(
+                black_box(source_claim),
+                black_box(compact_claim),
+            )
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "verify_phase44d_boundary_binding",
+        "full_typed_boundary_binding_check",
+        iterations,
+        capture_timings,
+        "Run the full Phase44D typed-boundary binding function used by the benchmark after compact proof verification; this is the end-to-end binding-only surface and is not additive with the independent subcomponent probes above.",
+        || {
+            Ok(verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                black_box(boundary),
+                black_box(compact_claim),
+            )?
+            .final_useful_compression_boundary)
+        },
+    )?);
+    components.push(measure_phase44d_boundary_binding_microprofile_component(
+        "compact_claim_from_source_root_claim_for_public_sum",
+        "compact_claim_reconstruction_for_logup",
+        iterations,
+        capture_timings,
+        "Repeat the compact-claim reconstruction at the call site that prepares terminal-boundary LogUp inputs and compare it to the supplied compact claim.",
+        || Ok(&compact_claim_from_source_root_claim(black_box(source_claim)) == black_box(compact_claim)),
+    )?);
+
+    Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
+        profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
+        total_steps: source_claim.total_steps,
+        pair_width: source_claim.pair_width,
+        preprocessed_trace_log_size_count: source_claim.preprocessed_trace_log_sizes.len(),
+        projection_trace_log_size_count: source_claim.projection_trace_log_sizes.len(),
+        components,
+    })
 }
 
 pub fn assess_phase43_history_replay_projection_boundary(
@@ -5709,6 +5942,29 @@ mod tests {
     use std::sync::OnceLock;
     use stwo::core::pcs::TreeVec;
     use stwo_constraint_framework::assert_constraints_on_trace;
+
+    #[test]
+    fn phase44d_boundary_binding_microprofile_component_capture_disabled_runs_once() {
+        let mut calls = 0usize;
+        let component = measure_phase44d_boundary_binding_microprofile_component(
+            "synthetic_component",
+            "synthetic_scope",
+            9,
+            false,
+            "synthetic no-timing probe",
+            || {
+                calls += 1;
+                Ok(true)
+            },
+        )
+        .expect("capture-disabled microprofile component should run");
+
+        assert_eq!(calls, 1);
+        assert_eq!(component.iterations, 1);
+        assert_eq!(component.total_ms, 0.0);
+        assert_eq!(component.mean_us, 0.0);
+        assert!(component.verified);
+    }
 
     relation!(Phase44DMinimalBoundaryElements, 3);
 
