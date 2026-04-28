@@ -1,6 +1,7 @@
 use std::ffi::OsString;
 use std::fs;
 use std::io::{Read, Write};
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
@@ -116,6 +117,8 @@ use llm_provable_computer::{
     run_stwo_phase71_handoff_receipt_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
+    run_stwo_tablero_boundary_binding_microprofile_benchmark,
+    run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options,
     run_stwo_tablero_replay_breakdown_benchmark,
     run_stwo_tablero_replay_breakdown_benchmark_with_options,
     run_stwo_tablero_replay_breakdown_optimized_benchmark,
@@ -152,6 +155,8 @@ use llm_provable_computer::{
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
     save_stwo_shared_table_reuse_benchmark_report_json,
     save_stwo_shared_table_reuse_benchmark_report_tsv,
+    save_stwo_tablero_boundary_binding_microprofile_report_json,
+    save_stwo_tablero_boundary_binding_microprofile_report_tsv,
     save_stwo_tablero_replay_breakdown_report_json, save_stwo_tablero_replay_breakdown_report_tsv,
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
@@ -628,6 +633,23 @@ enum Command {
         /// Optional file where the benchmark JSON will be written.
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Microprofile the typed Phase44D boundary-binding verifier path across the checked Tablero layout families. Engineering-only, issue #291.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
+    #[command(name = "bench-stwo-tablero-boundary-binding-microprofile")]
+    BenchStwoTableroBoundaryBindingMicroprofile {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Inner iterations used to amortize each component probe.
+        #[arg(long = "iterations", default_value = "256")]
+        iterations: NonZeroUsize,
         /// Capture host-dependent wall-clock timings in the report output.
         #[arg(long = "capture-timings", default_value_t = false)]
         capture_timings: bool,
@@ -2210,6 +2232,17 @@ fn run() -> llm_provable_computer::Result<()> {
         } => bench_stwo_tablero_replay_breakdown_optimized_command(
             &output_tsv,
             output_json.as_deref(),
+            capture_timings,
+        )?,
+        Command::BenchStwoTableroBoundaryBindingMicroprofile {
+            output_tsv,
+            output_json,
+            iterations,
+            capture_timings,
+        } => bench_stwo_tablero_boundary_binding_microprofile_command(
+            &output_tsv,
+            output_json.as_deref(),
+            iterations.get(),
             capture_timings,
         )?,
         Command::BenchStwoPhase12ArithmeticBudgetMap {
@@ -4158,6 +4191,63 @@ fn bench_stwo_tablero_replay_breakdown_optimized_command(
                 row.manifest_finalize_ms,
                 row.equality_check_ms,
                 row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_tablero_boundary_binding_microprofile_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    iterations: usize,
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = iterations;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Tablero boundary-binding microprofile requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Tablero boundary-binding microprofile")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if capture_timings {
+            run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(iterations, true)?
+        } else {
+            run_stwo_tablero_boundary_binding_microprofile_benchmark(iterations)?
+        };
+        save_stwo_tablero_boundary_binding_microprofile_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_tablero_boundary_binding_microprofile_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "tablero_boundary_binding_microprofile: family={} steps={} component={} mean_us={} verified={}",
+                row.family, row.steps, row.component, row.mean_us, row.verified
             );
         }
         Ok(())
@@ -13872,6 +13962,8 @@ mod cli_dispatch_tests {
     use clap::Parser;
     use std::ffi::OsString;
     use std::path::Path;
+    #[cfg(feature = "stwo-backend")]
+    use std::path::PathBuf;
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {
@@ -15394,6 +15486,106 @@ mod cli_dispatch_tests {
             .expect("tablero optimized negative-path test thread should not panic");
     }
 
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn tablero_boundary_binding_microprofile_command_parses_iterations_and_timings() {
+        let cli = Cli::try_parse_from(normalize_args(
+            [
+                "tvm",
+                "bench-stwo-tablero-boundary-binding-microprofile",
+                "--output-tsv",
+                "microprofile.tsv",
+                "--output-json",
+                "microprofile.json",
+                "--iterations",
+                "128",
+                "--capture-timings",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        ))
+        .expect("tablero boundary-binding microprofile command should parse");
+
+        let Command::BenchStwoTableroBoundaryBindingMicroprofile {
+            output_tsv,
+            output_json,
+            iterations,
+            capture_timings,
+        } = cli.command
+        else {
+            panic!("expected tablero boundary-binding microprofile command");
+        };
+
+        assert_eq!(output_tsv, PathBuf::from("microprofile.tsv"));
+        assert_eq!(output_json, Some(PathBuf::from("microprofile.json")));
+        assert_eq!(iterations.get(), 128);
+        assert!(capture_timings);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn tablero_boundary_binding_microprofile_command_rejects_zero_iterations_at_parse_time() {
+        assert!(Cli::try_parse_from(normalize_args(
+            [
+                "tvm",
+                "bench-stwo-tablero-boundary-binding-microprofile",
+                "--output-tsv",
+                "microprofile.tsv",
+                "--iterations",
+                "0",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        ))
+        .is_err());
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
+    fn tablero_boundary_binding_microprofile_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-tablero-boundary-binding-microprofile"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn tablero_boundary_binding_microprofile_command_rejects_identical_output_paths_before_run() {
+        let cli = Cli::try_parse_from(normalize_args(
+            [
+                "tvm",
+                "bench-stwo-tablero-boundary-binding-microprofile",
+                "--output-tsv",
+                "same.path",
+                "--output-json",
+                "same.path",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        ))
+        .expect("tablero boundary-binding microprofile command should parse");
+
+        let Command::BenchStwoTableroBoundaryBindingMicroprofile {
+            output_tsv,
+            output_json,
+            iterations,
+            capture_timings,
+        } = cli.command
+        else {
+            panic!("expected tablero boundary-binding microprofile command");
+        };
+
+        let err = super::bench_stwo_tablero_boundary_binding_microprofile_command(
+            &output_tsv,
+            output_json.as_deref(),
+            iterations.get(),
+            capture_timings,
+        )
+        .expect_err("identical output paths must fail before benchmark execution");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
     #[test]
     #[cfg(unix)]
     fn primitive_benchmark_rejects_dangling_symlink_output_paths() {
@@ -15863,6 +16055,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "bench-stwo-phase44d-source-emission-experimental-3x3-reuse"
                 | "bench-stwo-tablero-replay-breakdown"
                 | "bench-stwo-tablero-replay-breakdown-optimized"
+                | "bench-stwo-tablero-boundary-binding-microprofile"
                 | "bench-stwo-phase12-arithmetic-budget-map"
                 | "bench-stwo-phase44d-rescaled-exploratory"
                 | "bench-stwo-phase71-handoff-receipt-reuse"
