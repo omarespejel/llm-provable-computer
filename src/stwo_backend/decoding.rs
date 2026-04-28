@@ -14942,6 +14942,7 @@ mod tests {
     use crate::{ProgramCompiler, TransformerVmConfig};
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
+    use std::collections::VecDeque;
     use std::sync::OnceLock;
 
     #[derive(Debug, Clone)]
@@ -14999,6 +15000,42 @@ mod tests {
         }
     }
 
+    const SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY: usize = 32;
+
+    #[derive(Default)]
+    struct SamplePhase12StepProofCache {
+        order: VecDeque<(String, Vec<i16>)>,
+        proofs: HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>,
+    }
+
+    impl SamplePhase12StepProofCache {
+        fn get(&self, key: &(String, Vec<i16>)) -> Option<VanillaStarkExecutionProof> {
+            self.proofs.get(key).cloned()
+        }
+
+        fn insert(&mut self, key: (String, Vec<i16>), proof: VanillaStarkExecutionProof) {
+            if self.proofs.contains_key(&key) {
+                self.proofs.insert(key, proof);
+                return;
+            }
+            self.order.push_back(key.clone());
+            self.proofs.insert(key, proof);
+            while self.proofs.len() > SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY {
+                if let Some(evicted) = self.order.pop_front() {
+                    self.proofs.remove(&evicted);
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    fn sample_phase12_step_proof_step_bound(program: &Program) -> usize {
+        decoding_program_step_limit(program)
+            .expect("step limit")
+            .max(128)
+    }
+
     /// Cache real, proof-checked Phase 12 decoding step proofs keyed on
     /// `(layout_commitment, initial_memory)`.
     ///
@@ -15014,15 +15051,13 @@ mod tests {
     /// To keep all `sample_phase12_step_proof` call sites unchanged while
     /// still producing real proofs that survive the hardened verifier, we
     /// route the fixture through `prove_execution_stark_with_backend_and_options`
-    /// once per unique `(layout, initial_memory)` pair and cache the result.
+    /// once per unique `(layout, initial_memory)` pair and cache a bounded
+    /// working set of results.
     /// This mirrors the `OnceLock`-cached pattern already used by
     /// `sample_phase30_chain_and_manifest` after commit `4229d54`.
-    fn cached_phase12_step_proof_cache(
-    ) -> &'static std::sync::Mutex<HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>> {
-        static CACHE: OnceLock<
-            std::sync::Mutex<HashMap<(String, Vec<i16>), VanillaStarkExecutionProof>>,
-        > = OnceLock::new();
-        CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()))
+    fn cached_phase12_step_proof_cache() -> &'static std::sync::Mutex<SamplePhase12StepProofCache> {
+        static CACHE: OnceLock<std::sync::Mutex<SamplePhase12StepProofCache>> = OnceLock::new();
+        CACHE.get_or_init(|| std::sync::Mutex::new(SamplePhase12StepProofCache::default()))
     }
 
     fn sample_phase12_step_proof(
@@ -15036,15 +15071,16 @@ mod tests {
             .expect("phase12 step-proof cache poisoned")
             .get(&cache_key)
         {
-            return cached.clone();
+            return cached;
         }
         let program =
             decoding_step_v2_program_with_initial_memory(layout, initial_memory).expect("program");
         // Match the canonical demo prover wiring in
         // `prove_phase12_decoding_demo_for_layout_initial_memories_with_stark_options`:
         // single-layer percepta-reference config with `AverageHard` attention,
-        // the production-v1 stark options, and the same `128`-step bound the
-        // canonical demo uses.
+        // the production-v1 stark options, and a step bound derived from the
+        // generated program with the canonical demo's 128-step floor.
+        let step_bound = sample_phase12_step_proof_step_bound(&program);
         let config = TransformerVmConfig {
             num_layers: 1,
             attention_mode: Attention2DMode::AverageHard,
@@ -15055,7 +15091,7 @@ mod tests {
             .expect("compile model");
         let proof = prove_execution_stark_with_backend_and_options(
             &model,
-            128,
+            step_bound,
             StarkProofBackend::Stwo,
             production_v1_stark_options(),
         )
@@ -15065,6 +15101,40 @@ mod tests {
             .expect("phase12 step-proof cache poisoned")
             .insert(cache_key, proof.clone());
         proof
+    }
+
+    #[test]
+    fn sample_phase12_step_proof_cache_evicts_beyond_bounded_working_set() {
+        let mut cache = SamplePhase12StepProofCache::default();
+        let proof = sample_step_proof(vec![0; 23], vec![0; 23]);
+        for index in 0..(SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 3) {
+            cache.insert(
+                (format!("layout-{index}"), vec![index as i16]),
+                proof.clone(),
+            );
+        }
+
+        assert_eq!(cache.proofs.len(), SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY);
+        assert!(cache.get(&("layout-0".to_string(), vec![0])).is_none());
+        assert!(cache
+            .get(&(
+                format!("layout-{}", SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 2),
+                vec![(SAMPLE_PHASE12_STEP_PROOF_CACHE_CAPACITY + 2) as i16],
+            ))
+            .is_some());
+    }
+
+    #[test]
+    fn sample_phase12_step_proof_uses_program_derived_step_bound() {
+        let layout = Phase12DecodingLayout::new(4, 8).expect("wide valid layout");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let derived = decoding_program_step_limit(&program).expect("step limit");
+
+        assert!(
+            derived > 128,
+            "test layout should require a bound above the historical fixture floor"
+        );
+        assert_eq!(sample_phase12_step_proof_step_bound(&program), derived);
     }
 
     fn phase12_first_execution_carry_for_steps(
