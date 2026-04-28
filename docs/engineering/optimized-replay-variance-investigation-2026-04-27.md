@@ -8,13 +8,21 @@ ms)`. Issue #295 asked whether the `25 ms` gap between `2x2` and `3x3`
 is a structural signal, host noise, or an artifact of the
 representative-run picker.
 
+Measurement-quality status: **NO-GO for publication-grade family-ordering
+claims**. The capture below is engineering-only because it was taken in one
+normal interactive desktop session, without host quieting, and without multiple
+independent median-of-25 sessions. It is still useful for issue #295 because it
+shows the observed `2x2`/`3x3` gap is much smaller than the host-noise band; it
+must not be cited as a stable ordering result.
+
 ## Method
 
 Captured 25 independent runs of
 `bench-stwo-tablero-replay-breakdown-optimized` at `N=1024` for all
 three checked layout families, on the same host and in the same shell
-session, against repository commit `51ac0f6` (the post-PR-292 `main`
-HEAD as of 2026-04-27). Each run produced one row per family with
+session, against the carry-aware experimental backend at repository commit
+`51ac0f6` (the post-PR-292 `main` HEAD as of 2026-04-27). Timings were captured
+with the benchmark's microsecond timing mode (`--capture-timings`). Each run produced one row per family with
 `replay_total_ms` and the five component timings. The 25 raw run JSONs
 are checked in under
 `docs/engineering/evidence/variance-study-2026-04/runs-25/run-1.json`
@@ -44,12 +52,13 @@ the same ordering as the canonical median-of-9 evidence (`2x2 2146 <
 extreme outliers**: the `2x2` family's stdev (`1706 ms`) is comparable
 to its median, and its maximum (`10291.77 ms`) is `5.4×` the median.
 
-Note that the family ordering between `2x2` and `3x3` at the median
-flips between sample sizes: median-of-9 puts the gap at `25 ms`, the
-12-sample run from the original (interrupted) capture put it at
-`97 ms`, and this 25-sample re-capture puts it at `101 ms`. All three
-gaps are well below the per-family IQR (`>=320 ms` for all three
-families) and the per-family stdev (`>=750 ms` for all three).
+The median ordering between `2x2` and `3x3` does **not** flip across
+the cited sample sizes. What changes is the gap magnitude: median-of-9
+puts the gap at `25 ms`, the 12-sample run from the original
+(interrupted) capture put it at `97 ms`, and this 25-sample re-capture
+puts it at `101 ms`. All three gaps are well below the per-family IQR
+(`>=320 ms` for all three families) and the per-family stdev
+(`>=750 ms` for all three).
 
 ## Where the variance lives
 
@@ -107,8 +116,9 @@ median-of-9 sampling.
 
 The canonical optimized-replay TSV/JSON evidence stays as-is (no
 re-aggregation). We add this note to the engineering corpus and close
-issue #295 referencing it. We do **not** modify the paper text on the
-basis of these 25 ad-hoc samples; if a future submission requires a
+issue #295 by documenting that the apparent family-ordering gap is
+below the observed host-noise band. We do **not** modify the paper text
+based on these 25 ad-hoc samples; if a future submission requires a
 tighter bound on the family ordering, the right move is to rerun the
 benchmark on a quieter host (or a constrained-environment runner) at
 `BENCH_RUNS in {25, 49}` and re-aggregate using the same
