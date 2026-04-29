@@ -1,0 +1,144 @@
+{
+  "schema": "zkai-stwo-statement-bound-transformer-block-plan-v1",
+  "date": "2026-04-30",
+  "status": "design_gate",
+  "decision": "GO_TO_IMPLEMENTATION_ONLY_AFTER_CRITERIA_ARE_MET",
+  "current_baseline": {
+    "statement_receipt_schema": "zkai-statement-receipt-v1",
+    "proof_system": "stwo-transparent-stark",
+    "proof_system_version": "stwo-phase10-linear-block-v4-with-lookup",
+    "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
+    "statement_kind": "transformer-primitive",
+    "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
+    "evidence": [
+      "docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md",
+      "docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json",
+      "docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md",
+      "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json"
+    ],
+    "mutation_result": {
+      "proof_only": {
+        "decision": "NO_GO_FOR_METADATA_RELABELING_BY_ITSELF",
+        "mutations_rejected": 1,
+        "mutations_checked": 14
+      },
+      "statement_envelope": {
+        "decision": "GO_FOR_STATEMENT_BINDING",
+        "mutations_rejected": 14,
+        "mutations_checked": 14
+      }
+    },
+    "agent_composition_result": {
+      "decision": "GO_FOR_NESTED_STATEMENT_RECEIPT_CALLBACK",
+      "mutations_rejected": 36,
+      "mutations_checked": 36
+    }
+  },
+  "target": {
+    "name": "rmsnorm-affine-residual-block-v1",
+    "statement_kind": "transformer-block",
+    "purpose": "prove one small transformer-shaped block while binding the proof to model, input, output, config, public instance, verifier identity, and evidence manifest labels",
+    "width": 4,
+    "integer_domain": "signed fixed-width quantized M31-compatible integers",
+    "operations": [
+      {
+        "id": "rmsnorm_scale_lookup",
+        "description": "bind a fixed-width normalization denominator or scale lookup to the block config and input vector"
+      },
+      {
+        "id": "quantized_affine_projection",
+        "description": "apply a committed quantized weight matrix and bias vector to the normalized vector"
+      },
+      {
+        "id": "residual_add",
+        "description": "add the original input vector back into the projected vector with explicit range and overflow policy"
+      }
+    ],
+    "public_commitments": [
+      "model_artifact_commitment",
+      "model_config_commitment",
+      "input_commitment",
+      "output_commitment",
+      "public_instance_commitment",
+      "proof_commitment",
+      "verifying_key_commitment",
+      "setup_commitment",
+      "verifier_domain",
+      "proof_system_version",
+      "evidence_manifest_commitment"
+    ],
+    "minimum_artifacts": [
+      "program_or_air_identifier",
+      "model_weights_fixture",
+      "input_vector_fixture",
+      "output_vector_fixture",
+      "proof_object",
+      "statement_receipt",
+      "mutation_suite"
+    ]
+  },
+  "go_criteria": [
+    {
+      "id": "native_stwo_proof_accepts_honest_block",
+      "criterion": "A native Stwo verifier accepts one honest transformer-block instance with the declared width, operations, and public instance."
+    },
+    {
+      "id": "receipt_binds_all_public_commitments",
+      "criterion": "The zkAI statement receipt binds every target.public_commitments field into the statement commitment."
+    },
+    {
+      "id": "relabeling_suite_rejects_all_statement_mutations",
+      "criterion": "The mutation suite rejects model, input, output, config, proof, public-instance, verifier-domain, proof-system-version, setup, verifying-key, and evidence-manifest relabeling."
+    },
+    {
+      "id": "agent_step_composition_accepts_baseline",
+      "criterion": "The composed agent-step receipt accepts the honest transformer-block statement receipt as its model subreceipt."
+    },
+    {
+      "id": "agent_step_composition_rejects_nested_relabels",
+      "criterion": "At least one nested statement-receipt relabeling and one cross-layer agent-field relabeling are rejected through the Rust callback path."
+    }
+  ],
+  "no_go_criteria": [
+    {
+      "id": "proof_generator_cannot_emit_block_proof",
+      "criterion": "If the Stwo path cannot emit an honest proof for the declared block without removing normalization or residual semantics, stop and record a NO-GO."
+    },
+    {
+      "id": "verifier_accepts_statement_relabeling",
+      "criterion": "If any statement receipt mutation is accepted after recomputing unrelated digests, stop and record a NO-GO."
+    },
+    {
+      "id": "target_collapses_to_linear_toy",
+      "criterion": "If the target drops both normalization and residual structure, stop and do not present it as a transformer-block result."
+    },
+    {
+      "id": "public_instance_not_bound",
+      "criterion": "If the verifier accepts a proof whose public instance no longer matches the receipt commitment, stop and record a NO-GO."
+    }
+  ],
+  "non_claims": [
+    "This is not full transformer inference.",
+    "This is not an agent reasoning proof.",
+    "This is not a throughput or latency benchmark.",
+    "This is not backend independence.",
+    "This is not recursive or on-chain verification.",
+    "This does not claim that the existing linear-block primitive already proves transformer-block semantics.",
+    "This does not claim model truthfulness, policy compliance, or tool-output truth."
+  ],
+  "validation_commands": [
+    "python3 scripts/zkai_stwo_transformer_block_plan.py --json",
+    "python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan"
+  ],
+  "next_implementation_pr": {
+    "title": "Implement Stwo zkAI statement-bound transformer-block harness",
+    "minimum_scope": [
+      "honest fixture generation",
+      "native Stwo proof verification for the declared block",
+      "statement receipt construction",
+      "statement relabeling mutation suite",
+      "agent-step callback composition check"
+    ],
+    "merge_blocker": "Do not merge an implementation PR as GO unless all go_criteria pass and no_go_criteria remain false."
+  }
+}

@@ -118,8 +118,10 @@ The agent/action receipt follow-up has landed: the checked Stwo statement
 receipt is consumed as a proved model subreceipt, and the Rust callback verifier
 now validates that nested receipt against the outer agent receipt fields.
 
-The next useful step is to move from this bounded primitive to a Stwo-native
-statement-bound block with more transformer structure and the same receipt
+The next useful step is now pinned in
+`docs/engineering/zkai-stwo-statement-bound-transformer-block-gate-2026-04-30.md`:
+move from this bounded primitive to a width-4 Stwo-native statement-bound block
+with normalization, affine projection, residual structure, and the same receipt
 discipline.
 
 Do not use this gate to claim end-to-end verifiable intelligence. It is one
