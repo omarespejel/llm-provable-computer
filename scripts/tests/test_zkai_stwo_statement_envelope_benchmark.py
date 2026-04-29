@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -79,6 +80,13 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "verifying-key commitment mismatch"):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
+    def test_statement_envelope_rejects_proof_backend_version_swap(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        envelope["stwo_proof"]["proof_backend_version"] = "stwo-phase999-invalid"
+
+        with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "proof backend version"):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
     def test_statement_envelope_rejects_missing_artifact_reference_fail_closed(self) -> None:
         envelope = BENCH.baseline_envelope()
         del envelope["artifacts"]["program_path"]
@@ -112,6 +120,19 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
 
         with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "integer final_state.acc"):
             BENCH._mutate_final_state_acc(proof)
+
+    def test_load_json_decode_errors_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            bad_json = tmp / "bad.json"
+            bad_json.write_text("{", encoding="utf-8")
+            bad_gzip = tmp / "bad.json.gz"
+            bad_gzip.write_bytes(b"not gzip")
+
+            with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "failed to load JSON artifact"):
+                BENCH._load_json(bad_json)
+            with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "failed to load JSON artifact"):
+                BENCH._load_json(bad_gzip)
 
     def test_stwo_verify_times_out_fail_closed(self) -> None:
         with mock.patch.object(
@@ -192,6 +213,21 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with mock.patch.object(BENCH, "run_benchmark", return_value=payload):
             with mock.patch("sys.stdout", new_callable=io.StringIO):
                 self.assertEqual(BENCH.main(["--json"]), 1)
+
+    def test_main_records_effective_argv_override(self) -> None:
+        payload = valid_pass_payload()
+        captured = {}
+
+        def fake_run_benchmark(*, command, external_verify=BENCH.stwo_verify):  # noqa: ARG001
+            captured["command"] = command
+            return payload
+
+        with mock.patch.object(BENCH, "run_benchmark", side_effect=fake_run_benchmark):
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                self.assertEqual(BENCH.main(["--json"]), 0)
+
+        self.assertEqual(captured["command"][1], "scripts/zkai_stwo_statement_envelope_benchmark.py")
+        self.assertEqual(captured["command"][2], "--json")
 
     def test_tsv_columns_are_stable(self) -> None:
         payload = {

@@ -111,11 +111,14 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 
 
 def _load_json(path: pathlib.Path) -> Any:
-    if path.suffix == ".gz":
-        with gzip.open(path, "rt", encoding="utf-8") as handle:
+    try:
+        if path.suffix == ".gz":
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
+                return json.load(handle)
+        with path.open("r", encoding="utf-8") as handle:
             return json.load(handle)
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError, gzip.BadGzipFile) as err:
+        raise StwoEnvelopeError(f"failed to load JSON artifact {path}: {err}") from err
 
 
 def _required_dict(value: Any, label: str) -> dict[str, Any]:
@@ -481,6 +484,8 @@ def verify_statement_envelope(
         raise StwoEnvelopeError("unsupported envelope schema")
     statement = _required_dict(envelope.get("statement"), "statement")
     proof = stwo_proof_payload(envelope)
+    if proof.get("proof_backend_version") != statement.get("proof_system_version"):
+        raise StwoEnvelopeError("proof backend version does not match statement policy")
     if envelope.get("statement_commitment") != statement_commitment(statement):
         raise StwoEnvelopeError("statement_commitment mismatch")
     _check_statement_policy(statement)
@@ -705,7 +710,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-tsv", type=pathlib.Path, help="write TSV result to this path")
     args = parser.parse_args(argv)
 
-    payload = run_benchmark(command=[os.environ.get("PYTHON", "python3"), *sys.argv])
+    effective_argv = list(argv) if argv is not None else sys.argv[1:]
+    script_path = str(pathlib.Path(__file__).relative_to(ROOT))
+    payload = run_benchmark(
+        command=[os.environ.get("PYTHON", "python3"), script_path, *effective_argv]
+    )
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)
     if args.write_json:

@@ -6,8 +6,8 @@ stwo-proof-only	model_artifact_commitment_relabeling	artifact_binding	True	True	
 stwo-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	none
 stwo-proof-only	output_commitment_relabeling	artifact_binding	True	True	False	accepted	none
 stwo-proof-only	proof_commitment_relabeling	artifact_binding	True	True	False	accepted	none
-stwo-proof-only	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s
-     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmp_9xzmqqq/proof.json --reexecute`
+stwo-proof-only	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmp247fmrsq/proof.json --reexecute`
 error: invalid config: invalid transformer equivalence fingerprint"
 stwo-proof-only	proof_system_version_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
 stwo-proof-only	public_instance_commitment_relabeling	public_instance_binding	True	True	False	accepted	none
@@ -23,7 +23,7 @@ stwo-statement-envelope	model_id_relabeling	statement_policy	True	False	True	sta
 stwo-statement-envelope	output_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	output commitment mismatch
 stwo-statement-envelope	proof_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	proof commitment mismatch
 stwo-statement-envelope	proof_public_claim_relabeling	external_proof_verifier	True	False	True	artifact_binding	proof artifact does not match envelope proof
-stwo-statement-envelope	proof_system_version_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for proof_system_version
+stwo-statement-envelope	proof_system_version_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	proof backend version does not match statement policy
 stwo-statement-envelope	public_instance_commitment_relabeling	public_instance_binding	True	False	True	public_instance_binding	public-instance commitment mismatch
 stwo-statement-envelope	setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup commitment mismatch
 stwo-statement-envelope	statement_commitment_relabeling	statement_commitment	True	False	True	statement_commitment	statement_commitment mismatch
