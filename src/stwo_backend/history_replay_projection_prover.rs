@@ -84,7 +84,7 @@ pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44: &str =
     "phase44_projection_root_claim_compact_local_air_no_full_trace";
 pub const STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SOURCE_BINDING_PHASE44: &str = "root_claim_only";
 pub const STWO_HISTORY_REPLAY_PROJECTION_SOURCE_ROOT_CLAIM_VERSION_PHASE44: &str =
-    "phase44-history-replay-projection-source-root-claim-v1";
+    "phase44-history-replay-projection-source-root-claim-v2";
 pub const STWO_HISTORY_REPLAY_PROJECTION_SOURCE_ROOT_BINDING_PHASE44: &str =
     "source_recomputable_stwo_root";
 pub const STWO_HISTORY_REPLAY_PROJECTION_SOURCE_ROOT_SEMANTIC_SCOPE_PHASE44: &str =
