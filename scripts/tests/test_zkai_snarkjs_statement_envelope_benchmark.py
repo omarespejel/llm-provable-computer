@@ -162,6 +162,12 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
         self.assertTrue(any(part.startswith("ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=") for part in command))
         self.assertIn("python3", command)
 
+    def test_ansi_escape_sanitizer_keeps_evidence_machine_readable(self) -> None:
+        self.assertEqual(
+            BENCH.ANSI_ESCAPE_RE.sub("", "\x1b[31;22m[ERROR]\x1b[39;1msnarkJS\x1b[0m"),
+            "[ERROR]snarkJS",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
