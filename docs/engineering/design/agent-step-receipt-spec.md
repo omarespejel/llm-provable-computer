@@ -175,6 +175,33 @@ committed as `H("agent-step-receipt-v1.trust-class-vector", length, entries...)`
 Mutation tests must reject reordering, duplicate paths, unknown enum values, and
 trust-class changes without a matching `receipt_commitment` update.
 
+## Evidence Manifest
+
+The evidence manifest lists every subproof, attestation, replay source, or
+subreceipt that supports fields in the receipt. It is commitment-bound through
+`evidence_manifest_commitment`; the receipt is invalid if the canonical manifest
+bytes do not hash to that field.
+
+Manifest entries must be sorted by `evidence_id` UTF-8 bytes ascending. Duplicate
+`evidence_id` values, unsorted inputs, unknown fields, unknown enum values, and
+non-canonical encodings must be rejected before commitment comparison.
+
+Each entry has the following deterministic shape:
+
+| Field | Required | Type / format | Semantics |
+| --- | --- | --- | --- |
+| `evidence_id` | yes | URN or stable UTF-8 string | Unique handle, for example `urn:agent-step:evidence:model-proof:0`. |
+| `evidence_kind` | yes | enum string | One of `proof`, `attestation`, `replay_source`, or `subreceipt`. |
+| `commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the evidence object. |
+| `trust_class` | yes | trust-class enum string | Trust class contributed by this evidence object. |
+| `verifier_domain` | yes | UTF-8 domain string | Domain separator naming the verifier or attestation domain. |
+| `corresponding_receipt_field` | yes | UTF-8 JSON Pointer | Receipt field supported by this evidence, such as `/model_receipt_commitment`. |
+| `non_claims` | yes | array of UTF-8 strings | Explicit facts this evidence does not prove. |
+
+The evidence manifest uses the same commitment algorithm policy as the
+dependency-drop manifest: `blake2b-256`, `blake2s-256`, `sha256`, `sha384`, and
+`sha512` are the baseline allowlist unless the `verifier_domain` narrows it.
+
 ## Dependency-Drop Manifest
 
 The dependency-drop manifest lists each dependency the downstream verifier does
