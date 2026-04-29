@@ -92,6 +92,8 @@ if len(payloads) != bench_runs:
 expected_cli = {
     "benchmark_version": "stwo-tablero-boundary-binding-microprofile-benchmark-v1",
     "semantic_scope": "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend",
+    "backend_version": "stwo-phase12-decoding-family-v10-carry-aware-experimental",
+    "claim_scope": "post_compact_proof_phase44d_typed_boundary_binding_microprofile",
     "timing_mode": "measured_microprofile",
     "timing_policy": f"mean_of_{iterations}_iterations_from_microsecond_capture",
     "timing_unit": "milliseconds",
@@ -124,6 +126,8 @@ stable_fields = [
 for payload in payloads:
     for row in payload["rows"]:
         key = (row["family"], row["steps"], row["component"])
+        if row.get("steps") != 1024:
+            sys.exit(f"unexpected steps in row (expected 1024): {row!r}")
         if row.get("iterations") != iterations:
             sys.exit(f"unexpected iterations in row: {row!r}")
         if row.get("verified") is not True:
@@ -163,6 +167,8 @@ for key in sorted(row_groups, key=lambda k: (k[0] != "default", k[0], k[2])):
 payload = {
     "benchmark_version": expected_cli["benchmark_version"],
     "semantic_scope": expected_cli["semantic_scope"],
+    "backend_version": expected_cli["backend_version"],
+    "claim_scope": expected_cli["claim_scope"],
     "timing_mode": "measured_median",
     "timing_policy": f"median_of_{bench_runs}_runs_of_mean_{iterations}_iteration_microprofile",
     "timing_unit": "milliseconds",
@@ -174,6 +180,8 @@ output_json.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", en
 headers = [
     "benchmark_version",
     "semantic_scope",
+    "backend_version",
+    "claim_scope",
     "timing_mode",
     "timing_policy",
     "timing_unit",
@@ -200,6 +208,8 @@ with output_tsv.open("w", encoding="utf-8", newline="") as handle:
         writer.writerow({
             "benchmark_version": payload["benchmark_version"],
             "semantic_scope": payload["semantic_scope"],
+            "backend_version": payload["backend_version"],
+            "claim_scope": payload["claim_scope"],
             "timing_mode": payload["timing_mode"],
             "timing_policy": payload["timing_policy"],
             "timing_unit": payload["timing_unit"],
@@ -217,6 +227,8 @@ payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 expected = {
     "benchmark_version": "stwo-tablero-boundary-binding-microprofile-benchmark-v1",
     "semantic_scope": "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend",
+    "backend_version": "stwo-phase12-decoding-family-v10-carry-aware-experimental",
+    "claim_scope": "post_compact_proof_phase44d_typed_boundary_binding_microprofile",
     "timing_mode": "measured_median",
     "timing_policy": f"median_of_{sys.argv[2]}_runs_of_mean_{sys.argv[3]}_iteration_microprofile",
     "timing_unit": "milliseconds",

@@ -17,6 +17,7 @@ must not be read as a publication-default backend promotion.
 - Benchmark identity: `stwo-tablero-boundary-binding-microprofile-benchmark-v1`
 - Scope: `tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend`
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
+- Claim scope: `post_compact_proof_phase44d_typed_boundary_binding_microprofile`
 - Timing mode: `measured_median`
 - Timing policy: `median_of_5_runs_of_mean_256_iteration_microprofile`
 - Step frontier: `1024` for `default`, `2x2`, and `3x3`
