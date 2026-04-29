@@ -107,6 +107,27 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "non-empty first public signal"):
             BENCH.mutate_first_public_signal([])
 
+    def test_snarkjs_verify_times_out_fail_closed(self) -> None:
+        with mock.patch.object(
+            BENCH.subprocess,
+            "run",
+            side_effect=BENCH.subprocess.TimeoutExpired(cmd=["snarkjs"], timeout=60),
+        ):
+            with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "timed out"):
+                BENCH.snarkjs_verify({}, [], {})
+
+    def test_case_result_propagates_harness_bugs(self) -> None:
+        def buggy_verify(_envelope, *, external_verify):  # noqa: ARG001
+            raise KeyError("harness bug")
+
+        with mock.patch.object(BENCH, "verify_statement_envelope", side_effect=buggy_verify):
+            with self.assertRaises(KeyError):
+                BENCH._case_result(
+                    "snarkjs-statement-envelope",
+                    BENCH.baseline_envelope(),
+                    fake_external_verify,
+                )
+
     def test_run_benchmark_rejects_truncated_mutation_corpus(self) -> None:
         original = BENCH.mutated_envelopes
 

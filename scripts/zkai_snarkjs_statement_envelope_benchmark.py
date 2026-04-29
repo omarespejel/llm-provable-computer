@@ -144,7 +144,7 @@ def baseline_envelope() -> dict[str, Any]:
         "verification_key_file_sha256": metadata["artifacts"]["verification_key.json"],
         "proof_sha256": proof_sha256(proof),
         "public_signals_sha256": public_signals_sha256(public_signals),
-        "setup_commitment": metadata["artifacts"]["verification_key.json"],
+        "setup_commitment": None,
     }
     return {
         "schema": ENVELOPE_SCHEMA,
@@ -316,8 +316,8 @@ def _check_artifact_hashes(
     for actual, expected, label in checks:
         if actual != expected:
             raise SnarkjsEnvelopeError(f"{label} mismatch")
-    if statement.get("setup_commitment") != statement.get("verification_key_file_sha256"):
-        raise SnarkjsEnvelopeError("setup binding mismatch")
+    if statement.get("setup_commitment") is not None:
+        raise SnarkjsEnvelopeError("setup commitment must be null for snarkjs verifier-facing adapter")
     return vk_path
 
 
@@ -334,13 +334,17 @@ def snarkjs_verify(
         proof_path.write_text(json.dumps(proof, sort_keys=True), encoding="utf-8")
         public_path.write_text(json.dumps(public_signals, sort_keys=True), encoding="utf-8")
         vk_path.write_text(json.dumps(verification_key, sort_keys=True), encoding="utf-8")
-        result = subprocess.run(
-            [*SNARKJS_COMMAND, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                [*SNARKJS_COMMAND, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=60,
+            )
+        except subprocess.TimeoutExpired as err:
+            raise SnarkjsEnvelopeError("snarkjs groth16 verifier timed out") from err
     output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
     output = ANSI_ESCAPE_RE.sub("", output)
     if result.returncode != 0:
@@ -379,6 +383,8 @@ def classify_error(message: str) -> str:
     lowered = message.lower()
     if "snarkjs groth16 verifier rejected" in lowered:
         return "external_proof_verifier"
+    if "timed out" in lowered:
+        return "external_proof_verifier"
     if "must be" in lowered:
         return "parser_or_schema"
     if "artifact" in lowered or "proof hash" in lowered or "verification-key" in lowered:
@@ -393,7 +399,7 @@ def classify_error(message: str) -> str:
         return "statement_policy"
     if "commitment" in lowered:
         return "statement_commitment"
-    return "adapter_policy"
+    return "parser_or_schema"
 
 
 def _case_result(
@@ -408,7 +414,7 @@ def _case_result(
             verify_statement_envelope(envelope, external_verify=external_verify)
         else:
             raise SnarkjsEnvelopeError(f"unsupported adapter {adapter!r}")
-    except Exception as err:  # noqa: BLE001 - the benchmark records verifier failures.
+    except SnarkjsEnvelopeError as err:
         return False, str(err)
     return True, ""
 
