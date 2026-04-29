@@ -9,7 +9,7 @@
       "mutated_accepted": false,
       "mutation": "backend_proof_system_version",
       "rejected": true,
-      "rejection_layer": "zkai_statement_receipt",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -18,7 +18,7 @@
       "mutated_accepted": false,
       "mutation": "dependency_drop_manifest",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -99,7 +99,7 @@
       "mutated_accepted": false,
       "mutation": "proof_backend",
       "rejected": true,
-      "rejection_layer": "zkai_statement_receipt",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -117,7 +117,7 @@
       "mutated_accepted": false,
       "mutation": "receipt_parser_version",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -126,7 +126,7 @@
       "mutated_accepted": false,
       "mutation": "receipt_version",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -171,7 +171,7 @@
       "mutated_accepted": false,
       "mutation": "verifier_domain_separator",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "agent_receipt_verifier",
       "surface": "agent_receipt"
     },
     {
@@ -189,7 +189,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_config_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -198,7 +198,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_evidence_manifest_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "agent_receipt_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -207,7 +207,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_input_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -234,7 +234,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_output_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -270,7 +270,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_public_instance_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -279,7 +279,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_setup_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -306,7 +306,7 @@
       "mutated_accepted": false,
       "mutation": "zkai_verifying_key_commitment_relabeling",
       "rejected": true,
-      "rejection_layer": "composition_verifier",
+      "rejection_layer": "zkai_statement_receipt",
       "surface": "zkai_statement_receipt"
     },
     {
@@ -372,7 +372,7 @@
       "--write-tsv",
       "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv"
     ],
-    "git_commit": "b9d32bedbb1db5124c91ef30599b755cbd739e1b"
+    "git_commit": "eb064c1c0b1ad0e18993508cef7c3bc21919b677"
   },
   "result": "GO",
   "schema": "agent-step-zkai-stwo-composition-v1",

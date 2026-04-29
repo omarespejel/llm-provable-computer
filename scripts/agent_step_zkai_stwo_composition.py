@@ -167,6 +167,35 @@ def checked_stwo_evidence(path: pathlib.Path) -> dict[str, Any]:
     return payload
 
 
+def _checked_stwo_payload(stwo_evidence: dict[str, Any]) -> dict[str, Any]:
+    checked_stwo_evidence_path = stwo_evidence.get("_source_path")
+    if checked_stwo_evidence_path is not None:
+        return checked_stwo_evidence(pathlib.Path(checked_stwo_evidence_path))
+    if not STWO.benchmark_passed(stwo_evidence):
+        raise CompositionError("Stwo benchmark payload no longer passes")
+    return stwo_evidence
+
+
+def _assert_evidence_matches_envelope(stwo_evidence: dict[str, Any], envelope: dict[str, Any]) -> None:
+    cases = stwo_evidence.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise CompositionError("Stwo benchmark evidence has no cases")
+    commitments = {
+        case.get("baseline_statement_commitment")
+        for case in cases
+        if isinstance(case, dict)
+    }
+    if commitments != {envelope.get("statement_commitment")}:
+        raise CompositionError("checked Stwo evidence baseline statement commitment mismatch")
+    statement_hashes = {
+        case.get("baseline_statement_sha256")
+        for case in cases
+        if isinstance(case, dict)
+    }
+    if statement_hashes != {STWO.statement_payload_sha256(envelope)}:
+        raise CompositionError("checked Stwo evidence baseline statement payload mismatch")
+
+
 def _assert_stwo_envelope_checked(envelope: dict[str, Any]) -> None:
     def checked_elsewhere(_proof: dict[str, Any]) -> None:
         return None
@@ -259,12 +288,9 @@ def verify_composition(
     envelope: dict[str, Any],
     stwo_evidence: dict[str, Any],
 ) -> bool:
-    checked_stwo_evidence_path = stwo_evidence.get("_source_path")
-    if checked_stwo_evidence_path is not None:
-        checked_stwo_evidence(pathlib.Path(checked_stwo_evidence_path))
-    elif not STWO.benchmark_passed(stwo_evidence):
-        raise CompositionError("Stwo benchmark payload no longer passes")
+    stwo_evidence = _checked_stwo_payload(stwo_evidence)
     _assert_stwo_envelope_checked(envelope)
+    _assert_evidence_matches_envelope(stwo_evidence, envelope)
     _agent_fields_match_statement(bundle, envelope)
     HARNESS.verify_bundle(bundle)
     return True
@@ -293,7 +319,7 @@ def _composition_case(
             "baseline_accepted": True,
             "mutated_accepted": False,
             "rejected": True,
-            "rejection_layer": classify_composition_error(str(err)),
+            "rejection_layer": classify_composition_error(err),
             "error": str(err),
         }
     return {
@@ -307,16 +333,22 @@ def _composition_case(
     }
 
 
-def classify_composition_error(error: str) -> str:
-    lowered = error.lower()
+def classify_composition_error(error: BaseException) -> str:
+    if isinstance(error, HARNESS.AgentReceiptError):
+        return "agent_receipt_verifier"
+    if isinstance(error, STWO.StwoEnvelopeError):
+        return "zkai_statement_receipt"
+    lowered = str(error).lower()
     if "does not match zkaistatementreceiptv1" in lowered:
         return "agent_to_zkai_link_binding"
-    if "benchmark" in lowered or "mutation count" in lowered or "calibration" in lowered:
+    if (
+        "benchmark" in lowered
+        or "mutation count" in lowered
+        or "calibration" in lowered
+        or "checked stwo evidence" in lowered
+        or "source evidence" in lowered
+    ):
         return "checked_source_evidence"
-    if "statement" in lowered or "artifact" in lowered or "proof" in lowered:
-        return "zkai_statement_receipt"
-    if "agentstepreceipt" in lowered or "evidence" in lowered or "trust" in lowered:
-        return "agent_receipt_verifier"
     return "composition_verifier"
 
 
