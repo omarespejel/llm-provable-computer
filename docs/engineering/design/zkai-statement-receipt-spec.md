@@ -212,7 +212,10 @@ native Stwo statement receipt is consumed as
 `36 / 36` checked mutations across the agent receipt, the zkAI subreceipt, the
 cross-layer binding, and the checked source-evidence handle.
 
-The higher-upside follow-up is either a larger Stwo-native statement-bound
-transformer block or a production nested-subreceipt verifier callback for
-`AgentStepReceiptV1`, so the Rust verifier can validate the model subreceipt
-directly instead of relying on an external composition harness.
+The Rust verifier now also validates the checked Stwo statement receipt through
+the `AgentStepReceiptV1` model-subreceipt callback path, so the production
+verifier can consume the nested receipt directly instead of relying only on an
+external composition harness.
+
+The higher-upside follow-up is a larger Stwo-native statement-bound transformer
+block with the same receipt and callback discipline.

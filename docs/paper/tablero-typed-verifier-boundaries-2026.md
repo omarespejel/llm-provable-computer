@@ -732,15 +732,13 @@ configuration, observation, action, runtime domain, and
 `model_receipt_commitment` to the corresponding Stwo statement fields. The
 composition harness rejects `36 / 36` checked mutations across the agent receipt,
 the zkAI subreceipt, the cross-layer binding, and the checked source-evidence
-handle; the same composed agent receipt is accepted by the production Rust
-receipt parser. This is evidence of receipt composition, not a claim of proved
-agent reasoning. It is anchored to
+handle; the same composed agent receipt and nested statement receipt are accepted
+by the production Rust model-subreceipt callback verifier. This is evidence of
+receipt composition, not a claim of proved agent reasoning. It is anchored to
 `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md` and
 `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`.
-The Rust verifier also exposes a model-subreceipt callback path so production
-callers can pass a candidate nested receipt payload and combine the agent receipt
-parser with an adapter-specific nested receipt verifier rather than relying only
-on the standalone composition harness.
+The Rust verifier exposes both the generic model-subreceipt callback seam and a
+bounded checked-Stwo specialization for this primitive receipt.
 
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:

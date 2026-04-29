@@ -340,6 +340,8 @@
     },
     "model_receipt_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
     "model_receipt_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+    "model_subreceipt_path": "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/zkai_stwo_statement_receipt.json",
+    "model_subreceipt_sha256": "e66dd41911f96ceefe2c68668023c1db640e73a7d13d6ba9cc822a618a939f90",
     "path": "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/agent_step_zkai_stwo_composed_receipt.json",
     "receipt_commitment": "blake2b-256:67a5450975f29af4395b4d536b8c1e8cdc3398d0901b463b4dfcf6399e150be8",
     "rust_agent_receipt_verifier": {
@@ -350,7 +352,7 @@
           "error": ""
         }
       ],
-      "schema": "agent-step-receipt-rust-verifier-adapter-v1"
+      "schema": "agent-step-zkai-stwo-rust-callback-verifier-v1"
     },
     "schema": "agent-step-zkai-stwo-composed-bundle-v1",
     "sha256": "4a4f13a8cdfe7030a4cb04207e414e1255ac1715f0722d0cb5d9433400d76d33"
@@ -364,6 +366,8 @@
   ],
   "repro": {
     "command": [
+      "env",
+      "AGENT_ZKAI_COMPOSITION_GIT_COMMIT=5b742b6d0d3adc0a5e3991f1d3b234af57b28b15",
       "python3",
       "scripts/agent_step_zkai_stwo_composition.py",
       "--rust-verify",
@@ -372,7 +376,7 @@
       "--write-tsv",
       "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv"
     ],
-    "git_commit": "f238e54ad719f7f065644bde958305a28089e17d"
+    "git_commit": "5b742b6d0d3adc0a5e3991f1d3b234af57b28b15"
   },
   "result": "GO",
   "schema": "agent-step-zkai-stwo-composition-v1",

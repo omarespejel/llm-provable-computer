@@ -402,9 +402,10 @@ harness. The fifth step is checked by the Stwo composition gate:
 That gate composes the checked Stwo `zkAIStatementReceiptV1` into
 `AgentStepReceiptV1.model_receipt_commitment` and rejects `36 / 36` checked
 mutations across the agent receipt, the zkAI subreceipt, the cross-layer binding,
-and the source-evidence handle. The production Rust parser accepts the composed
-agent receipt bundle, while the composition harness verifies the nested Stwo
-statement receipt and the equality between agent fields and statement fields.
+and the source-evidence handle. The production Rust callback verifier accepts
+the composed agent receipt bundle plus the nested Stwo statement receipt, checks
+the checked Stwo evidence handle, and verifies the equality between agent fields
+and statement fields.
 
 The Rust verifier now also exposes
 `verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback`, which keeps
@@ -412,6 +413,11 @@ the parser-only API available but requires an adapter callback when
 `/model_receipt_commitment` is supported by subreceipt evidence. The callback receives the candidate nested receipt payload plus the
 model/input/output/config/runtime fields that must match the nested zkAI
 statement receipt.
+
+The Stwo specialization is
+`verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt`, which
+validates the bounded checked Stwo `zkAIStatementReceiptV1` adapter result
+through that callback seam.
 
 ## Landscape Context
 

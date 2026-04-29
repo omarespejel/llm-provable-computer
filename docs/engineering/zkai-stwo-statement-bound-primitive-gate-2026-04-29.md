@@ -114,12 +114,13 @@ python3.12 -m unittest scripts.tests.test_zkai_stwo_statement_envelope_benchmark
 
 ## Follow-up
 
-The next useful step is to move from this bounded primitive to either:
+The agent/action receipt follow-up has landed: the checked Stwo statement
+receipt is consumed as a proved model subreceipt, and the Rust callback verifier
+now validates that nested receipt against the outer agent receipt fields.
 
-1. a Stwo-native statement-bound block with more transformer structure and the
-   same receipt discipline, or
-2. an agent/action receipt that consumes this `zkAIStatementReceiptV1` as a
-   proved model subreceipt.
+The next useful step is to move from this bounded primitive to a Stwo-native
+statement-bound block with more transformer structure and the same receipt
+discipline.
 
 Do not use this gate to claim end-to-end verifiable intelligence. It is one
 verified statement-binding building block.
