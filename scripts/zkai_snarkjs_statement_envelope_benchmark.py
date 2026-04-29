@@ -385,14 +385,14 @@ def classify_error(message: str) -> str:
         return "external_proof_verifier"
     if "timed out" in lowered:
         return "external_proof_verifier"
-    if "must be" in lowered:
-        return "parser_or_schema"
     if "artifact" in lowered or "proof hash" in lowered or "verification-key" in lowered:
         return "artifact_binding"
     if "public-signals" in lowered:
         return "public_instance_binding"
     if "setup" in lowered:
         return "setup_binding"
+    if "must be" in lowered:
+        return "parser_or_schema"
     if "domain" in lowered or "version" in lowered:
         return "domain_or_version_allowlist"
     if "policy mismatch" in lowered:
