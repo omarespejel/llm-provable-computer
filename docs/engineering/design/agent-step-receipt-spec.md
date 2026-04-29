@@ -86,6 +86,9 @@ field to `omitted`, but then the omitted fact is not part of the claim.
 | `receipt_version` | replayed | Schema and semantics version. |
 | `verifier_domain` | replayed | Domain separator for this receipt family. |
 | `runtime_domain` | proved, attested, or replayed | Runtime/proof-system context for the step. |
+| `proof_backend` | replayed | Canonical proof-system or attestation-backend family, for example `stwo`, `halo2`, `nexus-zkvm`, `tee-attestation`, or `none`. |
+| `proof_backend_version` | replayed | Exact backend/proof-system version string accepted for this receipt. |
+| `receipt_parser_version` | replayed | Exact parser/canonicalization version that interprets this receipt schema. |
 | `prior_state_commitment` | proved, attested, replayed, or dependency_dropped | State before the step. |
 | `observation_commitment` | proved, attested, replayed, or dependency_dropped | User input, environment observation, or prompt/context input. |
 | `model_identity` | proved, attested, or replayed | Human-readable model identifier, if claimed. |
@@ -107,6 +110,15 @@ relabeled as a model-inference proof; implementation tests should mutate this
 field and its trust class together and require rejection unless the commitment is
 backed by a verified model receipt or by an explicit dependency-drop manifest.
 
+`runtime_domain` is not sufficient for downgrade protection by itself.
+Implementations must bind `proof_backend`, `proof_backend_version`, and
+`receipt_parser_version` into the receipt. Verifiers must reject unknown proof
+backends, unsupported backend versions, parser-version downgrades, and receipts
+whose parser version is incompatible with the declared `receipt_version`.
+Mutation tests should flip each of these fields independently and require a
+different `receipt_commitment` plus verifier rejection when the new value is not
+allowlisted.
+
 ## Canonical Commitment Shape
 
 A future implementation should avoid free-form string concatenation. The receipt
@@ -118,6 +130,9 @@ receipt_commitment = H(
   receipt_version,
   verifier_domain,
   runtime_domain,
+  proof_backend,
+  proof_backend_version,
+  receipt_parser_version,
   prior_state_commitment,
   observation_commitment,
   model_identity,
@@ -176,14 +191,21 @@ Each entry has the following deterministic shape:
 | --- | --- | --- | --- |
 | `dependency_id` | yes | URN or stable UTF-8 string | Unique dependency handle, for example `urn:agent-step:model-receipt:0`. |
 | `dependency_kind` | yes | enum string | One of `source_manifest`, `proof_trace`, `model_receipt`, `tool_receipt`, `state_commitment`, `policy_commitment`, `transcript`, or `other`. |
-| `source_commitment` | yes | `algorithm:lower_hex_digest` | Commitment to the replay source being dropped. |
-| `replacement_commitment` | yes | `algorithm:lower_hex_digest` | Commitment to the typed replacement object accepted by the verifier. |
+| `source_commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the replay source being dropped. |
+| `replacement_commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the typed replacement object accepted by the verifier. |
 | `replacement_receipt_version` | yes | semver-like string or integer schema version | Schema/version of the replacement receipt. |
 | `trust_class` | yes | trust-class enum string | Must be `dependency_dropped` for Tablero-style replay replacement unless a later verifier domain explicitly allows another class. |
 | `verifier_domain` | yes | UTF-8 domain string | Domain separator naming the verifier that accepts the replacement. |
 | `reason_for_drop` | yes | non-empty UTF-8 string | Human-readable reason, such as `linear source replay replaced by typed boundary commitment`. |
 | `required_subproof_or_attestation` | no | null or object `{kind, commitment, verifier_domain}` | Extra proof or attestation required before the drop is accepted. |
 | `non_claims` | yes | array of UTF-8 strings | Explicit statements the drop does not prove. |
+
+Commitment algorithms inherit the `verifier_domain` policy. Until a narrower
+domain-specific policy exists, conforming algorithm labels are limited to
+`blake2b-256`, `blake2s-256`, `sha256`, `sha384`, and `sha512`. Producers must
+not emit weak or unknown labels, and verifiers must reject them. Any verifier
+routine that relaxes this binding, for example by accepting `md5`, `sha1`, an
+unlabeled digest, or mixed-case algorithm aliases, is non-conformant.
 
 A Tablero boundary is valid only if the manifest is itself commitment-bound to
 the accepted receipt.
