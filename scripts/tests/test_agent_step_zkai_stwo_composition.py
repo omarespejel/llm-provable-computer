@@ -31,6 +31,21 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["cross_layer_composition_mutations"], 1)
         self.assertEqual(payload["summary"]["source_evidence_mutations"], 1)
 
+    def test_composition_gate_can_use_rust_zkai_callback_verifier(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            payload = COMPOSITION.run_composition(
+                artifact_dir=pathlib.Path(raw_tmp),
+                rust_verify=True,
+            )
+
+        rust_result = payload["composed_agent_receipt"]["rust_agent_receipt_verifier"]
+        self.assertEqual(
+            rust_result["schema"],
+            "agent-step-zkai-stwo-rust-callback-verifier-v1",
+        )
+        self.assertTrue(rust_result["results"][0]["accepted"])
+        self.assertTrue(payload["composed_agent_receipt"]["model_subreceipt_path"])
+
     def test_composed_bundle_verifies_with_agent_receipt_harness(self) -> None:
         envelope = COMPOSITION.baseline_stwo_envelope()
         bundle = COMPOSITION.build_composed_bundle(envelope)

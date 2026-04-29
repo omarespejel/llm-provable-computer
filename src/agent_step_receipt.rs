@@ -8,7 +8,8 @@ use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Serialize};
-use serde_json::{Number, Value};
+use serde_json::{Map, Number, Value};
+use sha2::{Digest, Sha256};
 use unicode_normalization::UnicodeNormalization;
 
 use crate::error::{Result, VmError};
@@ -24,6 +25,17 @@ pub const AGENT_DEPENDENCY_DROP_MANIFEST_VERSION_V1: &str =
 const MAX_AGENT_STEP_RECEIPT_BUNDLE_JSON_BYTES: usize = 1024 * 1024;
 const MODEL_RECEIPT_COMMITMENT_FIELD: &str = "model_receipt_commitment";
 const MODEL_RECEIPT_COMMITMENT_POINTER: &str = "/model_receipt_commitment";
+const ZKAI_STATEMENT_RECEIPT_SCHEMA_V1: &str = "zkai-statement-receipt-v1";
+const ZKAI_STWO_ENVELOPE_SCHEMA_V1: &str = "zkai-stwo-statement-envelope-v1";
+const ZKAI_STWO_BENCHMARK_SCHEMA_V1: &str = "zkai-stwo-statement-envelope-benchmark-v1";
+const ZKAI_STWO_SUITE_KIND_V1: &str = "native_stwo_statement_relabeling";
+const ZKAI_STWO_PROOF_SYSTEM_V1: &str = "stwo-transparent-stark";
+const ZKAI_STWO_PROOF_SYSTEM_VERSION_V1: &str = "stwo-phase10-linear-block-v4-with-lookup";
+const ZKAI_STWO_VERIFIER_DOMAIN_V1: &str =
+    "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup";
+const ZKAI_STWO_STATEMENT_KIND_V1: &str = "transformer-primitive";
+const ZKAI_STWO_MODEL_ID_V1: &str = "urn:zkai:ptvm:linear-block-v4-with-lookup";
+const ZKAI_STWO_EXPECTED_MUTATION_COUNT: usize = 14;
 
 const RECEIPT_FIELDS: &[&str] = &[
     "receipt_version",
@@ -418,6 +430,89 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
     verify_model_subreceipt(&request)
 }
 
+pub fn verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+    bundle: &AgentStepReceiptBundleV1,
+    model_subreceipt_payload: &Value,
+    checked_stwo_evidence: &Value,
+) -> Result<()> {
+    let verifier = |request: &AgentModelSubreceiptVerificationRequestV1<'_>| {
+        verify_zkai_stwo_statement_receipt_v1_for_agent_model_subreceipt(
+            request,
+            checked_stwo_evidence,
+        )
+    };
+    verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+        bundle,
+        Some(model_subreceipt_payload),
+        Some(&verifier),
+    )
+}
+
+pub fn verify_zkai_stwo_statement_receipt_v1_for_agent_model_subreceipt(
+    request: &AgentModelSubreceiptVerificationRequestV1<'_>,
+    checked_stwo_evidence: &Value,
+) -> Result<()> {
+    let (statement, statement_commitment) =
+        extract_zkai_stwo_statement_receipt(request.model_subreceipt_payload)?;
+    verify_zkai_stwo_statement_policy(&statement)?;
+    let expected_statement_commitment =
+        commitment_for_value(&statement, "ptvm:zkai:stwo-statement:v1")?;
+    if statement_commitment != expected_statement_commitment {
+        return Err(VmError::InvalidConfig(
+            "zkAI Stwo statement_commitment mismatch".to_string(),
+        ));
+    }
+    require_equal(
+        request.model_receipt_commitment,
+        &statement_commitment,
+        "AgentStepReceiptV1 model_receipt_commitment",
+        "zkAIStatementReceiptV1 statement_commitment",
+    )?;
+    require_equal(
+        request.runtime_domain,
+        zkai_statement_str(&statement, "verifier_domain")?,
+        "AgentStepReceiptV1 runtime_domain",
+        "zkAIStatementReceiptV1 verifier_domain",
+    )?;
+    require_equal(
+        request.model_identity,
+        zkai_statement_str(&statement, "model_id")?,
+        "AgentStepReceiptV1 model_identity",
+        "zkAIStatementReceiptV1 model_id",
+    )?;
+    require_equal(
+        request.model_commitment,
+        zkai_statement_str(&statement, "model_artifact_commitment")?,
+        "AgentStepReceiptV1 model_commitment",
+        "zkAIStatementReceiptV1 model_artifact_commitment",
+    )?;
+    require_equal(
+        request.model_config_commitment,
+        zkai_statement_str(&statement, "config_commitment")?,
+        "AgentStepReceiptV1 model_config_commitment",
+        "zkAIStatementReceiptV1 config_commitment",
+    )?;
+    require_equal(
+        request.observation_commitment,
+        zkai_statement_str(&statement, "input_commitment")?,
+        "AgentStepReceiptV1 observation_commitment",
+        "zkAIStatementReceiptV1 input_commitment",
+    )?;
+    require_equal(
+        request.action_commitment,
+        zkai_statement_str(&statement, "output_commitment")?,
+        "AgentStepReceiptV1 action_commitment",
+        "zkAIStatementReceiptV1 output_commitment",
+    )?;
+    if request.evidence_entry.corresponding_receipt_field != MODEL_RECEIPT_COMMITMENT_POINTER {
+        return Err(VmError::InvalidConfig(
+            "zkAI Stwo callback evidence entry does not support model_receipt_commitment"
+                .to_string(),
+        ));
+    }
+    verify_checked_zkai_stwo_evidence(checked_stwo_evidence, &statement, &statement_commitment)
+}
+
 pub fn commit_agent_step_receipt_v1(receipt: &AgentStepReceiptV1) -> Result<String> {
     let mut value = serde_json::to_value(receipt)
         .map_err(|err| VmError::Serialization(format!("AgentStepReceiptV1 receipt: {err}")))?;
@@ -441,6 +536,427 @@ pub fn commit_agent_dependency_drop_manifest_v1(
         ))
     })?;
     commitment_for_value(&value, "agent-step-receipt-v1.dependency-drop-manifest")
+}
+
+const ZKAI_STWO_STATEMENT_FIELDS: &[&str] = &[
+    "receipt_version",
+    "verifier_domain",
+    "proof_system",
+    "proof_system_version",
+    "statement_kind",
+    "model_id",
+    "model_artifact_commitment",
+    "input_commitment",
+    "output_commitment",
+    "config_commitment",
+    "public_instance_commitment",
+    "proof_commitment",
+    "verifying_key_commitment",
+    "setup_commitment",
+    "evidence_manifest_commitment",
+];
+
+const ZKAI_STWO_EXPECTED_MUTATIONS: &[&str] = &[
+    "config_commitment_relabeling",
+    "evidence_manifest_commitment_relabeling",
+    "input_commitment_relabeling",
+    "model_artifact_commitment_relabeling",
+    "model_id_relabeling",
+    "output_commitment_relabeling",
+    "proof_commitment_relabeling",
+    "proof_public_claim_relabeling",
+    "proof_system_version_relabeling",
+    "public_instance_commitment_relabeling",
+    "setup_commitment_relabeling",
+    "statement_commitment_relabeling",
+    "verifier_domain_relabeling",
+    "verifying_key_commitment_relabeling",
+];
+
+fn extract_zkai_stwo_statement_receipt(payload: &Value) -> Result<(Value, String)> {
+    let object = json_object(payload, "zkAI Stwo model subreceipt")?;
+    match json_str(object, "schema", "zkAI Stwo model subreceipt")? {
+        ZKAI_STWO_ENVELOPE_SCHEMA_V1 => {
+            let statement = object
+                .get("statement")
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "zkAI Stwo statement envelope is missing statement".to_string(),
+                    )
+                })?
+                .clone();
+            let statement_commitment = json_str(
+                object,
+                "statement_commitment",
+                "zkAI Stwo statement envelope",
+            )?
+            .to_string();
+            validate_zkai_stwo_statement_shape(&statement)?;
+            Ok((statement, statement_commitment))
+        }
+        ZKAI_STATEMENT_RECEIPT_SCHEMA_V1 => {
+            let mut statement = Map::new();
+            for field in ZKAI_STWO_STATEMENT_FIELDS {
+                let value = object.get(*field).ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "zkAI Stwo statement receipt is missing {field}"
+                    ))
+                })?;
+                statement.insert((*field).to_string(), value.clone());
+            }
+            let statement_commitment = json_str(
+                object,
+                "statement_commitment",
+                "zkAI Stwo statement receipt",
+            )?
+            .to_string();
+            Ok((Value::Object(statement), statement_commitment))
+        }
+        other => Err(VmError::InvalidConfig(format!(
+            "unsupported zkAI Stwo model subreceipt schema `{other}`"
+        ))),
+    }
+}
+
+fn validate_zkai_stwo_statement_shape(statement: &Value) -> Result<()> {
+    let object = json_object(statement, "zkAI Stwo statement")?;
+    let expected: BTreeSet<&str> = ZKAI_STWO_STATEMENT_FIELDS.iter().copied().collect();
+    let actual: BTreeSet<&str> = object.keys().map(String::as_str).collect();
+    if actual != expected {
+        return Err(VmError::InvalidConfig(
+            "zkAI Stwo statement fields do not match zkAIStatementReceiptV1".to_string(),
+        ));
+    }
+    for field in ZKAI_STWO_STATEMENT_FIELDS {
+        json_str(object, field, "zkAI Stwo statement")?;
+    }
+    Ok(())
+}
+
+fn verify_zkai_stwo_statement_policy(statement: &Value) -> Result<()> {
+    validate_zkai_stwo_statement_shape(statement)?;
+    let checks = [
+        ("receipt_version", ZKAI_STATEMENT_RECEIPT_SCHEMA_V1),
+        ("verifier_domain", ZKAI_STWO_VERIFIER_DOMAIN_V1),
+        ("proof_system", ZKAI_STWO_PROOF_SYSTEM_V1),
+        ("proof_system_version", ZKAI_STWO_PROOF_SYSTEM_VERSION_V1),
+        ("statement_kind", ZKAI_STWO_STATEMENT_KIND_V1),
+        ("model_id", ZKAI_STWO_MODEL_ID_V1),
+    ];
+    for (field, expected) in checks {
+        let actual = zkai_statement_str(statement, field)?;
+        if actual != expected {
+            return Err(VmError::InvalidConfig(format!(
+                "zkAI Stwo statement policy mismatch for {field}"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn verify_checked_zkai_stwo_evidence(
+    checked_stwo_evidence: &Value,
+    statement: &Value,
+    statement_commitment: &str,
+) -> Result<()> {
+    let evidence = json_object(checked_stwo_evidence, "checked zkAI Stwo evidence")?;
+    require_value(
+        json_str(evidence, "schema", "checked zkAI Stwo evidence")?,
+        ZKAI_STWO_BENCHMARK_SCHEMA_V1,
+        "checked zkAI Stwo evidence schema",
+    )?;
+    require_value(
+        json_str(evidence, "suite_kind", "checked zkAI Stwo evidence")?,
+        ZKAI_STWO_SUITE_KIND_V1,
+        "checked zkAI Stwo evidence suite_kind",
+    )?;
+    let external = json_child_object(evidence, "external_system", "checked zkAI Stwo evidence")?;
+    require_value(
+        json_str(external, "name", "checked zkAI Stwo external_system")?,
+        "ptvm-stwo-backend",
+        "checked zkAI Stwo external_system.name",
+    )?;
+    require_value(
+        json_str(
+            external,
+            "proof_system",
+            "checked zkAI Stwo external_system",
+        )?,
+        ZKAI_STWO_PROOF_SYSTEM_V1,
+        "checked zkAI Stwo external_system.proof_system",
+    )?;
+    require_value(
+        json_str(external, "version", "checked zkAI Stwo external_system")?,
+        ZKAI_STWO_PROOF_SYSTEM_VERSION_V1,
+        "checked zkAI Stwo external_system.version",
+    )?;
+
+    let summary = json_child_object(evidence, "summary", "checked zkAI Stwo evidence")?;
+    verify_checked_zkai_stwo_summary(summary)?;
+    let cases = evidence
+        .get("cases")
+        .and_then(Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("checked zkAI Stwo evidence cases must be an array".to_string())
+        })?;
+    verify_checked_zkai_stwo_cases(cases, statement, statement_commitment)
+}
+
+fn verify_checked_zkai_stwo_summary(summary: &Map<String, Value>) -> Result<()> {
+    let statement_summary = json_child_object(
+        summary,
+        "stwo-statement-envelope",
+        "checked zkAI Stwo summary",
+    )?;
+    require_bool(
+        statement_summary,
+        "baseline_accepted",
+        true,
+        "checked zkAI Stwo statement-envelope baseline",
+    )?;
+    require_bool(
+        statement_summary,
+        "all_mutations_rejected",
+        true,
+        "checked zkAI Stwo statement-envelope mutations",
+    )?;
+    require_usize(
+        statement_summary,
+        "mutation_count",
+        ZKAI_STWO_EXPECTED_MUTATION_COUNT,
+        "checked zkAI Stwo statement-envelope mutation_count",
+    )?;
+    require_usize(
+        statement_summary,
+        "mutations_rejected",
+        ZKAI_STWO_EXPECTED_MUTATION_COUNT,
+        "checked zkAI Stwo statement-envelope mutations_rejected",
+    )?;
+
+    let proof_summary = json_child_object(summary, "stwo-proof-only", "checked zkAI Stwo summary")?;
+    require_bool(
+        proof_summary,
+        "baseline_accepted",
+        true,
+        "checked zkAI Stwo proof-only baseline",
+    )?;
+    require_bool(
+        proof_summary,
+        "all_mutations_rejected",
+        false,
+        "checked zkAI Stwo proof-only calibration",
+    )?;
+    require_usize(
+        proof_summary,
+        "mutation_count",
+        ZKAI_STWO_EXPECTED_MUTATION_COUNT,
+        "checked zkAI Stwo proof-only mutation_count",
+    )?;
+    require_usize(
+        proof_summary,
+        "mutations_rejected",
+        1,
+        "checked zkAI Stwo proof-only mutations_rejected",
+    )
+}
+
+fn verify_checked_zkai_stwo_cases(
+    cases: &[Value],
+    statement: &Value,
+    statement_commitment: &str,
+) -> Result<()> {
+    let expected_mutations: BTreeSet<&str> = ZKAI_STWO_EXPECTED_MUTATIONS.iter().copied().collect();
+    let statement_sha256 = sha256_value(statement)?;
+    let public_instance_commitment = zkai_statement_str(statement, "public_instance_commitment")?;
+    let proof_commitment = zkai_statement_str(statement, "proof_commitment")?;
+    let mut seen = BTreeSet::new();
+
+    for case in cases {
+        let case = json_object(case, "checked zkAI Stwo evidence case")?;
+        let adapter = json_str(case, "adapter", "checked zkAI Stwo evidence case")?;
+        if adapter != "stwo-proof-only" && adapter != "stwo-statement-envelope" {
+            return Err(VmError::InvalidConfig(format!(
+                "checked zkAI Stwo evidence case has unsupported adapter `{adapter}`"
+            )));
+        }
+        let mutation = json_str(case, "mutation", "checked zkAI Stwo evidence case")?;
+        if !expected_mutations.contains(mutation) {
+            return Err(VmError::InvalidConfig(format!(
+                "checked zkAI Stwo evidence case has unexpected mutation `{mutation}`"
+            )));
+        }
+        if !seen.insert((adapter.to_string(), mutation.to_string())) {
+            return Err(VmError::InvalidConfig(
+                "checked zkAI Stwo evidence has duplicate adapter/mutation case".to_string(),
+            ));
+        }
+        require_bool(
+            case,
+            "baseline_accepted",
+            true,
+            "checked zkAI Stwo case baseline",
+        )?;
+
+        let expected_rejected =
+            adapter == "stwo-statement-envelope" || mutation == "proof_public_claim_relabeling";
+        require_bool(
+            case,
+            "rejected",
+            expected_rejected,
+            "checked zkAI Stwo case rejection",
+        )?;
+        require_bool(
+            case,
+            "mutated_accepted",
+            !expected_rejected,
+            "checked zkAI Stwo case mutated acceptance",
+        )?;
+
+        if case.get("baseline_statement") != Some(statement) {
+            return Err(VmError::InvalidConfig(
+                "checked zkAI Stwo evidence baseline statement mismatch".to_string(),
+            ));
+        }
+        require_value(
+            json_str(
+                case,
+                "baseline_statement_commitment",
+                "checked zkAI Stwo evidence case",
+            )?,
+            statement_commitment,
+            "checked zkAI Stwo baseline statement commitment",
+        )?;
+        require_value(
+            json_str(
+                case,
+                "baseline_statement_sha256",
+                "checked zkAI Stwo evidence case",
+            )?,
+            &statement_sha256,
+            "checked zkAI Stwo baseline statement payload",
+        )?;
+        require_value(
+            json_str(
+                case,
+                "baseline_public_instance_commitment",
+                "checked zkAI Stwo evidence case",
+            )?,
+            public_instance_commitment,
+            "checked zkAI Stwo baseline public instance",
+        )?;
+        let baseline_statement = json_child_object(
+            case,
+            "baseline_statement",
+            "checked zkAI Stwo evidence case",
+        )?;
+        require_value(
+            json_str(
+                baseline_statement,
+                "proof_commitment",
+                "checked zkAI Stwo evidence baseline statement",
+            )?,
+            proof_commitment,
+            "checked zkAI Stwo baseline proof commitment",
+        )?;
+    }
+
+    let expected_case_count = ZKAI_STWO_EXPECTED_MUTATION_COUNT * 2;
+    if seen.len() != expected_case_count {
+        return Err(VmError::InvalidConfig(format!(
+            "checked zkAI Stwo evidence has {} cases, expected {expected_case_count}",
+            seen.len()
+        )));
+    }
+    Ok(())
+}
+
+fn zkai_statement_str<'a>(statement: &'a Value, field: &str) -> Result<&'a str> {
+    let object = json_object(statement, "zkAI Stwo statement")?;
+    json_str(object, field, "zkAI Stwo statement")
+}
+
+fn json_child_object<'a>(
+    object: &'a Map<String, Value>,
+    field: &str,
+    label: &str,
+) -> Result<&'a Map<String, Value>> {
+    let value = object.get(field).ok_or_else(|| {
+        VmError::InvalidConfig(format!("{label} is missing object field {field}"))
+    })?;
+    json_object(value, &format!("{label}.{field}"))
+}
+
+fn json_object<'a>(value: &'a Value, label: &str) -> Result<&'a Map<String, Value>> {
+    value
+        .as_object()
+        .ok_or_else(|| VmError::InvalidConfig(format!("{label} must be a JSON object")))
+}
+
+fn json_str<'a>(object: &'a Map<String, Value>, field: &str, label: &str) -> Result<&'a str> {
+    object
+        .get(field)
+        .and_then(Value::as_str)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{label}.{field} must be a string")))
+}
+
+fn require_value(actual: &str, expected: &str, label: &str) -> Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!("{label} mismatch")));
+    }
+    Ok(())
+}
+
+fn require_equal(
+    actual: &str,
+    expected: &str,
+    actual_label: &str,
+    expected_label: &str,
+) -> Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{actual_label} does not match {expected_label}"
+        )));
+    }
+    Ok(())
+}
+
+fn require_bool(
+    object: &Map<String, Value>,
+    field: &str,
+    expected: bool,
+    label: &str,
+) -> Result<()> {
+    let actual = object
+        .get(field)
+        .and_then(Value::as_bool)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{label}.{field} must be a bool")))?;
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!("{label} mismatch")));
+    }
+    Ok(())
+}
+
+fn require_usize(
+    object: &Map<String, Value>,
+    field: &str,
+    expected: usize,
+    label: &str,
+) -> Result<()> {
+    let actual = object
+        .get(field)
+        .and_then(Value::as_u64)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{label}.{field} must be an integer")))?;
+    if actual != expected as u64 {
+        return Err(VmError::InvalidConfig(format!("{label} mismatch")));
+    }
+    Ok(())
+}
+
+fn sha256_value(value: &Value) -> Result<String> {
+    validate_canonical_value(value)?;
+    let mut canonical = Vec::new();
+    write_canonical_json_value(value, &mut canonical)?;
+    Ok(hex_lower(&Sha256::digest(canonical)))
 }
 
 fn validate_receipt_commitment_fields(receipt: &AgentStepReceiptV1) -> Result<()> {
@@ -1637,6 +2153,106 @@ mod tests {
         })
     }
 
+    fn checked_zkai_stwo_evidence_payload() -> Value {
+        serde_json::from_str(include_str!(
+            "../docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json"
+        ))
+        .expect("checked Stwo evidence")
+    }
+
+    fn checked_zkai_stwo_statement_payload(evidence: &Value) -> Value {
+        let cases = evidence["cases"].as_array().expect("cases");
+        let statement = cases[0]["baseline_statement"]
+            .as_object()
+            .expect("baseline statement");
+        let mut payload = Map::new();
+        payload.insert(
+            "schema".to_string(),
+            Value::String(ZKAI_STATEMENT_RECEIPT_SCHEMA_V1.to_string()),
+        );
+        payload.insert(
+            "statement_commitment".to_string(),
+            cases[0]["baseline_statement_commitment"].clone(),
+        );
+        for field in ZKAI_STWO_STATEMENT_FIELDS {
+            payload.insert((*field).to_string(), statement[*field].clone());
+        }
+        Value::Object(payload)
+    }
+
+    fn direct_zkai_stwo_statement_from_payload(payload: &Value) -> Value {
+        let payload = payload.as_object().expect("payload object");
+        let mut statement = Map::new();
+        for field in ZKAI_STWO_STATEMENT_FIELDS {
+            statement.insert((*field).to_string(), payload[*field].clone());
+        }
+        Value::Object(statement)
+    }
+
+    fn refresh_direct_zkai_stwo_statement_commitment(payload: &mut Value) {
+        let statement = direct_zkai_stwo_statement_from_payload(payload);
+        payload["statement_commitment"] =
+            Value::String(commitment_for_value(&statement, "ptvm:zkai:stwo-statement:v1").unwrap());
+    }
+
+    fn set_field_to_proved_subreceipt(bundle: &mut AgentStepReceiptBundleV1, field_path: &str) {
+        for entry in &mut bundle.receipt.field_trust_class_vector {
+            if entry.field_path == field_path {
+                entry.trust_class = AgentTrustClass::Proved;
+            }
+        }
+        let receipt_value = serde_json::to_value(&bundle.receipt).expect("receipt value");
+        let field = field_from_pointer(field_path).expect("field pointer");
+        for entry in &mut bundle.evidence_manifest.entries {
+            if entry.corresponding_receipt_field == field_path {
+                entry.evidence_kind = AgentEvidenceKind::Subreceipt;
+                entry.trust_class = AgentTrustClass::Proved;
+                entry.commitment = evidence_commitment_for_field(
+                    field_path,
+                    receipt_value.get(field).expect("field value"),
+                )
+                .expect("evidence commitment");
+            }
+        }
+    }
+
+    fn make_zkai_stwo_model_subreceipt_bundle() -> (AgentStepReceiptBundleV1, Value, Value) {
+        let evidence = checked_zkai_stwo_evidence_payload();
+        let payload = checked_zkai_stwo_statement_payload(&evidence);
+        let statement = direct_zkai_stwo_statement_from_payload(&payload);
+        let statement = statement.as_object().expect("statement object");
+        let mut bundle = build_valid_bundle();
+        bundle.receipt.runtime_domain = statement["verifier_domain"].as_str().unwrap().to_string();
+        bundle.receipt.model_identity = statement["model_id"].as_str().unwrap().to_string();
+        bundle.receipt.model_commitment = statement["model_artifact_commitment"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        bundle.receipt.model_config_commitment =
+            statement["config_commitment"].as_str().unwrap().to_string();
+        bundle.receipt.model_receipt_commitment = payload["statement_commitment"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        bundle.receipt.observation_commitment =
+            statement["input_commitment"].as_str().unwrap().to_string();
+        bundle.receipt.action_commitment =
+            statement["output_commitment"].as_str().unwrap().to_string();
+        for field_path in [
+            "/runtime_domain",
+            "/model_identity",
+            "/model_commitment",
+            "/model_config_commitment",
+            MODEL_RECEIPT_COMMITMENT_POINTER,
+            "/observation_commitment",
+            "/action_commitment",
+        ] {
+            set_field_to_proved_subreceipt(&mut bundle, field_path);
+        }
+        recompute_manifest_commitments(&mut bundle);
+        (bundle, payload, evidence)
+    }
+
     fn make_omitted_tool_receipt_bundle() -> AgentStepReceiptBundleV1 {
         let mut bundle = build_valid_bundle();
         bundle.receipt.tool_receipts_root = None;
@@ -2119,6 +2735,95 @@ mod tests {
         )
         .expect_err("nested verifier catches cross-layer drift");
         assert!(err.to_string().contains("model_identity mismatch"), "{err}");
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_accepts_checked_statement_receipt() {
+        let (bundle, payload, evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        verify_agent_step_receipt_bundle_v1(&bundle).expect("base agent receipt verifies");
+
+        verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect("checked zkAI Stwo subreceipt accepts through Rust callback");
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_agent_field_drift() {
+        let (mut bundle, payload, evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        bundle.receipt.model_identity = "urn:zkai:ptvm:other-model".to_string();
+        refresh_evidence_for_field(&mut bundle, "/model_identity");
+        verify_agent_step_receipt_bundle_v1(&bundle)
+            .expect("self-consistent agent receipt still verifies");
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("agent-to-zkAI field drift rejects");
+        assert!(
+            err.to_string()
+                .contains("AgentStepReceiptV1 model_identity does not match"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_policy_relabeling() {
+        let (mut bundle, mut payload, evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        payload["model_id"] = Value::String("urn:zkai:ptvm:different-linear-block".to_string());
+        refresh_direct_zkai_stwo_statement_commitment(&mut payload);
+        bundle.receipt.model_identity = payload["model_id"].as_str().unwrap().to_string();
+        bundle.receipt.model_receipt_commitment = payload["statement_commitment"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        refresh_evidence_for_field(&mut bundle, "/model_identity");
+        refresh_evidence_for_field(&mut bundle, MODEL_RECEIPT_COMMITMENT_POINTER);
+        verify_agent_step_receipt_bundle_v1(&bundle)
+            .expect("self-consistent relabeled agent receipt still verifies");
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("Stwo statement policy relabeling rejects");
+        assert!(
+            err.to_string().contains("policy mismatch for model_id"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_forged_checked_evidence_summary() {
+        let (bundle, payload, mut evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        evidence["summary"]["stwo-statement-envelope"]["mutations_rejected"] =
+            Value::Number(Number::from(13));
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("forged checked evidence summary rejects");
+        assert!(
+            err.to_string()
+                .contains("statement-envelope mutations_rejected mismatch"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_evidence_baseline_mismatch() {
+        let (bundle, payload, mut evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        evidence["cases"][0]["baseline_statement_commitment"] =
+            Value::String("blake2b-256:".to_string() + &"44".repeat(32));
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("checked evidence baseline mismatch rejects");
+        assert!(
+            err.to_string()
+                .contains("baseline statement commitment mismatch"),
+            "{err}"
+        );
     }
 
     #[test]

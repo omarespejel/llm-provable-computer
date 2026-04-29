@@ -242,6 +242,15 @@ def _statement_commitment_for_agent(envelope: dict[str, Any]) -> str:
     return str(envelope["statement_commitment"])
 
 
+def zkai_statement_receipt_payload(envelope: dict[str, Any]) -> dict[str, Any]:
+    statement = copy.deepcopy(envelope["statement"])
+    return {
+        "schema": STWO.STATEMENT_SCHEMA,
+        "statement_commitment": envelope["statement_commitment"],
+        **statement,
+    }
+
+
 def _set_trust_class(bundle: dict[str, Any], field_path: str, trust_class: str) -> None:
     for entry in bundle["receipt"]["field_trust_class_vector"]:
         if entry["field_path"] == field_path:
@@ -445,15 +454,21 @@ def mutation_cases(stwo_evidence_path: pathlib.Path) -> list[dict[str, Any]]:
     return cases
 
 
-def _run_rust_agent_verifier(bundle_path: pathlib.Path) -> dict[str, Any]:
+def _run_rust_agent_verifier(
+    bundle_path: pathlib.Path,
+    model_subreceipt_path: pathlib.Path,
+    checked_stwo_evidence_path: pathlib.Path,
+) -> dict[str, Any]:
     cmd = [
         "cargo",
         "run",
         "--quiet",
         "--example",
-        "agent_step_receipt_verify",
+        "agent_step_zkai_stwo_receipt_verify",
         "--",
-        f"baseline={bundle_path}",
+        str(bundle_path),
+        str(model_subreceipt_path),
+        str(checked_stwo_evidence_path),
     ]
     completed = subprocess.run(
         cmd,
@@ -472,7 +487,7 @@ def _run_rust_agent_verifier(bundle_path: pathlib.Path) -> dict[str, Any]:
         payload = json.loads(completed.stdout)
     except json.JSONDecodeError as err:
         raise CompositionError(f"Rust AgentStepReceiptV1 verifier returned invalid JSON: {err}") from err
-    if payload.get("schema") != "agent-step-receipt-rust-verifier-adapter-v1":
+    if payload.get("schema") != "agent-step-zkai-stwo-rust-callback-verifier-v1":
         raise CompositionError("Rust AgentStepReceiptV1 verifier returned an unexpected schema")
     results = payload.get("results")
     if not isinstance(results, list) or len(results) != 1:
@@ -498,10 +513,16 @@ def run_composition(
     artifact_dir.mkdir(parents=True, exist_ok=True)
     bundle_path = artifact_dir / "agent_step_zkai_stwo_composed_receipt.json"
     bundle_path.write_bytes(canonical_json_bytes(bundle) + b"\n")
+    subreceipt_path = artifact_dir / "zkai_stwo_statement_receipt.json"
+    subreceipt_path.write_bytes(canonical_json_bytes(zkai_statement_receipt_payload(envelope)) + b"\n")
 
     rust_result = None
     if rust_verify:
-        rust_result = _run_rust_agent_verifier(bundle_path)
+        rust_result = _run_rust_agent_verifier(
+            bundle_path,
+            subreceipt_path,
+            _source_evidence_path(stwo_evidence_path),
+        )
 
     cases = mutation_cases(stwo_evidence_path)
     passed = all(case["rejected"] for case in cases)
@@ -531,7 +552,9 @@ def run_composition(
         "composed_agent_receipt": {
             "schema": COMPOSED_BUNDLE_SCHEMA,
             "path": _path_label(bundle_path),
+            "model_subreceipt_path": _path_label(subreceipt_path),
             "sha256": file_sha256(bundle_path),
+            "model_subreceipt_sha256": file_sha256(subreceipt_path),
             "receipt_commitment": bundle["receipt"]["receipt_commitment"],
             "model_receipt_commitment": bundle["receipt"]["model_receipt_commitment"],
             "model_receipt_statement_commitment": envelope["statement_commitment"],
