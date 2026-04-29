@@ -372,11 +372,22 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
                 "AgentStepReceiptV1 missing trust class for /model_receipt_commitment".to_string(),
             )
         })?;
-    let Some(model_subreceipt_evidence) = bundle.evidence_manifest.entries.iter().find(|entry| {
-        entry.corresponding_receipt_field == "/model_receipt_commitment"
+    let mut model_subreceipt_evidence = None;
+    for entry in &bundle.evidence_manifest.entries {
+        if entry.corresponding_receipt_field == "/model_receipt_commitment"
             && entry.trust_class == model_trust
             && entry.evidence_kind == AgentEvidenceKind::Subreceipt
-    }) else {
+        {
+            if model_subreceipt_evidence.is_some() {
+                return Err(VmError::InvalidConfig(
+                    "AgentStepReceiptV1 model_receipt_commitment has multiple subreceipt evidence entries"
+                        .to_string(),
+                ));
+            }
+            model_subreceipt_evidence = Some(entry);
+        }
+    }
+    let Some(model_subreceipt_evidence) = model_subreceipt_evidence else {
         return Ok(());
     };
     let Some(model_subreceipt_payload) = model_subreceipt_payload else {
@@ -2046,6 +2057,41 @@ mod tests {
             }),
         )
         .expect("dependency-dropped subreceipt callback accepts");
+    }
+
+    #[test]
+    fn agent_step_receipt_model_subreceipt_rejects_ambiguous_evidence_entries() {
+        let mut bundle = make_proved_model_subreceipt_bundle();
+        let mut duplicate = bundle
+            .evidence_manifest
+            .entries
+            .iter()
+            .find(|entry| entry.corresponding_receipt_field == "/model_receipt_commitment")
+            .expect("model receipt evidence")
+            .clone();
+        duplicate.evidence_id = "urn:agent-step:evidence:model-receipt:duplicate".to_string();
+        bundle.evidence_manifest.entries.push(duplicate);
+        bundle.evidence_manifest.entries.sort_by(|left, right| {
+            left.evidence_id
+                .as_bytes()
+                .cmp(right.evidence_id.as_bytes())
+        });
+        recompute_manifest_commitments(&mut bundle);
+        verify_agent_step_receipt_bundle_v1(&bundle)
+            .expect("parser-only verifier accepts multiple same-field evidence entries");
+        let model_subreceipt = model_subreceipt_payload(&bundle);
+
+        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+            &bundle,
+            Some(&model_subreceipt),
+            Some(&|_| Ok(())),
+        )
+        .expect_err("ambiguous model subreceipt evidence rejects");
+        assert!(
+            err.to_string()
+                .contains("multiple subreceipt evidence entries"),
+            "{err}"
+        );
     }
 
     #[test]
