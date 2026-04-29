@@ -163,6 +163,7 @@ pub struct AgentRequiredSubfactV1 {
 
 #[derive(Debug)]
 pub struct AgentModelSubreceiptVerificationRequestV1<'a> {
+    pub model_subreceipt_payload: &'a Value,
     pub model_receipt_commitment: &'a str,
     pub runtime_domain: &'a str,
     pub model_identity: &'a str,
@@ -355,32 +356,34 @@ pub fn verify_agent_step_receipt_bundle_v1(bundle: &AgentStepReceiptBundleV1) ->
 
 pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
     bundle: &AgentStepReceiptBundleV1,
+    model_subreceipt_payload: Option<&Value>,
     verify_model_subreceipt: Option<&AgentModelSubreceiptVerifierV1<'_>>,
 ) -> Result<()> {
     verify_agent_step_receipt_bundle_v1(bundle)?;
 
-    let receipt_value = serde_json::to_value(&bundle.receipt)
-        .map_err(|err| VmError::Serialization(format!("AgentStepReceiptV1 receipt: {err}")))?;
-    let trust_by_field = validate_trust_vector(&bundle.receipt, &receipt_value)?;
-    let evidence_by_field =
-        validate_evidence_manifest(&bundle.evidence_manifest, &receipt_value, &trust_by_field)?;
-    let model_trust = trust_by_field
-        .get("/model_receipt_commitment")
+    let model_trust = bundle
+        .receipt
+        .field_trust_class_vector
+        .iter()
+        .find(|entry| entry.field_path == "/model_receipt_commitment")
+        .map(|entry| entry.trust_class)
         .ok_or_else(|| {
             VmError::InvalidConfig(
                 "AgentStepReceiptV1 missing trust class for /model_receipt_commitment".to_string(),
             )
         })?;
-    let Some(model_subreceipt_evidence) = evidence_by_field
-        .get("/model_receipt_commitment")
-        .into_iter()
-        .flatten()
-        .find(|entry| {
-            entry.evidence_kind == AgentEvidenceKind::Subreceipt
-                && entry.trust_class == *model_trust
-        })
-    else {
+    let Some(model_subreceipt_evidence) = bundle.evidence_manifest.entries.iter().find(|entry| {
+        entry.corresponding_receipt_field == "/model_receipt_commitment"
+            && entry.trust_class == model_trust
+            && entry.evidence_kind == AgentEvidenceKind::Subreceipt
+    }) else {
         return Ok(());
+    };
+    let Some(model_subreceipt_payload) = model_subreceipt_payload else {
+        return Err(VmError::InvalidConfig(
+            "AgentStepReceiptV1 model_receipt_commitment requires candidate nested subreceipt payload"
+                .to_string(),
+        ));
     };
     let Some(verify_model_subreceipt) = verify_model_subreceipt else {
         return Err(VmError::InvalidConfig(
@@ -389,6 +392,7 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
         ));
     };
     let request = AgentModelSubreceiptVerificationRequestV1 {
+        model_subreceipt_payload,
         model_receipt_commitment: &bundle.receipt.model_receipt_commitment,
         runtime_domain: &bundle.receipt.runtime_domain,
         model_identity: &bundle.receipt.model_identity,
@@ -1607,6 +1611,19 @@ mod tests {
         recompute_manifest_commitments(bundle);
     }
 
+    fn model_subreceipt_payload(bundle: &AgentStepReceiptBundleV1) -> Value {
+        serde_json::json!({
+            "schema": "zkai-statement-receipt-v1",
+            "statement_commitment": bundle.receipt.model_receipt_commitment,
+            "verifier_domain": bundle.receipt.runtime_domain,
+            "model_id": bundle.receipt.model_identity,
+            "model_artifact_commitment": bundle.receipt.model_commitment,
+            "config_commitment": bundle.receipt.model_config_commitment,
+            "input_commitment": bundle.receipt.observation_commitment,
+            "output_commitment": bundle.receipt.action_commitment,
+        })
+    }
+
     fn make_omitted_tool_receipt_bundle() -> AgentStepReceiptBundleV1 {
         let mut bundle = build_valid_bundle();
         bundle.receipt.tool_receipts_root = None;
@@ -1924,12 +1941,15 @@ mod tests {
     fn agent_step_receipt_model_subreceipt_callback_accepts() {
         let bundle = make_proved_model_subreceipt_bundle();
         verify_agent_step_receipt_bundle_v1(&bundle).expect("parser-only verifier still accepts");
+        let model_subreceipt = model_subreceipt_payload(&bundle);
         let called = Cell::new(false);
 
         verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
             &bundle,
+            Some(&model_subreceipt),
             Some(&|request| {
                 called.set(true);
+                assert_eq!(request.model_subreceipt_payload, &model_subreceipt);
                 assert_eq!(
                     request.model_receipt_commitment,
                     bundle.receipt.model_receipt_commitment
@@ -1960,8 +1980,13 @@ mod tests {
     #[test]
     fn agent_step_receipt_model_subreceipt_requires_callback() {
         let bundle = make_proved_model_subreceipt_bundle();
-        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(&bundle, None)
-            .expect_err("missing callback rejects subreceipt-backed model receipt");
+        let model_subreceipt = model_subreceipt_payload(&bundle);
+        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+            &bundle,
+            Some(&model_subreceipt),
+            None,
+        )
+        .expect_err("missing callback rejects subreceipt-backed model receipt");
         assert!(
             err.to_string()
                 .contains("requires nested subreceipt verifier callback"),
@@ -1970,17 +1995,38 @@ mod tests {
     }
 
     #[test]
+    fn agent_step_receipt_model_subreceipt_requires_candidate_payload() {
+        let bundle = make_proved_model_subreceipt_bundle();
+        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+            &bundle,
+            None,
+            Some(&|_| Ok(())),
+        )
+        .expect_err("missing candidate nested subreceipt payload rejects");
+        assert!(
+            err.to_string()
+                .contains("requires candidate nested subreceipt payload"),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn agent_step_receipt_proof_backed_model_receipt_does_not_require_subreceipt_callback() {
         let bundle = build_valid_bundle();
-        verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(&bundle, None)
+        verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(&bundle, None, None)
             .expect("proof-backed model receipt does not require subreceipt callback");
     }
 
     #[test]
     fn agent_step_receipt_dependency_dropped_model_subreceipt_requires_callback() {
         let bundle = make_dependency_dropped_model_receipt_bundle();
-        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(&bundle, None)
-            .expect_err("dependency-dropped subreceipt missing callback rejects");
+        let model_subreceipt = model_subreceipt_payload(&bundle);
+        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+            &bundle,
+            Some(&model_subreceipt),
+            None,
+        )
+        .expect_err("dependency-dropped subreceipt missing callback rejects");
         assert!(
             err.to_string()
                 .contains("requires nested subreceipt verifier callback"),
@@ -1989,7 +2035,9 @@ mod tests {
 
         verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
             &bundle,
+            Some(&model_subreceipt),
             Some(&|request| {
+                assert_eq!(request.model_subreceipt_payload, &model_subreceipt);
                 assert_eq!(
                     request.model_receipt_commitment,
                     bundle.receipt.model_receipt_commitment
@@ -2007,9 +2055,11 @@ mod tests {
         refresh_evidence_for_field(&mut bundle, "/model_identity");
         verify_agent_step_receipt_bundle_v1(&bundle)
             .expect("parser-only verifier accepts self-consistent agent receipt");
+        let model_subreceipt = model_subreceipt_payload(&make_proved_model_subreceipt_bundle());
 
         let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
             &bundle,
+            Some(&model_subreceipt),
             Some(&|request| {
                 if request.model_identity != "toy-transformer-block-v1" {
                     return Err(VmError::InvalidConfig(

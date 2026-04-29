@@ -409,9 +409,9 @@ statement receipt and the equality between agent fields and statement fields.
 The Rust verifier now also exposes
 `verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback`, which keeps
 the parser-only API available but requires an adapter callback when
-`/model_receipt_commitment` is supported by subreceipt evidence. The callback
-receives the model/input/output/config/runtime fields that must match the nested
-zkAI statement receipt.
+`/model_receipt_commitment` is supported by subreceipt evidence. The callback receives the candidate nested receipt payload plus the
+model/input/output/config/runtime fields that must match the nested zkAI
+statement receipt.
 
 ## Landscape Context
 

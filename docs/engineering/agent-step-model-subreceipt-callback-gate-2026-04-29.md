@@ -26,14 +26,17 @@ This gate adds a stricter composition API:
 ```rust
 verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
     &bundle,
+    Some(&candidate_model_subreceipt_payload),
     Some(&verify_model_subreceipt),
 )
 ```
 
 If `/model_receipt_commitment` is supported by compatible `subreceipt` evidence,
-the stricter API requires a callback. The callback receives the agent-side fields
-that must be checked against the nested model subreceipt:
+the stricter API requires both a candidate nested receipt payload and a callback.
+The callback receives the payload plus the agent-side fields that must be checked
+against the nested model subreceipt:
 
+- candidate nested receipt payload,
 - `model_receipt_commitment`,
 - `runtime_domain`,
 - `model_identity`,
@@ -57,6 +60,7 @@ New Rust tests cover:
 | Parser-only verifier on a subreceipt-backed model receipt | Accepts |
 | Callback verifier with matching nested subreceipt facts | Accepts |
 | Proof-backed model receipt with no subreceipt evidence | Does not require callback |
+| Proved model subreceipt missing candidate payload | Rejects |
 | Proved model subreceipt missing callback | Rejects |
 | Dependency-dropped model subreceipt missing callback | Rejects |
 | Self-consistent agent receipt whose model identity drifts from nested subreceipt | Rejects through callback |
@@ -76,6 +80,7 @@ Broader preflight used for the PR:
 ```bash
 python3 scripts/paper/paper_preflight.py --repo-root .
 just gate-fast
+just gate
 ```
 
 ## Non-claims
