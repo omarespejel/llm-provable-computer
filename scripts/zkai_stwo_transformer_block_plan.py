@@ -169,9 +169,10 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     operation_ids = _ids(operations, "target.operations")
     _require_superset(operation_ids, REQUIRED_OPERATION_IDS, "target.operations")
 
-    public_commitments = set(_required_list(target.get("public_commitments"), "target.public_commitments"))
-    if not all(isinstance(item, str) and item for item in public_commitments):
+    public_commitment_items = _required_list(target.get("public_commitments"), "target.public_commitments")
+    if not all(isinstance(item, str) and item for item in public_commitment_items):
         raise PlanValidationError("target.public_commitments must contain only non-empty strings")
+    public_commitments = set(public_commitment_items)
     _require_superset(public_commitments, REQUIRED_PUBLIC_COMMITMENTS, "target.public_commitments")
 
     go_ids = _ids(_required_list(plan.get("go_criteria"), "go_criteria"), "go_criteria")
@@ -181,7 +182,9 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     _require_superset(no_go_ids, REQUIRED_NO_GO_IDS, "no_go_criteria")
 
     non_claims = _required_list(plan.get("non_claims"), "non_claims")
-    non_claim_text = "\n".join(str(item).lower() for item in non_claims)
+    if not all(isinstance(item, str) and item for item in non_claims):
+        raise PlanValidationError("non_claims must contain only non-empty strings")
+    non_claim_text = "\n".join(item.lower() for item in non_claims)
     for fragment in REQUIRED_NON_CLAIM_FRAGMENTS:
         if fragment.lower() not in non_claim_text:
             raise PlanValidationError(f"non_claims is missing: {fragment}")

@@ -67,6 +67,13 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(PLAN.PlanValidationError, "public_instance_commitment"):
             PLAN.validate_plan(plan)
 
+    def test_plan_rejects_unhashable_public_commitment_cleanly(self) -> None:
+        plan = self._plan()
+        plan["target"]["public_commitments"].append({"bad": "shape"})
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "public_commitments"):
+            PLAN.validate_plan(plan)
+
     def test_plan_requires_relabeling_go_criterion(self) -> None:
         plan = self._plan()
         plan["go_criteria"] = [
@@ -111,6 +118,13 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         ] = "GO_FOR_STATEMENT_BINDING"
 
         with self.assertRaisesRegex(PLAN.PlanValidationError, "proof-only baseline"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_non_string_non_claim_cleanly(self) -> None:
+        plan = self._plan()
+        plan["non_claims"].append({"not": "a string"})
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "non_claims"):
             PLAN.validate_plan(plan)
 
     def test_main_returns_failure_on_malformed_plan_file(self) -> None:
