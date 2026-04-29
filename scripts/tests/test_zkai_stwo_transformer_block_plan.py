@@ -120,6 +120,66 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(PLAN.PlanValidationError, "proof-only baseline"):
             PLAN.validate_plan(plan)
 
+    def test_plan_rejects_baseline_proof_system_version_drift(self) -> None:
+        plan = self._plan()
+        plan["current_baseline"]["proof_system_version"] = "stwo-phase999-invalid"
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "proof_system_version"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_statement_corpus_size_weakening(self) -> None:
+        plan = self._plan()
+        plan["current_baseline"]["mutation_result"]["statement_envelope"][
+            "mutations_checked"
+        ] = 1
+        plan["current_baseline"]["mutation_result"]["statement_envelope"][
+            "mutations_rejected"
+        ] = 1
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "statement-envelope baseline"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_proof_only_corpus_size_drift(self) -> None:
+        plan = self._plan()
+        plan["current_baseline"]["mutation_result"]["proof_only"][
+            "mutations_checked"
+        ] = 1
+        plan["current_baseline"]["mutation_result"]["proof_only"][
+            "mutations_rejected"
+        ] = 1
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "proof-only baseline"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_agent_composition_corpus_size_weakening(self) -> None:
+        plan = self._plan()
+        plan["current_baseline"]["agent_composition_result"][
+            "mutations_checked"
+        ] = 1
+        plan["current_baseline"]["agent_composition_result"][
+            "mutations_rejected"
+        ] = 1
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "agent composition baseline"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_validation_command_coverage_weakening(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"] = [
+            "python3 scripts/zkai_stwo_transformer_block_plan.py --json",
+            "python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan",
+        ]
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "test_zkai_stwo_statement_envelope"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_non_string_validation_command_cleanly(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"].append({"bad": "shape"})
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "validation_commands"):
+            PLAN.validate_plan(plan)
+
     def test_plan_rejects_non_string_non_claim_cleanly(self) -> None:
         plan = self._plan()
         plan["non_claims"].append({"not": "a string"})
