@@ -121,7 +121,7 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         payload = SUITE.run_suite("python-reference")
         rows = list(csv.DictReader(io.StringIO(SUITE.to_tsv(payload)), delimiter="\t"))
 
-        self.assertEqual(rows[0].keys(), set(SUITE.TSV_COLUMNS))
+        self.assertEqual(list(rows[0].keys()), SUITE.TSV_COLUMNS)
         self.assertEqual(len(rows), payload["case_count"])
         self.assertIn("model_identity_relabeling", {row["category"] for row in rows})
 
