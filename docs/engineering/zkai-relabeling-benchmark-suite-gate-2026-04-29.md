@@ -42,7 +42,7 @@ Rust-production regeneration command:
 
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
-ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=6ce6b6b22cab2a82780d47588f9e3e804e8f4bb9 \
+ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=445a00f59f1676e7ef905375b076679570cb6dce \
 ZKAI_RELABELING_BENCHMARK_COMMAND_JSON='["env","CARGO_TARGET_DIR=target/agent-relabeling-bench","python3.12","scripts/zkai_relabeling_benchmark_suite.py","--adapter","rust-production","--write-json","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"]' \
 python3.12 scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
@@ -53,7 +53,7 @@ python3.12 scripts/zkai_relabeling_benchmark_suite.py \
 Declarative-policy regeneration command:
 
 ```bash
-ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=6ce6b6b22cab2a82780d47588f9e3e804e8f4bb9 \
+ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=445a00f59f1676e7ef905375b076679570cb6dce \
 ZKAI_RELABELING_BENCHMARK_COMMAND_JSON='["env","python3.12","scripts/zkai_relabeling_benchmark_suite.py","--adapter","declarative-policy","--write-json","docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.tsv"]' \
 python3.12 scripts/zkai_relabeling_benchmark_suite.py \
     --adapter declarative-policy \
