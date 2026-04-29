@@ -129,6 +129,8 @@ object for that stronger claim.
 - `malformed artifact producer`: emits structurally invalid manifests, payloads, or nested proof envelopes.
 - `oversized input producer`: attempts denial-of-service via large JSON, nested payloads, or excessive member counts.
 - `backend confusion attacker`: mixes incompatible proof families, versions, or proof surfaces.
+- `parser-version relabeling attacker`: reuses receipt bytes under a different parser or
+  canonicalization version to change field interpretation without changing the evidence.
 - `scope drift attacker`: rewrites statement version, semantic scope, or proof-family labels without matching source changes.
 - `shared-table substitution attacker`: swaps the intended lookup table or registry while preserving surrounding structure.
 - `carried-state splice attacker`: stitches together artifacts whose boundaries do not legitimately line up.
@@ -180,6 +182,8 @@ For accepted inputs, the repository aims to prevent:
 - acceptance of malformed or truncated artifacts,
 - acceptance of backend-swapped or version-swapped proofs,
 - silent drift between statement metadata and verifier semantics,
+- acceptance of proof-backend-version or receipt-parser-version relabeling while proof,
+  manifest, or receipt bytes are reused,
 - reuse of a different shared table under the same descriptive label,
 - carried-state continuity claims that do not actually line up,
 - acceptance of reordered or cross-wired member families when order matters,

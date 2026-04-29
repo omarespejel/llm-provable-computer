@@ -76,6 +76,38 @@ Every receipt member must declare one trust class.
 A receipt is only as strong as its weakest claimed member. Public copy must not
 collapse `attested` or `omitted` fields into a fully proved agent claim.
 
+For deterministic verifier checks, the canonical trust-class rank is:
+
+```text
+omitted=0 < attested=1 < replayed=2 < dependency_dropped=3 < proved=4
+```
+
+This rank is a fail-closed consistency rule, not a philosophical claim that a
+dependency-dropped field is always "stronger" than replay. A verifier uses the
+rank only to reject receipts whose declared field trust exceeds the evidence
+that supports it.
+
+For every non-`omitted` receipt field, the verifier must compute the evidence
+support class from `evidence_manifest.entries[*]` where
+`corresponding_receipt_field` equals that field's JSON Pointer. The aggregate
+support class is the maximum trust-class rank among those entries. The declared
+field class is valid only if:
+
+- at least one evidence entry supports the field,
+- the aggregate support rank is greater than or equal to the declared field
+  rank,
+- `proved` declarations have at least one `evidence_kind=proof` or
+  `evidence_kind=subreceipt` entry with `trust_class=proved`,
+- `dependency_dropped` declarations have at least one
+  `trust_class=dependency_dropped` evidence entry and a matching dependency-drop
+  manifest entry,
+- `omitted` declarations have no positive claim in the receipt text, surrounding
+  metadata, or dependency-drop manifest.
+
+Verifiers must reject any receipt whose `field_trust_class_vector` names a field
+that is absent from the receipt, omits a present non-`omitted` field, contains a
+duplicate field path, or disagrees with the evidence-derived support rule above.
+
 ## Receipt Fields
 
 `AgentStepReceiptV1` should bind the following fields. Implementations may set a
@@ -182,15 +214,53 @@ subreceipt that supports fields in the receipt. It is commitment-bound through
 `evidence_manifest_commitment`; the receipt is invalid if the canonical manifest
 bytes do not hash to that field.
 
-Manifest entries must be sorted by `evidence_id` UTF-8 bytes ascending. Duplicate
-`evidence_id` values, unsorted inputs, unknown fields, unknown enum values, and
-non-canonical encodings must be rejected before commitment comparison.
+### Canonical Manifest Bytes
+
+`AgentEvidenceManifestV1` is encoded as UTF-8 JSON using RFC 8785 JSON
+Canonicalization Scheme semantics plus the stricter profile below. A future
+implementation may replace this with canonical CBOR, but it must use a new
+`receipt_parser_version` and reject cross-parser commitment reuse.
+
+The canonical object shape is exactly:
+
+```json
+{
+  "manifest_version": "agent-step-evidence-manifest-v1",
+  "entries": []
+}
+```
+
+The verifier must reject:
+
+- JSON with duplicate object names, unknown object names, comments, trailing
+  commas, `NaN`, `Infinity`, `-Infinity`, or non-UTF-8 bytes,
+- strings that are not Unicode NFC before canonicalization,
+- enum strings outside the exact lowercase ASCII values specified by this note,
+- mixed-case algorithm aliases or digest strings,
+- arrays whose order is not the canonical order defined below.
+
+Manifest entries must be sorted by `evidence_id` UTF-8 bytes ascending.
+`non_claims` arrays must also be sorted by UTF-8 bytes ascending and must not
+contain duplicates. Duplicate `evidence_id` values, unsorted inputs, unknown
+fields, unknown enum values, and non-canonical encodings must be rejected before
+commitment comparison.
+
+For `v1`, `evidence_id` must be an ASCII URN matching:
+
+```text
+^urn:agent-step:evidence:[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9._-]{0,127}$
+```
+
+`commitment` values must be `algorithm:lower_hex_digest` where `algorithm` is in
+the active allowlist and the digest length matches the algorithm: `64` hex
+characters for `blake2b-256`, `blake2s-256`, and `sha256`; `96` for `sha384`;
+and `128` for `sha512`.
 
 Each entry has the following deterministic shape:
 
 | Field | Required | Type / format | Semantics |
 | --- | --- | --- | --- |
-| `evidence_id` | yes | URN or stable UTF-8 string | Unique handle, for example `urn:agent-step:evidence:model-proof:0`. |
+| `evidence_id` | yes | ASCII URN | Unique handle, for example `urn:agent-step:evidence:model-proof:0`. |
 | `evidence_kind` | yes | enum string | One of `proof`, `attestation`, `replay_source`, or `subreceipt`. |
 | `commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the evidence object. |
 | `trust_class` | yes | trust-class enum string | Trust class contributed by this evidence object. |
@@ -201,6 +271,13 @@ Each entry has the following deterministic shape:
 The evidence manifest uses the same commitment algorithm policy as the
 dependency-drop manifest: `blake2b-256`, `blake2s-256`, `sha256`, `sha384`, and
 `sha512` are the baseline allowlist unless the `verifier_domain` narrows it.
+
+Every `corresponding_receipt_field` must be a JSON Pointer present in the
+receipt's `field_trust_class_vector`. Evidence entries that point at omitted
+fields, unknown fields, or fields whose declared trust class is stronger than
+the evidence-derived support class must be rejected. This rule is what prevents
+a producer from reusing a valid evidence manifest while upgrading an
+attestation-only field into a proof claim.
 
 ## Dependency-Drop Manifest
 
@@ -253,6 +330,8 @@ the corresponding field is not `omitted`:
 - policy commitment changed,
 - transcript commitment changed,
 - backend/proof-system domain changed,
+- backend/proof-system version changed while proof or receipt bytes are reused,
+- receipt parser version changed or downgraded while canonical bytes are reused,
 - dependency-drop manifest changed,
 - evidence manifest changed,
 - trust class upgraded from `attested` or `omitted` to `proved`.
