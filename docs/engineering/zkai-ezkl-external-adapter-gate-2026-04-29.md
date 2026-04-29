@@ -92,6 +92,21 @@ uv venv --python /opt/homebrew/bin/python3.12 /tmp/ptvm-ezkl-venv
 uv pip install --python /tmp/ptvm-ezkl-venv/bin/python ezkl==23.0.5 onnx==1.21.0
 ```
 
+Provision the pinned SRS before running. The benchmark fails fast if this file
+is missing instead of downloading live bytes during evidence generation.
+
+```bash
+mkdir -p target/ezkl
+curl -L https://kzg.ezkl.xyz/kzg17.srs -o target/ezkl/kzg17.srs
+python3.12 - <<'PY'
+import hashlib
+from pathlib import Path
+expected = "41509f380362a8d14401c5ae92073154922fe23e45459ce6f696f58607655db7"
+actual = hashlib.sha256(Path("target/ezkl/kzg17.srs").read_bytes()).hexdigest()
+assert actual == expected, (actual, expected)
+PY
+```
+
 Run the benchmark:
 
 ```bash

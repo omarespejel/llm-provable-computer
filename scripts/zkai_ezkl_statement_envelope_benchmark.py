@@ -20,12 +20,12 @@ from collections.abc import Callable
 import copy
 import csv
 import hashlib
+import importlib.metadata
 import io
 import json
 import os
 import pathlib
 import tempfile
-import urllib.request
 from typing import Any
 
 
@@ -71,7 +71,11 @@ def sha256_bytes(data: bytes) -> str:
 
 
 def sha256_file(path: pathlib.Path) -> str:
-    return sha256_bytes(path.read_bytes())
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def blake2b_commitment(value: Any, domain: str) -> str:
@@ -204,10 +208,11 @@ def mutated_envelopes() -> dict[str, tuple[str, dict[str, Any]]]:
 
 
 def ensure_srs(path: pathlib.Path) -> pathlib.Path:
-    if path.exists():
-        return path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    urllib.request.urlretrieve(SRS_URL, path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"missing EZKL KZG SRS at {path}; provision {SRS_URL} first "
+            "and set ZKAI_EZKL_SRS_PATH or pass --srs-path"
+        )
     return path
 
 
@@ -221,6 +226,13 @@ def ezkl_verify(
         import ezkl  # type: ignore
     except ImportError as err:
         raise EzklEnvelopeError("ezkl Python package is not installed") from err
+
+    installed_version = importlib.metadata.version("ezkl")
+    expected_version = EXPECTED_STATEMENT["proof_system_version"]
+    if installed_version != expected_version:
+        raise EzklEnvelopeError(
+            f"installed ezkl version {installed_version} does not match expected {expected_version}"
+        )
 
     with tempfile.TemporaryDirectory(prefix="zkai-ezkl-proof-") as raw_tmp:
         proof_path = pathlib.Path(raw_tmp) / "proof.json"
@@ -262,6 +274,8 @@ def _check_artifact_hashes(envelope: dict[str, Any]) -> tuple[pathlib.Path, path
 def verify_statement_envelope(
     envelope: dict[str, Any],
     srs_path: pathlib.Path,
+    *,
+    srs_sha256: str | None = None,
     external_verify: Callable[[dict[str, Any], pathlib.Path, pathlib.Path, pathlib.Path], None] = ezkl_verify,
 ) -> None:
     if envelope.get("schema") != ENVELOPE_SCHEMA:
@@ -275,7 +289,8 @@ def verify_statement_envelope(
     settings_path, vk_path = _check_artifact_hashes(envelope)
     if statement.get("srs_url") != SRS_URL:
         raise EzklEnvelopeError("unsupported SRS URL")
-    if sha256_file(srs_path) != statement.get("srs_sha256"):
+    actual_srs_sha256 = srs_sha256 if srs_sha256 is not None else sha256_file(srs_path)
+    if actual_srs_sha256 != statement.get("srs_sha256"):
         raise EzklEnvelopeError("SRS hash mismatch")
     external_verify(_proof_payload(envelope), settings_path, vk_path, srs_path)
 
@@ -313,12 +328,13 @@ def _case_result(
     envelope: dict[str, Any],
     srs_path: pathlib.Path,
     external_verify: Callable[[dict[str, Any], pathlib.Path, pathlib.Path, pathlib.Path], None],
+    srs_sha256: str | None,
 ) -> tuple[bool, str]:
     try:
         if adapter == "ezkl-proof-only":
             verify_proof_only(envelope, srs_path, external_verify=external_verify)
         elif adapter == "ezkl-statement-envelope":
-            verify_statement_envelope(envelope, srs_path, external_verify=external_verify)
+            verify_statement_envelope(envelope, srs_path, srs_sha256=srs_sha256, external_verify=external_verify)
         else:
             raise EzklEnvelopeError(f"unsupported adapter {adapter!r}")
     except Exception as err:  # noqa: BLE001 - the benchmark records verifier failures.
@@ -332,14 +348,17 @@ def run_benchmark(
     external_verify: Callable[[dict[str, Any], pathlib.Path, pathlib.Path, pathlib.Path], None] = ezkl_verify,
 ) -> dict[str, Any]:
     ensure_srs(srs_path)
+    srs_sha256 = sha256_file(srs_path)
     baseline = baseline_envelope()
     mutations = mutated_envelopes()
     adapters = ["ezkl-proof-only", "ezkl-statement-envelope"]
     cases = []
     for adapter in adapters:
-        baseline_accepted, baseline_error = _case_result(adapter, baseline, srs_path, external_verify)
+        baseline_accepted, baseline_error = _case_result(
+            adapter, baseline, srs_path, external_verify, srs_sha256
+        )
         for mutation, (category, envelope) in sorted(mutations.items()):
-            accepted, error = _case_result(adapter, envelope, srs_path, external_verify)
+            accepted, error = _case_result(adapter, envelope, srs_path, external_verify, srs_sha256)
             cases.append(
                 {
                     "adapter": adapter,
@@ -362,7 +381,7 @@ def run_benchmark(
             "version": "23.0.5",
             "verification_api": "ezkl.verify(proof_path, settings_path, vk_path, srs_path)",
             "srs_url": SRS_URL,
-            "srs_sha256": sha256_file(srs_path),
+            "srs_sha256": srs_sha256,
         },
         "non_claims": [
             "not_a_performance_benchmark",
@@ -419,6 +438,17 @@ def _canonical_command(command: list[str] | None) -> list[str]:
     return command or []
 
 
+def benchmark_passed(payload: dict[str, Any]) -> bool:
+    summary = payload["summary"]
+    proof_only = summary["ezkl-proof-only"]
+    statement_envelope = summary["ezkl-statement-envelope"]
+    return (
+        proof_only["baseline_accepted"]
+        and statement_envelope["baseline_accepted"]
+        and statement_envelope["all_mutations_rejected"]
+    )
+
+
 def to_tsv(payload: dict[str, Any]) -> str:
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
@@ -455,16 +485,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json_text, end="")
     if args.tsv:
         print(tsv_text, end="")
+    passed = benchmark_passed(payload)
     if not (args.json or args.tsv or args.write_json or args.write_tsv):
         summary = payload["summary"]
         print(
-            "PASS: "
+            f"{'PASS' if passed else 'FAIL'}: "
             f"proof-only rejected {summary['ezkl-proof-only']['mutations_rejected']}/"
             f"{summary['ezkl-proof-only']['mutation_count']} mutations; "
             f"statement-envelope rejected {summary['ezkl-statement-envelope']['mutations_rejected']}/"
             f"{summary['ezkl-statement-envelope']['mutation_count']} mutations"
         )
-    return 0 if payload["summary"]["ezkl-statement-envelope"]["all_mutations_rejected"] else 1
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

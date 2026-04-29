@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import pathlib
+import sys
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -63,6 +67,52 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
                     pathlib.Path(srs.name),
                     external_verify=fake_external_verify,
                 )
+
+    def test_ensure_srs_fails_fast_when_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            missing = pathlib.Path(raw_tmp) / "missing-kzg17.srs"
+            with self.assertRaisesRegex(FileNotFoundError, "missing EZKL KZG SRS"):
+                BENCH.ensure_srs(missing)
+
+    def test_ezkl_verify_rejects_runtime_version_mismatch(self) -> None:
+        original_ezkl = sys.modules.get("ezkl")
+        sys.modules["ezkl"] = types.SimpleNamespace(verify=lambda *_args, **_kwargs: True)
+        try:
+            with mock.patch.object(BENCH.importlib.metadata, "version", return_value="0.0.0"):
+                with self.assertRaisesRegex(BENCH.EzklEnvelopeError, "does not match expected"):
+                    BENCH.ezkl_verify(
+                        {"instances": [["1"]]},
+                        pathlib.Path("settings.json"),
+                        pathlib.Path("vk.key"),
+                        pathlib.Path("srs"),
+                    )
+        finally:
+            if original_ezkl is None:
+                del sys.modules["ezkl"]
+            else:
+                sys.modules["ezkl"] = original_ezkl
+
+    def test_main_fails_when_statement_envelope_baseline_is_rejected(self) -> None:
+        payload = {
+            "summary": {
+                "ezkl-proof-only": {
+                    "baseline_accepted": True,
+                    "mutations_rejected": 1,
+                    "mutation_count": 7,
+                    "all_mutations_rejected": False,
+                },
+                "ezkl-statement-envelope": {
+                    "baseline_accepted": False,
+                    "mutations_rejected": 7,
+                    "mutation_count": 7,
+                    "all_mutations_rejected": True,
+                },
+            },
+            "cases": [],
+        }
+        with mock.patch.object(BENCH, "run_benchmark", return_value=payload):
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                self.assertEqual(BENCH.main(["--json", "--srs-path", "unused"]), 1)
 
     def test_tsv_columns_are_stable(self) -> None:
         payload = {
