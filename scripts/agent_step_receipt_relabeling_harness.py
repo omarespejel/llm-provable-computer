@@ -116,6 +116,25 @@ MUTATION_FIELDS = {
     "verifier_domain_separator": "verifier_domain",
     "transcript_hash": "transcript_commitment",
 }
+COMMITMENT_MUTATION_FIELDS = {
+    "prior_state_commitment",
+    "observation_commitment",
+    "model_commitment",
+    "model_config_commitment",
+    "model_receipt_commitment",
+    "tool_receipts_root",
+    "policy_commitment",
+    "action_commitment",
+    "next_state_commitment",
+    "transcript_commitment",
+}
+SCHEMA_MUTATION_VALUES = {
+    "receipt_version": "agent-step-receipt-v2",
+    "verifier_domain": "agent-step-receipt-other-domain",
+    "proof_backend": "other-proof-backend",
+    "proof_backend_version": "stwo-agent-step-test-proof-v2",
+    "receipt_parser_version": "agent-step-receipt-parser-v2",
+}
 EVIDENCE_ID_RE = re.compile(
     r"^urn:agent-step:evidence:[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9._-]{0,127}$"
 )
@@ -617,6 +636,12 @@ def _mutate_field(field: str, value: Any) -> Callable[[dict[str, Any]], None]:
     return mutate
 
 
+def _mutation_value(name: str, field: str) -> Any:
+    if field in COMMITMENT_MUTATION_FIELDS:
+        return commitment_for(f"tampered-{name}", "toy-mutation")
+    return SCHEMA_MUTATION_VALUES.get(field, f"tampered-{name}")
+
+
 def _mutation_scope(name: str) -> str:
     if name in MUTATION_FIELDS:
         return "receipt-field-stale-evidence"
@@ -631,7 +656,7 @@ def _mutation_scope(name: str) -> str:
 
 def mutation_cases() -> dict[str, Callable[[dict[str, Any]], None]]:
     cases = {
-        name: _mutate_field(field, f"tampered-{name}")
+        name: _mutate_field(field, _mutation_value(name, field))
         for name, field in MUTATION_FIELDS.items()
     }
 

@@ -90,11 +90,64 @@ if normalized(generated) != normalized(checked_in):
 PY
 }
 
+check_zkai_relabeling_benchmark_evidence() {
+  local generated_json="${ARTIFACT_DIR}/zkai-relabeling-benchmark-generated.json"
+  local generated_tsv="${ARTIFACT_DIR}/zkai-relabeling-benchmark-generated.tsv"
+  local checked_json="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json"
+  local checked_tsv="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
+  local repro_commit
+  local repro_command
+  repro_commit="$(python3 -B - "$checked_json" <<'PY'
+import json
+import sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["git_commit"])
+PY
+)"
+  repro_command="$(python3 -B - "$checked_json" <<'PY'
+import json
+import sys
+print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["command"][0])
+PY
+)"
+  ZKAI_RELABELING_BENCHMARK_GIT_COMMIT="$repro_commit" \
+    ZKAI_RELABELING_BENCHMARK_COMMAND="$repro_command" \
+    python3 -B scripts/zkai_relabeling_benchmark_suite.py \
+    --adapter rust-production \
+    --write-json "$generated_json" \
+    --write-tsv "$generated_tsv"
+  python3 -B - "$generated_json" "$checked_json" "$generated_tsv" "$checked_tsv" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+
+def normalized_json(path: str) -> str:
+    return json.dumps(
+        json.loads(Path(path).read_text(encoding="utf-8")),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+generated_json, checked_json, generated_tsv, checked_tsv = sys.argv[1:]
+if normalized_json(generated_json) != normalized_json(checked_json):
+    raise SystemExit(
+        f"zkAI relabeling benchmark JSON differs from checked-in evidence: {generated_json} != {checked_json}"
+    )
+if Path(generated_tsv).read_text(encoding="utf-8") != Path(checked_tsv).read_text(encoding="utf-8"):
+    raise SystemExit(
+        f"zkAI relabeling benchmark TSV differs from checked-in evidence: {generated_tsv} != {checked_tsv}"
+    )
+PY
+}
+
 run_logged fmt cargo fmt --check
 run_logged diff-check git diff --check
 run_logged agent-step-receipt-rust cargo test --lib agent_step_receipt
 run_logged agent-step-relabeling python3 -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
 run_logged agent-step-relabeling-cli-evidence check_agent_step_relabeling_cli_evidence
+run_logged zkai-relabeling-benchmark python3 -B -m unittest scripts.tests.test_zkai_relabeling_benchmark_suite
+run_logged zkai-relabeling-benchmark-evidence check_zkai_relabeling_benchmark_evidence
 run_logged carry-aware-air cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib carry_aware_
 run_logged experimental-proof-route cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib experimental_phase12_carry_aware_
 run_logged phase44d-boundary cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib phase44d_source_emission_public_output_boundary_
