@@ -26,6 +26,7 @@ import json
 import os
 import pathlib
 import shutil
+import sys
 import tempfile
 from typing import Any
 
@@ -173,6 +174,22 @@ def _refresh_statement_commitment(envelope: dict[str, Any]) -> None:
     envelope["statement_commitment"] = statement_commitment(envelope["statement"])
 
 
+def mutate_first_public_instance(proof: dict[str, Any]) -> None:
+    instances = proof.get("instances")
+    if (
+        not isinstance(instances, list)
+        or not instances
+        or not isinstance(instances[0], list)
+        or not instances[0]
+        or not isinstance(instances[0][0], str)
+        or not instances[0][0]
+    ):
+        raise EzklEnvelopeError("baseline EZKL proof must contain a non-empty first public instance")
+    first = instances[0][0]
+    replacement_prefix = "8" if first.startswith("7") else "7"
+    instances[0][0] = replacement_prefix + first[1:]
+
+
 def mutated_envelopes() -> dict[str, tuple[str, dict[str, Any]]]:
     baseline = baseline_envelope()
 
@@ -216,7 +233,7 @@ def mutated_envelopes() -> dict[str, tuple[str, dict[str, Any]]]:
     }
 
     proof_env = copy.deepcopy(baseline)
-    proof_env["ezkl_proof"]["instances"][0][0] = "7" + proof_env["ezkl_proof"]["instances"][0][0][1:]
+    mutate_first_public_instance(proof_env["ezkl_proof"])
     proof_env["statement"]["proof_sha256"] = proof_sha256(proof_env["ezkl_proof"])
     proof_env["statement"]["public_instances_sha256"] = proof_public_instances_sha256(proof_env["ezkl_proof"])
     _refresh_statement_commitment(proof_env)
@@ -530,7 +547,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-tsv", type=pathlib.Path, help="write TSV result to this path")
     args = parser.parse_args(argv)
 
-    payload = run_benchmark(args.srs_path, command=[os.environ.get("PYTHON", "python3"), *os.sys.argv])
+    payload = run_benchmark(args.srs_path, command=[os.environ.get("PYTHON", "python3"), *sys.argv])
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)
     if args.write_json:

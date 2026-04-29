@@ -89,6 +89,10 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
                     external_verify=fake_external_verify,
                 )
 
+    def test_public_instance_mutation_rejects_malformed_proof_shape(self) -> None:
+        with self.assertRaisesRegex(BENCH.EzklEnvelopeError, "non-empty first public instance"):
+            BENCH.mutate_first_public_instance({"instances": []})
+
     def test_ensure_srs_fails_fast_when_missing(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:
             missing = pathlib.Path(raw_tmp) / "missing-kzg17.srs"
