@@ -229,6 +229,10 @@ def _file_sha256_hex(path: pathlib.Path) -> str:
     return _sha256_hex(path.read_bytes())
 
 
+def _canonical_json_file_sha256_hex(path: pathlib.Path) -> str:
+    return _sha256_hex(_canonical_bundle_bytes(json.loads(path.read_text(encoding="utf-8"))))
+
+
 def _git_commit() -> str:
     override = os.environ.get("ZKAI_RELABELING_BENCHMARK_GIT_COMMIT")
     if override:
@@ -275,7 +279,7 @@ def _verifier_metadata(adapter: str) -> dict[str, str]:
         "proof_backend": HARNESS.PROOF_BACKEND,
         "proof_backend_version": HARNESS.PROOF_BACKEND_VERSION,
         "declarative_policy_path": str(DECLARATIVE_POLICY_PATH.relative_to(ROOT)),
-        "declarative_policy_sha256": _file_sha256_hex(DECLARATIVE_POLICY_PATH),
+        "declarative_policy_sha256": _canonical_json_file_sha256_hex(DECLARATIVE_POLICY_PATH),
     }
 
 
@@ -333,6 +337,10 @@ def _run_declarative_policy() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
         ],
         expected_schema=DECLARATIVE_POLICY_ADAPTER_SCHEMA,
         adapter_label="declarative policy",
+        expected_metadata={
+            "policy_path": str(DECLARATIVE_POLICY_PATH.relative_to(ROOT)),
+            "policy_sha256": _canonical_json_file_sha256_hex(DECLARATIVE_POLICY_PATH),
+        },
     )
 
 
@@ -341,6 +349,7 @@ def _run_case_adapter(
     cmd_prefix: list[str],
     expected_schema: str,
     adapter_label: str,
+    expected_metadata: dict[str, str] | None = None,
 ) -> tuple[bool, str, dict[str, tuple[bool, str]]]:
     bundles = {"baseline": HARNESS.build_valid_bundle(), **_mutated_bundles()}
     with tempfile.TemporaryDirectory(prefix="zkai-relabeling-suite-") as raw_tmp:
@@ -370,6 +379,16 @@ def _run_case_adapter(
         raise RuntimeError(f"{adapter_label} adapter returned malformed payload: expected object")
     if payload.get("schema") != expected_schema:
         raise RuntimeError(f"unexpected {adapter_label} adapter schema: {payload.get('schema')!r}")
+    if expected_metadata is not None:
+        for key, expected_value in expected_metadata.items():
+            actual_value = payload.get(key)
+            if not isinstance(actual_value, str):
+                raise RuntimeError(f"{adapter_label} adapter returned malformed metadata {key!r}")
+            if actual_value != expected_value:
+                raise RuntimeError(
+                    f"{adapter_label} adapter metadata mismatch for {key}: "
+                    f"expected={expected_value!r} actual={actual_value!r}"
+                )
     results = payload.get("results")
     if not isinstance(results, list):
         raise RuntimeError(f"{adapter_label} adapter returned malformed results: expected list")

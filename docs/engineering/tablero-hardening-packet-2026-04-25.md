@@ -267,6 +267,11 @@ commitment predicates without importing the mutation oracle. This improves local
 cross-implementation confidence, but it is still not an external ecosystem
 comparison.
 
+A case is counted as a pass only if the baseline is accepted and all mutated
+artifacts are rejected; baseline failure does not count as conformance data. For
+regeneration commands, evidence paths, and the full adapter contract, see
+`docs/engineering/zkai-relabeling-benchmark-suite-gate-2026-04-29.md`.
+
 This does not claim a proved agent. It only makes the verifier-facing receipt
 object fail closed before future model, tool, policy, or memory evidence is
 attached.
