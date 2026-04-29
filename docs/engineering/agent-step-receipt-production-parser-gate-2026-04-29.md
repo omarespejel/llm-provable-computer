@@ -25,7 +25,7 @@ dependency-drop manifest under exact parser/domain/backend allowlists.
 - Duplicate JSON object names reject before serde struct deserialization.
 - Unknown JSON fields reject through typed `deny_unknown_fields` structs.
 - Non-NFC strings reject before commitment canonicalization.
-- Floating point JSON values reject; receipt commitments use deterministic JSON
+- Floating-point JSON values reject; receipt commitments use deterministic JSON
   canonicalization over integers, strings, arrays, and objects only.
 - Commitment labels are exact and lowercase:
   `blake2b-256`, `blake2s-256`, `sha256`, `sha384`, or `sha512`.

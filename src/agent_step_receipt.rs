@@ -1,6 +1,7 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fmt;
-use std::fs;
+use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -86,16 +87,16 @@ pub struct AgentStepReceiptV1 {
     pub proof_backend: String,
     pub proof_backend_version: String,
     pub receipt_parser_version: String,
-    pub prior_state_commitment: Option<String>,
-    pub observation_commitment: Option<String>,
-    pub model_identity: Option<String>,
-    pub model_commitment: Option<String>,
-    pub model_config_commitment: Option<String>,
-    pub model_receipt_commitment: Option<String>,
+    pub prior_state_commitment: String,
+    pub observation_commitment: String,
+    pub model_identity: String,
+    pub model_commitment: String,
+    pub model_config_commitment: String,
+    pub model_receipt_commitment: String,
     pub tool_receipts_root: Option<String>,
     pub policy_commitment: Option<String>,
-    pub action_commitment: Option<String>,
-    pub next_state_commitment: Option<String>,
+    pub action_commitment: String,
+    pub next_state_commitment: String,
     pub transcript_commitment: Option<String>,
     pub dependency_drop_manifest_commitment: String,
     pub evidence_manifest_commitment: String,
@@ -1035,7 +1036,8 @@ fn agent_receipt_json_error(error: serde_json::Error) -> VmError {
 }
 
 fn read_json_bytes_with_limit(path: &Path, limit: usize, label: &str) -> Result<Vec<u8>> {
-    let metadata = fs::metadata(path)?;
+    let file = File::open(path)?;
+    let metadata = file.metadata()?;
     if !metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
             "{label} path `{}` is not a regular file",
@@ -1049,7 +1051,10 @@ fn read_json_bytes_with_limit(path: &Path, limit: usize, label: &str) -> Result<
             limit
         )));
     }
-    let bytes = fs::read(path)?;
+
+    let mut reader = file.take(limit as u64 + 1);
+    let mut bytes = Vec::new();
+    reader.read_to_end(&mut bytes)?;
     if bytes.len() > limit {
         return Err(VmError::InvalidConfig(format!(
             "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
@@ -1279,16 +1284,16 @@ mod tests {
             proof_backend: "stwo".to_string(),
             proof_backend_version: AGENT_STEP_RECEIPT_STWO_TEST_BACKEND_VERSION.to_string(),
             receipt_parser_version: AGENT_STEP_RECEIPT_PARSER_VERSION_V1.to_string(),
-            prior_state_commitment: Some(toy_commit("prior-state", "toy")),
-            observation_commitment: Some(toy_commit("observation", "toy")),
-            model_identity: Some("toy-transformer-block-v1".to_string()),
-            model_commitment: Some(toy_commit("model-weights", "toy")),
-            model_config_commitment: Some(toy_commit("model-config", "toy")),
-            model_receipt_commitment: Some(toy_commit("model-proof-receipt", "toy")),
+            prior_state_commitment: toy_commit("prior-state", "toy"),
+            observation_commitment: toy_commit("observation", "toy"),
+            model_identity: "toy-transformer-block-v1".to_string(),
+            model_commitment: toy_commit("model-weights", "toy"),
+            model_config_commitment: toy_commit("model-config", "toy"),
+            model_receipt_commitment: toy_commit("model-proof-receipt", "toy"),
             tool_receipts_root: Some(toy_commit("tool-output-root", "toy")),
             policy_commitment: Some(toy_commit("policy", "toy")),
-            action_commitment: Some(toy_commit("action", "toy")),
-            next_state_commitment: Some(toy_commit("next-state", "toy")),
+            action_commitment: toy_commit("action", "toy"),
+            next_state_commitment: toy_commit("next-state", "toy"),
             transcript_commitment: Some(toy_commit("transcript", "toy")),
             dependency_drop_manifest_commitment: String::new(),
             evidence_manifest_commitment: String::new(),
@@ -1384,11 +1389,7 @@ mod tests {
                 entry.trust_class = AgentTrustClass::DependencyDropped;
             }
         }
-        let replacement = bundle
-            .receipt
-            .model_receipt_commitment
-            .clone()
-            .expect("model receipt");
+        let replacement = bundle.receipt.model_receipt_commitment.clone();
         bundle.dependency_drop_manifest.entries = vec![AgentDependencyDropEntryV1 {
             dependency_id: "urn:agent-step:dependency:model-receipt:0".to_string(),
             dependency_kind: AgentDependencyKind::ModelReceipt,
@@ -1481,24 +1482,22 @@ mod tests {
                 bundle.receipt.runtime_domain = "other-runtime-domain".to_string();
             }),
             ("model_identity", |bundle| {
-                bundle.receipt.model_identity = Some("different-model-label".to_string());
+                bundle.receipt.model_identity = "different-model-label".to_string();
             }),
             ("model_commitment", |bundle| {
-                bundle.receipt.model_commitment = Some(toy_commit("other-model", "toy"));
+                bundle.receipt.model_commitment = toy_commit("other-model", "toy");
             }),
             ("model_config_commitment", |bundle| {
-                bundle.receipt.model_config_commitment = Some(toy_commit("other-config", "toy"));
+                bundle.receipt.model_config_commitment = toy_commit("other-config", "toy");
             }),
             ("model_receipt_commitment", |bundle| {
-                bundle.receipt.model_receipt_commitment =
-                    Some(toy_commit("other-model-receipt", "toy"));
+                bundle.receipt.model_receipt_commitment = toy_commit("other-model-receipt", "toy");
             }),
             ("observation_commitment", |bundle| {
-                bundle.receipt.observation_commitment =
-                    Some(toy_commit("other-observation", "toy"));
+                bundle.receipt.observation_commitment = toy_commit("other-observation", "toy");
             }),
             ("action_commitment", |bundle| {
-                bundle.receipt.action_commitment = Some(toy_commit("other-action", "toy"));
+                bundle.receipt.action_commitment = toy_commit("other-action", "toy");
             }),
             ("policy_commitment", |bundle| {
                 bundle.receipt.policy_commitment = Some(toy_commit("other-policy", "toy"));
@@ -1507,10 +1506,10 @@ mod tests {
                 bundle.receipt.tool_receipts_root = Some(toy_commit("other-tool", "toy"));
             }),
             ("prior_state_commitment", |bundle| {
-                bundle.receipt.prior_state_commitment = Some(toy_commit("other-prior", "toy"));
+                bundle.receipt.prior_state_commitment = toy_commit("other-prior", "toy");
             }),
             ("next_state_commitment", |bundle| {
-                bundle.receipt.next_state_commitment = Some(toy_commit("other-next", "toy"));
+                bundle.receipt.next_state_commitment = toy_commit("other-next", "toy");
             }),
             ("transcript_commitment", |bundle| {
                 bundle.receipt.transcript_commitment = Some(toy_commit("other-transcript", "toy"));
@@ -1662,7 +1661,7 @@ mod tests {
     #[test]
     fn agent_step_receipt_dependency_drop_must_map_each_dropped_field_once() {
         let mut bundle = make_dependency_dropped_model_receipt_bundle();
-        bundle.receipt.policy_commitment = bundle.receipt.model_receipt_commitment.clone();
+        bundle.receipt.policy_commitment = Some(bundle.receipt.model_receipt_commitment.clone());
         for entry in &mut bundle.receipt.field_trust_class_vector {
             if entry.field_path == "/policy_commitment" {
                 entry.trust_class = AgentTrustClass::DependencyDropped;
@@ -1711,16 +1710,53 @@ mod tests {
     }
 
     #[test]
+    fn agent_step_receipt_dependency_drop_rejects_version_and_domain_drift() {
+        let mut version = make_dependency_dropped_model_receipt_bundle();
+        version.dependency_drop_manifest.entries[0].replacement_receipt_version =
+            "agent-step-receipt-v01".to_string();
+        recompute_manifest_commitments(&mut version);
+        let err = verify_agent_step_receipt_bundle_v1(&version)
+            .expect_err("replacement receipt version drift rejects");
+        assert!(
+            err.to_string()
+                .contains("unsupported replacement receipt version"),
+            "{err}"
+        );
+
+        let mut domain = make_dependency_dropped_model_receipt_bundle();
+        domain.dependency_drop_manifest.entries[0].verifier_domain = "other-domain".to_string();
+        recompute_manifest_commitments(&mut domain);
+        let err = verify_agent_step_receipt_bundle_v1(&domain).expect_err("domain drift rejects");
+        assert!(
+            err.to_string()
+                .contains("dependency-drop verifier domain mismatch"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_dependency_drop_rejects_unknown_dependency_kind() {
+        let mut value =
+            serde_json::to_value(make_dependency_dropped_model_receipt_bundle()).expect("bundle");
+        value["dependency_drop_manifest"]["entries"][0]["dependency_kind"] =
+            Value::String("model-proof".to_string());
+        let err = parse_agent_step_receipt_bundle_v1_json(&value.to_string())
+            .expect_err("unknown dependency kind rejects");
+        assert!(
+            err.to_string().contains("dependency_kind")
+                || err.to_string().contains("unknown variant"),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn agent_step_receipt_rejects_mixed_case_commitment_algorithm() {
         let mut bundle = build_valid_bundle();
-        bundle.receipt.model_commitment = Some(
+        bundle.receipt.model_commitment =
             bundle
                 .receipt
                 .model_commitment
-                .clone()
-                .expect("model commitment")
-                .replacen("blake2b-256", "BLAKE2B-256", 1),
-        );
+                .replacen("blake2b-256", "BLAKE2B-256", 1);
         recompute_receipt_commitment(&mut bundle);
         let err =
             verify_agent_step_receipt_bundle_v1(&bundle).expect_err("mixed-case algorithm rejects");
