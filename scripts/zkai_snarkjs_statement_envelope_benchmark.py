@@ -121,6 +121,15 @@ def statement_commitment(statement: dict[str, Any]) -> str:
     return blake2b_commitment(statement, "ptvm:zkai:snarkjs-statement:v1")
 
 
+def statement_payload(envelope: dict[str, Any]) -> dict[str, Any]:
+    statement = envelope.get("statement", {})
+    return copy.deepcopy(statement) if isinstance(statement, dict) else {}
+
+
+def statement_payload_sha256(envelope: dict[str, Any]) -> str:
+    return sha256_bytes(canonical_json_bytes(statement_payload(envelope)))
+
+
 def baseline_envelope() -> dict[str, Any]:
     metadata = _load_json(ARTIFACT_DIR / "metadata.json")
     proof = _load_json(ARTIFACT_DIR / "proof.json")
@@ -422,6 +431,14 @@ def run_benchmark(
                     "adapter": adapter,
                     "mutation": mutation,
                     "category": category,
+                    "baseline_statement": statement_payload(baseline),
+                    "mutated_statement": statement_payload(envelope),
+                    "baseline_statement_sha256": statement_payload_sha256(baseline),
+                    "mutated_statement_sha256": statement_payload_sha256(envelope),
+                    "baseline_statement_commitment": baseline.get("statement_commitment", ""),
+                    "mutated_statement_commitment": envelope.get("statement_commitment", ""),
+                    "baseline_public_signals_sha256": public_signals_sha256(baseline["public_signals"]),
+                    "mutated_public_signals_sha256": public_signals_sha256(envelope["public_signals"]),
                     "baseline_accepted": baseline_accepted,
                     "baseline_error": baseline_error,
                     "mutated_accepted": accepted,
