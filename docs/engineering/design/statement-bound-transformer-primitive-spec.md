@@ -79,8 +79,10 @@ The verifier should accept only if:
 1. The Stwo proof verifies under the expected backend/version/domain.
 2. The statement receipt commitment recomputes.
 3. The proof public-input digest matches `public_instance_commitment`.
-4. The program/weights/config/input/output commitments recompute from source
-   artifacts or accepted source handles.
+4. The program/weights/config/input/output commitments, `proof_commitment`,
+   `verifying_key_commitment`, `setup_commitment`, and
+   `evidence_manifest_commitment` recompute from source artifacts or accepted
+   source handles.
 5. The verifier rejects unknown versions, alternate domains, stale public inputs,
    and receipt fields whose trust class exceeds their evidence support.
 

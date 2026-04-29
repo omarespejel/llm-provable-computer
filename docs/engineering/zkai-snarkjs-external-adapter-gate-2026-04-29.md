@@ -100,6 +100,7 @@ ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=9604f791857ff5ee7fbebec839d6e0b7ae4823f5 \
 The checked proof artifacts were generated with this local command shape:
 
 ```bash
+cd docs/engineering/evidence/zkai-snarkjs-statement-envelope-2026-04/
 circom square.circom --r1cs --wasm --sym -o .
 npx -y snarkjs@0.7.6 powersoftau new bn128 8 pot8_0000.ptau -v
 npx -y snarkjs@0.7.6 powersoftau contribute pot8_0000.ptau pot8_0001.ptau --name="ptvm test" -v -e="ptvm deterministic local test entropy"
@@ -110,11 +111,17 @@ npx -y snarkjs@0.7.6 zkey export verificationkey square_final.zkey verification_
 node square_js/generate_witness.js square_js/square.wasm input.json witness.wtns
 npx -y snarkjs@0.7.6 groth16 prove square_final.zkey witness.wtns proof.json public.json
 npx -y snarkjs@0.7.6 groth16 verify verification_key.json public.json proof.json
+cd -
 ```
 
 Only verifier-facing artifacts are checked in. The proving key, witness, and
 powers-of-tau files are intentionally omitted from this repository because they
 are not needed to rerun the relabeling verifier benchmark.
+
+The adapter does not claim an independent checked SRS/setup artifact. For this
+verifier-facing calibration, setup is represented by the pinned verification key;
+the receipt uses `setup_commitment = null` and rejects attempts to relabel a
+separate setup commitment.
 
 Final validation used for this gate:
 
@@ -127,6 +134,7 @@ python3.12 -m unittest \
 python3.12 scripts/zkai_snarkjs_statement_envelope_benchmark.py --json
 python3.12 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
+just gate
 ```
 
 ## Non-claims

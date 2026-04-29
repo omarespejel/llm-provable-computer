@@ -96,8 +96,8 @@ A verifier accepts a statement receipt only if all of the following hold:
 2. The statement commitment recomputes from the canonical receipt fields.
 3. Every artifact commitment named by the statement recomputes from the supplied
    artifact or accepted artifact reference.
-4. The delegated proof verifier accepts the proof under the supplied verifying
-   key, setup parameters, and public instances.
+4. The delegated proof verifier accepts the proof under verifying-key, setup,
+   and public-instance values derived from checked artifacts or source handles.
 5. The proof object's public-instance commitment matches the statement field.
 6. The evidence manifest commitment recomputes and contains enough source handles
    for third-party reproduction.
@@ -108,10 +108,10 @@ In pseudocode:
 zkAIStatementVerify(r, proof, artifacts) :=
     ValidateReceiptShape(r)
     and RecomputeStatementCommitment(r)
-    and RecomputeArtifactCommitments(r, artifacts)
-    and ExternalProofVerify(proof, r.public_instances, r.verifying_key, r.setup)
-    and BindProofPublicInstances(proof, r.public_instance_commitment)
     and VerifyEvidenceManifest(r.evidence_manifest_commitment, artifacts)
+    and let bound = RecomputeArtifactCommitments(r, artifacts)
+    and BindProofPublicInstances(proof, r.public_instance_commitment, bound.public_instances)
+    and ExternalProofVerify(proof, bound.public_instances, bound.verifying_key, bound.setup)
 ```
 
 ## Relabeling threat model
@@ -141,6 +141,7 @@ A useful adapter reports the rejection layer:
 - `public_instance_binding`,
 - `setup_binding`,
 - `domain_or_version_allowlist`,
+- `statement_policy`,
 - `evidence_manifest`,
 - `parser_or_schema`,
 - `accepted`.
