@@ -44,17 +44,17 @@ single-digit milliseconds:
 
 | Family | Boundary bytes | Full binding median-of-run-means |
 | --- | ---: | ---: |
-| `default` | `6,561` | `4.918 ms` |
-| `2x2` | `6,545` | `4.896 ms` |
-| `3x3` | `6,557` | `4.894 ms` |
+| `default` | `6,561` | `4.912 ms` |
+| `2x2` | `6,545` | `4.912 ms` |
+| `3x3` | `6,557` | `4.887 ms` |
 
 The dominant call-site probes are:
 
 | Family | Source-root binding median-of-run-means | Compact-claim validation median-of-run-means | Terminal public-sum median-of-run-means | Nested recommits median-of-run-means |
 | --- | ---: | ---: | ---: | ---: |
-| `default` | `2.428 ms` | `1.182 ms` | `8.115 us` | `1.865-4.759 us` |
-| `2x2` | `2.446 ms` | `1.184 ms` | `8.193 us` | `1.889-4.919 us` |
-| `3x3` | `2.448 ms` | `1.180 ms` | `8.153 us` | `1.858-4.805 us` |
+| `default` | `2.438 ms` | `1.189 ms` | `8.321 us` | `1.894-4.723 us` |
+| `2x2` | `2.442 ms` | `1.193 ms` | `8.228 us` | `1.934-4.627 us` |
+| `3x3` | `2.433 ms` | `1.176 ms` | `8.356 us` | `1.843-4.734 us` |
 
 The source-root binding and compact-claim validation probes intentionally include nested
 validation work. The rows are independent call-site probes, not an additive/exclusive

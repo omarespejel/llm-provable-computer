@@ -50,8 +50,6 @@ use super::decoding::{
 };
 #[cfg(test)]
 use super::history_replay_projection_prover::Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent;
-#[cfg(test)]
-use super::history_replay_projection_prover::STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43;
 use super::history_replay_projection_prover::{
     derive_phase43_history_replay_projection_source_root_claim,
     emit_phase43_history_replay_proof_native_source_chain_public_output_boundary,
@@ -69,6 +67,7 @@ use super::history_replay_projection_prover::{
     Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
     Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
     STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
@@ -1876,6 +1875,23 @@ fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
                 iterations,
                 capture_timings,
             )?;
+        let expected_timing_mode = if capture_timings {
+            BENCHMARK_TIMING_MODE_MICROPROFILE
+        } else {
+            BENCHMARK_TIMING_MODE_DETERMINISTIC
+        };
+        if profile.backend_version != STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+            || profile.compact_proof_backend_version
+                != STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43
+            || profile.claim_scope != STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE
+            || profile.timing_mode != expected_timing_mode
+            || profile.total_steps != steps
+            || profile.pair_width != layout.pair_width
+        {
+            return Err(VmError::UnsupportedProof(format!(
+                "tablero boundary-binding microprofile metadata drift for family {family} / {steps} steps"
+            )));
+        }
         append_tablero_boundary_binding_microprofile_rows(
             &mut rows,
             family,
