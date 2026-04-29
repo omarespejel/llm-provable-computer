@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+from collections import Counter
 import csv
 import importlib.util
 import io
@@ -125,6 +126,16 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertEqual(payload["case_count"], len(SUITE.HARNESS.mutation_cases()))
         self.assertTrue(all(case["rejected"] for case in payload["cases"]))
+        self.assertEqual(
+            Counter(case["rejection_layer"] for case in payload["cases"]),
+            Counter(
+                {
+                    "cryptographic_binding": 14,
+                    "domain_or_version_allowlist": 5,
+                    "trust_policy": 1,
+                }
+            ),
+        )
         self.assertIn(
             "declarative_policy_sha256",
             payload["repro"]["verifier"],
@@ -132,10 +143,14 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
 
     def test_declarative_policy_adapter_does_not_import_mutation_oracle(self) -> None:
         harness_path = SUITE.HARNESS_PATH.resolve()
+        suite_path = SUITE_PATH.resolve()
+        forbidden_paths = {harness_path, suite_path}
         forbidden_module_names = {
             "agent_step_receipt_relabeling_harness",
             "agent_step_receipt_harness",
             "scripts.agent_step_receipt_relabeling_harness",
+            "zkai_relabeling_benchmark_suite",
+            "scripts.zkai_relabeling_benchmark_suite",
         }
         before_harness_modules = self._module_names_loaded_from(harness_path)
         before_names = set(sys.modules)
@@ -148,8 +163,8 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
                     location_path = pathlib.Path(location).resolve()
                 except (OSError, TypeError):
                     location_path = None
-                if location_path == harness_path:
-                    raise AssertionError(f"adapter attempted to load mutation oracle file: {location}")
+                if location_path in forbidden_paths:
+                    raise AssertionError(f"adapter attempted to load forbidden test dependency: {location}")
             return original_spec_from_file_location(name, location, *args, **kwargs)
 
         def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
