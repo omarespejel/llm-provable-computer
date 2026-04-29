@@ -168,9 +168,31 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         plan["validation_commands"] = [
             "python3 scripts/zkai_stwo_transformer_block_plan.py --json",
             "python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan",
+            "just gate-fast",
+            "just gate",
         ]
 
         with self.assertRaisesRegex(PLAN.PlanValidationError, "test_zkai_stwo_statement_envelope"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_missing_fast_repo_gate(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"] = [
+            command for command in plan["validation_commands"] if command != "just gate-fast"
+        ]
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "just gate-fast"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_missing_final_repo_gate(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"] = [
+            command
+            for command in plan["validation_commands"]
+            if command not in {"just gate", "just gate-no-nightly"}
+        ]
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "final repo gate"):
             PLAN.validate_plan(plan)
 
     def test_plan_rejects_non_string_validation_command_cleanly(self) -> None:
