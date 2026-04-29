@@ -101,12 +101,15 @@ field class is valid only if:
 - `dependency_dropped` declarations have at least one
   `trust_class=dependency_dropped` evidence entry and a matching dependency-drop
   manifest entry,
-- `omitted` declarations have no positive claim in the receipt text, surrounding
-  metadata, or dependency-drop manifest.
+- `omitted` declarations have no positive claim in any commitment-bound receipt
+  field, evidence-manifest entry, or dependency-drop manifest entry.
 
 Verifiers must reject any receipt whose `field_trust_class_vector` names a field
 that is absent from the receipt, omits a present non-`omitted` field, contains a
 duplicate field path, or disagrees with the evidence-derived support rule above.
+Non-commitment-bound prose is not verifier input; if public copy or UI metadata
+claims a fact that the receipt marks `omitted`, that is a publication/UI
+non-conformance rather than something this byte-level verifier can repair.
 
 ## Receipt Fields
 
@@ -150,6 +153,13 @@ whose parser version is incompatible with the declared `receipt_version`.
 Mutation tests should flip each of these fields independently and require a
 different `receipt_commitment` plus verifier rejection when the new value is not
 allowlisted.
+
+Version handling is exact-match, not semantic-version ordering. For each
+`receipt_version`, the verifier has an allowlist of accepted
+`receipt_parser_version` values and an allowlist of accepted
+`(proof_backend, proof_backend_version)` pairs. A parser version is a downgrade
+if it is not in the allowlist for the declared `receipt_version`; implementations
+must not compare version strings lexicographically or accept parser aliases.
 
 ## Canonical Commitment Shape
 
@@ -204,8 +214,10 @@ The `field_path` is a UTF-8 JSON Pointer such as
 `4=proved`. Each entry should be domain-separated before inclusion, for example
 `H("agent-step-receipt-v1.trust-class-entry", entry)`, and the vector should be
 committed as `H("agent-step-receipt-v1.trust-class-vector", length, entries...)`.
-Mutation tests must reject reordering, duplicate paths, unknown enum values, and
-trust-class changes without a matching `receipt_commitment` update.
+Entries are sorted by `field_path_utf8_json_pointer` byte order only; duplicate
+paths are rejected before commitment comparison, so no secondary comparator is
+defined. Mutation tests must reject reordering, duplicate paths, unknown enum
+values, and trust-class changes without a matching `receipt_commitment` update.
 
 ## Evidence Manifest
 
@@ -289,15 +301,28 @@ The manifest object is commitment-bound to the accepted receipt through
 bytes do not hash to that field. Entries must be serialized canonically with
 unknown fields rejected.
 
+`AgentDependencyDropManifestV1` uses the same UTF-8 RFC 8785-style canonical JSON
+profile as `AgentEvidenceManifestV1`. Entries must be sorted by
+`dependency_id` UTF-8 bytes ascending. Duplicate `dependency_id` values,
+unsorted entries, unknown fields, unknown enum values, non-canonical encodings,
+and unsorted or duplicate `non_claims` arrays must be rejected before commitment
+comparison.
+
+For `v1`, `dependency_id` must be an ASCII URN matching:
+
+```text
+^urn:agent-step:dependency:[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9._-]{0,127}$
+```
+
 Each entry has the following deterministic shape:
 
 | Field | Required | Type / format | Semantics |
 | --- | --- | --- | --- |
-| `dependency_id` | yes | URN or stable UTF-8 string | Unique dependency handle, for example `urn:agent-step:model-receipt:0`. |
+| `dependency_id` | yes | ASCII URN | Unique dependency handle, for example `urn:agent-step:dependency:model-receipt:0`. |
 | `dependency_kind` | yes | enum string | One of `source_manifest`, `proof_trace`, `model_receipt`, `tool_receipt`, `state_commitment`, `policy_commitment`, `transcript`, or `other`. |
 | `source_commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the replay source being dropped. |
 | `replacement_commitment` | yes | `allowlisted_algorithm:lower_hex_digest` | Commitment to the typed replacement object accepted by the verifier. |
-| `replacement_receipt_version` | yes | semver-like string or integer schema version | Schema/version of the replacement receipt. |
+| `replacement_receipt_version` | yes | ASCII schema-version string | Schema/version of the replacement receipt. Integers and semver aliases are not allowed. |
 | `trust_class` | yes | trust-class enum string | Must be `dependency_dropped` for Tablero-style replay replacement unless a later verifier domain explicitly allows another class. |
 | `verifier_domain` | yes | UTF-8 domain string | Domain separator naming the verifier that accepts the replacement. |
 | `reason_for_drop` | yes | non-empty UTF-8 string | Human-readable reason, such as `linear source replay replaced by typed boundary commitment`. |
@@ -310,6 +335,11 @@ domain-specific policy exists, conforming algorithm labels are limited to
 not emit weak or unknown labels, and verifiers must reject them. Any verifier
 routine that relaxes this binding, for example by accepting `md5`, `sha1`, an
 unlabeled digest, or mixed-case algorithm aliases, is non-conformant.
+The same digest-length checks used by the evidence manifest apply to
+`source_commitment`, `replacement_commitment`, and
+`required_subproof_or_attestation.commitment`: `64` lowercase hex characters for
+`blake2b-256`, `blake2s-256`, and `sha256`; `96` for `sha384`; and `128` for
+`sha512`.
 
 A Tablero boundary is valid only if the manifest is itself commitment-bound to
 the accepted receipt.
