@@ -37,6 +37,23 @@ SPEC.loader.exec_module(HARNESS)
 
 SUITE_SCHEMA = "zkai-relabeling-benchmark-suite-v1"
 RUST_ADAPTER_SCHEMA = "agent-step-receipt-rust-verifier-adapter-v1"
+BINDING_REJECTION_MARKERS = (
+    "does not bind",
+    "dependency_drop_manifest_commitment mismatch",
+    "evidence_manifest_commitment mismatch",
+)
+DOMAIN_OR_VERSION_REJECTION_MARKERS = ("unsupported", "domain", "version")
+TRUST_POLICY_REJECTION_MARKERS = ("trust", "evidence kind", "insufficient evidence")
+PARSER_OR_SCHEMA_REJECTION_MARKERS = (
+    "omitted",
+    "unexpected",
+    "unknown",
+    "invalid",
+    "malformed",
+    "parse",
+    "schema",
+    "syntax",
+)
 
 MUTATION_CATALOG: dict[str, dict[str, str]] = {
     "receipt_version": {
@@ -228,13 +245,13 @@ def _verifier_metadata(adapter: str) -> dict[str, str]:
 
 def _classify_rejection(error: str) -> str:
     lowered = error.lower()
-    if "commitment" in lowered or "does not bind" in lowered:
+    if any(marker in lowered for marker in BINDING_REJECTION_MARKERS):
         return "cryptographic_binding"
-    if "unsupported" in lowered or "domain" in lowered or "version" in lowered:
+    if any(marker in lowered for marker in DOMAIN_OR_VERSION_REJECTION_MARKERS):
         return "domain_or_version_allowlist"
-    if "trust" in lowered or "evidence kind" in lowered or "insufficient evidence" in lowered:
+    if any(marker in lowered for marker in TRUST_POLICY_REJECTION_MARKERS):
         return "trust_policy"
-    if "omitted" in lowered or "unexpected" in lowered or "unknown" in lowered:
+    if any(marker in lowered for marker in PARSER_OR_SCHEMA_REJECTION_MARKERS):
         return "parser_or_schema_validation"
     return "verifier_policy"
 
