@@ -34,4 +34,4 @@ zkai_statement_commitment_relabeling	zkai_statement_receipt	True	False	True	zkai
 zkai_verifier_domain_relabeling	zkai_statement_receipt	True	False	True	zkai_statement_receipt	statement policy mismatch for verifier_domain
 zkai_verifying_key_commitment_relabeling	zkai_statement_receipt	True	False	True	zkai_statement_receipt	verifying-key commitment mismatch
 agent_points_to_mutated_zkai_subreceipt	cross_layer_composition	True	False	True	zkai_statement_receipt	statement policy mismatch for model_id
-checked_stwo_evidence_tampered	source_evidence	True	False	True	checked_source_evidence	Stwo benchmark payload no longer passes
+checked_stwo_evidence_tampered	source_evidence	True	False	True	checked_source_evidence	checked Stwo statement-envelope benchmark did not pass

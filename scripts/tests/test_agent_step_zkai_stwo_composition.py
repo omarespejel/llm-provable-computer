@@ -77,7 +77,7 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
                 case["error"] = ""
                 break
 
-        with self.assertRaisesRegex(COMPOSITION.CompositionError, "benchmark payload"):
+        with self.assertRaisesRegex(COMPOSITION.CompositionError, "benchmark"):
             COMPOSITION.verify_composition(bundle, envelope=envelope, stwo_evidence=tampered)
 
     def test_checked_stwo_evidence_must_match_composed_envelope(self) -> None:
@@ -141,6 +141,13 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
 
             with self.assertRaisesRegex(COMPOSITION.CompositionError, "benchmark"):
                 COMPOSITION.checked_stwo_evidence(path)
+
+    def test_in_memory_stwo_evidence_runs_same_metadata_checks(self) -> None:
+        evidence = COMPOSITION.checked_stwo_evidence(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
+        evidence["external_system"]["version"] = "wrong-stwo-version"
+
+        with self.assertRaisesRegex(COMPOSITION.CompositionError, "version"):
+            COMPOSITION._checked_stwo_payload(evidence)
 
 
 if __name__ == "__main__":
