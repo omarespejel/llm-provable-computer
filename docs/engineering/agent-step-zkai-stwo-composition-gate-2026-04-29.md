@@ -138,7 +138,7 @@ python3 -m unittest \
 
 ## Follow-up
 
-The next useful implementation hardening is a nested-subreceipt verifier callback
-for `AgentStepReceiptV1`: the production verifier would receive a
-`model_receipt_commitment` and an adapter that verifies the corresponding
-`zkAIStatementReceiptV1`, instead of relying on an external composition harness.
+The immediate nested-subreceipt verifier callback hardening is implemented in
+`docs/engineering/agent-step-model-subreceipt-callback-gate-2026-04-29.md`.
+The next useful step is to plug the checked Stwo `zkAIStatementReceiptV1` adapter
+into that Rust callback path directly.

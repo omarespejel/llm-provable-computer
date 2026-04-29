@@ -405,8 +405,13 @@ mutations across the agent receipt, the zkAI subreceipt, the cross-layer binding
 and the source-evidence handle. The production Rust parser accepts the composed
 agent receipt bundle, while the composition harness verifies the nested Stwo
 statement receipt and the equality between agent fields and statement fields.
-This distinction matters: a production verifier must keep both layers, or
-replace the harness with an equivalent nested-subreceipt verifier callback.
+
+The Rust verifier now also exposes
+`verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback`, which keeps
+the parser-only API available but requires an adapter callback when
+`/model_receipt_commitment` is supported by subreceipt evidence. The callback
+receives the model/input/output/config/runtime fields that must match the nested
+zkAI statement receipt.
 
 ## Landscape Context
 

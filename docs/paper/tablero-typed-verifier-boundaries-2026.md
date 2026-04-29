@@ -737,6 +737,9 @@ receipt parser. This is evidence of receipt composition, not a claim of proved
 agent reasoning. It is anchored to
 `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md` and
 `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`.
+The Rust verifier also exposes a model-subreceipt callback path so production
+callers can combine the agent receipt parser with an adapter-specific nested
+receipt verifier rather than relying only on the standalone composition harness.
 
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:
