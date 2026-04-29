@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fmt;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
@@ -1036,8 +1036,7 @@ fn agent_receipt_json_error(error: serde_json::Error) -> VmError {
 }
 
 fn read_json_bytes_with_limit(path: &Path, limit: usize, label: &str) -> Result<Vec<u8>> {
-    let file = File::open(path)?;
-    let metadata = file.metadata()?;
+    let metadata = fs::metadata(path)?;
     if !metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
             "{label} path `{}` is not a regular file",
@@ -1048,6 +1047,22 @@ fn read_json_bytes_with_limit(path: &Path, limit: usize, label: &str) -> Result<
         return Err(VmError::InvalidConfig(format!(
             "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
             metadata.len(),
+            limit
+        )));
+    }
+
+    let file = File::open(path)?;
+    let opened_metadata = file.metadata()?;
+    if !opened_metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} path `{}` did not open as a regular file",
+            path.display()
+        )));
+    }
+    if opened_metadata.len() > limit as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
+            opened_metadata.len(),
             limit
         )));
     }
