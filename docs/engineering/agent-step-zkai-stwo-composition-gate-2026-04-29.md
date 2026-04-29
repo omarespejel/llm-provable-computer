@@ -158,5 +158,7 @@ python3 -m unittest \
 
 The immediate nested-subreceipt verifier callback hardening is implemented in
 `docs/engineering/agent-step-model-subreceipt-callback-gate-2026-04-29.md` and
-now exercised by this gate. The next useful research step is a larger
-Stwo-native statement-bound transformer block, not another callback seam.
+now exercised by this gate. The next research step is pinned in
+`docs/engineering/zkai-stwo-statement-bound-transformer-block-gate-2026-04-30.md`:
+a larger Stwo-native statement-bound transformer block, not another callback
+seam.
