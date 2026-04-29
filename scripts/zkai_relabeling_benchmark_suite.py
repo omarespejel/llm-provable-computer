@@ -302,6 +302,8 @@ def _run_rust_production() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
                 f"command: {' '.join(cmd)}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
             )
         payload = json.loads(completed.stdout)
+    if not isinstance(payload, dict):
+        raise RuntimeError("rust adapter returned malformed payload: expected object")
     if payload.get("schema") != RUST_ADAPTER_SCHEMA:
         raise RuntimeError(f"unexpected rust adapter schema: {payload.get('schema')!r}")
     results = payload.get("results")

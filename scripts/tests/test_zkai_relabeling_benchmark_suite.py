@@ -18,24 +18,27 @@ SPEC.loader.exec_module(SUITE)
 
 
 class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
-    def _install_fake_rust_adapter_results(self, results: list[dict[str, object]]):
+    def _install_fake_rust_adapter_payload(self, payload: object):
         original_run = SUITE.subprocess.run
 
         class FakeCompleted:
             returncode = 0
             stderr = ""
-            stdout = json.dumps(
-                {
-                    "schema": "agent-step-receipt-rust-verifier-adapter-v1",
-                    "results": results,
-                }
-            )
+            stdout = json.dumps(payload)
 
         def fake_run(*_args, **_kwargs):
             return FakeCompleted()
 
         SUITE.subprocess.run = fake_run
         return original_run
+
+    def _install_fake_rust_adapter_results(self, results: list[dict[str, object]]):
+        return self._install_fake_rust_adapter_payload(
+            {
+                "schema": "agent-step-receipt-rust-verifier-adapter-v1",
+                "results": results,
+            }
+        )
 
     def _install_fake_rust_adapter_output(self, case_ids: list[str]):
         return self._install_fake_rust_adapter_results(
@@ -159,6 +162,14 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         )
         try:
             with self.assertRaisesRegex(RuntimeError, "malformed result row"):
+                SUITE._run_rust_production()
+        finally:
+            SUITE.subprocess.run = original_run
+
+    def test_rust_adapter_rejects_non_object_payload(self) -> None:
+        original_run = self._install_fake_rust_adapter_payload([])
+        try:
+            with self.assertRaisesRegex(RuntimeError, "malformed payload"):
                 SUITE._run_rust_production()
         finally:
             SUITE.subprocess.run = original_run
