@@ -12,15 +12,23 @@ ARTIFACT_DIR="${ARTIFACT_DIR:-target/tablero-hardening/${RUN_ID}}"
 SUMMARY_TSV="${ARTIFACT_DIR}/summary.tsv"
 PYTHON_BIN="${PYTHON_BIN:-}"
 
+python_version_ok() {
+  local output
+  output="$("$1" - <<'PY'
+import sys
+
+if sys.version_info < (3, 11):
+    raise SystemExit(1)
+print("python-3.11-ok")
+PY
+)" || return 1
+  [[ "$output" == "python-3.11-ok" ]]
+}
+
 select_python_bin() {
   local candidate
   if [[ -n "$PYTHON_BIN" ]]; then
-    if "$PYTHON_BIN" - <<'PY'
-import sys
-
-raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
-PY
-    then
+    if python_version_ok "$PYTHON_BIN"; then
       return 0
     fi
     echo "PYTHON_BIN must point to Python 3.11+; got $PYTHON_BIN" >&2
@@ -28,12 +36,7 @@ PY
   fi
 
   for candidate in python3.12 python3.11 python3; do
-    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" - <<'PY'
-import sys
-
-raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
-PY
-    then
+    if command -v "$candidate" >/dev/null 2>&1 && python_version_ok "$candidate"; then
       PYTHON_BIN="$candidate"
       return 0
     fi

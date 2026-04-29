@@ -304,15 +304,25 @@ def _run_rust_production() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
         payload = json.loads(completed.stdout)
     if payload.get("schema") != RUST_ADAPTER_SCHEMA:
         raise RuntimeError(f"unexpected rust adapter schema: {payload.get('schema')!r}")
+    results = payload.get("results")
+    if not isinstance(results, list):
+        raise RuntimeError("rust adapter returned malformed results: expected list")
     expected = {"baseline", *_case_catalog().keys()}
-    case_ids = [str(item.get("case_id", "")) for item in payload["results"]]
+    case_ids = []
+    raw_results = {}
+    for item in results:
+        if not isinstance(item, dict):
+            raise RuntimeError("rust adapter returned malformed result row: expected object")
+        case_id = item.get("case_id")
+        accepted = item.get("accepted")
+        error = item.get("error")
+        if not isinstance(case_id, str) or not isinstance(accepted, bool) or not isinstance(error, str):
+            raise RuntimeError("rust adapter returned malformed result row")
+        case_ids.append(case_id)
+        raw_results[case_id] = (accepted, error)
     duplicate_case_ids = sorted({case_id for case_id in case_ids if case_ids.count(case_id) > 1})
     if duplicate_case_ids:
         raise RuntimeError(f"rust adapter returned duplicate case_id rows: {duplicate_case_ids}")
-    raw_results = {
-        item["case_id"]: (bool(item["accepted"]), str(item["error"]))
-        for item in payload["results"]
-    }
     actual = set(raw_results)
     if actual != expected:
         raise RuntimeError(
