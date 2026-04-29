@@ -26,6 +26,27 @@ def fake_external_verify(proof, _settings_path, _vk_path, _srs_path):
         raise BENCH.EzklEnvelopeError("EZKL proof verifier rejected mutated public instance")
 
 
+def valid_pass_payload():
+    cases = []
+    for adapter in BENCH.EXPECTED_ADAPTERS:
+        for mutation in BENCH.EXPECTED_MUTATION_NAMES:
+            rejected = adapter == "ezkl-statement-envelope" or mutation == "proof_public_instance_relabeling"
+            cases.append(
+                {
+                    "adapter": adapter,
+                    "mutation": mutation,
+                    "category": "unit-test",
+                    "baseline_accepted": True,
+                    "baseline_error": "",
+                    "mutated_accepted": not rejected,
+                    "rejected": rejected,
+                    "rejection_layer": "unit-test" if rejected else "accepted",
+                    "error": "rejected" if rejected else "",
+                }
+            )
+    return {"cases": cases, "summary": BENCH.summarize_cases(cases)}
+
+
 class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
     def test_baseline_statement_commitment_matches(self) -> None:
         envelope = BENCH.baseline_envelope()
@@ -186,6 +207,21 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
         }
 
         self.assertFalse(BENCH.benchmark_passed(payload))
+
+    def test_benchmark_pass_uses_raw_cases_not_forged_summary(self) -> None:
+        payload = valid_pass_payload()
+        for case in payload["cases"]:
+            if case["adapter"] == "ezkl-statement-envelope" and case["mutation"] == "model_id_relabeling":
+                case["rejected"] = False
+                case["mutated_accepted"] = True
+                case["rejection_layer"] = "accepted"
+                case["error"] = ""
+                break
+
+        self.assertFalse(BENCH.benchmark_passed(payload))
+
+    def test_benchmark_pass_accepts_expected_differential_result(self) -> None:
+        self.assertTrue(BENCH.benchmark_passed(valid_pass_payload()))
 
     def test_tsv_columns_are_stable(self) -> None:
         payload = {
