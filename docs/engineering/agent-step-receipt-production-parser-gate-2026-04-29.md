@@ -64,10 +64,14 @@ domain and backend semantics.
 Run:
 
 ```bash
+just gate-fast
 cargo test --lib agent_step_receipt
 python3 -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
 ARTIFACT_DIR=/tmp/tablero-hardening-agent-step-parser scripts/run_tablero_hardening_preflight.sh --mode core
 python3.12 scripts/paper/paper_preflight.py --repo-root .
+just gate
+# Or, when nightly is unavailable:
+# just gate-no-nightly
 ```
 
 The Tablero hardening preflight now includes the Rust parser/verifier tests as a

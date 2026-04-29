@@ -511,6 +511,13 @@ fn validate_evidence_manifest(
                 "AgentStepReceiptV1 positive evidence cannot use omitted trust class".to_string(),
             ));
         }
+        validate_allowed_trust_class(&entry.corresponding_receipt_field, entry.trust_class)?;
+        if !evidence_kind_supports(entry.evidence_kind, entry.trust_class) {
+            return Err(VmError::InvalidConfig(format!(
+                "AgentStepReceiptV1 evidence {} has incompatible evidence_kind/trust_class",
+                entry.evidence_id
+            )));
+        }
         let field = field_from_pointer(&entry.corresponding_receipt_field)?;
         let value = receipt_value.get(field).ok_or_else(|| {
             VmError::InvalidConfig(format!(
@@ -1698,6 +1705,76 @@ mod tests {
         let err =
             verify_agent_step_receipt_bundle_v1(&bundle).expect_err("self-bound evidence rejects");
         assert!(err.to_string().contains("self-bound receipt field"));
+    }
+
+    #[test]
+    fn agent_step_receipt_rejects_invalid_extra_evidence_claims() {
+        let mut disallowed_trust = build_valid_bundle();
+        let receipt_value = serde_json::to_value(&disallowed_trust.receipt).expect("receipt value");
+        disallowed_trust
+            .evidence_manifest
+            .entries
+            .push(AgentEvidenceEntryV1 {
+                evidence_id: "urn:agent-step:evidence:runtime-domain-bogus:0".to_string(),
+                evidence_kind: AgentEvidenceKind::Subreceipt,
+                commitment: evidence_commitment_for_field(
+                    "/runtime_domain",
+                    receipt_value.get("runtime_domain").expect("runtime"),
+                )
+                .expect("evidence commitment"),
+                trust_class: AgentTrustClass::DependencyDropped,
+                verifier_domain: AGENT_STEP_RECEIPT_TEST_VERIFIER_DOMAIN.to_string(),
+                corresponding_receipt_field: "/runtime_domain".to_string(),
+                non_claims: vec!["does-not-prove-agent-truthfulness".to_string()],
+            });
+        disallowed_trust
+            .evidence_manifest
+            .entries
+            .sort_by(|left, right| {
+                left.evidence_id
+                    .as_bytes()
+                    .cmp(right.evidence_id.as_bytes())
+            });
+        recompute_manifest_commitments(&mut disallowed_trust);
+        let err = verify_agent_step_receipt_bundle_v1(&disallowed_trust)
+            .expect_err("disallowed evidence trust class rejects");
+        assert!(err.to_string().contains("cannot use trust class"), "{err}");
+
+        let mut incompatible_kind = build_valid_bundle();
+        let receipt_value =
+            serde_json::to_value(&incompatible_kind.receipt).expect("receipt value");
+        incompatible_kind
+            .evidence_manifest
+            .entries
+            .push(AgentEvidenceEntryV1 {
+                evidence_id: "urn:agent-step:evidence:model-identity-bogus:0".to_string(),
+                evidence_kind: AgentEvidenceKind::Attestation,
+                commitment: evidence_commitment_for_field(
+                    "/model_identity",
+                    receipt_value.get("model_identity").expect("model identity"),
+                )
+                .expect("evidence commitment"),
+                trust_class: AgentTrustClass::Proved,
+                verifier_domain: AGENT_STEP_RECEIPT_TEST_VERIFIER_DOMAIN.to_string(),
+                corresponding_receipt_field: "/model_identity".to_string(),
+                non_claims: vec!["does-not-prove-agent-truthfulness".to_string()],
+            });
+        incompatible_kind
+            .evidence_manifest
+            .entries
+            .sort_by(|left, right| {
+                left.evidence_id
+                    .as_bytes()
+                    .cmp(right.evidence_id.as_bytes())
+            });
+        recompute_manifest_commitments(&mut incompatible_kind);
+        let err = verify_agent_step_receipt_bundle_v1(&incompatible_kind)
+            .expect_err("incompatible evidence kind rejects");
+        assert!(
+            err.to_string()
+                .contains("incompatible evidence_kind/trust_class"),
+            "{err}"
+        );
     }
 
     #[test]
