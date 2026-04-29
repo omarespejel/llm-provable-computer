@@ -99,6 +99,31 @@ expected_cli = {
     "timing_unit": "milliseconds",
     "timing_runs": iterations,
 }
+expected_families = {"default", "2x2", "3x3"}
+expected_components = {
+    "source_emitted_root_artifact_recommit",
+    "source_emission_recommit",
+    "source_emission_public_output_recommit",
+    "source_chain_public_output_boundary_recommit",
+    "compact_claim_from_source_root_claim",
+    "validate_phase43_projection_compact_claim",
+    "phase44_terminal_public_boundary_logup_sum",
+    "verify_phase43_source_root_binding",
+    "verify_phase44d_boundary_binding",
+    "compact_claim_from_source_root_claim_for_public_sum",
+}
+expected_component_keys = {
+    (family, 1024, component)
+    for family in expected_families
+    for component in expected_components
+}
+expected_relation = (
+    "typed Phase44D boundary-binding microprofile after compact proof verification"
+)
+expected_non_additivity_suffix = (
+    " This row is an independent call-site probe over the accepted boundary object,"
+    " not an exclusive/additive contribution to the full verifier."
+)
 for payload in payloads:
     for key, want in expected_cli.items():
         got = payload.get(key)
@@ -126,21 +151,25 @@ stable_fields = [
 for payload in payloads:
     for row in payload["rows"]:
         key = (row["family"], row["steps"], row["component"])
-        if row.get("steps") != 1024:
-            sys.exit(f"unexpected steps in row (expected 1024): {row!r}")
+        if key not in expected_component_keys:
+            sys.exit(f"unexpected family/steps/component tuple: {key!r}")
         if row.get("iterations") != iterations:
             sys.exit(f"unexpected iterations in row: {row!r}")
+        if row.get("relation") != expected_relation:
+            sys.exit(f"unexpected relation in row: {row!r}")
         if row.get("verified") is not True:
             sys.exit(f"unverified microprofile row: {row!r}")
-        if "additive" not in row.get("note", ""):
-            sys.exit(f"microprofile row is missing non-additivity note: {row!r}")
+        if not row.get("note", "").endswith(expected_non_additivity_suffix):
+            sys.exit(f"microprofile row is missing exact non-additivity suffix: {row!r}")
         row_groups.setdefault(key, []).append(row)
 
 families = {key[0] for key in row_groups}
-if families != {"default", "2x2", "3x3"}:
+if families != expected_families:
     sys.exit(f"unexpected family set: {sorted(families)!r}")
-if len(row_groups) != 30:
-    sys.exit(f"expected 30 component groups, got {len(row_groups)}")
+if set(row_groups) != expected_component_keys:
+    missing = sorted(expected_component_keys - set(row_groups))
+    unexpected = sorted(set(row_groups) - expected_component_keys)
+    sys.exit(f"component key drift: missing={missing!r} unexpected={unexpected!r}")
 family_counts = Counter(key[0] for key in row_groups)
 expected_family_counts = Counter({"default": 10, "2x2": 10, "3x3": 10})
 if family_counts != expected_family_counts:

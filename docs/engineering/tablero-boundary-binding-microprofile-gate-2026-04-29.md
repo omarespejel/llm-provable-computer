@@ -33,25 +33,28 @@ The generator fails closed if the benchmark identity, timing policy, family set,
 count, component count, verification flags, or non-additivity notes drift. It writes
 median-of-five component rows so a single noisy microprofile run does not become the
 checked evidence payload.
+All table values below are median-of-run-means from the checked policy
+`median_of_5_runs_of_mean_256_iteration_microprofile`; the JSON/TSV stamp the aggregate
+payload as `timing_mode=measured_median`.
 
 ## Result
 
 At the checked `1024`-step frontier, the full binding-only verifier surface remains in
 single-digit milliseconds:
 
-| Family | Boundary bytes | Full binding mean |
+| Family | Boundary bytes | Full binding median-of-run-means |
 | --- | ---: | ---: |
-| `default` | `6,561` | `5.084 ms` |
-| `2x2` | `6,545` | `5.020 ms` |
-| `3x3` | `6,557` | `4.965 ms` |
+| `default` | `6,561` | `4.918 ms` |
+| `2x2` | `6,545` | `4.896 ms` |
+| `3x3` | `6,557` | `4.894 ms` |
 
 The dominant call-site probes are:
 
-| Family | Source-root binding | Compact-claim validation | Terminal public sum | Nested recommits |
+| Family | Source-root binding median-of-run-means | Compact-claim validation median-of-run-means | Terminal public-sum median-of-run-means | Nested recommits median-of-run-means |
 | --- | ---: | ---: | ---: | ---: |
-| `default` | `2.456 ms` | `1.232 ms` | `8.348 us` | `1.920-4.815 us` |
-| `2x2` | `2.447 ms` | `1.192 ms` | `8.230 us` | `1.868-4.715 us` |
-| `3x3` | `2.479 ms` | `1.193 ms` | `8.266 us` | `1.867-4.792 us` |
+| `default` | `2.428 ms` | `1.182 ms` | `8.115 us` | `1.865-4.759 us` |
+| `2x2` | `2.446 ms` | `1.184 ms` | `8.193 us` | `1.889-4.919 us` |
+| `3x3` | `2.448 ms` | `1.180 ms` | `8.153 us` | `1.858-4.805 us` |
 
 The source-root binding and compact-claim validation probes intentionally include nested
 validation work. The rows are independent call-site probes, not an additive/exclusive
