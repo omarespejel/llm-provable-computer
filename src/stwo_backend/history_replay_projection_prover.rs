@@ -2719,6 +2719,13 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
         || Ok(&compact_claim_from_source_root_claim(black_box(source_claim)) == black_box(compact_claim)),
     )?);
 
+    if let Some(failed) = components.iter().find(|component| !component.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "Phase44D boundary-binding microprofile component `{}` did not verify",
+            failed.component
+        )));
+    }
+
     Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
         profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
         backend_version: execution_backend_version.to_string(),

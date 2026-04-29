@@ -120,6 +120,38 @@ expected_component_keys = {
 expected_relation = (
     "typed Phase44D boundary-binding microprofile after compact proof verification"
 )
+expected_component_notes = {
+    "source_emitted_root_artifact_recommit": (
+        "Recompute the Phase44D source-emitted root artifact commitment and compare it to the emitted artifact commitment."
+    ),
+    "source_emission_recommit": (
+        "Recompute the Phase44D source-emission bundle commitment and compare it to the emitted bundle commitment."
+    ),
+    "source_emission_public_output_recommit": (
+        "Recompute the Phase44D source-emission public-output commitment and compare it to the emitted public-output commitment."
+    ),
+    "source_chain_public_output_boundary_recommit": (
+        "Recompute the outer Phase44D typed-boundary commitment and compare it to the emitted boundary commitment."
+    ),
+    "compact_claim_from_source_root_claim": (
+        "Reconstruct the compact projection claim from the emitted source-root claim and compare it to the supplied compact claim."
+    ),
+    "validate_phase43_projection_compact_claim": (
+        "Validate the compact Phase43 projection claim schema, versions, flags, shapes, roots, and terminal boundary."
+    ),
+    "phase44_terminal_public_boundary_logup_sum": (
+        "Recompute the terminal-boundary public LogUp contribution using precomputed transcript elements; this is a fixed-width boundary-row operation, not a per-step replay."
+    ),
+    "verify_phase43_source_root_binding": (
+        "Run the complete source-root-to-compact-claim binding check used by Phase44D after compact proof verification; this component intentionally includes its internal validation and LogUp statement recomputation."
+    ),
+    "verify_phase44d_boundary_binding": (
+        "Run the full Phase44D typed-boundary binding function used by the benchmark after compact proof verification; this is the end-to-end binding-only surface and is not additive with the independent subcomponent probes above."
+    ),
+    "compact_claim_from_source_root_claim_for_public_sum": (
+        "Repeat the compact-claim reconstruction at the call site that prepares terminal-boundary LogUp inputs and compare it to the supplied compact claim."
+    ),
+}
 expected_non_additivity_suffix = (
     " This row is an independent call-site probe over the accepted boundary object,"
     " not an exclusive/additive contribution to the full verifier."
@@ -159,8 +191,9 @@ for payload in payloads:
             sys.exit(f"unexpected relation in row: {row!r}")
         if row.get("verified") is not True:
             sys.exit(f"unverified microprofile row: {row!r}")
-        if not row.get("note", "").endswith(expected_non_additivity_suffix):
-            sys.exit(f"microprofile row is missing exact non-additivity suffix: {row!r}")
+        expected_note = expected_component_notes[row["component"]] + expected_non_additivity_suffix
+        if row.get("note", "") != expected_note:
+            sys.exit(f"microprofile row note drift: expected {expected_note!r}, got {row.get('note', '')!r}")
         row_groups.setdefault(key, []).append(row)
 
 families = {key[0] for key in row_groups}
