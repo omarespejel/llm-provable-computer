@@ -77,9 +77,12 @@ New Rust tests cover:
 | Self-consistent agent receipt whose model identity drifts from nested subreceipt | Rejects through callback |
 | Checked Stwo `zkAIStatementReceiptV1` consumed through Rust callback | Accepts |
 | Agent-to-zkAI model identity drift | Rejects |
+| Direct Stwo `zkAIStatementReceiptV1` with unknown top-level field | Rejects |
+| Stwo `zkAIStatementReceiptV1` with oversized commitment field | Rejects |
 | Stwo statement policy relabeling | Rejects |
 | Forged checked Stwo evidence summary | Rejects |
 | Checked Stwo evidence baseline mismatch | Rejects |
+| Checked Stwo evidence manifest handle drift | Rejects |
 
 This closes the implementation gap left explicit by the composition gate: a
 production caller can now keep the agent parser and checked Stwo

@@ -585,6 +585,17 @@ const ZKAI_STWO_EXPECTED_MUTATIONS: &[&str] = &[
     "verifying_key_commitment_relabeling",
 ];
 
+const ZKAI_STWO_BLAKE2B_COMMITMENT_FIELDS: &[&str] = &[
+    "model_artifact_commitment",
+    "input_commitment",
+    "output_commitment",
+    "config_commitment",
+    "public_instance_commitment",
+    "verifying_key_commitment",
+    "setup_commitment",
+    "evidence_manifest_commitment",
+];
+
 fn extract_zkai_stwo_statement_receipt(payload: &Value) -> Result<(Value, String)> {
     let object = json_object(payload, "zkAI Stwo model subreceipt")?;
     match json_str(object, "schema", "zkAI Stwo model subreceipt")? {
@@ -603,10 +614,15 @@ fn extract_zkai_stwo_statement_receipt(payload: &Value) -> Result<(Value, String
                 "zkAI Stwo statement envelope",
             )?
             .to_string();
+            validate_blake2b_256_commitment(
+                &statement_commitment,
+                "zkAI Stwo statement envelope.statement_commitment",
+            )?;
             validate_zkai_stwo_statement_shape(&statement)?;
             Ok((statement, statement_commitment))
         }
         ZKAI_STATEMENT_RECEIPT_SCHEMA_V1 => {
+            validate_zkai_stwo_direct_statement_receipt_shape(object)?;
             let mut statement = Map::new();
             for field in ZKAI_STWO_STATEMENT_FIELDS {
                 let value = object.get(*field).ok_or_else(|| {
@@ -622,7 +638,13 @@ fn extract_zkai_stwo_statement_receipt(payload: &Value) -> Result<(Value, String
                 "zkAI Stwo statement receipt",
             )?
             .to_string();
-            Ok((Value::Object(statement), statement_commitment))
+            validate_blake2b_256_commitment(
+                &statement_commitment,
+                "zkAI Stwo statement receipt.statement_commitment",
+            )?;
+            let statement = Value::Object(statement);
+            validate_zkai_stwo_statement_shape(&statement)?;
+            Ok((statement, statement_commitment))
         }
         other => Err(VmError::InvalidConfig(format!(
             "unsupported zkAI Stwo model subreceipt schema `{other}`"
@@ -630,18 +652,38 @@ fn extract_zkai_stwo_statement_receipt(payload: &Value) -> Result<(Value, String
     }
 }
 
+fn validate_zkai_stwo_direct_statement_receipt_shape(object: &Map<String, Value>) -> Result<()> {
+    let mut expected: BTreeSet<&str> = ZKAI_STWO_STATEMENT_FIELDS.iter().copied().collect();
+    expected.insert("schema");
+    expected.insert("statement_commitment");
+    validate_json_object_exact_fields(
+        object,
+        expected,
+        "zkAI Stwo direct statement receipt fields",
+    )
+}
+
 fn validate_zkai_stwo_statement_shape(statement: &Value) -> Result<()> {
     let object = json_object(statement, "zkAI Stwo statement")?;
     let expected: BTreeSet<&str> = ZKAI_STWO_STATEMENT_FIELDS.iter().copied().collect();
-    let actual: BTreeSet<&str> = object.keys().map(String::as_str).collect();
-    if actual != expected {
-        return Err(VmError::InvalidConfig(
-            "zkAI Stwo statement fields do not match zkAIStatementReceiptV1".to_string(),
-        ));
-    }
+    validate_json_object_exact_fields(
+        object,
+        expected,
+        "zkAI Stwo statement fields do not match zkAIStatementReceiptV1",
+    )?;
     for field in ZKAI_STWO_STATEMENT_FIELDS {
         json_str(object, field, "zkAI Stwo statement")?;
     }
+    for field in ZKAI_STWO_BLAKE2B_COMMITMENT_FIELDS {
+        validate_blake2b_256_commitment(
+            json_str(object, field, "zkAI Stwo statement")?,
+            &format!("zkAI Stwo statement.{field}"),
+        )?;
+    }
+    validate_lower_hex_32(
+        json_str(object, "proof_commitment", "zkAI Stwo statement")?,
+        "zkAI Stwo statement.proof_commitment",
+    )?;
     Ok(())
 }
 
@@ -933,6 +975,20 @@ fn json_str<'a>(object: &'a Map<String, Value>, field: &str, label: &str) -> Res
         .get(field)
         .and_then(Value::as_str)
         .ok_or_else(|| VmError::InvalidConfig(format!("{label}.{field} must be a string")))
+}
+
+fn validate_json_object_exact_fields(
+    object: &Map<String, Value>,
+    expected: BTreeSet<&str>,
+    label: &str,
+) -> Result<()> {
+    let actual: BTreeSet<&str> = object.keys().map(String::as_str).collect();
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{label}: field set mismatch"
+        )));
+    }
+    Ok(())
 }
 
 fn require_value(actual: &str, expected: &str, label: &str) -> Result<()> {
@@ -1931,6 +1987,33 @@ fn validate_commitment(value: &str, label: &str) -> Result<()> {
     Ok(())
 }
 
+fn validate_blake2b_256_commitment(value: &str, label: &str) -> Result<()> {
+    let Some((algorithm, digest)) = value.split_once(':') else {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} must be blake2b-256:lower_hex_digest"
+        )));
+    };
+    if algorithm != "blake2b-256" {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} uses unsupported commitment algorithm `{algorithm}`"
+        )));
+    }
+    validate_lower_hex_32(digest, label)
+}
+
+fn validate_lower_hex_32(value: &str, label: &str) -> Result<()> {
+    if value.len() != 64
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} must be a 64-character lowercase hex string"
+        )));
+    }
+    Ok(())
+}
+
 fn validate_nfc(value: &str, label: &str) -> Result<()> {
     if !value.nfc().eq(value.chars()) {
         return Err(VmError::InvalidConfig(format!(
@@ -2819,6 +2902,37 @@ mod tests {
             &bundle, &payload, &evidence,
         )
         .expect("checked zkAI Stwo subreceipt accepts through Rust callback");
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_direct_receipt_extra_fields() {
+        let (bundle, mut payload, evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        payload["unexpected_top_level_field"] = Value::String("ambiguous".to_string());
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("unknown direct receipt fields reject");
+        assert!(
+            err.to_string().contains("direct statement receipt fields"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_oversized_commitment_field() {
+        let (bundle, mut payload, evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        payload["model_artifact_commitment"] =
+            Value::String("blake2b-256:".to_string() + &"aa".repeat(4096));
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("oversized statement commitment field rejects");
+        assert!(
+            err.to_string().contains("64-character lowercase hex"),
+            "{err}"
+        );
     }
 
     #[test]
