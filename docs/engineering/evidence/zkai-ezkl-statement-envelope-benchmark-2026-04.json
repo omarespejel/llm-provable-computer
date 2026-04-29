@@ -173,7 +173,7 @@
     "artifact_metadata_sha256": "0ec21f3973081e664de7d07e6c908f707bb9fc8295d4adb270b71148261a9d7b",
     "command": [
       "env",
-      "ZKAI_EZKL_BENCHMARK_GIT_COMMIT=13bae5699ed2498ce3df3fe72a02606ce37a5a39",
+      "ZKAI_EZKL_BENCHMARK_GIT_COMMIT=703ac1f5a0f7919de4ae0d9539d3f7d9612b9fe9",
       "ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs",
       "python3",
       "scripts/zkai_ezkl_statement_envelope_benchmark.py",
@@ -182,7 +182,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "13bae5699ed2498ce3df3fe72a02606ce37a5a39"
+    "git_commit": "703ac1f5a0f7919de4ae0d9539d3f7d9612b9fe9"
   },
   "schema": "zkai-ezkl-statement-envelope-benchmark-v1",
   "suite_kind": "external_ezkl_statement_relabeling",
