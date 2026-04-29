@@ -1,0 +1,22 @@
+{
+  "artifacts": {
+    "identity.onnx": "190ce93958bce706f983a1863d3c7877cc15163a5714d6c999b720eb2ff69234",
+    "input.json": "e64fb51a7e0d66e4d158c5146efb47a2797482a1e78012432e757024d7db75fd",
+    "proof.json": "6fd4ffe3bff0dfe72a98f811fb8e62891eb205cd4cdebf33d8ccb1d820bc9fd2",
+    "settings.json": "9c28a1bb2b96782f8732844b79532425b2449b1341a76a07ad1f1a45118a7acb",
+    "vk.key": "70f5deae57f95889a405eab48b28af7a0f986826b137b5c9ebf710bd6bea961e"
+  },
+  "external_system": "EZKL",
+  "ezkl_version": "23.0.5",
+  "logrows": 17,
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_an_ezkl_security_audit",
+    "not_a_system_ranking"
+  ],
+  "onnx_version": "1.21.0",
+  "python": "3.12.11",
+  "schema": "zkai-ezkl-statement-envelope-artifact-metadata-v1",
+  "srs_sha256": "41509f380362a8d14401c5ae92073154922fe23e45459ce6f696f58607655db7",
+  "srs_url": "https://kzg.ezkl.xyz/kzg17.srs"
+}
