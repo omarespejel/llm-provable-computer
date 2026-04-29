@@ -147,6 +147,21 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
             else:
                 os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"] = original
 
+    def test_checked_evidence_uses_portable_repro_command(self) -> None:
+        path = (
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-snarkjs-statement-envelope-benchmark-2026-04.json"
+        )
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        command = payload["repro"]["command"]
+
+        self.assertEqual(command[0], "env")
+        self.assertTrue(any(part.startswith("ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=") for part in command))
+        self.assertIn("python3", command)
+
 
 if __name__ == "__main__":
     unittest.main()

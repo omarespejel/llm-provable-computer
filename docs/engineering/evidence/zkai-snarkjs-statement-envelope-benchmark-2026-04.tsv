@@ -1,0 +1,19 @@
+adapter	mutation	category	baseline_accepted	mutated_accepted	rejected	rejection_layer	error
+snarkjs-proof-only	circuit_artifact_hash_relabeling	artifact_binding	True	True	False	accepted	
+snarkjs-proof-only	config_id_relabeling	statement_policy	True	True	False	accepted	
+snarkjs-proof-only	input_id_relabeling	statement_policy	True	True	False	accepted	
+snarkjs-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	
+snarkjs-proof-only	output_id_relabeling	statement_policy	True	True	False	accepted	
+snarkjs-proof-only	proof_hash_relabeling	artifact_binding	True	True	False	accepted	
+snarkjs-proof-only	public_signal_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	snarkjs groth16 verifier rejected: [31;22m[ERROR] [39;1msnarkJS[0m: Invalid proof
+snarkjs-proof-only	verification_key_hash_relabeling	artifact_binding	True	True	False	accepted	
+snarkjs-proof-only	verifier_domain_relabeling	domain_or_version_allowlist	True	True	False	accepted	
+snarkjs-statement-envelope	circuit_artifact_hash_relabeling	artifact_binding	True	False	True	artifact_binding	circuit artifact hash mismatch
+snarkjs-statement-envelope	config_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for quantization_config_id
+snarkjs-statement-envelope	input_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for input_id
+snarkjs-statement-envelope	model_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for model_id
+snarkjs-statement-envelope	output_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for output_id
+snarkjs-statement-envelope	proof_hash_relabeling	artifact_binding	True	False	True	artifact_binding	proof hash mismatch
+snarkjs-statement-envelope	public_signal_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	snarkjs groth16 verifier rejected: [31;22m[ERROR] [39;1msnarkJS[0m: Invalid proof
+snarkjs-statement-envelope	verification_key_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification-key canonical hash mismatch
+snarkjs-statement-envelope	verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for verifier_domain

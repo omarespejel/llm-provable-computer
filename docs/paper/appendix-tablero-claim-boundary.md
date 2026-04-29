@@ -14,7 +14,7 @@ The paper claims only the following.
 | Supporting second boundary | A distinct emitted-source surface also clears as a real second typed boundary with a modest verifier-side gain on the conservative publication row. |
 | Negative evidence | A narrower compact handoff object is reported honestly as a compactness-only surface rather than a replay-avoidance win. |
 | Assurance posture | Deterministic tamper tests, bounded model checking, differential fuzzing, and fail-closed runtime guards materially reduce implementation-side self-deception risk. |
-| External statement-binding adapter | A checked EZKL adapter shows that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-instance drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
+| External statement-binding adapter | Checked EZKL and snarkjs adapters show that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-input drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
 
 ## Negative claim surface
 
@@ -29,7 +29,7 @@ The paper does **not** claim the following.
 | Implementation-invariant baseline | No claim that every manifest implementation in every system would pay the same replay cost as this codebase. |
 | Full zkML frontier result | No claim of full end-to-end transformer inference proving or a matched full-model benchmark against public competitors. |
 | Onchain deployment | No claim that the typed-boundary path itself has already been deployed onchain. |
-| External-system weakness | No claim that EZKL or any external proof stack is weak because application metadata outside its verifier path is not bound by raw proof verification. |
+| External-system weakness | No claim that EZKL, snarkjs, or any external proof stack is weak because application metadata outside its verifier path is not bound by raw proof verification. |
 | Verifiable intelligence | No claim that Tablero by itself proves agent reasoning, tool truth, model truthfulness, or policy compliance. |
 
 ## Talk-safe summary
