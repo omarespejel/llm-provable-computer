@@ -10,3 +10,8 @@ Repository-wide hardening and test policy lives in
 
 The detailed phase chronology moved out of the public README lives in
 [`engineering-timeline.md`](engineering-timeline.md).
+
+Verifiable-intelligence receipt design begins with
+[`agent-step-receipt-spec.md`](agent-step-receipt-spec.md). That note scopes
+Tablero as a typed receipt boundary for agent-step evidence, not as a claim that
+Tablero itself proves agents, reasoning, tool truth, or policy semantics.
