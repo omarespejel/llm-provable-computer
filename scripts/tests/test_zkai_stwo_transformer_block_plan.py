@@ -214,6 +214,13 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(PLAN.PlanValidationError, "validation_commands"):
             PLAN.validate_plan(plan)
 
+    def test_plan_rejects_empty_validation_commands_cleanly(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"] = []
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "at least one command"):
+            PLAN.validate_plan(plan)
+
     def test_plan_rejects_missing_no_nightly_alternative(self) -> None:
         plan = self._plan()
         plan["validation_command_alternatives"] = []

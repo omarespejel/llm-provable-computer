@@ -251,7 +251,9 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
             raise PlanValidationError(f"non_claims is missing: {fragment}")
 
     commands = _required_list(plan.get("validation_commands"), "validation_commands")
-    if not all(isinstance(command, str) and command for command in commands):
+    if not commands:
+        raise PlanValidationError("validation_commands must contain at least one command")
+    if not all(isinstance(command, str) and command.strip() for command in commands):
         raise PlanValidationError("validation_commands must contain only non-empty strings")
     normalized_commands = [command.strip() for command in commands]
     command_text = "\n".join(normalized_commands)
