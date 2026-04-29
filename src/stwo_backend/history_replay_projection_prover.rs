@@ -478,6 +478,7 @@ pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
 pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
     pub profile_version: String,
     pub backend_version: String,
+    pub compact_proof_backend_version: String,
     pub timing_mode: String,
     pub claim_scope: String,
     pub total_steps: usize,
@@ -2563,6 +2564,7 @@ where
 pub fn profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
     boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
     compact_claim: &Phase43HistoryReplayProjectionCompactClaim,
+    execution_backend_version: &str,
     iterations: usize,
     capture_timings: bool,
 ) -> Result<Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile> {
@@ -2582,6 +2584,12 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
             STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
             compact_claim.proof_backend_version
         )));
+    }
+    if execution_backend_version.trim().is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase44D boundary-binding microprofile execution backend version must be non-empty"
+                .to_string(),
+        ));
     }
     let emitted_root_artifact = &source_emission.emitted_root_artifact;
     let terminal_elements = phase44_terminal_boundary_elements_from_compact_claim(compact_claim)?;
@@ -2713,7 +2721,8 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
 
     Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
         profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
-        backend_version: compact_claim.proof_backend_version.clone(),
+        backend_version: execution_backend_version.to_string(),
+        compact_proof_backend_version: compact_claim.proof_backend_version.clone(),
         timing_mode: if capture_timings {
             STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_MEASURED.to_string()
         } else {
@@ -6030,6 +6039,7 @@ mod tests {
             profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
                 &boundary,
                 &compact_envelope.claim,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL,
                 0,
                 false,
             )

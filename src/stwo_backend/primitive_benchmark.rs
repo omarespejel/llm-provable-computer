@@ -1872,6 +1872,7 @@ fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
             profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
                 &benchmark_input.boundary,
                 &benchmark_input.compact_envelope.claim,
+                STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION,
                 iterations,
                 capture_timings,
             )?;
@@ -7167,7 +7168,9 @@ mod tests {
     fn tablero_boundary_binding_microprofile_rows_preserve_non_additive_scope() {
         let profile = Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
             profile_version: "phase44d-boundary-binding-microprofile-v1".to_string(),
-            backend_version: STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43.to_string(),
+            backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+            compact_proof_backend_version: STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43
+                .to_string(),
             timing_mode: BENCHMARK_TIMING_MODE_MICROPROFILE.to_string(),
             claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
             total_steps: 1024,
