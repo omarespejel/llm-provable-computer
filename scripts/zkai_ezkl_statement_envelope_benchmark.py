@@ -70,6 +70,10 @@ EXPECTED_MUTATION_NAMES = (
     "verifier_domain_relabeling",
 )
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
+EXPECTED_MUTATION_SET = frozenset(EXPECTED_MUTATION_NAMES)
+EXPECTED_CASE_PAIRS = frozenset(
+    (adapter, mutation) for adapter in EXPECTED_ADAPTERS for mutation in EXPECTED_MUTATION_NAMES
+)
 
 
 class EzklEnvelopeError(ValueError):
@@ -369,7 +373,7 @@ def run_benchmark(
     srs_sha256 = sha256_file(srs_path)
     baseline = baseline_envelope()
     mutations = mutated_envelopes()
-    if tuple(sorted(mutations)) != EXPECTED_MUTATION_NAMES:
+    if set(mutations) != EXPECTED_MUTATION_SET:
         raise RuntimeError("mutation corpus does not match expected external relabeling suite")
     cases = []
     for adapter in EXPECTED_ADAPTERS:
@@ -391,6 +395,10 @@ def run_benchmark(
                     "error": error,
                 }
             )
+
+    summary = summarize_cases(cases)
+    if summary is None:
+        raise RuntimeError("benchmark case corpus does not match expected external relabeling suite")
 
     return {
         "schema": BENCHMARK_SCHEMA,
@@ -415,21 +423,7 @@ def run_benchmark(
             "artifact_metadata_sha256": sha256_file(ARTIFACT_DIR / "metadata.json"),
         },
         "cases": cases,
-        "summary": {
-            adapter: {
-                "baseline_accepted": all(
-                    case["baseline_accepted"] for case in cases if case["adapter"] == adapter
-                ),
-                "mutations_rejected": sum(
-                    1 for case in cases if case["adapter"] == adapter and case["rejected"]
-                ),
-                "mutation_count": sum(1 for case in cases if case["adapter"] == adapter),
-                "all_mutations_rejected": all(
-                    case["rejected"] for case in cases if case["adapter"] == adapter
-                ),
-            }
-            for adapter in EXPECTED_ADAPTERS
-        },
+        "summary": summary,
     }
 
 
@@ -460,22 +454,55 @@ def _canonical_command(command: list[str] | None) -> list[str]:
     return command or []
 
 
+def summarize_cases(cases: Any) -> dict[str, dict[str, Any]] | None:
+    if not isinstance(cases, list):
+        return None
+    pairs = []
+    for case in cases:
+        if not isinstance(case, dict):
+            return None
+        adapter = case.get("adapter")
+        mutation = case.get("mutation")
+        if adapter not in EXPECTED_ADAPTERS or mutation not in EXPECTED_MUTATION_SET:
+            return None
+        pairs.append((adapter, mutation))
+    if len(pairs) != len(EXPECTED_CASE_PAIRS) or set(pairs) != EXPECTED_CASE_PAIRS:
+        return None
+    return {
+        adapter: {
+            "baseline_accepted": all(
+                bool(case.get("baseline_accepted")) for case in cases if case["adapter"] == adapter
+            ),
+            "mutations_rejected": sum(
+                1 for case in cases if case["adapter"] == adapter and bool(case.get("rejected"))
+            ),
+            "mutation_count": sum(1 for case in cases if case["adapter"] == adapter),
+            "all_mutations_rejected": all(
+                bool(case.get("rejected")) for case in cases if case["adapter"] == adapter
+            ),
+        }
+        for adapter in EXPECTED_ADAPTERS
+    }
+
+
 def benchmark_passed(payload: dict[str, Any]) -> bool:
-    summary = payload["summary"]
-    expected_case_count = len(EXPECTED_ADAPTERS) * EXPECTED_MUTATION_COUNT
-    if len(payload.get("cases", [])) != expected_case_count:
+    summary = summarize_cases(payload.get("cases"))
+    if summary is None:
         return False
-    for adapter in EXPECTED_ADAPTERS:
-        adapter_summary = summary.get(adapter)
-        if adapter_summary is None:
-            return False
-        if adapter_summary.get("mutation_count") != EXPECTED_MUTATION_COUNT:
-            return False
+    if payload.get("summary") != summary:
+        return False
     proof_only = summary["ezkl-proof-only"]
     statement_envelope = summary["ezkl-statement-envelope"]
+    proof_cases = {
+        case["mutation"]: case
+        for case in payload["cases"]
+        if case["adapter"] == "ezkl-proof-only"
+    }
     return (
         proof_only["baseline_accepted"]
         and statement_envelope["baseline_accepted"]
+        and proof_only["mutations_rejected"] == 1
+        and bool(proof_cases["proof_public_instance_relabeling"].get("rejected"))
         and statement_envelope["all_mutations_rejected"]
     )
 
