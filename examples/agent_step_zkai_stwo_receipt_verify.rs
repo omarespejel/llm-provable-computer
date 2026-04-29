@@ -22,8 +22,19 @@ struct Output {
     results: Vec<CaseResult>,
 }
 
+const MAX_JSON_INPUT_BYTES: u64 = 1024 * 1024;
+
 fn load_json(path: &str) -> Result<Value, String> {
-    let raw = fs::read_to_string(Path::new(path)).map_err(|err| format!("read {path}: {err}"))?;
+    let path_ref = Path::new(path);
+    let size = fs::metadata(path_ref)
+        .map_err(|err| format!("stat {path}: {err}"))?
+        .len();
+    if size > MAX_JSON_INPUT_BYTES {
+        return Err(format!(
+            "read {path}: input is {size} bytes, max is {MAX_JSON_INPUT_BYTES}"
+        ));
+    }
+    let raw = fs::read_to_string(path_ref).map_err(|err| format!("read {path}: {err}"))?;
     serde_json::from_str(&raw).map_err(|err| format!("parse {path}: {err}"))
 }
 
