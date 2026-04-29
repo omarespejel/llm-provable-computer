@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -82,6 +84,32 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
             BENCH.to_tsv(payload).splitlines()[0].split("\t"),
             BENCH.TSV_COLUMNS,
         )
+
+    def test_command_json_override_preserves_portable_argv_vector(self) -> None:
+        original = os.environ.get("ZKAI_EZKL_BENCHMARK_COMMAND_JSON")
+        os.environ["ZKAI_EZKL_BENCHMARK_COMMAND_JSON"] = json.dumps(
+            [
+                "env",
+                "ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs",
+                "python3",
+                "scripts/zkai_ezkl_statement_envelope_benchmark.py",
+            ]
+        )
+        try:
+            self.assertEqual(
+                BENCH._canonical_command(["ignored"]),
+                [
+                    "env",
+                    "ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs",
+                    "python3",
+                    "scripts/zkai_ezkl_statement_envelope_benchmark.py",
+                ],
+            )
+        finally:
+            if original is None:
+                del os.environ["ZKAI_EZKL_BENCHMARK_COMMAND_JSON"]
+            else:
+                os.environ["ZKAI_EZKL_BENCHMARK_COMMAND_JSON"] = original
 
 
 if __name__ == "__main__":
