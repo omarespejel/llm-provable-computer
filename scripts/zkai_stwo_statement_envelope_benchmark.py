@@ -393,12 +393,19 @@ def _check_artifact_bindings(envelope: dict[str, Any], proof: dict[str, Any]) ->
     artifacts = _required_dict(envelope.get("artifacts"), "artifacts")
     program_path = _repo_path(_required_artifact_reference(artifacts, "program_path"))
     metadata_path = _artifact_dir_path(_required_artifact_reference(artifacts, "metadata_path"))
-    _required_artifact_reference(artifacts, "proof_path")
+    proof_reference = _required_artifact_reference(artifacts, "proof_path")
+    proof_path = _artifact_dir_path(proof_reference)
     metadata = _required_dict(_load_json(metadata_path), "metadata")
     statement = _required_dict(envelope.get("statement"), "statement")
-    expected_program_hash = metadata.get("artifacts", {}).get(STWO_PROGRAM_PATH)
+    metadata_artifacts = _required_dict(metadata.get("artifacts"), "metadata.artifacts")
+    expected_program_hash = metadata_artifacts.get(STWO_PROGRAM_PATH)
     if sha256_file(program_path) != expected_program_hash:
         raise StwoEnvelopeError("program artifact hash does not match metadata")
+    expected_proof_hash = metadata_artifacts.get(proof_reference)
+    if sha256_file(proof_path) != expected_proof_hash:
+        raise StwoEnvelopeError("proof artifact hash does not match metadata")
+    if _load_json(proof_path) != proof:
+        raise StwoEnvelopeError("proof artifact does not match envelope proof")
     checks = [
         (model_artifact_commitment(proof, program_path), statement.get("model_artifact_commitment"), "model artifact commitment"),
         (input_commitment(proof), statement.get("input_commitment"), "input commitment"),
@@ -456,6 +463,8 @@ def stwo_verify(proof: dict[str, Any]) -> None:
             )
         except subprocess.TimeoutExpired as err:
             raise StwoEnvelopeError("Stwo verify-stark verifier timed out") from err
+        except OSError as err:
+            raise StwoEnvelopeError(f"Stwo verify-stark verifier failed to execute cargo: {err}") from err
     output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
     if result.returncode != 0:
         raise StwoEnvelopeError(f"Stwo verify-stark verifier rejected: {output}")
@@ -496,7 +505,12 @@ def classify_error(message: str) -> str:
         return "setup_binding"
     if "evidence manifest" in lowered:
         return "evidence_manifest"
-    if "program artifact" in lowered or "proof commitment" in lowered or "model artifact" in lowered:
+    if (
+        "program artifact" in lowered
+        or "proof artifact" in lowered
+        or "proof commitment" in lowered
+        or "model artifact" in lowered
+    ):
         return "artifact_binding"
     if "input commitment" in lowered or "output commitment" in lowered or "config commitment" in lowered:
         return "artifact_binding"

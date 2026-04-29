@@ -45,8 +45,9 @@ The statement receipt first binds the accepted proof to model/primitive ID,
 program and model artifact commitment, input commitment, output commitment,
 configuration commitment, public-instance commitment, proof commitment,
 transparent setup commitment, verifier/AIR identity commitment, evidence
-manifest commitment, backend version, and verifier domain. Under that wrapper,
-all 14 checked mutations are rejected.
+manifest commitment, backend version, verifier domain, and the checked proof
+artifact path/hash recorded in `metadata.json`. Under that wrapper, all 14
+checked mutations are rejected.
 
 ## Interpretation
 
