@@ -154,9 +154,8 @@ conformance measurement for that system.
 
 ## Follow-Up
 
-The next useful step after #318 is a true external ecosystem adapter, tracked in
-#320. Good
-candidates are small statement-bound EZKL artifacts, another Stwo-native
+The next useful step after `#318` is a true external ecosystem adapter, tracked in
+`#320`. Good candidates are small statement-bound EZKL artifacts, another Stwo-native
 verifier surface, or a carefully scoped BitSage/Obelyzk artifact only after its
 verifier command and source/deployed-hash mapping are reproducible enough to
 avoid unfair claims.

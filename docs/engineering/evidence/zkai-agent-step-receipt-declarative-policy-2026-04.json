@@ -80,11 +80,50 @@
     "field_trust_class_vector",
     "receipt_commitment"
   ],
+  "receipt_commitment_fields": [
+    "prior_state_commitment",
+    "observation_commitment",
+    "model_commitment",
+    "model_config_commitment",
+    "model_receipt_commitment",
+    "tool_receipts_root",
+    "policy_commitment",
+    "action_commitment",
+    "next_state_commitment",
+    "transcript_commitment",
+    "dependency_drop_manifest_commitment",
+    "evidence_manifest_commitment",
+    "receipt_commitment"
+  ],
+  "receipt_optional_string_fields": [
+    "tool_receipts_root",
+    "policy_commitment",
+    "transcript_commitment"
+  ],
   "receipt_parser_versions": {
     "agent-step-receipt-v1": [
       "agent-step-receipt-parser-v1"
     ]
   },
+  "receipt_string_fields": [
+    "receipt_version",
+    "verifier_domain",
+    "runtime_domain",
+    "proof_backend",
+    "proof_backend_version",
+    "receipt_parser_version",
+    "prior_state_commitment",
+    "observation_commitment",
+    "model_identity",
+    "model_commitment",
+    "model_config_commitment",
+    "model_receipt_commitment",
+    "action_commitment",
+    "next_state_commitment",
+    "dependency_drop_manifest_commitment",
+    "evidence_manifest_commitment",
+    "receipt_commitment"
+  ],
   "receipt_versions": [
     "agent-step-receipt-v1"
   ],

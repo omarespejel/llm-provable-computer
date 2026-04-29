@@ -6,6 +6,7 @@ import io
 import json
 import os
 import pathlib
+import sys
 import unittest
 
 
@@ -19,6 +20,15 @@ SPEC.loader.exec_module(SUITE)
 
 
 class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
+    def _load_declarative_adapter_module(self):
+        module_name = "zkai_declarative_receipt_adapter_independence_check"
+        spec = importlib.util.spec_from_file_location(module_name, SUITE.DECLARATIVE_ADAPTER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def _install_fake_rust_adapter_payload(self, payload: object):
         original_run = SUITE.subprocess.run
 
@@ -106,10 +116,29 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         )
 
     def test_declarative_policy_adapter_does_not_import_mutation_oracle(self) -> None:
-        adapter_source = SUITE.DECLARATIVE_ADAPTER_PATH.read_text(encoding="utf-8")
+        before = set(sys.modules)
+        module = self._load_declarative_adapter_module()
+        loaded = set(sys.modules) - before
 
-        self.assertNotIn("agent_step_receipt_relabeling_harness", adapter_source)
-        self.assertNotIn("HARNESS", adapter_source)
+        self.assertNotIn("agent_step_receipt_relabeling_harness", module.__dict__)
+        self.assertNotIn("HARNESS", module.__dict__)
+        self.assertNotIn("agent_step_receipt_relabeling_harness", loaded)
+
+    def test_declarative_policy_rejects_self_consistent_non_string_receipt_field(self) -> None:
+        adapter = self._load_declarative_adapter_module()
+        policy = adapter.load_policy(SUITE.DECLARATIVE_POLICY_PATH)
+        bundle = SUITE.HARNESS.build_valid_bundle()
+        bundle["receipt"]["runtime_domain"] = {"not": "a-string"}
+        for entry in bundle["evidence_manifest"]["entries"]:
+            if entry["corresponding_receipt_field"] == "/runtime_domain":
+                entry["commitment"] = SUITE.HARNESS.commitment_for(
+                    {"field": "/runtime_domain", "value": bundle["receipt"]["runtime_domain"]},
+                    "agent-step-receipt-v1.evidence-field-binding",
+                )
+        SUITE.HARNESS.recompute_manifest_commitments(bundle)
+
+        with self.assertRaisesRegex(adapter.DeclarativeReceiptError, "/runtime_domain must be a string"):
+            adapter.verify_bundle(policy, bundle)
 
     def test_payload_records_reproducibility_and_artifact_hashes(self) -> None:
         payload = SUITE.run_suite("python-reference", command=["suite", "--adapter", "python-reference"])
@@ -216,6 +245,28 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         try:
             with self.assertRaisesRegex(RuntimeError, "malformed payload"):
                 SUITE._run_rust_production()
+        finally:
+            SUITE.subprocess.run = original_run
+
+    def test_declarative_adapter_metadata_is_verified(self) -> None:
+        case_ids = ["baseline", *sorted(SUITE._case_catalog())]
+        payload = {
+            "schema": SUITE.DECLARATIVE_POLICY_ADAPTER_SCHEMA,
+            "policy_path": str(SUITE.DECLARATIVE_POLICY_PATH.relative_to(SUITE.ROOT)),
+            "policy_sha256": "0" * 64,
+            "results": [
+                {
+                    "case_id": case_id,
+                    "accepted": case_id == "baseline",
+                    "error": "" if case_id == "baseline" else "mutated failed",
+                }
+                for case_id in case_ids
+            ],
+        }
+        original_run = self._install_fake_rust_adapter_payload(payload)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "metadata mismatch for policy_sha256"):
+                SUITE._run_declarative_policy()
         finally:
             SUITE.subprocess.run = original_run
 

@@ -95,8 +95,8 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _policy_sha256(policy_path: pathlib.Path) -> str:
-    return _sha256_hex(policy_path.read_bytes())
+def _policy_sha256(policy: dict[str, Any]) -> str:
+    return _sha256_hex(canonical_json_bytes(policy))
 
 
 def require_object(value: Any, label: str) -> dict[str, Any]:
@@ -133,9 +133,12 @@ def load_policy(policy_path: pathlib.Path) -> dict[str, Any]:
         "hash_lengths",
         "manifest_versions",
         "proof_backends",
+        "receipt_commitment_fields",
         "receipt_fields",
+        "receipt_optional_string_fields",
         "receipt_parser_versions",
         "receipt_versions",
+        "receipt_string_fields",
         "required_subfact_kinds",
         "self_bound_fields",
         "trust_class_rank",
@@ -151,6 +154,16 @@ def load_policy(policy_path: pathlib.Path) -> dict[str, Any]:
     _require_string_set(policy, "evidence_kinds")
     _require_string_set(policy, "required_subfact_kinds")
     _require_string_set(policy, "allowed_replacement_receipt_versions")
+    receipt_fields = _require_string_set(policy, "receipt_fields")
+    string_fields = _require_string_set(policy, "receipt_string_fields")
+    optional_string_fields = _require_string_set(policy, "receipt_optional_string_fields")
+    commitment_fields = _require_string_set(policy, "receipt_commitment_fields")
+    if string_fields & optional_string_fields:
+        raise DeclarativeReceiptError("policy string and optional-string receipt fields overlap")
+    if (string_fields | optional_string_fields | {"field_trust_class_vector"}) != receipt_fields:
+        raise DeclarativeReceiptError("policy receipt field type coverage mismatch")
+    if not commitment_fields.issubset(string_fields | optional_string_fields):
+        raise DeclarativeReceiptError("policy commitment fields must be string or optional-string fields")
     return policy
 
 
@@ -194,6 +207,18 @@ def _validate_sorted_string_list(value: Any, label: str) -> list[str]:
     if len(strings) != len(set(strings)):
         raise DeclarativeReceiptError(f"duplicate {label} entry")
     return strings
+
+
+def _verify_receipt_field_types(policy: dict[str, Any], receipt: dict[str, Any]) -> None:
+    for field in policy["receipt_string_fields"]:
+        if not isinstance(receipt[field], str):
+            raise DeclarativeReceiptError(f"receipt field /{field} must be a string")
+    for field in policy["receipt_optional_string_fields"]:
+        if receipt[field] is not None and not isinstance(receipt[field], str):
+            raise DeclarativeReceiptError(f"receipt field /{field} must be a string or null")
+    for field in policy["receipt_commitment_fields"]:
+        if receipt[field] is not None:
+            _validate_commitment(policy, receipt[field], f"receipt field /{field}")
 
 
 def _commitment_for(policy: dict[str, Any], value: Any, domain: str) -> str:
@@ -405,6 +430,7 @@ def verify_bundle(policy: dict[str, Any], bundle: dict[str, Any]) -> bool:
     dependency_manifest = require_object(bundle["dependency_drop_manifest"], "dependency-drop manifest")
     if set(receipt) != set(policy["receipt_fields"]):
         raise DeclarativeReceiptError("receipt has missing or unexpected fields")
+    _verify_receipt_field_types(policy, receipt)
 
     if receipt["receipt_version"] not in set(policy["receipt_versions"]):
         raise DeclarativeReceiptError("unsupported receipt version")
@@ -548,12 +574,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"declarative adapter setup failed: {err}", file=sys.stderr)
         return 2
 
+    try:
+        policy_label = str(policy_path.relative_to(ROOT))
+    except ValueError:
+        policy_label = str(policy_path)
+
     print(
         json.dumps(
             {
                 "schema": ADAPTER_SCHEMA,
-                "policy_path": str(policy_path.relative_to(ROOT)),
-                "policy_sha256": _policy_sha256(policy_path),
+                "policy_path": policy_label,
+                "policy_sha256": _policy_sha256(policy),
                 "results": results,
             },
             indent=2,
