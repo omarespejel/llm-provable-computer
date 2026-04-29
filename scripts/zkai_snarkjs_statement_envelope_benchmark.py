@@ -13,7 +13,6 @@ import json
 import os
 import pathlib
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -28,6 +27,7 @@ ENVELOPE_SCHEMA = "zkai-snarkjs-statement-envelope-v1"
 STATEMENT_SCHEMA = "zkai-external-statement-v1"
 SNARKJS_VERSION = "0.7.6"
 SNARKJS_VERIFIER_DOMAIN = f"snarkjs-groth16-verify-v{SNARKJS_VERSION}"
+SNARKJS_COMMAND = ("npx", "-y", f"snarkjs@{SNARKJS_VERSION}")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 EXPECTED_STATEMENT = {
     "model_id": "urn:zkai:snarkjs-demo:square-v1",
@@ -325,11 +325,8 @@ def snarkjs_verify(
         proof_path.write_text(json.dumps(proof, sort_keys=True), encoding="utf-8")
         public_path.write_text(json.dumps(public_signals, sort_keys=True), encoding="utf-8")
         vk_path.write_text(json.dumps(verification_key, sort_keys=True), encoding="utf-8")
-        command = shlex.split(os.environ.get("ZKAI_SNARKJS_COMMAND", "npx -y snarkjs@0.7.6"))
-        if not command:
-            raise SnarkjsEnvelopeError("ZKAI_SNARKJS_COMMAND must not be empty")
         result = subprocess.run(
-            [*command, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
+            [*SNARKJS_COMMAND, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
             cwd=ROOT,
             text=True,
             capture_output=True,
