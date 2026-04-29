@@ -38,7 +38,7 @@ Generated benchmark evidence:
 
 Generator commit recorded in evidence:
 
-`b6e7c2afefeffe0f675d05f414ce72ea251dd434`
+`a16527c9574e4d8e1739c683aa1272287397f822`
 
 ## Result
 
@@ -47,8 +47,8 @@ set.
 
 | Adapter | Baseline | Mutations rejected | Gate |
 |---|---:|---:|---|
-| `snarkjs-proof-only` | accepted | 1 / 9 | NO-GO for statement-bound relabeling |
-| `snarkjs-statement-envelope` | accepted | 9 / 9 | GO for external proof-backed statement envelope |
+| `snarkjs-proof-only` | accepted | 1 / 14 | NO-GO for statement-bound relabeling |
+| `snarkjs-statement-envelope` | accepted | 14 / 14 | GO for external proof-backed statement envelope |
 
 The raw proof-only path rejects the mutated public signal, as it should, but
 accepts metadata-only relabeling because those labels are outside the raw
@@ -59,7 +59,7 @@ application statement binding.
 The statement-envelope path first checks the statement commitment, artifact
 hashes, label policy, verifier domain, verification-key binding, setup binding,
 proof hash, and public-signal digest, and then delegates proof validity to
-snarkjs. Under that adapter, all nine mutations are rejected.
+snarkjs. Under that adapter, all 14 mutations are rejected.
 
 ## Interpretation
 
@@ -89,8 +89,8 @@ Regenerate the benchmark evidence:
 the checked evidence.
 
 ```bash
-export ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON='["env","ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=b6e7c2afefeffe0f675d05f414ce72ea251dd434","python3","scripts/zkai_snarkjs_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"]'
-ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=b6e7c2afefeffe0f675d05f414ce72ea251dd434 \
+export ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON='["env","ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=a16527c9574e4d8e1739c683aa1272287397f822","python3","scripts/zkai_snarkjs_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"]'
+ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=a16527c9574e4d8e1739c683aa1272287397f822 \
   python3.12 scripts/zkai_snarkjs_statement_envelope_benchmark.py \
   --write-json docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json \
   --write-tsv docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv

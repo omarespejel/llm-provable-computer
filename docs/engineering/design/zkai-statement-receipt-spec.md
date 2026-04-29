@@ -165,9 +165,9 @@ baseline and rejects `1 / 7` checked relabeling mutations. The statement envelop
 accepts the same baseline and rejects `7 / 7` checked mutations.
 
 The second checked external adapter is a tiny Circom/snarkjs Groth16 artifact.
-The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 9`
+The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the public-signal mutation. The statement envelope
-accepts the same baseline and rejects `9 / 9` checked mutations.
+accepts the same baseline and rejects `14 / 14` checked mutations.
 
 Evidence handles:
 
