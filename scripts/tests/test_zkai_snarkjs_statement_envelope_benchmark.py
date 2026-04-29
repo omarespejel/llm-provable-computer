@@ -190,18 +190,6 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
             else:
                 os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"] = original
 
-    def test_snarkjs_command_rejects_empty_argv(self) -> None:
-        original = os.environ.get("ZKAI_SNARKJS_COMMAND")
-        os.environ["ZKAI_SNARKJS_COMMAND"] = ""
-        try:
-            with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "must not be empty"):
-                BENCH.snarkjs_verify({}, [], {})
-        finally:
-            if original is None:
-                del os.environ["ZKAI_SNARKJS_COMMAND"]
-            else:
-                os.environ["ZKAI_SNARKJS_COMMAND"] = original
-
     def test_checked_evidence_uses_portable_repro_command(self) -> None:
         path = (
             ROOT

@@ -96,7 +96,7 @@ mutations for:
 - config commitment,
 - public-instance commitment,
 - proof commitment,
-- verifying-key commitment,
+- `verifying_key_commitment`,
 - verifier domain,
 - backend/proof version,
 - setup/FRI/config commitment,
