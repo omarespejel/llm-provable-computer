@@ -1,0 +1,33 @@
+adapter	mutation	category	baseline_accepted	mutated_accepted	rejected	rejection_layer	error
+stwo-proof-only	config_commitment_relabeling	artifact_binding	True	True	False	accepted	none
+stwo-proof-only	evidence_manifest_commitment_relabeling	evidence_manifest	True	True	False	accepted	none
+stwo-proof-only	input_commitment_relabeling	artifact_binding	True	True	False	accepted	none
+stwo-proof-only	model_artifact_commitment_relabeling	artifact_binding	True	True	False	accepted	none
+stwo-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	none
+stwo-proof-only	output_commitment_relabeling	artifact_binding	True	True	False	accepted	none
+stwo-proof-only	proof_commitment_relabeling	artifact_binding	True	True	False	accepted	none
+stwo-proof-only	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.67s
+     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpb0ppm5p1/proof.json --reexecute`
+error: invalid config: invalid transformer equivalence fingerprint"
+stwo-proof-only	proof_system_version_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+stwo-proof-only	public_instance_commitment_relabeling	public_instance_binding	True	True	False	accepted	none
+stwo-proof-only	setup_commitment_relabeling	setup_binding	True	True	False	accepted	none
+stwo-proof-only	statement_commitment_relabeling	statement_commitment	True	True	False	accepted	none
+stwo-proof-only	verifier_domain_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+stwo-proof-only	verifying_key_commitment_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+stwo-statement-envelope	config_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	config commitment mismatch
+stwo-statement-envelope	evidence_manifest_commitment_relabeling	evidence_manifest	True	False	True	evidence_manifest	evidence manifest commitment mismatch
+stwo-statement-envelope	input_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	input commitment mismatch
+stwo-statement-envelope	model_artifact_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	model artifact commitment mismatch
+stwo-statement-envelope	model_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for model_id
+stwo-statement-envelope	output_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	output commitment mismatch
+stwo-statement-envelope	proof_commitment_relabeling	artifact_binding	True	False	True	artifact_binding	proof commitment mismatch
+stwo-statement-envelope	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmph_huz6to/proof.json --reexecute`
+error: invalid config: invalid transformer equivalence fingerprint"
+stwo-statement-envelope	proof_system_version_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for proof_system_version
+stwo-statement-envelope	public_instance_commitment_relabeling	public_instance_binding	True	False	True	public_instance_binding	public-instance commitment mismatch
+stwo-statement-envelope	setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup commitment mismatch
+stwo-statement-envelope	statement_commitment_relabeling	statement_commitment	True	False	True	statement_commitment	statement_commitment mismatch
+stwo-statement-envelope	verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for verifier_domain
+stwo-statement-envelope	verifying_key_commitment_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	verifying-key commitment mismatch
