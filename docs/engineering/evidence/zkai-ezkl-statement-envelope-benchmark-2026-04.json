@@ -181,7 +181,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "8c716f844e2f4a0369f71f89cab1ba7621d08483"
+    "git_commit": "8d6433c17a9545a15da3eda479e4280c16063696"
   },
   "schema": "zkai-ezkl-statement-envelope-benchmark-v1",
   "suite_kind": "external_ezkl_statement_relabeling",
