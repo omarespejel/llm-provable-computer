@@ -101,6 +101,12 @@ field to `omitted`, but then the omitted fact is not part of the claim.
 | `evidence_manifest_commitment` | replayed | Commitment to all subproofs, attestations, and replayed sources. |
 | `receipt_commitment` | replayed | Canonical commitment to the receipt payload. |
 
+`model_receipt_commitment` is deliberately limited to `proved` or
+`dependency_dropped`. This prevents an attestation-only model claim from being
+relabeled as a model-inference proof; implementation tests should mutate this
+field and its trust class together and require rejection unless the commitment is
+backed by a verified model receipt or by an explicit dependency-drop manifest.
+
 ## Canonical Commitment Shape
 
 A future implementation should avoid free-form string concatenation. The receipt
@@ -133,23 +139,51 @@ The trust-class vector is part of the commitment. Otherwise a producer could
 reuse the same commitments while upgrading an `attested` or `omitted` field into
 a `proved` claim in surrounding metadata.
 
+`field_trust_class_vector` must be encoded canonically, not as display text. The
+candidate encoding is a length-prefixed, lexicographically sorted sequence of
+entries:
+
+```text
+trust_class_entry = (
+  field_path_utf8_json_pointer_length,
+  field_path_utf8_json_pointer,
+  trust_class_enum_u8
+)
+```
+
+The `field_path` is a UTF-8 JSON Pointer such as
+`/model_receipt_commitment`. The enum mapping is fixed as
+`0=omitted`, `1=attested`, `2=replayed`, `3=dependency_dropped`, and
+`4=proved`. Each entry should be domain-separated before inclusion, for example
+`H("agent-step-receipt-v1.trust-class-entry", entry)`, and the vector should be
+committed as `H("agent-step-receipt-v1.trust-class-vector", length, entries...)`.
+Mutation tests must reject reordering, duplicate paths, unknown enum values, and
+trust-class changes without a matching `receipt_commitment` update.
+
 ## Dependency-Drop Manifest
 
 The dependency-drop manifest lists each dependency the downstream verifier does
 not replay.
 
-Each entry should include:
+The manifest object is commitment-bound to the accepted receipt through
+`dependency_drop_manifest_commitment`; the receipt is invalid if the manifest
+bytes do not hash to that field. Entries must be serialized canonically with
+unknown fields rejected.
 
-- `dependency_id`,
-- `dependency_kind`,
-- `source_commitment`,
-- `replacement_commitment`,
-- `replacement_receipt_version`,
-- `trust_class`,
-- `verifier_domain`,
-- `reason_for_drop`,
-- `required_subproof_or_attestation`,
-- `non_claims`.
+Each entry has the following deterministic shape:
+
+| Field | Required | Type / format | Semantics |
+| --- | --- | --- | --- |
+| `dependency_id` | yes | URN or stable UTF-8 string | Unique dependency handle, for example `urn:agent-step:model-receipt:0`. |
+| `dependency_kind` | yes | enum string | One of `source_manifest`, `proof_trace`, `model_receipt`, `tool_receipt`, `state_commitment`, `policy_commitment`, `transcript`, or `other`. |
+| `source_commitment` | yes | `algorithm:lower_hex_digest` | Commitment to the replay source being dropped. |
+| `replacement_commitment` | yes | `algorithm:lower_hex_digest` | Commitment to the typed replacement object accepted by the verifier. |
+| `replacement_receipt_version` | yes | semver-like string or integer schema version | Schema/version of the replacement receipt. |
+| `trust_class` | yes | trust-class enum string | Must be `dependency_dropped` for Tablero-style replay replacement unless a later verifier domain explicitly allows another class. |
+| `verifier_domain` | yes | UTF-8 domain string | Domain separator naming the verifier that accepts the replacement. |
+| `reason_for_drop` | yes | non-empty UTF-8 string | Human-readable reason, such as `linear source replay replaced by typed boundary commitment`. |
+| `required_subproof_or_attestation` | no | null or object `{kind, commitment, verifier_domain}` | Extra proof or attestation required before the drop is accepted. |
+| `non_claims` | yes | array of UTF-8 strings | Explicit statements the drop does not prove. |
 
 A Tablero boundary is valid only if the manifest is itself commitment-bound to
 the accepted receipt.
@@ -213,12 +247,24 @@ will eventually consume that primitive.
 
 Useful external reference points for the next research pass:
 
-- EZKL represents the developer-friendly ONNX/Halo2 zkML lane.
-- zkLLM, zkGPT, and NANOZK represent specialized LLM-proof lanes.
-- Nexus zkMCP frames the adjacent problem as verifiable model execution context.
-- Artemis highlights commitment-consistency overhead as a zkML bottleneck.
-- Percepta's LLM-as-computer framing is a narrative signal that the target may
-  move from isolated inference proofs toward proof-carrying computation context.
+- [EZKL](https://github.com/zkonduit/ezkl) represents the developer-friendly
+  ONNX/Halo2 zkML lane.
+- [zkLLM](https://arxiv.org/abs/2404.16109),
+  [zkGPT](https://eprint.iacr.org/2025/1184), and
+  [NANOZK](https://openreview.net/forum?id=zNTAvn3sct) represent specialized
+  LLM-proof lanes.
+- [Nexus zkMCP](https://blog.nexus.xyz/nexus-zkmcp-verifiable-model-execution/)
+  frames the adjacent problem as verifiable model execution context.
+- [Artemis](https://arxiv.org/abs/2409.12055) highlights
+  commitment-consistency overhead as a zkML bottleneck.
+- BitSage/Obelyzk, including the
+  [ObelyZK paper artifact](https://docs.rs/crate/obelyzk/0.3.0/source/obelyzk-paper.pdf)
+  and [Starknet-facing Obelysk materials](https://www.obelysk.xyz/), is an
+  ecosystem signal for GPU-proved ML and recursive/on-chain verifier claims that
+  need independent replay and public-input binding checks before endorsement.
+- Percepta's [LLM-as-computer framing](https://www.percepta.ai/blog/can-llms-be-computers)
+  is a narrative signal that the target may move from isolated inference proofs
+  toward proof-carrying computation context.
 
 This spec should stay neutral about those systems' performance claims. It uses
 them only to explain why the repo needs a statement-bound receipt object instead

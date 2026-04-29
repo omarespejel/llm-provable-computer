@@ -222,14 +222,19 @@ Public-facing text in this repository should follow these rules.
 
 ## Verifiable-Intelligence Receipts
 
-The first verifiable-intelligence receipt surface is specified in
+The first verifiable-intelligence receipt surface is currently a design note, not
+an enforced operational constraint. It is specified in
 [`docs/engineering/design/agent-step-receipt-spec.md`](../engineering/design/agent-step-receipt-spec.md).
 That design introduces typed agent-step receipts over state, observation, model,
 tool, policy, action, transcript, and next-state commitments.
 
-The key security rule is trust-class honesty. A receipt member may be `proved`,
-`attested`, `replayed`, `dependency_dropped`, or `omitted`. Public claims must
-not upgrade an `attested` or `omitted` member into a proved fact. A Tablero-style
-boundary can bind and transport an accepted receipt, but it does not by itself
-prove model semantics, tool truthfulness, memory correctness, policy compliance,
-or agent reasoning quality.
+Future receipt implementations should enforce trust-class honesty. A receipt
+member may be `proved`, `attested`, `replayed`, `dependency_dropped`, or
+`omitted`; future verifiers and mutation tests should reject attempts to upgrade
+an `attested` or `omitted` member into a proved fact.
+
+The staged implementation route is toy receipts first, then Stwo-native
+transformer receipts. Until that exists, the receipt rules are policy goals for
+future implementation. A Tablero-style boundary can bind and transport an
+accepted receipt, but it does not by itself prove model semantics, tool
+truthfulness, memory correctness, policy compliance, or agent reasoning quality.
