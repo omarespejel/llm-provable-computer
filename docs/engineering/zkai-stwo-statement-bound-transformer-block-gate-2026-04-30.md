@@ -120,6 +120,13 @@ Validate the gate plan:
 python3 scripts/zkai_stwo_transformer_block_plan.py --json
 ```
 
+Repository gates:
+
+```bash
+just gate-fast
+just gate
+```
+
 ## Non-claims
 
 - This is not full transformer inference.

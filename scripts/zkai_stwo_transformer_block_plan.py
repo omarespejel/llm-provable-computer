@@ -85,6 +85,7 @@ REQUIRED_VALIDATION_COMMAND_FRAGMENTS = (
     "scripts.tests.test_zkai_stwo_transformer_block_plan",
     "scripts.tests.test_zkai_stwo_statement_envelope_benchmark",
     "scripts.tests.test_agent_step_zkai_stwo_composition",
+    "just gate-fast",
 )
 
 
@@ -237,6 +238,11 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
         raise PlanValidationError(
             "validation_commands is missing required coverage: "
             + ", ".join(missing_command_fragments)
+        )
+    normalized_commands = {command.strip() for command in commands}
+    if not ({"just gate", "just gate-no-nightly"} & normalized_commands):
+        raise PlanValidationError(
+            "validation_commands must include final repo gate: `just gate` or `just gate-no-nightly`"
         )
 
     return {
