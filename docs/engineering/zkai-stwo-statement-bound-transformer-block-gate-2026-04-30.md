@@ -108,7 +108,10 @@ The validator is:
 Focused tests:
 
 ```bash
-python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan
+python3 -m unittest \
+  scripts.tests.test_zkai_stwo_transformer_block_plan \
+  scripts.tests.test_zkai_stwo_statement_envelope_benchmark \
+  scripts.tests.test_agent_step_zkai_stwo_composition
 ```
 
 Validate the gate plan:

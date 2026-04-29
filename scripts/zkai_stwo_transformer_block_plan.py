@@ -27,8 +27,12 @@ DEFAULT_PLAN_PATH = (
 
 PLAN_SCHEMA = "zkai-stwo-statement-bound-transformer-block-plan-v1"
 PLAN_STATUS = "design_gate"
+BASELINE_PROOF_SYSTEM_VERSION = "stwo-phase10-linear-block-v4-with-lookup"
 TARGET_NAME = "rmsnorm-affine-residual-block-v1"
 TARGET_STATEMENT_KIND = "transformer-block"
+EXPECTED_STATEMENT_MUTATIONS = 14
+EXPECTED_PROOF_ONLY_REJECTIONS = 1
+EXPECTED_COMPOSITION_MUTATIONS = 36
 
 REQUIRED_OPERATION_IDS = frozenset(
     {
@@ -76,6 +80,11 @@ REQUIRED_NON_CLAIM_FRAGMENTS = (
     "not backend independence",
     "not recursive or on-chain verification",
     "does not claim that the existing linear-block primitive already proves transformer-block semantics",
+)
+REQUIRED_VALIDATION_COMMAND_FRAGMENTS = (
+    "scripts.tests.test_zkai_stwo_transformer_block_plan",
+    "scripts.tests.test_zkai_stwo_statement_envelope_benchmark",
+    "scripts.tests.test_agent_step_zkai_stwo_composition",
 )
 
 
@@ -130,6 +139,10 @@ def _validate_current_baseline(plan: dict[str, Any]) -> None:
         raise PlanValidationError("current_baseline.statement_receipt_schema is not the checked receipt schema")
     if baseline.get("proof_system") != "stwo-transparent-stark":
         raise PlanValidationError("current_baseline.proof_system must stay Stwo-native")
+    if baseline.get("proof_system_version") != BASELINE_PROOF_SYSTEM_VERSION:
+        raise PlanValidationError(
+            f"current_baseline.proof_system_version must be {BASELINE_PROOF_SYSTEM_VERSION!r}"
+        )
     if baseline.get("model_id") != "urn:zkai:ptvm:linear-block-v4-with-lookup":
         raise PlanValidationError("current_baseline.model_id does not match the checked Stwo primitive")
 
@@ -137,14 +150,38 @@ def _validate_current_baseline(plan: dict[str, Any]) -> None:
     statement = _required_dict(mutation_result.get("statement_envelope"), "mutation_result.statement_envelope")
     if statement.get("mutations_rejected") != statement.get("mutations_checked"):
         raise PlanValidationError("current statement-envelope baseline must reject all checked mutations")
+    if (
+        statement.get("mutations_checked") != EXPECTED_STATEMENT_MUTATIONS
+        or statement.get("mutations_rejected") != EXPECTED_STATEMENT_MUTATIONS
+    ):
+        raise PlanValidationError(
+            f"current statement-envelope baseline must stay pinned at "
+            f"{EXPECTED_STATEMENT_MUTATIONS}/{EXPECTED_STATEMENT_MUTATIONS}"
+        )
 
     proof_only = _required_dict(mutation_result.get("proof_only"), "mutation_result.proof_only")
     if proof_only.get("decision") != "NO_GO_FOR_METADATA_RELABELING_BY_ITSELF":
         raise PlanValidationError("proof-only baseline must remain scoped as NO-GO for metadata relabeling")
+    if (
+        proof_only.get("mutations_checked") != EXPECTED_STATEMENT_MUTATIONS
+        or proof_only.get("mutations_rejected") != EXPECTED_PROOF_ONLY_REJECTIONS
+    ):
+        raise PlanValidationError(
+            f"proof-only baseline must stay pinned at "
+            f"{EXPECTED_PROOF_ONLY_REJECTIONS}/{EXPECTED_STATEMENT_MUTATIONS}"
+        )
 
     composition = _required_dict(baseline.get("agent_composition_result"), "current_baseline.agent_composition_result")
     if composition.get("mutations_rejected") != composition.get("mutations_checked"):
         raise PlanValidationError("agent composition baseline must reject all checked mutations")
+    if (
+        composition.get("mutations_checked") != EXPECTED_COMPOSITION_MUTATIONS
+        or composition.get("mutations_rejected") != EXPECTED_COMPOSITION_MUTATIONS
+    ):
+        raise PlanValidationError(
+            f"agent composition baseline must stay pinned at "
+            f"{EXPECTED_COMPOSITION_MUTATIONS}/{EXPECTED_COMPOSITION_MUTATIONS}"
+        )
 
 
 def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -190,8 +227,17 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
             raise PlanValidationError(f"non_claims is missing: {fragment}")
 
     commands = _required_list(plan.get("validation_commands"), "validation_commands")
-    if "python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan" not in commands:
-        raise PlanValidationError("validation_commands must include the focused unit test")
+    if not all(isinstance(command, str) and command for command in commands):
+        raise PlanValidationError("validation_commands must contain only non-empty strings")
+    command_text = "\n".join(commands)
+    missing_command_fragments = [
+        fragment for fragment in REQUIRED_VALIDATION_COMMAND_FRAGMENTS if fragment not in command_text
+    ]
+    if missing_command_fragments:
+        raise PlanValidationError(
+            "validation_commands is missing required coverage: "
+            + ", ".join(missing_command_fragments)
+        )
 
     return {
         "schema": PLAN_SCHEMA,
