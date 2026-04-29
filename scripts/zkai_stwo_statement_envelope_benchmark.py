@@ -501,8 +501,10 @@ def verify_proof_only(
 
 
 def classify_error(message: str) -> str:
-    # Keep these phrase checks aligned with StwoEnvelopeError messages above;
-    # benchmark evidence uses this as a coarse rejection-layer label.
+    # Keep these phrase checks aligned with StwoEnvelopeError messages above.
+    # Examples: "policy mismatch", "proof artifact", "setup commitment", and
+    # "verify-stark verifier rejected" drive evidence rejection-layer labels.
+    # If those errors change, update this classifier and its evidence tests.
     lowered = message.lower()
     if "verify-stark verifier rejected" in lowered or "timed out" in lowered:
         return "external_proof_verifier"
@@ -713,7 +715,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     effective_argv = list(argv) if argv is not None else sys.argv[1:]
-    script_path = str(pathlib.Path(__file__).relative_to(ROOT))
+    script_path = str(pathlib.Path(__file__).resolve().relative_to(ROOT))
     payload = run_benchmark(
         command=[os.environ.get("PYTHON", "python3"), script_path, *effective_argv]
     )
