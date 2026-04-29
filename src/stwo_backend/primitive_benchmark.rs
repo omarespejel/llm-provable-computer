@@ -67,6 +67,8 @@ use super::history_replay_projection_prover::{
     Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
     Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION,
+    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
@@ -149,7 +151,9 @@ pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION: &str =
 pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE: &str =
     "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend";
 pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION: &str =
-    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
+    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION;
+pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE: &str =
+    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE;
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
     "stwo-phase43-source-root-feasibility-benchmark-v2";
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_SCOPE: &str =
@@ -456,6 +460,8 @@ pub struct StwoTableroBoundaryBindingMicroprofileMeasurement {
 pub struct StwoTableroBoundaryBindingMicroprofileReport {
     pub benchmark_version: String,
     pub semantic_scope: String,
+    pub backend_version: String,
+    pub claim_scope: String,
     pub timing_mode: String,
     pub timing_policy: String,
     pub timing_unit: String,
@@ -1875,6 +1881,8 @@ pub fn run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(
     Ok(StwoTableroBoundaryBindingMicroprofileReport {
         benchmark_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE.to_string(),
+        backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+        claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
         timing_mode: if capture_timings {
             BENCHMARK_TIMING_MODE_MICROPROFILE.to_string()
         } else {
@@ -2964,13 +2972,15 @@ pub fn save_stwo_tablero_boundary_binding_microprofile_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\tprofile_version\trelation\tcomponent\tcomponent_scope\titerations\ttotal_ms\tmean_us\tboundary_serialized_bytes\tpreprocessed_trace_log_size_count\tprojection_trace_log_size_count\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\tbackend_version\tclaim_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\tprofile_version\trelation\tcomponent\tcomponent_scope\titerations\ttotal_ms\tmean_us\tboundary_serialized_bytes\tpreprocessed_trace_log_size_count\tprojection_trace_log_size_count\tverified\tnote\n",
     );
     for row in &report.rows {
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
             report.benchmark_version,
             report.semantic_scope,
+            report.backend_version,
+            report.claim_scope,
             report.timing_mode,
             report.timing_policy,
             report.timing_unit,
@@ -7137,6 +7147,9 @@ mod tests {
     fn tablero_boundary_binding_microprofile_rows_preserve_non_additive_scope() {
         let profile = Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
             profile_version: "phase44d-boundary-binding-microprofile-v1".to_string(),
+            backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+            timing_mode: BENCHMARK_TIMING_MODE_MICROPROFILE.to_string(),
+            claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
             total_steps: 1024,
             pair_width: 2,
             preprocessed_trace_log_size_count: 3,

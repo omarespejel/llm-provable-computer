@@ -455,6 +455,13 @@ pub struct Phase44DHistoryReplayProjectionExternalSourceRootAcceptance {
 
 pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION: &str =
     "phase44d-boundary-binding-microprofile-v1";
+pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION: &str =
+    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
+pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE: &str =
+    "post_compact_proof_phase44d_typed_boundary_binding_microprofile";
+const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_MEASURED: &str =
+    "measured_microprofile";
+const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_ZEROED: &str = "deterministic_zeroed";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -472,6 +479,9 @@ pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
 #[serde(deny_unknown_fields)]
 pub struct Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
     pub profile_version: String,
+    pub backend_version: String,
+    pub timing_mode: String,
+    pub claim_scope: String,
     pub total_steps: usize,
     pub pair_width: usize,
     pub preprocessed_trace_log_size_count: usize,
@@ -2509,6 +2519,13 @@ fn measure_phase44d_boundary_binding_microprofile_component<F>(
 where
     F: FnMut() -> Result<bool>,
 {
+    if iterations == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase44D boundary-binding microprofile iterations must be greater than zero"
+                .to_string(),
+        ));
+    }
+
     let effective_iterations = if capture_timings { iterations } else { 1 };
     let mut elapsed = Duration::ZERO;
     let mut verified = true;
@@ -2673,11 +2690,11 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
         capture_timings,
         "Run the full Phase44D typed-boundary binding function used by the benchmark after compact proof verification; this is the end-to-end binding-only surface and is not additive with the independent subcomponent probes above.",
         || {
-            Ok(verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+            let _acceptance = verify_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
                 black_box(boundary),
                 black_box(compact_claim),
-            )?
-            .final_useful_compression_boundary)
+            )?;
+            Ok(true)
         },
     )?);
     components.push(measure_phase44d_boundary_binding_microprofile_component(
@@ -2691,6 +2708,13 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
 
     Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
         profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
+        backend_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+        timing_mode: if capture_timings {
+            STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_MEASURED.to_string()
+        } else {
+            STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_ZEROED.to_string()
+        },
+        claim_scope: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
         total_steps: source_claim.total_steps,
         pair_width: source_claim.pair_width,
         preprocessed_trace_log_size_count: source_claim.preprocessed_trace_log_sizes.len(),
@@ -5964,6 +5988,48 @@ mod tests {
         assert_eq!(component.total_ms, 0.0);
         assert_eq!(component.mean_us, 0.0);
         assert!(component.verified);
+    }
+
+    #[test]
+    fn phase44d_boundary_binding_microprofile_component_rejects_zero_iterations() {
+        let mut calls = 0usize;
+        let error = measure_phase44d_boundary_binding_microprofile_component(
+            "synthetic_component",
+            "synthetic_scope",
+            0,
+            false,
+            "zero-iteration guard",
+            || {
+                calls += 1;
+                Ok(true)
+            },
+        )
+        .expect_err("zero iterations must fail before invoking the probe");
+
+        assert_eq!(calls, 0);
+        assert!(error.to_string().contains("greater than zero"));
+    }
+
+    #[test]
+    fn phase44d_boundary_binding_microprofile_rejects_zero_iterations() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let compact_envelope =
+            prove_phase43_history_replay_projection_compact_claim_envelope(&trace)
+                .expect("prove compact Phase43 projection");
+        let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+            &trace, &phase30,
+        )
+        .expect("emit Phase44D source-chain public output boundary");
+
+        let error =
+            profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
+                &boundary,
+                &compact_envelope.claim,
+                0,
+                false,
+            )
+            .expect_err("zero iterations must be rejected");
+        assert!(error.to_string().contains("greater than zero"));
     }
 
     relation!(Phase44DMinimalBoundaryElements, 3);
