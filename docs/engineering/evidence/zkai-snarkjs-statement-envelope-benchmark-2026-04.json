@@ -343,7 +343,7 @@
     "artifact_metadata_sha256": "46da24c5f3551a40973f9e46d4c534a37df83fdc12728aff3e9b525bfa043468",
     "command": [
       "env",
-      "ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=a16527c9574e4d8e1739c683aa1272287397f822",
+      "ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=56c3cab80fee01f763a61a2a9f60ae9674a4331a",
       "python3",
       "scripts/zkai_snarkjs_statement_envelope_benchmark.py",
       "--write-json",
@@ -351,7 +351,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "a16527c9574e4d8e1739c683aa1272287397f822"
+    "git_commit": "56c3cab80fee01f763a61a2a9f60ae9674a4331a"
   },
   "schema": "zkai-snarkjs-statement-envelope-benchmark-v1",
   "suite_kind": "external_snarkjs_statement_relabeling",
