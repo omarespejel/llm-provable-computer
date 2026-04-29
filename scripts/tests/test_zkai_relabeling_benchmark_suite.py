@@ -18,7 +18,7 @@ SPEC.loader.exec_module(SUITE)
 
 
 class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
-    def _install_fake_rust_adapter_output(self, case_ids: list[str]):
+    def _install_fake_rust_adapter_results(self, results: list[dict[str, object]]):
         original_run = SUITE.subprocess.run
 
         class FakeCompleted:
@@ -27,14 +27,7 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
             stdout = json.dumps(
                 {
                     "schema": "agent-step-receipt-rust-verifier-adapter-v1",
-                    "results": [
-                        {
-                            "case_id": case_id,
-                            "accepted": case_id == "baseline",
-                            "error": "" if case_id == "baseline" else "mutated failed",
-                        }
-                        for case_id in case_ids
-                    ],
+                    "results": results,
                 }
             )
 
@@ -43,6 +36,18 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
 
         SUITE.subprocess.run = fake_run
         return original_run
+
+    def _install_fake_rust_adapter_output(self, case_ids: list[str]):
+        return self._install_fake_rust_adapter_results(
+            [
+                {
+                    "case_id": case_id,
+                    "accepted": case_id == "baseline",
+                    "error": "" if case_id == "baseline" else "mutated failed",
+                }
+                for case_id in case_ids
+            ]
+        )
 
     def test_catalog_covers_every_declared_mutation_case(self) -> None:
         cases = set(SUITE.HARNESS.mutation_cases())
@@ -144,6 +149,16 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         original_run = self._install_fake_rust_adapter_output(case_ids)
         try:
             with self.assertRaisesRegex(RuntimeError, "extra=\\['unexpected_extra'\\]"):
+                SUITE._run_rust_production()
+        finally:
+            SUITE.subprocess.run = original_run
+
+    def test_rust_adapter_rejects_non_boolean_acceptance(self) -> None:
+        original_run = self._install_fake_rust_adapter_results(
+            [{"case_id": "baseline", "accepted": "false", "error": ""}]
+        )
+        try:
+            with self.assertRaisesRegex(RuntimeError, "malformed result row"):
                 SUITE._run_rust_production()
         finally:
             SUITE.subprocess.run = original_run
