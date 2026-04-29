@@ -63,6 +63,7 @@ New Rust tests cover:
 | Proved model subreceipt missing candidate payload | Rejects |
 | Proved model subreceipt missing callback | Rejects |
 | Dependency-dropped model subreceipt missing callback | Rejects |
+| Multiple matching model subreceipt evidence entries | Rejects as ambiguous |
 | Self-consistent agent receipt whose model identity drifts from nested subreceipt | Rejects through callback |
 
 This closes the implementation gap left explicit by the composition gate: a
