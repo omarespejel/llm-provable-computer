@@ -260,6 +260,13 @@ payload, plus canonical SHA-256 hashes computed over the verifier-facing JSON
 bytes. This makes the checked result inspectable without trusting a private test
 fixture.
 
+The suite now has two checked adapters over the same artifact bundle: the Rust
+production verifier and an independent declarative-policy interpreter. The
+second adapter consumes a checked JSON policy document and recomputes the
+commitment predicates without importing the mutation oracle. This improves local
+cross-implementation confidence, but it is still not an external ecosystem
+comparison.
+
 This does not claim a proved agent. It only makes the verifier-facing receipt
 object fail closed before future model, tool, policy, or memory evidence is
 attached.

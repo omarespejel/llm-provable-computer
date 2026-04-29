@@ -2,7 +2,7 @@
 
 Status: engineering/public-conformance benchmark, not a performance benchmark.
 
-Issue: #315
+Issues: #315, #318
 
 ## Purpose
 
@@ -24,22 +24,41 @@ performance and does not prove the soundness of an underlying proof system.
 
 - Suite driver: `scripts/zkai_relabeling_benchmark_suite.py`
 - Production verifier adapter: `examples/agent_step_receipt_verify.rs`
+- Independent declarative-policy adapter:
+  `scripts/zkai_declarative_receipt_adapter.py`
+- Checked declarative policy:
+  `docs/engineering/evidence/zkai-agent-step-receipt-declarative-policy-2026-04.json`
 - Suite tests: `scripts/tests/test_zkai_relabeling_benchmark_suite.py`
 - JSON evidence:
   `docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json`
 - TSV evidence:
   `docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv`
+- Declarative-policy JSON evidence:
+  `docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json`
+- Declarative-policy TSV evidence:
+  `docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.tsv`
 
-Regeneration command:
+Rust-production regeneration command:
 
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
-ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=9e65141b206d9dbfacd51cbc5c17d5f1225d8b59 \
+ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=287ff4e1f99317207ac392777cef8e8ec5d6a45b \
 ZKAI_RELABELING_BENCHMARK_COMMAND_JSON='["env","CARGO_TARGET_DIR=target/agent-relabeling-bench","python3.12","scripts/zkai_relabeling_benchmark_suite.py","--adapter","rust-production","--write-json","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"]' \
 python3.12 scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
     --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json \
     --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv
+```
+
+Declarative-policy regeneration command:
+
+```bash
+ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=287ff4e1f99317207ac392777cef8e8ec5d6a45b \
+ZKAI_RELABELING_BENCHMARK_COMMAND_JSON='["env","python3.12","scripts/zkai_relabeling_benchmark_suite.py","--adapter","declarative-policy","--write-json","docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.tsv"]' \
+python3.12 scripts/zkai_relabeling_benchmark_suite.py \
+    --adapter declarative-policy \
+    --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json \
+    --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.tsv
 ```
 
 Validation commands:
@@ -50,17 +69,23 @@ python3.12 -m unittest \
   scripts.tests.test_zkai_relabeling_benchmark_suite
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
 python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --json
+python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter declarative-policy --json
 python3.12 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
 ```
 
-The benchmark-suite command exercises the Rust production verifier adapter
-against one accepted baseline plus all mutated fixture cases.
+The benchmark-suite commands exercise both checked adapters against one accepted
+baseline plus all mutated fixture cases.
 
 ## Result
 
-The Rust production verifier accepts the baseline `AgentStepReceiptV1` fixture
-and rejects all `20 / 20` relabeling mutations.
+Both checked adapters accept the baseline `AgentStepReceiptV1` fixture and
+reject all `20 / 20` relabeling mutations:
+
+- `rust-production`: production Rust parser/verifier surface.
+- `declarative-policy`: independent Python policy interpreter that does not
+  import the mutation oracle and recomputes commitment predicates from a checked
+  JSON policy document.
 
 The JSON evidence records:
 
@@ -80,6 +105,8 @@ Observed rejection layers:
 - `14` cryptographic-binding rejections,
 - `5` domain/version allowlist rejections,
 - `1` trust-policy rejection.
+
+The rejection-layer counts match across both adapters on the checked evidence.
 
 The important result is not the count. The important result is that commitment
 fields are now mutated to valid but different commitments, so the production
@@ -118,16 +145,17 @@ conformance measurement for that system.
 
 - This is not a throughput or latency benchmark.
 - This is not a proof that an implementation's cryptographic backend is sound.
-- This is not a claim about external systems until their adapters are checked in
-  with reproducible artifacts.
+- This is not a claim about external ecosystem systems. The second adapter is an
+  independent local policy interpreter, not an EZKL, BitSage/Obelyzk, or other
+  external verifier integration.
 - This does not prove that a verifier rejects every possible self-consistent
   forged evidence graph; it tests stale-evidence relabeling and trust-class
   upgrade attempts against a fixed accepted baseline.
 
 ## Follow-Up
 
-The next useful step is one external or independent adapter, tracked in #318.
-Good candidates are small statement-bound EZKL artifacts, another Stwo-native
+The next useful step after #318 is a true external ecosystem adapter. Good
+candidates are small statement-bound EZKL artifacts, another Stwo-native
 verifier surface, or a carefully scoped BitSage/Obelyzk artifact only after its
 verifier command and source/deployed-hash mapping are reproducible enough to
 avoid unfair claims.
