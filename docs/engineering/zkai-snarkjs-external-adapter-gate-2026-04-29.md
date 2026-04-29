@@ -38,7 +38,7 @@ Generated benchmark evidence:
 
 Generator commit recorded in evidence:
 
-`c84e7fbcfc64cdebffb5b5e64f4b40e2cbd07e8a`
+`9604f791857ff5ee7fbebec839d6e0b7ae4823f5`
 
 ## Result
 
@@ -90,8 +90,8 @@ Regenerate the benchmark evidence:
 the checked evidence.
 
 ```bash
-export ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON='["env","ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=c84e7fbcfc64cdebffb5b5e64f4b40e2cbd07e8a","python3","scripts/zkai_snarkjs_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"]'
-ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=c84e7fbcfc64cdebffb5b5e64f4b40e2cbd07e8a \
+export ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON='["env","ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=9604f791857ff5ee7fbebec839d6e0b7ae4823f5","python3","scripts/zkai_snarkjs_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"]'
+ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=9604f791857ff5ee7fbebec839d6e0b7ae4823f5 \
   python3.12 scripts/zkai_snarkjs_statement_envelope_benchmark.py \
   --write-json docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json \
   --write-tsv docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv
