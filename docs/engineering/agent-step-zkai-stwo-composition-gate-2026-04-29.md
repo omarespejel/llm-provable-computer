@@ -127,8 +127,8 @@ python3 -m unittest \
 - This is not full transformer inference.
 - This is not a new Stwo security audit.
 - This is not backend independence.
-- This does not prove model truthfulness, policy semantics, tool-output truth,
-  or agent reasoning.
+- This does not prove model truthfulness, policy semantics, policy compliance,
+  tool-output truth, or agent reasoning.
 
 ## Follow-up
 

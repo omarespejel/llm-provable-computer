@@ -80,6 +80,31 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.CompositionError, "benchmark payload"):
             COMPOSITION.verify_composition(bundle, envelope=envelope, stwo_evidence=tampered)
 
+    def test_checked_stwo_evidence_must_match_composed_envelope(self) -> None:
+        envelope = COMPOSITION.baseline_stwo_envelope()
+        bundle = COMPOSITION.build_composed_bundle(envelope)
+        evidence = COMPOSITION.checked_stwo_evidence(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
+        tampered = copy.deepcopy(evidence)
+        for case in tampered["cases"]:
+            case["baseline_statement_commitment"] = "blake2b-256:" + "44" * 32
+
+        with self.assertRaisesRegex(COMPOSITION.CompositionError, "baseline statement commitment"):
+            COMPOSITION.verify_composition(bundle, envelope=envelope, stwo_evidence=tampered)
+
+    def test_rejection_layer_classification_uses_exception_type(self) -> None:
+        self.assertEqual(
+            COMPOSITION.classify_composition_error(
+                COMPOSITION.HARNESS.AgentReceiptError("unsupported proof backend version")
+            ),
+            "agent_receipt_verifier",
+        )
+        self.assertEqual(
+            COMPOSITION.classify_composition_error(
+                COMPOSITION.HARNESS.AgentReceiptError("unsupported verifier domain")
+            ),
+            "agent_receipt_verifier",
+        )
+
     def test_agent_trust_upgrade_case_targets_unproved_field(self) -> None:
         cases = COMPOSITION.mutation_cases(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
         case = next(item for item in cases if item["mutation"] == "trust_class_upgrade_without_proof")
