@@ -22,7 +22,7 @@ transformer-inference result, and not a Stwo security audit.
 
 The checked proof and metadata live at:
 
-- `docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json`
+- `docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json.gz`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/metadata.json`
 
 The checked benchmark outputs are:
@@ -67,21 +67,21 @@ In short:
 
 ## Reproduction
 
-Generate the baseline Stwo proof:
+Generate and compress the baseline Stwo proof deterministically:
 
 ```bash
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/linear_block_v4_with_lookup.tvm \
-  -o docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json \
+  -o /tmp/linear_block_v4_with_lookup.proof.json \
   --max-steps 256
+gzip -n -9 -c /tmp/linear_block_v4_with_lookup.proof.json \
+  > docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json.gz
 ```
 
-Verify the baseline proof:
+Verify the checked proof through the statement benchmark harness:
 
 ```bash
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stark docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json \
-  --reexecute
+python3.12 scripts/zkai_stwo_statement_envelope_benchmark.py --json
 ```
 
 Regenerate the benchmark evidence:
