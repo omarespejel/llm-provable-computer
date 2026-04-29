@@ -22,7 +22,7 @@ snarkjs-statement-envelope	output_id_relabeling	statement_policy	True	False	True
 snarkjs-statement-envelope	proof_hash_relabeling	artifact_binding	True	False	True	artifact_binding	proof hash mismatch
 snarkjs-statement-envelope	proof_system_version_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for proof_system_version
 snarkjs-statement-envelope	public_signal_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	snarkjs groth16 verifier rejected: [ERROR] snarkJS: Invalid proof
-snarkjs-statement-envelope	setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup binding mismatch
+snarkjs-statement-envelope	setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup commitment must be null for snarkjs verifier-facing adapter
 snarkjs-statement-envelope	statement_commitment_relabeling	statement_commitment	True	False	True	statement_commitment	statement_commitment mismatch
 snarkjs-statement-envelope	verification_key_file_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification-key file hash mismatch
 snarkjs-statement-envelope	verification_key_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification-key canonical hash mismatch
