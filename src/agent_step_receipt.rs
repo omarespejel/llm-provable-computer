@@ -22,6 +22,8 @@ pub const AGENT_DEPENDENCY_DROP_MANIFEST_VERSION_V1: &str =
     "agent-step-dependency-drop-manifest-v1";
 
 const MAX_AGENT_STEP_RECEIPT_BUNDLE_JSON_BYTES: usize = 1024 * 1024;
+const MODEL_RECEIPT_COMMITMENT_FIELD: &str = "model_receipt_commitment";
+const MODEL_RECEIPT_COMMITMENT_POINTER: &str = "/model_receipt_commitment";
 
 const RECEIPT_FIELDS: &[&str] = &[
     "receipt_version",
@@ -35,7 +37,7 @@ const RECEIPT_FIELDS: &[&str] = &[
     "model_identity",
     "model_commitment",
     "model_config_commitment",
-    "model_receipt_commitment",
+    MODEL_RECEIPT_COMMITMENT_FIELD,
     "tool_receipts_root",
     "policy_commitment",
     "action_commitment",
@@ -59,7 +61,7 @@ const COMMITMENT_FIELDS: &[&str] = &[
     "observation_commitment",
     "model_commitment",
     "model_config_commitment",
-    "model_receipt_commitment",
+    MODEL_RECEIPT_COMMITMENT_FIELD,
     "tool_receipts_root",
     "policy_commitment",
     "action_commitment",
@@ -365,7 +367,7 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
         .receipt
         .field_trust_class_vector
         .iter()
-        .find(|entry| entry.field_path == "/model_receipt_commitment")
+        .find(|entry| entry.field_path == MODEL_RECEIPT_COMMITMENT_POINTER)
         .map(|entry| entry.trust_class)
         .ok_or_else(|| {
             VmError::InvalidConfig(
@@ -374,7 +376,7 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
         })?;
     let mut model_subreceipt_evidence = None;
     for entry in &bundle.evidence_manifest.entries {
-        if entry.corresponding_receipt_field == "/model_receipt_commitment"
+        if entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER
             && entry.trust_class == model_trust
             && entry.evidence_kind == AgentEvidenceKind::Subreceipt
         {
@@ -859,7 +861,7 @@ fn validate_allowed_trust_class(field_path: &str, trust_class: AgentTrustClass) 
             AgentTrustClass::Attested,
             AgentTrustClass::Replayed,
         ],
-        "/model_receipt_commitment" => {
+        MODEL_RECEIPT_COMMITMENT_POINTER => {
             &[AgentTrustClass::Proved, AgentTrustClass::DependencyDropped]
         }
         "/tool_receipts_root" | "/policy_commitment" | "/transcript_commitment" => &[
@@ -1424,7 +1426,7 @@ mod tests {
             ("model_commitment", AgentTrustClass::Replayed),
             ("model_config_commitment", AgentTrustClass::Replayed),
             ("model_identity", AgentTrustClass::Attested),
-            ("model_receipt_commitment", AgentTrustClass::Proved),
+            (MODEL_RECEIPT_COMMITMENT_FIELD, AgentTrustClass::Proved),
             ("next_state_commitment", AgentTrustClass::Replayed),
             ("observation_commitment", AgentTrustClass::Replayed),
             ("policy_commitment", AgentTrustClass::Replayed),
@@ -1547,7 +1549,7 @@ mod tests {
     fn make_dependency_dropped_model_receipt_bundle() -> AgentStepReceiptBundleV1 {
         let mut bundle = build_valid_bundle();
         for entry in &mut bundle.receipt.field_trust_class_vector {
-            if entry.field_path == "/model_receipt_commitment" {
+            if entry.field_path == MODEL_RECEIPT_COMMITMENT_POINTER {
                 entry.trust_class = AgentTrustClass::DependencyDropped;
             }
         }
@@ -1560,7 +1562,7 @@ mod tests {
             replacement_receipt_version: AGENT_STEP_RECEIPT_VERSION_V1.to_string(),
             trust_class: AgentTrustClass::DependencyDropped,
             verifier_domain: AGENT_STEP_RECEIPT_TEST_VERIFIER_DOMAIN.to_string(),
-            corresponding_receipt_field: "/model_receipt_commitment".to_string(),
+            corresponding_receipt_field: MODEL_RECEIPT_COMMITMENT_POINTER.to_string(),
             reason_for_drop: "model proof replay replaced by subreceipt".to_string(),
             required_subproof_or_attestation: Some(AgentRequiredSubfactV1 {
                 kind: AgentRequiredSubfactKind::Subreceipt,
@@ -1571,13 +1573,13 @@ mod tests {
         }];
         let receipt_value = serde_json::to_value(&bundle.receipt).expect("receipt value");
         for entry in &mut bundle.evidence_manifest.entries {
-            if entry.corresponding_receipt_field == "/model_receipt_commitment" {
+            if entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER {
                 entry.evidence_kind = AgentEvidenceKind::Subreceipt;
                 entry.trust_class = AgentTrustClass::DependencyDropped;
                 entry.commitment = evidence_commitment_for_field(
-                    "/model_receipt_commitment",
+                    MODEL_RECEIPT_COMMITMENT_POINTER,
                     receipt_value
-                        .get("model_receipt_commitment")
+                        .get(MODEL_RECEIPT_COMMITMENT_FIELD)
                         .expect("model receipt value"),
                 )
                 .expect("evidence commitment");
@@ -1591,13 +1593,13 @@ mod tests {
         let mut bundle = build_valid_bundle();
         let receipt_value = serde_json::to_value(&bundle.receipt).expect("receipt value");
         for entry in &mut bundle.evidence_manifest.entries {
-            if entry.corresponding_receipt_field == "/model_receipt_commitment" {
+            if entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER {
                 entry.evidence_kind = AgentEvidenceKind::Subreceipt;
                 entry.trust_class = AgentTrustClass::Proved;
                 entry.commitment = evidence_commitment_for_field(
-                    "/model_receipt_commitment",
+                    MODEL_RECEIPT_COMMITMENT_POINTER,
                     receipt_value
-                        .get("model_receipt_commitment")
+                        .get(MODEL_RECEIPT_COMMITMENT_FIELD)
                         .expect("model receipt value"),
                 )
                 .expect("evidence commitment");
@@ -1721,7 +1723,7 @@ mod tests {
             ("model_config_commitment", |bundle| {
                 bundle.receipt.model_config_commitment = toy_commit("other-config", "toy");
             }),
-            ("model_receipt_commitment", |bundle| {
+            (MODEL_RECEIPT_COMMITMENT_FIELD, |bundle| {
                 bundle.receipt.model_receipt_commitment = toy_commit("other-model-receipt", "toy");
             }),
             ("observation_commitment", |bundle| {
@@ -1979,7 +1981,7 @@ mod tests {
                 assert_eq!(request.action_commitment, bundle.receipt.action_commitment);
                 assert_eq!(
                     request.evidence_entry.corresponding_receipt_field,
-                    "/model_receipt_commitment"
+                    MODEL_RECEIPT_COMMITMENT_POINTER
                 );
                 Ok(())
             }),
@@ -2066,7 +2068,7 @@ mod tests {
             .evidence_manifest
             .entries
             .iter()
-            .find(|entry| entry.corresponding_receipt_field == "/model_receipt_commitment")
+            .find(|entry| entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER)
             .expect("model receipt evidence")
             .clone();
         duplicate.evidence_id = "urn:agent-step:evidence:model-receipt:duplicate".to_string();
