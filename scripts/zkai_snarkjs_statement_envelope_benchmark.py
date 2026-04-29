@@ -316,7 +316,9 @@ def _check_artifact_hashes(
     for actual, expected, label in checks:
         if actual != expected:
             raise SnarkjsEnvelopeError(f"{label} mismatch")
-    if statement.get("setup_commitment") is not None:
+    if "setup_commitment" not in statement:
+        raise SnarkjsEnvelopeError("setup commitment must be explicitly null")
+    if statement["setup_commitment"] is not None:
         raise SnarkjsEnvelopeError("setup commitment must be null for snarkjs verifier-facing adapter")
     return vk_path
 
