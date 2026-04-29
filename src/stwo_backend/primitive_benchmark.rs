@@ -461,6 +461,7 @@ pub struct StwoTableroBoundaryBindingMicroprofileReport {
     pub benchmark_version: String,
     pub semantic_scope: String,
     pub backend_version: String,
+    pub compact_proof_backend_version: String,
     pub claim_scope: String,
     pub timing_mode: String,
     pub timing_policy: String,
@@ -1892,6 +1893,7 @@ fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
                 "tablero boundary-binding microprofile metadata drift for family {family} / {steps} steps"
             )));
         }
+        validate_tablero_boundary_binding_microprofile_component_schema(&profile, family, steps)?;
         append_tablero_boundary_binding_microprofile_rows(
             &mut rows,
             family,
@@ -1912,6 +1914,8 @@ fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
         benchmark_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE.to_string(),
         backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+        compact_proof_backend_version: STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43
+            .to_string(),
         claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
         timing_mode: if capture_timings {
             BENCHMARK_TIMING_MODE_MICROPROFILE.to_string()
@@ -1927,6 +1931,77 @@ fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
         timing_runs: if capture_timings { iterations } else { 0 },
         rows,
     })
+}
+
+fn validate_tablero_boundary_binding_microprofile_component_schema(
+    profile: &Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
+    family: &str,
+    steps: usize,
+) -> Result<()> {
+    let expected = [
+        (
+            "source_emitted_root_artifact_recommit",
+            "phase44d_blake2b_nested_recommit",
+        ),
+        (
+            "source_emission_recommit",
+            "phase44d_blake2b_nested_recommit",
+        ),
+        (
+            "source_emission_public_output_recommit",
+            "phase44d_blake2b_nested_recommit",
+        ),
+        (
+            "source_chain_public_output_boundary_recommit",
+            "phase44d_blake2b_nested_recommit",
+        ),
+        (
+            "compact_claim_from_source_root_claim",
+            "compact_claim_reconstruction",
+        ),
+        (
+            "validate_phase43_projection_compact_claim",
+            "compact_claim_validation",
+        ),
+        (
+            "phase44_terminal_public_boundary_logup_sum",
+            "terminal_boundary_public_sum",
+        ),
+        (
+            "verify_phase43_source_root_binding",
+            "source_root_binding_compact_claim_check",
+        ),
+        (
+            "verify_phase44d_boundary_binding",
+            "full_typed_boundary_binding_check",
+        ),
+        (
+            "compact_claim_from_source_root_claim_for_public_sum",
+            "compact_claim_reconstruction_for_logup",
+        ),
+    ]
+    .into_iter()
+    .collect::<std::collections::BTreeSet<_>>();
+    let actual = profile
+        .components
+        .iter()
+        .map(|component| {
+            (
+                component.component.as_str(),
+                component.component_scope.as_str(),
+            )
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+
+    if profile.components.len() != expected.len()
+        || actual.len() != expected.len()
+        || actual != expected
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "tablero boundary-binding microprofile component schema drift for family {family} / {steps} steps: expected {expected:?}, got {actual:?}"
+        )));
+    }
+    Ok(())
 }
 
 fn append_tablero_boundary_binding_microprofile_rows(
@@ -3009,14 +3084,15 @@ pub fn save_stwo_tablero_boundary_binding_microprofile_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "benchmark_version\tsemantic_scope\tbackend_version\tclaim_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\tprofile_version\trelation\tcomponent\tcomponent_scope\titerations\ttotal_ms\tmean_us\tboundary_serialized_bytes\tpreprocessed_trace_log_size_count\tprojection_trace_log_size_count\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\tbackend_version\tcompact_proof_backend_version\tclaim_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tfamily\tsteps\tprofile_version\trelation\tcomponent\tcomponent_scope\titerations\ttotal_ms\tmean_us\tboundary_serialized_bytes\tpreprocessed_trace_log_size_count\tprojection_trace_log_size_count\tverified\tnote\n",
     );
     for row in &report.rows {
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
             report.benchmark_version,
             report.semantic_scope,
             report.backend_version,
+            report.compact_proof_backend_version,
             report.claim_scope,
             report.timing_mode,
             report.timing_policy,
@@ -7223,6 +7299,40 @@ mod tests {
     }
 
     #[test]
+    fn tablero_boundary_binding_microprofile_component_schema_rejects_drift() {
+        let profile = Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
+            profile_version: "phase44d-boundary-binding-microprofile-v1".to_string(),
+            backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+            compact_proof_backend_version: STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43
+                .to_string(),
+            timing_mode: BENCHMARK_TIMING_MODE_MICROPROFILE.to_string(),
+            claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
+            total_steps: 1024,
+            pair_width: 2,
+            preprocessed_trace_log_size_count: 3,
+            projection_trace_log_size_count: 111,
+            components: vec![
+                Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
+                    component: "unexpected_component".to_string(),
+                    component_scope: "unexpected_scope".to_string(),
+                    iterations: 9,
+                    total_ms: 0.0,
+                    mean_us: 0.0,
+                    verified: true,
+                    note: "unexpected probe".to_string(),
+                },
+            ],
+        };
+
+        let error =
+            validate_tablero_boundary_binding_microprofile_component_schema(&profile, "2x2", 1024)
+                .expect_err("component shape drift must be rejected before row emission");
+
+        assert!(error.to_string().contains("component schema drift"));
+        assert!(error.to_string().contains("unexpected_component"));
+    }
+
+    #[test]
     fn tablero_boundary_binding_microprofile_zeroed_mode_preserves_report_surface() {
         let cases = vec![
             ("default", phase12_default_decoding_layout(), 2usize),
@@ -7252,6 +7362,10 @@ mod tests {
         assert_eq!(
             report.backend_version,
             STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+        );
+        assert_eq!(
+            report.compact_proof_backend_version,
+            STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43
         );
         assert_eq!(
             report.claim_scope,

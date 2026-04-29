@@ -62,7 +62,7 @@ RUN_INPUTS=()
 for run_index in $(seq 1 "$BENCH_RUNS"); do
   run_json="$RUN_DIR/run-$run_index.json"
   run_tsv="$RUN_DIR/run-$run_index.tsv"
-  cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
+  cargo "$NIGHTLY_TOOLCHAIN" run --locked --release --features stwo-backend --bin tvm -- \
     bench-stwo-tablero-boundary-binding-microprofile \
     --capture-timings \
     --iterations "$ITERATIONS" \
@@ -93,6 +93,7 @@ expected_cli = {
     "benchmark_version": "stwo-tablero-boundary-binding-microprofile-benchmark-v1",
     "semantic_scope": "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend",
     "backend_version": "stwo-phase12-decoding-family-v10-carry-aware-experimental",
+    "compact_proof_backend_version": "stwo-phase43-history-replay-projection-air-v1",
     "claim_scope": "post_compact_proof_phase44d_typed_boundary_binding_microprofile",
     "timing_mode": "measured_microprofile",
     "timing_policy": f"mean_of_{iterations}_iterations_from_microsecond_capture",
@@ -222,14 +223,16 @@ for key in sorted(row_groups, key=lambda k: (k[0] != "default", k[0], k[2])):
             if row.get(field) != template.get(field):
                 sys.exit(f"non-timing field drift for {key} field {field!r}: {row.get(field)!r} != {template.get(field)!r}")
     median_mean_us = statistics.median(float(row["mean_us"]) for row in group)
-    template["mean_us"] = round(median_mean_us, 3)
-    template["total_ms"] = round((median_mean_us * iterations) / 1000.0, 3)
+    mean_us_rounded = round(median_mean_us, 3)
+    template["mean_us"] = mean_us_rounded
+    template["total_ms"] = round((mean_us_rounded * iterations) / 1000.0, 3)
     rows.append(template)
 
 payload = {
     "benchmark_version": expected_cli["benchmark_version"],
     "semantic_scope": expected_cli["semantic_scope"],
     "backend_version": expected_cli["backend_version"],
+    "compact_proof_backend_version": expected_cli["compact_proof_backend_version"],
     "claim_scope": expected_cli["claim_scope"],
     "timing_mode": "measured_median",
     "timing_policy": f"median_of_{bench_runs}_runs_of_mean_{iterations}_iteration_microprofile",
@@ -243,6 +246,7 @@ headers = [
     "benchmark_version",
     "semantic_scope",
     "backend_version",
+    "compact_proof_backend_version",
     "claim_scope",
     "timing_mode",
     "timing_policy",
@@ -271,6 +275,7 @@ with output_tsv.open("w", encoding="utf-8", newline="") as handle:
             "benchmark_version": payload["benchmark_version"],
             "semantic_scope": payload["semantic_scope"],
             "backend_version": payload["backend_version"],
+            "compact_proof_backend_version": payload["compact_proof_backend_version"],
             "claim_scope": payload["claim_scope"],
             "timing_mode": payload["timing_mode"],
             "timing_policy": payload["timing_policy"],
@@ -290,6 +295,7 @@ expected = {
     "benchmark_version": "stwo-tablero-boundary-binding-microprofile-benchmark-v1",
     "semantic_scope": "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend",
     "backend_version": "stwo-phase12-decoding-family-v10-carry-aware-experimental",
+    "compact_proof_backend_version": "stwo-phase43-history-replay-projection-air-v1",
     "claim_scope": "post_compact_proof_phase44d_typed_boundary_binding_microprofile",
     "timing_mode": "measured_median",
     "timing_policy": f"median_of_{sys.argv[2]}_runs_of_mean_{sys.argv[3]}_iteration_microprofile",

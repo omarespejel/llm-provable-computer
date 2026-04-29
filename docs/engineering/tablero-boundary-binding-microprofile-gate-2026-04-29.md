@@ -25,7 +25,7 @@ must not be read as a publication-default backend promotion.
 Regeneration command:
 
 ```bash
-BENCH_RUNS=5 ITERATIONS=256 CAPTURE_TIMINGS=1 \
+NIGHTLY_TOOLCHAIN=+nightly-2025-07-14 BENCH_RUNS=5 ITERATIONS=256 CAPTURE_TIMINGS=1 \
   scripts/engineering/generate_tablero_boundary_binding_microprofile_benchmark.sh
 ```
 
@@ -44,17 +44,17 @@ single-digit milliseconds:
 
 | Family | Boundary bytes | Full binding median-of-run-means |
 | --- | ---: | ---: |
-| `default` | `6,561` | `4.912 ms` |
-| `2x2` | `6,545` | `4.912 ms` |
-| `3x3` | `6,557` | `4.887 ms` |
+| `default` | `6,649` | `5.294 ms` |
+| `2x2` | `6,633` | `5.212 ms` |
+| `3x3` | `6,645` | `5.074 ms` |
 
 The dominant call-site probes are:
 
 | Family | Source-root binding median-of-run-means | Compact-claim validation median-of-run-means | Terminal public-sum median-of-run-means | Nested recommits median-of-run-means |
 | --- | ---: | ---: | ---: | ---: |
-| `default` | `2.438 ms` | `1.189 ms` | `8.321 us` | `1.894-4.723 us` |
-| `2x2` | `2.442 ms` | `1.193 ms` | `8.228 us` | `1.934-4.627 us` |
-| `3x3` | `2.433 ms` | `1.176 ms` | `8.356 us` | `1.843-4.734 us` |
+| `default` | `2.542 ms` | `1.213 ms` | `8.148 us` | `1.878-5.535 us` |
+| `2x2` | `2.592 ms` | `1.284 ms` | `8.159 us` | `1.960-4.958 us` |
+| `3x3` | `2.602 ms` | `1.245 ms` | `8.326 us` | `1.849-4.710 us` |
 
 The source-root binding and compact-claim validation probes intentionally include nested
 validation work. The rows are independent call-site probes, not an additive/exclusive

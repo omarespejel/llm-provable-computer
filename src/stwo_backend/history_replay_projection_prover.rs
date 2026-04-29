@@ -299,6 +299,7 @@ pub struct Phase43HistoryReplayProjectionSourceRootClaim {
     pub source_binding: String,
     pub phase43_trace_commitment: String,
     pub phase43_trace_version: String,
+    pub execution_backend_version: String,
     pub phase30_source_chain_commitment: String,
     pub phase30_step_envelopes_commitment: String,
     pub total_steps: usize,
@@ -1500,6 +1501,7 @@ pub fn derive_phase43_history_replay_projection_source_root_claim(
         source_binding: STWO_HISTORY_REPLAY_PROJECTION_SOURCE_ROOT_BINDING_PHASE44.to_string(),
         phase43_trace_commitment: trace.trace_commitment.clone(),
         phase43_trace_version: trace.trace_version.clone(),
+        execution_backend_version: trace.proof_backend_version.clone(),
         phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
         phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
         total_steps: trace.total_steps,
@@ -2531,11 +2533,19 @@ where
     for _ in 0..effective_iterations {
         if capture_timings {
             let started = Instant::now();
-            let ok = black_box(verify_once()?);
+            let ok = black_box(verify_once().map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "Phase44D boundary-binding microprofile component `{component}` failed: {error}"
+                ))
+            })?);
             elapsed += started.elapsed();
             verified &= ok;
         } else {
-            verified &= black_box(verify_once()?);
+            verified &= black_box(verify_once().map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "Phase44D boundary-binding microprofile component `{component}` failed: {error}"
+                ))
+            })?);
         }
     }
     let total_ms = if capture_timings {
@@ -2559,6 +2569,18 @@ where
             note: note.to_string(),
         },
     )
+}
+
+fn validate_phase44d_boundary_binding_microprofile_components_verified(
+    components: &[Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent],
+) -> Result<()> {
+    if let Some(failed) = components.iter().find(|component| !component.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "Phase44D boundary-binding microprofile component `{}` did not verify",
+            failed.component
+        )));
+    }
+    Ok(())
 }
 
 pub fn profile_phase44d_history_replay_projection_source_chain_public_output_boundary_binding(
@@ -2590,6 +2612,12 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
             "Phase44D boundary-binding microprofile execution backend version must be non-empty"
                 .to_string(),
         ));
+    }
+    if source_claim.execution_backend_version != execution_backend_version {
+        return Err(VmError::UnsupportedProof(format!(
+            "Phase44D boundary-binding microprofile source claim execution backend `{}` does not match expected `{}`",
+            source_claim.execution_backend_version, execution_backend_version
+        )));
     }
     let emitted_root_artifact = &source_emission.emitted_root_artifact;
     let terminal_elements = phase44_terminal_boundary_elements_from_compact_claim(compact_claim)?;
@@ -2719,12 +2747,7 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
         || Ok(&compact_claim_from_source_root_claim(black_box(source_claim)) == black_box(compact_claim)),
     )?);
 
-    if let Some(failed) = components.iter().find(|component| !component.verified) {
-        return Err(VmError::UnsupportedProof(format!(
-            "Phase44D boundary-binding microprofile component `{}` did not verify",
-            failed.component
-        )));
-    }
+    validate_phase44d_boundary_binding_microprofile_components_verified(&components)?;
 
     Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
         profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
@@ -3699,6 +3722,16 @@ fn validate_phase43_projection_source_root_claim(
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 44 source root binding `{}`",
             claim.source_binding
+        )));
+    }
+    if !matches!(
+        claim.execution_backend_version.as_str(),
+        crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            | crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+    ) {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 44 source root execution backend `{}`",
+            claim.execution_backend_version
         )));
     }
     if !claim.derived_from_phase30_manifest || !claim.derived_from_phase43_trace {
@@ -4782,6 +4815,7 @@ fn commit_phase43_projection_source_root_preimage(
     update_len_prefixed(&mut hasher, claim.source_binding.as_bytes());
     update_len_prefixed(&mut hasher, claim.phase43_trace_commitment.as_bytes());
     update_len_prefixed(&mut hasher, claim.phase43_trace_version.as_bytes());
+    update_len_prefixed(&mut hasher, claim.execution_backend_version.as_bytes());
     update_len_prefixed(
         &mut hasher,
         claim.phase30_source_chain_commitment.as_bytes(),
@@ -4847,6 +4881,7 @@ fn commit_phase43_projection_source_root(
         &mut hasher,
         claim.source_root_preimage_commitment.as_bytes(),
     );
+    update_len_prefixed(&mut hasher, claim.execution_backend_version.as_bytes());
     update_len_prefixed(
         &mut hasher,
         claim.phase30_source_chain_commitment.as_bytes(),
@@ -6029,6 +6064,28 @@ mod tests {
 
         assert_eq!(calls, 0);
         assert!(error.to_string().contains("greater than zero"));
+    }
+
+    #[test]
+    fn phase44d_boundary_binding_microprofile_rejects_unverified_component() {
+        let components = vec![
+            Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent {
+                component: "synthetic_component".to_string(),
+                component_scope: "synthetic_scope".to_string(),
+                iterations: 1,
+                total_ms: 0.0,
+                mean_us: 0.0,
+                verified: false,
+                note: "forced failure".to_string(),
+            },
+        ];
+
+        let error =
+            validate_phase44d_boundary_binding_microprofile_components_verified(&components)
+                .expect_err("unverified microprofile component must fail closed");
+
+        assert!(error.to_string().contains("synthetic_component"));
+        assert!(error.to_string().contains("did not verify"));
     }
 
     #[test]
