@@ -372,7 +372,7 @@
       "--write-tsv",
       "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv"
     ],
-    "git_commit": "cc568361eeeea3483513abe74311a81b8932e64d"
+    "git_commit": "f238e54ad719f7f065644bde958305a28089e17d"
   },
   "result": "GO",
   "schema": "agent-step-zkai-stwo-composition-v1",
