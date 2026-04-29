@@ -455,8 +455,6 @@ pub struct Phase44DHistoryReplayProjectionExternalSourceRootAcceptance {
 
 pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION: &str =
     "phase44d-boundary-binding-microprofile-v1";
-pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION: &str =
-    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
 pub const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE: &str =
     "post_compact_proof_phase44d_typed_boundary_binding_microprofile";
 const STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_MEASURED: &str =
@@ -2578,6 +2576,13 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
     let public_output = &boundary.source_emission_public_output;
     let source_emission = &public_output.source_emission;
     let source_claim = &source_emission.source_claim;
+    if compact_claim.proof_backend_version != STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43 {
+        return Err(VmError::UnsupportedProof(format!(
+            "Phase44D boundary-binding microprofile expected compact proof backend version `{}`, got `{}`",
+            STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
+            compact_claim.proof_backend_version
+        )));
+    }
     let emitted_root_artifact = &source_emission.emitted_root_artifact;
     let terminal_elements = phase44_terminal_boundary_elements_from_compact_claim(compact_claim)?;
 
@@ -2708,7 +2713,7 @@ pub fn profile_phase44d_history_replay_projection_source_chain_public_output_bou
 
     Ok(Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
         profile_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_VERSION.to_string(),
-        backend_version: STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+        backend_version: compact_claim.proof_backend_version.clone(),
         timing_mode: if capture_timings {
             STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_TIMING_MODE_MEASURED.to_string()
         } else {

@@ -50,6 +50,8 @@ use super::decoding::{
 };
 #[cfg(test)]
 use super::history_replay_projection_prover::Phase44DHistoryReplayProjectionBoundaryBindingMicroprofileComponent;
+#[cfg(test)]
+use super::history_replay_projection_prover::STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43;
 use super::history_replay_projection_prover::{
     derive_phase43_history_replay_projection_source_root_claim,
     emit_phase43_history_replay_proof_native_source_chain_public_output_boundary,
@@ -67,7 +69,6 @@ use super::history_replay_projection_prover::{
     Phase43HistoryReplayProofNativeSourceChainPublicOutputBoundary,
     Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
     Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
-    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION,
     STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
@@ -151,7 +152,7 @@ pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION: &str =
 pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE: &str =
     "tablero_typed_boundary_binding_microprofile_over_checked_layout_families_over_phase12_carry_aware_experimental_backend";
 pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION: &str =
-    STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION;
+    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
 pub const STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE: &str =
     STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE;
 pub const STWO_PHASE43_SOURCE_ROOT_FEASIBILITY_BENCHMARK_VERSION: &str =
@@ -1806,17 +1807,29 @@ pub fn run_stwo_tablero_boundary_binding_microprofile_benchmark_with_options(
     iterations: usize,
     capture_timings: bool,
 ) -> Result<StwoTableroBoundaryBindingMicroprofileReport> {
+    let cases = vec![
+        ("default", phase12_default_decoding_layout(), 1024usize),
+        ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
+        ("3x3", Phase12DecodingLayout::new(3, 3)?, 1024usize),
+    ];
+    run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
+        iterations,
+        capture_timings,
+        cases,
+    )
+}
+
+fn run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(
+    iterations: usize,
+    capture_timings: bool,
+    cases: Vec<(&'static str, Phase12DecodingLayout, usize)>,
+) -> Result<StwoTableroBoundaryBindingMicroprofileReport> {
     if iterations == 0 {
         return Err(VmError::InvalidConfig(
             "tablero boundary-binding microprofile requires iterations > 0".to_string(),
         ));
     }
 
-    let cases = [
-        ("default", phase12_default_decoding_layout(), 1024usize),
-        ("2x2", Phase12DecodingLayout::new(2, 2)?, 1024usize),
-        ("3x3", Phase12DecodingLayout::new(3, 3)?, 1024usize),
-    ];
     let mut rows = Vec::new();
     for (family, layout, steps) in cases {
         let chain =
@@ -1906,11 +1919,18 @@ fn append_tablero_boundary_binding_microprofile_rows(
     boundary_serialized_bytes: usize,
     profile: Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile,
 ) {
-    for component in profile.components {
+    let Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
+        profile_version,
+        preprocessed_trace_log_size_count,
+        projection_trace_log_size_count,
+        components,
+        ..
+    } = profile;
+    for component in components {
         rows.push(StwoTableroBoundaryBindingMicroprofileMeasurement {
             family: family.to_string(),
             steps,
-            profile_version: profile.profile_version.clone(),
+            profile_version: profile_version.clone(),
             relation: "typed Phase44D boundary-binding microprofile after compact proof verification"
                 .to_string(),
             component: component.component,
@@ -1919,8 +1939,8 @@ fn append_tablero_boundary_binding_microprofile_rows(
             total_ms: component.total_ms,
             mean_us: component.mean_us,
             boundary_serialized_bytes,
-            preprocessed_trace_log_size_count: profile.preprocessed_trace_log_size_count,
-            projection_trace_log_size_count: profile.projection_trace_log_size_count,
+            preprocessed_trace_log_size_count,
+            projection_trace_log_size_count,
             verified: component.verified,
             note: format!(
                 "{} This row is an independent call-site probe over the accepted boundary object, not an exclusive/additive contribution to the full verifier.",
@@ -7147,7 +7167,7 @@ mod tests {
     fn tablero_boundary_binding_microprofile_rows_preserve_non_additive_scope() {
         let profile = Phase44DHistoryReplayProjectionBoundaryBindingMicroprofile {
             profile_version: "phase44d-boundary-binding-microprofile-v1".to_string(),
-            backend_version: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION.to_string(),
+            backend_version: STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43.to_string(),
             timing_mode: BENCHMARK_TIMING_MODE_MICROPROFILE.to_string(),
             claim_scope: STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE.to_string(),
             total_steps: 1024,
@@ -7181,6 +7201,68 @@ mod tests {
             row.note.contains("not an exclusive/additive contribution"),
             "microprofile row must reject additive interpretation"
         );
+    }
+
+    #[test]
+    fn tablero_boundary_binding_microprofile_zeroed_mode_preserves_report_surface() {
+        let cases = vec![
+            ("default", phase12_default_decoding_layout(), 2usize),
+            (
+                "2x2",
+                Phase12DecodingLayout::new(2, 2).expect("2x2 layout"),
+                2usize,
+            ),
+            (
+                "3x3",
+                Phase12DecodingLayout::new(3, 3).expect("3x3 layout"),
+                2usize,
+            ),
+        ];
+        let report =
+            run_stwo_tablero_boundary_binding_microprofile_benchmark_for_cases(9, false, cases)
+                .expect("capture-disabled microprofile should run on bounded fixture");
+
+        assert_eq!(
+            report.benchmark_version,
+            STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_VERSION
+        );
+        assert_eq!(
+            report.semantic_scope,
+            STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BENCHMARK_SCOPE
+        );
+        assert_eq!(
+            report.backend_version,
+            STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_BACKEND_VERSION
+        );
+        assert_eq!(
+            report.claim_scope,
+            STWO_TABLERO_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE
+        );
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_runs, 0);
+        assert_eq!(report.rows.len(), 30);
+
+        let mut families = std::collections::BTreeMap::new();
+        for row in &report.rows {
+            *families.entry(row.family.as_str()).or_insert(0usize) += 1;
+            assert_eq!(row.steps, 2, "{}", row.family);
+            assert_eq!(row.iterations, 1, "{}", row.family);
+            assert_eq!(row.total_ms, 0.0, "{}", row.family);
+            assert_eq!(row.mean_us, 0.0, "{}", row.family);
+            assert!(row.verified, "{} / {}", row.family, row.component);
+            assert!(
+                row.note.contains("not an exclusive/additive contribution"),
+                "{} / {}",
+                row.family,
+                row.component
+            );
+        }
+
+        assert_eq!(families.get("default"), Some(&10));
+        assert_eq!(families.get("2x2"), Some(&10));
+        assert_eq!(families.get("3x3"), Some(&10));
+        assert_eq!(families.len(), 3);
     }
 
     #[test]
