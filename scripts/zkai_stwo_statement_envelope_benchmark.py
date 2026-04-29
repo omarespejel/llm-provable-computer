@@ -13,6 +13,7 @@ import argparse
 from collections.abc import Callable
 import copy
 import csv
+import gzip
 import hashlib
 import io
 import json
@@ -36,7 +37,7 @@ STWO_PROOF_SYSTEM = "stwo-transparent-stark"
 STWO_STATEMENT_KIND = "transformer-primitive"
 STWO_MODEL_ID = "urn:zkai:ptvm:linear-block-v4-with-lookup"
 STWO_PROGRAM_PATH = "programs/linear_block_v4_with_lookup.tvm"
-STWO_PROOF_PATH = "linear_block_v4_with_lookup.proof.json"
+STWO_PROOF_PATH = "linear_block_v4_with_lookup.proof.json.gz"
 
 EXPECTED_STATEMENT = {
     "receipt_version": STATEMENT_SCHEMA,
@@ -110,6 +111,9 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 
 
 def _load_json(path: pathlib.Path) -> Any:
+    if path.suffix == ".gz":
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            return json.load(handle)
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 

@@ -1,9 +1,18 @@
 {
   "artifact_metadata": {
     "artifacts": {
-      "linear_block_v4_with_lookup.proof.json": "b6ccaccc6a880d01861f80cbea7bdd1ee9af702e2b690978628d04db8a791f7f",
+      "linear_block_v4_with_lookup.proof.json.gz": "50849745b28d62d1045372678215ba1df45ac6bb033084249302c8dc88c84586",
       "programs/linear_block_v4_with_lookup.tvm": "fed75a4eafca96b9fcbb632de7de28757de9ae6a6c1be08428b857bb3d3b5dee"
     },
+    "compression_command": [
+      "gzip",
+      "-n",
+      "-9",
+      "-c",
+      "/tmp/linear_block_v4_with_lookup.proof.json",
+      ">",
+      "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json.gz"
+    ],
     "generated_at": "2026-04-29",
     "generation_command": [
       "cargo",
@@ -17,7 +26,7 @@
       "prove-stark",
       "programs/linear_block_v4_with_lookup.tvm",
       "-o",
-      "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json",
+      "/tmp/linear_block_v4_with_lookup.proof.json",
       "--max-steps",
       "256"
     ],
@@ -27,20 +36,12 @@
       "not_backend_independence"
     ],
     "program_path": "programs/linear_block_v4_with_lookup.tvm",
-    "proof_path": "linear_block_v4_with_lookup.proof.json",
+    "proof_path": "linear_block_v4_with_lookup.proof.json.gz",
     "schema": "zkai-stwo-statement-envelope-artifacts-v1",
     "verification_command": [
-      "cargo",
-      "+nightly-2025-07-14",
-      "run",
-      "--features",
-      "stwo-backend",
-      "--bin",
-      "tvm",
-      "--",
-      "verify-stark",
-      "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json",
-      "--reexecute"
+      "python3.12",
+      "scripts/zkai_stwo_statement_envelope_benchmark.py",
+      "--json"
     ]
   },
   "cases": [
@@ -51,7 +52,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -66,15 +67,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -89,8 +90,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:5f6ee3903ceeac6fe24acddacbe218b7de56a7d9f9949d1932f593e5489b0fd7",
-      "mutated_statement_sha256": "4a9677cc1c9171eb0b0fe8e8d2bbeaccb1409c383be613bb1a9eee70895ac11a",
+      "mutated_statement_commitment": "blake2b-256:e7a7a2fdfaf2886747a1a152be626bc88b5d046d64ec6c0768d202c8ecdb67bb",
+      "mutated_statement_sha256": "b4aaeeeefa7739c4e7b267f56d58ae5e34b9421f6f4873df509fb3008774f48b",
       "mutation": "config_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -102,7 +103,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -117,8 +118,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "evidence_manifest",
       "error": "",
       "mutated_accepted": true,
@@ -153,7 +154,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -168,15 +169,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -191,8 +192,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:3602e15af3ea6bc3bc46c7d15ef6e19e9edc963bba2f8716c7761480c24436ef",
-      "mutated_statement_sha256": "a23b29f7c7572786a4693cb655b515f0af692ba3c8862b4cc3aab5f69f2fe8a2",
+      "mutated_statement_commitment": "blake2b-256:402a3b8235e68e0a450c2e7a2cd9b33d2057d5b1b233be286015296a6c4db7e3",
+      "mutated_statement_sha256": "e5afccf999845c46992bbc89bbd1d1dce6b1aa7e109087c9111100821ff0bb50",
       "mutation": "input_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -204,7 +205,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -219,15 +220,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -242,8 +243,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:60edea19887bce9b17d0be033469874d05d576cf0eaf4a99fab2305e2ae19ca8",
-      "mutated_statement_sha256": "26339a00fa845e9e541850319df312906bc384d122092ebb610a7263b619da20",
+      "mutated_statement_commitment": "blake2b-256:05ed3e5abac01d026caf98ec6f5cbbb70e1c0784964aae7931716fce28bebe8b",
+      "mutated_statement_sha256": "b9296cd7d831287618dc47eab8c0e0fa4925f548df9b6617f294a31e0c8698de",
       "mutation": "model_artifact_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -255,7 +256,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -270,15 +271,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "statement_policy",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:different-linear-block-v1",
@@ -293,8 +294,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:db326917f115bedf3fc7b571092101e3e72088402902ec25db73206784370ac0",
-      "mutated_statement_sha256": "e8f8413d535df4ae2abde9e547750a9f0d158d1f751c393b15305a4f6da7edca",
+      "mutated_statement_commitment": "blake2b-256:785d3984ca2d1f41d84c29f533eaa2632f82c1bc91496eafa9d54408317eefaf",
+      "mutated_statement_sha256": "92cff25453dc5d71b222daf1faedef3d7f7d0c8bf9c3c29ed971e1ee1e58c143",
       "mutation": "model_id_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -306,7 +307,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -321,15 +322,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -344,8 +345,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:1b62a2fd3a4e85c47308cb906759c7efd4bfc3a1f8de73e94f2da088d167d215",
-      "mutated_statement_sha256": "178032e0a5bdde3a5c94567d26b7f4e0e58f2ee7033624673df9247a3560e1c7",
+      "mutated_statement_commitment": "blake2b-256:7f52a21993ce62db2887d9648574e96c3d607aa40b3fb9adfaf1419db10bb56c",
+      "mutated_statement_sha256": "dd2db8735580e853862146ca1a23471db884b9c3da6b1ae4896f1c53605bee8f",
       "mutation": "output_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -357,7 +358,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -372,15 +373,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -395,8 +396,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:bf59837d0e5c25d974f83e116e5511c51024667d0fde07387d2d50f3b8052c70",
-      "mutated_statement_sha256": "80b0f40d8c2d6395bc1ae13df5413a121eeb04b312f127db6f5d720210bcfcfd",
+      "mutated_statement_commitment": "blake2b-256:274f7e8e02027938e17ff8bcbbe57c5a4575e42a12815aa83bc452db39ee47b4",
+      "mutated_statement_sha256": "853408db156a783a73a583143494289919c694690a214eb1d0b9d7e2f2625ddf",
       "mutation": "proof_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -408,7 +409,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -423,15 +424,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "external_proof_verifier",
-      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.67s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpb0ppm5p1/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
+      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpe59ifm36/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:bb4df46491eb33678bc5efd7f8a2438cb419f5b1ff4e67cf19496a85fbd752af",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:6aa0a243121bdc95fd2798542ca2412ded9f95c660897b48699dacf06d2ffc8e",
+        "evidence_manifest_commitment": "blake2b-256:654ed57fba8101d94c6aac88d8af9bbecf1517974a3e7646592fcdd5a8bd8af6",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -446,8 +447,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:0dfea94dd1328e88bdd804509f66ed74b7f6ecd8dedee38331df1604c2492a14",
-      "mutated_statement_sha256": "29aa28407e725c8383a4562fd6770f41c2e1fd975deb119f5cad11dd2608378a",
+      "mutated_statement_commitment": "blake2b-256:bb016c47976e3dbfa32e758b3c68810f3f49ada5e6212acc175a2e8626ba228c",
+      "mutated_statement_sha256": "acfc97a8612f4fcb9ef3680bafabc7b974735cca856d2e3e49221df5b5fc2b59",
       "mutation": "proof_public_claim_relabeling",
       "rejected": true,
       "rejection_layer": "external_proof_verifier"
@@ -459,7 +460,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -474,15 +475,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -497,8 +498,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:be48d4c60691ec5e1730154fdef0c0d9b12e5b5be3c92e6c42527774d098820f",
-      "mutated_statement_sha256": "a9695c05638790e0bdabb6358a88c48297928d2614159fc6d7f77b264d4c71bd",
+      "mutated_statement_commitment": "blake2b-256:e4df557e27b27ecf485dd4b0c4e38547bcc8c94a8993e6f8c91727c234746a33",
+      "mutated_statement_sha256": "aa8ab10a31c7b4d5dc56d304f6fcae4850addd885f044d57da6c0f46daa786d9",
       "mutation": "proof_system_version_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -510,7 +511,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -525,15 +526,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "public_instance_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -548,8 +549,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:6836a3d080dd497f1006f24e43cb1d90c2a0b68883cfff0c3bb01a48a3d43c78",
-      "mutated_statement_sha256": "a82a3a9a976afbd40ee2b1feff216d4168d77083943d3efbe9f8e39c4db67d1b",
+      "mutated_statement_commitment": "blake2b-256:8f692b759a2a7519aca4dc6475e835f515ff569c3263353290232e248cd0478b",
+      "mutated_statement_sha256": "29f6f55f69c3a618a84f83b84948ddc63e7a43f00248088a3bd8c4937412cf73",
       "mutation": "public_instance_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -561,7 +562,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -576,15 +577,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "setup_binding",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -599,8 +600,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:8d02467301fc5aed23cee24afc0a543c7cbd26653e59ba0e05f6c83a762f80d4",
-      "mutated_statement_sha256": "fc32f1cb135dda43416a8e6c72c28c550787a16f395d3984637349cd3a7445cb",
+      "mutated_statement_commitment": "blake2b-256:05c138a4b8d5126d5acccbc0754f52bede084bf5f1f0ed6b4f5988df3270b570",
+      "mutated_statement_sha256": "f343d3b083cc132bca99399e9bee677af8b57cfad3b4bdd1ae1672d13e3d7c86",
       "mutation": "setup_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -612,7 +613,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -627,15 +628,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "statement_commitment",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -651,7 +652,7 @@
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
       "mutated_statement_commitment": "blake2b-256:6666666666666666666666666666666666666666666666666666666666666666",
-      "mutated_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "mutated_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "mutation": "statement_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -663,7 +664,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -678,15 +679,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -701,8 +702,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-v999",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:aa33255a8066c830e888a8708e0f6b0684b86ddba2cc0ea9301746c847315687",
-      "mutated_statement_sha256": "685af8ddc8ab38c2ab1951e592fc8ba15a25bccb816419b8f0b0645fcb36a392",
+      "mutated_statement_commitment": "blake2b-256:4e220728efbe377565f26c6f59aa1855767b798201a6b84fd0eaaa1d8897f9d0",
+      "mutated_statement_sha256": "8e2e86266af72a308e0a1c500869fc16f42763ba3ede178acb934107e5008401",
       "mutation": "verifier_domain_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -714,7 +715,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -729,15 +730,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "",
       "mutated_accepted": true,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -752,8 +753,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000"
       },
-      "mutated_statement_commitment": "blake2b-256:4acf4698f01bd88ef07f6edbb35c9c2ab13e1c47fdae3da9884ab54f45778913",
-      "mutated_statement_sha256": "ed684ceb7d3ff82c7562bffa389a4dab39d330368a6c01dcea5b1f3a42b69fa5",
+      "mutated_statement_commitment": "blake2b-256:cbe87c23b4a652f5b8a843f41be190cbb22af2c4e6844a2f66278da69ccd6e0b",
+      "mutated_statement_sha256": "7fb3c5cc4d740c519ada3f8b8c028a7c13ec6af7cc58d2587bed8c5c87773123",
       "mutation": "verifying_key_commitment_relabeling",
       "rejected": false,
       "rejection_layer": "accepted"
@@ -765,7 +766,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -780,15 +781,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "config commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -803,8 +804,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:5f6ee3903ceeac6fe24acddacbe218b7de56a7d9f9949d1932f593e5489b0fd7",
-      "mutated_statement_sha256": "4a9677cc1c9171eb0b0fe8e8d2bbeaccb1409c383be613bb1a9eee70895ac11a",
+      "mutated_statement_commitment": "blake2b-256:e7a7a2fdfaf2886747a1a152be626bc88b5d046d64ec6c0768d202c8ecdb67bb",
+      "mutated_statement_sha256": "b4aaeeeefa7739c4e7b267f56d58ae5e34b9421f6f4873df509fb3008774f48b",
       "mutation": "config_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding"
@@ -816,7 +817,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -831,8 +832,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "evidence_manifest",
       "error": "evidence manifest commitment mismatch",
       "mutated_accepted": false,
@@ -867,7 +868,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -882,15 +883,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "input commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -905,8 +906,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:3602e15af3ea6bc3bc46c7d15ef6e19e9edc963bba2f8716c7761480c24436ef",
-      "mutated_statement_sha256": "a23b29f7c7572786a4693cb655b515f0af692ba3c8862b4cc3aab5f69f2fe8a2",
+      "mutated_statement_commitment": "blake2b-256:402a3b8235e68e0a450c2e7a2cd9b33d2057d5b1b233be286015296a6c4db7e3",
+      "mutated_statement_sha256": "e5afccf999845c46992bbc89bbd1d1dce6b1aa7e109087c9111100821ff0bb50",
       "mutation": "input_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding"
@@ -918,7 +919,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -933,15 +934,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "model artifact commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -956,8 +957,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:60edea19887bce9b17d0be033469874d05d576cf0eaf4a99fab2305e2ae19ca8",
-      "mutated_statement_sha256": "26339a00fa845e9e541850319df312906bc384d122092ebb610a7263b619da20",
+      "mutated_statement_commitment": "blake2b-256:05ed3e5abac01d026caf98ec6f5cbbb70e1c0784964aae7931716fce28bebe8b",
+      "mutated_statement_sha256": "b9296cd7d831287618dc47eab8c0e0fa4925f548df9b6617f294a31e0c8698de",
       "mutation": "model_artifact_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding"
@@ -969,7 +970,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -984,15 +985,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "statement_policy",
       "error": "statement policy mismatch for model_id",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:different-linear-block-v1",
@@ -1007,8 +1008,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:db326917f115bedf3fc7b571092101e3e72088402902ec25db73206784370ac0",
-      "mutated_statement_sha256": "e8f8413d535df4ae2abde9e547750a9f0d158d1f751c393b15305a4f6da7edca",
+      "mutated_statement_commitment": "blake2b-256:785d3984ca2d1f41d84c29f533eaa2632f82c1bc91496eafa9d54408317eefaf",
+      "mutated_statement_sha256": "92cff25453dc5d71b222daf1faedef3d7f7d0c8bf9c3c29ed971e1ee1e58c143",
       "mutation": "model_id_relabeling",
       "rejected": true,
       "rejection_layer": "statement_policy"
@@ -1020,7 +1021,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1035,15 +1036,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "output commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1058,8 +1059,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:1b62a2fd3a4e85c47308cb906759c7efd4bfc3a1f8de73e94f2da088d167d215",
-      "mutated_statement_sha256": "178032e0a5bdde3a5c94567d26b7f4e0e58f2ee7033624673df9247a3560e1c7",
+      "mutated_statement_commitment": "blake2b-256:7f52a21993ce62db2887d9648574e96c3d607aa40b3fb9adfaf1419db10bb56c",
+      "mutated_statement_sha256": "dd2db8735580e853862146ca1a23471db884b9c3da6b1ae4896f1c53605bee8f",
       "mutation": "output_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding"
@@ -1071,7 +1072,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1086,15 +1087,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "artifact_binding",
       "error": "proof commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1109,8 +1110,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:bf59837d0e5c25d974f83e116e5511c51024667d0fde07387d2d50f3b8052c70",
-      "mutated_statement_sha256": "80b0f40d8c2d6395bc1ae13df5413a121eeb04b312f127db6f5d720210bcfcfd",
+      "mutated_statement_commitment": "blake2b-256:274f7e8e02027938e17ff8bcbbe57c5a4575e42a12815aa83bc452db39ee47b4",
+      "mutated_statement_sha256": "853408db156a783a73a583143494289919c694690a214eb1d0b9d7e2f2625ddf",
       "mutation": "proof_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding"
@@ -1122,7 +1123,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1137,15 +1138,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "external_proof_verifier",
-      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.32s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmph_huz6to/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
+      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmp_1rcpf_8/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:bb4df46491eb33678bc5efd7f8a2438cb419f5b1ff4e67cf19496a85fbd752af",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:6aa0a243121bdc95fd2798542ca2412ded9f95c660897b48699dacf06d2ffc8e",
+        "evidence_manifest_commitment": "blake2b-256:654ed57fba8101d94c6aac88d8af9bbecf1517974a3e7646592fcdd5a8bd8af6",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1160,8 +1161,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:0dfea94dd1328e88bdd804509f66ed74b7f6ecd8dedee38331df1604c2492a14",
-      "mutated_statement_sha256": "29aa28407e725c8383a4562fd6770f41c2e1fd975deb119f5cad11dd2608378a",
+      "mutated_statement_commitment": "blake2b-256:bb016c47976e3dbfa32e758b3c68810f3f49ada5e6212acc175a2e8626ba228c",
+      "mutated_statement_sha256": "acfc97a8612f4fcb9ef3680bafabc7b974735cca856d2e3e49221df5b5fc2b59",
       "mutation": "proof_public_claim_relabeling",
       "rejected": true,
       "rejection_layer": "external_proof_verifier"
@@ -1173,7 +1174,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1188,15 +1189,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "statement policy mismatch for proof_system_version",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1211,8 +1212,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:be48d4c60691ec5e1730154fdef0c0d9b12e5b5be3c92e6c42527774d098820f",
-      "mutated_statement_sha256": "a9695c05638790e0bdabb6358a88c48297928d2614159fc6d7f77b264d4c71bd",
+      "mutated_statement_commitment": "blake2b-256:e4df557e27b27ecf485dd4b0c4e38547bcc8c94a8993e6f8c91727c234746a33",
+      "mutated_statement_sha256": "aa8ab10a31c7b4d5dc56d304f6fcae4850addd885f044d57da6c0f46daa786d9",
       "mutation": "proof_system_version_relabeling",
       "rejected": true,
       "rejection_layer": "domain_or_version_allowlist"
@@ -1224,7 +1225,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1239,15 +1240,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "public_instance_binding",
       "error": "public-instance commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1262,8 +1263,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:6836a3d080dd497f1006f24e43cb1d90c2a0b68883cfff0c3bb01a48a3d43c78",
-      "mutated_statement_sha256": "a82a3a9a976afbd40ee2b1feff216d4168d77083943d3efbe9f8e39c4db67d1b",
+      "mutated_statement_commitment": "blake2b-256:8f692b759a2a7519aca4dc6475e835f515ff569c3263353290232e248cd0478b",
+      "mutated_statement_sha256": "29f6f55f69c3a618a84f83b84948ddc63e7a43f00248088a3bd8c4937412cf73",
       "mutation": "public_instance_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "public_instance_binding"
@@ -1275,7 +1276,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1290,15 +1291,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "setup_binding",
       "error": "setup commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1313,8 +1314,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:8d02467301fc5aed23cee24afc0a543c7cbd26653e59ba0e05f6c83a762f80d4",
-      "mutated_statement_sha256": "fc32f1cb135dda43416a8e6c72c28c550787a16f395d3984637349cd3a7445cb",
+      "mutated_statement_commitment": "blake2b-256:05c138a4b8d5126d5acccbc0754f52bede084bf5f1f0ed6b4f5988df3270b570",
+      "mutated_statement_sha256": "f343d3b083cc132bca99399e9bee677af8b57cfad3b4bdd1ae1672d13e3d7c86",
       "mutation": "setup_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "setup_binding"
@@ -1326,7 +1327,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1341,15 +1342,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "statement_commitment",
       "error": "statement_commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1365,7 +1366,7 @@
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
       "mutated_statement_commitment": "blake2b-256:6666666666666666666666666666666666666666666666666666666666666666",
-      "mutated_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "mutated_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "mutation": "statement_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "statement_commitment"
@@ -1377,7 +1378,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1392,15 +1393,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "statement policy mismatch for verifier_domain",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1415,8 +1416,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-v999",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "mutated_statement_commitment": "blake2b-256:aa33255a8066c830e888a8708e0f6b0684b86ddba2cc0ea9301746c847315687",
-      "mutated_statement_sha256": "685af8ddc8ab38c2ab1951e592fc8ba15a25bccb816419b8f0b0645fcb36a392",
+      "mutated_statement_commitment": "blake2b-256:4e220728efbe377565f26c6f59aa1855767b798201a6b84fd0eaaa1d8897f9d0",
+      "mutated_statement_sha256": "8e2e86266af72a308e0a1c500869fc16f42763ba3ede178acb934107e5008401",
       "mutation": "verifier_domain_relabeling",
       "rejected": true,
       "rejection_layer": "domain_or_version_allowlist"
@@ -1428,7 +1429,7 @@
       "baseline_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "baseline_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1443,15 +1444,15 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:7d4782ecc34488f3d5b358734fceae9c69f2b2245d0b4beaa8b4d111f77a10ac"
       },
-      "baseline_statement_commitment": "blake2b-256:d00c892d13598452607730c6946f9d66c5f9e8391e576632070501bf5ca548e3",
-      "baseline_statement_sha256": "16822ac7eecd3e570b7019cbb5bb99a84cc00fa8140ebded8b898e7e8a28600a",
+      "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
+      "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "domain_or_version_allowlist",
       "error": "verifying-key commitment mismatch",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:63191d874e8a5febbdbac95679689897f72583e4ebb75a0e929f12ce81e6af38",
       "mutated_statement": {
         "config_commitment": "blake2b-256:bb83eceaa67cf8d56777c6bf1ba647b41bf4369a307162b60d0097cc8fbe64eb",
-        "evidence_manifest_commitment": "blake2b-256:bd99294386e1b4279ac5cae80036f7dd25bbb9a44560e2b03b31bab7391ad21e",
+        "evidence_manifest_commitment": "blake2b-256:d9bc4f040a57b23bdddc933253d04280bc65dd19835184e479a1ff923707624b",
         "input_commitment": "blake2b-256:f01286959041ba219410644823a265fc82655c018fc9fc4d86f29ac023b5cb9f",
         "model_artifact_commitment": "blake2b-256:afac4611a49171f517e3a42b9cad9154a24cd4e686a2b79f23506cd564d06a2a",
         "model_id": "urn:zkai:ptvm:linear-block-v4-with-lookup",
@@ -1466,8 +1467,8 @@
         "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup",
         "verifying_key_commitment": "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000"
       },
-      "mutated_statement_commitment": "blake2b-256:4acf4698f01bd88ef07f6edbb35c9c2ab13e1c47fdae3da9884ab54f45778913",
-      "mutated_statement_sha256": "ed684ceb7d3ff82c7562bffa389a4dab39d330368a6c01dcea5b1f3a42b69fa5",
+      "mutated_statement_commitment": "blake2b-256:cbe87c23b4a652f5b8a843f41be190cbb22af2c4e6844a2f66278da69ccd6e0b",
+      "mutated_statement_sha256": "7fb3c5cc4d740c519ada3f8b8c028a7c13ec6af7cc58d2587bed8c5c87773123",
       "mutation": "verifying_key_commitment_relabeling",
       "rejected": true,
       "rejection_layer": "domain_or_version_allowlist"
@@ -1487,10 +1488,10 @@
   ],
   "repro": {
     "artifact_dir": "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04",
-    "artifact_metadata_sha256": "21bcd7089901c01ff7fa4262d9fbdecbfd312a3e648772a276a50b6b01d0d431",
+    "artifact_metadata_sha256": "856bda2e0da08be02989e2c552be58448334a9b7ad567a62a8fe691a4c3387f9",
     "command": [
       "env",
-      "ZKAI_STWO_BENCHMARK_GIT_COMMIT=d8ef5ffd6806c51985b5be3f579d38cf7cb04bb9",
+      "ZKAI_STWO_BENCHMARK_GIT_COMMIT=b47af15f58b0c5e612b402754deb88cdee33751c",
       "python3.12",
       "scripts/zkai_stwo_statement_envelope_benchmark.py",
       "--write-json",
@@ -1498,7 +1499,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "d8ef5ffd6806c51985b5be3f579d38cf7cb04bb9"
+    "git_commit": "b47af15f58b0c5e612b402754deb88cdee33751c"
   },
   "schema": "zkai-stwo-statement-envelope-benchmark-v1",
   "suite_kind": "native_stwo_statement_relabeling",
