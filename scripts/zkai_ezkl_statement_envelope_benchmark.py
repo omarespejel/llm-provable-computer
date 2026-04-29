@@ -25,6 +25,7 @@ import io
 import json
 import os
 import pathlib
+import shutil
 import tempfile
 from typing import Any
 
@@ -35,6 +36,8 @@ SRS_URL = "https://kzg.ezkl.xyz/kzg17.srs"
 BENCHMARK_SCHEMA = "zkai-ezkl-statement-envelope-benchmark-v1"
 ENVELOPE_SCHEMA = "zkai-ezkl-statement-envelope-v1"
 STATEMENT_SCHEMA = "zkai-external-statement-v1"
+EZKL_VERSION = "23.0.5"
+EZKL_VERIFIER_DOMAIN = f"ezkl-python-verify-v{EZKL_VERSION}"
 
 EXPECTED_STATEMENT = {
     "model_id": "urn:zkai:ezkl-demo:identity-v1",
@@ -42,8 +45,8 @@ EXPECTED_STATEMENT = {
     "output_id": "urn:zkai:output:identity-scalar-one-v1",
     "quantization_config_id": "urn:zkai:ezkl-settings:identity-public-io-v1",
     "proof_system": "EZKL/Halo2-KZG",
-    "proof_system_version": "23.0.5",
-    "verifier_domain": "ezkl-python-verify-v23.0.5",
+    "proof_system_version": EZKL_VERSION,
+    "verifier_domain": EZKL_VERIFIER_DOMAIN,
 }
 
 TSV_COLUMNS = [
@@ -227,7 +230,10 @@ def ezkl_verify(
     except ImportError as err:
         raise EzklEnvelopeError("ezkl Python package is not installed") from err
 
-    installed_version = importlib.metadata.version("ezkl")
+    try:
+        installed_version = importlib.metadata.version("ezkl")
+    except importlib.metadata.PackageNotFoundError as err:
+        raise EzklEnvelopeError("ezkl package metadata is not available") from err
     expected_version = EXPECTED_STATEMENT["proof_system_version"]
     if installed_version != expected_version:
         raise EzklEnvelopeError(
@@ -378,7 +384,7 @@ def run_benchmark(
         "suite_kind": "external_ezkl_statement_relabeling",
         "external_system": {
             "name": "EZKL",
-            "version": "23.0.5",
+            "version": EXPECTED_STATEMENT["proof_system_version"],
             "verification_api": "ezkl.verify(proof_path, settings_path, vk_path, srs_path)",
             "srs_url": SRS_URL,
             "srs_sha256": srs_sha256,
@@ -417,9 +423,12 @@ def run_benchmark(
 def _git_commit() -> str:
     import subprocess
 
+    git = shutil.which("git")
+    if git is None:
+        return "unknown"
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
+            [git, "rev-parse", "HEAD"],
             cwd=ROOT,
             text=True,
             stderr=subprocess.DEVNULL,
