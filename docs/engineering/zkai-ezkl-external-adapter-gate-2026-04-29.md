@@ -37,7 +37,7 @@ Generated benchmark evidence:
 
 Generator commit recorded in evidence:
 
-`03ae4783f82e02ac8d615a04cc653ccd64ee38ad`
+`1e2451f923a69c9f387902fa8dbf53aadc041c64`
 
 ## Result
 
@@ -109,9 +109,13 @@ PY
 
 Run the benchmark:
 
+`ZKAI_EZKL_BENCHMARK_COMMAND_JSON` is the portable command vector recorded in
+the checked evidence. The local `/tmp/ptvm-ezkl-venv/bin/python` interpreter is
+only the execution environment used to run the pinned EZKL package.
+
 ```bash
-export ZKAI_EZKL_BENCHMARK_COMMAND_JSON='["env","ZKAI_EZKL_BENCHMARK_GIT_COMMIT=03ae4783f82e02ac8d615a04cc653ccd64ee38ad","ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs","python3","scripts/zkai_ezkl_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv"]'
-ZKAI_EZKL_BENCHMARK_GIT_COMMIT=03ae4783f82e02ac8d615a04cc653ccd64ee38ad \
+export ZKAI_EZKL_BENCHMARK_COMMAND_JSON='["env","ZKAI_EZKL_BENCHMARK_GIT_COMMIT=1e2451f923a69c9f387902fa8dbf53aadc041c64","ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs","python3","scripts/zkai_ezkl_statement_envelope_benchmark.py","--write-json","docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv"]'
+ZKAI_EZKL_BENCHMARK_GIT_COMMIT=1e2451f923a69c9f387902fa8dbf53aadc041c64 \
 ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs \
   /tmp/ptvm-ezkl-venv/bin/python scripts/zkai_ezkl_statement_envelope_benchmark.py \
   --write-json docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json \
