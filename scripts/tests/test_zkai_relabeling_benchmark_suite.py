@@ -91,12 +91,33 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(payload["case_count"], len(SUITE.HARNESS.mutation_cases()))
         self.assertTrue(all(case["rejected"] for case in payload["cases"]))
 
+    def test_declarative_policy_suite_rejects_all_mutations(self) -> None:
+        payload = SUITE.run_suite("declarative-policy")
+
+        self.assertEqual(payload["adapter"], "declarative-policy")
+        self.assertTrue(payload["baseline_accepted"])
+        self.assertEqual(payload["baseline_error"], "")
+        self.assertTrue(payload["all_mutations_rejected"])
+        self.assertEqual(payload["case_count"], len(SUITE.HARNESS.mutation_cases()))
+        self.assertTrue(all(case["rejected"] for case in payload["cases"]))
+        self.assertIn(
+            "declarative_policy_sha256",
+            payload["repro"]["verifier"],
+        )
+
+    def test_declarative_policy_adapter_does_not_import_mutation_oracle(self) -> None:
+        adapter_source = SUITE.DECLARATIVE_ADAPTER_PATH.read_text(encoding="utf-8")
+
+        self.assertNotIn("agent_step_receipt_relabeling_harness", adapter_source)
+        self.assertNotIn("HARNESS", adapter_source)
+
     def test_payload_records_reproducibility_and_artifact_hashes(self) -> None:
         payload = SUITE.run_suite("python-reference", command=["suite", "--adapter", "python-reference"])
 
         self.assertEqual(payload["repro"]["command"], ["suite", "--adapter", "python-reference"])
         self.assertIn("git_commit", payload["repro"])
         self.assertEqual(payload["repro"]["verifier"]["receipt_version"], SUITE.HARNESS.RECEIPT_VERSION)
+        self.assertRegex(payload["repro"]["verifier"]["declarative_policy_sha256"], r"^[0-9a-f]{64}$")
         artifact_bundle = payload["repro"]["artifacts"]
         self.assertEqual(artifact_bundle["schema"], "zkai-relabeling-artifact-bundle-v1")
         baseline_hash = artifact_bundle["baseline"]["sha256"]

@@ -128,10 +128,11 @@ PY
 }
 
 check_zkai_relabeling_benchmark_evidence() {
-  local generated_json="${ARTIFACT_DIR}/zkai-relabeling-benchmark-generated.json"
-  local generated_tsv="${ARTIFACT_DIR}/zkai-relabeling-benchmark-generated.tsv"
-  local checked_json="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json"
-  local checked_tsv="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
+  local adapter="$1"
+  local checked_json="$2"
+  local checked_tsv="$3"
+  local generated_json="${ARTIFACT_DIR}/zkai-relabeling-benchmark-${adapter}-generated.json"
+  local generated_tsv="${ARTIFACT_DIR}/zkai-relabeling-benchmark-${adapter}-generated.tsv"
   local repro_commit
   local repro_command_json
   repro_commit="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
@@ -149,7 +150,7 @@ PY
   ZKAI_RELABELING_BENCHMARK_GIT_COMMIT="$repro_commit" \
     ZKAI_RELABELING_BENCHMARK_COMMAND_JSON="$repro_command_json" \
     "$PYTHON_BIN" -B scripts/zkai_relabeling_benchmark_suite.py \
-    --adapter rust-production \
+    --adapter "$adapter" \
     --write-json "$generated_json" \
     --write-tsv "$generated_tsv"
   "$PYTHON_BIN" -B - "$generated_json" "$checked_json" "$generated_tsv" "$checked_tsv" <<'PY'
@@ -184,7 +185,16 @@ run_logged agent-step-receipt-rust cargo test --lib agent_step_receipt
 run_logged agent-step-relabeling "$PYTHON_BIN" -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
 run_logged agent-step-relabeling-cli-evidence check_agent_step_relabeling_cli_evidence
 run_logged zkai-relabeling-benchmark "$PYTHON_BIN" -B -m unittest scripts.tests.test_zkai_relabeling_benchmark_suite
-run_logged zkai-relabeling-benchmark-evidence check_zkai_relabeling_benchmark_evidence
+run_logged zkai-relabeling-benchmark-rust-evidence \
+  check_zkai_relabeling_benchmark_evidence \
+    rust-production \
+    docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json \
+    docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv
+run_logged zkai-relabeling-benchmark-declarative-evidence \
+  check_zkai_relabeling_benchmark_evidence \
+    declarative-policy \
+    docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json \
+    docs/engineering/evidence/zkai-relabeling-benchmark-suite-declarative-policy-2026-04.tsv
 run_logged carry-aware-air cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib carry_aware_
 run_logged experimental-proof-route cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib experimental_phase12_carry_aware_
 run_logged phase44d-boundary cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib phase44d_source_emission_public_output_boundary_
