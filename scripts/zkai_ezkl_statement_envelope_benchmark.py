@@ -216,6 +216,10 @@ def ensure_srs(path: pathlib.Path) -> pathlib.Path:
             f"missing EZKL KZG SRS at {path}; provision {SRS_URL} first "
             "and set ZKAI_EZKL_SRS_PATH or pass --srs-path"
         )
+    if not path.is_file():
+        raise FileNotFoundError(f"EZKL KZG SRS path must be a readable file: {path}")
+    with path.open("rb") as handle:
+        handle.read(1)
     return path
 
 
@@ -281,7 +285,6 @@ def verify_statement_envelope(
     envelope: dict[str, Any],
     srs_path: pathlib.Path,
     *,
-    srs_sha256: str | None = None,
     external_verify: Callable[[dict[str, Any], pathlib.Path, pathlib.Path, pathlib.Path], None] = ezkl_verify,
 ) -> None:
     if envelope.get("schema") != ENVELOPE_SCHEMA:
@@ -295,8 +298,7 @@ def verify_statement_envelope(
     settings_path, vk_path = _check_artifact_hashes(envelope)
     if statement.get("srs_url") != SRS_URL:
         raise EzklEnvelopeError("unsupported SRS URL")
-    actual_srs_sha256 = srs_sha256 if srs_sha256 is not None else sha256_file(srs_path)
-    if actual_srs_sha256 != statement.get("srs_sha256"):
+    if sha256_file(srs_path) != statement.get("srs_sha256"):
         raise EzklEnvelopeError("SRS hash mismatch")
     external_verify(_proof_payload(envelope), settings_path, vk_path, srs_path)
 
@@ -334,13 +336,12 @@ def _case_result(
     envelope: dict[str, Any],
     srs_path: pathlib.Path,
     external_verify: Callable[[dict[str, Any], pathlib.Path, pathlib.Path, pathlib.Path], None],
-    srs_sha256: str | None,
 ) -> tuple[bool, str]:
     try:
         if adapter == "ezkl-proof-only":
             verify_proof_only(envelope, srs_path, external_verify=external_verify)
         elif adapter == "ezkl-statement-envelope":
-            verify_statement_envelope(envelope, srs_path, srs_sha256=srs_sha256, external_verify=external_verify)
+            verify_statement_envelope(envelope, srs_path, external_verify=external_verify)
         else:
             raise EzklEnvelopeError(f"unsupported adapter {adapter!r}")
     except Exception as err:  # noqa: BLE001 - the benchmark records verifier failures.
@@ -361,10 +362,10 @@ def run_benchmark(
     cases = []
     for adapter in adapters:
         baseline_accepted, baseline_error = _case_result(
-            adapter, baseline, srs_path, external_verify, srs_sha256
+            adapter, baseline, srs_path, external_verify
         )
         for mutation, (category, envelope) in sorted(mutations.items()):
-            accepted, error = _case_result(adapter, envelope, srs_path, external_verify, srs_sha256)
+            accepted, error = _case_result(adapter, envelope, srs_path, external_verify)
             cases.append(
                 {
                     "adapter": adapter,
