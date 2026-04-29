@@ -92,6 +92,28 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
             else:
                 sys.modules["ezkl"] = original_ezkl
 
+    def test_ezkl_verify_normalizes_missing_package_metadata(self) -> None:
+        original_ezkl = sys.modules.get("ezkl")
+        sys.modules["ezkl"] = types.SimpleNamespace(verify=lambda *_args, **_kwargs: True)
+        try:
+            with mock.patch.object(
+                BENCH.importlib.metadata,
+                "version",
+                side_effect=BENCH.importlib.metadata.PackageNotFoundError,
+            ):
+                with self.assertRaisesRegex(BENCH.EzklEnvelopeError, "metadata is not available"):
+                    BENCH.ezkl_verify(
+                        {"instances": [["1"]]},
+                        pathlib.Path("settings.json"),
+                        pathlib.Path("vk.key"),
+                        pathlib.Path("srs"),
+                    )
+        finally:
+            if original_ezkl is None:
+                del sys.modules["ezkl"]
+            else:
+                sys.modules["ezkl"] = original_ezkl
+
     def test_main_fails_when_statement_envelope_baseline_is_rejected(self) -> None:
         payload = {
             "summary": {

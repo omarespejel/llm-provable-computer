@@ -117,11 +117,25 @@ ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs \
   --write-tsv docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv
 ```
 
-Focused tests:
+Final validation used for this gate:
 
 ```bash
-python3.12 -m unittest scripts.tests.test_zkai_ezkl_statement_envelope_benchmark
+python3.12 -m unittest \
+  scripts.tests.test_zkai_ezkl_statement_envelope_benchmark \
+  scripts.tests.test_zkai_relabeling_benchmark_suite
+/tmp/ptvm-ezkl-venv/bin/python \
+  scripts/zkai_ezkl_statement_envelope_benchmark.py \
+  --srs-path target/ezkl/kzg17.srs \
+  --json
+python3.12 scripts/paper/paper_preflight.py --repo-root .
+git diff --check
 ```
+
+This is not a timing benchmark and records no timing mode, step count, or
+performance frontier. The checked evidence artifacts are
+`docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json`
+and
+`docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv`.
 
 ## Non-claims
 
