@@ -59,6 +59,17 @@ TSV_COLUMNS = [
     "rejection_layer",
     "error",
 ]
+EXPECTED_ADAPTERS = ("ezkl-proof-only", "ezkl-statement-envelope")
+EXPECTED_MUTATION_NAMES = (
+    "config_id_relabeling",
+    "input_id_relabeling",
+    "model_artifact_hash_relabeling",
+    "model_id_relabeling",
+    "output_id_relabeling",
+    "proof_public_instance_relabeling",
+    "verifier_domain_relabeling",
+)
+EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 
 
 class EzklEnvelopeError(ValueError):
@@ -358,9 +369,10 @@ def run_benchmark(
     srs_sha256 = sha256_file(srs_path)
     baseline = baseline_envelope()
     mutations = mutated_envelopes()
-    adapters = ["ezkl-proof-only", "ezkl-statement-envelope"]
+    if tuple(sorted(mutations)) != EXPECTED_MUTATION_NAMES:
+        raise RuntimeError("mutation corpus does not match expected external relabeling suite")
     cases = []
-    for adapter in adapters:
+    for adapter in EXPECTED_ADAPTERS:
         baseline_accepted, baseline_error = _case_result(
             adapter, baseline, srs_path, external_verify
         )
@@ -416,7 +428,7 @@ def run_benchmark(
                     case["rejected"] for case in cases if case["adapter"] == adapter
                 ),
             }
-            for adapter in adapters
+            for adapter in EXPECTED_ADAPTERS
         },
     }
 
@@ -450,6 +462,15 @@ def _canonical_command(command: list[str] | None) -> list[str]:
 
 def benchmark_passed(payload: dict[str, Any]) -> bool:
     summary = payload["summary"]
+    expected_case_count = len(EXPECTED_ADAPTERS) * EXPECTED_MUTATION_COUNT
+    if len(payload.get("cases", [])) != expected_case_count:
+        return False
+    for adapter in EXPECTED_ADAPTERS:
+        adapter_summary = summary.get(adapter)
+        if adapter_summary is None:
+            return False
+        if adapter_summary.get("mutation_count") != EXPECTED_MUTATION_COUNT:
+            return False
     proof_only = summary["ezkl-proof-only"]
     statement_envelope = summary["ezkl-statement-envelope"]
     return (
