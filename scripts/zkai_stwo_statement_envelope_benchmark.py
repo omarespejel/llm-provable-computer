@@ -501,6 +501,8 @@ def verify_proof_only(
 
 
 def classify_error(message: str) -> str:
+    # Keep these phrase checks aligned with StwoEnvelopeError messages above;
+    # benchmark evidence uses this as a coarse rejection-layer label.
     lowered = message.lower()
     if "verify-stark verifier rejected" in lowered or "timed out" in lowered:
         return "external_proof_verifier"

@@ -248,32 +248,23 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
         self.assertEqual(BENCH.to_tsv(payload).splitlines()[0].split("\t"), BENCH.TSV_COLUMNS)
 
     def test_command_json_override_preserves_portable_argv_vector(self) -> None:
-        original = os.environ.get("ZKAI_STWO_BENCHMARK_COMMAND_JSON")
-        os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"] = json.dumps(
-            ["env", "python3", "scripts/zkai_stwo_statement_envelope_benchmark.py"]
-        )
-        try:
+        with mock.patch.dict(
+            os.environ,
+            {
+                "ZKAI_STWO_BENCHMARK_COMMAND_JSON": json.dumps(
+                    ["env", "python3", "scripts/zkai_stwo_statement_envelope_benchmark.py"]
+                )
+            },
+        ):
             self.assertEqual(
                 BENCH._canonical_command(["ignored"]),
                 ["env", "python3", "scripts/zkai_stwo_statement_envelope_benchmark.py"],
             )
-        finally:
-            if original is None:
-                del os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"]
-            else:
-                os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"] = original
 
     def test_command_json_override_rejects_malformed_json(self) -> None:
-        original = os.environ.get("ZKAI_STWO_BENCHMARK_COMMAND_JSON")
-        os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"] = "{"
-        try:
+        with mock.patch.dict(os.environ, {"ZKAI_STWO_BENCHMARK_COMMAND_JSON": "{"}):
             with self.assertRaisesRegex(RuntimeError, "valid JSON array of strings"):
                 BENCH._canonical_command(["ignored"])
-        finally:
-            if original is None:
-                del os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"]
-            else:
-                os.environ["ZKAI_STWO_BENCHMARK_COMMAND_JSON"] = original
 
     def test_checked_evidence_uses_portable_repro_command(self) -> None:
         path = (
