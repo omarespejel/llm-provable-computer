@@ -37,6 +37,7 @@ SPEC.loader.exec_module(HARNESS)
 
 
 SUITE_SCHEMA = "zkai-relabeling-benchmark-suite-v1"
+ARTIFACT_BUNDLE_SCHEMA = "zkai-relabeling-artifact-bundle-v1"
 RUST_ADAPTER_SCHEMA = "agent-step-receipt-rust-verifier-adapter-v1"
 BINDING_REJECTION_MARKERS = (
     "does not bind",
@@ -196,9 +197,23 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _artifact_payloads() -> dict[str, dict[str, Any]]:
+    return {"baseline": HARNESS.build_valid_bundle(), **_mutated_bundles()}
+
+
+def _artifact_records() -> dict[str, dict[str, Any]]:
+    return {
+        case_id: {
+            "case_id": case_id,
+            "sha256": _sha256_hex(_canonical_bundle_bytes(bundle)),
+            "artifact": bundle,
+        }
+        for case_id, bundle in _artifact_payloads().items()
+    }
+
+
 def _artifact_hashes() -> dict[str, str]:
-    bundles = {"baseline": HARNESS.build_valid_bundle(), **_mutated_bundles()}
-    return {case_id: _sha256_hex(_canonical_bundle_bytes(bundle)) for case_id, bundle in bundles.items()}
+    return {case_id: record["sha256"] for case_id, record in _artifact_records().items()}
 
 
 def _git_commit() -> str:
@@ -361,7 +376,8 @@ def run_suite(adapter: str, command: list[str] | None = None) -> dict[str, Any]:
             f"extra={sorted(actual_mutations - expected_mutations)}"
         )
 
-    artifact_hashes = _artifact_hashes()
+    artifact_records = _artifact_records()
+    artifact_hashes = {case_id: record["sha256"] for case_id, record in artifact_records.items()}
     git_commit = _git_commit()
     cases = []
     for mutation in sorted(raw_results):
@@ -401,15 +417,10 @@ def run_suite(adapter: str, command: list[str] | None = None) -> dict[str, Any]:
             "command": _canonical_command(command),
             "verifier": _verifier_metadata(adapter),
             "artifacts": {
-                "baseline": {
-                    "case_id": "baseline",
-                    "sha256": artifact_hashes["baseline"],
-                },
+                "schema": ARTIFACT_BUNDLE_SCHEMA,
+                "baseline": artifact_records["baseline"],
                 "mutations": {
-                    mutation: {
-                        "case_id": mutation,
-                        "sha256": artifact_hashes[mutation],
-                    }
+                    mutation: artifact_records[mutation]
                     for mutation in sorted(raw_results)
                 },
             },

@@ -255,6 +255,11 @@ weights, input, output/action, config, policy, tool-output, state, backend
 version, verifier-domain, evidence-manifest, dependency-manifest, and trust-class
 upgrade surfaces.
 
+The benchmark evidence records the accepted baseline and every mutated artifact
+payload, plus canonical SHA-256 hashes computed over the verifier-facing JSON
+bytes. This makes the checked result inspectable without trusting a private test
+fixture.
+
 This does not claim a proved agent. It only makes the verifier-facing receipt
 object fail closed before future model, tool, policy, or memory evidence is
 attached.
