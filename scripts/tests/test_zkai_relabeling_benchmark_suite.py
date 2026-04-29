@@ -237,14 +237,9 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
                 os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"] = original
 
     def test_checked_evidence_uses_portable_repro_command(self) -> None:
-        evidence_paths = [
-            ROOT / "docs" / "engineering" / "evidence" / "zkai-relabeling-benchmark-suite-2026-04.json",
-            ROOT
-            / "docs"
-            / "engineering"
-            / "evidence"
-            / "zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json",
-        ]
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        evidence_paths = sorted(evidence_dir.glob("zkai-relabeling-benchmark-suite*.json"))
+        self.assertGreaterEqual(len(evidence_paths), 2)
         for path in evidence_paths:
             payload = json.loads(path.read_text(encoding="utf-8"))
             command = payload["repro"]["command"]
