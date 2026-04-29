@@ -191,6 +191,8 @@ For accepted inputs, the repository aims to prevent:
 This repository does **not** currently attempt to:
 
 - prove full standard-softmax transformer inference end to end,
+- prove full agent behavior, reasoning quality, tool-output truthfulness, or
+  semantic policy compliance,
 - prove recursive cryptographic accumulation or generic custom-AIR recursion closure,
 - prove implementation equivalence of every runtime backend cryptographically,
 - prove model correctness, truthfulness, or training-data properties,
@@ -217,3 +219,17 @@ Public-facing text in this repository should follow these rules.
   itself is the subject of the claim.
 - Treat `--verify-all` and related multi-engine checks as differential testing, not proof.
 - Do not describe verifier-bound packaging artifacts as recursive cryptographic compression.
+
+## Verifiable-Intelligence Receipts
+
+The first verifiable-intelligence receipt surface is specified in
+[`docs/engineering/design/agent-step-receipt-spec.md`](../engineering/design/agent-step-receipt-spec.md).
+That design introduces typed agent-step receipts over state, observation, model,
+tool, policy, action, transcript, and next-state commitments.
+
+The key security rule is trust-class honesty. A receipt member may be `proved`,
+`attested`, `replayed`, `dependency_dropped`, or `omitted`. Public claims must
+not upgrade an `attested` or `omitted` member into a proved fact. A Tablero-style
+boundary can bind and transport an accepted receipt, but it does not by itself
+prove model semantics, tool truthfulness, memory correctness, policy compliance,
+or agent reasoning quality.
