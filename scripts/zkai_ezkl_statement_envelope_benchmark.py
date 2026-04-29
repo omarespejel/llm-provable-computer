@@ -372,7 +372,7 @@ def run_benchmark(
         ],
         "repro": {
             "git_commit": os.environ.get("ZKAI_EZKL_BENCHMARK_GIT_COMMIT", _git_commit()),
-            "command": command or [],
+            "command": _canonical_command(command),
             "artifact_dir": str(ARTIFACT_DIR.relative_to(ROOT)),
             "artifact_metadata_sha256": sha256_file(ARTIFACT_DIR / "metadata.json"),
         },
@@ -407,6 +407,16 @@ def _git_commit() -> str:
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+def _canonical_command(command: list[str] | None) -> list[str]:
+    override_json = os.environ.get("ZKAI_EZKL_BENCHMARK_COMMAND_JSON")
+    if override_json:
+        parsed = json.loads(override_json)
+        if not isinstance(parsed, list) or not all(isinstance(part, str) for part in parsed):
+            raise RuntimeError("ZKAI_EZKL_BENCHMARK_COMMAND_JSON must be a JSON array of strings")
+        return parsed
+    return command or []
 
 
 def to_tsv(payload: dict[str, Any]) -> str:
