@@ -19,6 +19,7 @@ import io
 import json
 import os
 import pathlib
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -216,9 +217,15 @@ def _git_commit() -> str:
 
 
 def _canonical_command(command: list[str] | None) -> list[str]:
+    override_json = os.environ.get("ZKAI_RELABELING_BENCHMARK_COMMAND_JSON")
+    if override_json:
+        parsed = json.loads(override_json)
+        if not isinstance(parsed, list) or not all(isinstance(part, str) for part in parsed):
+            raise RuntimeError("ZKAI_RELABELING_BENCHMARK_COMMAND_JSON must be a JSON array of strings")
+        return parsed
     override = os.environ.get("ZKAI_RELABELING_BENCHMARK_COMMAND")
     if override:
-        return [override]
+        return shlex.split(override)
     if command is None:
         return []
     return command

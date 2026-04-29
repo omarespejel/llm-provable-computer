@@ -133,21 +133,21 @@ check_zkai_relabeling_benchmark_evidence() {
   local checked_json="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json"
   local checked_tsv="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
   local repro_commit
-  local repro_command
+  local repro_command_json
   repro_commit="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
 import json
 import sys
 print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["git_commit"])
 PY
 )"
-  repro_command="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
+  repro_command_json="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
 import json
 import sys
-print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["command"][0])
+print(json.dumps(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["command"], separators=(",", ":")))
 PY
 )"
   ZKAI_RELABELING_BENCHMARK_GIT_COMMIT="$repro_commit" \
-    ZKAI_RELABELING_BENCHMARK_COMMAND="$repro_command" \
+    ZKAI_RELABELING_BENCHMARK_COMMAND_JSON="$repro_command_json" \
     "$PYTHON_BIN" -B scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
     --write-json "$generated_json" \

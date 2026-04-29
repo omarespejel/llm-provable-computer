@@ -35,7 +35,7 @@ Regeneration command:
 ```bash
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
 ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=9e65141b206d9dbfacd51cbc5c17d5f1225d8b59 \
-ZKAI_RELABELING_BENCHMARK_COMMAND="CARGO_TARGET_DIR=target/agent-relabeling-bench python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv" \
+ZKAI_RELABELING_BENCHMARK_COMMAND_JSON='["env","CARGO_TARGET_DIR=target/agent-relabeling-bench","python3.12","scripts/zkai_relabeling_benchmark_suite.py","--adapter","rust-production","--write-json","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json","--write-tsv","docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"]' \
 python3.12 scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
     --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json \

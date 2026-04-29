@@ -4,6 +4,7 @@ import csv
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import unittest
 
@@ -101,6 +102,22 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         for case in payload["cases"]:
             self.assertEqual(case["baseline_artifact_sha256"], baseline_hash)
             self.assertRegex(case["mutated_artifact_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_command_json_override_preserves_argv_vector(self) -> None:
+        original = os.environ.get("ZKAI_RELABELING_BENCHMARK_COMMAND_JSON")
+        os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"] = json.dumps(
+            ["env", "CARGO_TARGET_DIR=target/agent-relabeling-bench", "python3.12", "suite.py"]
+        )
+        try:
+            self.assertEqual(
+                SUITE._canonical_command(["ignored"]),
+                ["env", "CARGO_TARGET_DIR=target/agent-relabeling-bench", "python3.12", "suite.py"],
+            )
+        finally:
+            if original is None:
+                del os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"]
+            else:
+                os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"] = original
 
     def test_artifact_hashes_use_harness_canonicalizer(self) -> None:
         original_mutated_bundles = SUITE._mutated_bundles

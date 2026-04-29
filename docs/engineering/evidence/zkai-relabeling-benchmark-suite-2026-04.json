@@ -421,7 +421,16 @@
       }
     },
     "command": [
-      "CARGO_TARGET_DIR=target/agent-relabeling-bench python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
+      "env",
+      "CARGO_TARGET_DIR=target/agent-relabeling-bench",
+      "python3.12",
+      "scripts/zkai_relabeling_benchmark_suite.py",
+      "--adapter",
+      "rust-production",
+      "--write-json",
+      "docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json",
+      "--write-tsv",
+      "docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
     ],
     "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
     "verifier": {
