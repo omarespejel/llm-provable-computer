@@ -157,18 +157,26 @@ A checked adapter result must include:
 - a gate note that states whether the raw proof verifier, the statement receipt,
   or both reject each mutation.
 
-## Current checked adapter result
+## Current checked adapter results
 
 The first checked external adapter is EZKL `23.0.5` with a toy identity ONNX
 artifact and a KZG SRS pinned by SHA-256. The raw proof verifier accepts the
 baseline and rejects `1 / 7` checked relabeling mutations. The statement envelope
 accepts the same baseline and rejects `7 / 7` checked mutations.
 
+The second checked external adapter is a tiny Circom/snarkjs Groth16 artifact.
+The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 9`
+checked relabeling mutations: the public-signal mutation. The statement envelope
+accepts the same baseline and rejects `9 / 9` checked mutations.
+
 Evidence handles:
 
 - `docs/engineering/zkai-ezkl-external-adapter-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv`
+- `docs/engineering/zkai-snarkjs-external-adapter-gate-2026-04-29.md`
+- `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json`
+- `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv`
 
 The correct interpretation is:
 
@@ -177,20 +185,8 @@ The correct interpretation is:
 
 ## Next adapter targets
 
-The next external adapter should use a different proof stack to avoid mistaking
-an EZKL-specific boundary for a proof-stack-neutral result. The best near-term
-candidate is a tiny Circom/snarkjs Groth16 artifact because the local toolchain
-already has `circom` and `snarkjs`, the verifier is independent of EZKL, and the
-public-signal surface is easy to mutate.
-
-The predeclared result shape should match the EZKL adapter:
-
-- raw `snarkjs groth16 verify` over a proof and public signals,
-- statement receipt binding model/input/output/config/verifier/setup labels to
-  the same proof and public-signal digest,
-- stale-evidence relabeling mutations that raw proof verification cannot see,
-- public-signal mutation that the raw verifier rejects.
-
-If the Groth16 setup artifacts are too large or unreproducible for a clean PR,
-record that as a NO-GO and keep the next checked adapter as a design issue rather
-than forcing a weak result.
+The next result should not add another toy proof stack unless it tests a new
+statement dimension. The higher-upside follow-up is the Stwo-native
+statement-bound transformer primitive: a small transparent proof whose receipt
+binds model/primitive ID, weight or circuit commitment, input commitment, output
+commitment, config, backend version, verifier domain, and public-instance digest.

@@ -700,21 +700,23 @@ small-width workload [1]. The closest local compact handoff object is smaller bu
 on its current path. That is another example of the paper's central claim: different
 verifier-facing layers improve different costs.
 
-### 7.1 External statement-binding adapter
+### 7.1 External statement-binding adapters
 
-A separate engineering adapter applies the same boundary discipline to an external
-zkML proof stack, EZKL [7]. The adapter is not used as a performance comparator and
-is not presented as an EZKL security finding. It answers a narrower question: does
-raw proof verification, by itself, bind the accepted proof to the model, input, output,
-configuration, setup, and verifier-domain labels claimed by a surrounding zkAI system?
+Separate engineering adapters apply the same boundary discipline to two external
+proof stacks: EZKL [7] and Circom/snarkjs Groth16 [8]. These adapters are not used as
+performance comparators and are not presented as security findings against either
+system. They answer a narrower question: does raw proof verification, by itself, bind
+the accepted proof to the model, input, output, configuration, setup, and
+verifier-domain labels claimed by a surrounding zkAI system?
 
-The checked result is deliberately modest. The raw proof-verification path accepts the
-baseline proof and rejects the public-instance mutation, as expected, but it does not
-reject metadata-only relabeling because those labels are outside the raw proof
-acceptance path. A statement envelope around the same proof first binds the proof to
-canonical model/input/output/config/setup/domain fields and then delegates proof
-validity to EZKL; that envelope accepts the same baseline and rejects every checked
-relabeling mutation.
+The checked results are deliberately modest and consistent. In both adapters, the raw
+proof-verification path accepts the baseline proof and rejects the mutated proof-public
+input, as expected, but it does not reject metadata-only relabeling because those labels
+are outside the raw proof acceptance path. A statement envelope around the same proof
+first binds the proof to canonical model/input/output/config/setup/domain fields and
+then delegates proof validity to the external verifier. Under that envelope, the EZKL
+adapter rejects `7 / 7` checked relabeling mutations and the snarkjs adapter rejects
+`9 / 9`.
 
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:
@@ -722,9 +724,9 @@ It clarifies the broader systems lesson that motivates the next research track:
 > proof validity and statement binding are distinct verifier layers.
 
 For verifiable AI and agent systems, the object above a proof verifier must say what
-was proved, under which verifier domain, with which artifacts and public instances.
+was proved, under which verifier domain, with which artifacts and public inputs.
 Tablero is one settlement-layer pattern for accepting such typed objects without
-replay. The external adapter shows why the typed object is needed even when the
+replay. The external adapters show why the typed object is needed even when the
 underlying proof verifier is already doing its own job correctly.
 
 ---
@@ -821,3 +823,4 @@ exposes.
 5. Hakim AbdelStark. *Can LLMs be PROVABLE computers?* Public research note. Names the bridge as `the trace becomes the witness`.
 6. Omar Espejel. *Why STARK Execution Structure Fits Transformer Workloads*. `blog.espejel.lol`, 2026-04-15 (updated 2026-04-21).
 7. EZKL project. Public documentation and verifier tooling for proof verification over `proof.json`, `vk.key`, `settings.json`, and SRS inputs.
+8. snarkjs project. Public Circom/Groth16 verifier tooling for `verification_key.json`, `public.json`, and `proof.json` inputs.

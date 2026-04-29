@@ -1,0 +1,262 @@
+{
+  "artifact_metadata": {
+    "artifacts": {
+      "input.json": "74563a6495afe7834b59baa1fbc88992a8efd5747c4d2baba6bb1b7ce67f5b2d",
+      "proof.json": "50b9e247e69f24ea7d773b96970ddfe611445580acd35063a121f34e3b1ef905",
+      "public.json": "9303e928016b067399e0cbd54c91cc8e5187ab7be22bead8efd97785dbf479f3",
+      "square.circom": "c39af94057ce6c333cd7a7721f35b8c33cd1a6fd2d01e034fcbbef1b63b27953",
+      "verification_key.json": "e3b4c39dc791f520ce67031921a3dbb86245417d801139d28739e3d206f25aa6"
+    },
+    "circuit_id": "urn:zkai:snarkjs-demo:square-v1",
+    "config_id": "urn:zkai:snarkjs-settings:square-public-io-v1",
+    "generation_note": "Generated locally with circom 2.0.9 and npx -y snarkjs@0.7.6; only verifier-facing artifacts are checked in.",
+    "input_id": "urn:zkai:input:scalar-seven-v1",
+    "output_id": "urn:zkai:output:square-scalar-forty-nine-v1",
+    "proof_system": "snarkjs/Groth16/BN128",
+    "schema": "zkai-snarkjs-statement-envelope-artifact-metadata-v1",
+    "snarkjs_version": "0.7.6"
+  },
+  "cases": [
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "circuit_artifact_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "config_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "input_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "model_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "output_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "proof_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "external_proof_verifier",
+      "error": "snarkjs groth16 verifier rejected: \u001b[31;22m[ERROR] \u001b[39;1msnarkJS\u001b[0m: Invalid proof",
+      "mutated_accepted": false,
+      "mutation": "public_signal_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "verification_key_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "verifier_domain_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "circuit artifact hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "circuit_artifact_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for quantization_config_id",
+      "mutated_accepted": false,
+      "mutation": "config_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for input_id",
+      "mutated_accepted": false,
+      "mutation": "input_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for model_id",
+      "mutated_accepted": false,
+      "mutation": "model_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for output_id",
+      "mutated_accepted": false,
+      "mutation": "output_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "proof hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "proof_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "external_proof_verifier",
+      "error": "snarkjs groth16 verifier rejected: \u001b[31;22m[ERROR] \u001b[39;1msnarkJS\u001b[0m: Invalid proof",
+      "mutated_accepted": false,
+      "mutation": "public_signal_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "verification-key canonical hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "verification_key_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "statement policy mismatch for verifier_domain",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_relabeling",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist"
+    }
+  ],
+  "external_system": {
+    "name": "snarkjs",
+    "proof_system": "snarkjs/Groth16/BN128",
+    "verification_api": "snarkjs groth16 verify verification_key.json public.json proof.json",
+    "version": "0.7.6"
+  },
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_a_snarkjs_security_audit",
+    "not_a_system_ranking",
+    "proof_only_no_go_is_limited_to_metadata_outside_the_snarkjs_acceptance_path"
+  ],
+  "repro": {
+    "artifact_dir": "docs/engineering/evidence/zkai-snarkjs-statement-envelope-2026-04",
+    "artifact_metadata_sha256": "46da24c5f3551a40973f9e46d4c534a37df83fdc12728aff3e9b525bfa043468",
+    "command": [
+      "env",
+      "ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=b6e7c2afefeffe0f675d05f414ce72ea251dd434",
+      "python3",
+      "scripts/zkai_snarkjs_statement_envelope_benchmark.py",
+      "--write-json",
+      "docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json",
+      "--write-tsv",
+      "docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"
+    ],
+    "git_commit": "b6e7c2afefeffe0f675d05f414ce72ea251dd434"
+  },
+  "schema": "zkai-snarkjs-statement-envelope-benchmark-v1",
+  "suite_kind": "external_snarkjs_statement_relabeling",
+  "summary": {
+    "snarkjs-proof-only": {
+      "all_mutations_rejected": false,
+      "baseline_accepted": true,
+      "mutation_count": 9,
+      "mutations_rejected": 1
+    },
+    "snarkjs-statement-envelope": {
+      "all_mutations_rejected": true,
+      "baseline_accepted": true,
+      "mutation_count": 9,
+      "mutations_rejected": 9
+    }
+  }
+}

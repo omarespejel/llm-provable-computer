@@ -16,3 +16,4 @@ Verifiable-intelligence receipt design begins with
 Tablero as a typed receipt boundary for agent-step evidence, not as a claim that
 Tablero itself proves agents, reasoning, tool truth, or policy semantics.
 - [zkAI statement receipt spec](zkai-statement-receipt-spec.md)
+- [statement-bound transformer primitive spec](statement-bound-transformer-primitive-spec.md)
