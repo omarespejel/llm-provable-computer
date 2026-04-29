@@ -26,7 +26,8 @@ dependency-drop manifest under exact parser/domain/backend allowlists.
 - Unknown JSON fields reject through typed `deny_unknown_fields` structs.
 - Non-NFC strings reject before commitment canonicalization.
 - Floating-point JSON values reject; receipt commitments use deterministic JSON
-  canonicalization over integers, strings, arrays, and objects only.
+  canonicalization over `null`, booleans, integers, strings, arrays, and
+  objects.
 - Commitment labels are exact and lowercase:
   `blake2b-256`, `blake2s-256`, `sha256`, `sha384`, or `sha512`.
 - `field_trust_class_vector` must cover every receipt field exactly once and be
