@@ -12,6 +12,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import shlex
 import shutil
 import subprocess
@@ -27,6 +28,7 @@ ENVELOPE_SCHEMA = "zkai-snarkjs-statement-envelope-v1"
 STATEMENT_SCHEMA = "zkai-external-statement-v1"
 SNARKJS_VERSION = "0.7.6"
 SNARKJS_VERIFIER_DOMAIN = f"snarkjs-groth16-verify-v{SNARKJS_VERSION}"
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 EXPECTED_STATEMENT = {
     "model_id": "urn:zkai:snarkjs-demo:square-v1",
     "input_id": "urn:zkai:input:scalar-seven-v1",
@@ -300,6 +302,7 @@ def snarkjs_verify(
             check=False,
         )
     output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+    output = ANSI_ESCAPE_RE.sub("", output)
     if result.returncode != 0:
         raise SnarkjsEnvelopeError(f"snarkjs groth16 verifier rejected: {output}")
     if "OK" not in output:
