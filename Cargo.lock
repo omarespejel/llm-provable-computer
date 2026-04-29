@@ -4129,6 +4129,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "tract-onnx",
+ "unicode-normalization",
 ]
 
 [[package]]
