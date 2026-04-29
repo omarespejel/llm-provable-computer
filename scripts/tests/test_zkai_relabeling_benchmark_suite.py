@@ -97,11 +97,18 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(payload["repro"]["command"], ["suite", "--adapter", "python-reference"])
         self.assertIn("git_commit", payload["repro"])
         self.assertEqual(payload["repro"]["verifier"]["receipt_version"], SUITE.HARNESS.RECEIPT_VERSION)
-        baseline_hash = payload["repro"]["artifacts"]["baseline"]["sha256"]
+        artifact_bundle = payload["repro"]["artifacts"]
+        self.assertEqual(artifact_bundle["schema"], "zkai-relabeling-artifact-bundle-v1")
+        baseline_hash = artifact_bundle["baseline"]["sha256"]
         self.assertRegex(baseline_hash, r"^[0-9a-f]{64}$")
+        self.assertEqual(artifact_bundle["baseline"]["artifact"], SUITE.HARNESS.build_valid_bundle())
         for case in payload["cases"]:
             self.assertEqual(case["baseline_artifact_sha256"], baseline_hash)
             self.assertRegex(case["mutated_artifact_sha256"], r"^[0-9a-f]{64}$")
+            mutation_record = artifact_bundle["mutations"][case["mutation"]]
+            self.assertEqual(mutation_record["case_id"], case["mutation"])
+            self.assertEqual(mutation_record["sha256"], case["mutated_artifact_sha256"])
+            self.assertIsInstance(mutation_record["artifact"], dict)
 
     def test_command_json_override_preserves_argv_vector(self) -> None:
         original = os.environ.get("ZKAI_RELABELING_BENCHMARK_COMMAND_JSON")

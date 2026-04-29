@@ -65,10 +65,15 @@ and rejects all `20 / 20` relabeling mutations.
 The JSON evidence records:
 
 - generation commit handle,
-- exact regeneration command string,
+- exact regeneration command argv vector,
 - verifier adapter/crate/schema metadata,
-- canonical baseline artifact SHA-256,
-- canonical per-mutation artifact SHA-256.
+- canonical baseline artifact SHA-256 and inspectable artifact payload,
+- canonical per-mutation artifact SHA-256 and inspectable artifact payload.
+
+The artifact payloads are intentionally checked into the JSON evidence, not only
+hashed, so an auditor can inspect the accepted baseline and each stale-evidence
+relabeling mutation without rerunning the generator first. The SHA-256 values are
+computed over the same canonical JSON bytes consumed by the verifier adapter.
 
 Observed rejection layers:
 
