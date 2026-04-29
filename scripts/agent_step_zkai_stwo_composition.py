@@ -34,6 +34,7 @@ DEFAULT_STWO_EVIDENCE_PATH = (
 DEFAULT_ARTIFACT_DIR = (
     ROOT / "docs" / "engineering" / "evidence" / "agent-step-zkai-stwo-composition-2026-04"
 )
+_CHECKED_STWO_EVIDENCE_CACHE: dict[pathlib.Path, dict[str, Any]] = {}
 COMPOSITION_SCHEMA = "agent-step-zkai-stwo-composition-v1"
 COMPOSED_BUNDLE_SCHEMA = "agent-step-zkai-stwo-composed-bundle-v1"
 TSV_COLUMNS = [
@@ -167,7 +168,11 @@ def _validate_stwo_evidence_payload(payload: Any) -> dict[str, Any]:
 
 def checked_stwo_evidence(path: pathlib.Path) -> dict[str, Any]:
     evidence_path = _source_evidence_path(path)
-    return _validate_stwo_evidence_payload(load_json(evidence_path))
+    cached = _CHECKED_STWO_EVIDENCE_CACHE.get(evidence_path)
+    if cached is None:
+        cached = _validate_stwo_evidence_payload(load_json(evidence_path))
+        _CHECKED_STWO_EVIDENCE_CACHE[evidence_path] = copy.deepcopy(cached)
+    return copy.deepcopy(cached)
 
 
 def _checked_stwo_payload(stwo_evidence: dict[str, Any]) -> dict[str, Any]:

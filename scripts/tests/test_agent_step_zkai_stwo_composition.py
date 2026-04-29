@@ -149,6 +149,27 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.CompositionError, "version"):
             COMPOSITION._checked_stwo_payload(evidence)
 
+    def test_source_evidence_path_is_loaded_once_for_mutation_suite(self) -> None:
+        COMPOSITION._CHECKED_STWO_EVIDENCE_CACHE.clear()
+        original_load_json = COMPOSITION.load_json
+        load_count = 0
+
+        def counting_load_json(path: pathlib.Path):
+            nonlocal load_count
+            if path.resolve() == COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH.resolve():
+                load_count += 1
+            return original_load_json(path)
+
+        COMPOSITION.load_json = counting_load_json
+        try:
+            cases = COMPOSITION.mutation_cases(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
+        finally:
+            COMPOSITION.load_json = original_load_json
+            COMPOSITION._CHECKED_STWO_EVIDENCE_CACHE.clear()
+
+        self.assertEqual(len(cases), 36)
+        self.assertEqual(load_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
