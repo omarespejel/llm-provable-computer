@@ -1036,48 +1036,109 @@ fn agent_receipt_json_error(error: serde_json::Error) -> VmError {
 }
 
 fn read_json_bytes_with_limit(path: &Path, limit: usize, label: &str) -> Result<Vec<u8>> {
-    let metadata = fs::metadata(path)?;
+    let metadata = fs::symlink_metadata(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be inspected before reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     if !metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
-            "{label} path `{}` is not a regular file",
+            "{label} `{}` is not a regular file",
             path.display()
         )));
     }
     if metadata.len() > limit as u64 {
         return Err(VmError::InvalidConfig(format!(
-            "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
             metadata.len(),
             limit
         )));
     }
 
-    let file = File::open(path)?;
-    let opened_metadata = file.metadata()?;
+    let file = open_json_file_for_read(path, label)?;
+    let opened_metadata = file.metadata().map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be inspected after opening: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     if !opened_metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
-            "{label} path `{}` did not open as a regular file",
+            "{label} `{}` is not a regular file after opening",
             path.display()
         )));
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if metadata.dev() != opened_metadata.dev() || metadata.ino() != opened_metadata.ino() {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` changed between metadata inspection and open",
+                path.display()
+            )));
+        }
+    }
     if opened_metadata.len() > limit as u64 {
         return Err(VmError::InvalidConfig(format!(
-            "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
+            "{label} `{}` is {} bytes after opening, exceeding the limit of {} bytes",
+            path.display(),
             opened_metadata.len(),
             limit
         )));
     }
 
     let mut reader = file.take(limit as u64 + 1);
-    let mut bytes = Vec::new();
-    reader.read_to_end(&mut bytes)?;
+    let mut bytes = Vec::with_capacity(metadata.len().min(limit as u64) as usize);
+    reader.read_to_end(&mut bytes).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be read: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     if bytes.len() > limit {
         return Err(VmError::InvalidConfig(format!(
-            "{label} JSON file is {} bytes, exceeding the limit of {} bytes",
+            "{label} `{}` is {} bytes after reading, exceeding the limit of {} bytes",
+            path.display(),
             bytes.len(),
             limit
         )));
     }
     Ok(bytes)
+}
+
+#[cfg(unix)]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<File> {
+    use std::fs::OpenOptions;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "{label} `{}` could not be opened for reading without following symlinks or blocking: io_kind={:?}: {error}",
+                path.display(),
+                error.kind()
+            ))
+        })
+}
+
+#[cfg(not(unix))]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<File> {
+    File::open(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })
 }
 
 fn validate_field_path(value: &str) -> Result<()> {
@@ -1462,6 +1523,27 @@ mod tests {
         verify_agent_step_receipt_bundle_v1(&bundle).expect("valid bundle verifies");
         let json = serde_json::to_string(&bundle).expect("serialize bundle");
         parse_agent_step_receipt_bundle_v1_json(&json).expect("parse valid bundle");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn agent_step_receipt_loader_rejects_symlink_path_boundary() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("bundle.json");
+        std::fs::write(
+            &target,
+            serde_json::to_vec(&build_valid_bundle()).expect("bundle json"),
+        )
+        .expect("write target");
+        let link = dir.path().join("bundle-link.json");
+        std::os::unix::fs::symlink(&target, &link).expect("symlink");
+
+        let err = load_agent_step_receipt_bundle_v1(&link).expect_err("symlink rejects");
+        assert!(
+            err.to_string().contains("not a regular file")
+                || err.to_string().contains("without following symlinks"),
+            "{err}"
+        );
     }
 
     #[test]
