@@ -141,6 +141,52 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
             with mock.patch("sys.stdout", new_callable=io.StringIO):
                 self.assertEqual(BENCH.main(["--json", "--srs-path", "unused"]), 1)
 
+    def test_benchmark_pass_requires_full_mutation_corpus(self) -> None:
+        payload = {
+            "summary": {
+                "ezkl-proof-only": {
+                    "baseline_accepted": True,
+                    "mutations_rejected": 1,
+                    "mutation_count": BENCH.EXPECTED_MUTATION_COUNT - 1,
+                    "all_mutations_rejected": False,
+                },
+                "ezkl-statement-envelope": {
+                    "baseline_accepted": True,
+                    "mutations_rejected": BENCH.EXPECTED_MUTATION_COUNT - 1,
+                    "mutation_count": BENCH.EXPECTED_MUTATION_COUNT - 1,
+                    "all_mutations_rejected": True,
+                },
+            },
+            "cases": [
+                {"adapter": adapter, "rejected": True}
+                for adapter in BENCH.EXPECTED_ADAPTERS
+                for _ in range(BENCH.EXPECTED_MUTATION_COUNT - 1)
+            ],
+        }
+
+        self.assertFalse(BENCH.benchmark_passed(payload))
+
+    def test_benchmark_pass_requires_full_case_count(self) -> None:
+        payload = {
+            "summary": {
+                "ezkl-proof-only": {
+                    "baseline_accepted": True,
+                    "mutations_rejected": 1,
+                    "mutation_count": BENCH.EXPECTED_MUTATION_COUNT,
+                    "all_mutations_rejected": False,
+                },
+                "ezkl-statement-envelope": {
+                    "baseline_accepted": True,
+                    "mutations_rejected": BENCH.EXPECTED_MUTATION_COUNT,
+                    "mutation_count": BENCH.EXPECTED_MUTATION_COUNT,
+                    "all_mutations_rejected": True,
+                },
+            },
+            "cases": [],
+        }
+
+        self.assertFalse(BENCH.benchmark_passed(payload))
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = {
             "cases": [
