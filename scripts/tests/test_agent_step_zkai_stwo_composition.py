@@ -91,6 +91,38 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.CompositionError, "baseline statement commitment"):
             COMPOSITION.verify_composition(bundle, envelope=envelope, stwo_evidence=tampered)
 
+    def test_checked_stwo_evidence_must_match_nested_proof_payload(self) -> None:
+        envelope = COMPOSITION.baseline_stwo_envelope()
+        bundle = COMPOSITION.build_composed_bundle(envelope)
+        evidence = COMPOSITION.checked_stwo_evidence(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
+        tampered = copy.deepcopy(evidence)
+        for case in tampered["cases"]:
+            case["baseline_statement"]["proof_commitment"] = "22" * 32
+
+        with self.assertRaisesRegex(COMPOSITION.CompositionError, "baseline proof payload"):
+            COMPOSITION.verify_composition(bundle, envelope=envelope, stwo_evidence=tampered)
+
+    def test_nested_proof_tamper_rejects_with_unchanged_statement_payload(self) -> None:
+        envelope = COMPOSITION.baseline_stwo_envelope()
+        tampered_envelope = copy.deepcopy(envelope)
+        COMPOSITION.STWO._mutate_final_state_acc(tampered_envelope["stwo_proof"])
+        bundle = COMPOSITION.build_composed_bundle(envelope)
+        evidence = COMPOSITION._source_evidence_with_path(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
+
+        self.assertEqual(
+            COMPOSITION.STWO.statement_payload_sha256(tampered_envelope),
+            COMPOSITION.STWO.statement_payload_sha256(envelope),
+        )
+        with self.assertRaisesRegex(
+            COMPOSITION.STWO.StwoEnvelopeError,
+            "proof artifact does not match envelope proof",
+        ):
+            COMPOSITION.verify_composition(
+                bundle,
+                envelope=tampered_envelope,
+                stwo_evidence=evidence,
+            )
+
     def test_rejection_layer_classification_uses_exception_type(self) -> None:
         self.assertEqual(
             COMPOSITION.classify_composition_error(
@@ -142,6 +174,13 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
             with self.assertRaisesRegex(COMPOSITION.CompositionError, "benchmark"):
                 COMPOSITION.checked_stwo_evidence(path)
 
+    def test_malformed_checked_stwo_evidence_rejects_as_composition_error(self) -> None:
+        source = json.loads(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH.read_text(encoding="utf-8"))
+        source["summary"] = "not-a-summary-object"
+
+        with self.assertRaisesRegex(COMPOSITION.CompositionError, "valid summary"):
+            COMPOSITION._validate_stwo_evidence_payload(source)
+
     def test_in_memory_stwo_evidence_runs_same_metadata_checks(self) -> None:
         evidence = COMPOSITION.checked_stwo_evidence(COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH)
         evidence["external_system"]["version"] = "wrong-stwo-version"
@@ -149,7 +188,7 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.CompositionError, "version"):
             COMPOSITION._checked_stwo_payload(evidence)
 
-    def test_source_evidence_path_is_loaded_once_for_mutation_suite(self) -> None:
+    def test_source_evidence_cache_prevents_mid_suite_source_drift_regression(self) -> None:
         COMPOSITION._CHECKED_STWO_EVIDENCE_CACHE.clear()
         original_load_json = COMPOSITION.load_json
         load_count = 0
@@ -158,6 +197,10 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
             nonlocal load_count
             if path.resolve() == COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH.resolve():
                 load_count += 1
+                if load_count > 1:
+                    drifted = original_load_json(path)
+                    drifted["summary"] = "tampered-after-first-validation"
+                    return drifted
             return original_load_json(path)
 
         COMPOSITION.load_json = counting_load_json

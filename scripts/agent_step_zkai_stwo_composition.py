@@ -143,6 +143,15 @@ def _source_evidence_path(path: pathlib.Path) -> pathlib.Path:
 def _validate_stwo_evidence_payload(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise CompositionError("Stwo evidence must be a JSON object")
+    summary = payload.get("summary")
+    if not isinstance(summary, dict):
+        raise CompositionError("Stwo evidence lacks a valid summary")
+    statement = summary.get("stwo-statement-envelope")
+    if not isinstance(statement, dict):
+        raise CompositionError("Stwo evidence lacks statement-envelope summary")
+    proof_only = summary.get("stwo-proof-only")
+    if not isinstance(proof_only, dict):
+        raise CompositionError("Stwo evidence lacks proof-only summary")
     if payload.get("schema") != STWO.BENCHMARK_SCHEMA:
         raise CompositionError(f"unsupported Stwo benchmark schema {payload.get('schema')!r}")
     if payload.get("suite_kind") != "native_stwo_statement_relabeling":
@@ -156,9 +165,6 @@ def _validate_stwo_evidence_payload(payload: Any) -> dict[str, Any]:
         raise CompositionError("Stwo evidence version does not match the checked native primitive")
     if not STWO.benchmark_passed(payload):
         raise CompositionError("checked Stwo statement-envelope benchmark did not pass")
-    summary = payload["summary"]
-    statement = summary.get("stwo-statement-envelope", {})
-    proof_only = summary.get("stwo-proof-only", {})
     if statement.get("mutations_rejected") != STWO.EXPECTED_MUTATION_COUNT:
         raise CompositionError("Stwo statement-envelope mutation count is incomplete")
     if proof_only.get("mutations_rejected") != 1:
@@ -186,6 +192,9 @@ def _assert_evidence_matches_envelope(stwo_evidence: dict[str, Any], envelope: d
     cases = stwo_evidence.get("cases")
     if not isinstance(cases, list) or not cases:
         raise CompositionError("Stwo benchmark evidence has no cases")
+    proof = STWO.stwo_proof_payload(envelope)
+    proof_sha256 = STWO.proof_sha256(proof)
+    public_instance_commitment = STWO.public_instance_commitment(proof)
     commitments = {
         case.get("baseline_statement_commitment")
         for case in cases
@@ -200,6 +209,20 @@ def _assert_evidence_matches_envelope(stwo_evidence: dict[str, Any], envelope: d
     }
     if statement_hashes != {STWO.statement_payload_sha256(envelope)}:
         raise CompositionError("checked Stwo evidence baseline statement payload mismatch")
+    proof_hashes = {
+        case.get("baseline_statement", {}).get("proof_commitment")
+        for case in cases
+        if isinstance(case, dict) and isinstance(case.get("baseline_statement"), dict)
+    }
+    if proof_hashes != {proof_sha256}:
+        raise CompositionError("checked Stwo evidence baseline proof payload mismatch")
+    public_instance_commitments = {
+        case.get("baseline_public_instance_commitment")
+        for case in cases
+        if isinstance(case, dict)
+    }
+    if public_instance_commitments != {public_instance_commitment}:
+        raise CompositionError("checked Stwo evidence baseline public instance mismatch")
 
 
 def _assert_stwo_envelope_checked(envelope: dict[str, Any]) -> None:

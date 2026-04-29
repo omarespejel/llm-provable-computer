@@ -96,6 +96,12 @@ cross-layer equality between agent fields and statement fields. A production
 agent verifier must keep both layers, or must replace the harness with an
 equivalent nested-subreceipt verifier callback.
 
+The checked source-evidence handle is bound to the exact nested receipt, not just
+to a generic GO result: the harness validates the Stwo evidence schema, suite,
+system, version, baseline statement commitment, baseline statement payload hash,
+baseline proof commitment, and baseline public-instance commitment before
+accepting the composed agent receipt.
+
 ## Reproduction
 
 Regenerate the composition evidence:
