@@ -37,7 +37,7 @@ Generated benchmark evidence:
 
 Generator commit recorded in evidence:
 
-`55836b28ac8e83944ca23d4ab78e11ac15117642`
+`13bae5699ed2498ce3df3fe72a02606ce37a5a39`
 
 ## Result
 
@@ -95,7 +95,7 @@ uv pip install --python /tmp/ptvm-ezkl-venv/bin/python ezkl==23.0.5 onnx==1.21.0
 Run the benchmark:
 
 ```bash
-ZKAI_EZKL_BENCHMARK_GIT_COMMIT=55836b28ac8e83944ca23d4ab78e11ac15117642 \
+ZKAI_EZKL_BENCHMARK_GIT_COMMIT=13bae5699ed2498ce3df3fe72a02606ce37a5a39 \
 ZKAI_EZKL_SRS_PATH=target/ezkl/kzg17.srs \
   /tmp/ptvm-ezkl-venv/bin/python scripts/zkai_ezkl_statement_envelope_benchmark.py \
   --write-json docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json \
