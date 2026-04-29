@@ -427,7 +427,7 @@
       "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
       "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "external_proof_verifier",
-      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpe59ifm36/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
+      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmp_9xzmqqq/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:bb4df46491eb33678bc5efd7f8a2438cb419f5b1ff4e67cf19496a85fbd752af",
       "mutated_statement": {
@@ -1141,7 +1141,7 @@
       "baseline_statement_commitment": "blake2b-256:421be41f9819ddeb7ed3cd69a59c8f10f658c8096b1677c89682c5643f06e4fe",
       "baseline_statement_sha256": "a89af38703d675f947c76cedccaeea88f637fc1fdd1e45bc2a8081dc35c7b265",
       "category": "external_proof_verifier",
-      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmp_1rcpf_8/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
+      "error": "proof artifact does not match envelope proof",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:bb4df46491eb33678bc5efd7f8a2438cb419f5b1ff4e67cf19496a85fbd752af",
       "mutated_statement": {
@@ -1165,7 +1165,7 @@
       "mutated_statement_sha256": "acfc97a8612f4fcb9ef3680bafabc7b974735cca856d2e3e49221df5b5fc2b59",
       "mutation": "proof_public_claim_relabeling",
       "rejected": true,
-      "rejection_layer": "external_proof_verifier"
+      "rejection_layer": "artifact_binding"
     },
     {
       "adapter": "stwo-statement-envelope",
@@ -1491,7 +1491,7 @@
     "artifact_metadata_sha256": "856bda2e0da08be02989e2c552be58448334a9b7ad567a62a8fe691a4c3387f9",
     "command": [
       "env",
-      "ZKAI_STWO_BENCHMARK_GIT_COMMIT=b47af15f58b0c5e612b402754deb88cdee33751c",
+      "ZKAI_STWO_BENCHMARK_GIT_COMMIT=37c46f102da2f9720e601ff1c8c85e6b86b8c03f",
       "python3.12",
       "scripts/zkai_stwo_statement_envelope_benchmark.py",
       "--write-json",
@@ -1499,7 +1499,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "b47af15f58b0c5e612b402754deb88cdee33751c"
+    "git_commit": "37c46f102da2f9720e601ff1c8c85e6b86b8c03f"
   },
   "schema": "zkai-stwo-statement-envelope-benchmark-v1",
   "suite_kind": "native_stwo_statement_relabeling",

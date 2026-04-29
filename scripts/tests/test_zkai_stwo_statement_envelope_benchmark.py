@@ -67,10 +67,10 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "statement policy mismatch"):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
-    def test_statement_envelope_delegates_public_claim_mutation_to_external_verifier(self) -> None:
+    def test_statement_envelope_rejects_public_claim_mutation_before_delegation(self) -> None:
         _category, envelope = BENCH.mutated_envelopes()["proof_public_claim_relabeling"]
 
-        with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "verify-stark verifier rejected"):
+        with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "proof artifact does not match"):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
     def test_statement_envelope_rejects_verifying_key_identity_swap(self) -> None:
@@ -86,6 +86,16 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(
             BENCH.StwoEnvelopeError,
             "artifacts.program_path must be a non-empty string",
+        ):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
+    def test_statement_envelope_rejects_missing_proof_artifact_reference_fail_closed(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        del envelope["artifacts"]["proof_path"]
+
+        with self.assertRaisesRegex(
+            BENCH.StwoEnvelopeError,
+            "artifacts.proof_path must be a non-empty string",
         ):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
@@ -110,6 +120,11 @@ class ZkAIStwoStatementEnvelopeBenchmarkTests(unittest.TestCase):
             side_effect=BENCH.subprocess.TimeoutExpired(cmd=["tvm"], timeout=90),
         ):
             with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "timed out"):
+                BENCH.stwo_verify(BENCH.baseline_envelope()["stwo_proof"])
+
+    def test_stwo_verify_os_error_fails_closed(self) -> None:
+        with mock.patch.object(BENCH.subprocess, "run", side_effect=FileNotFoundError("cargo")):
+            with self.assertRaisesRegex(BENCH.StwoEnvelopeError, "failed to execute cargo"):
                 BENCH.stwo_verify(BENCH.baseline_envelope()["stwo_proof"])
 
     def test_case_result_propagates_harness_bugs(self) -> None:
