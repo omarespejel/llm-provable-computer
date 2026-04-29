@@ -52,6 +52,14 @@ formal statement-preservation criterion for deploying it safely, and an empirica
 study showing when and why replay elimination opens a growing latency gap in a layered
 STARK stack.
 
+Finally, we use the same boundary discipline as a small statement-binding check
+outside the main performance result. Two external zkAI proof adapters and one
+native Stwo primitive show the same separation: raw proof verification establishes
+proof validity, but a typed statement receipt is needed to bind that proof to the
+claimed model, input, output, configuration, setup, and verifier domain. This is
+supporting systems evidence, not a claim that those proof systems are flawed and
+not a claim of end-to-end verifiable intelligence.
+
 ---
 
 ## 1. Introduction
@@ -105,6 +113,16 @@ transformer benchmark, or a universal lower bound on replay cost across all
 implementations. The empirical demonstrations remain in one transformer-shaped STARK-zkML
 lane, and the large latency ratios are implementation-grounded replay-avoidance ratios,
 not claims that cryptographic verification itself became hundreds of times faster.
+The zkAI adapter checks later in the paper are likewise scoped narrowly: they
+show that proof validity and application statement validity are different
+verifier layers, not that external proof systems are unsound.
+
+This distinction is important for verifiable AI and agent systems. A proof
+verifier can correctly accept a proof while the surrounding application still
+misstates which model, input, output, configuration, policy, or action that proof
+is meant to support. In that setting, a typed boundary is not only a latency
+optimization; it is also a way to make the accepted statement explicit before a
+higher-level receipt or settlement layer composes it with other facts.
 
 ### 1.1 Research context
 
@@ -670,7 +688,7 @@ boundary:
 
 ---
 
-## 7. External Calibration
+## 7. External Calibration and Statement Binding
 
 The paper should not present the local results in isolation. The strongest honest
 external calibration we currently have is a source-backed public STARK-native deployment
@@ -706,9 +724,10 @@ Separate engineering adapters apply the same boundary discipline to two external
 proof stacks and one native Stwo primitive: EZKL [7], Circom/snarkjs Groth16 [8],
 and the repository's Stwo linear-block-with-lookup proof surface. These adapters are
 not used as performance comparators and are not presented as security findings
-against any system. They answer a narrower question: does raw proof verification,
-by itself, bind the accepted proof to the model, input, output, configuration,
-setup, and verifier-domain labels claimed by a surrounding zkAI system?
+against any system. They are boundary-conformance checks. They answer a narrower
+question: does raw proof verification, by itself, bind the accepted proof to the
+model, input, output, configuration, setup, and verifier-domain labels claimed by
+a surrounding zkAI system?
 
 The checked results are deliberately modest and consistent. In all three adapters,
 the raw proof-verification path accepts the baseline proof and rejects the mutated
@@ -739,6 +758,10 @@ receipt composition, not a claim of proved agent reasoning. It is anchored to
 `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`.
 The Rust verifier exposes both the generic model-subreceipt callback seam and a
 bounded checked-Stwo specialization for this primitive receipt.
+Focused Rust tests additionally cover malformed direct receipt shape, oversized
+commitment fields, ambiguous model-subreceipt evidence, and forged
+evidence-manifest handles. Those tests are implementation hardening for the
+receipt boundary; they are not counted as new performance evidence.
 
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:
@@ -824,16 +847,21 @@ preconditions.
 families, a supporting second typed boundary on a distinct source surface, and one
 bounded compactness no-go that marks where the pattern does not yet apply.
 
+The same discipline also explains the statement-binding result in Section 7.1:
+proof validity is not statement validity. A typed receipt is the object that
+binds a valid proof to the application-level claim it is supposed to support
+before another verifier, agent receipt, or settlement layer accepts it.
+
 This is not the end of the story. Several open directions remain in the
 broader space: broader cryptographic-backend transfer, stronger external
-calibration against deployed verifiers, a recursive layer that preserves
-the same boundary semantics, and prover-side cost reductions that make
-end-to-end transformer proving practical at production scale. Whether
-those directions are pursued by the authors of this paper or by other
-groups, the present contribution remains a self-contained verifier-side
-pattern with a stated soundness criterion and measured replay-avoidance
-evidence on the carried-state surface that transformer decode naturally
-exposes.
+calibration against deployed verifiers, statement-bound transformer blocks with
+more model structure, a recursive layer that preserves the same boundary
+semantics, and prover-side cost reductions that make end-to-end transformer
+proving practical at production scale. Whether those directions are pursued by
+the authors of this paper or by other groups, the present contribution remains a
+self-contained verifier-side pattern with a stated soundness criterion and
+measured replay-avoidance evidence on the carried-state surface that transformer
+decode naturally exposes.
 
 ---
 
