@@ -194,6 +194,9 @@ Evidence handles:
 - `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv`
+- `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md`
+- `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`
+- `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv`
 
 The correct interpretation is:
 
@@ -203,6 +206,13 @@ The correct interpretation is:
 ## Next adapter targets
 
 The next result should not add another toy proof stack unless it tests a new
-statement dimension. The higher-upside follow-up is a larger Stwo-native
-statement-bound transformer block or an agent/action receipt that consumes a
-`zkAIStatementReceiptV1` as a proved subreceipt.
+statement dimension. The first agent/action composition gate is now checked: the
+native Stwo statement receipt is consumed as
+`AgentStepReceiptV1.model_receipt_commitment`, and the composition harness rejects
+`36 / 36` checked mutations across the agent receipt, the zkAI subreceipt, the
+cross-layer binding, and the checked source-evidence handle.
+
+The higher-upside follow-up is either a larger Stwo-native statement-bound
+transformer block or a production nested-subreceipt verifier callback for
+`AgentStepReceiptV1`, so the Rust verifier can validate the model subreceipt
+directly instead of relying on an external composition harness.

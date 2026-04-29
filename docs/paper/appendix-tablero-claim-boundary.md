@@ -15,6 +15,7 @@ The paper claims only the following.
 | Negative evidence | A narrower compact handoff object is reported honestly as a compactness-only surface rather than a replay-avoidance win. |
 | Assurance posture | Deterministic tamper tests, bounded model checking, differential fuzzing, and fail-closed runtime guards materially reduce implementation-side self-deception risk. |
 | Statement-binding adapters | Checked EZKL, snarkjs, and native Stwo primitive adapters show that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-input or proof-public-claim drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
+| Agent receipt composition | A checked native Stwo statement receipt can be consumed as the model subreceipt inside an agent-step receipt, with `36 / 36` checked relabeling and cross-layer mutations rejected. |
 
 ## Negative claim surface
 
@@ -31,6 +32,7 @@ The paper does **not** claim the following.
 | Onchain deployment | No claim that the typed-boundary path itself has already been deployed onchain. |
 | External-system weakness | No claim that EZKL, snarkjs, Stwo, or any proof stack is weak because application metadata outside its verifier path is not bound by raw proof verification. |
 | Verifiable intelligence | No claim that Tablero by itself proves agent reasoning, tool truth, model truthfulness, or policy compliance. |
+| Nested verifier completeness | No claim that the agent receipt parser alone verifies the nested zkAI receipt body; the checked composition gate keeps that as an explicit second verifier layer. |
 
 ## Talk-safe summary
 

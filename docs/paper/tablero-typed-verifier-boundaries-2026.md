@@ -725,6 +725,19 @@ Stwo row is anchored to
 `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md` and
 `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`.
 
+A separate composition gate then consumes the checked Stwo statement receipt as
+the model subreceipt inside an agent-step receipt. The composed
+`AgentStepReceiptV1` binds its model identity, model artifact, model
+configuration, observation, action, runtime domain, and
+`model_receipt_commitment` to the corresponding Stwo statement fields. The
+composition harness rejects `36 / 36` checked mutations across the agent receipt,
+the zkAI subreceipt, the cross-layer binding, and the checked source-evidence
+handle; the same composed agent receipt is accepted by the production Rust
+receipt parser. This is evidence of receipt composition, not a claim of proved
+agent reasoning. It is anchored to
+`docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md` and
+`docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`.
+
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:
 
