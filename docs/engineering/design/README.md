@@ -18,3 +18,4 @@ Tablero itself proves agents, reasoning, tool truth, or policy semantics.
 - [zkAI statement receipt spec](zkai-statement-receipt-spec.md)
 - [statement-bound transformer primitive spec](statement-bound-transformer-primitive-spec.md)
 - [Stwo statement-bound primitive gate](../zkai-stwo-statement-bound-primitive-gate-2026-04-29.md)
+- [Agent-step zkAI Stwo composition gate](../agent-step-zkai-stwo-composition-gate-2026-04-29.md)

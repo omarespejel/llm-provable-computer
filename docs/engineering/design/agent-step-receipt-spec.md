@@ -392,6 +392,22 @@ The first implementation should be intentionally small:
 The staged route prevents the repo from claiming a fully proved agent before the
 model, tool, policy, and memory surfaces each have their own evidence.
 
+The first four steps are now implemented by the receipt parser and relabeling
+harness. The fifth step is checked by the Stwo composition gate:
+
+- `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md`
+- `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`
+- `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv`
+
+That gate composes the checked Stwo `zkAIStatementReceiptV1` into
+`AgentStepReceiptV1.model_receipt_commitment` and rejects `36 / 36` checked
+mutations across the agent receipt, the zkAI subreceipt, the cross-layer binding,
+and the source-evidence handle. The production Rust parser accepts the composed
+agent receipt bundle, while the composition harness verifies the nested Stwo
+statement receipt and the equality between agent fields and statement fields.
+This distinction matters: a production verifier must keep both layers, or
+replace the harness with an equivalent nested-subreceipt verifier callback.
+
 ## Landscape Context
 
 This receipt layer is complementary to zkML systems and zkVM systems. Generic
@@ -400,8 +416,10 @@ subfacts into one typed agent-step claim. This is the repo's intended bridge fro
 STARK-zkML toward verifiable intelligence.
 
 The near-term competitor-facing result is now a statement-bound Stwo transformer
-primitive receipt. The agent-step receipt is the higher-level object that should
-consume that primitive next: see issue `#326` for the focused composition track.
+primitive receipt plus a checked agent-step composition gate that consumes it as
+a proved model subreceipt. This is still not a claim of fully proved agents; it
+is the first concrete bridge from isolated zkAI proof receipts into higher-level
+agent/action receipts.
 
 Useful external reference points for the next research pass:
 
