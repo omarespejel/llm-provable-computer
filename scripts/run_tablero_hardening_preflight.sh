@@ -64,8 +64,36 @@ run_logged() {
   fi
 }
 
+check_agent_step_relabeling_cli_evidence() {
+  local generated="${ARTIFACT_DIR}/agent-step-relabeling-generated.json"
+  local checked_in="docs/engineering/evidence/agent-step-receipt-relabeling-harness-2026-04.json"
+  python3 -B scripts/agent_step_receipt_relabeling_harness.py --json > "$generated"
+  python3 -B - "$generated" "$checked_in" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+
+def normalized(path: str) -> str:
+    return json.dumps(
+        json.loads(Path(path).read_text(encoding="utf-8")),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+generated, checked_in = sys.argv[1], sys.argv[2]
+if normalized(generated) != normalized(checked_in):
+    raise SystemExit(
+        f"agent-step receipt CLI output differs from checked-in evidence: {generated} != {checked_in}"
+    )
+PY
+}
+
 run_logged fmt cargo fmt --check
 run_logged diff-check git diff --check
+run_logged agent-step-relabeling python3 -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
+run_logged agent-step-relabeling-cli-evidence check_agent_step_relabeling_cli_evidence
 run_logged carry-aware-air cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib carry_aware_
 run_logged experimental-proof-route cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib experimental_phase12_carry_aware_
 run_logged phase44d-boundary cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib phase44d_source_emission_public_output_boundary_
