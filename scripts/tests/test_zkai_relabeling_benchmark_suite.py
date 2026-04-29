@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import importlib.util
 import io
+import json
 import pathlib
 import unittest
 
@@ -17,6 +18,32 @@ SPEC.loader.exec_module(SUITE)
 
 
 class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
+    def _install_fake_rust_adapter_output(self, case_ids: list[str]):
+        original_run = SUITE.subprocess.run
+
+        class FakeCompleted:
+            returncode = 0
+            stderr = ""
+            stdout = json.dumps(
+                {
+                    "schema": "agent-step-receipt-rust-verifier-adapter-v1",
+                    "results": [
+                        {
+                            "case_id": case_id,
+                            "accepted": case_id == "baseline",
+                            "error": "" if case_id == "baseline" else "mutated failed",
+                        }
+                        for case_id in case_ids
+                    ],
+                }
+            )
+
+        def fake_run(*_args, **_kwargs):
+            return FakeCompleted()
+
+        SUITE.subprocess.run = fake_run
+        return original_run
+
     def test_catalog_covers_every_declared_mutation_case(self) -> None:
         cases = set(SUITE.HARNESS.mutation_cases())
         catalog = set(SUITE.MUTATION_CATALOG)
@@ -67,6 +94,15 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
             self.assertEqual(case["baseline_artifact_sha256"], baseline_hash)
             self.assertRegex(case["mutated_artifact_sha256"], r"^[0-9a-f]{64}$")
 
+    def test_artifact_hashes_use_harness_canonicalizer(self) -> None:
+        original_mutated_bundles = SUITE._mutated_bundles
+        SUITE._mutated_bundles = lambda: {"bad_float": {"not_canonical": 1.0}}
+        try:
+            with self.assertRaisesRegex(SUITE.HARNESS.AgentReceiptError, "floating point"):
+                SUITE._artifact_hashes()
+        finally:
+            SUITE._mutated_bundles = original_mutated_bundles
+
     def test_baseline_failure_is_reported_as_structured_payload(self) -> None:
         original = SUITE._python_verify
         calls = {"count": 0}
@@ -88,22 +124,26 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(all(case["rejected"] for case in payload["cases"]))
 
     def test_rust_adapter_requires_exact_case_coverage(self) -> None:
-        original_run = SUITE.subprocess.run
-
-        class FakeCompleted:
-            returncode = 0
-            stderr = ""
-            stdout = (
-                '{"schema":"agent-step-receipt-rust-verifier-adapter-v1",'
-                '"results":[{"case_id":"baseline","accepted":true,"error":""}]}'
-            )
-
-        def fake_run(*_args, **_kwargs):
-            return FakeCompleted()
-
-        SUITE.subprocess.run = fake_run
+        original_run = self._install_fake_rust_adapter_output(["baseline"])
         try:
             with self.assertRaisesRegex(RuntimeError, "incomplete case coverage"):
+                SUITE._run_rust_production()
+        finally:
+            SUITE.subprocess.run = original_run
+
+    def test_rust_adapter_rejects_duplicate_case_ids(self) -> None:
+        original_run = self._install_fake_rust_adapter_output(["baseline", "baseline"])
+        try:
+            with self.assertRaisesRegex(RuntimeError, "duplicate case_id"):
+                SUITE._run_rust_production()
+        finally:
+            SUITE.subprocess.run = original_run
+
+    def test_rust_adapter_rejects_extra_case_ids(self) -> None:
+        case_ids = ["baseline", *sorted(SUITE._case_catalog()), "unexpected_extra"]
+        original_run = self._install_fake_rust_adapter_output(case_ids)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "extra=\\['unexpected_extra'\\]"):
                 SUITE._run_rust_production()
         finally:
             SUITE.subprocess.run = original_run

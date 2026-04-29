@@ -188,9 +188,7 @@ def _case_catalog() -> dict[str, Callable[[dict[str, Any]], None]]:
 
 
 def _canonical_bundle_bytes(bundle: dict[str, Any]) -> bytes:
-    return json.dumps(bundle, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
-        "utf-8"
-    )
+    return HARNESS.canonical_json_bytes(bundle)
 
 
 def _sha256_hex(data: bytes) -> str:
