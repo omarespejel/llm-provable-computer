@@ -33,8 +33,9 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
 
     def test_composition_gate_can_use_rust_zkai_callback_verifier(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:
+            artifact_dir = pathlib.Path(raw_tmp)
             payload = COMPOSITION.run_composition(
-                artifact_dir=pathlib.Path(raw_tmp),
+                artifact_dir=artifact_dir,
                 rust_verify=True,
             )
 
@@ -45,6 +46,29 @@ class AgentStepZkAIStwoCompositionTests(unittest.TestCase):
         )
         self.assertTrue(rust_result["results"][0]["accepted"])
         self.assertTrue(payload["composed_agent_receipt"]["model_subreceipt_path"])
+
+    def test_rust_zkai_callback_verifier_rejects_tampered_subreceipt(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            artifact_dir = pathlib.Path(raw_tmp)
+            payload = COMPOSITION.run_composition(
+                artifact_dir=artifact_dir,
+                rust_verify=True,
+            )
+            bundle_path = pathlib.Path(payload["composed_agent_receipt"]["path"])
+            subreceipt_path = pathlib.Path(
+                payload["composed_agent_receipt"]["model_subreceipt_path"]
+            )
+            evidence_path = COMPOSITION.DEFAULT_STWO_EVIDENCE_PATH
+            tampered = json.loads(subreceipt_path.read_text(encoding="utf-8"))
+            tampered["model_id"] = "urn:zkai:ptvm:different-linear-block"
+            subreceipt_path.write_text(json.dumps(tampered, sort_keys=True), encoding="utf-8")
+
+            with self.assertRaisesRegex(COMPOSITION.CompositionError, "policy mismatch"):
+                COMPOSITION._run_rust_agent_verifier(
+                    bundle_path,
+                    subreceipt_path,
+                    evidence_path,
+                )
 
     def test_composed_bundle_verifies_with_agent_receipt_harness(self) -> None:
         envelope = COMPOSITION.baseline_stwo_envelope()

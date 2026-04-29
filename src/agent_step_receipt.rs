@@ -389,7 +389,6 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
     let mut model_subreceipt_evidence = None;
     for entry in &bundle.evidence_manifest.entries {
         if entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER
-            && entry.trust_class == model_trust
             && entry.evidence_kind == AgentEvidenceKind::Subreceipt
         {
             if model_subreceipt_evidence.is_some() {
@@ -404,6 +403,12 @@ pub fn verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
     let Some(model_subreceipt_evidence) = model_subreceipt_evidence else {
         return Ok(());
     };
+    if model_subreceipt_evidence.trust_class != model_trust {
+        return Err(VmError::InvalidConfig(
+            "AgentStepReceiptV1 model_receipt_commitment subreceipt evidence trust class mismatch"
+                .to_string(),
+        ));
+    }
     let Some(model_subreceipt_payload) = model_subreceipt_payload else {
         return Err(VmError::InvalidConfig(
             "AgentStepReceiptV1 model_receipt_commitment requires candidate nested subreceipt payload"
@@ -510,6 +515,13 @@ pub fn verify_zkai_stwo_statement_receipt_v1_for_agent_model_subreceipt(
                 .to_string(),
         ));
     }
+    let expected_evidence_manifest_commitment =
+        checked_zkai_stwo_evidence_manifest_commitment(checked_stwo_evidence, &statement)?;
+    require_value(
+        zkai_statement_str(&statement, "evidence_manifest_commitment")?,
+        &expected_evidence_manifest_commitment,
+        "zkAI Stwo statement evidence_manifest_commitment",
+    )?;
     verify_checked_zkai_stwo_evidence(checked_stwo_evidence, &statement, &statement_commitment)
 }
 
@@ -700,6 +712,30 @@ fn verify_checked_zkai_stwo_evidence(
             VmError::InvalidConfig("checked zkAI Stwo evidence cases must be an array".to_string())
         })?;
     verify_checked_zkai_stwo_cases(cases, statement, statement_commitment)
+}
+
+fn checked_zkai_stwo_evidence_manifest_commitment(
+    checked_stwo_evidence: &Value,
+    statement: &Value,
+) -> Result<String> {
+    let evidence = json_object(checked_stwo_evidence, "checked zkAI Stwo evidence")?;
+    let metadata = evidence.get("artifact_metadata").ok_or_else(|| {
+        VmError::InvalidConfig(
+            "checked zkAI Stwo evidence is missing artifact_metadata".to_string(),
+        )
+    })?;
+    let metadata = json_object(metadata, "checked zkAI Stwo artifact_metadata")?;
+    let payload = serde_json::json!({
+        "schema": metadata.get("schema").cloned().unwrap_or(Value::Null),
+        "program_path": metadata.get("program_path").cloned().unwrap_or(Value::Null),
+        "proof_path": metadata.get("proof_path").cloned().unwrap_or(Value::Null),
+        "artifacts": metadata.get("artifacts").cloned().unwrap_or(Value::Null),
+        "generation_command": metadata.get("generation_command").cloned().unwrap_or(Value::Null),
+        "verification_command": metadata.get("verification_command").cloned().unwrap_or(Value::Null),
+        "proof_sha256": zkai_statement_str(statement, "proof_commitment")?,
+        "public_instance_commitment": zkai_statement_str(statement, "public_instance_commitment")?,
+    });
+    commitment_for_value(&payload, "ptvm:zkai:stwo-evidence-manifest:v1")
 }
 
 fn verify_checked_zkai_stwo_summary(summary: &Map<String, Value>) -> Result<()> {
@@ -2713,6 +2749,43 @@ mod tests {
     }
 
     #[test]
+    fn agent_step_receipt_model_subreceipt_rejects_ambiguous_cross_trust_evidence_entries() {
+        let mut bundle = make_proved_model_subreceipt_bundle();
+        let mut duplicate = bundle
+            .evidence_manifest
+            .entries
+            .iter()
+            .find(|entry| entry.corresponding_receipt_field == MODEL_RECEIPT_COMMITMENT_POINTER)
+            .expect("model receipt evidence")
+            .clone();
+        duplicate.evidence_id =
+            "urn:agent-step:evidence:model-receipt:dependency-dropped-duplicate".to_string();
+        duplicate.trust_class = AgentTrustClass::DependencyDropped;
+        bundle.evidence_manifest.entries.push(duplicate);
+        bundle.evidence_manifest.entries.sort_by(|left, right| {
+            left.evidence_id
+                .as_bytes()
+                .cmp(right.evidence_id.as_bytes())
+        });
+        recompute_manifest_commitments(&mut bundle);
+        verify_agent_step_receipt_bundle_v1(&bundle)
+            .expect("parser-only verifier accepts multiple same-field evidence entries");
+        let model_subreceipt = model_subreceipt_payload(&bundle);
+
+        let err = verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
+            &bundle,
+            Some(&model_subreceipt),
+            Some(&|_| Ok(())),
+        )
+        .expect_err("ambiguous cross-trust model subreceipt evidence rejects");
+        assert!(
+            err.to_string()
+                .contains("multiple subreceipt evidence entries"),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn agent_step_receipt_model_subreceipt_callback_rejects_cross_layer_drift() {
         let mut bundle = make_proved_model_subreceipt_bundle();
         bundle.receipt.model_identity = "toy-transformer-block-v2".to_string();
@@ -2822,6 +2895,23 @@ mod tests {
         assert!(
             err.to_string()
                 .contains("baseline statement commitment mismatch"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_forged_evidence_manifest_handle() {
+        let (bundle, payload, mut evidence) = make_zkai_stwo_model_subreceipt_bundle();
+        evidence["artifact_metadata"]["proof_path"] =
+            Value::String("forged_linear_block_v4_with_lookup.proof.json.gz".to_string());
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("forged checked evidence manifest handle rejects");
+        assert!(
+            err.to_string()
+                .contains("evidence_manifest_commitment mismatch"),
             "{err}"
         );
     }

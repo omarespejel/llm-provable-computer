@@ -13,8 +13,13 @@ This is a composition gate, not a new proof-system result. It checks that:
 - the resulting `AgentStepReceiptV1` bundle verifies with the existing Python
   reference verifier,
 - the same composed bundle and nested statement receipt verify through the Rust
-  production `AgentStepReceiptV1` zkAI/Stwo callback verifier,
+  production `AgentStepReceiptV1` zkAI/Stwo callback verifier on the baseline,
 - relabeling at either layer rejects fail-closed.
+
+The mutation totals below are produced by the Python composition matrix. The
+recorded Rust callback run is a baseline acceptance check; focused tests also
+exercise a tampered nested statement receipt through that Rust callback path and
+require rejection, but the JSON mutation-count table is still the Python matrix.
 
 ## Artifacts
 
@@ -54,6 +59,10 @@ Decision: **GO**.
 | Cross-layer self-consistent bad subreceipt | 1 / 1 |
 | Checked source-evidence tamper | 1 / 1 |
 | Total | 36 / 36 |
+
+These rejection counts come from the Python composition matrix. The checked JSON
+evidence records Rust callback baseline acceptance separately under
+`rust_agent_receipt_verifier`.
 
 The composed `AgentStepReceiptV1` baseline and the nested Stwo
 `zkAIStatementReceiptV1` fixture are accepted by the Rust production callback
@@ -102,9 +111,14 @@ fields and statement fields.
 
 The checked source-evidence handle is bound to the exact nested receipt, not just
 to a generic GO result: the Rust callback verifier validates the Stwo evidence
-schema, suite, system, version, case corpus, baseline statement commitment,
-baseline statement payload hash, baseline proof commitment, and baseline
-public-instance commitment before accepting the composed agent receipt.
+schema, suite, system, version, case corpus, evidence-manifest commitment,
+baseline statement commitment, baseline statement payload hash, baseline proof
+commitment, and baseline public-instance commitment before accepting the
+composed agent receipt.
+
+Focused tests additionally mutate the nested statement receipt and require the
+Rust callback verifier to reject it. Those callback-path tamper checks are test
+coverage, not the source of the `36 / 36` matrix above.
 
 ## Reproduction
 
