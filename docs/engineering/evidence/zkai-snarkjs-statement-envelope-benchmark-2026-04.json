@@ -43,6 +43,17 @@
       "adapter": "snarkjs-proof-only",
       "baseline_accepted": true,
       "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "input_artifact_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
       "category": "statement_policy",
       "error": "",
       "mutated_accepted": true,
@@ -87,12 +98,56 @@
       "adapter": "snarkjs-proof-only",
       "baseline_accepted": true,
       "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "proof_system_version_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
       "category": "external_proof_verifier",
-      "error": "snarkjs groth16 verifier rejected: \u001b[31;22m[ERROR] \u001b[39;1msnarkJS\u001b[0m: Invalid proof",
+      "error": "snarkjs groth16 verifier rejected: [ERROR] snarkJS: Invalid proof",
       "mutated_accepted": false,
       "mutation": "public_signal_relabeling",
       "rejected": true,
       "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "setup_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "setup_commitment_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_commitment",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "statement_commitment_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "snarkjs-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "verification_key_file_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
     },
     {
       "adapter": "snarkjs-proof-only",
@@ -142,6 +197,17 @@
       "adapter": "snarkjs-statement-envelope",
       "baseline_accepted": true,
       "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "input artifact hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "input_artifact_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
       "category": "statement_policy",
       "error": "statement policy mismatch for input_id",
       "mutated_accepted": false,
@@ -186,12 +252,56 @@
       "adapter": "snarkjs-statement-envelope",
       "baseline_accepted": true,
       "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "statement policy mismatch for proof_system_version",
+      "mutated_accepted": false,
+      "mutation": "proof_system_version_relabeling",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
       "category": "external_proof_verifier",
-      "error": "snarkjs groth16 verifier rejected: \u001b[31;22m[ERROR] \u001b[39;1msnarkJS\u001b[0m: Invalid proof",
+      "error": "snarkjs groth16 verifier rejected: [ERROR] snarkJS: Invalid proof",
       "mutated_accepted": false,
       "mutation": "public_signal_relabeling",
       "rejected": true,
       "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "setup_binding",
+      "error": "setup binding mismatch",
+      "mutated_accepted": false,
+      "mutation": "setup_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "setup_binding"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_commitment",
+      "error": "statement_commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "statement_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_commitment"
+    },
+    {
+      "adapter": "snarkjs-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "verification-key file hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "verification_key_file_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
     },
     {
       "adapter": "snarkjs-statement-envelope",
@@ -233,7 +343,7 @@
     "artifact_metadata_sha256": "46da24c5f3551a40973f9e46d4c534a37df83fdc12728aff3e9b525bfa043468",
     "command": [
       "env",
-      "ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=b6e7c2afefeffe0f675d05f414ce72ea251dd434",
+      "ZKAI_SNARKJS_BENCHMARK_GIT_COMMIT=a16527c9574e4d8e1739c683aa1272287397f822",
       "python3",
       "scripts/zkai_snarkjs_statement_envelope_benchmark.py",
       "--write-json",
@@ -241,7 +351,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv"
     ],
-    "git_commit": "b6e7c2afefeffe0f675d05f414ce72ea251dd434"
+    "git_commit": "a16527c9574e4d8e1739c683aa1272287397f822"
   },
   "schema": "zkai-snarkjs-statement-envelope-benchmark-v1",
   "suite_kind": "external_snarkjs_statement_relabeling",
@@ -249,14 +359,14 @@
     "snarkjs-proof-only": {
       "all_mutations_rejected": false,
       "baseline_accepted": true,
-      "mutation_count": 9,
+      "mutation_count": 14,
       "mutations_rejected": 1
     },
     "snarkjs-statement-envelope": {
       "all_mutations_rejected": true,
       "baseline_accepted": true,
-      "mutation_count": 9,
-      "mutations_rejected": 9
+      "mutation_count": 14,
+      "mutations_rejected": 14
     }
   }
 }

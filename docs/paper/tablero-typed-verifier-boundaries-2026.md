@@ -716,7 +716,7 @@ are outside the raw proof acceptance path. A statement envelope around the same 
 first binds the proof to canonical model/input/output/config/setup/domain fields and
 then delegates proof validity to the external verifier. Under that envelope, the EZKL
 adapter rejects `7 / 7` checked relabeling mutations and the snarkjs adapter rejects
-`9 / 9`.
+`14 / 14`.
 
 This does not change the Tablero theorem or the replay-avoidance measurements above.
 It clarifies the broader systems lesson that motivates the next research track:
