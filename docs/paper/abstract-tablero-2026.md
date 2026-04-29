@@ -55,3 +55,11 @@ replay-dependent path rather than eliminating replay. The contribution is
 therefore a reusable verifier-boundary pattern, a statement-preservation
 criterion for deploying it safely, and an empirical study of when replay
 elimination materially changes verifier latency.
+
+The paper also includes a deliberately scoped statement-binding extension:
+two external zkAI adapters and one native Stwo primitive show that raw proof
+verification and application statement binding are distinct verifier layers.
+This is not a security claim against those proof systems. It shows why a
+typed receipt is needed to bind a valid proof to the claimed model, input,
+output, configuration, setup, and verifier domain before a higher-level
+receipt or settlement layer accepts it.
