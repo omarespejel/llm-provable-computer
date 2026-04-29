@@ -1,0 +1,202 @@
+{
+  "cases": [
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "config_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "input_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "model_artifact_hash_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "model_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "output_id_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "external_proof_verifier",
+      "error": "Failed to run verify: [halo2] The constraint system is not satisfied",
+      "mutated_accepted": false,
+      "mutation": "proof_public_instance_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "ezkl-proof-only",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "",
+      "mutated_accepted": true,
+      "mutation": "verifier_domain_relabeling",
+      "rejected": false,
+      "rejection_layer": "accepted"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for /quantization_config_id",
+      "mutated_accepted": false,
+      "mutation": "config_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for /input_id",
+      "mutated_accepted": false,
+      "mutation": "input_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "artifact_binding",
+      "error": "artifact hash mismatch for /model_artifact_sha256",
+      "mutated_accepted": false,
+      "mutation": "model_artifact_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for /model_id",
+      "mutated_accepted": false,
+      "mutation": "model_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "statement_policy",
+      "error": "statement policy mismatch for /output_id",
+      "mutated_accepted": false,
+      "mutation": "output_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_policy"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "external_proof_verifier",
+      "error": "Failed to run verify: [halo2] The constraint system is not satisfied",
+      "mutated_accepted": false,
+      "mutation": "proof_public_instance_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_verifier"
+    },
+    {
+      "adapter": "ezkl-statement-envelope",
+      "baseline_accepted": true,
+      "baseline_error": "",
+      "category": "domain_or_version_allowlist",
+      "error": "statement policy mismatch for /verifier_domain",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_relabeling",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist"
+    }
+  ],
+  "external_system": {
+    "name": "EZKL",
+    "srs_sha256": "41509f380362a8d14401c5ae92073154922fe23e45459ce6f696f58607655db7",
+    "srs_url": "https://kzg.ezkl.xyz/kzg17.srs",
+    "verification_api": "ezkl.verify(proof_path, settings_path, vk_path, srs_path)",
+    "version": "23.0.5"
+  },
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_an_ezkl_security_audit",
+    "not_a_system_ranking",
+    "proof_only_no_go_is_limited_to_metadata_outside_the_ezkl_acceptance_path"
+  ],
+  "repro": {
+    "artifact_dir": "docs/engineering/evidence/zkai-ezkl-statement-envelope-2026-04",
+    "artifact_metadata_sha256": "0ec21f3973081e664de7d07e6c908f707bb9fc8295d4adb270b71148261a9d7b",
+    "command": [
+      "python3",
+      "scripts/zkai_ezkl_statement_envelope_benchmark.py",
+      "--srs-path",
+      "/tmp/ptvm-ezkl-public-srs/kzg17.srs",
+      "--write-json",
+      "docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json",
+      "--write-tsv",
+      "docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.tsv"
+    ],
+    "git_commit": "8c716f844e2f4a0369f71f89cab1ba7621d08483"
+  },
+  "schema": "zkai-ezkl-statement-envelope-benchmark-v1",
+  "suite_kind": "external_ezkl_statement_relabeling",
+  "summary": {
+    "ezkl-proof-only": {
+      "all_mutations_rejected": false,
+      "baseline_accepted": true,
+      "mutation_count": 7,
+      "mutations_rejected": 1
+    },
+    "ezkl-statement-envelope": {
+      "all_mutations_rejected": true,
+      "baseline_accepted": true,
+      "mutation_count": 7,
+      "mutations_rejected": 7
+    }
+  }
+}

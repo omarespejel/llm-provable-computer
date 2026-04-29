@@ -1,0 +1,15 @@
+adapter	mutation	category	baseline_accepted	mutated_accepted	rejected	rejection_layer	error
+ezkl-proof-only	config_id_relabeling	statement_policy	True	True	False	accepted	
+ezkl-proof-only	input_id_relabeling	statement_policy	True	True	False	accepted	
+ezkl-proof-only	model_artifact_hash_relabeling	artifact_binding	True	True	False	accepted	
+ezkl-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	
+ezkl-proof-only	output_id_relabeling	statement_policy	True	True	False	accepted	
+ezkl-proof-only	proof_public_instance_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	Failed to run verify: [halo2] The constraint system is not satisfied
+ezkl-proof-only	verifier_domain_relabeling	domain_or_version_allowlist	True	True	False	accepted	
+ezkl-statement-envelope	config_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for /quantization_config_id
+ezkl-statement-envelope	input_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for /input_id
+ezkl-statement-envelope	model_artifact_hash_relabeling	artifact_binding	True	False	True	artifact_binding	artifact hash mismatch for /model_artifact_sha256
+ezkl-statement-envelope	model_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for /model_id
+ezkl-statement-envelope	output_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for /output_id
+ezkl-statement-envelope	proof_public_instance_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	Failed to run verify: [halo2] The constraint system is not satisfied
+ezkl-statement-envelope	verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for /verifier_domain
