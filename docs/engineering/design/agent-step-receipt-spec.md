@@ -399,9 +399,9 @@ and specialized systems can prove or attest subfacts; the receipt binds those
 subfacts into one typed agent-step claim. This is the repo's intended bridge from
 STARK-zkML toward verifiable intelligence.
 
-The near-term competitor-facing result remains a statement-bound Stwo
-transformer primitive. The agent-step receipt is the higher-level object that
-will eventually consume that primitive.
+The near-term competitor-facing result is now a statement-bound Stwo transformer
+primitive receipt. The agent-step receipt is the higher-level object that should
+consume that primitive next: see issue `#326` for the focused composition track.
 
 Useful external reference points for the next research pass:
 

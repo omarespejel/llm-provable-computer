@@ -113,21 +113,25 @@ rejected as a statement-binding failure, not as a parser failure.
 
 ## Minimum GO result
 
-A minimum GO result is:
+A minimum GO result is now checked in. The gate note is:
+
+- `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
+
+The result contains:
 
 - one accepted Stwo-native primitive proof,
-- one checked `zkAIStatementReceiptV1` around that proof,
-- mutation suite rejects all required relabeling cases,
-- proof-public-input mutation is rejected by the raw proof verifier,
-- metadata-only relabeling is rejected by the statement receipt,
-- gate note records exact commands, hashes, and non-claims.
+- one checked `zkAIStatementReceiptV1`-style envelope around that proof,
+- a 14-mutation relabeling suite,
+- raw proof-only rejection of the proof-public-claim mutation,
+- statement-envelope rejection of all 14 mutations,
+- exact commands, hashes, and non-claims.
 
-This result would support the claim:
+This supports the claim:
 
 > The statement-binding receipt pattern that held for EZKL and snarkjs also
 > applies to this repo's Stwo-native transformer-shaped primitive.
 
-It would not support claims of full transformer inference, backend independence,
+It does not support claims of full transformer inference, backend independence,
 production zkML throughput, or agent correctness.
 
 ## NO-GO criteria

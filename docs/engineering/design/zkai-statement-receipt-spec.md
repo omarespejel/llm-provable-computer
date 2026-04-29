@@ -172,6 +172,13 @@ The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the public-signal mutation. The statement envelope
 accepts the same baseline and rejects `14 / 14` checked mutations.
 
+The third checked adapter is native to this repository's Stwo lane: a
+linear-block-with-lookup proof over `programs/linear_block_v4_with_lookup.tvm`.
+The raw Stwo `verify-stark --reexecute` path accepts the baseline and rejects
+`1 / 14` checked relabeling mutations: the proof-public-claim mutation. The
+statement envelope accepts the same baseline and rejects `14 / 14` checked
+mutations.
+
 These counts are adapter-scoped calibration suites, not full
 `zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
 for a production receipt remains the relabeling threat model above.
@@ -184,16 +191,18 @@ Evidence handles:
 - `docs/engineering/zkai-snarkjs-external-adapter-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv`
+- `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
+- `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`
+- `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv`
 
 The correct interpretation is:
 
-> A zkAI system needs an explicit statement-binding layer around external proof
-> systems if it wants relabeling rejection to be a verifier-level property.
+> A zkAI system needs an explicit statement-binding layer around proof systems if
+> it wants relabeling rejection to be a verifier-level property.
 
 ## Next adapter targets
 
 The next result should not add another toy proof stack unless it tests a new
-statement dimension. The higher-upside follow-up is the Stwo-native
-statement-bound transformer primitive: a small transparent proof whose receipt
-binds model/primitive ID, weight or circuit commitment, input commitment, output
-commitment, config, backend version, verifier domain, and public-instance digest.
+statement dimension. The higher-upside follow-up is a larger Stwo-native
+statement-bound transformer block or an agent/action receipt that consumes a
+`zkAIStatementReceiptV1` as a proved subreceipt.

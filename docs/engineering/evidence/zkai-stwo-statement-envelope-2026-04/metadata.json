@@ -1,0 +1,44 @@
+{
+  "artifacts": {
+    "linear_block_v4_with_lookup.proof.json": "b6ccaccc6a880d01861f80cbea7bdd1ee9af702e2b690978628d04db8a791f7f",
+    "programs/linear_block_v4_with_lookup.tvm": "fed75a4eafca96b9fcbb632de7de28757de9ae6a6c1be08428b857bb3d3b5dee"
+  },
+  "generated_at": "2026-04-29",
+  "generation_command": [
+    "cargo",
+    "+nightly-2025-07-14",
+    "run",
+    "--features",
+    "stwo-backend",
+    "--bin",
+    "tvm",
+    "--",
+    "prove-stark",
+    "programs/linear_block_v4_with_lookup.tvm",
+    "-o",
+    "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json",
+    "--max-steps",
+    "256"
+  ],
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_full_transformer_inference",
+    "not_backend_independence"
+  ],
+  "program_path": "programs/linear_block_v4_with_lookup.tvm",
+  "proof_path": "linear_block_v4_with_lookup.proof.json",
+  "schema": "zkai-stwo-statement-envelope-artifacts-v1",
+  "verification_command": [
+    "cargo",
+    "+nightly-2025-07-14",
+    "run",
+    "--features",
+    "stwo-backend",
+    "--bin",
+    "tvm",
+    "--",
+    "verify-stark",
+    "docs/engineering/evidence/zkai-stwo-statement-envelope-2026-04/linear_block_v4_with_lookup.proof.json",
+    "--reexecute"
+  ]
+}
