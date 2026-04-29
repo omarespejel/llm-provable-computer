@@ -96,6 +96,17 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
         ):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
+    def test_statement_envelope_rejects_missing_setup_commitment_fail_closed(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        del envelope["statement"]["setup_commitment"]
+        BENCH._refresh_statement_commitment(envelope)
+
+        with self.assertRaisesRegex(
+            BENCH.SnarkjsEnvelopeError,
+            "setup commitment must be explicitly null",
+        ):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
     def test_proof_only_rejects_malformed_payload_fail_closed(self) -> None:
         envelope = BENCH.baseline_envelope()
         envelope["public_signals"] = {"not": "a list"}
