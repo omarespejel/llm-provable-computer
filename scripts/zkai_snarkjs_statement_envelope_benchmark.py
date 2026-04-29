@@ -12,6 +12,7 @@ import io
 import json
 import os
 import pathlib
+import shlex
 import shutil
 import subprocess
 import sys
@@ -49,12 +50,17 @@ EXPECTED_ADAPTERS = ("snarkjs-proof-only", "snarkjs-statement-envelope")
 EXPECTED_MUTATION_NAMES = (
     "circuit_artifact_hash_relabeling",
     "config_id_relabeling",
+    "input_artifact_hash_relabeling",
     "input_id_relabeling",
     "model_id_relabeling",
     "output_id_relabeling",
     "proof_hash_relabeling",
+    "proof_system_version_relabeling",
     "public_signal_relabeling",
+    "setup_commitment_relabeling",
+    "statement_commitment_relabeling",
     "verifier_domain_relabeling",
+    "verification_key_file_hash_relabeling",
     "verification_key_hash_relabeling",
 )
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
@@ -190,11 +196,27 @@ def mutated_envelopes() -> dict[str, tuple[str, dict[str, Any]]]:
         "circuit_artifact_hash_relabeling": mutate_statement(
             "circuit_artifact_sha256", "00" * 32, "artifact_binding"
         ),
+        "input_artifact_hash_relabeling": mutate_statement(
+            "input_artifact_sha256", "44" * 32, "artifact_binding"
+        ),
         "verification_key_hash_relabeling": mutate_statement(
             "verification_key_sha256", "11" * 32, "artifact_binding"
         ),
+        "verification_key_file_hash_relabeling": mutate_statement(
+            "verification_key_file_sha256", "55" * 32, "artifact_binding"
+        ),
         "proof_hash_relabeling": mutate_statement("proof_sha256", "22" * 32, "artifact_binding"),
+        "proof_system_version_relabeling": mutate_statement(
+            "proof_system_version", "999.0.0", "domain_or_version_allowlist"
+        ),
+        "setup_commitment_relabeling": mutate_statement(
+            "setup_commitment", "33" * 32, "setup_binding"
+        ),
     }
+
+    commitment_env = copy.deepcopy(baseline)
+    commitment_env["statement_commitment"] = f"blake2b-256:{'66' * 32}"
+    out["statement_commitment_relabeling"] = ("statement_commitment", commitment_env)
 
     public_env = copy.deepcopy(baseline)
     mutate_first_public_signal(public_env["public_signals"])
@@ -269,7 +291,7 @@ def snarkjs_verify(
         proof_path.write_text(json.dumps(proof, sort_keys=True), encoding="utf-8")
         public_path.write_text(json.dumps(public_signals, sort_keys=True), encoding="utf-8")
         vk_path.write_text(json.dumps(verification_key, sort_keys=True), encoding="utf-8")
-        command = os.environ.get("ZKAI_SNARKJS_COMMAND", "npx -y snarkjs@0.7.6").split()
+        command = shlex.split(os.environ.get("ZKAI_SNARKJS_COMMAND", "npx -y snarkjs@0.7.6"))
         result = subprocess.run(
             [*command, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
             cwd=ROOT,
