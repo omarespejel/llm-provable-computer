@@ -1,0 +1,443 @@
+{
+  "adapter": "rust-production",
+  "all_mutations_rejected": true,
+  "baseline_accepted": true,
+  "baseline_error": "",
+  "case_count": 20,
+  "cases": [
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "proof_system_version_relabeling",
+      "claim_axis": "proof-system version",
+      "error": "invalid config: AgentStepReceiptV1 proof backend `stwo` version `stwo-agent-step-test-proof-v2` is unsupported",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "2abbd98b5e0b05a2d5ffefea16bc5947c45c4d160a1fa407960597290c00aa83",
+      "mutation": "backend_proof_system_version",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/proof_backend_version"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "dependency_manifest_relabeling",
+      "claim_axis": "dependency-drop manifest",
+      "error": "invalid config: AgentStepReceiptV1 dependency_drop_manifest_commitment mismatch",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "f61ce466a6d0e1fbf039013c35e71e7fd718b9cfc3df5e2ebdcc9ae404e8d19a",
+      "mutation": "dependency_drop_manifest",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/dependency_drop_manifest_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "evidence_manifest_relabeling",
+      "claim_axis": "evidence manifest",
+      "error": "invalid config: AgentStepReceiptV1 evidence_manifest_commitment mismatch",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "6001d8e8bf5da80262bd1109f011c9029e64c9375f53668160c43c0c563e6d5f",
+      "mutation": "evidence_manifest",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/evidence_manifest_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "input_context_relabeling",
+      "claim_axis": "input/context",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /observation_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "01a363858d0cf7624223ed25eddb20d6bdeca90b6fd82e36db01caa2b99c0511",
+      "mutation": "input_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/observation_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "model_identity_relabeling",
+      "claim_axis": "model identity",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /model_identity",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "dae75a598beaec0f6142a96e339591e3cd393afcbe307da05680a9b12fc1805c",
+      "mutation": "model_id",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/model_identity"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "model_receipt_relabeling",
+      "claim_axis": "model receipt/proof",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /model_receipt_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "bae8223581d90b30def703b3a101d86c0a2292f6d3a0d3dc82c9a0219fc34907",
+      "mutation": "model_receipt_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/model_receipt_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "next_state_relabeling",
+      "claim_axis": "next agent state",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /next_state_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "e89ced63066a1c69671d762cab3061cf753bc5d36428fc94639f790f53320058",
+      "mutation": "next_state_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/next_state_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "output_action_relabeling",
+      "claim_axis": "output/action",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /action_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "a7ffe909949f17e85473859c2902846964f213d87559b2c9bd411d8ffc0e3398",
+      "mutation": "output_action_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/action_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "policy_relabeling",
+      "claim_axis": "policy/tool policy",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /policy_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "e7062c2adfb5851a0f882cd371fa32088005c6a068f5affa09f85ceed50dca2c",
+      "mutation": "policy_hash",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/policy_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "prior_state_relabeling",
+      "claim_axis": "prior agent state",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /prior_state_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "8e0940b04df137bf61a80cde1c9632e3c3c74966f93568a9277604fb660c91c4",
+      "mutation": "prior_state_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/prior_state_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "proof_backend_relabeling",
+      "claim_axis": "proof backend",
+      "error": "invalid config: AgentStepReceiptV1 proof backend `other-proof-backend` version `stwo-agent-step-test-proof-v1` is unsupported",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "274ef88990aebb74dcab8a1563bf645de7f985a43f24b243ee9a95b6f8a92443",
+      "mutation": "proof_backend",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/proof_backend"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "model_config_relabeling",
+      "claim_axis": "quantization/config",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /model_config_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "ea9fb39e1043b02a2e6870946a3a08f87bd4ad505b2bb89a4345cd5bb1990fce",
+      "mutation": "quantization_config_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/model_config_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "parser_version_relabeling",
+      "claim_axis": "receipt parser version",
+      "error": "invalid config: AgentStepReceiptV1 receipt_parser_version `agent-step-receipt-parser-v2` is unsupported",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "704c039aac0cd9cc1a76921a93c3e0837982ec0ee7ab608603696d02a2538c69",
+      "mutation": "receipt_parser_version",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/receipt_parser_version"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "receipt_schema_version_relabeling",
+      "claim_axis": "receipt schema/version",
+      "error": "invalid config: AgentStepReceiptV1 receipt_version `agent-step-receipt-v2` is unsupported",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "4cf9637d4e83f61b2cb8c7ac2bc63e30f9316e3ebd6df646599e34b82648048a",
+      "mutation": "receipt_version",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/receipt_version"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "runtime_domain_relabeling",
+      "claim_axis": "runtime domain",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /runtime_domain",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "abf24dde04292a657a84655e559dac6a728be0e16facf1583e86f5b2dbe5fb6c",
+      "mutation": "runtime_domain",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/runtime_domain"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "tool_output_relabeling",
+      "claim_axis": "tool output",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /tool_receipts_root",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "4137192d2b352e2fd32e55dd127146f7b5520ca96546b7b715b07068cb2d694b",
+      "mutation": "tool_output_hash",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/tool_receipts_root"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "transcript_relabeling",
+      "claim_axis": "agent transcript",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /transcript_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "95b0671d1546b7e3e03e6f531f37eb8bde584b69a3a94176eda945985b0d3c69",
+      "mutation": "transcript_hash",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/transcript_commitment"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "trust_class_upgrade_relabeling",
+      "claim_axis": "trust-class upgrade",
+      "error": "invalid config: AgentStepReceiptV1 insufficient evidence trust class for /model_identity",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "949d1bb97a88414bf5693341623f74955b818fa6c472673f473f670884129a88",
+      "mutation": "trust_class_upgrade_without_proof",
+      "rejected": true,
+      "rejection_layer": "trust_policy",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/model_identity"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "verifier_domain_relabeling",
+      "claim_axis": "verifier domain separator",
+      "error": "invalid config: AgentStepReceiptV1 verifier_domain `agent-step-receipt-other-domain` is unsupported",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "5b357f44ec279124a6b6904a8cf54eb7613cf3cfa51c9f66021da4cd44a3ea3f",
+      "mutation": "verifier_domain_separator",
+      "rejected": true,
+      "rejection_layer": "domain_or_version_allowlist",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/verifier_domain"
+    },
+    {
+      "adapter": "rust-production",
+      "baseline_accepted": true,
+      "baseline_artifact_sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9",
+      "category": "model_weights_relabeling",
+      "claim_axis": "model weights",
+      "error": "invalid config: AgentStepReceiptV1 evidence commitment does not bind /model_commitment",
+      "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+      "mutated_accepted": false,
+      "mutated_artifact_sha256": "71609d4b8cb6d3bac88d224e5f61a7e5f573387848a01c514eb3b2afab44577a",
+      "mutation": "weights_commitment",
+      "rejected": true,
+      "rejection_layer": "cryptographic_binding",
+      "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier",
+      "target_field": "/model_commitment"
+    }
+  ],
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_a_proof_system_soundness_proof",
+    "not_a_ranking_of_external_systems"
+  ],
+  "repro": {
+    "artifacts": {
+      "baseline": {
+        "case_id": "baseline",
+        "sha256": "06d660ae7ba5c3a2bcb716f449965a5feb3d24ca2cd6cd251502255d815f70b9"
+      },
+      "mutations": {
+        "backend_proof_system_version": {
+          "case_id": "backend_proof_system_version",
+          "sha256": "2abbd98b5e0b05a2d5ffefea16bc5947c45c4d160a1fa407960597290c00aa83"
+        },
+        "dependency_drop_manifest": {
+          "case_id": "dependency_drop_manifest",
+          "sha256": "f61ce466a6d0e1fbf039013c35e71e7fd718b9cfc3df5e2ebdcc9ae404e8d19a"
+        },
+        "evidence_manifest": {
+          "case_id": "evidence_manifest",
+          "sha256": "6001d8e8bf5da80262bd1109f011c9029e64c9375f53668160c43c0c563e6d5f"
+        },
+        "input_commitment": {
+          "case_id": "input_commitment",
+          "sha256": "01a363858d0cf7624223ed25eddb20d6bdeca90b6fd82e36db01caa2b99c0511"
+        },
+        "model_id": {
+          "case_id": "model_id",
+          "sha256": "dae75a598beaec0f6142a96e339591e3cd393afcbe307da05680a9b12fc1805c"
+        },
+        "model_receipt_commitment": {
+          "case_id": "model_receipt_commitment",
+          "sha256": "bae8223581d90b30def703b3a101d86c0a2292f6d3a0d3dc82c9a0219fc34907"
+        },
+        "next_state_commitment": {
+          "case_id": "next_state_commitment",
+          "sha256": "e89ced63066a1c69671d762cab3061cf753bc5d36428fc94639f790f53320058"
+        },
+        "output_action_commitment": {
+          "case_id": "output_action_commitment",
+          "sha256": "a7ffe909949f17e85473859c2902846964f213d87559b2c9bd411d8ffc0e3398"
+        },
+        "policy_hash": {
+          "case_id": "policy_hash",
+          "sha256": "e7062c2adfb5851a0f882cd371fa32088005c6a068f5affa09f85ceed50dca2c"
+        },
+        "prior_state_commitment": {
+          "case_id": "prior_state_commitment",
+          "sha256": "8e0940b04df137bf61a80cde1c9632e3c3c74966f93568a9277604fb660c91c4"
+        },
+        "proof_backend": {
+          "case_id": "proof_backend",
+          "sha256": "274ef88990aebb74dcab8a1563bf645de7f985a43f24b243ee9a95b6f8a92443"
+        },
+        "quantization_config_commitment": {
+          "case_id": "quantization_config_commitment",
+          "sha256": "ea9fb39e1043b02a2e6870946a3a08f87bd4ad505b2bb89a4345cd5bb1990fce"
+        },
+        "receipt_parser_version": {
+          "case_id": "receipt_parser_version",
+          "sha256": "704c039aac0cd9cc1a76921a93c3e0837982ec0ee7ab608603696d02a2538c69"
+        },
+        "receipt_version": {
+          "case_id": "receipt_version",
+          "sha256": "4cf9637d4e83f61b2cb8c7ac2bc63e30f9316e3ebd6df646599e34b82648048a"
+        },
+        "runtime_domain": {
+          "case_id": "runtime_domain",
+          "sha256": "abf24dde04292a657a84655e559dac6a728be0e16facf1583e86f5b2dbe5fb6c"
+        },
+        "tool_output_hash": {
+          "case_id": "tool_output_hash",
+          "sha256": "4137192d2b352e2fd32e55dd127146f7b5520ca96546b7b715b07068cb2d694b"
+        },
+        "transcript_hash": {
+          "case_id": "transcript_hash",
+          "sha256": "95b0671d1546b7e3e03e6f531f37eb8bde584b69a3a94176eda945985b0d3c69"
+        },
+        "trust_class_upgrade_without_proof": {
+          "case_id": "trust_class_upgrade_without_proof",
+          "sha256": "949d1bb97a88414bf5693341623f74955b818fa6c472673f473f670884129a88"
+        },
+        "verifier_domain_separator": {
+          "case_id": "verifier_domain_separator",
+          "sha256": "5b357f44ec279124a6b6904a8cf54eb7613cf3cfa51c9f66021da4cd44a3ea3f"
+        },
+        "weights_commitment": {
+          "case_id": "weights_commitment",
+          "sha256": "71609d4b8cb6d3bac88d224e5f61a7e5f573387848a01c514eb3b2afab44577a"
+        }
+      }
+    },
+    "command": [
+      "CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/.ptvm-targets/agent-relabeling-bench python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
+    ],
+    "git_commit": "9e65141b206d9dbfacd51cbc5c17d5f1225d8b59",
+    "verifier": {
+      "adapter": "rust-production",
+      "crate_name": "llm-provable-computer",
+      "crate_version": "0.1.0",
+      "proof_backend": "stwo",
+      "proof_backend_version": "stwo-agent-step-test-proof-v1",
+      "receipt_parser_version": "agent-step-receipt-parser-v1",
+      "receipt_version": "agent-step-receipt-v1",
+      "rust_adapter_schema": "agent-step-receipt-rust-verifier-adapter-v1",
+      "suite_schema": "zkai-relabeling-benchmark-suite-v1",
+      "verifier_domain": "agent-step-receipt-test-domain"
+    }
+  },
+  "schema": "zkai-relabeling-benchmark-suite-v1",
+  "suite_kind": "statement_relabeling_conformance",
+  "system_under_test": "llm-provable-computer AgentStepReceiptV1 production verifier"
+}

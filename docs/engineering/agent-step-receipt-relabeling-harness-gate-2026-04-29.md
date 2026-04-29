@@ -111,6 +111,9 @@ dependency-drop accounting, and malformed-input fail-closed behavior.
 
 ## Follow-Up
 
-When the real `AgentStepReceiptV1` schema is implemented, port these cases from
-the Python reference harness into the production parser/verifier tests and keep
-this script as a fixture generator or compatibility oracle.
+The production `AgentStepReceiptV1` parser/verifier now carries the same core
+relabeling cases, and `scripts/zkai_relabeling_benchmark_suite.py` promotes this
+mutation catalog into a public conformance benchmark with a Rust production
+verifier adapter. Keep this Python harness as the reference fixture generator and
+compatibility oracle; use the zkAI benchmark-suite gate for public adapter
+results.

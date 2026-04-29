@@ -78,11 +78,17 @@ Key properties to confirm:
 
 - `docs/engineering/design/agent-step-receipt-spec.md`
 - `scripts/agent_step_receipt_relabeling_harness.py`
+- `scripts/zkai_relabeling_benchmark_suite.py`
+- `examples/agent_step_receipt_verify.rs`
 - `scripts/tests/test_agent_step_receipt_relabeling_harness.py`
+- `scripts/tests/test_zkai_relabeling_benchmark_suite.py`
 
 Key properties to confirm:
 
 - user-facing statement fields reject stale-evidence relabeling,
+- the public zkAI relabeling benchmark mutates commitment-valued fields to
+  valid but different commitments, so production-verifier rejections exercise
+  statement binding rather than malformed commitment syntax,
 - evidence kinds are compatible with the declared trust class, not only with a
   numeric trust rank,
 - parser/backend versions are exact allowlist matches, not aliases,
@@ -90,7 +96,8 @@ Key properties to confirm:
   verifier-domain drift, ambiguous field mapping, replacement mismatch, and
   unsupported replacement-support drift; dependency-dropped fields require
   subreceipt support,
-- the CLI-generated evidence JSON matches the checked-in evidence artifact,
+- the CLI-generated reference evidence and Rust production-adapter benchmark
+  evidence match their checked-in artifacts,
 - omitted fields remain non-claims unless set to a value with matching evidence.
 
 ## Claim boundary
@@ -240,6 +247,13 @@ checks duplicate JSON keys, unknown fields, NFC string canonicalization,
 commitment algorithm casing, exact parser/domain/backend allowlists,
 trust-vector coverage and ordering, evidence-kind compatibility, omitted-field
 nullness, and one-to-one dependency-drop support.
+
+The packet also includes a public zkAI relabeling benchmark suite with a Rust
+production-verifier adapter. Its current checked result accepts the baseline
+receipt and rejects all `20 / 20` relabeling mutations across model identity,
+weights, input, output/action, config, policy, tool-output, state, backend
+version, verifier-domain, evidence-manifest, dependency-manifest, and trust-class
+upgrade surfaces.
 
 This does not claim a proved agent. It only makes the verifier-facing receipt
 object fail closed before future model, tool, policy, or memory evidence is
