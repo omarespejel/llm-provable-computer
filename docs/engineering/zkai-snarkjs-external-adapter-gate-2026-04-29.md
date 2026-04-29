@@ -64,7 +64,8 @@ snarkjs. Under that adapter, all 14 mutations are rejected.
 ## Interpretation
 
 This is the second useful external-adapter result for the zkAI relabeling line.
-Together with the EZKL adapter, it supports the proof-stack-neutral claim:
+Together with the EZKL adapter, it supports the adapter-level verifier-boundary
+claim:
 
 > Proof validity and statement binding are distinct verifier layers.
 

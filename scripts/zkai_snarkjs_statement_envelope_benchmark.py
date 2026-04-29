@@ -240,6 +240,34 @@ def _artifact_path(relative_path: str) -> pathlib.Path:
     return resolved
 
 
+def _required_dict(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise SnarkjsEnvelopeError(f"{label} must be an object")
+    return value
+
+
+def _required_list(value: Any, label: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise SnarkjsEnvelopeError(f"{label} must be a list")
+    return value
+
+
+def _required_artifact_reference(artifacts: dict[str, Any], key: str) -> str:
+    value = artifacts.get(key)
+    if not isinstance(value, str) or not value:
+        raise SnarkjsEnvelopeError(f"artifacts.{key} must be a non-empty string")
+    return value
+
+
+def _snarkjs_payloads(
+    envelope: dict[str, Any],
+) -> tuple[dict[str, Any], list[Any], dict[str, Any]]:
+    proof = _required_dict(envelope.get("snarkjs_proof"), "snarkjs_proof")
+    public_signals = _required_list(envelope.get("public_signals"), "public_signals")
+    verification_key = _required_dict(envelope.get("verification_key"), "verification_key")
+    return proof, public_signals, verification_key
+
+
 def _check_statement_policy(statement: dict[str, Any]) -> None:
     for key, expected in EXPECTED_STATEMENT.items():
         if statement.get(key) != expected:
@@ -248,26 +276,30 @@ def _check_statement_policy(statement: dict[str, Any]) -> None:
         raise SnarkjsEnvelopeError("unsupported statement schema")
 
 
-def _check_artifact_hashes(envelope: dict[str, Any]) -> pathlib.Path:
-    artifacts = envelope.get("artifacts")
-    if not isinstance(artifacts, dict):
-        raise SnarkjsEnvelopeError("artifacts must be an object")
-    circuit_path = _artifact_path(artifacts["circuit_path"])
-    input_path = _artifact_path(artifacts["input_path"])
-    vk_path = _artifact_path(artifacts["verification_key_path"])
+def _check_artifact_hashes(
+    envelope: dict[str, Any],
+    proof: dict[str, Any],
+    public_signals: list[Any],
+    verification_key: dict[str, Any],
+) -> pathlib.Path:
+    artifacts = _required_dict(envelope.get("artifacts"), "artifacts")
+    circuit_path = _artifact_path(_required_artifact_reference(artifacts, "circuit_path"))
+    input_path = _artifact_path(_required_artifact_reference(artifacts, "input_path"))
+    vk_path = _artifact_path(_required_artifact_reference(artifacts, "verification_key_path"))
+    vk_from_file = _required_dict(_load_json(vk_path), "verification_key artifact")
+    inline_vk_hash = verification_key_sha256(verification_key)
+    file_vk_hash = verification_key_sha256(vk_from_file)
+    if file_vk_hash != inline_vk_hash:
+        raise SnarkjsEnvelopeError("verification-key object does not match verification-key artifact")
     statement = envelope["statement"]
     checks = [
         (sha256_file(circuit_path), statement.get("circuit_artifact_sha256"), "circuit artifact hash"),
         (sha256_file(input_path), statement.get("input_artifact_sha256"), "input artifact hash"),
         (sha256_file(vk_path), statement.get("verification_key_file_sha256"), "verification-key file hash"),
+        (inline_vk_hash, statement.get("verification_key_sha256"), "verification-key canonical hash"),
+        (proof_sha256(proof), statement.get("proof_sha256"), "proof hash"),
         (
-            verification_key_sha256(envelope["verification_key"]),
-            statement.get("verification_key_sha256"),
-            "verification-key canonical hash",
-        ),
-        (proof_sha256(envelope["snarkjs_proof"]), statement.get("proof_sha256"), "proof hash"),
-        (
-            public_signals_sha256(envelope["public_signals"]),
+            public_signals_sha256(public_signals),
             statement.get("public_signals_sha256"),
             "public-signals hash",
         ),
@@ -294,6 +326,8 @@ def snarkjs_verify(
         public_path.write_text(json.dumps(public_signals, sort_keys=True), encoding="utf-8")
         vk_path.write_text(json.dumps(verification_key, sort_keys=True), encoding="utf-8")
         command = shlex.split(os.environ.get("ZKAI_SNARKJS_COMMAND", "npx -y snarkjs@0.7.6"))
+        if not command:
+            raise SnarkjsEnvelopeError("ZKAI_SNARKJS_COMMAND must not be empty")
         result = subprocess.run(
             [*command, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
             cwd=ROOT,
@@ -319,24 +353,28 @@ def verify_statement_envelope(
     statement = envelope.get("statement")
     if not isinstance(statement, dict):
         raise SnarkjsEnvelopeError("statement must be an object")
+    proof, public_signals, verification_key = _snarkjs_payloads(envelope)
     if envelope.get("statement_commitment") != statement_commitment(statement):
         raise SnarkjsEnvelopeError("statement_commitment mismatch")
     _check_statement_policy(statement)
-    _check_artifact_hashes(envelope)
-    external_verify(envelope["snarkjs_proof"], envelope["public_signals"], envelope["verification_key"])
+    _check_artifact_hashes(envelope, proof, public_signals, verification_key)
+    external_verify(proof, public_signals, verification_key)
 
 
 def verify_proof_only(
     envelope: dict[str, Any],
     external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any]], None] = snarkjs_verify,
 ) -> None:
-    external_verify(envelope["snarkjs_proof"], envelope["public_signals"], envelope["verification_key"])
+    proof, public_signals, verification_key = _snarkjs_payloads(envelope)
+    external_verify(proof, public_signals, verification_key)
 
 
 def classify_error(message: str) -> str:
     lowered = message.lower()
     if "snarkjs groth16 verifier rejected" in lowered:
         return "external_proof_verifier"
+    if "must be" in lowered:
+        return "parser_or_schema"
     if "artifact" in lowered or "proof hash" in lowered or "verification-key" in lowered:
         return "artifact_binding"
     if "public-signals" in lowered:
@@ -441,7 +479,12 @@ def _git_commit() -> str:
 def _canonical_command(command: list[str] | None) -> list[str]:
     override_json = os.environ.get("ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON")
     if override_json:
-        parsed = json.loads(override_json)
+        try:
+            parsed = json.loads(override_json)
+        except json.JSONDecodeError as err:
+            raise RuntimeError(
+                "ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON must be a valid JSON array of strings"
+            ) from err
         if not isinstance(parsed, list) or not all(isinstance(part, str) for part in parsed):
             raise RuntimeError("ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON must be a JSON array of strings")
         return parsed
