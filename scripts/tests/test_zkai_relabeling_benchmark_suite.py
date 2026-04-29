@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import csv
 import importlib.util
 import io
@@ -20,6 +21,20 @@ SPEC.loader.exec_module(SUITE)
 
 
 class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
+    def _module_names_loaded_from(self, path: pathlib.Path) -> set[str]:
+        resolved = path.resolve()
+        names = set()
+        for name, module in sys.modules.items():
+            module_file = getattr(module, "__file__", None)
+            if module_file is None:
+                continue
+            try:
+                if pathlib.Path(module_file).resolve() == resolved:
+                    names.add(name)
+            except OSError:
+                continue
+        return names
+
     def _load_declarative_adapter_module(self):
         module_name = "zkai_declarative_receipt_adapter_independence_check"
         spec = importlib.util.spec_from_file_location(module_name, SUITE.DECLARATIVE_ADAPTER_PATH)
@@ -116,13 +131,58 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         )
 
     def test_declarative_policy_adapter_does_not_import_mutation_oracle(self) -> None:
-        before = set(sys.modules)
-        module = self._load_declarative_adapter_module()
-        loaded = set(sys.modules) - before
+        harness_path = SUITE.HARNESS_PATH.resolve()
+        before_harness_modules = self._module_names_loaded_from(harness_path)
+        before_names = set(sys.modules)
+        original_spec_from_file_location = importlib.util.spec_from_file_location
+        original_import = builtins.__import__
+
+        def guarded_spec_from_file_location(name, location, *args, **kwargs):
+            if location is not None:
+                try:
+                    location_path = pathlib.Path(location).resolve()
+                except (OSError, TypeError):
+                    location_path = None
+                if location_path == harness_path:
+                    raise AssertionError(f"adapter attempted to load mutation oracle file: {location}")
+            return original_spec_from_file_location(name, location, *args, **kwargs)
+
+        def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+            forbidden = {
+                "agent_step_receipt_relabeling_harness",
+                "agent_step_receipt_harness",
+                "scripts.agent_step_receipt_relabeling_harness",
+            }
+            if name in forbidden:
+                raise AssertionError(f"adapter attempted to import mutation oracle module: {name}")
+            return original_import(name, globals, locals, fromlist, level)
+
+        importlib.util.spec_from_file_location = guarded_spec_from_file_location
+        builtins.__import__ = guarded_import
+        try:
+            module = self._load_declarative_adapter_module()
+        finally:
+            builtins.__import__ = original_import
+            importlib.util.spec_from_file_location = original_spec_from_file_location
+
+        loaded_names = set(sys.modules) - before_names
+        after_harness_modules = self._module_names_loaded_from(harness_path)
 
         self.assertNotIn("agent_step_receipt_relabeling_harness", module.__dict__)
         self.assertNotIn("HARNESS", module.__dict__)
-        self.assertNotIn("agent_step_receipt_relabeling_harness", loaded)
+        self.assertFalse(
+            after_harness_modules - before_harness_modules,
+            f"adapter loaded mutation oracle under alternate module names: "
+            f"{sorted(after_harness_modules - before_harness_modules)}",
+        )
+        self.assertFalse(
+            {
+                "agent_step_receipt_relabeling_harness",
+                "agent_step_receipt_harness",
+                "scripts.agent_step_receipt_relabeling_harness",
+            }
+            & loaded_names
+        )
 
     def test_declarative_policy_rejects_self_consistent_non_string_receipt_field(self) -> None:
         adapter = self._load_declarative_adapter_module()
@@ -175,6 +235,24 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
                 del os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"]
             else:
                 os.environ["ZKAI_RELABELING_BENCHMARK_COMMAND_JSON"] = original
+
+    def test_checked_evidence_uses_portable_repro_command(self) -> None:
+        evidence_paths = [
+            ROOT / "docs" / "engineering" / "evidence" / "zkai-relabeling-benchmark-suite-2026-04.json",
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-relabeling-benchmark-suite-declarative-policy-2026-04.json",
+        ]
+        for path in evidence_paths:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            command = payload["repro"]["command"]
+            self.assertEqual(command[0], "env")
+            self.assertIn("CARGO_TARGET_DIR=target/agent-relabeling-bench", command)
+            self.assertTrue(any(part.startswith("ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=") for part in command))
+            self.assertIn("python3.12", command)
+            self.assertNotIn("/opt/homebrew/bin/python3.12", command)
 
     def test_artifact_hashes_use_harness_canonicalizer(self) -> None:
         original_mutated_bundles = SUITE._mutated_bundles
