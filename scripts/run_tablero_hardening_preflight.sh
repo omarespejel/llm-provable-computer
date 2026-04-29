@@ -10,6 +10,40 @@ FUZZ_TIME_PER_TARGET="${FUZZ_TIME_PER_TARGET:-20}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 ARTIFACT_DIR="${ARTIFACT_DIR:-target/tablero-hardening/${RUN_ID}}"
 SUMMARY_TSV="${ARTIFACT_DIR}/summary.tsv"
+PYTHON_BIN="${PYTHON_BIN:-}"
+
+select_python_bin() {
+  local candidate
+  if [[ -n "$PYTHON_BIN" ]]; then
+    if "$PYTHON_BIN" - <<'PY'
+import sys
+
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+    then
+      return 0
+    fi
+    echo "PYTHON_BIN must point to Python 3.11+; got $PYTHON_BIN" >&2
+    return 1
+  fi
+
+  for candidate in python3.12 python3.11 python3; do
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" - <<'PY'
+import sys
+
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+    then
+      PYTHON_BIN="$candidate"
+      return 0
+    fi
+  done
+
+  echo "Python 3.11+ is required for the zkAI relabeling benchmark suite (tomllib)." >&2
+  return 1
+}
+
+select_python_bin
 
 usage() {
   cat <<USAGE
@@ -67,8 +101,8 @@ run_logged() {
 check_agent_step_relabeling_cli_evidence() {
   local generated="${ARTIFACT_DIR}/agent-step-relabeling-generated.json"
   local checked_in="docs/engineering/evidence/agent-step-receipt-relabeling-harness-2026-04.json"
-  python3 -B scripts/agent_step_receipt_relabeling_harness.py --json > "$generated"
-  python3 -B - "$generated" "$checked_in" <<'PY'
+  "$PYTHON_BIN" -B scripts/agent_step_receipt_relabeling_harness.py --json > "$generated"
+  "$PYTHON_BIN" -B - "$generated" "$checked_in" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -97,13 +131,13 @@ check_zkai_relabeling_benchmark_evidence() {
   local checked_tsv="docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv"
   local repro_commit
   local repro_command
-  repro_commit="$(python3 -B - "$checked_json" <<'PY'
+  repro_commit="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
 import json
 import sys
 print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["git_commit"])
 PY
 )"
-  repro_command="$(python3 -B - "$checked_json" <<'PY'
+  repro_command="$("$PYTHON_BIN" -B - "$checked_json" <<'PY'
 import json
 import sys
 print(json.load(open(sys.argv[1], encoding="utf-8"))["repro"]["command"][0])
@@ -111,11 +145,11 @@ PY
 )"
   ZKAI_RELABELING_BENCHMARK_GIT_COMMIT="$repro_commit" \
     ZKAI_RELABELING_BENCHMARK_COMMAND="$repro_command" \
-    python3 -B scripts/zkai_relabeling_benchmark_suite.py \
+    "$PYTHON_BIN" -B scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
     --write-json "$generated_json" \
     --write-tsv "$generated_tsv"
-  python3 -B - "$generated_json" "$checked_json" "$generated_tsv" "$checked_tsv" <<'PY'
+  "$PYTHON_BIN" -B - "$generated_json" "$checked_json" "$generated_tsv" "$checked_tsv" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -144,9 +178,9 @@ PY
 run_logged fmt cargo fmt --check
 run_logged diff-check git diff --check
 run_logged agent-step-receipt-rust cargo test --lib agent_step_receipt
-run_logged agent-step-relabeling python3 -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
+run_logged agent-step-relabeling "$PYTHON_BIN" -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
 run_logged agent-step-relabeling-cli-evidence check_agent_step_relabeling_cli_evidence
-run_logged zkai-relabeling-benchmark python3 -B -m unittest scripts.tests.test_zkai_relabeling_benchmark_suite
+run_logged zkai-relabeling-benchmark "$PYTHON_BIN" -B -m unittest scripts.tests.test_zkai_relabeling_benchmark_suite
 run_logged zkai-relabeling-benchmark-evidence check_zkai_relabeling_benchmark_evidence
 run_logged carry-aware-air cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib carry_aware_
 run_logged experimental-proof-route cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib experimental_phase12_carry_aware_

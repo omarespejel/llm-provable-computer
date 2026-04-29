@@ -116,6 +116,14 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(layers["dependency_drop_manifest"], "cryptographic_binding")
         self.assertEqual(layers["verifier_domain_separator"], "domain_or_version_allowlist")
         self.assertEqual(layers["trust_class_upgrade_without_proof"], "trust_policy")
+        self.assertEqual(
+            SUITE._classify_rejection("invalid commitment encoding"),
+            "parser_or_schema_validation",
+        )
+        self.assertEqual(
+            SUITE._classify_rejection("dependency_drop_manifest_commitment mismatch"),
+            "cryptographic_binding",
+        )
 
     def test_tsv_output_has_stable_public_columns(self) -> None:
         payload = SUITE.run_suite("python-reference")
