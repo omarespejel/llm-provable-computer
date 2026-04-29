@@ -132,6 +132,11 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
 
     def test_declarative_policy_adapter_does_not_import_mutation_oracle(self) -> None:
         harness_path = SUITE.HARNESS_PATH.resolve()
+        forbidden_module_names = {
+            "agent_step_receipt_relabeling_harness",
+            "agent_step_receipt_harness",
+            "scripts.agent_step_receipt_relabeling_harness",
+        }
         before_harness_modules = self._module_names_loaded_from(harness_path)
         before_names = set(sys.modules)
         original_spec_from_file_location = importlib.util.spec_from_file_location
@@ -148,13 +153,15 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
             return original_spec_from_file_location(name, location, *args, **kwargs)
 
         def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
-            forbidden = {
-                "agent_step_receipt_relabeling_harness",
-                "agent_step_receipt_harness",
-                "scripts.agent_step_receipt_relabeling_harness",
-            }
-            if name in forbidden:
+            from_items = tuple(fromlist or ())
+            requested = {name}
+            requested.update(str(part) for part in from_items)
+            requested.update(f"{name}.{part}" for part in from_items)
+            if requested & forbidden_module_names:
                 raise AssertionError(f"adapter attempted to import mutation oracle module: {name}")
+            for requested_name in requested:
+                if requested_name in forbidden_module_names and requested_name in sys.modules:
+                    raise AssertionError(f"adapter attempted to reuse mutation oracle module: {requested_name}")
             return original_import(name, globals, locals, fromlist, level)
 
         importlib.util.spec_from_file_location = guarded_spec_from_file_location
@@ -170,19 +177,19 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertNotIn("agent_step_receipt_relabeling_harness", module.__dict__)
         self.assertNotIn("HARNESS", module.__dict__)
+        for forbidden_name in forbidden_module_names:
+            forbidden_module = sys.modules.get(forbidden_name)
+            if forbidden_module is not None:
+                self.assertFalse(
+                    any(value is forbidden_module for value in module.__dict__.values()),
+                    f"adapter bound forbidden module via alias: {forbidden_name}",
+                )
         self.assertFalse(
             after_harness_modules - before_harness_modules,
             f"adapter loaded mutation oracle under alternate module names: "
             f"{sorted(after_harness_modules - before_harness_modules)}",
         )
-        self.assertFalse(
-            {
-                "agent_step_receipt_relabeling_harness",
-                "agent_step_receipt_harness",
-                "scripts.agent_step_receipt_relabeling_harness",
-            }
-            & loaded_names
-        )
+        self.assertFalse(forbidden_module_names & loaded_names)
 
     def test_declarative_policy_rejects_self_consistent_non_string_receipt_field(self) -> None:
         adapter = self._load_declarative_adapter_module()
@@ -239,7 +246,10 @@ class ZkAIRelabelingBenchmarkSuiteTests(unittest.TestCase):
     def test_checked_evidence_uses_portable_repro_command(self) -> None:
         evidence_dir = ROOT / "docs" / "engineering" / "evidence"
         evidence_paths = sorted(evidence_dir.glob("zkai-relabeling-benchmark-suite*.json"))
-        self.assertGreaterEqual(len(evidence_paths), 2)
+        baseline_paths = [path for path in evidence_paths if "-declarative-policy-" not in path.name]
+        declarative_paths = [path for path in evidence_paths if "-declarative-policy-" in path.name]
+        self.assertGreaterEqual(len(baseline_paths), 1, "missing baseline suite evidence file")
+        self.assertGreaterEqual(len(declarative_paths), 1, "missing declarative-policy evidence file")
         for path in evidence_paths:
             payload = json.loads(path.read_text(encoding="utf-8"))
             command = payload["repro"]["command"]
