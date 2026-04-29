@@ -74,6 +74,11 @@ class ZkAIEzklStatementEnvelopeBenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(FileNotFoundError, "missing EZKL KZG SRS"):
                 BENCH.ensure_srs(missing)
 
+    def test_ensure_srs_rejects_directory_path(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            with self.assertRaisesRegex(FileNotFoundError, "must be a readable file"):
+                BENCH.ensure_srs(pathlib.Path(raw_tmp))
+
     def test_ezkl_verify_rejects_runtime_version_mismatch(self) -> None:
         original_ezkl = sys.modules.get("ezkl")
         sys.modules["ezkl"] = types.SimpleNamespace(verify=lambda *_args, **_kwargs: True)
