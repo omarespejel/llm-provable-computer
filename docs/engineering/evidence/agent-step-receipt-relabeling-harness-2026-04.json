@@ -1,0 +1,125 @@
+{
+  "schema": "agent-step-relabeling-harness-v1",
+  "results": [
+    {
+      "mutation": "receipt_version",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "unsupported receipt version"
+    },
+    {
+      "mutation": "model_id",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /model_identity"
+    },
+    {
+      "mutation": "runtime_domain",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /runtime_domain"
+    },
+    {
+      "mutation": "proof_backend",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "unsupported proof backend version"
+    },
+    {
+      "mutation": "receipt_parser_version",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "unsupported receipt parser version"
+    },
+    {
+      "mutation": "weights_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /model_commitment"
+    },
+    {
+      "mutation": "model_receipt_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /model_receipt_commitment"
+    },
+    {
+      "mutation": "input_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /observation_commitment"
+    },
+    {
+      "mutation": "output_action_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /action_commitment"
+    },
+    {
+      "mutation": "quantization_config_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /model_config_commitment"
+    },
+    {
+      "mutation": "policy_hash",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /policy_commitment"
+    },
+    {
+      "mutation": "tool_output_hash",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /tool_receipts_root"
+    },
+    {
+      "mutation": "prior_state_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /prior_state_commitment"
+    },
+    {
+      "mutation": "next_state_commitment",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /next_state_commitment"
+    },
+    {
+      "mutation": "backend_proof_system_version",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "unsupported proof backend version"
+    },
+    {
+      "mutation": "verifier_domain_separator",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "unsupported verifier domain"
+    },
+    {
+      "mutation": "transcript_hash",
+      "scope": "receipt-field-stale-evidence",
+      "rejected": true,
+      "error": "evidence commitment does not bind /transcript_commitment"
+    },
+    {
+      "mutation": "dependency_drop_manifest",
+      "scope": "stale-dependency-manifest-commitment",
+      "rejected": true,
+      "error": "dependency_drop_manifest_commitment mismatch"
+    },
+    {
+      "mutation": "evidence_manifest",
+      "scope": "stale-evidence-manifest-commitment",
+      "rejected": true,
+      "error": "evidence_manifest_commitment mismatch"
+    },
+    {
+      "mutation": "trust_class_upgrade_without_proof",
+      "scope": "unsupported-trust-upgrade",
+      "rejected": true,
+      "error": "insufficient evidence trust class for /model_identity"
+    }
+  ]
+}

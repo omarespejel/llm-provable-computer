@@ -31,7 +31,9 @@ Answer four questions cleanly:
 6. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
 7. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
 8. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
-9. `docs/paper/stark-transformer-alignment-2026.md`
+9. `docs/engineering/design/agent-step-receipt-spec.md`
+10. `docs/engineering/agent-step-receipt-relabeling-harness-gate-2026-04-29.md`
+11. `docs/paper/stark-transformer-alignment-2026.md`
 
 ## Exact code surfaces to review
 
@@ -72,6 +74,25 @@ Key properties to confirm:
 - Phase47 wrapper candidate remains boundary-width and explicitly non-recursive.
 - Phase48 remains an explicit no-go wrapper attempt with blocker preservation.
 
+### Agent-step receipt relabeling surface
+
+- `docs/engineering/design/agent-step-receipt-spec.md`
+- `scripts/agent_step_receipt_relabeling_harness.py`
+- `scripts/tests/test_agent_step_receipt_relabeling_harness.py`
+
+Key properties to confirm:
+
+- user-facing statement fields reject stale-evidence relabeling,
+- evidence kinds are compatible with the declared trust class, not only with a
+  numeric trust rank,
+- parser/backend versions are exact allowlist matches, not aliases,
+- dependency-drop manifests reject relabeling, duplicate IDs, invalid versions,
+  verifier-domain drift, ambiguous field mapping, replacement mismatch, and
+  unsupported replacement-support drift; dependency-dropped fields require
+  subreceipt support,
+- the CLI-generated evidence JSON matches the checked-in evidence artifact,
+- omitted fields remain non-claims unless set to a value with matching evidence.
+
 ## Claim boundary
 
 ### Strong claims supported today
@@ -95,6 +116,7 @@ Key properties to confirm:
 4. No SNIP-36 deployment claim.
 5. No claim that the large replay-avoidance ratios are implementation-independent
    lower bounds for all manifest replay designs.
+6. No production verifiable-agent runtime or fully proved transformer step.
 
 ## Tooling stack to run before stronger claims
 
@@ -130,6 +152,7 @@ scripts/run_tablero_hardening_preflight.sh --mode core
 This runs:
 
 - formatting and diff hygiene,
+- the agent-step receipt mutation/relabeling harness,
 - targeted carry-aware AIR and proof-route tests,
 - targeted Phase44D/45/46/47/48 verifier and tamper tests,
 - the narrow Tablero formal-contract suite,
@@ -222,6 +245,8 @@ as long as libFuzzer emits no crash artifact.
    current experimental claim boundary?
 5. Is any additional bounded-model-checking harness obviously worth adding for
    the exact binding predicates that replace replay?
+6. Does the agent-step receipt surface reject statement relabeling before any
+   future verifiable-intelligence claim is built on it?
 
 ## Longer-term escalation path
 
