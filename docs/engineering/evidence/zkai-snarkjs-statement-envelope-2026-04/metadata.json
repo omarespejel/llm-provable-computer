@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "input.json": "74563a6495afe7834b59baa1fbc88992a8efd5747c4d2baba6bb1b7ce67f5b2d",
+    "proof.json": "50b9e247e69f24ea7d773b96970ddfe611445580acd35063a121f34e3b1ef905",
+    "public.json": "9303e928016b067399e0cbd54c91cc8e5187ab7be22bead8efd97785dbf479f3",
+    "square.circom": "c39af94057ce6c333cd7a7721f35b8c33cd1a6fd2d01e034fcbbef1b63b27953",
+    "verification_key.json": "e3b4c39dc791f520ce67031921a3dbb86245417d801139d28739e3d206f25aa6"
+  },
+  "circuit_id": "urn:zkai:snarkjs-demo:square-v1",
+  "config_id": "urn:zkai:snarkjs-settings:square-public-io-v1",
+  "generation_note": "Generated locally with circom 2.0.9 and npx -y snarkjs@0.7.6; only verifier-facing artifacts are checked in.",
+  "input_id": "urn:zkai:input:scalar-seven-v1",
+  "output_id": "urn:zkai:output:square-scalar-forty-nine-v1",
+  "proof_system": "snarkjs/Groth16/BN128",
+  "schema": "zkai-snarkjs-statement-envelope-artifact-metadata-v1",
+  "snarkjs_version": "0.7.6"
+}
