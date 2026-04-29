@@ -195,11 +195,37 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(PLAN.PlanValidationError, "final repo gate"):
             PLAN.validate_plan(plan)
 
+    def test_plan_rejects_final_repo_gate_not_last(self) -> None:
+        plan = self._plan()
+        plan["validation_commands"] = [
+            "python3 scripts/zkai_stwo_transformer_block_plan.py --json",
+            "just gate-fast",
+            "just gate",
+            "python3 -m unittest scripts.tests.test_zkai_stwo_transformer_block_plan scripts.tests.test_zkai_stwo_statement_envelope_benchmark scripts.tests.test_agent_step_zkai_stwo_composition",
+        ]
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "end with final repo gate"):
+            PLAN.validate_plan(plan)
+
     def test_plan_rejects_non_string_validation_command_cleanly(self) -> None:
         plan = self._plan()
         plan["validation_commands"].append({"bad": "shape"})
 
         with self.assertRaisesRegex(PLAN.PlanValidationError, "validation_commands"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_missing_no_nightly_alternative(self) -> None:
+        plan = self._plan()
+        plan["validation_command_alternatives"] = []
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "validation_command_alternatives"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_wrong_no_nightly_alternative(self) -> None:
+        plan = self._plan()
+        plan["validation_command_alternatives"][0]["command"] = "just something-else"
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "just gate-no-nightly"):
             PLAN.validate_plan(plan)
 
     def test_plan_rejects_non_string_non_claim_cleanly(self) -> None:

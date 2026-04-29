@@ -132,6 +132,13 @@
     "just gate-fast",
     "just gate"
   ],
+  "validation_command_alternatives": [
+    {
+      "instead_of": "just gate",
+      "command": "just gate-no-nightly",
+      "condition": "Use only when the pinned nightly toolchain is unavailable."
+    }
+  ],
   "next_implementation_pr": {
     "title": "Implement Stwo zkAI statement-bound transformer-block harness",
     "minimum_scope": [

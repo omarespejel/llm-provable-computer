@@ -127,6 +127,10 @@ just gate-fast
 just gate
 ```
 
+If the pinned nightly toolchain is unavailable, use `just gate-no-nightly` as
+the final command instead of `just gate`; do not run additional validation
+commands after the final repo gate.
+
 ## Non-claims
 
 - This is not full transformer inference.
