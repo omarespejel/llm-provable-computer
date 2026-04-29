@@ -29,6 +29,14 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 HARNESS_PATH = ROOT / "scripts" / "agent_step_receipt_relabeling_harness.py"
+DECLARATIVE_POLICY_PATH = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-agent-step-receipt-declarative-policy-2026-04.json"
+)
+DECLARATIVE_ADAPTER_PATH = ROOT / "scripts" / "zkai_declarative_receipt_adapter.py"
 SPEC = importlib.util.spec_from_file_location("agent_step_receipt_harness", HARNESS_PATH)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError(f"failed to load agent receipt harness from {HARNESS_PATH}")
@@ -39,6 +47,7 @@ SPEC.loader.exec_module(HARNESS)
 SUITE_SCHEMA = "zkai-relabeling-benchmark-suite-v1"
 ARTIFACT_BUNDLE_SCHEMA = "zkai-relabeling-artifact-bundle-v1"
 RUST_ADAPTER_SCHEMA = "agent-step-receipt-rust-verifier-adapter-v1"
+DECLARATIVE_POLICY_ADAPTER_SCHEMA = "agent-step-receipt-declarative-policy-adapter-v1"
 BINDING_REJECTION_MARKERS = (
     "does not bind",
     "dependency_drop_manifest_commitment mismatch",
@@ -216,6 +225,10 @@ def _artifact_hashes() -> dict[str, str]:
     return {case_id: record["sha256"] for case_id, record in _artifact_records().items()}
 
 
+def _file_sha256_hex(path: pathlib.Path) -> str:
+    return _sha256_hex(path.read_bytes())
+
+
 def _git_commit() -> str:
     override = os.environ.get("ZKAI_RELABELING_BENCHMARK_GIT_COMMIT")
     if override:
@@ -253,6 +266,7 @@ def _verifier_metadata(adapter: str) -> dict[str, str]:
         "adapter": adapter,
         "suite_schema": SUITE_SCHEMA,
         "rust_adapter_schema": RUST_ADAPTER_SCHEMA,
+        "declarative_policy_adapter_schema": DECLARATIVE_POLICY_ADAPTER_SCHEMA,
         "crate_name": package["name"],
         "crate_version": package["version"],
         "receipt_version": HARNESS.RECEIPT_VERSION,
@@ -260,6 +274,8 @@ def _verifier_metadata(adapter: str) -> dict[str, str]:
         "verifier_domain": HARNESS.VERIFIER_DOMAIN,
         "proof_backend": HARNESS.PROOF_BACKEND,
         "proof_backend_version": HARNESS.PROOF_BACKEND_VERSION,
+        "declarative_policy_path": str(DECLARATIVE_POLICY_PATH.relative_to(ROOT)),
+        "declarative_policy_sha256": _file_sha256_hex(DECLARATIVE_POLICY_PATH),
     }
 
 
@@ -300,6 +316,32 @@ def _run_python_reference() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
 
 
 def _run_rust_production() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
+    return _run_case_adapter(
+        cmd_prefix=["cargo", "run", "--quiet", "--example", "agent_step_receipt_verify", "--"],
+        expected_schema=RUST_ADAPTER_SCHEMA,
+        adapter_label="rust production",
+    )
+
+
+def _run_declarative_policy() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
+    return _run_case_adapter(
+        cmd_prefix=[
+            sys.executable,
+            str(DECLARATIVE_ADAPTER_PATH),
+            "--policy",
+            str(DECLARATIVE_POLICY_PATH),
+        ],
+        expected_schema=DECLARATIVE_POLICY_ADAPTER_SCHEMA,
+        adapter_label="declarative policy",
+    )
+
+
+def _run_case_adapter(
+    *,
+    cmd_prefix: list[str],
+    expected_schema: str,
+    adapter_label: str,
+) -> tuple[bool, str, dict[str, tuple[bool, str]]]:
     bundles = {"baseline": HARNESS.build_valid_bundle(), **_mutated_bundles()}
     with tempfile.TemporaryDirectory(prefix="zkai-relabeling-suite-") as raw_tmp:
         tmp = pathlib.Path(raw_tmp)
@@ -308,7 +350,7 @@ def _run_rust_production() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
             path = tmp / f"{case_id}.json"
             path.write_bytes(_canonical_bundle_bytes(bundle))
             args.append(f"{case_id}={path}")
-        cmd = ["cargo", "run", "--quiet", "--example", "agent_step_receipt_verify", "--", *args]
+        cmd = [*cmd_prefix, *args]
         completed = subprocess.run(
             cmd,
             cwd=ROOT,
@@ -320,37 +362,37 @@ def _run_rust_production() -> tuple[bool, str, dict[str, tuple[bool, str]]]:
         )
         if completed.returncode != 0:
             raise RuntimeError(
-                "rust production adapter failed:\n"
+                f"{adapter_label} adapter failed:\n"
                 f"command: {' '.join(cmd)}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
             )
         payload = json.loads(completed.stdout)
     if not isinstance(payload, dict):
-        raise RuntimeError("rust adapter returned malformed payload: expected object")
-    if payload.get("schema") != RUST_ADAPTER_SCHEMA:
-        raise RuntimeError(f"unexpected rust adapter schema: {payload.get('schema')!r}")
+        raise RuntimeError(f"{adapter_label} adapter returned malformed payload: expected object")
+    if payload.get("schema") != expected_schema:
+        raise RuntimeError(f"unexpected {adapter_label} adapter schema: {payload.get('schema')!r}")
     results = payload.get("results")
     if not isinstance(results, list):
-        raise RuntimeError("rust adapter returned malformed results: expected list")
+        raise RuntimeError(f"{adapter_label} adapter returned malformed results: expected list")
     expected = {"baseline", *_case_catalog().keys()}
     case_ids = []
     raw_results = {}
     for item in results:
         if not isinstance(item, dict):
-            raise RuntimeError("rust adapter returned malformed result row: expected object")
+            raise RuntimeError(f"{adapter_label} adapter returned malformed result row: expected object")
         case_id = item.get("case_id")
         accepted = item.get("accepted")
         error = item.get("error")
         if not isinstance(case_id, str) or not isinstance(accepted, bool) or not isinstance(error, str):
-            raise RuntimeError("rust adapter returned malformed result row")
+            raise RuntimeError(f"{adapter_label} adapter returned malformed result row")
         case_ids.append(case_id)
         raw_results[case_id] = (accepted, error)
     duplicate_case_ids = sorted({case_id for case_id in case_ids if case_ids.count(case_id) > 1})
     if duplicate_case_ids:
-        raise RuntimeError(f"rust adapter returned duplicate case_id rows: {duplicate_case_ids}")
+        raise RuntimeError(f"{adapter_label} adapter returned duplicate case_id rows: {duplicate_case_ids}")
     actual = set(raw_results)
     if actual != expected:
         raise RuntimeError(
-            "rust adapter returned incomplete case coverage: "
+            f"{adapter_label} adapter returned incomplete case coverage: "
             f"missing={sorted(expected - actual)} extra={sorted(actual - expected)}"
         )
     baseline_accepted, baseline_error = raw_results.pop("baseline")
@@ -364,6 +406,9 @@ def run_suite(adapter: str, command: list[str] | None = None) -> dict[str, Any]:
     elif adapter == "rust-production":
         baseline_accepted, baseline_error, raw_results = _run_rust_production()
         system_under_test = "llm-provable-computer AgentStepReceiptV1 production verifier"
+    elif adapter == "declarative-policy":
+        baseline_accepted, baseline_error, raw_results = _run_declarative_policy()
+        system_under_test = "checked declarative AgentStepReceiptV1 policy verifier"
     else:
         raise ValueError(f"unsupported adapter {adapter!r}")
 
@@ -446,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--adapter",
-        choices=("python-reference", "rust-production"),
+        choices=("python-reference", "rust-production", "declarative-policy"),
         default="python-reference",
         help="verifier adapter to run",
     )

@@ -1,0 +1,112 @@
+{
+  "schema": "agent-step-receipt-declarative-policy-v1",
+  "allowed_replacement_receipt_versions": [
+    "agent-step-receipt-v1"
+  ],
+  "dependency_kinds": [
+    "model_receipt",
+    "other",
+    "policy_commitment",
+    "proof_trace",
+    "source_manifest",
+    "state_commitment",
+    "tool_receipt",
+    "transcript"
+  ],
+  "domain_separators": {
+    "dependency_drop_manifest": "agent-step-receipt-v1.dependency-drop-manifest",
+    "evidence_field_binding": "agent-step-receipt-v1.evidence-field-binding",
+    "evidence_manifest": "agent-step-receipt-v1.evidence-manifest",
+    "receipt": "agent-step-receipt-v1.receipt"
+  },
+  "evidence_kinds": [
+    "attestation",
+    "proof",
+    "replay_source",
+    "subreceipt"
+  ],
+  "evidence_kinds_by_trust_class": {
+    "attested": [
+      "attestation"
+    ],
+    "dependency_dropped": [
+      "subreceipt"
+    ],
+    "proved": [
+      "proof",
+      "subreceipt"
+    ],
+    "replayed": [
+      "replay_source"
+    ]
+  },
+  "hash_lengths": {
+    "blake2b-256": 64,
+    "blake2s-256": 64,
+    "sha256": 64,
+    "sha384": 96,
+    "sha512": 128
+  },
+  "manifest_versions": {
+    "dependency_drop_manifest": "agent-step-dependency-drop-manifest-v1",
+    "evidence_manifest": "agent-step-evidence-manifest-v1"
+  },
+  "proof_backends": [
+    {
+      "proof_backend": "stwo",
+      "proof_backend_version": "stwo-agent-step-test-proof-v1"
+    }
+  ],
+  "receipt_fields": [
+    "receipt_version",
+    "verifier_domain",
+    "runtime_domain",
+    "proof_backend",
+    "proof_backend_version",
+    "receipt_parser_version",
+    "prior_state_commitment",
+    "observation_commitment",
+    "model_identity",
+    "model_commitment",
+    "model_config_commitment",
+    "model_receipt_commitment",
+    "tool_receipts_root",
+    "policy_commitment",
+    "action_commitment",
+    "next_state_commitment",
+    "transcript_commitment",
+    "dependency_drop_manifest_commitment",
+    "evidence_manifest_commitment",
+    "field_trust_class_vector",
+    "receipt_commitment"
+  ],
+  "receipt_parser_versions": {
+    "agent-step-receipt-v1": [
+      "agent-step-receipt-parser-v1"
+    ]
+  },
+  "receipt_versions": [
+    "agent-step-receipt-v1"
+  ],
+  "required_subfact_kinds": [
+    "attestation",
+    "proof",
+    "subreceipt"
+  ],
+  "self_bound_fields": [
+    "/dependency_drop_manifest_commitment",
+    "/evidence_manifest_commitment",
+    "/field_trust_class_vector",
+    "/receipt_commitment"
+  ],
+  "trust_class_rank": {
+    "attested": 1,
+    "dependency_dropped": 3,
+    "omitted": 0,
+    "proved": 4,
+    "replayed": 2
+  },
+  "verifier_domains": [
+    "agent-step-receipt-test-domain"
+  ]
+}
