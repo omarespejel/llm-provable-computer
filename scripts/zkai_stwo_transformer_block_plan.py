@@ -87,6 +87,7 @@ REQUIRED_VALIDATION_COMMAND_FRAGMENTS = (
     "scripts.tests.test_agent_step_zkai_stwo_composition",
     "just gate-fast",
 )
+FINAL_REPO_GATES = frozenset({"just gate", "just gate-no-nightly"})
 
 
 class PlanValidationError(ValueError):
@@ -185,6 +186,28 @@ def _validate_current_baseline(plan: dict[str, Any]) -> None:
         )
 
 
+def _validate_command_alternatives(plan: dict[str, Any]) -> None:
+    alternatives = _required_list(
+        plan.get("validation_command_alternatives"),
+        "validation_command_alternatives",
+    )
+    expected = {
+        "instead_of": "just gate",
+        "command": "just gate-no-nightly",
+        "condition": "Use only when the pinned nightly toolchain is unavailable.",
+    }
+    if len(alternatives) != 1:
+        raise PlanValidationError("validation_command_alternatives must contain exactly one final-gate alternative")
+    alternative = alternatives[0]
+    if not isinstance(alternative, dict):
+        raise PlanValidationError("validation_command_alternatives[0] must be an object")
+    for key, value in expected.items():
+        if alternative.get(key) != value:
+            raise PlanValidationError(
+                f"validation_command_alternatives[0].{key} must be {value!r}"
+            )
+
+
 def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     if plan.get("schema") != PLAN_SCHEMA:
         raise PlanValidationError(f"unexpected schema: {plan.get('schema')!r}")
@@ -230,7 +253,8 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     commands = _required_list(plan.get("validation_commands"), "validation_commands")
     if not all(isinstance(command, str) and command for command in commands):
         raise PlanValidationError("validation_commands must contain only non-empty strings")
-    command_text = "\n".join(commands)
+    normalized_commands = [command.strip() for command in commands]
+    command_text = "\n".join(normalized_commands)
     missing_command_fragments = [
         fragment for fragment in REQUIRED_VALIDATION_COMMAND_FRAGMENTS if fragment not in command_text
     ]
@@ -239,11 +263,13 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
             "validation_commands is missing required coverage: "
             + ", ".join(missing_command_fragments)
         )
-    normalized_commands = {command.strip() for command in commands}
-    if not ({"just gate", "just gate-no-nightly"} & normalized_commands):
+    if normalized_commands[-1] not in FINAL_REPO_GATES:
         raise PlanValidationError(
-            "validation_commands must include final repo gate: `just gate` or `just gate-no-nightly`"
+            "validation_commands must end with final repo gate: `just gate` or `just gate-no-nightly`"
         )
+    if "just gate-fast" not in normalized_commands[:-1]:
+        raise PlanValidationError("validation_commands must run `just gate-fast` before the final repo gate")
+    _validate_command_alternatives(plan)
 
     return {
         "schema": PLAN_SCHEMA,
