@@ -1,3 +1,4 @@
+pub mod agent_step_receipt;
 pub mod assembly;
 #[cfg(feature = "burn-model")]
 pub mod burn_model;
@@ -23,6 +24,17 @@ pub mod stwo_backend;
 pub mod tui;
 pub mod verification;
 
+pub use agent_step_receipt::{
+    commit_agent_dependency_drop_manifest_v1, commit_agent_evidence_manifest_v1,
+    commit_agent_step_receipt_v1, load_agent_step_receipt_bundle_v1,
+    parse_agent_step_receipt_bundle_v1_json, verify_agent_step_receipt_bundle_v1,
+    AgentDependencyDropEntryV1, AgentDependencyDropManifestV1, AgentDependencyKind,
+    AgentEvidenceEntryV1, AgentEvidenceKind, AgentEvidenceManifestV1, AgentFieldTrustClassV1,
+    AgentRequiredSubfactKind, AgentRequiredSubfactV1, AgentStepReceiptBundleV1, AgentStepReceiptV1,
+    AgentTrustClass, AGENT_DEPENDENCY_DROP_MANIFEST_VERSION_V1, AGENT_EVIDENCE_MANIFEST_VERSION_V1,
+    AGENT_STEP_RECEIPT_PARSER_VERSION_V1, AGENT_STEP_RECEIPT_STWO_TEST_BACKEND_VERSION,
+    AGENT_STEP_RECEIPT_TEST_VERIFIER_DOMAIN, AGENT_STEP_RECEIPT_VERSION_V1,
+};
 pub use assembly::parse_program;
 #[cfg(feature = "burn-model")]
 pub use burn_model::{

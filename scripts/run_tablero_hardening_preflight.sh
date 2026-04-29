@@ -92,6 +92,7 @@ PY
 
 run_logged fmt cargo fmt --check
 run_logged diff-check git diff --check
+run_logged agent-step-receipt-rust cargo test --lib agent_step_receipt
 run_logged agent-step-relabeling python3 -B -m unittest scripts.tests.test_agent_step_receipt_relabeling_harness
 run_logged agent-step-relabeling-cli-evidence check_agent_step_relabeling_cli_evidence
 run_logged carry-aware-air cargo +"${HARDENING_TOOLCHAIN}" test --features stwo-backend --lib carry_aware_

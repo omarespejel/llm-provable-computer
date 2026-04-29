@@ -232,6 +232,19 @@ The smoke contract is intentionally modest: the targets are exercised under a
 bounded wall-clock budget, and timeout itself is treated as normal completion
 as long as libFuzzer emits no crash artifact.
 
+## Agent-step receipt parser surface
+
+The packet now includes the production Rust `AgentStepReceiptV1` parser/verifier
+tests in addition to the Python stale-evidence mutation oracle. The Rust surface
+checks duplicate JSON keys, unknown fields, NFC string canonicalization,
+commitment algorithm casing, exact parser/domain/backend allowlists,
+trust-vector coverage and ordering, evidence-kind compatibility, omitted-field
+nullness, and one-to-one dependency-drop support.
+
+This does not claim a proved agent. It only makes the verifier-facing receipt
+object fail closed before future model, tool, policy, or memory evidence is
+attached.
+
 ## Exact hardening questions
 
 1. Is the theorem in `docs/engineering/tablero-soundness-note-2026-04-25.md`

@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provable-transformer-vm.local/spec/agent-step-receipt-v1.schema.json",
+  "title": "AgentStepReceiptV1 Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt", "evidence_manifest", "dependency_drop_manifest"],
+  "properties": {
+    "receipt": { "$ref": "#/$defs/receipt" },
+    "evidence_manifest": { "$ref": "#/$defs/evidence_manifest" },
+    "dependency_drop_manifest": { "$ref": "#/$defs/dependency_drop_manifest" }
+  },
+  "$defs": {
+    "trust_class": {
+      "type": "string",
+      "enum": ["omitted", "attested", "replayed", "dependency_dropped", "proved"]
+    },
+    "commitment": {
+      "type": "string",
+      "pattern": "^(blake2b-256|blake2s-256|sha256):[0-9a-f]{64}$|^sha384:[0-9a-f]{96}$|^sha512:[0-9a-f]{128}$"
+    },
+    "field_path": {
+      "type": "string",
+      "enum": [
+        "/receipt_version",
+        "/verifier_domain",
+        "/runtime_domain",
+        "/proof_backend",
+        "/proof_backend_version",
+        "/receipt_parser_version",
+        "/prior_state_commitment",
+        "/observation_commitment",
+        "/model_identity",
+        "/model_commitment",
+        "/model_config_commitment",
+        "/model_receipt_commitment",
+        "/tool_receipts_root",
+        "/policy_commitment",
+        "/action_commitment",
+        "/next_state_commitment",
+        "/transcript_commitment",
+        "/dependency_drop_manifest_commitment",
+        "/evidence_manifest_commitment",
+        "/field_trust_class_vector",
+        "/receipt_commitment"
+      ]
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_version",
+        "verifier_domain",
+        "runtime_domain",
+        "proof_backend",
+        "proof_backend_version",
+        "receipt_parser_version",
+        "prior_state_commitment",
+        "observation_commitment",
+        "model_identity",
+        "model_commitment",
+        "model_config_commitment",
+        "model_receipt_commitment",
+        "tool_receipts_root",
+        "policy_commitment",
+        "action_commitment",
+        "next_state_commitment",
+        "transcript_commitment",
+        "dependency_drop_manifest_commitment",
+        "evidence_manifest_commitment",
+        "field_trust_class_vector",
+        "receipt_commitment"
+      ],
+      "properties": {
+        "receipt_version": { "const": "agent-step-receipt-v1" },
+        "verifier_domain": { "type": "string" },
+        "runtime_domain": { "type": "string" },
+        "proof_backend": { "type": "string" },
+        "proof_backend_version": { "type": "string" },
+        "receipt_parser_version": { "type": "string" },
+        "prior_state_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "observation_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "model_identity": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "model_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "model_config_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "model_receipt_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "tool_receipts_root": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "policy_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "action_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "next_state_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "transcript_commitment": { "anyOf": [{ "$ref": "#/$defs/commitment" }, { "type": "null" }] },
+        "dependency_drop_manifest_commitment": { "$ref": "#/$defs/commitment" },
+        "evidence_manifest_commitment": { "$ref": "#/$defs/commitment" },
+        "field_trust_class_vector": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field_path", "trust_class"],
+            "properties": {
+              "field_path": { "$ref": "#/$defs/field_path" },
+              "trust_class": { "$ref": "#/$defs/trust_class" }
+            }
+          }
+        },
+        "receipt_commitment": { "$ref": "#/$defs/commitment" }
+      }
+    },
+    "evidence_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_version", "entries"],
+      "properties": {
+        "manifest_version": { "const": "agent-step-evidence-manifest-v1" },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_id",
+              "evidence_kind",
+              "commitment",
+              "trust_class",
+              "verifier_domain",
+              "corresponding_receipt_field",
+              "non_claims"
+            ],
+            "properties": {
+              "evidence_id": {
+                "type": "string",
+                "pattern": "^urn:agent-step:evidence:[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9._-]{0,127}$"
+              },
+              "evidence_kind": {
+                "type": "string",
+                "enum": ["proof", "attestation", "replay_source", "subreceipt"]
+              },
+              "commitment": { "$ref": "#/$defs/commitment" },
+              "trust_class": { "$ref": "#/$defs/trust_class" },
+              "verifier_domain": { "type": "string" },
+              "corresponding_receipt_field": { "$ref": "#/$defs/field_path" },
+              "non_claims": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "dependency_drop_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_version", "entries"],
+      "properties": {
+        "manifest_version": { "const": "agent-step-dependency-drop-manifest-v1" },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dependency_id",
+              "dependency_kind",
+              "source_commitment",
+              "replacement_commitment",
+              "replacement_receipt_version",
+              "trust_class",
+              "verifier_domain",
+              "corresponding_receipt_field",
+              "reason_for_drop",
+              "required_subproof_or_attestation",
+              "non_claims"
+            ],
+            "properties": {
+              "dependency_id": {
+                "type": "string",
+                "pattern": "^urn:agent-step:dependency:[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9._-]{0,127}$"
+              },
+              "dependency_kind": {
+                "type": "string",
+                "enum": [
+                  "source_manifest",
+                  "proof_trace",
+                  "model_receipt",
+                  "tool_receipt",
+                  "state_commitment",
+                  "policy_commitment",
+                  "transcript",
+                  "other"
+                ]
+              },
+              "source_commitment": { "$ref": "#/$defs/commitment" },
+              "replacement_commitment": { "$ref": "#/$defs/commitment" },
+              "replacement_receipt_version": { "type": "string" },
+              "trust_class": { "$ref": "#/$defs/trust_class" },
+              "verifier_domain": { "type": "string" },
+              "corresponding_receipt_field": { "$ref": "#/$defs/field_path" },
+              "reason_for_drop": { "type": "string", "minLength": 1 },
+              "required_subproof_or_attestation": {
+                "anyOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind", "commitment", "verifier_domain"],
+                    "properties": {
+                      "kind": { "type": "string", "enum": ["proof", "attestation", "subreceipt"] },
+                      "commitment": { "$ref": "#/$defs/commitment" },
+                      "verifier_domain": { "type": "string" }
+                    }
+                  }
+                ]
+              },
+              "non_claims": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

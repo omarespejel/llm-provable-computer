@@ -41,6 +41,7 @@ stwo = { version = "2.2.0", default-features = false, features = ["std", "prover
 stwo-constraint-framework = { version = "2.2.0", default-features = false, features = ["std", "prover"], optional = true }
 thiserror = "2.0.12"
 tract-onnx = { version = "0.23.0-dev.2", optional = true }
+unicode-normalization = "0.1"
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
