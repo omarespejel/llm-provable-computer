@@ -503,7 +503,10 @@ def to_tsv(payload: dict[str, Any]) -> str:
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
     for case in payload["cases"]:
-        writer.writerow({column: case[column] for column in TSV_COLUMNS})
+        row = {column: case[column] for column in TSV_COLUMNS}
+        if row["error"] == "":
+            row["error"] = "none"
+        writer.writerow(row)
     return output.getvalue()
 
 
