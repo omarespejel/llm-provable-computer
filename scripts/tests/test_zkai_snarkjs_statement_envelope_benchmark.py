@@ -72,6 +72,37 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "snarkjs groth16 verifier rejected"):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
+    def test_statement_envelope_rejects_inline_verification_key_swap(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        envelope["verification_key"]["protocol"] = "tampered-groth16"
+        envelope["statement"]["verification_key_sha256"] = BENCH.verification_key_sha256(
+            envelope["verification_key"]
+        )
+        BENCH._refresh_statement_commitment(envelope)
+
+        with self.assertRaisesRegex(
+            BENCH.SnarkjsEnvelopeError,
+            "verification-key object does not match verification-key artifact",
+        ):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
+    def test_statement_envelope_rejects_missing_artifact_reference_fail_closed(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        del envelope["artifacts"]["verification_key_path"]
+
+        with self.assertRaisesRegex(
+            BENCH.SnarkjsEnvelopeError,
+            "artifacts.verification_key_path must be a non-empty string",
+        ):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
+    def test_proof_only_rejects_malformed_payload_fail_closed(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        envelope["public_signals"] = {"not": "a list"}
+
+        with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "public_signals must be a list"):
+            BENCH.verify_proof_only(envelope, external_verify=fake_external_verify)
+
     def test_public_signal_mutation_rejects_malformed_shape(self) -> None:
         with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "non-empty first public signal"):
             BENCH.mutate_first_public_signal([])
@@ -146,6 +177,30 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
                 del os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"]
             else:
                 os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"] = original
+
+    def test_command_json_override_rejects_malformed_json(self) -> None:
+        original = os.environ.get("ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON")
+        os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"] = "{"
+        try:
+            with self.assertRaisesRegex(RuntimeError, "valid JSON array of strings"):
+                BENCH._canonical_command(["ignored"])
+        finally:
+            if original is None:
+                del os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"]
+            else:
+                os.environ["ZKAI_SNARKJS_BENCHMARK_COMMAND_JSON"] = original
+
+    def test_snarkjs_command_rejects_empty_argv(self) -> None:
+        original = os.environ.get("ZKAI_SNARKJS_COMMAND")
+        os.environ["ZKAI_SNARKJS_COMMAND"] = ""
+        try:
+            with self.assertRaisesRegex(BENCH.SnarkjsEnvelopeError, "must not be empty"):
+                BENCH.snarkjs_verify({}, [], {})
+        finally:
+            if original is None:
+                del os.environ["ZKAI_SNARKJS_COMMAND"]
+            else:
+                os.environ["ZKAI_SNARKJS_COMMAND"] = original
 
     def test_checked_evidence_uses_portable_repro_command(self) -> None:
         path = (

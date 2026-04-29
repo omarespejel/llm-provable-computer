@@ -11,8 +11,10 @@ A zkAI verifier usually has to answer two different questions:
    and verifier domain claimed by the surrounding system?
 
 The first question belongs to the proof system. The second question belongs to a
-statement receipt. This note defines a proof-stack-neutral receipt shape for the
-second question.
+statement receipt. This note defines an adapter-neutral receipt shape for the
+second question: the schema can wrap different proof stacks, but every accepted
+receipt remains bound to an explicit backend, version, verifier domain, setup,
+and verifying key. It is not a backend-independence claim.
 
 The checked EZKL external-adapter result demonstrates why this separation is
 needed. The raw EZKL proof verifier accepts the baseline proof and rejects the
@@ -168,6 +170,10 @@ The second checked external adapter is a tiny Circom/snarkjs Groth16 artifact.
 The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the public-signal mutation. The statement envelope
 accepts the same baseline and rejects `14 / 14` checked mutations.
+
+These counts are adapter-scoped calibration suites, not full
+`zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
+for a production receipt remains the relabeling threat model above.
 
 Evidence handles:
 
