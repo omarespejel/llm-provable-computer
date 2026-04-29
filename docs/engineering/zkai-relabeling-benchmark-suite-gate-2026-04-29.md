@@ -33,10 +33,10 @@ performance and does not prove the soundness of an underlying proof system.
 Regeneration command:
 
 ```bash
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
 ZKAI_RELABELING_BENCHMARK_GIT_COMMIT=9e65141b206d9dbfacd51cbc5c17d5f1225d8b59 \
-ZKAI_RELABELING_BENCHMARK_COMMAND="CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/.ptvm-targets/agent-relabeling-bench python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv" \
-CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/.ptvm-targets/agent-relabeling-bench \
-  python3.12 scripts/zkai_relabeling_benchmark_suite.py \
+ZKAI_RELABELING_BENCHMARK_COMMAND="CARGO_TARGET_DIR=target/agent-relabeling-bench python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv" \
+python3.12 scripts/zkai_relabeling_benchmark_suite.py \
     --adapter rust-production \
     --write-json docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.json \
     --write-tsv docs/engineering/evidence/zkai-relabeling-benchmark-suite-2026-04.tsv
@@ -48,8 +48,8 @@ Validation commands:
 python3.12 -m unittest \
   scripts.tests.test_agent_step_receipt_relabeling_harness \
   scripts.tests.test_zkai_relabeling_benchmark_suite
-CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/zk-ai/.ptvm-targets/agent-relabeling-bench \
-  python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --json
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/agent-relabeling-bench}"
+python3.12 scripts/zkai_relabeling_benchmark_suite.py --adapter rust-production --json
 python3.12 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
 ```

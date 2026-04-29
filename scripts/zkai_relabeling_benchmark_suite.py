@@ -318,6 +318,15 @@ def run_suite(adapter: str, command: list[str] | None = None) -> dict[str, Any]:
     else:
         raise ValueError(f"unsupported adapter {adapter!r}")
 
+    expected_mutations = set(_case_catalog())
+    actual_mutations = set(raw_results)
+    if actual_mutations != expected_mutations or len(raw_results) != len(expected_mutations):
+        raise RuntimeError(
+            "adapter result coverage mismatch: "
+            f"missing={sorted(expected_mutations - actual_mutations)} "
+            f"extra={sorted(actual_mutations - expected_mutations)}"
+        )
+
     artifact_hashes = _artifact_hashes()
     git_commit = _git_commit()
     cases = []
