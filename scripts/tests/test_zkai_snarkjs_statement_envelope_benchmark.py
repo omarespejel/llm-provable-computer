@@ -134,6 +134,23 @@ class ZkAISnarkjsStatementEnvelopeBenchmarkTests(unittest.TestCase):
 
         self.assertFalse(BENCH.benchmark_passed(payload))
 
+    def test_benchmark_records_inspectable_mutation_payload_digests(self) -> None:
+        payload = BENCH.run_benchmark(external_verify=fake_external_verify)
+        case = next(
+            item
+            for item in payload["cases"]
+            if item["adapter"] == "snarkjs-statement-envelope"
+            and item["mutation"] == "model_id_relabeling"
+        )
+
+        self.assertIn("baseline_statement", case)
+        self.assertIn("mutated_statement", case)
+        self.assertNotEqual(case["baseline_statement"], case["mutated_statement"])
+        self.assertEqual(
+            case["mutated_statement_sha256"],
+            BENCH.sha256_bytes(BENCH.canonical_json_bytes(case["mutated_statement"])),
+        )
+
     def test_main_fails_when_statement_envelope_baseline_is_rejected(self) -> None:
         payload = valid_pass_payload()
         for case in payload["cases"]:

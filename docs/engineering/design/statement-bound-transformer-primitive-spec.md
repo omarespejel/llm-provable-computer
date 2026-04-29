@@ -105,7 +105,9 @@ mutations for:
 
 The result is not credible if rejection happens only because a mutation produces
 malformed syntax. Commitment-valued mutations must use syntactically valid but
-wrong commitments.
+wrong commitments. In particular, the `verifying_key_commitment` mutation must
+swap the verifier/AIR identity commitment to a valid but wrong value and must be
+rejected as a statement-binding failure, not as a parser failure.
 
 ## Minimum GO result
 
