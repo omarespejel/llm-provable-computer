@@ -320,7 +320,7 @@
     },
     {
       "baseline_accepted": true,
-      "error": "Stwo benchmark payload no longer passes",
+      "error": "checked Stwo statement-envelope benchmark did not pass",
       "mutated_accepted": false,
       "mutation": "checked_stwo_evidence_tampered",
       "rejected": true,
@@ -372,7 +372,7 @@
       "--write-tsv",
       "docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv"
     ],
-    "git_commit": "eb064c1c0b1ad0e18993508cef7c3bc21919b677"
+    "git_commit": "cc568361eeeea3483513abe74311a81b8932e64d"
   },
   "result": "GO",
   "schema": "agent-step-zkai-stwo-composition-v1",

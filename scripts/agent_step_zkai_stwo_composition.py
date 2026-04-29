@@ -139,9 +139,7 @@ def _source_evidence_path(path: pathlib.Path) -> pathlib.Path:
     return resolved
 
 
-def checked_stwo_evidence(path: pathlib.Path) -> dict[str, Any]:
-    evidence_path = _source_evidence_path(path)
-    payload = load_json(evidence_path)
+def _validate_stwo_evidence_payload(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise CompositionError("Stwo evidence must be a JSON object")
     if payload.get("schema") != STWO.BENCHMARK_SCHEMA:
@@ -167,13 +165,16 @@ def checked_stwo_evidence(path: pathlib.Path) -> dict[str, Any]:
     return payload
 
 
+def checked_stwo_evidence(path: pathlib.Path) -> dict[str, Any]:
+    evidence_path = _source_evidence_path(path)
+    return _validate_stwo_evidence_payload(load_json(evidence_path))
+
+
 def _checked_stwo_payload(stwo_evidence: dict[str, Any]) -> dict[str, Any]:
     checked_stwo_evidence_path = stwo_evidence.get("_source_path")
     if checked_stwo_evidence_path is not None:
         return checked_stwo_evidence(pathlib.Path(checked_stwo_evidence_path))
-    if not STWO.benchmark_passed(stwo_evidence):
-        raise CompositionError("Stwo benchmark payload no longer passes")
-    return stwo_evidence
+    return _validate_stwo_evidence_payload(stwo_evidence)
 
 
 def _assert_evidence_matches_envelope(stwo_evidence: dict[str, Any], envelope: dict[str, Any]) -> None:
