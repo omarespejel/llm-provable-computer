@@ -31,6 +31,16 @@ verify_agent_step_receipt_bundle_v1_with_model_subreceipt_callback(
 )
 ```
 
+The Stwo zkAI specialization now uses the same seam directly:
+
+```rust
+verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+    &bundle,
+    &candidate_zkai_statement_receipt,
+    &checked_stwo_evidence,
+)
+```
+
 If `/model_receipt_commitment` is supported by compatible `subreceipt` evidence,
 the stricter API requires both a candidate nested receipt payload and a callback.
 The callback receives the payload plus the agent-side fields that must be checked
@@ -65,10 +75,15 @@ New Rust tests cover:
 | Dependency-dropped model subreceipt missing callback | Rejects |
 | Multiple matching model subreceipt evidence entries | Rejects as ambiguous |
 | Self-consistent agent receipt whose model identity drifts from nested subreceipt | Rejects through callback |
+| Checked Stwo `zkAIStatementReceiptV1` consumed through Rust callback | Accepts |
+| Agent-to-zkAI model identity drift | Rejects |
+| Stwo statement policy relabeling | Rejects |
+| Forged checked Stwo evidence summary | Rejects |
+| Checked Stwo evidence baseline mismatch | Rejects |
 
 This closes the implementation gap left explicit by the composition gate: a
-production caller can now keep the agent parser and nested model-subreceipt
-verifier in one Rust verification path.
+production caller can now keep the agent parser and checked Stwo
+model-subreceipt verifier in one Rust verification path.
 
 ## Reproduction
 
@@ -94,7 +109,7 @@ just gate
 
 ## Next hardening
 
-The next useful step is to plug the checked Stwo `zkAIStatementReceiptV1` verifier
-into this callback path directly, so the checked composition fixture exercises the
-same Rust callback boundary instead of only the standalone Python composition
-harness.
+The checked Stwo `zkAIStatementReceiptV1` verifier is now plugged into this
+callback path. The next useful hardening step is to keep this callback shape
+while replacing the bounded primitive with a larger Stwo-native statement-bound
+transformer block.

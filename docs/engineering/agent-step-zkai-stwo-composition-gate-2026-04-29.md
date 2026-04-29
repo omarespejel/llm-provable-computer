@@ -12,8 +12,8 @@ This is a composition gate, not a new proof-system result. It checks that:
   checked Stwo statement receipt,
 - the resulting `AgentStepReceiptV1` bundle verifies with the existing Python
   reference verifier,
-- the same composed bundle verifies with the Rust production
-  `AgentStepReceiptV1` parser/verifier,
+- the same composed bundle and nested statement receipt verify through the Rust
+  production `AgentStepReceiptV1` zkAI/Stwo callback verifier,
 - relabeling at either layer rejects fail-closed.
 
 ## Artifacts
@@ -28,6 +28,8 @@ This is a composition gate, not a new proof-system result. It checks that:
   `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv`
 - Composed receipt fixture:
   `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/agent_step_zkai_stwo_composed_receipt.json`
+- Nested zkAI statement receipt fixture consumed by the Rust callback verifier:
+  `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/zkai_stwo_statement_receipt.json`
 
 The composed receipt binds:
 
@@ -53,19 +55,22 @@ Decision: **GO**.
 | Checked source-evidence tamper | 1 / 1 |
 | Total | 36 / 36 |
 
-The composed `AgentStepReceiptV1` baseline is accepted by the Rust production
-parser through:
+The composed `AgentStepReceiptV1` baseline and the nested Stwo
+`zkAIStatementReceiptV1` fixture are accepted by the Rust production callback
+path through:
 
 ```bash
-cargo run --quiet --example agent_step_receipt_verify -- \
-  baseline=docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/agent_step_zkai_stwo_composed_receipt.json
+cargo run --quiet --example agent_step_zkai_stwo_receipt_verify -- \
+  docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/agent_step_zkai_stwo_composed_receipt.json \
+  docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04/zkai_stwo_statement_receipt.json \
+  docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json
 ```
 
 The recorded Rust adapter output is:
 
 ```json
 {
-  "schema": "agent-step-receipt-rust-verifier-adapter-v1",
+  "schema": "agent-step-zkai-stwo-rust-callback-verifier-v1",
   "results": [
     {
       "case_id": "baseline",
@@ -88,19 +93,18 @@ Stwo proof
         -> future Tablero / audit / settlement boundary
 ```
 
-The important negative detail is that the agent receipt parser alone does not
-inspect the nested Stwo receipt body. That is deliberate: the parser checks the
-agent receipt's internal canonicalization, evidence, and trust rules. The
-composition harness checks the nested `zkAIStatementReceiptV1` and the
-cross-layer equality between agent fields and statement fields. A production
-agent verifier must keep both layers, or must replace the harness with an
-equivalent nested-subreceipt verifier callback.
+The important negative detail is that the parser-only agent receipt API still
+does not inspect the nested Stwo receipt body. That is deliberate: the parser
+checks the agent receipt's internal canonicalization, evidence, and trust rules.
+The production Rust callback path now checks the nested `zkAIStatementReceiptV1`,
+the checked Stwo evidence handle, and the cross-layer equality between agent
+fields and statement fields.
 
 The checked source-evidence handle is bound to the exact nested receipt, not just
-to a generic GO result: the harness validates the Stwo evidence schema, suite,
-system, version, baseline statement commitment, baseline statement payload hash,
-baseline proof commitment, and baseline public-instance commitment before
-accepting the composed agent receipt.
+to a generic GO result: the Rust callback verifier validates the Stwo evidence
+schema, suite, system, version, case corpus, baseline statement commitment,
+baseline statement payload hash, baseline proof commitment, and baseline
+public-instance commitment before accepting the composed agent receipt.
 
 ## Reproduction
 
@@ -139,6 +143,6 @@ python3 -m unittest \
 ## Follow-up
 
 The immediate nested-subreceipt verifier callback hardening is implemented in
-`docs/engineering/agent-step-model-subreceipt-callback-gate-2026-04-29.md`.
-The next useful step is to plug the checked Stwo `zkAIStatementReceiptV1` adapter
-into that Rust callback path directly.
+`docs/engineering/agent-step-model-subreceipt-callback-gate-2026-04-29.md` and
+now exercised by this gate. The next useful research step is a larger
+Stwo-native statement-bound transformer block, not another callback seam.
