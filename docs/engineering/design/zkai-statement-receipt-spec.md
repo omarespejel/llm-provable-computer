@@ -172,12 +172,12 @@ The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the public-signal mutation. The statement envelope
 accepts the same baseline and rejects `14 / 14` checked mutations.
 
-The third checked adapter is native to this repository's Stwo lane: a
-linear-block-with-lookup proof over `programs/linear_block_v4_with_lookup.tvm`.
-The raw Stwo `verify-stark --reexecute` path accepts the baseline and rejects
-`1 / 14` checked relabeling mutations: the proof-public-claim mutation. The
-statement envelope accepts the same baseline and rejects `14 / 14` checked
-mutations.
+The third checked adapter is native to this repository's Stwo lane
+(`stwo-phase10-linear-block-v4-with-lookup`): a linear-block-with-lookup proof
+over `programs/linear_block_v4_with_lookup.tvm`. The raw Stwo
+`verify-stark --reexecute` path accepts the baseline and rejects `1 / 14`
+checked relabeling mutations: the proof-public-claim mutation. The statement
+envelope accepts the same baseline and rejects `14 / 14` checked mutations.
 
 These counts are adapter-scoped calibration suites, not full
 `zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
