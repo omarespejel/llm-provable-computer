@@ -39,7 +39,7 @@
     "proof_backend": "stwo",
     "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
     "proof_path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-2026-05/linear_block_v4_with_lookup.proof.json.gz",
-    "proof_payload_bytes": 90458,
+    "proof_payload_bytes": 277942,
     "proof_sha256": "50849745b28d62d1045372678215ba1df45ac6bb033084249302c8dc88c84586",
     "statement_envelope_mutations_checked": 14,
     "statement_envelope_mutations_rejected": 14,
@@ -77,7 +77,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
     ],
-    "git_commit": "f4248edd0e775b19cfe09e0ece6d1a3d4e451a2a"
+    "git_commit": "a54145d665f36b429dc903e67c1a9ff01dacc2ba"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "rows": [
