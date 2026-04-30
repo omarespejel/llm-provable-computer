@@ -393,7 +393,7 @@ The staged route prevents the repo from claiming a fully proved agent before the
 model, tool, policy, and memory surfaces each have their own evidence.
 
 The first four steps are now implemented by the receipt parser and relabeling
-harness. The fifth step is checked by the Stwo composition gate:
+harness. The fifth step is checked first by the Stwo primitive composition gate:
 
 - `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md`
 - `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`
@@ -419,6 +419,20 @@ The Stwo specialization is
 validates the bounded checked Stwo `zkAIStatementReceiptV1` adapter result
 through that callback seam.
 
+The same callback seam now also accepts the bounded Stwo transformer-block
+statement receipt:
+
+- `docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`
+- `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
+- `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv`
+
+That gate composes
+`urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1` into
+`AgentStepReceiptV1.model_receipt_commitment`, rejects `36 / 36` checked
+mutations across the agent receipt, the nested zkAI statement receipt, the
+cross-layer binding, and the source-evidence handle, and verifies the honest
+bundle through the production Rust callback path.
+
 ## Landscape Context
 
 This receipt layer is complementary to zkML systems and zkVM systems. Generic
@@ -426,10 +440,11 @@ and specialized systems can prove or attest subfacts; the receipt binds those
 subfacts into one typed agent-step claim. This is the repo's intended bridge from
 STARK-zkML toward verifiable intelligence.
 
-The near-term competitor-facing result is now a statement-bound Stwo transformer
-primitive receipt plus a checked agent-step composition gate that consumes it as
-a proved model subreceipt. This is still not a claim of fully proved agents; it
-is the first concrete bridge from isolated zkAI proof receipts into higher-level
+The near-term competitor-facing result is now a statement-bound Stwo
+transformer-block receipt plus a checked agent-step composition gate that
+consumes it as a proved model subreceipt. This is still not a claim of fully
+proved agents, full transformer inference, or matched zkML throughput; it is the
+first concrete bridge from isolated zkAI proof receipts into higher-level
 agent/action receipts.
 
 Useful external reference points for the next research pass:

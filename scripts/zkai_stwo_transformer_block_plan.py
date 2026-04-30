@@ -28,7 +28,7 @@ DEFAULT_PLAN_PATH = (
 PLAN_SCHEMA = "zkai-stwo-statement-bound-transformer-block-plan-v1"
 PLAN_STATUS = "design_gate"
 BASELINE_PROOF_SYSTEM_VERSION = "stwo-phase10-linear-block-v4-with-lookup"
-TARGET_NAME = "rmsnorm-affine-residual-block-v1"
+TARGET_NAME = "rmsnorm-gated-affine-residual-block-v1"
 TARGET_STATEMENT_KIND = "transformer-block"
 EXPECTED_STATEMENT_MUTATIONS = 14
 EXPECTED_PROOF_ONLY_REJECTIONS = 1
@@ -38,7 +38,9 @@ REQUIRED_OPERATION_IDS = frozenset(
     {
         "rmsnorm_scale_lookup",
         "quantized_affine_projection",
+        "gated_value_mix",
         "residual_add",
+        "bounded_activation_lookup",
     }
 )
 REQUIRED_PUBLIC_COMMITMENTS = frozenset(
@@ -79,6 +81,8 @@ REQUIRED_NON_CLAIM_FRAGMENTS = (
     "not a throughput or latency benchmark",
     "not backend independence",
     "not recursive or on-chain verification",
+    "not a d64 or d128 matched benchmark",
+    "not full swiglu mlp",
     "does not claim that the existing linear-block primitive already proves transformer-block semantics",
 )
 REQUIRED_VALIDATION_COMMAND_FRAGMENTS = (

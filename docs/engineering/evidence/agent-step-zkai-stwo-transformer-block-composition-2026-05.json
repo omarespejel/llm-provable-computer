@@ -1,0 +1,423 @@
+{
+  "all_mutations_rejected": true,
+  "baseline_accepted": true,
+  "case_count": 36,
+  "cases": [
+    {
+      "baseline_accepted": true,
+      "error": "unsupported proof backend version",
+      "mutated_accepted": false,
+      "mutation": "backend_proof_system_version",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "dependency_drop_manifest_commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "dependency_drop_manifest",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence_manifest_commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "evidence_manifest",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /observation_commitment does not match zkAIStatementReceiptV1 input_commitment",
+      "mutated_accepted": false,
+      "mutation": "input_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /model_identity does not match zkAIStatementReceiptV1 model_id",
+      "mutated_accepted": false,
+      "mutation": "model_id",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /model_receipt_commitment does not match zkAIStatementReceiptV1 statement_commitment",
+      "mutated_accepted": false,
+      "mutation": "model_receipt_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence commitment does not bind /next_state_commitment",
+      "mutated_accepted": false,
+      "mutation": "next_state_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /action_commitment does not match zkAIStatementReceiptV1 output_commitment",
+      "mutated_accepted": false,
+      "mutation": "output_action_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence commitment does not bind /policy_commitment",
+      "mutated_accepted": false,
+      "mutation": "policy_hash",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence commitment does not bind /prior_state_commitment",
+      "mutated_accepted": false,
+      "mutation": "prior_state_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "unsupported proof backend version",
+      "mutated_accepted": false,
+      "mutation": "proof_backend",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /model_config_commitment does not match zkAIStatementReceiptV1 config_commitment",
+      "mutated_accepted": false,
+      "mutation": "quantization_config_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "unsupported receipt parser version",
+      "mutated_accepted": false,
+      "mutation": "receipt_parser_version",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "unsupported receipt version",
+      "mutated_accepted": false,
+      "mutation": "receipt_version",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /runtime_domain does not match zkAIStatementReceiptV1 verifier_domain",
+      "mutated_accepted": false,
+      "mutation": "runtime_domain",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence commitment does not bind /tool_receipts_root",
+      "mutated_accepted": false,
+      "mutation": "tool_output_hash",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence commitment does not bind /transcript_commitment",
+      "mutated_accepted": false,
+      "mutation": "transcript_hash",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "insufficient evidence trust class for /tool_receipts_root",
+      "mutated_accepted": false,
+      "mutation": "trust_class_upgrade_without_proof",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "unsupported verifier domain",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_separator",
+      "rejected": true,
+      "rejection_layer": "agent_receipt_verifier",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "AgentStepReceiptV1 /model_commitment does not match zkAIStatementReceiptV1 model_artifact_commitment",
+      "mutated_accepted": false,
+      "mutation": "weights_commitment",
+      "rejected": true,
+      "rejection_layer": "agent_to_zkai_link_binding",
+      "surface": "agent_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "config commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_config_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "evidence manifest commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_evidence_manifest_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "input commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_input_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "model artifact commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_model_artifact_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "statement policy mismatch for model_id",
+      "mutated_accepted": false,
+      "mutation": "zkai_model_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "output commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_output_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "proof commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_proof_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "proof artifact does not match envelope proof",
+      "mutated_accepted": false,
+      "mutation": "zkai_proof_public_claim_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "proof backend version does not match statement policy",
+      "mutated_accepted": false,
+      "mutation": "zkai_proof_system_version_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "public-instance commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_public_instance_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "setup commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_setup_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "statement_commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_statement_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "statement policy mismatch for verifier_domain",
+      "mutated_accepted": false,
+      "mutation": "zkai_verifier_domain_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "verifying-key commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "zkai_verifying_key_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "zkai_statement_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "statement policy mismatch for model_id",
+      "mutated_accepted": false,
+      "mutation": "agent_points_to_mutated_zkai_subreceipt",
+      "rejected": true,
+      "rejection_layer": "zkai_statement_receipt",
+      "surface": "cross_layer_composition"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "checked Stwo transformer-block statement-envelope benchmark did not pass",
+      "mutated_accepted": false,
+      "mutation": "checked_stwo_evidence_tampered",
+      "rejected": true,
+      "rejection_layer": "checked_source_evidence",
+      "surface": "source_evidence"
+    }
+  ],
+  "composed_agent_receipt": {
+    "agent_field_to_zkai_statement_field": {
+      "action_commitment": "output_commitment",
+      "model_commitment": "model_artifact_commitment",
+      "model_config_commitment": "config_commitment",
+      "model_identity": "model_id",
+      "model_receipt_commitment": "statement_commitment",
+      "observation_commitment": "input_commitment",
+      "runtime_domain": "verifier_domain"
+    },
+    "model_receipt_commitment": "blake2b-256:196d1ebb936119666979ff13fa576d8944daa1f2d1035d1c536f6a4aa0b6674b",
+    "model_receipt_statement_commitment": "blake2b-256:196d1ebb936119666979ff13fa576d8944daa1f2d1035d1c536f6a4aa0b6674b",
+    "model_subreceipt_path": "docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05/zkai_stwo_statement_receipt.json",
+    "model_subreceipt_sha256": "b74593f8907683ca8dac63647eab08a373cfe04cb483afd4c6c3e1ecea022358",
+    "path": "docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05/agent_step_zkai_stwo_composed_receipt.json",
+    "receipt_commitment": "blake2b-256:feb009dcdd95fca69cf5e066ba03253ff6e7d73384a174be4d9ec8fe0c3db6a3",
+    "rust_agent_receipt_verifier": {
+      "results": [
+        {
+          "accepted": true,
+          "case_id": "baseline",
+          "error": ""
+        }
+      ],
+      "schema": "agent-step-zkai-stwo-rust-callback-verifier-v1"
+    },
+    "schema": "agent-step-zkai-stwo-transformer-block-composed-bundle-v1",
+    "sha256": "459b8814305baf1921eac9387926255237665ad252b65ebc8c8d342ddf0ffab7"
+  },
+  "non_claims": [
+    "not_end_to_end_verifiable_intelligence",
+    "not_full_transformer_inference",
+    "not_a_new_stwo_security_audit",
+    "not_backend_independence",
+    "does_not_prove_agent_truthfulness_or_policy_semantics"
+  ],
+  "repro": {
+    "command": [
+      "python3.12",
+      "scripts/agent_step_zkai_stwo_transformer_block_composition.py",
+      "--rust-verify",
+      "--write-json",
+      "docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json",
+      "--write-tsv",
+      "docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv"
+    ],
+    "git_commit": "f255c8151463a577fa34aaef45e1e78afb160472"
+  },
+  "result": "GO",
+  "schema": "agent-step-zkai-stwo-transformer-block-composition-v1",
+  "source_stwo_statement_evidence": {
+    "external_system": {
+      "name": "ptvm-stwo-backend",
+      "proof_system": "stwo-transparent-stark",
+      "verification_api": "cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark <proof> --reexecute",
+      "version": "stwo-phase10-linear-block-v4-with-lookup"
+    },
+    "path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json",
+    "schema": "zkai-stwo-statement-envelope-benchmark-v1",
+    "sha256": "9d602063f97d80ef2b8a5891312bcf0e1de69ebc9c4e6e5cb0d44cc7c896f80e",
+    "summary": {
+      "stwo-proof-only": {
+        "all_mutations_rejected": false,
+        "baseline_accepted": true,
+        "mutation_count": 14,
+        "mutations_rejected": 1
+      },
+      "stwo-statement-envelope": {
+        "all_mutations_rejected": true,
+        "baseline_accepted": true,
+        "mutation_count": 14,
+        "mutations_rejected": 14
+      }
+    }
+  },
+  "suite_kind": "agent_step_zkai_statement_receipt_composition",
+  "summary": {
+    "agent_receipt_mutations": 20,
+    "cross_layer_composition_mutations": 1,
+    "mutations_rejected": 36,
+    "source_evidence_mutations": 1,
+    "zkai_statement_receipt_mutations": 14
+  },
+  "zkai_statement_receipt": {
+    "model_id": "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1",
+    "proof_system": "stwo-transparent-stark",
+    "proof_system_version": "stwo-phase10-linear-block-v4-with-lookup",
+    "receipt_version": "zkai-statement-receipt-v1",
+    "statement_commitment": "blake2b-256:196d1ebb936119666979ff13fa576d8944daa1f2d1035d1c536f6a4aa0b6674b",
+    "statement_kind": "transformer-block",
+    "verifier_domain": "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup"
+  }
+}

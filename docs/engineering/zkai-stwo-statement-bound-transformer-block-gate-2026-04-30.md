@@ -10,7 +10,9 @@ linear-block-with-lookup statement receipt:
 > already checked for external adapters, the native Stwo primitive, and the
 > composed agent-step receipt?
 
-This is a design and implementation gate. It is not yet a proof result.
+This is a design and implementation gate. It is not itself the proof result.
+The checked result is recorded in
+`docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`.
 
 ## Current baseline
 
@@ -35,14 +37,16 @@ It does not establish transformer-block semantics.
 
 The next target is:
 
-- name: `rmsnorm-affine-residual-block-v1`
+- name: `rmsnorm-gated-affine-residual-block-v1`
 - statement kind: `transformer-block`
 - width: `4`
 - integer domain: signed fixed-width quantized M31-compatible integers
 - required operations:
   - `rmsnorm_scale_lookup`
   - `quantized_affine_projection`
+  - `gated_value_mix`
   - `residual_add`
+  - `bounded_activation_lookup`
 
 The target is deliberately small. A width-4 block is large enough to include
 real transformer structure and small enough to keep proof-generation debugging
@@ -138,6 +142,8 @@ commands after the final repo gate.
 - This is not a throughput or latency benchmark.
 - This is not backend independence.
 - This is not recursive or on-chain verification.
+- This is not a d64 or d128 matched benchmark.
+- This is not full SwiGLU MLP.
 - This does not claim that the existing linear-block primitive already proves
   transformer-block semantics.
 - This does not claim model truthfulness, policy compliance, or tool-output

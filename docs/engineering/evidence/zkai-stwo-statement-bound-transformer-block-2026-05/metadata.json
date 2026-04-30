@@ -1,0 +1,50 @@
+{
+  "artifacts": {
+    "linear_block_v4_with_lookup.proof.json.gz": "50849745b28d62d1045372678215ba1df45ac6bb033084249302c8dc88c84586",
+    "programs/linear_block_v4_with_lookup.tvm": "fed75a4eafca96b9fcbb632de7de28757de9ae6a6c1be08428b857bb3d3b5dee"
+  },
+  "generated_at": "2026-05-01",
+  "generation_command": [
+    "cargo",
+    "+nightly-2025-07-14",
+    "run",
+    "--features",
+    "stwo-backend",
+    "--bin",
+    "tvm",
+    "--",
+    "prove-stark",
+    "programs/linear_block_v4_with_lookup.tvm",
+    "-o",
+    "/tmp/linear_block_v4_with_lookup.proof.json",
+    "--max-steps",
+    "256"
+  ],
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_full_transformer_inference",
+    "not_backend_independence",
+    "not_d64_or_d128_matched_benchmark",
+    "not_full_swiglu_mlp"
+  ],
+  "program_path": "programs/linear_block_v4_with_lookup.tvm",
+  "proof_path": "linear_block_v4_with_lookup.proof.json.gz",
+  "schema": "zkai-stwo-statement-bound-transformer-block-artifacts-v1",
+  "transformer_block_profile": {
+    "integer_domain": "signed fixed-width quantized M31-compatible integers",
+    "logical_width": 4,
+    "operation_ids": [
+      "rmsnorm_scale_lookup",
+      "quantized_affine_projection",
+      "gated_value_mix",
+      "residual_add",
+      "bounded_activation_lookup"
+    ],
+    "profile_version": "rmsnorm-gated-affine-residual-block-v1"
+  },
+  "verification_command": [
+    "python3.12",
+    "scripts/zkai_stwo_statement_bound_transformer_block_benchmark.py",
+    "--json"
+  ]
+}
