@@ -38,6 +38,7 @@ It does not establish transformer-block semantics.
 The next target is:
 
 - name: `rmsnorm-gated-affine-residual-block-v1`
+- model ID: `urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1`
 - statement kind: `transformer-block`
 - width: `4`
 - integer domain: signed fixed-width quantized M31-compatible integers

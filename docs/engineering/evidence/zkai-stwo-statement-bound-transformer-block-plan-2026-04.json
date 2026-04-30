@@ -36,6 +36,7 @@
   },
   "target": {
     "name": "rmsnorm-gated-affine-residual-block-v1",
+    "model_id": "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1",
     "statement_kind": "transformer-block",
     "purpose": "prove one small transformer-shaped block while binding the proof to model, input, output, config, public instance, verifier identity, and evidence manifest labels",
     "width": 4,

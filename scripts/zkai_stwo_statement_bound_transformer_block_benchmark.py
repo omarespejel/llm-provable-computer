@@ -33,6 +33,8 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from zkai_stwo_transformer_block_constants import (  # noqa: E402
     REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS,
+    TRANSFORMER_BLOCK_MODEL_ID,
+    TRANSFORMER_BLOCK_PROFILE_VERSION,
 )
 
 ARTIFACT_DIR = ROOT / "docs" / "engineering" / "evidence" / "zkai-stwo-statement-bound-transformer-block-2026-05"
@@ -46,10 +48,10 @@ STWO_PROOF_SYSTEM_VERSION = "stwo-phase10-linear-block-v4-with-lookup"
 STWO_VERIFIER_DOMAIN = f"ptvm-stwo-verify-stark-reexecute-{STWO_PROOF_SYSTEM_VERSION}"
 STWO_PROOF_SYSTEM = "stwo-transparent-stark"
 STWO_STATEMENT_KIND = "transformer-block"
-STWO_MODEL_ID = "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1"
+STWO_MODEL_ID = TRANSFORMER_BLOCK_MODEL_ID
 STWO_PROGRAM_PATH = "programs/linear_block_v4_with_lookup.tvm"
 STWO_PROOF_PATH = "linear_block_v4_with_lookup.proof.json.gz"
-BLOCK_PROFILE_VERSION = "rmsnorm-gated-affine-residual-block-v1"
+BLOCK_PROFILE_VERSION = TRANSFORMER_BLOCK_PROFILE_VERSION
 BLOCK_LOGICAL_WIDTH = 4
 BLOCK_INTEGER_DOMAIN = "signed fixed-width quantized M31-compatible integers"
 REQUIRED_BLOCK_OPERATION_IDS = REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS
