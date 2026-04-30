@@ -366,6 +366,8 @@
   ],
   "repro": {
     "command": [
+      "env",
+      "AGENT_ZKAI_COMPOSITION_GIT_COMMIT=ddc0a46751fbdc6b53cdf0022479c2650177e39f",
       "python3.12",
       "scripts/agent_step_zkai_stwo_transformer_block_composition.py",
       "--rust-verify",
@@ -387,7 +389,7 @@
     },
     "path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json",
     "schema": "zkai-stwo-statement-envelope-benchmark-v1",
-    "sha256": "cef40cb9df2f815b6ddbda67b2721d750b988fd76d7be67c310034667989b18d",
+    "sha256": "d77bd207cf88137f9af775a076611d41ab1078081d4748d91341a845ce87ef47",
     "summary": {
       "stwo-proof-only": {
         "all_mutations_rejected": false,

@@ -6,8 +6,8 @@ stwo-proof-only	model_artifact_commitment_relabeling	artifact_binding	True	True	
 stwo-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	none
 stwo-proof-only	output_commitment_relabeling	artifact_binding	True	True	False	accepted	none
 stwo-proof-only	proof_commitment_relabeling	artifact_binding	True	True	False	accepted	none
-stwo-proof-only	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.27s
-     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpng7su_4e/proof.json --reexecute`
+stwo-proof-only	proof_public_claim_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmprv3szp6q/proof.json --reexecute`
 error: invalid config: invalid transformer equivalence fingerprint"
 stwo-proof-only	proof_system_version_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
 stwo-proof-only	public_instance_commitment_relabeling	public_instance_binding	True	True	False	accepted	none
