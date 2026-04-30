@@ -1,0 +1,3 @@
+target_width	status	reason	current_d_model	current_logical_width	target_ff_dim	target_estimated_linear_muls	current_mul_memory_ops	mul_gap_factor	target_activation_rows	target_norm_rows	blocker_count
+64	NO_GO_CURRENT_SURFACE	current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof	36	4	256	49152	7	7021.714	256	1	4
+128	NO_GO_CURRENT_SURFACE	current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof	36	4	512	196608	7	28086.857	512	1	4

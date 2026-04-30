@@ -1,0 +1,227 @@
+{
+  "current_surface": {
+    "block_logical_width": 4,
+    "block_operation_ids": [
+      "rmsnorm_scale_lookup",
+      "quantized_affine_projection",
+      "gated_value_mix",
+      "residual_add",
+      "bounded_activation_lookup"
+    ],
+    "block_profile_version": "rmsnorm-gated-affine-residual-block-v1",
+    "claim_add_memory_ops": 4,
+    "claim_instruction_count": 43,
+    "claim_memory_cells": 21,
+    "claim_mul_memory_ops": 7,
+    "claim_semantic_scope": "native_isa_execution_with_transformer_native_equivalence_check",
+    "claim_steps": 43,
+    "claim_transformer_config": {
+      "attention_mode": "AverageHard",
+      "d_model": 36,
+      "ff_dim": 72,
+      "max_seq_len": 1000000,
+      "num_heads": 18,
+      "num_layers": 1,
+      "vocab_size": 256
+    },
+    "evidence_path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json",
+    "evidence_sha256": "d77bd207cf88137f9af775a076611d41ab1078081d4748d91341a845ce87ef47",
+    "fixture_gate": {
+      "fixture_gate_detected": true,
+      "markers": {
+        "broader_arithmetic_subset_internal": true,
+        "decoding_step_v2_family": true,
+        "linear_block_v4_with_lookup": true
+      },
+      "source_path": "src/stwo_backend/arithmetic_subset_prover.rs",
+      "source_sha256": "b5a3eb01a57774a74188f5952e8e136cbf565d374b8bb0c5bf85774296361858"
+    },
+    "proof_backend": "stwo",
+    "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
+    "proof_path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-2026-05/linear_block_v4_with_lookup.proof.json.gz",
+    "proof_payload_bytes": 90458,
+    "proof_sha256": "50849745b28d62d1045372678215ba1df45ac6bb033084249302c8dc88c84586",
+    "statement_envelope_mutations_checked": 14,
+    "statement_envelope_mutations_rejected": 14,
+    "statement_model_id": "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1"
+  },
+  "decision": "NO_GO_CURRENT_STWO_PROOF_SURFACE",
+  "generated_at": "2026-04-30T23:09:46Z",
+  "next_required_work": [
+    {
+      "description": "Expose input/output activation, weight, normalization, activation-lookup, and config commitments as verifier-facing public statement material.",
+      "id": "parameterized_vector_public_claim"
+    },
+    {
+      "description": "Add or export a proof surface whose constraints actually cover RMSNorm, SwiGLU gate/value/down projections, and residual addition at d=64 before d=128.",
+      "id": "stwo_air_for_vector_mlp_block"
+    },
+    {
+      "description": "If using EZKL/ONNX or another proof stack for comparison, bind the same statement fields and run the same relabeling suite.",
+      "id": "same_statement_external_adapter"
+    }
+  ],
+  "non_claims": [
+    "This is not a d64 or d128 proof result.",
+    "This is not a performance benchmark.",
+    "This does not claim full transformer inference.",
+    "This does not claim that the width-4 statement-bound block already proves matched RMSNorm-SwiGLU semantics.",
+    "This does not claim Stwo is incapable of such a proof; it records that the current repo proof surface does not expose it."
+  ],
+  "repro": {
+    "command": [
+      "python3",
+      "scripts/zkai_matched_rmsnorm_swiglu_block_feasibility.py",
+      "--write-json",
+      "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.json",
+      "--write-tsv",
+      "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
+    ],
+    "git_commit": "67adfe54c8282f7d6b82abdb9c0644c7a7888a02"
+  },
+  "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
+  "rows": [
+    {
+      "blockers": [
+        {
+          "current": 36,
+          "id": "proof_claim_d_model_mismatch",
+          "required": 64,
+          "why_it_matters": "the checked proof public claim is not a d64/d128 transformer block claim"
+        },
+        {
+          "current": 4,
+          "id": "statement_profile_width_mismatch",
+          "required": 64,
+          "why_it_matters": "the statement receipt binds a width-4 profile, not a matched public benchmark width"
+        },
+        {
+          "current_mul_memory_ops": 7,
+          "estimated_required_linear_muls": 49152,
+          "id": "instruction_surface_too_small_for_swiglu",
+          "why_it_matters": "a matched SwiGLU block needs gate, value, and down projections over d x ff_dim matrices"
+        },
+        {
+          "id": "proof_generator_fixture_allowlist",
+          "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
+        }
+      ],
+      "current_d_model": 36,
+      "current_logical_width": 4,
+      "current_mul_memory_ops": 7,
+      "mul_gap_factor": 7021.714285714285,
+      "reason": "current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof",
+      "status": "NO_GO_CURRENT_SURFACE",
+      "target_activation_rows": 256,
+      "target_estimated_linear_muls": 49152,
+      "target_ff_dim": 256,
+      "target_id": "rmsnorm-swiglu-residual-d64-v1",
+      "target_norm_rows": 1,
+      "target_width": 64
+    },
+    {
+      "blockers": [
+        {
+          "current": 36,
+          "id": "proof_claim_d_model_mismatch",
+          "required": 128,
+          "why_it_matters": "the checked proof public claim is not a d64/d128 transformer block claim"
+        },
+        {
+          "current": 4,
+          "id": "statement_profile_width_mismatch",
+          "required": 128,
+          "why_it_matters": "the statement receipt binds a width-4 profile, not a matched public benchmark width"
+        },
+        {
+          "current_mul_memory_ops": 7,
+          "estimated_required_linear_muls": 196608,
+          "id": "instruction_surface_too_small_for_swiglu",
+          "why_it_matters": "a matched SwiGLU block needs gate, value, and down projections over d x ff_dim matrices"
+        },
+        {
+          "id": "proof_generator_fixture_allowlist",
+          "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
+        }
+      ],
+      "current_d_model": 36,
+      "current_logical_width": 4,
+      "current_mul_memory_ops": 7,
+      "mul_gap_factor": 28086.85714285714,
+      "reason": "current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof",
+      "status": "NO_GO_CURRENT_SURFACE",
+      "target_activation_rows": 512,
+      "target_estimated_linear_muls": 196608,
+      "target_ff_dim": 512,
+      "target_id": "rmsnorm-swiglu-residual-d128-v1",
+      "target_norm_rows": 1,
+      "target_width": 128
+    }
+  ],
+  "schema": "zkai-matched-rmsnorm-swiglu-block-feasibility-v1",
+  "summary": {
+    "current_result_is_not": "a matched d64/d128 zkML benchmark",
+    "current_result_is_still_useful_for": "statement-binding and agent-step composition discipline",
+    "first_required_backend_work": "parameterized Stwo AIR or export path for RMSNorm/SwiGLU/residual vector blocks",
+    "no_go_count": 2,
+    "target_count": 2
+  },
+  "targets": [
+    {
+      "activation": "SwiGLU",
+      "estimated_activation_rows": 256,
+      "estimated_linear_muls": 49152,
+      "estimated_norm_rows": 1,
+      "ff_dim": 256,
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+      "normalization": "RMSNorm",
+      "required_statement_bindings": [
+        "model_artifact_commitment",
+        "model_config_commitment",
+        "weight_commitment",
+        "input_activation_commitment",
+        "output_activation_commitment",
+        "normalization_config_commitment",
+        "activation_lookup_commitment",
+        "public_instance_commitment",
+        "proof_commitment",
+        "verifying_key_commitment",
+        "setup_commitment",
+        "verifier_domain",
+        "proof_system_version"
+      ],
+      "residual": true,
+      "statement_kind": "transformer-block",
+      "target_id": "rmsnorm-swiglu-residual-d64-v1",
+      "width": 64
+    },
+    {
+      "activation": "SwiGLU",
+      "estimated_activation_rows": 512,
+      "estimated_linear_muls": 196608,
+      "estimated_norm_rows": 1,
+      "ff_dim": 512,
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d128-v1",
+      "normalization": "RMSNorm",
+      "required_statement_bindings": [
+        "model_artifact_commitment",
+        "model_config_commitment",
+        "weight_commitment",
+        "input_activation_commitment",
+        "output_activation_commitment",
+        "normalization_config_commitment",
+        "activation_lookup_commitment",
+        "public_instance_commitment",
+        "proof_commitment",
+        "verifying_key_commitment",
+        "setup_commitment",
+        "verifier_domain",
+        "proof_system_version"
+      ],
+      "residual": true,
+      "statement_kind": "transformer-block",
+      "target_id": "rmsnorm-swiglu-residual-d128-v1",
+      "width": 128
+    }
+  ]
+}
