@@ -759,6 +759,18 @@ receipt. It is anchored to
 and
 `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`.
 
+A follow-up matched-block feasibility probe prevents this result from being
+overstated. It asks whether the same checked Stwo surface can honestly serve as
+a `d=64` or `d=128` RMSNorm-SwiGLU-residual benchmark. The current answer is
+NO-GO: the checked proof public claim reports `d_model = 36`, the receipt binds
+a width-4 block profile, the fixture exposes `7` `MulMemory` operations while a
+minimal `d=64` SwiGLU block already requires roughly `49,152` linear
+multiplications, and the current proof generator is fixture-gated rather than a
+parameterized vector-block AIR. This is useful as claim hygiene: the statement
+receipt result is a binding/composition result, not a competitor-facing zkML
+throughput result. The feasibility gate is anchored to
+`docs/engineering/zkai-matched-rmsnorm-swiglu-block-feasibility-gate-2026-05-01.md`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model
