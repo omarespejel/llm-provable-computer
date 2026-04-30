@@ -128,7 +128,11 @@ def _generated_at() -> str:
         timestamp = int(source_date_epoch)
     except ValueError as err:
         raise FeasibilityError("SOURCE_DATE_EPOCH must be an integer timestamp") from err
-    return dt.datetime.fromtimestamp(timestamp, tz=dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    try:
+        generated_at = dt.datetime.fromtimestamp(timestamp, tz=dt.timezone.utc)
+    except (OverflowError, OSError, ValueError) as err:
+        raise FeasibilityError("SOURCE_DATE_EPOCH must be in the supported timestamp range") from err
+    return generated_at.isoformat().replace("+00:00", "Z")
 
 
 def _git_commit() -> str:
@@ -329,10 +333,12 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
                 "why_it_matters": "the probe could not confirm the current fixture-gated Stwo proof surface",
             }
         )
-    if fixture_gate.get("fixture_gate_detected") and proof_backend_version == CURRENT_FIXTURE_PROOF_SYSTEM_VERSION:
+    if fixture_gate.get("fixture_gate_detected"):
         blockers.append(
             {
                 "id": "proof_generator_fixture_allowlist",
+                "proof_backend_version": proof_backend_version,
+                "pinned_fixture_version": CURRENT_FIXTURE_PROOF_SYSTEM_VERSION,
                 "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs",
             }
         )

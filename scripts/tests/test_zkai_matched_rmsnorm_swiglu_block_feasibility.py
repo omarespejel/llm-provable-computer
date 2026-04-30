@@ -168,6 +168,11 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
             with self.assertRaisesRegex(PROBE.FeasibilityError, "SOURCE_DATE_EPOCH"):
                 PROBE._generated_at()
 
+    def test_generated_at_rejects_out_of_range_source_date_epoch(self) -> None:
+        with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(10**100)}, clear=True):
+            with self.assertRaisesRegex(PROBE.FeasibilityError, "timestamp range"):
+                PROBE._generated_at()
+
     def test_classifier_can_report_go_for_synthetic_matched_surface(self) -> None:
         current = {
             "proof_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
@@ -182,6 +187,21 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertEqual(row["status"], "GO_FEASIBLE")
         self.assertEqual(row["blockers"], [])
         self.assertEqual(PROBE.decision_for_rows([row]), PROBE.DECISION_GO)
+
+    def test_classifier_keeps_fixture_blocker_for_renamed_backend_version(self) -> None:
+        current = {
+            "proof_backend_version": "stwo-phase10-linear-block-v5-renamed",
+            "claim_transformer_config": {"d_model": 64},
+            "block_logical_width": 64,
+            "claim_mul_memory_ops": 49_152,
+            "fixture_gate": {"fixture_gate_detected": True},
+        }
+
+        row = PROBE.classify_target(current, PROBE.matched_target(64))
+
+        self.assertEqual(row["status"], "NO_GO_CURRENT_SURFACE")
+        self.assertEqual([blocker["id"] for blocker in row["blockers"]], ["proof_generator_fixture_allowlist"])
+        self.assertEqual(row["blockers"][0]["proof_backend_version"], "stwo-phase10-linear-block-v5-renamed")
 
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = {

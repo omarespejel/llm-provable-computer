@@ -77,7 +77,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
     ],
-    "git_commit": "dc6b41088ecc5c6a9b47945b6cfe76e16bc3fd55"
+    "git_commit": "d7ecbbb5bd252eab84e8294227b8dcee14cc10c5"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "rows": [
@@ -103,6 +103,8 @@
         },
         {
           "id": "proof_generator_fixture_allowlist",
+          "pinned_fixture_version": "stwo-phase10-linear-block-v4-with-lookup",
+          "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
           "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
         }
       ],
@@ -141,6 +143,8 @@
         },
         {
           "id": "proof_generator_fixture_allowlist",
+          "pinned_fixture_version": "stwo-phase10-linear-block-v4-with-lookup",
+          "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
           "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
         }
       ],
