@@ -374,7 +374,7 @@
       "--write-tsv",
       "docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv"
     ],
-    "git_commit": "f255c8151463a577fa34aaef45e1e78afb160472"
+    "git_commit": "ddc0a46751fbdc6b53cdf0022479c2650177e39f"
   },
   "result": "GO",
   "schema": "agent-step-zkai-stwo-transformer-block-composition-v1",
@@ -387,7 +387,7 @@
     },
     "path": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json",
     "schema": "zkai-stwo-statement-envelope-benchmark-v1",
-    "sha256": "9d602063f97d80ef2b8a5891312bcf0e1de69ebc9c4e6e5cb0d44cc7c896f80e",
+    "sha256": "cef40cb9df2f815b6ddbda67b2721d750b988fd76d7be67c310034667989b18d",
     "summary": {
       "stwo-proof-only": {
         "all_mutations_rejected": false,
