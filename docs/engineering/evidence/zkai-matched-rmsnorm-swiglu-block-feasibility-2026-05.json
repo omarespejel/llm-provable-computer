@@ -77,7 +77,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
     ],
-    "git_commit": "8e801d79cde42db196eb0c3b0412ca683edc8ff9"
+    "git_commit": "f34f321ad0373493ac15c9ce94e62804ad67a4b9"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "rows": [
@@ -180,6 +180,7 @@
       "ff_dim": 256,
       "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
       "normalization": "RMSNorm",
+      "required_proof_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
       "required_statement_bindings": [
         "model_artifact_commitment",
         "model_config_commitment",
@@ -208,6 +209,7 @@
       "ff_dim": 512,
       "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d128-v1",
       "normalization": "RMSNorm",
+      "required_proof_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
       "required_statement_bindings": [
         "model_artifact_commitment",
         "model_config_commitment",

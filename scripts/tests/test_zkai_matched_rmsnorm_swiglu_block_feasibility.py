@@ -29,9 +29,11 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         d128 = PROBE.matched_target(128)
 
         self.assertEqual(d64["ff_dim"], 256)
+        self.assertEqual(d64["required_proof_backend_version"], "stwo-rmsnorm-swiglu-residual-d64-v1")
         self.assertEqual(d64["estimated_linear_muls"], 49_152)
         self.assertEqual(d64["estimated_activation_rows"], 256)
         self.assertEqual(d128["ff_dim"], 512)
+        self.assertEqual(d128["required_proof_backend_version"], "stwo-rmsnorm-swiglu-residual-d128-v1")
         self.assertEqual(d128["estimated_linear_muls"], 196_608)
         self.assertEqual(d128["estimated_activation_rows"], 512)
 
@@ -200,8 +202,26 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         row = PROBE.classify_target(current, PROBE.matched_target(64))
 
         self.assertEqual(row["status"], "NO_GO_CURRENT_SURFACE")
-        self.assertEqual([blocker["id"] for blocker in row["blockers"]], ["proof_generator_fixture_allowlist"])
-        self.assertEqual(row["blockers"][0]["proof_backend_version"], "stwo-phase10-linear-block-v5-renamed")
+        self.assertEqual(
+            [blocker["id"] for blocker in row["blockers"]],
+            ["proof_backend_version_mismatch", "proof_generator_fixture_allowlist"],
+        )
+        self.assertEqual(row["blockers"][1]["proof_backend_version"], "stwo-phase10-linear-block-v5-renamed")
+
+    def test_classifier_rejects_backend_version_drift_on_matched_shape(self) -> None:
+        current = {
+            "proof_backend_version": "corrupt-version",
+            "claim_transformer_config": {"d_model": 64},
+            "block_logical_width": 64,
+            "claim_mul_memory_ops": 49_152,
+            "fixture_gate": {"fixture_gate_detected": False},
+        }
+
+        row = PROBE.classify_target(current, PROBE.matched_target(64))
+
+        self.assertEqual(row["status"], "NO_GO_CURRENT_SURFACE")
+        self.assertEqual([blocker["id"] for blocker in row["blockers"]], ["proof_backend_version_mismatch"])
+        self.assertEqual(PROBE.decision_for_rows([row]), PROBE.DECISION_NO_GO)
 
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = {
