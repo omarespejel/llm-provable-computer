@@ -84,6 +84,30 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
             with self.assertRaisesRegex(PROBE.FeasibilityError, "logical_width disagrees"):
                 PROBE.current_surface(evidence_path=evidence_path, proof_path=PROBE.CURRENT_PROOF_PATH)
 
+    def test_current_surface_rejects_baseline_statement_model_id_drift(self) -> None:
+        evidence = json.loads(PROBE.CURRENT_EVIDENCE_PATH.read_text(encoding="utf-8"))
+        evidence["cases"][0]["baseline_statement"]["model_id"] = "urn:zkai:ptvm:wrong-model"
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            evidence_path = tmp / "evidence.json"
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+            with self.assertRaisesRegex(PROBE.FeasibilityError, "baseline_statement.model_id"):
+                PROBE.current_surface(evidence_path=evidence_path, proof_path=PROBE.CURRENT_PROOF_PATH)
+
+    def test_current_surface_rejects_missing_baseline_statement_model_id(self) -> None:
+        evidence = json.loads(PROBE.CURRENT_EVIDENCE_PATH.read_text(encoding="utf-8"))
+        del evidence["cases"][0]["baseline_statement"]["model_id"]
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            evidence_path = tmp / "evidence.json"
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+            with self.assertRaisesRegex(PROBE.FeasibilityError, "baseline_statement.model_id"):
+                PROBE.current_surface(evidence_path=evidence_path, proof_path=PROBE.CURRENT_PROOF_PATH)
+
     def test_current_surface_rejects_malformed_proof_instruction_shape(self) -> None:
         with gzip.open(PROBE.CURRENT_PROOF_PATH, "rt", encoding="utf-8") as handle:
             proof = json.load(handle)

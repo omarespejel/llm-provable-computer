@@ -171,6 +171,26 @@ def _current_block_profile(evidence: dict[str, Any]) -> dict[str, Any]:
     return profile
 
 
+def _baseline_statement_model_id(evidence: dict[str, Any]) -> str:
+    cases = _require_list(evidence.get("cases"), "cases")
+    if not cases:
+        raise FeasibilityError("cases must not be empty")
+    model_ids: set[str] = set()
+    for index, case in enumerate(cases):
+        case_dict = _require_dict(case, f"cases[{index}]")
+        statement = _require_dict(case_dict.get("baseline_statement"), f"cases[{index}].baseline_statement")
+        model_id = statement.get("model_id")
+        if model_id != CURRENT_EXPECTED_MODEL_ID:
+            raise FeasibilityError(
+                f"cases[{index}].baseline_statement.model_id must be "
+                f"{CURRENT_EXPECTED_MODEL_ID!r}, got {model_id!r}"
+            )
+        model_ids.add(model_id)
+    if model_ids != {CURRENT_EXPECTED_MODEL_ID}:
+        raise FeasibilityError("baseline statement model IDs are inconsistent")
+    return CURRENT_EXPECTED_MODEL_ID
+
+
 def _fixture_gate_scan(source_path: pathlib.Path = CURRENT_STWO_SOURCE_PATH) -> dict[str, Any]:
     try:
         source = source_path.read_text(encoding="utf-8")
@@ -198,6 +218,7 @@ def current_surface(
     proof = _load_json(proof_path)
     statement_summary = _statement_envelope_summary(evidence)
     block_profile = _current_block_profile(evidence)
+    statement_model_id = _baseline_statement_model_id(evidence)
     claim = _require_dict(proof.get("claim"), "claim")
     transformer_config = _require_dict(claim.get("transformer_config"), "claim.transformer_config")
     final_state = _require_dict(claim.get("final_state"), "claim.final_state")
@@ -211,9 +232,7 @@ def current_surface(
         "proof_sha256": sha256_file(proof_path),
         "proof_backend": proof.get("proof_backend"),
         "proof_backend_version": proof.get("proof_backend_version"),
-        "statement_model_id": _require_dict(evidence.get("EXPECTED_STATEMENT"), "EXPECTED_STATEMENT").get("model_id")
-        if "EXPECTED_STATEMENT" in evidence
-        else CURRENT_EXPECTED_MODEL_ID,
+        "statement_model_id": statement_model_id,
         "claim_semantic_scope": claim.get("semantic_scope"),
         "claim_steps": claim.get("steps"),
         "claim_transformer_config": transformer_config,
