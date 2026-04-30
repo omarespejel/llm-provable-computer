@@ -46,7 +46,7 @@
     "statement_model_id": "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1"
   },
   "decision": "NO_GO_CURRENT_STWO_PROOF_SURFACE",
-  "generated_at": "2026-04-30T23:09:46Z",
+  "generated_at": "2026-04-30T23:17:10Z",
   "next_required_work": [
     {
       "description": "Expose input/output activation, weight, normalization, activation-lookup, and config commitments as verifier-facing public statement material.",
@@ -77,7 +77,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
     ],
-    "git_commit": "67adfe54c8282f7d6b82abdb9c0644c7a7888a02"
+    "git_commit": "576bc113c8e8cc43ba15bca34bb47a286ec045d6"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "rows": [
