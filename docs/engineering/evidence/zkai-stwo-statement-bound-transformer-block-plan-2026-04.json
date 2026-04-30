@@ -35,7 +35,7 @@
     }
   },
   "target": {
-    "name": "rmsnorm-affine-residual-block-v1",
+    "name": "rmsnorm-gated-affine-residual-block-v1",
     "statement_kind": "transformer-block",
     "purpose": "prove one small transformer-shaped block while binding the proof to model, input, output, config, public instance, verifier identity, and evidence manifest labels",
     "width": 4,
@@ -50,8 +50,16 @@
         "description": "apply a committed quantized weight matrix and bias vector to the normalized vector"
       },
       {
+        "id": "gated_value_mix",
+        "description": "mix a second committed value path into the projected vector to avoid reducing the target to a plain affine-only toy"
+      },
+      {
         "id": "residual_add",
         "description": "add the original input vector back into the projected vector with explicit range and overflow policy"
+      },
+      {
+        "id": "bounded_activation_lookup",
+        "description": "bind a small activation lookup surface to the block config and witness cells"
       }
     ],
     "public_commitments": [
@@ -123,6 +131,8 @@
     "This is not a throughput or latency benchmark.",
     "This is not backend independence.",
     "This is not recursive or on-chain verification.",
+    "This is not a d64 or d128 matched benchmark.",
+    "This is not full SwiGLU MLP.",
     "This does not claim that the existing linear-block primitive already proves transformer-block semantics.",
     "This does not claim model truthfulness, policy compliance, or tool-output truth."
   ],

@@ -179,6 +179,16 @@ over `programs/linear_block_v4_with_lookup.tvm`. The raw Stwo
 checked relabeling mutations: the proof-public-claim mutation. The statement
 envelope accepts the same baseline and rejects `14 / 14` checked mutations.
 
+The fourth checked adapter is a bounded native Stwo transformer-block statement
+receipt over the same delegated proof backend. It changes the statement kind to
+`transformer-block`, binds a width-4 `rmsnorm-gated-affine-residual-block-v1`
+profile into `config_commitment`, and checks the static program markers,
+proof-public instruction pattern, and final-state witness cells for
+normalization and bounded activation rows. The raw proof-only path again rejects
+`1 / 14` checked relabeling mutations, while the statement envelope rejects
+`14 / 14`. This is a statement-binding and composition result, not a full
+SwiGLU MLP proof and not a `d=64` or `d=128` matched benchmark.
+
 These counts are adapter-scoped calibration suites, not full
 `zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
 for a production receipt remains the relabeling threat model above.
@@ -197,6 +207,11 @@ Evidence handles:
 - `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md`
 - `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`
 - `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.tsv`
+- `docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`
+- `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`
+- `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.tsv`
+- `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
+- `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv`
 
 The correct interpretation is:
 
@@ -217,5 +232,6 @@ the `AgentStepReceiptV1` model-subreceipt callback path, so the production
 verifier can consume the nested receipt directly instead of relying only on an
 external composition harness.
 
-The higher-upside follow-up is a larger Stwo-native statement-bound transformer
-block with the same receipt and callback discipline.
+The higher-upside follow-up is now a matched Stwo/EZKL/NANOZK comparison target:
+implement or export a `d=64`, then `d=128`, RMSNorm/SwiGLU/residual block while
+keeping the same receipt and callback discipline.

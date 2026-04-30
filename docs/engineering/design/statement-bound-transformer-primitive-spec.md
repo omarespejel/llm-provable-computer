@@ -113,7 +113,7 @@ rejected as a statement-binding failure, not as a parser failure.
 
 ## Minimum GO result
 
-A minimum GO result is now checked in. The gate note is:
+A minimum primitive GO result is now checked in. The gate note is:
 
 - `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
 
@@ -133,6 +133,32 @@ This supports the claim:
 
 It does not support claims of full transformer inference, backend independence,
 production zkML throughput, or agent correctness.
+
+## Bounded Transformer-Block Result
+
+The next bounded Stwo-native result is also checked in:
+
+- `docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`
+- `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`
+- `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
+
+That result wraps the checked Stwo proof with a width-4
+`transformer-block` statement receipt for
+`urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1`. The block profile binds
+RMSNorm-scale lookup, quantized affine projection, gated value mixing, residual
+addition, bounded activation lookup, the proof object, verifier domain, setup
+identity, public instance, and source evidence. Raw proof-only verification
+rejects only `1 / 14` relabels because most labels are outside the raw proof
+acceptance path. The statement receipt rejects `14 / 14`, and the composed
+agent-step receipt rejects `36 / 36` nested and cross-layer mutations with the
+Rust callback verifier accepting the honest bundle.
+
+This is a real statement-binding and composition result. It is still not a
+d64/d128 matched benchmark, not full SwiGLU MLP, not full transformer
+inference, not recursive/on-chain verification, and not backend independence.
+The next comparison result should move from this width-4 baseline to a matched
+d64 or d128 RMSNorm/SwiGLU/residual target before comparing against public zkML
+systems.
 
 ## NO-GO criteria
 

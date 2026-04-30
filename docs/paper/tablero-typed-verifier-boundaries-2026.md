@@ -721,8 +721,10 @@ verifier-facing layers improve different costs.
 ### 7.1 Statement-binding adapters
 
 Separate engineering adapters apply the same boundary discipline to two external
-proof stacks and one native Stwo primitive: EZKL [7], Circom/snarkjs Groth16 [8],
-and the repository's Stwo linear-block-with-lookup proof surface. These adapters are
+proof stacks, one native Stwo primitive, and one bounded native Stwo
+transformer-block receipt: EZKL [7], Circom/snarkjs Groth16 [8], the
+repository's Stwo linear-block-with-lookup proof surface, and a width-4
+RMSNorm/gated-affine/residual block profile over that checked Stwo proof. These adapters are
 not used as performance comparators and are not presented as security findings
 against any system. They are boundary-conformance checks. They answer a narrower
 question: does raw proof verification, by itself, bind the accepted proof to the
@@ -744,6 +746,19 @@ Stwo row is anchored to
 `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md` and
 `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`.
 
+The bounded transformer-block follow-up keeps the same delegated Stwo proof
+backend but changes the statement kind to `transformer-block` and binds a
+checked width-4 block profile named
+`rmsnorm-gated-affine-residual-block-v1` into the receipt configuration. Its raw
+proof-only path again rejects `1 / 14` checked relabeling mutations, while the
+statement envelope rejects `14 / 14`. This is not a `d=64` or `d=128` matched
+zkML benchmark and not a full SwiGLU MLP proof; it is the first checked bridge
+from primitive statement binding to a transformer-block-shaped statement
+receipt. It is anchored to
+`docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`
+and
+`docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model
@@ -756,8 +771,13 @@ by the production Rust model-subreceipt callback verifier. This is evidence of
 receipt composition, not a claim of proved agent reasoning. It is anchored to
 `docs/engineering/agent-step-zkai-stwo-composition-gate-2026-04-29.md` and
 `docs/engineering/evidence/agent-step-zkai-stwo-composition-2026-04.json`.
+The transformer-block receipt has the same composition shape: its composed
+agent-step gate rejects `36 / 36` checked mutations and is accepted by the Rust
+model-subreceipt callback verifier, anchored to
+`docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`.
 The Rust verifier exposes both the generic model-subreceipt callback seam and a
-bounded checked-Stwo specialization for this primitive receipt.
+bounded checked-Stwo specialization for these primitive and transformer-block
+receipts.
 Focused Rust tests additionally cover malformed direct receipt shape, oversized
 commitment fields, ambiguous model-subreceipt evidence, and forged
 evidence-manifest handles. Those tests are implementation hardening for the

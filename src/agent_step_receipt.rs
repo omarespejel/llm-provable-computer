@@ -35,6 +35,9 @@ const ZKAI_STWO_VERIFIER_DOMAIN_V1: &str =
     "ptvm-stwo-verify-stark-reexecute-stwo-phase10-linear-block-v4-with-lookup";
 const ZKAI_STWO_STATEMENT_KIND_V1: &str = "transformer-primitive";
 const ZKAI_STWO_MODEL_ID_V1: &str = "urn:zkai:ptvm:linear-block-v4-with-lookup";
+const ZKAI_STWO_TRANSFORMER_BLOCK_STATEMENT_KIND_V1: &str = "transformer-block";
+const ZKAI_STWO_TRANSFORMER_BLOCK_MODEL_ID_V1: &str =
+    "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1";
 const ZKAI_STWO_EXPECTED_MUTATION_COUNT: usize = 14;
 
 const RECEIPT_FIELDS: &[&str] = &[
@@ -694,8 +697,6 @@ fn verify_zkai_stwo_statement_policy(statement: &Value) -> Result<()> {
         ("verifier_domain", ZKAI_STWO_VERIFIER_DOMAIN_V1),
         ("proof_system", ZKAI_STWO_PROOF_SYSTEM_V1),
         ("proof_system_version", ZKAI_STWO_PROOF_SYSTEM_VERSION_V1),
-        ("statement_kind", ZKAI_STWO_STATEMENT_KIND_V1),
-        ("model_id", ZKAI_STWO_MODEL_ID_V1),
     ];
     for (field, expected) in checks {
         let actual = zkai_statement_str(statement, field)?;
@@ -704,6 +705,24 @@ fn verify_zkai_stwo_statement_policy(statement: &Value) -> Result<()> {
                 "zkAI Stwo statement policy mismatch for {field}"
             )));
         }
+    }
+    let statement_kind = zkai_statement_str(statement, "statement_kind")?;
+    let model_id = zkai_statement_str(statement, "model_id")?;
+    let supported_profile = (statement_kind == ZKAI_STWO_STATEMENT_KIND_V1
+        && model_id == ZKAI_STWO_MODEL_ID_V1)
+        || (statement_kind == ZKAI_STWO_TRANSFORMER_BLOCK_STATEMENT_KIND_V1
+            && model_id == ZKAI_STWO_TRANSFORMER_BLOCK_MODEL_ID_V1);
+    if !supported_profile {
+        let field = if statement_kind != ZKAI_STWO_STATEMENT_KIND_V1
+            && statement_kind != ZKAI_STWO_TRANSFORMER_BLOCK_STATEMENT_KIND_V1
+        {
+            "statement_kind"
+        } else {
+            "model_id"
+        };
+        return Err(VmError::InvalidConfig(format!(
+            "zkAI Stwo statement policy mismatch for {field}"
+        )));
     }
     Ok(())
 }
@@ -2279,6 +2298,13 @@ mod tests {
         .expect("checked Stwo evidence")
     }
 
+    fn checked_zkai_stwo_transformer_block_evidence_payload() -> Value {
+        serde_json::from_str(include_str!(
+            "../docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json"
+        ))
+        .expect("checked Stwo transformer-block evidence")
+    }
+
     fn checked_zkai_stwo_statement_payload(evidence: &Value) -> Value {
         let cases = evidence["cases"].as_array().expect("cases");
         let statement = cases[0]["baseline_statement"]
@@ -2335,8 +2361,9 @@ mod tests {
         }
     }
 
-    fn make_zkai_stwo_model_subreceipt_bundle() -> (AgentStepReceiptBundleV1, Value, Value) {
-        let evidence = checked_zkai_stwo_evidence_payload();
+    fn make_zkai_stwo_model_subreceipt_bundle_from_evidence(
+        evidence: Value,
+    ) -> (AgentStepReceiptBundleV1, Value, Value) {
         let payload = checked_zkai_stwo_statement_payload(&evidence);
         let statement = direct_zkai_stwo_statement_from_payload(&payload);
         let statement = statement.as_object().expect("statement object");
@@ -2370,6 +2397,10 @@ mod tests {
         }
         recompute_manifest_commitments(&mut bundle);
         (bundle, payload, evidence)
+    }
+
+    fn make_zkai_stwo_model_subreceipt_bundle() -> (AgentStepReceiptBundleV1, Value, Value) {
+        make_zkai_stwo_model_subreceipt_bundle_from_evidence(checked_zkai_stwo_evidence_payload())
     }
 
     fn make_omitted_tool_receipt_bundle() -> AgentStepReceiptBundleV1 {
@@ -2902,6 +2933,51 @@ mod tests {
             &bundle, &payload, &evidence,
         )
         .expect("checked zkAI Stwo subreceipt accepts through Rust callback");
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_accepts_checked_transformer_block_receipt() {
+        let (bundle, payload, evidence) = make_zkai_stwo_model_subreceipt_bundle_from_evidence(
+            checked_zkai_stwo_transformer_block_evidence_payload(),
+        );
+        verify_agent_step_receipt_bundle_v1(&bundle).expect("base agent receipt verifies");
+
+        verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect("checked zkAI Stwo transformer-block subreceipt accepts through Rust callback");
+        assert_eq!(
+            bundle.receipt.model_identity,
+            "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1"
+        );
+    }
+
+    #[test]
+    fn agent_step_receipt_zkai_stwo_callback_rejects_mismatched_transformer_block_pair() {
+        let (mut bundle, mut payload, evidence) =
+            make_zkai_stwo_model_subreceipt_bundle_from_evidence(
+                checked_zkai_stwo_transformer_block_evidence_payload(),
+            );
+        payload["model_id"] = Value::String(ZKAI_STWO_MODEL_ID_V1.to_string());
+        refresh_direct_zkai_stwo_statement_commitment(&mut payload);
+        bundle.receipt.model_identity = payload["model_id"].as_str().unwrap().to_string();
+        bundle.receipt.model_receipt_commitment = payload["statement_commitment"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        refresh_evidence_for_field(&mut bundle, "/model_identity");
+        refresh_evidence_for_field(&mut bundle, MODEL_RECEIPT_COMMITMENT_POINTER);
+        verify_agent_step_receipt_bundle_v1(&bundle)
+            .expect("self-consistent relabeled agent receipt still verifies");
+
+        let err = verify_agent_step_receipt_bundle_v1_with_zkai_stwo_model_subreceipt(
+            &bundle, &payload, &evidence,
+        )
+        .expect_err("mismatched transformer-block statement/model pair rejects");
+        assert!(
+            err.to_string().contains("policy mismatch for model_id"),
+            "{err}"
+        );
     }
 
     #[test]
