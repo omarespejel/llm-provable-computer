@@ -75,6 +75,30 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(PLAN.PlanValidationError, "bounded_activation_lookup"):
             PLAN.validate_plan(plan)
 
+    def test_plan_rejects_extra_transformer_operation_ids(self) -> None:
+        plan = self._plan()
+        plan["target"]["operations"].append(
+            {
+                "id": "unscoped_attention_claim",
+                "description": "would silently widen the bounded target",
+            }
+        )
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "unsupported entries"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_rejects_duplicate_transformer_operation_ids(self) -> None:
+        plan = self._plan()
+        plan["target"]["operations"].append(
+            {
+                "id": "residual_add",
+                "description": "duplicate operation id must not collapse away",
+            }
+        )
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "duplicate ids"):
+            PLAN.validate_plan(plan)
+
     def test_plan_requires_statement_binding_fields(self) -> None:
         plan = self._plan()
         plan["target"]["public_commitments"].remove("evidence_manifest_commitment")

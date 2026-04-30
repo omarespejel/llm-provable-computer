@@ -232,6 +232,14 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
 
     operations = _required_list(target.get("operations"), "target.operations")
     operation_ids = _ids(operations, "target.operations")
+    if len(operation_ids) != len(operations):
+        raise PlanValidationError("target.operations must not contain duplicate ids")
+    unexpected_operation_ids = sorted(operation_ids - REQUIRED_OPERATION_IDS)
+    if unexpected_operation_ids:
+        raise PlanValidationError(
+            "target.operations contains unsupported entries: "
+            + ", ".join(unexpected_operation_ids)
+        )
     _require_superset(operation_ids, REQUIRED_OPERATION_IDS, "target.operations")
 
     public_commitment_items = _required_list(target.get("public_commitments"), "target.public_commitments")
