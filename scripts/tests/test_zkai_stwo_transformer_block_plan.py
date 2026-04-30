@@ -28,6 +28,10 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         self.assertEqual(summary["schema"], PLAN.PLAN_SCHEMA)
         self.assertEqual(summary["status"], "design_gate")
         self.assertEqual(summary["target"], "rmsnorm-gated-affine-residual-block-v1")
+        self.assertEqual(
+            summary["model_id"],
+            "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1",
+        )
         self.assertEqual(summary["statement_kind"], "transformer-block")
         self.assertEqual(summary["width"], 4)
         self.assertEqual(summary["go_criteria_count"], 5)
@@ -40,6 +44,13 @@ class ZkAIStwoTransformerBlockPlanTests(unittest.TestCase):
         ]
 
         with self.assertRaisesRegex(PLAN.PlanValidationError, "rmsnorm_scale_lookup"):
+            PLAN.validate_plan(plan)
+
+    def test_plan_requires_verifier_facing_transformer_block_model_id(self) -> None:
+        plan = self._plan()
+        plan["target"]["model_id"] = "rmsnorm-gated-affine-residual-block-v1"
+
+        with self.assertRaisesRegex(PLAN.PlanValidationError, "target.model_id"):
             PLAN.validate_plan(plan)
 
     def test_plan_requires_residual_structure(self) -> None:

@@ -23,6 +23,8 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from zkai_stwo_transformer_block_constants import (  # noqa: E402
     REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS,
+    TRANSFORMER_BLOCK_MODEL_ID,
+    TRANSFORMER_BLOCK_PROFILE_VERSION,
 )
 
 DEFAULT_PLAN_PATH = (
@@ -36,7 +38,8 @@ DEFAULT_PLAN_PATH = (
 PLAN_SCHEMA = "zkai-stwo-statement-bound-transformer-block-plan-v1"
 PLAN_STATUS = "design_gate"
 BASELINE_PROOF_SYSTEM_VERSION = "stwo-phase10-linear-block-v4-with-lookup"
-TARGET_NAME = "rmsnorm-gated-affine-residual-block-v1"
+TARGET_NAME = TRANSFORMER_BLOCK_PROFILE_VERSION
+TARGET_MODEL_ID = TRANSFORMER_BLOCK_MODEL_ID
 TARGET_STATEMENT_KIND = "transformer-block"
 EXPECTED_STATEMENT_MUTATIONS = 14
 EXPECTED_PROOF_ONLY_REJECTIONS = 1
@@ -225,6 +228,8 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     target = _required_dict(plan.get("target"), "target")
     if target.get("name") != TARGET_NAME:
         raise PlanValidationError(f"target.name must be {TARGET_NAME!r}")
+    if target.get("model_id") != TARGET_MODEL_ID:
+        raise PlanValidationError(f"target.model_id must be {TARGET_MODEL_ID!r}")
     if target.get("statement_kind") != TARGET_STATEMENT_KIND:
         raise PlanValidationError(f"target.statement_kind must be {TARGET_STATEMENT_KIND!r}")
     if target.get("width") != 4:
@@ -289,6 +294,7 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
         "schema": PLAN_SCHEMA,
         "status": PLAN_STATUS,
         "target": target["name"],
+        "model_id": target["model_id"],
         "statement_kind": target["statement_kind"],
         "width": target["width"],
         "operation_count": len(operation_ids),
