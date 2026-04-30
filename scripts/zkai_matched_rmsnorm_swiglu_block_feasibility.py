@@ -264,6 +264,7 @@ def matched_target(width: int) -> dict[str, Any]:
         "target_id": f"rmsnorm-swiglu-residual-d{width}-v1",
         "statement_kind": "transformer-block",
         "model_id": f"urn:zkai:ptvm:rmsnorm-swiglu-residual-d{width}-v1",
+        "required_proof_backend_version": f"stwo-rmsnorm-swiglu-residual-d{width}-v1",
         "width": width,
         "ff_dim": ff_dim,
         "activation": "SwiGLU",
@@ -326,6 +327,19 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
         )
     fixture_gate = _require_dict(current.get("fixture_gate"), "current.fixture_gate")
     proof_backend_version = current.get("proof_backend_version")
+    allowed_backend_versions = {
+        CURRENT_FIXTURE_PROOF_SYSTEM_VERSION,
+        target["required_proof_backend_version"],
+    }
+    if proof_backend_version not in allowed_backend_versions:
+        blockers.append(
+            {
+                "id": "proof_backend_version_mismatch",
+                "current": proof_backend_version,
+                "allowed": sorted(allowed_backend_versions),
+                "why_it_matters": "the gate only classifies the checked fixture surface or the explicit matched target backend",
+            }
+        )
     if not fixture_gate.get("fixture_gate_detected") and proof_backend_version == CURRENT_FIXTURE_PROOF_SYSTEM_VERSION:
         blockers.append(
             {
