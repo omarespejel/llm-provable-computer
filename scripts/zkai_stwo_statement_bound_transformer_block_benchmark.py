@@ -27,6 +27,14 @@ from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from zkai_stwo_transformer_block_constants import (  # noqa: E402
+    REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS,
+)
+
 ARTIFACT_DIR = ROOT / "docs" / "engineering" / "evidence" / "zkai-stwo-statement-bound-transformer-block-2026-05"
 BENCHMARK_SCHEMA = "zkai-stwo-statement-envelope-benchmark-v1"
 ENVELOPE_SCHEMA = "zkai-stwo-statement-envelope-v1"
@@ -44,13 +52,7 @@ STWO_PROOF_PATH = "linear_block_v4_with_lookup.proof.json.gz"
 BLOCK_PROFILE_VERSION = "rmsnorm-gated-affine-residual-block-v1"
 BLOCK_LOGICAL_WIDTH = 4
 BLOCK_INTEGER_DOMAIN = "signed fixed-width quantized M31-compatible integers"
-REQUIRED_BLOCK_OPERATION_IDS = (
-    "rmsnorm_scale_lookup",
-    "quantized_affine_projection",
-    "gated_value_mix",
-    "residual_add",
-    "bounded_activation_lookup",
-)
+REQUIRED_BLOCK_OPERATION_IDS = REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS
 
 EXPECTED_STATEMENT = {
     "receipt_version": STATEMENT_SCHEMA,

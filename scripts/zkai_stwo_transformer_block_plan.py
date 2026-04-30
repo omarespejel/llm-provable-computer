@@ -17,6 +17,14 @@ from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from zkai_stwo_transformer_block_constants import (  # noqa: E402
+    REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS,
+)
+
 DEFAULT_PLAN_PATH = (
     ROOT
     / "docs"
@@ -34,15 +42,7 @@ EXPECTED_STATEMENT_MUTATIONS = 14
 EXPECTED_PROOF_ONLY_REJECTIONS = 1
 EXPECTED_COMPOSITION_MUTATIONS = 36
 
-REQUIRED_OPERATION_IDS = frozenset(
-    {
-        "rmsnorm_scale_lookup",
-        "quantized_affine_projection",
-        "gated_value_mix",
-        "residual_add",
-        "bounded_activation_lookup",
-    }
-)
+REQUIRED_OPERATION_IDS = frozenset(REQUIRED_TRANSFORMER_BLOCK_OPERATION_IDS)
 REQUIRED_PUBLIC_COMMITMENTS = frozenset(
     {
         "model_artifact_commitment",
