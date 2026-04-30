@@ -81,6 +81,15 @@ def sha256_file(path: pathlib.Path) -> str:
     return digest.hexdigest()
 
 
+def _display_path(path: pathlib.Path) -> str:
+    resolved_root = ROOT.resolve()
+    resolved_path = path.resolve()
+    try:
+        return str(resolved_path.relative_to(resolved_root))
+    except ValueError:
+        return os.path.relpath(resolved_path, resolved_root)
+
+
 def _load_json(path: pathlib.Path) -> dict[str, Any]:
     try:
         if path.suffix == ".gz":
@@ -207,7 +216,7 @@ def _fixture_gate_scan(source_path: pathlib.Path = CURRENT_STWO_SOURCE_PATH) -> 
         "broader_arithmetic_subset_internal": "broader arithmetic-subset AIR coverage remains internal" in source,
     }
     return {
-        "source_path": str(source_path.relative_to(ROOT)),
+        "source_path": _display_path(source_path),
         "source_sha256": sha256_file(source_path),
         "fixture_gate_detected": all(markers.values()),
         "markers": markers,
@@ -230,10 +239,11 @@ def current_surface(
     memory = _require_list(final_state.get("memory"), "claim.final_state.memory")
     op_ids = _instruction_op_ids(proof)
     proof_payload = _require_list(proof.get("proof"), "proof")
+    proof_payload_bytes = len(canonical_json_bytes(proof_payload))
     return {
-        "evidence_path": str(evidence_path.relative_to(ROOT)),
+        "evidence_path": _display_path(evidence_path),
         "evidence_sha256": sha256_file(evidence_path),
-        "proof_path": str(proof_path.relative_to(ROOT)),
+        "proof_path": _display_path(proof_path),
         "proof_sha256": sha256_file(proof_path),
         "proof_backend": proof.get("proof_backend"),
         "proof_backend_version": proof.get("proof_backend_version"),
@@ -245,7 +255,7 @@ def current_surface(
         "claim_instruction_count": len(op_ids),
         "claim_mul_memory_ops": op_ids.count("MulMemory"),
         "claim_add_memory_ops": op_ids.count("AddMemory"),
-        "proof_payload_bytes": len(proof_payload),
+        "proof_payload_bytes": proof_payload_bytes,
         "block_profile_version": block_profile.get("profile_version"),
         "block_logical_width": block_profile.get("logical_width"),
         "block_operation_ids": block_profile.get("operation_ids"),
@@ -347,7 +357,7 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
                 "why_it_matters": "the probe could not confirm the current fixture-gated Stwo proof surface",
             }
         )
-    if fixture_gate.get("fixture_gate_detected"):
+    if fixture_gate.get("fixture_gate_detected") and proof_backend_version != target["required_proof_backend_version"]:
         blockers.append(
             {
                 "id": "proof_generator_fixture_allowlist",

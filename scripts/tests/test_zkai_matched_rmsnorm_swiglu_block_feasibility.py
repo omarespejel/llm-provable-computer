@@ -50,6 +50,12 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertEqual(payload["current_surface"]["claim_transformer_config"]["d_model"], 36)
         self.assertEqual(payload["current_surface"]["block_logical_width"], 4)
         self.assertEqual(payload["current_surface"]["claim_mul_memory_ops"], 7)
+        with gzip.open(PROBE.CURRENT_PROOF_PATH, "rt", encoding="utf-8") as handle:
+            proof = json.load(handle)
+        self.assertEqual(
+            payload["current_surface"]["proof_payload_bytes"],
+            len(PROBE.canonical_json_bytes(proof["proof"])),
+        )
         self.assertTrue(payload["current_surface"]["fixture_gate"]["fixture_gate_detected"])
 
         widths = [row["target_width"] for row in payload["rows"]]
@@ -140,6 +146,26 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertTrue(result["markers"]["linear_block_v4_with_lookup"])
         self.assertFalse(result["markers"]["decoding_step_v2_family"])
 
+    def test_fixture_gate_scan_records_external_paths_without_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            source = pathlib.Path(raw_tmp) / "probe.rs"
+            source.write_text(
+                "\n".join(
+                    [
+                        "fn matches_linear_block_v4_with_lookup() {}",
+                        "fn matches_decoding_step_v2() {}",
+                        "// broader arithmetic-subset AIR coverage remains internal",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            result = PROBE._fixture_gate_scan(source)
+
+        self.assertTrue(result["fixture_gate_detected"])
+        self.assertTrue(result["source_path"])
+        self.assertNotEqual(result["source_path"], ".")
+
     def test_tsv_rows_are_stable_and_include_gap_factor(self) -> None:
         current = {
             "proof_backend_version": PROBE.CURRENT_FIXTURE_PROOF_SYSTEM_VERSION,
@@ -189,6 +215,20 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertEqual(row["status"], "GO_FEASIBLE")
         self.assertEqual(row["blockers"], [])
         self.assertEqual(PROBE.decision_for_rows([row]), PROBE.DECISION_GO)
+
+    def test_classifier_allows_explicit_matched_backend_even_if_fixture_markers_remain(self) -> None:
+        current = {
+            "proof_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+            "claim_transformer_config": {"d_model": 64},
+            "block_logical_width": 64,
+            "claim_mul_memory_ops": 49_152,
+            "fixture_gate": {"fixture_gate_detected": True},
+        }
+
+        row = PROBE.classify_target(current, PROBE.matched_target(64))
+
+        self.assertEqual(row["status"], "GO_FEASIBLE")
+        self.assertEqual(row["blockers"], [])
 
     def test_classifier_keeps_fixture_blocker_for_renamed_backend_version(self) -> None:
         current = {
