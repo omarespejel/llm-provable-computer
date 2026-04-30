@@ -85,9 +85,9 @@ def _display_path(path: pathlib.Path) -> str:
     resolved_root = ROOT.resolve()
     resolved_path = path.resolve()
     try:
-        return str(resolved_path.relative_to(resolved_root))
+        return resolved_path.relative_to(resolved_root).as_posix()
     except ValueError:
-        return os.path.relpath(resolved_path, resolved_root)
+        return resolved_path.as_posix()
 
 
 def _load_json(path: pathlib.Path) -> dict[str, Any]:
