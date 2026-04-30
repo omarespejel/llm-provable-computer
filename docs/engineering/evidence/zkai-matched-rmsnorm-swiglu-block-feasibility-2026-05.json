@@ -77,7 +77,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.tsv"
     ],
-    "git_commit": "f34f321ad0373493ac15c9ce94e62804ad67a4b9"
+    "git_commit": "f4248edd0e775b19cfe09e0ece6d1a3d4e451a2a"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "rows": [
