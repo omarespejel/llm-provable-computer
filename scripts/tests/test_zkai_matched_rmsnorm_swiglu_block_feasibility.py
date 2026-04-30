@@ -165,6 +165,7 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertTrue(result["fixture_gate_detected"])
         self.assertTrue(result["source_path"])
         self.assertNotEqual(result["source_path"], ".")
+        self.assertNotIn("\\", result["source_path"])
 
     def test_tsv_rows_are_stable_and_include_gap_factor(self) -> None:
         current = {
