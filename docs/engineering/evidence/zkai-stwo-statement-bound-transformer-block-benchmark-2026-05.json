@@ -565,7 +565,7 @@
       "baseline_statement_commitment": "blake2b-256:196d1ebb936119666979ff13fa576d8944daa1f2d1035d1c536f6a4aa0b6674b",
       "baseline_statement_sha256": "db5cecc91fd6c217d2b80994d7051065b25ba5acfa79990b78f5288f6364713f",
       "category": "external_proof_verifier",
-      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.27s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmpng7su_4e/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
+      "error": "Stwo verify-stark verifier rejected: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s\n     Running `target/debug/tvm verify-stark /var/folders/qz/nsyksys54bx4x8c_688j6sx80000gn/T/tmprv3szp6q/proof.json --reexecute`\nerror: invalid config: invalid transformer equivalence fingerprint",
       "mutated_accepted": false,
       "mutated_public_instance_commitment": "blake2b-256:bb4df46491eb33678bc5efd7f8a2438cb419f5b1ff4e67cf19496a85fbd752af",
       "mutated_statement": {
@@ -1631,6 +1631,8 @@
     "artifact_dir": "docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-2026-05",
     "artifact_metadata_sha256": "d411f9e5f6cf9eb6ccaae167f37f1ce095d44d8a0b23a94c3c377d2b2cdc4674",
     "command": [
+      "env",
+      "ZKAI_STWO_BENCHMARK_GIT_COMMIT=ddc0a46751fbdc6b53cdf0022479c2650177e39f",
       "python3.12",
       "scripts/zkai_stwo_statement_bound_transformer_block_benchmark.py",
       "--write-json",
