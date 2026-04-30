@@ -36,14 +36,15 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertEqual(d128["estimated_activation_rows"], 512)
 
     def test_payload_records_current_surface_no_go_for_both_targets(self) -> None:
-        with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "0", "ZKAI_GIT_COMMIT": "test-commit"}):
+        with mock.patch.dict(os.environ, {"ZKAI_GIT_COMMIT": "test-commit"}, clear=True):
             payload = PROBE.build_payload()
 
         self.assertEqual(payload["schema"], PROBE.SCHEMA)
         self.assertEqual(payload["generated_at"], "1970-01-01T00:00:00Z")
-        self.assertEqual(payload["decision"], "NO_GO_CURRENT_STWO_PROOF_SURFACE")
+        self.assertEqual(payload["decision"], PROBE.DECISION_NO_GO)
         self.assertEqual(payload["summary"]["target_count"], 2)
         self.assertEqual(payload["summary"]["no_go_count"], 2)
+        self.assertEqual(payload["summary"]["go_count"], 0)
         self.assertEqual(payload["current_surface"]["claim_transformer_config"]["d_model"], 36)
         self.assertEqual(payload["current_surface"]["block_logical_width"], 4)
         self.assertEqual(payload["current_surface"]["claim_mul_memory_ops"], 7)
@@ -139,6 +140,7 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
 
     def test_tsv_rows_are_stable_and_include_gap_factor(self) -> None:
         current = {
+            "proof_backend_version": PROBE.CURRENT_FIXTURE_PROOF_SYSTEM_VERSION,
             "claim_transformer_config": {"d_model": 36},
             "block_logical_width": 4,
             "claim_mul_memory_ops": 7,
@@ -157,12 +159,37 @@ class ZkAIMatchedRMSNormSwiGLUBlockFeasibilityTests(unittest.TestCase):
         self.assertEqual(tsv_rows[1]["mul_gap_factor"], "28086.857")
         self.assertEqual(tsv_rows[0]["blocker_count"], 4)
 
+    def test_generated_at_is_deterministic_by_default(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(PROBE._generated_at(), "1970-01-01T00:00:00Z")
+
+    def test_generated_at_rejects_malformed_source_date_epoch(self) -> None:
+        with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "not-an-int"}, clear=True):
+            with self.assertRaisesRegex(PROBE.FeasibilityError, "SOURCE_DATE_EPOCH"):
+                PROBE._generated_at()
+
+    def test_classifier_can_report_go_for_synthetic_matched_surface(self) -> None:
+        current = {
+            "proof_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+            "claim_transformer_config": {"d_model": 64},
+            "block_logical_width": 64,
+            "claim_mul_memory_ops": 49_152,
+            "fixture_gate": {"fixture_gate_detected": False},
+        }
+
+        row = PROBE.classify_target(current, PROBE.matched_target(64))
+
+        self.assertEqual(row["status"], "GO_FEASIBLE")
+        self.assertEqual(row["blockers"], [])
+        self.assertEqual(PROBE.decision_for_rows([row]), PROBE.DECISION_GO)
+
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = {
             "schema": PROBE.SCHEMA,
             "rows": [
                 PROBE.classify_target(
                     {
+                        "proof_backend_version": PROBE.CURRENT_FIXTURE_PROOF_SYSTEM_VERSION,
                         "claim_transformer_config": {"d_model": 36},
                         "block_logical_width": 4,
                         "claim_mul_memory_ops": 7,

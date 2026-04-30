@@ -42,10 +42,13 @@ CURRENT_PROOF_PATH = (
 CURRENT_STWO_SOURCE_PATH = ROOT / "src" / "stwo_backend" / "arithmetic_subset_prover.rs"
 
 SCHEMA = "zkai-matched-rmsnorm-swiglu-block-feasibility-v1"
-DECISION = "NO_GO_CURRENT_STWO_PROOF_SURFACE"
+DECISION_GO = "GO_MATCHED_STWO_PROOF_SURFACE"
+DECISION_NO_GO = "NO_GO_CURRENT_STWO_PROOF_SURFACE"
 TARGET_WIDTHS = (64, 128)
 FF_DIM_MULTIPLIER = 4
 CURRENT_EXPECTED_MODEL_ID = "urn:zkai:ptvm:rmsnorm-gated-affine-residual-block-v1"
+CURRENT_FIXTURE_PROOF_SYSTEM_VERSION = "stwo-phase10-linear-block-v4-with-lookup"
+DEFAULT_SOURCE_DATE_EPOCH = 0
 TSV_COLUMNS = (
     "target_width",
     "status",
@@ -120,14 +123,12 @@ def _instruction_op_ids(proof: dict[str, Any]) -> list[str]:
 
 
 def _generated_at() -> str:
-    source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH")
-    if source_date_epoch:
-        try:
-            timestamp = int(source_date_epoch)
-        except ValueError as err:
-            raise FeasibilityError("SOURCE_DATE_EPOCH must be an integer timestamp") from err
-        return dt.datetime.fromtimestamp(timestamp, tz=dt.UTC).isoformat().replace("+00:00", "Z")
-    return dt.datetime.now(tz=dt.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH", str(DEFAULT_SOURCE_DATE_EPOCH))
+    try:
+        timestamp = int(source_date_epoch)
+    except ValueError as err:
+        raise FeasibilityError("SOURCE_DATE_EPOCH must be an integer timestamp") from err
+    return dt.datetime.fromtimestamp(timestamp, tz=dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _git_commit() -> str:
@@ -319,14 +320,16 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
                 "why_it_matters": "a matched SwiGLU block needs gate, value, and down projections over d x ff_dim matrices",
             }
         )
-    if not _require_dict(current.get("fixture_gate"), "current.fixture_gate").get("fixture_gate_detected"):
+    fixture_gate = _require_dict(current.get("fixture_gate"), "current.fixture_gate")
+    proof_backend_version = current.get("proof_backend_version")
+    if not fixture_gate.get("fixture_gate_detected") and proof_backend_version == CURRENT_FIXTURE_PROOF_SYSTEM_VERSION:
         blockers.append(
             {
                 "id": "unsupported_source_probe",
                 "why_it_matters": "the probe could not confirm the current fixture-gated Stwo proof surface",
             }
         )
-    else:
+    if fixture_gate.get("fixture_gate_detected") and proof_backend_version == CURRENT_FIXTURE_PROOF_SYSTEM_VERSION:
         blockers.append(
             {
                 "id": "proof_generator_fixture_allowlist",
@@ -335,11 +338,17 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
         )
 
     gap = float(target["estimated_linear_muls"]) / float(current_mul_ops or 1)
+    status = "GO_FEASIBLE" if not blockers else "NO_GO_CURRENT_SURFACE"
+    reason = (
+        "current checked proof surface satisfies the matched RMSNorm-SwiGLU target shape"
+        if status == "GO_FEASIBLE"
+        else "current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof"
+    )
     return {
         "target_id": target["target_id"],
         "target_width": target["width"],
-        "status": "NO_GO_CURRENT_SURFACE",
-        "reason": "current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof",
+        "status": status,
+        "reason": reason,
         "current_d_model": current_d_model,
         "current_logical_width": current_width,
         "current_mul_memory_ops": current_mul_ops,
@@ -350,6 +359,12 @@ def classify_target(current: dict[str, Any], target: dict[str, Any]) -> dict[str
         "target_norm_rows": target["estimated_norm_rows"],
         "blockers": blockers,
     }
+
+
+def decision_for_rows(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        raise FeasibilityError("rows must not be empty")
+    return DECISION_GO if all(row["status"] == "GO_FEASIBLE" for row in rows) else DECISION_NO_GO
 
 
 def build_payload(
@@ -364,7 +379,7 @@ def build_payload(
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
-        "decision": DECISION,
+        "decision": decision_for_rows(rows),
         "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
         "current_surface": current,
         "targets": targets,
@@ -372,6 +387,7 @@ def build_payload(
         "summary": {
             "target_count": len(rows),
             "no_go_count": sum(1 for row in rows if row["status"].startswith("NO_GO")),
+            "go_count": sum(1 for row in rows if row["status"] == "GO_FEASIBLE"),
             "first_required_backend_work": "parameterized Stwo AIR or export path for RMSNorm/SwiGLU/residual vector blocks",
             "current_result_is_still_useful_for": "statement-binding and agent-step composition discipline",
             "current_result_is_not": "a matched d64/d128 zkML benchmark",
