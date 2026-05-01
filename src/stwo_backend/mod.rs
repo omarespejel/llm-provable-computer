@@ -6,6 +6,8 @@ mod arithmetic_subset_prover;
 mod d64_native_export_contract;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_rmsnorm_air_feasibility;
+#[cfg(feature = "stwo-backend")]
+mod d64_native_rmsnorm_public_row_proof;
 mod d64_native_rmsnorm_slice_contract;
 #[cfg(feature = "stwo-backend")]
 mod decoding;
@@ -71,6 +73,16 @@ pub use d64_native_rmsnorm_air_feasibility::{
     ZkAiD64NativeRmsnormAirFeasibilityGate, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_DECISION,
     ZKAI_D64_RMSNORM_AIR_FEASIBILITY_KIND, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_NEXT_BACKEND_STEP,
     ZKAI_D64_RMSNORM_AIR_FEASIBILITY_RUST_MODULE, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_SCHEMA,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_rmsnorm_public_row_proof::{
+    prove_zkai_d64_rmsnorm_public_row_envelope, verify_zkai_d64_rmsnorm_public_row_envelope,
+    zkai_d64_rmsnorm_public_row_input_from_json_str, D64RmsnormPublicRow,
+    ZkAiD64RmsnormPublicRowProofEnvelope, ZkAiD64RmsnormPublicRowProofInput,
+    ZKAI_D64_RMSNORM_PUBLIC_ROW_DECISION, ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_DECISION,
+    ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_SCHEMA, ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_JSON_BYTES,
+    ZKAI_D64_RMSNORM_PUBLIC_ROW_NEXT_BACKEND_STEP, ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+    ZKAI_D64_RMSNORM_PUBLIC_ROW_SEMANTIC_SCOPE, ZKAI_D64_RMSNORM_PUBLIC_ROW_STATEMENT_VERSION,
 };
 pub use d64_native_rmsnorm_slice_contract::{
     zkai_d64_native_rmsnorm_slice_contract_from_oracle_json_str,

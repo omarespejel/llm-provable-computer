@@ -1,0 +1,2 @@
+schema	decision	target_id	row_count	rms_q8	sum_squares	average_square_floor	proof_native_parameter_commitment	rms_scale_tree_root	non_claims
+zkai-d64-native-rmsnorm-public-row-air-proof-input-v1	GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF	rmsnorm-swiglu-residual-d64-v2	64	115	849454	13272	blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc	blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3	5
