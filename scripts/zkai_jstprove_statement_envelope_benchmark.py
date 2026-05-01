@@ -36,6 +36,7 @@ GIT_COMMIT_OVERRIDE_ENV = "ZKAI_JSTPROVE_BENCHMARK_GIT_COMMIT"
 COMMAND_OVERRIDE_ENV = "ZKAI_JSTPROVE_BENCHMARK_COMMAND_JSON"
 HEX_SHA_RE = re.compile(r"^[0-9a-fA-F]{7,40}$")
 ALLOWED_ARTIFACTS = frozenset({"model.msgpack", "input.msgpack", "proof.msgpack"})
+MODEL_SOURCE_ARTIFACT = "tiny_gemm.onnx"
 EXPECTED_STATEMENT = {
     "model_id": "urn:zkai:jstprove-demo:tiny-gemm-remainder-v1",
     "input_id": "urn:zkai:input:tiny-gemm-vector-v1",
@@ -172,7 +173,7 @@ def baseline_envelope() -> dict[str, Any]:
         "model_artifact_sha256": metadata["artifacts"]["model.msgpack"],
         "input_artifact_sha256": metadata["artifacts"]["input.msgpack"],
         "proof_sha256": metadata["artifacts"]["proof.msgpack"],
-        "model_source_sha256": metadata["source_artifacts"]["tiny_gemm.onnx"],
+        "model_source_sha256": metadata["source_artifacts"][MODEL_SOURCE_ARTIFACT],
         "upstream_commit": JSTPROVE_UPSTREAM_COMMIT,
         "remainder_commit": JSTPROVE_REMAINDER_COMMIT,
         "setup_commitment": None,
@@ -320,7 +321,7 @@ def _check_artifact_hashes(envelope: dict[str, Any]) -> tuple[str, str, str]:
         (artifact_sha256(envelope, input_name), statement.get("input_artifact_sha256"), "input artifact hash"),
         (artifact_sha256(envelope, proof_name), statement.get("proof_sha256"), "proof hash"),
         (
-            _artifact_metadata()["source_artifacts"]["tiny_gemm.onnx"],
+            sha256_file(ARTIFACT_DIR / MODEL_SOURCE_ARTIFACT),
             statement.get("model_source_sha256"),
             "model source hash",
         ),
@@ -346,9 +347,13 @@ def _materialized_artifacts(envelope: dict[str, Any], tmp: pathlib.Path) -> tupl
 
 def jstprove_verify(envelope: dict[str, Any]) -> None:
     binary = os.environ.get(JSTPROVE_BIN_ENV, "jstprove-remainder")
-    if pathlib.Path(binary).is_absolute() and not pathlib.Path(binary).is_file():
-        raise JstproveEnvelopeError(f"JSTprove Remainder verifier is missing: {binary}")
-    if not pathlib.Path(binary).is_absolute() and shutil.which(binary) is None:
+    binary_path = pathlib.Path(binary)
+    if binary_path.is_absolute():
+        if not binary_path.is_file():
+            raise JstproveEnvelopeError(f"JSTprove Remainder verifier is missing: {binary}")
+        if not os.access(binary_path, os.X_OK):
+            raise JstproveEnvelopeError(f"JSTprove Remainder verifier is not executable: {binary}")
+    if not binary_path.is_absolute() and shutil.which(binary) is None:
         raise JstproveEnvelopeError(f"JSTprove Remainder verifier is not on PATH: {binary}")
     with tempfile.TemporaryDirectory(prefix="zkai-jstprove-proof-") as raw_tmp:
         model_path, input_path, proof_path = _materialized_artifacts(envelope, pathlib.Path(raw_tmp))
@@ -373,6 +378,8 @@ def jstprove_verify(envelope: dict[str, Any]) -> None:
             )
         except subprocess.TimeoutExpired as err:
             raise JstproveEnvelopeError("JSTprove Remainder verifier timed out") from err
+        except OSError as err:
+            raise JstproveEnvelopeError(f"JSTprove Remainder verifier failed to start: {err}") from err
     output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
     if result.returncode != 0:
         raise JstproveEnvelopeError(f"JSTprove Remainder verifier rejected: {output}")

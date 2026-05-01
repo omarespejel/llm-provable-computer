@@ -79,6 +79,21 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "proof hash mismatch"):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
+    def test_statement_envelope_hashes_model_source_artifact_bytes(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        original_sha256_file = BENCH.sha256_file
+
+        def fake_source_hash(path):
+            if pathlib.Path(path).name == BENCH.MODEL_SOURCE_ARTIFACT:
+                return "ff" * 32
+            return original_sha256_file(path)
+
+        with (
+            mock.patch.object(BENCH, "sha256_file", side_effect=fake_source_hash),
+            self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "model source hash mismatch"),
+        ):
+            BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
+
     def test_statement_envelope_rejects_missing_setup_commitment_fail_closed(self) -> None:
         envelope = BENCH.baseline_envelope()
         del envelope["statement"]["setup_commitment"]
@@ -109,6 +124,12 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
                 side_effect=BENCH.subprocess.TimeoutExpired(cmd=["jstprove-remainder"], timeout=180),
             ):
                 with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "timed out"):
+                    BENCH.jstprove_verify(BENCH.baseline_envelope())
+
+    def test_jstprove_verify_wraps_spawn_errors(self) -> None:
+        with mock.patch.object(BENCH.shutil, "which", return_value="/usr/bin/jstprove-remainder"):
+            with mock.patch.object(BENCH.subprocess, "run", side_effect=OSError("exec format error")):
+                with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "failed to start"):
                     BENCH.jstprove_verify(BENCH.baseline_envelope())
 
     def test_case_result_propagates_harness_bugs(self) -> None:
