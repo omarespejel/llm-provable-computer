@@ -376,10 +376,13 @@ def validate_probe(payload: dict[str, Any]) -> None:
         raise CommitmentConsistencyProbeError("source fixture drift")
 
     expected_manifest = proof_native_parameter_manifest(FIXTURE.evaluate_reference_block())
-    if (
-        payload["source_fixture"]["proof_native_parameter_commitment"]
-        != payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"]
-    ):
+    manifest_payload = payload["proof_native_parameter_manifest"]
+    if not isinstance(manifest_payload, dict):
+        raise CommitmentConsistencyProbeError("proof-native parameter manifest must be an object")
+    manifest_commitment = manifest_payload.get("proof_native_parameter_commitment")
+    if not isinstance(manifest_commitment, str):
+        raise CommitmentConsistencyProbeError("proof-native parameter manifest missing commitment")
+    if payload["source_fixture"]["proof_native_parameter_commitment"] != manifest_commitment:
         raise CommitmentConsistencyProbeError("proof-native parameter commitment mismatch")
     counts = expected_manifest["counts"]
     if counts["matrix_row_leaves"] != EXPECTED_MATRIX_ROW_LEAVES:
