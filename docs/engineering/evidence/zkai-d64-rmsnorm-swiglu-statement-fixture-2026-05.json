@@ -6,6 +6,7 @@
     "model_config_commitment": "blake2b-256:554f3a7cf84ef54723d94c35e169fa4dba7ecf2c14ac28aabf1deccebc0edba4",
     "normalization_config_commitment": "blake2b-256:bfd18a548d24acdf90518744f24e4dd742e68cd2df5f006d3eacc02f3217dc72",
     "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "weight_commitment": "blake2b-256:1b17805c9ca827683479abf8165a866eeb86d5994ea420f634c298fee1fa2f08"
   },
   "decision": "GO_STATEMENT_TARGET_PINNED_NOT_PROVEN",
@@ -16,7 +17,7 @@
       "encode the RMSNorm rows against the committed scale vector",
       "encode gate/value/down projection rows against committed matrices",
       "encode bounded SiLU lookup and SwiGLU multiplication rows",
-      "bind the proof public instance to this statement payload"
+      "bind the proof public instance to proof_native_parameter_commitment and this statement payload"
     ],
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
     "what_this_is": "canonical committed statement fixture for the next d64 prover target",
@@ -61,6 +62,11 @@
         "rejected": true
       },
       {
+        "name": "proof_native_parameter_commitment_relabeling",
+        "reason": "statement field mismatch: proof_native_parameter_commitment",
+        "rejected": true
+      },
+      {
         "name": "input_activation_commitment_relabeling",
         "reason": "statement field mismatch: input_activation_commitment",
         "rejected": true
@@ -102,8 +108,8 @@
       }
     ],
     "decision": "GO",
-    "mutations_checked": 14,
-    "mutations_rejected": 14
+    "mutations_checked": 15,
+    "mutations_rejected": 15
   },
   "reference_semantics": {
     "activation_lut_domain_q8": [
@@ -152,14 +158,15 @@
     "normalization_config_commitment": "blake2b-256:bfd18a548d24acdf90518744f24e4dd742e68cd2df5f006d3eacc02f3217dc72",
     "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
     "proof_commitment": null,
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
     "proof_system": "stwo-transparent-stark",
     "proof_system_version_required": "stwo-rmsnorm-swiglu-residual-d64-v1",
-    "public_instance_commitment": "blake2b-256:2dd3b69b8ee2a74c73fa25438bb5f4d254929758431efae179f542b3502c23cb",
+    "public_instance_commitment": "blake2b-256:e506a7cd632c091b4dfd89c3e156171025bfa2e673122816c229e3fc0c718311",
     "receipt_version": "zkai-statement-target-v1",
     "reference_output_sha256": "d85e1accebec91047bc31f32ca56366a6b794bd83abf0b8eb235f5339c90f956",
     "setup_commitment": null,
-    "statement_commitment": "blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6",
+    "statement_commitment": "blake2b-256:c962fda54999c83cb3ba82d5ff1107373d9ae0f625b90b326d83f13af40a9714",
     "statement_kind": "transformer-block",
     "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v1",
     "verifying_key_commitment": null,
