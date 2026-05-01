@@ -7,10 +7,12 @@
       "primary_blocker": "exact_d64_semantics_not_encoded_by_a_vanilla_float_export",
       "proof_generated": false,
       "required_custom_semantics": [
+        "signed_q8_integer_arithmetic",
         "floor_division_rounding",
         "integer_square_root",
         "bounded_integer_silu_lookup",
-        "committed_parameter_tables"
+        "committed_parameter_tables",
+        "statement_receipt_binding"
       ],
       "same_statement_proof_claim": "NO_GO"
     },
@@ -67,7 +69,7 @@
       "same_statement_proof_claim": "NO_GO"
     }
   ],
-  "candidate_matrix_commitment": "blake2b-256:c3b67ffdf96c85316270221d9ab7bcd9faa2c9e33a91980e19d3f36a9fdc6dfc",
+  "candidate_matrix_commitment": "blake2b-256:de75d77488f2abc142f9920a412941795bb0103683f0a94bd6a89d0d50dd7c4f",
   "conclusion": {
     "exact_vanilla_external_export": "NO_GO",
     "external_custom_circuit_track": "POSSIBLE_NOT_CHECKED",
@@ -89,6 +91,7 @@
       "torch": "not_recorded"
     }
   },
+  "dependency_probe_commitment": "blake2b-256:c6a2d7e28e454a45d2b6e899406b9a51c16530e1ce17794b85b94d4c4b1e34cf",
   "exact_semantic_requirements": [
     {
       "requirement": "signed_q8_integer_arithmetic",
@@ -125,7 +128,7 @@
     "max_abs_output_delta_q8": 10
   },
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "unspecified",
+  "git_commit": "30b9bbdafbc55c4879ab2cfb31f9006541fddaa7",
   "non_claims": [
     "not an EZKL security finding",
     "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",

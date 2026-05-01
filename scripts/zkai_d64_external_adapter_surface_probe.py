@@ -19,6 +19,7 @@ import math
 import os
 import pathlib
 import shutil
+import subprocess
 from typing import Any
 
 
@@ -111,7 +112,20 @@ def _validate_generated_at(value: Any) -> None:
 
 
 def _git_commit() -> str:
-    return "unspecified"
+    override = os.environ.get("ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT")
+    if override:
+        return override
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unavailable"
+    return completed.stdout.strip() or "unavailable"
 
 
 def dependency_probe(
@@ -150,6 +164,7 @@ def dependency_probe(
         modules.get("onnx") is True
         and modules.get("onnxruntime") is True
         and modules.get("numpy") is True
+        and modules.get("torch") is True
         and modules.get("ezkl") is True
         and cli_tools.get("ezkl") is True
     )
@@ -268,10 +283,12 @@ def adapter_candidates() -> list[dict[str, Any]]:
             "proof_generated": False,
             "primary_blocker": "exact_d64_semantics_not_encoded_by_a_vanilla_float_export",
             "required_custom_semantics": [
+                "signed_q8_integer_arithmetic",
                 "floor_division_rounding",
                 "integer_square_root",
                 "bounded_integer_silu_lookup",
                 "committed_parameter_tables",
+                "statement_receipt_binding",
             ],
             "next_action": (
                 "Do not report an EZKL verifier-time row for this statement until a "
@@ -335,6 +352,26 @@ def adapter_candidates() -> list[dict[str, Any]]:
     ]
 
 
+def expected_conclusion() -> dict[str, str]:
+    return {
+        "exact_vanilla_external_export": "NO_GO",
+        "statement_receipt_reuse": "GO_FOR_BINDING_TARGET_NOT_PROOF",
+        "native_stwo_backend_track": "REFERRED_TO_ISSUE_341",
+        "external_custom_circuit_track": "POSSIBLE_NOT_CHECKED",
+    }
+
+
+def expected_non_claims() -> list[str]:
+    return [
+        "not an EZKL security finding",
+        "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",
+        "not a proof-generation benchmark",
+        "not a verifier-time benchmark",
+        "not evidence that the d64 statement is proven",
+        "not a full transformer inference claim",
+    ]
+
+
 def build_probe(
     module_overrides: dict[str, bool] | None = None,
     cli_overrides: dict[str, bool] | None = None,
@@ -358,6 +395,10 @@ def build_probe(
     )
     candidates = adapter_candidates()
     candidate_matrix_commitment = blake2b_commitment(candidates, "ptvm:zkai:d64-external-adapter-candidates:v1")
+    dependency_probe_commitment = blake2b_commitment(
+        dependencies,
+        "ptvm:zkai:d64-external-adapter-dependency-probe:v1",
+    )
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -376,25 +417,14 @@ def build_probe(
             },
         },
         "dependency_probe": dependencies,
+        "dependency_probe_commitment": dependency_probe_commitment,
         "exact_semantic_requirements": exact_requirements,
         "exact_semantic_requirements_commitment": exact_requirements_commitment,
         "float_drift_summary": drift,
         "candidate_adapters": candidates,
         "candidate_matrix_commitment": candidate_matrix_commitment,
-        "conclusion": {
-            "exact_vanilla_external_export": "NO_GO",
-            "statement_receipt_reuse": "GO_FOR_BINDING_TARGET_NOT_PROOF",
-            "native_stwo_backend_track": "REFERRED_TO_ISSUE_341",
-            "external_custom_circuit_track": "POSSIBLE_NOT_CHECKED",
-        },
-        "non_claims": [
-            "not an EZKL security finding",
-            "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",
-            "not a proof-generation benchmark",
-            "not a verifier-time benchmark",
-            "not evidence that the d64 statement is proven",
-            "not a full transformer inference claim",
-        ],
+        "conclusion": expected_conclusion(),
+        "non_claims": expected_non_claims(),
     }
 
 
@@ -425,6 +455,7 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "target",
         "source_fixture",
         "dependency_probe",
+        "dependency_probe_commitment",
         "exact_semantic_requirements",
         "exact_semantic_requirements_commitment",
         "float_drift_summary",
@@ -443,6 +474,19 @@ def validate_probe(payload: dict[str, Any]) -> None:
     git_commit = payload.get("git_commit")
     if not isinstance(git_commit, str) or not git_commit:
         raise D64ExternalAdapterProbeError("git_commit must be a non-empty string")
+    if git_commit != "unavailable" and (
+        len(git_commit) != 40 or any(char not in "0123456789abcdef" for char in git_commit)
+    ):
+        raise D64ExternalAdapterProbeError("git_commit must be a full lowercase hex commit hash")
+
+    expected_dependency_probe = dependency_probe()
+    if payload["dependency_probe"] != expected_dependency_probe:
+        raise D64ExternalAdapterProbeError("dependency probe drift")
+    if payload["dependency_probe_commitment"] != blake2b_commitment(
+        expected_dependency_probe,
+        "ptvm:zkai:d64-external-adapter-dependency-probe:v1",
+    ):
+        raise D64ExternalAdapterProbeError("dependency probe commitment drift")
 
     fixture = FIXTURE.build_fixture()
     if payload["target"] != fixture["target"]:
@@ -501,8 +545,10 @@ def validate_probe(payload: dict[str, Any]) -> None:
         raise D64ExternalAdapterProbeError("vanilla exact export gate must stay NO_GO")
     if by_name["zkai_statement_receipt_only"]["gate"] != "GO_FOR_BINDING_TARGET_NOT_PROOF":
         raise D64ExternalAdapterProbeError("statement receipt row must remain binding-only")
-    if payload["conclusion"].get("exact_vanilla_external_export") != "NO_GO":
-        raise D64ExternalAdapterProbeError("conclusion exact external export gate drift")
+    if payload["conclusion"] != expected_conclusion():
+        raise D64ExternalAdapterProbeError("conclusion drift")
+    if payload["non_claims"] != expected_non_claims():
+        raise D64ExternalAdapterProbeError("non-claims drift")
 
 
 def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -561,8 +607,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.include_host_deps and (args.write_json is not None or args.write_tsv is not None):
+        raise D64ExternalAdapterProbeError("--include-host-deps is diagnostic-only and cannot write checked evidence")
     payload = build_probe(include_host_dependencies=args.include_host_deps)
-    write_outputs(payload, args.write_json, args.write_tsv)
+    if args.write_json is not None or args.write_tsv is not None:
+        write_outputs(payload, args.write_json, args.write_tsv)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:

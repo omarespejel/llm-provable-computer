@@ -64,7 +64,8 @@ this one.
 
 The checked evidence intentionally does not record host dependency availability.
 That keeps the JSON/TSV reproducible across machines. For local diagnosis, run
-the probe with `--include-host-deps`.
+the probe with `--json --include-host-deps`. The diagnostic mode is not allowed
+to write checked evidence files.
 
 Host dependency availability is not the main research blocker. Even with the
 external runtime installed, the exact-semantics blocker above remains unless the
@@ -105,6 +106,22 @@ python3 scripts/zkai_d64_external_adapter_surface_probe.py \
   --write-tsv docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.tsv
 
 python3 -m unittest scripts.tests.test_zkai_d64_external_adapter_surface_probe
+
+python3 -m py_compile \
+  scripts/zkai_d64_external_adapter_surface_probe.py \
+  scripts/tests/test_zkai_d64_external_adapter_surface_probe.py
+
+python3 -m unittest \
+  scripts.tests.test_zkai_d64_external_adapter_surface_probe \
+  scripts.tests.test_zkai_d64_rmsnorm_swiglu_statement_fixture
+
+python3 scripts/paper/paper_preflight.py --repo-root .
+
+git diff --check
+
+just gate-fast
+
+just gate
 ```
 
 ## Non-claims

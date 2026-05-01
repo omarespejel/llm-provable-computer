@@ -28,10 +28,18 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         rows = {row["candidate_adapter"]: row for row in payload["candidate_adapters"]}
         self.assertEqual(rows["vanilla_onnx_ezkl_exact_export"]["gate"], "NO_GO")
         self.assertFalse(rows["vanilla_onnx_ezkl_exact_export"]["proof_generated"])
+        self.assertIn(
+            "signed_q8_integer_arithmetic",
+            rows["vanilla_onnx_ezkl_exact_export"]["required_custom_semantics"],
+        )
         self.assertIn("floor_division_rounding", rows["vanilla_onnx_ezkl_exact_export"]["required_custom_semantics"])
         self.assertIn("integer_square_root", rows["vanilla_onnx_ezkl_exact_export"]["required_custom_semantics"])
         self.assertIn(
             "bounded_integer_silu_lookup",
+            rows["vanilla_onnx_ezkl_exact_export"]["required_custom_semantics"],
+        )
+        self.assertIn(
+            "statement_receipt_binding",
             rows["vanilla_onnx_ezkl_exact_export"]["required_custom_semantics"],
         )
 
@@ -49,15 +57,21 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
 
     def test_dependency_probe_can_be_injected_for_reproducible_tests(self) -> None:
         deps = PROBE.dependency_probe(
-            module_overrides={"onnx": True, "onnxruntime": True, "numpy": True, "torch": False, "ezkl": True},
+            module_overrides={"onnx": True, "onnxruntime": True, "numpy": True, "torch": True, "ezkl": True},
             cli_overrides={"ezkl": True},
         )
 
         self.assertTrue(deps["python_modules"]["onnx"])
-        self.assertFalse(deps["python_modules"]["torch"])
+        self.assertTrue(deps["python_modules"]["torch"])
         self.assertTrue(deps["cli_tools"]["ezkl"])
         self.assertTrue(deps["all_vanilla_external_runtime_present"])
         self.assertEqual(deps["mode"], "declared_requirements_with_overrides")
+
+        missing_torch = PROBE.dependency_probe(
+            module_overrides={"onnx": True, "onnxruntime": True, "numpy": True, "torch": False, "ezkl": True},
+            cli_overrides={"ezkl": True},
+        )
+        self.assertFalse(missing_torch["all_vanilla_external_runtime_present"])
 
     def test_default_dependency_probe_is_reproducible_and_host_free(self) -> None:
         deps = PROBE.dependency_probe()
@@ -66,6 +80,13 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         self.assertEqual(deps["python_modules"]["onnx"], "not_recorded")
         self.assertEqual(deps["cli_tools"]["ezkl"], "not_recorded")
         self.assertEqual(deps["all_vanilla_external_runtime_present"], "not_recorded")
+
+    def test_validation_rejects_dependency_probe_drift(self) -> None:
+        payload = PROBE.build_probe()
+        payload["dependency_probe"]["all_vanilla_external_runtime_present"] = True
+
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "dependency probe drift"):
+            PROBE.validate_probe(payload)
 
     def test_float_approximation_is_not_same_statement(self) -> None:
         reference = PROBE.FIXTURE.evaluate_reference_block()
@@ -152,6 +173,19 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         payload["candidate_adapters"][0]["gate"] = "GO"
 
         with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "candidate adapter matrix drift"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_claim_boundary_drift(self) -> None:
+        payload = PROBE.build_probe()
+        payload["conclusion"]["statement_receipt_reuse"] = "GO"
+
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "conclusion drift"):
+            PROBE.validate_probe(payload)
+
+        payload = PROBE.build_probe()
+        payload["non_claims"][0] = "not a caveat anymore"
+
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "non-claims drift"):
             PROBE.validate_probe(payload)
 
 
