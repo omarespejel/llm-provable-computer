@@ -1,6 +1,6 @@
 # Publication Release Package
 
-Snapshot date: **April 26, 2026**
+Snapshot date: **May 1, 2026**
 
 Primary presentation title:
 
@@ -32,6 +32,11 @@ It supports the following presentation posture:
 - the empirical lab is one transformer-shaped STARK-zkML stack,
 - the main positive evidence is replay avoidance across three layout families,
 - the supporting positive evidence is a second typed boundary on a distinct emitted-source surface with a modest verifier-side gain on the conservative publication row (checked point `2`, `1.22x`, timing policy `median_of_5_runs_from_microsecond_capture`; evidence: [TSV](evidence/phase43-source-root-feasibility-publication-2026-04.tsv), [JSON](evidence/phase43-source-root-feasibility-publication-2026-04.json)),
+- the supporting zkAI evidence is a statement-binding extension: external
+  adapters, native Stwo proof receipts, a range-disciplined activation receipt,
+  and an attention/KV transition receipt show that proof validity, statement
+  binding, numeric range assumptions, and state transitions must remain separate
+  verifier layers,
 - the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
 - the main negative evidence is one bounded compactness no-go on a narrower handoff object,
 - the external calibration is source-backed but not presented as a matched verifier race.
@@ -43,6 +48,7 @@ It does **not** support the following claims:
 - recursive compression,
 - full end-to-end transformer benchmarking,
 - onchain deployment of the typed-boundary path.
+- full verifiable-intelligence or full autoregressive-transformer proving.
 
 ## Package hygiene
 

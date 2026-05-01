@@ -1,0 +1,528 @@
+{
+  "cases": [
+    {
+      "all_mutations_rejected": true,
+      "backend_status": "NO_GO",
+      "case_id": "tiny_gemm_relu_scale_1",
+      "failure_kind": "range_check_capacity",
+      "mutation_cases": [
+        {
+          "name": "scale_relabeling",
+          "reason": "range scale is not backed by source evidence",
+          "rejected": true
+        },
+        {
+          "name": "range_contract_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "backend_gate_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "proof_artifact_commitment_relabeling",
+          "reason": "receipt field drift: proof_commitment",
+          "rejected": true
+        },
+        {
+          "name": "input_artifact_commitment_relabeling",
+          "reason": "receipt field drift: input_commitment",
+          "rejected": true
+        },
+        {
+          "name": "statement_commitment_relabeling",
+          "reason": "receipt field drift: statement_commitment",
+          "rejected": true
+        },
+        {
+          "name": "source_evidence_commitment_relabeling",
+          "reason": "source evidence commitment drift",
+          "rejected": true
+        }
+      ],
+      "mutations_checked": 7,
+      "mutations_rejected": 7,
+      "range_contract": {
+        "backend_gate": {
+          "failure_kind": "range_check_capacity",
+          "proof_bytes": null,
+          "proof_stack": "JSTprove/Remainder",
+          "status": "NO_GO"
+        },
+        "numeric_contract_version": "range-disciplined-relu-v1",
+        "operator": "Relu",
+        "preactivation_q": {
+          "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+          "max": "3.75",
+          "min": "3.75"
+        },
+        "scale": "1",
+        "scale_scope": "input_weights_and_bias_scaled_together"
+      },
+      "receipt": {
+        "config_commitment": "blake2b-256:e722f67ce3eef2c12328d1bc1b35e95bd7c269a6e13537d7fb18e8ed550bbca2",
+        "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+        "input_commitment": "blake2b-256:3539e42a944161262d1ecfa80ce0d3045284efa814646ecd71004c28baa4c118",
+        "model_artifact_commitment": "blake2b-256:9b87e0f6c16e9265676ca82128ce3b699bb9ed6e997bb4519c97d518a7d2fb00",
+        "model_id": "tiny-gemm-relu-scale-1",
+        "output_commitment": "blake2b-256:8d4711ba95d289b6ef4c6ace64b950f5097b20efdf6106e2c1410fcdd61863e7",
+        "proof_commitment": "blake2b-256:000873f29d675e87f24a60c83e0c4417061a1d8047eb1816145c70eff8cbce50",
+        "proof_system": "jstprove-remainder",
+        "proof_system_version": "06a5f406",
+        "public_instance_commitment": "blake2b-256:04a93315694f84ea5240e071e94891fb61aaa71ea359f332796c6a182b772fd8",
+        "range_contract": {
+          "backend_gate": {
+            "failure_kind": "range_check_capacity",
+            "proof_bytes": null,
+            "proof_stack": "JSTprove/Remainder",
+            "status": "NO_GO"
+          },
+          "numeric_contract_version": "range-disciplined-relu-v1",
+          "operator": "Relu",
+          "preactivation_q": {
+            "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+            "max": "3.75",
+            "min": "3.75"
+          },
+          "scale": "1",
+          "scale_scope": "input_weights_and_bias_scaled_together"
+        },
+        "receipt_version": "zkai-statement-receipt-v1",
+        "setup_commitment": "not-applicable:jstprove-source-backed-shape-probe",
+        "statement_commitment": "blake2b-256:8c97628b8eedde06e1ea4c858152603085e1cd832c236a4bc0a67ffe7fd3282f",
+        "statement_kind": "range-disciplined-activation-fixture",
+        "verifier_domain": "ptvm:zkai:range-disciplined-activation:v1",
+        "verifying_key_commitment": "not-applicable:jstprove-source-backed-shape-probe"
+      },
+      "receipt_accepted": true,
+      "scale": "1"
+    },
+    {
+      "all_mutations_rejected": true,
+      "backend_status": "GO",
+      "case_id": "tiny_gemm_relu_scale_0.25",
+      "failure_kind": "",
+      "mutation_cases": [
+        {
+          "name": "scale_relabeling",
+          "reason": "range scale is not backed by source evidence",
+          "rejected": true
+        },
+        {
+          "name": "range_contract_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "backend_gate_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "proof_artifact_commitment_relabeling",
+          "reason": "receipt field drift: proof_commitment",
+          "rejected": true
+        },
+        {
+          "name": "input_artifact_commitment_relabeling",
+          "reason": "receipt field drift: input_commitment",
+          "rejected": true
+        },
+        {
+          "name": "statement_commitment_relabeling",
+          "reason": "receipt field drift: statement_commitment",
+          "rejected": true
+        },
+        {
+          "name": "source_evidence_commitment_relabeling",
+          "reason": "source evidence commitment drift",
+          "rejected": true
+        }
+      ],
+      "mutations_checked": 7,
+      "mutations_rejected": 7,
+      "range_contract": {
+        "backend_gate": {
+          "failure_kind": "",
+          "proof_bytes": 87377,
+          "proof_stack": "JSTprove/Remainder",
+          "status": "GO"
+        },
+        "numeric_contract_version": "range-disciplined-relu-v1",
+        "operator": "Relu",
+        "preactivation_q": {
+          "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+          "max": "0.28125",
+          "min": "0.28125"
+        },
+        "scale": "0.25",
+        "scale_scope": "input_weights_and_bias_scaled_together"
+      },
+      "receipt": {
+        "config_commitment": "blake2b-256:ff16bb21e92ca87d16c32f1d586ca704fd02f238275d794453c941eda8ffe443",
+        "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+        "input_commitment": "blake2b-256:413d89a1e7c87f67ec811b61d0ab04e6571d2056b2a69041742b64bd01df4fbf",
+        "model_artifact_commitment": "blake2b-256:1cbef8d7e95a26f05ba9b56740a1bd7d316015ac7df9cedd4b6a5c3b62bed9dd",
+        "model_id": "tiny-gemm-relu-scale-0.25",
+        "output_commitment": "blake2b-256:f49ad9ec3fe535fbf8fdbadd11e2a278d2ba898dab093db47bf10935d650981f",
+        "proof_commitment": "blake2b-256:bb37777e0b45106325dd03c1b3fbbd72956d256667beae116843f96613878a84",
+        "proof_system": "jstprove-remainder",
+        "proof_system_version": "06a5f406",
+        "public_instance_commitment": "blake2b-256:95644492772b5ade851a27e8de34545062c58a046caa65a872c164e0764e0122",
+        "range_contract": {
+          "backend_gate": {
+            "failure_kind": "",
+            "proof_bytes": 87377,
+            "proof_stack": "JSTprove/Remainder",
+            "status": "GO"
+          },
+          "numeric_contract_version": "range-disciplined-relu-v1",
+          "operator": "Relu",
+          "preactivation_q": {
+            "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+            "max": "0.28125",
+            "min": "0.28125"
+          },
+          "scale": "0.25",
+          "scale_scope": "input_weights_and_bias_scaled_together"
+        },
+        "receipt_version": "zkai-statement-receipt-v1",
+        "setup_commitment": "not-applicable:jstprove-source-backed-shape-probe",
+        "statement_commitment": "blake2b-256:e6cacda513ed02dc333cda24e871cf910b0976ef9988aeb88f9c9ca50f868b5a",
+        "statement_kind": "range-disciplined-activation-fixture",
+        "verifier_domain": "ptvm:zkai:range-disciplined-activation:v1",
+        "verifying_key_commitment": "not-applicable:jstprove-source-backed-shape-probe"
+      },
+      "receipt_accepted": true,
+      "scale": "0.25"
+    },
+    {
+      "all_mutations_rejected": true,
+      "backend_status": "GO",
+      "case_id": "tiny_gemm_relu_scale_0.1",
+      "failure_kind": "",
+      "mutation_cases": [
+        {
+          "name": "scale_relabeling",
+          "reason": "range scale is not backed by source evidence",
+          "rejected": true
+        },
+        {
+          "name": "range_contract_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "backend_gate_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "proof_artifact_commitment_relabeling",
+          "reason": "receipt field drift: proof_commitment",
+          "rejected": true
+        },
+        {
+          "name": "input_artifact_commitment_relabeling",
+          "reason": "receipt field drift: input_commitment",
+          "rejected": true
+        },
+        {
+          "name": "statement_commitment_relabeling",
+          "reason": "receipt field drift: statement_commitment",
+          "rejected": true
+        },
+        {
+          "name": "source_evidence_commitment_relabeling",
+          "reason": "source evidence commitment drift",
+          "rejected": true
+        }
+      ],
+      "mutations_checked": 7,
+      "mutations_rejected": 7,
+      "range_contract": {
+        "backend_gate": {
+          "failure_kind": "",
+          "proof_bytes": 211088,
+          "proof_stack": "JSTprove/Remainder",
+          "status": "GO"
+        },
+        "numeric_contract_version": "range-disciplined-relu-v1",
+        "operator": "Relu",
+        "preactivation_q": {
+          "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+          "max": "0.06",
+          "min": "0.06"
+        },
+        "scale": "0.1",
+        "scale_scope": "input_weights_and_bias_scaled_together"
+      },
+      "receipt": {
+        "config_commitment": "blake2b-256:372a34d866febb9d81507c0a6bfc2b70b1d8f10a1aa9357158b6dee98e86cb3b",
+        "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+        "input_commitment": "blake2b-256:adf53007216cb5aaf8914422036abd6304dce031f18a809d217eeb8ebe251bfd",
+        "model_artifact_commitment": "blake2b-256:afbb4e32c511e327182ffffebdfc6daf075cc1f4b33080186ae0970ad76c31d3",
+        "model_id": "tiny-gemm-relu-scale-0.1",
+        "output_commitment": "blake2b-256:d5e079bfcce75afa022b0c15e37852104d21a821e106a2a751ec43522a605abf",
+        "proof_commitment": "blake2b-256:128b50e41a6cf9d3731dc3e9b48072b56cb583946737e72f506aca46516ffcc0",
+        "proof_system": "jstprove-remainder",
+        "proof_system_version": "06a5f406",
+        "public_instance_commitment": "blake2b-256:98ce594baa1b2cb4a3278c9e163c56f5c92966b59c3a1e37bb3f9671b6556936",
+        "range_contract": {
+          "backend_gate": {
+            "failure_kind": "",
+            "proof_bytes": 211088,
+            "proof_stack": "JSTprove/Remainder",
+            "status": "GO"
+          },
+          "numeric_contract_version": "range-disciplined-relu-v1",
+          "operator": "Relu",
+          "preactivation_q": {
+            "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+            "max": "0.06",
+            "min": "0.06"
+          },
+          "scale": "0.1",
+          "scale_scope": "input_weights_and_bias_scaled_together"
+        },
+        "receipt_version": "zkai-statement-receipt-v1",
+        "setup_commitment": "not-applicable:jstprove-source-backed-shape-probe",
+        "statement_commitment": "blake2b-256:09a5404aacc93f001bf7fe8d72c47296d5ff9061311867b6ad824ff737a42e12",
+        "statement_kind": "range-disciplined-activation-fixture",
+        "verifier_domain": "ptvm:zkai:range-disciplined-activation:v1",
+        "verifying_key_commitment": "not-applicable:jstprove-source-backed-shape-probe"
+      },
+      "receipt_accepted": true,
+      "scale": "0.1"
+    },
+    {
+      "all_mutations_rejected": true,
+      "backend_status": "GO",
+      "case_id": "tiny_gemm_relu_scale_0.01",
+      "failure_kind": "",
+      "mutation_cases": [
+        {
+          "name": "scale_relabeling",
+          "reason": "range scale is not backed by source evidence",
+          "rejected": true
+        },
+        {
+          "name": "range_contract_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "backend_gate_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "proof_artifact_commitment_relabeling",
+          "reason": "receipt field drift: proof_commitment",
+          "rejected": true
+        },
+        {
+          "name": "input_artifact_commitment_relabeling",
+          "reason": "receipt field drift: input_commitment",
+          "rejected": true
+        },
+        {
+          "name": "statement_commitment_relabeling",
+          "reason": "receipt field drift: statement_commitment",
+          "rejected": true
+        },
+        {
+          "name": "source_evidence_commitment_relabeling",
+          "reason": "source evidence commitment drift",
+          "rejected": true
+        }
+      ],
+      "mutations_checked": 7,
+      "mutations_rejected": 7,
+      "range_contract": {
+        "backend_gate": {
+          "failure_kind": "",
+          "proof_bytes": 227462,
+          "proof_stack": "JSTprove/Remainder",
+          "status": "GO"
+        },
+        "numeric_contract_version": "range-disciplined-relu-v1",
+        "operator": "Relu",
+        "preactivation_q": {
+          "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+          "max": "0.00285",
+          "min": "0.00285"
+        },
+        "scale": "0.01",
+        "scale_scope": "input_weights_and_bias_scaled_together"
+      },
+      "receipt": {
+        "config_commitment": "blake2b-256:4b3a9b185982994f3c2aed5a05541168aaee00bb5c6e136088999539ace2aa77",
+        "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+        "input_commitment": "blake2b-256:d0790ac88c0319c0eda710dd04b6608f1b4dfeaff3f2e6117ce54c075df7b81b",
+        "model_artifact_commitment": "blake2b-256:e9019bec5f066bc86af63b81b8bb78d276a3fd547ceff549efcc3bbd1b9c9309",
+        "model_id": "tiny-gemm-relu-scale-0.01",
+        "output_commitment": "blake2b-256:4a027e6b770efdfeb94e7d29b318c13a92ec616fd593d7076a1125db2446d744",
+        "proof_commitment": "blake2b-256:8485ff7bbc2a792a07c128f76b2414faf1b00d59050b8610c2e5c9a46f7743bf",
+        "proof_system": "jstprove-remainder",
+        "proof_system_version": "06a5f406",
+        "public_instance_commitment": "blake2b-256:f87dcee826f7474dd39860c34ea93c613d4d988d410f794488f1f4d0f90c9e68",
+        "range_contract": {
+          "backend_gate": {
+            "failure_kind": "",
+            "proof_bytes": 227462,
+            "proof_stack": "JSTprove/Remainder",
+            "status": "GO"
+          },
+          "numeric_contract_version": "range-disciplined-relu-v1",
+          "operator": "Relu",
+          "preactivation_q": {
+            "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+            "max": "0.00285",
+            "min": "0.00285"
+          },
+          "scale": "0.01",
+          "scale_scope": "input_weights_and_bias_scaled_together"
+        },
+        "receipt_version": "zkai-statement-receipt-v1",
+        "setup_commitment": "not-applicable:jstprove-source-backed-shape-probe",
+        "statement_commitment": "blake2b-256:ee34bc4c38359f5efa7f41b1e2fbe69281f89216fd4c66a90b8fe7f4d8450a31",
+        "statement_kind": "range-disciplined-activation-fixture",
+        "verifier_domain": "ptvm:zkai:range-disciplined-activation:v1",
+        "verifying_key_commitment": "not-applicable:jstprove-source-backed-shape-probe"
+      },
+      "receipt_accepted": true,
+      "scale": "0.01"
+    },
+    {
+      "all_mutations_rejected": true,
+      "backend_status": "GO",
+      "case_id": "tiny_gemm_relu_scale_0.001",
+      "failure_kind": "",
+      "mutation_cases": [
+        {
+          "name": "scale_relabeling",
+          "reason": "range scale is not backed by source evidence",
+          "rejected": true
+        },
+        {
+          "name": "range_contract_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "backend_gate_relabeling",
+          "reason": "receipt field drift: range_contract",
+          "rejected": true
+        },
+        {
+          "name": "proof_artifact_commitment_relabeling",
+          "reason": "receipt field drift: proof_commitment",
+          "rejected": true
+        },
+        {
+          "name": "input_artifact_commitment_relabeling",
+          "reason": "receipt field drift: input_commitment",
+          "rejected": true
+        },
+        {
+          "name": "statement_commitment_relabeling",
+          "reason": "receipt field drift: statement_commitment",
+          "rejected": true
+        },
+        {
+          "name": "source_evidence_commitment_relabeling",
+          "reason": "source evidence commitment drift",
+          "rejected": true
+        }
+      ],
+      "mutations_checked": 7,
+      "mutations_rejected": 7,
+      "range_contract": {
+        "backend_gate": {
+          "failure_kind": "",
+          "proof_bytes": 108172,
+          "proof_stack": "JSTprove/Remainder",
+          "status": "GO"
+        },
+        "numeric_contract_version": "range-disciplined-relu-v1",
+        "operator": "Relu",
+        "preactivation_q": {
+          "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+          "max": "0.0002535",
+          "min": "0.0002535"
+        },
+        "scale": "0.001",
+        "scale_scope": "input_weights_and_bias_scaled_together"
+      },
+      "receipt": {
+        "config_commitment": "blake2b-256:cbf2059fc9f70735ab653fdd77c1030ed57958cec336399cc932e60dc44d4c9e",
+        "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+        "input_commitment": "blake2b-256:3e7830be7b8cd6c6251abd792b9e4ceebf7e1c513ff7aee0acffbb5ae9b293f4",
+        "model_artifact_commitment": "blake2b-256:8a974c70b70b6a5259e89159090813853df1c51b03524cb886921a0a4eca7806",
+        "model_id": "tiny-gemm-relu-scale-0.001",
+        "output_commitment": "blake2b-256:571fd1e4923ae4de96703b71b54d3340a9c635fbbe4786de9a4cd4cc6940d8e3",
+        "proof_commitment": "blake2b-256:1b203bf3c40f147614bc376a2d58baaadb362f19fea8780b14a11e5284858e70",
+        "proof_system": "jstprove-remainder",
+        "proof_system_version": "06a5f406",
+        "public_instance_commitment": "blake2b-256:33bb2f89a516524abaca01023f637bcfba4435aba1ec90361525f0f24c8cd47e",
+        "range_contract": {
+          "backend_gate": {
+            "failure_kind": "",
+            "proof_bytes": 108172,
+            "proof_stack": "JSTprove/Remainder",
+            "status": "GO"
+          },
+          "numeric_contract_version": "range-disciplined-relu-v1",
+          "operator": "Relu",
+          "preactivation_q": {
+            "derivation": "input=[1*s,2*s], weights=[0.5*s,1.5*s], bias=0.25*s, y=3.5*s^2+0.25*s",
+            "max": "0.0002535",
+            "min": "0.0002535"
+          },
+          "scale": "0.001",
+          "scale_scope": "input_weights_and_bias_scaled_together"
+        },
+        "receipt_version": "zkai-statement-receipt-v1",
+        "setup_commitment": "not-applicable:jstprove-source-backed-shape-probe",
+        "statement_commitment": "blake2b-256:8644e308bec8a12882b976ac0c70cdfbaec9a3d41d784420f6f6ac83a10f24f7",
+        "statement_kind": "range-disciplined-activation-fixture",
+        "verifier_domain": "ptvm:zkai:range-disciplined-activation:v1",
+        "verifying_key_commitment": "not-applicable:jstprove-source-backed-shape-probe"
+      },
+      "receipt_accepted": true,
+      "scale": "0.001"
+    }
+  ],
+  "decision": "GO_RANGE_DISCIPLINE_BOUND_IN_STATEMENT_RECEIPT",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "1dc78f8795f89fef53eb15e053e6595c6ba41d54",
+  "non_claims": [
+    "not a new proof benchmark",
+    "not a transformer proof",
+    "not a JSTprove security finding",
+    "not evidence that ReLU is solved at large model scale",
+    "not a Stwo AIR result"
+  ],
+  "question": "Can the JSTprove ReLU magnitude-sensitivity result be carried as an explicit range contract in a statement receipt?",
+  "schema": "zkai-range-disciplined-activation-receipt-v1",
+  "source_evidence": {
+    "decision": "GO_OPERATOR_SUPPORT_SPLIT_NOT_TRANSFORMER_PROOF",
+    "evidence_manifest_commitment": "blake2b-256:2426c46afc1d42cf4b3372ccee62aaa28998f44ef34680c1fc92be82cb3659e1",
+    "git_commit": "e2f717b549e1a0e27f7aa108aecb5f4483ed56b5",
+    "path": "docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.json",
+    "results_commitment": "blake2b-256:ead487a7eb184f8d2ec69291eccb7b3cf9d532d4e0b1d75f8453b88e5e471175",
+    "schema": "zkai-jstprove-shape-probe-v1"
+  },
+  "summary": {
+    "all_receipts_fail_closed": true,
+    "baseline_scale_status": "NO_GO",
+    "case_count": 5,
+    "interpretation": "ReLU acceptance is magnitude-sensitive in the checked JSTprove probe, so scale/range assumptions are verifier-relevant statement data, not benchmark metadata.",
+    "mutations_checked": 35,
+    "mutations_rejected": 35,
+    "scaled_go_count": 4
+  }
+}

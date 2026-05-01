@@ -227,6 +227,16 @@ This keeps the research split explicit: statement binding, exact statement
 semantics, numeric range discipline, and backend operator support are separate
 gates.
 
+The corresponding range-disciplined activation receipt is now checked in:
+
+- `docs/engineering/zkai-range-disciplined-activation-receipt-2026-05-01.md`
+- `docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.json`
+- `docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.tsv`
+
+It is not a new proof benchmark. It records the rule that activation
+scale/range assumptions are verifier-relevant statement fields and rejects
+`35 / 35` checked relabeling mutations across the JSTprove ReLU scaling rows.
+
 The native Stwo vector-row surface probe is also checked in:
 
 - `docs/engineering/zkai-d64-stwo-vector-row-surface-probe-2026-05-01.md`
@@ -256,6 +266,29 @@ The canonical d64-v2 statement fixture carries the field now and rejects
 `15 / 15` checked relabeling mutations, including
 `proof_native_parameter_commitment`. The remaining proof work is to make the
 native relation consume it.
+
+The first native d64 proof slice is now checked in:
+
+- `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`
+- `src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs`
+
+This proof consumes the public RMSNorm row surface and proves square,
+Q8 scale-division, normalized-output, and bounded public-scalar sqrt inequality
+constraints in native Stwo AIR. It is still a public-row RMSNorm-local slice:
+it does not prove private parameter openings, projection, activation, residual
+relations, or the full d64 `output_activation_commitment`.
+
+The first attention/KV receipt contract is also checked in:
+
+- `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
+- `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.tsv`
+
+It is source-backed rather than proof-backed, but it fixes the stateful
+statement shape for the next transformer-specific proof lane: prior KV state,
+input/query state, attention output, next KV state, model config, verifier
+domain, and proof status are all independent relabeling surfaces.
 
 ## NO-GO criteria
 

@@ -43,6 +43,9 @@ Package posture:
   replay avoidance, and explicit claim boundaries.
 - The transformer-shaped STARK-zkML stack is the empirical laboratory, not the scope of
   the entire design claim.
+- The zkAI/verifiable-intelligence extension is supporting systems evidence:
+  proof validity, numeric range discipline, statement binding, and carried-state
+  binding are separate verifier layers.
 - The package keeps external language in the paper and appendices even when the tracked
   evidence files and artifact directories retain older internal names for checksum and
   provenance stability.

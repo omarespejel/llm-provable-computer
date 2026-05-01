@@ -44,20 +44,21 @@ pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_SCHEMA: &str =
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_DECISION: &str =
     "GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION: &str =
-    "stwo-d64-rmsnorm-public-row-air-proof-v1";
+    "stwo-d64-rmsnorm-public-row-air-proof-v2";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_STATEMENT_VERSION: &str =
     "zkai-d64-rmsnorm-public-row-statement-v1";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_SEMANTIC_SCOPE: &str =
     "d64_rmsnorm_public_rows_bound_to_statement_receipt";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_DECISION: &str = "GO_PUBLIC_ROW_D64_RMSNORM_AIR_PROOF";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_NEXT_BACKEND_STEP: &str =
-    "move rms_q8 scalar sqrt/range relation from verifier-side recomputation into AIR-native bounded inequality or lookup argument";
+    "bridge RMSNorm-local normed rows into the next d64 transformer-block relation surface without relabeling them as the full output commitment";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES: usize = 1_048_576;
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const D64_RMSNORM_LOG_SIZE: u32 = 6;
 const D64_Q8_SCALE: i64 = 256;
+const D64_RMSNORM_SCALAR_RANGE_BITS: usize = 16;
 const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS: usize = 3;
 
@@ -72,12 +73,15 @@ const COLUMN_IDS: [&str; 9] = [
     "zkai/d64/rmsnorm/norm_remainder",
     "zkai/d64/rmsnorm/rms_q8",
 ];
+const AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/average_square_floor";
+const SQRT_LOW_DELTA_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/sqrt_low_delta";
+const SQRT_HIGH_GAP_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/sqrt_high_gap";
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not private witness privacy",
     "not full d64 block proof",
     "not projection, activation, SwiGLU, down-projection, or residual proof",
-    "rms_q8 scalar sqrt correctness is verifier-side checked over public rows, not yet AIR-native range proof",
+    "rms_q8 scalar sqrt inequality is AIR-native only for this public scalar row surface",
     "not proof that private witness rows open to proof_native_parameter_commitment beyond public rms_scale_tree_root recomputation",
     "not binding the full d64 output_activation_commitment from only RMSNorm local rows",
 ];
@@ -85,6 +89,7 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
     "exact integer isqrt recomputation without floating-point sqrt",
+    "AIR-native bounded sqrt inequality via 16-bit nonnegative gap decompositions",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing",
@@ -114,6 +119,9 @@ impl FrameworkEval for D64RmsnormPublicRowEval {
         let normed_q8 = eval.next_trace_mask();
         let norm_remainder = eval.next_trace_mask();
         let rms_q8 = eval.next_trace_mask();
+        let average_square_floor = eval.next_trace_mask();
+        let sqrt_low_delta = eval.next_trace_mask();
+        let sqrt_high_gap = eval.next_trace_mask();
 
         let trace_values = [
             index.clone(),
@@ -130,13 +138,52 @@ impl FrameworkEval for D64RmsnormPublicRowEval {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
         }
+        for (column_id, trace_value) in [
+            (AVERAGE_SQUARE_FLOOR_COLUMN_ID, average_square_floor.clone()),
+            (SQRT_LOW_DELTA_COLUMN_ID, sqrt_low_delta.clone()),
+            (SQRT_HIGH_GAP_COLUMN_ID, sqrt_high_gap.clone()),
+        ] {
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
+            eval.add_constraint(trace_value - public_value);
+        }
+
+        let one = E::F::from(BaseField::from(1u32));
+        let mut low_delta_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..D64_RMSNORM_SCALAR_RANGE_BITS {
+            let bit = eval.next_trace_mask();
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(
+                &scalar_bit_column_id("low", bit_index),
+            ));
+            eval.add_constraint(bit.clone() - public_value);
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            low_delta_bits = low_delta_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
+        let mut high_gap_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..D64_RMSNORM_SCALAR_RANGE_BITS {
+            let bit = eval.next_trace_mask();
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(
+                &scalar_bit_column_id("high", bit_index),
+            ));
+            eval.add_constraint(bit.clone() - public_value);
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            high_gap_bits = high_gap_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
 
         let q8_scale = E::F::from(BaseField::from(D64_Q8_SCALE as u32));
         eval.add_constraint(input_q8.clone() * input_q8.clone() - input_square);
         eval.add_constraint(
             input_q8 * rms_scale_q8 - scaled_floor.clone() * q8_scale.clone() - scale_remainder,
         );
-        eval.add_constraint(scaled_floor * q8_scale - normed_q8 * rms_q8 - norm_remainder);
+        eval.add_constraint(scaled_floor * q8_scale - normed_q8 * rms_q8.clone() - norm_remainder);
+        eval.add_constraint(sqrt_low_delta.clone() - low_delta_bits);
+        eval.add_constraint(sqrt_high_gap.clone() - high_gap_bits);
+        eval.add_constraint(
+            rms_q8.clone() * rms_q8.clone() + sqrt_low_delta - average_square_floor.clone(),
+        );
+        let next_rms_q8 = rms_q8 + one.clone();
+        eval.add_constraint(
+            next_rms_q8.clone() * next_rms_q8 - average_square_floor - sqrt_high_gap - one,
+        );
         eval
     }
 }
@@ -402,6 +449,7 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
         ));
     }
     expect_i64(input.rms_q8, integer_sqrt(average_square_floor), "rms q8")?;
+    scalar_sqrt_witness(input)?;
     expect_eq(
         &sequence_commitment(
             &input_values,
@@ -470,6 +518,56 @@ fn validate_row(row: &D64RmsnormPublicRow, expected_index: usize, rms_q8: i64) -
     Ok(())
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ScalarSqrtWitness {
+    sqrt_low_delta: i64,
+    sqrt_high_gap: i64,
+    sqrt_low_delta_bits: [u8; D64_RMSNORM_SCALAR_RANGE_BITS],
+    sqrt_high_gap_bits: [u8; D64_RMSNORM_SCALAR_RANGE_BITS],
+}
+
+fn scalar_sqrt_witness(input: &ZkAiD64RmsnormPublicRowProofInput) -> Result<ScalarSqrtWitness> {
+    if input.rms_q8 <= 0 {
+        return Err(public_row_error(
+            "rms_q8 must be positive for scalar sqrt witness",
+        ));
+    }
+    let rms_square = checked_mul_i64(input.rms_q8, input.rms_q8, "rms_q8 square")?;
+    let next_rms = checked_add_i64(input.rms_q8, 1, "next rms_q8")?;
+    let next_square = checked_mul_i64(next_rms, next_rms, "next rms_q8 square")?;
+    let sqrt_low_delta = input
+        .average_square_floor
+        .checked_sub(rms_square)
+        .ok_or_else(|| public_row_error("sqrt low delta underflow"))?;
+    let sqrt_high_gap = next_square
+        .checked_sub(input.average_square_floor)
+        .and_then(|value| value.checked_sub(1))
+        .ok_or_else(|| public_row_error("sqrt high gap underflow"))?;
+    Ok(ScalarSqrtWitness {
+        sqrt_low_delta,
+        sqrt_high_gap,
+        sqrt_low_delta_bits: decompose_scalar_gap(sqrt_low_delta, "sqrt low delta")?,
+        sqrt_high_gap_bits: decompose_scalar_gap(sqrt_high_gap, "sqrt high gap")?,
+    })
+}
+
+fn decompose_scalar_gap(value: i64, label: &str) -> Result<[u8; D64_RMSNORM_SCALAR_RANGE_BITS]> {
+    if value < 0 {
+        return Err(public_row_error(format!("{label} must be non-negative")));
+    }
+    if value >= (1i64 << D64_RMSNORM_SCALAR_RANGE_BITS) {
+        return Err(public_row_error(format!(
+            "{label} exceeds {}-bit scalar range",
+            D64_RMSNORM_SCALAR_RANGE_BITS
+        )));
+    }
+    let mut bits = [0u8; D64_RMSNORM_SCALAR_RANGE_BITS];
+    for (index, bit) in bits.iter_mut().enumerate() {
+        *bit = ((value >> index) & 1) as u8;
+    }
+    Ok(bits)
+}
+
 fn prove_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput) -> Result<Vec<u8>> {
     let component = public_row_component();
     let config = public_row_pcs_config();
@@ -486,11 +584,11 @@ fn prove_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput) -> Result<Vec<u8
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(public_row_trace(&input.rows));
+    tree_builder.extend_evals(public_row_trace(input));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(public_row_trace(&input.rows));
+    tree_builder.extend_evals(public_row_trace(input));
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -590,11 +688,11 @@ fn public_row_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(public_row_trace(&input.rows));
+    tree_builder.extend_evals(public_row_trace(input));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(public_row_trace(&input.rows));
+    tree_builder.extend_evals(public_row_trace(input));
     tree_builder.commit(channel);
 
     commitment_scheme.roots()
@@ -611,10 +709,13 @@ fn public_row_component() -> FrameworkComponent<D64RmsnormPublicRowEval> {
 }
 
 fn public_row_trace(
-    rows: &[D64RmsnormPublicRow],
+    input: &ZkAiD64RmsnormPublicRowProofInput,
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
     let domain = CanonicCoset::new(D64_RMSNORM_LOG_SIZE).circle_domain();
-    let columns: [Vec<BaseField>; 9] = [
+    let rows = &input.rows;
+    let scalar_witness =
+        scalar_sqrt_witness(input).expect("validated d64 RMSNorm scalar sqrt witness");
+    let mut columns: Vec<Vec<BaseField>> = vec![
         rows.iter().map(|row| field_usize(row.index)).collect(),
         rows.iter().map(|row| field_i64(row.input_q8)).collect(),
         rows.iter().map(|row| field_i64(row.rms_scale_q8)).collect(),
@@ -629,6 +730,21 @@ fn public_row_trace(
             .collect(),
         rows.iter().map(|row| field_i64(row.rms_q8)).collect(),
     ];
+    columns.push(vec![field_i64(input.average_square_floor); ZKAI_D64_WIDTH]);
+    columns.push(vec![
+        field_i64(scalar_witness.sqrt_low_delta);
+        ZKAI_D64_WIDTH
+    ]);
+    columns.push(vec![
+        field_i64(scalar_witness.sqrt_high_gap);
+        ZKAI_D64_WIDTH
+    ]);
+    for bit in scalar_witness.sqrt_low_delta_bits {
+        columns.push(vec![field_i64(i64::from(bit)); ZKAI_D64_WIDTH]);
+    }
+    for bit in scalar_witness.sqrt_high_gap_bits {
+        columns.push(vec![field_i64(i64::from(bit)); ZKAI_D64_WIDTH]);
+    }
     columns
         .into_iter()
         .map(|column| {
@@ -642,11 +758,30 @@ fn public_row_trace(
 }
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
-    COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
+    let mut ids: Vec<PreProcessedColumnId> =
+        COLUMN_IDS.into_iter().map(preprocessed_column_id).collect();
+    ids.push(preprocessed_column_id(AVERAGE_SQUARE_FLOOR_COLUMN_ID));
+    ids.push(preprocessed_column_id(SQRT_LOW_DELTA_COLUMN_ID));
+    ids.push(preprocessed_column_id(SQRT_HIGH_GAP_COLUMN_ID));
+    for bit_index in 0..D64_RMSNORM_SCALAR_RANGE_BITS {
+        ids.push(preprocessed_column_id(&scalar_bit_column_id(
+            "low", bit_index,
+        )));
+    }
+    for bit_index in 0..D64_RMSNORM_SCALAR_RANGE_BITS {
+        ids.push(preprocessed_column_id(&scalar_bit_column_id(
+            "high", bit_index,
+        )));
+    }
+    ids
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
     PreProcessedColumnId { id: id.to_string() }
+}
+
+fn scalar_bit_column_id(kind: &str, bit_index: usize) -> String {
+    format!("zkai/d64/rmsnorm/scalar/sqrt_{kind}_bit_{bit_index:02}")
 }
 
 fn field_usize(value: usize) -> BaseField {
@@ -904,6 +1039,42 @@ mod tests {
         assert!(error
             .to_string()
             .contains("d64 RMSNorm public-row proof rejected"));
+    }
+
+    #[test]
+    fn scalar_sqrt_witness_decomposes_checked_inequality_gaps() {
+        let input = input();
+        let witness = scalar_sqrt_witness(&input).expect("scalar sqrt witness");
+
+        assert_eq!(witness.sqrt_low_delta, 47);
+        assert_eq!(witness.sqrt_high_gap, 183);
+        assert_eq!(witness.sqrt_low_delta_bits[0], 1);
+        assert_eq!(witness.sqrt_low_delta_bits[4], 0);
+        assert_eq!(witness.sqrt_low_delta_bits[5], 1);
+        assert_eq!(witness.sqrt_high_gap_bits[0], 1);
+        assert_eq!(witness.sqrt_high_gap_bits[2], 1);
+        assert_eq!(witness.sqrt_high_gap_bits[7], 1);
+    }
+
+    #[test]
+    fn public_row_input_rejects_average_square_floor_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["average_square_floor"] = Value::from(13_273);
+        let error = zkai_d64_rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("average square floor"));
+    }
+
+    #[test]
+    fn scalar_sqrt_witness_rejects_out_of_bound_gap_surface() {
+        let mut input = input();
+        input.rms_q8 = 46_340;
+        input.average_square_floor = 46_340 * 46_340 + (1 << D64_RMSNORM_SCALAR_RANGE_BITS);
+
+        let error = scalar_sqrt_witness(&input).unwrap_err();
+        assert!(error.to_string().contains("sqrt low delta exceeds"));
     }
 
     #[test]

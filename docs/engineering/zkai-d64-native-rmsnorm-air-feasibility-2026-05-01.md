@@ -10,9 +10,12 @@ native AIR/proof step for the d64 RMSNorm slice contract?
 NO-GO for reusing the existing normalization lookup primitive as the d64
 RMSNorm AIR proof.
 
-GO for the next implementation target: build a d64-specific RMSNorm AIR
-component that consumes the same slice contract and binds the same public
-instance, `proof_native_parameter_commitment`, and RMS scale tree root.
+The follow-up d64-specific public-row AIR component now exists and supersedes
+the implementation-target half of this feasibility note. That later proof
+consumes the same public-row surface and adds an AIR-native bounded sqrt
+inequality for the public `rms_q8` scalar. This note remains the checked NO-GO
+for relabeling the old five-row normalization lookup primitive as the d64
+RMSNorm proof.
 
 ## Why This Matters
 
@@ -58,15 +61,27 @@ The checked non-claims are:
 - `not a 64-row RMSNorm constraint system`
 - `not safe to reuse the Phase5/Phase10 normalization primitive as the d64 slice proof`
 
+## Superseding Result
+
+The d64-specific public-row proof is recorded in:
+
+- `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`
+- `src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs`
+
+That result still does not prove private parameter openings or full d64 block
+output semantics. It only supersedes the earlier "build a d64-specific RMSNorm
+AIR component" implementation target.
+
 ## Next Step
 
-Implement a d64-specific RMSNorm AIR component with:
+Continue from the public-row proof by bridging local RMSNorm rows into the next
+d64 relation surface:
 
-- one row family for the `64` input square constraints,
-- one row family for the `64` normalized-output constraints,
-- explicit `proof_native_parameter_commitment` consumption,
-- explicit `rms_scale_tree_root` binding,
-- verifier rejection for statement/public-instance/scale-root relabeling.
+- add a local `rmsnorm_output_row_commitment` for `normed_q8`,
+- make the next proof slice consume that local commitment,
+- only claim the full d64 `output_activation_commitment` after the remaining
+  activation, projection, and residual rows are proven or source-bound.
 
 Do not reuse the current normalization lookup primitive as the d64 proof unless
 it is upgraded to carry those exact bindings.

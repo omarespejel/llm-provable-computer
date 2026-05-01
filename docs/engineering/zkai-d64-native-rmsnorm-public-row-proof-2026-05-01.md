@@ -22,6 +22,20 @@ input_i * rms_scale_i = scaled_floor_i * 256 + scale_remainder_i
 scaled_floor_i * 256 = normed_i * rms_q8 + norm_remainder_i
 ```
 
+It also proves the public scalar sqrt/range surface with bounded
+nonnegative-gap decompositions:
+
+```text
+rms_q8^2 + sqrt_low_delta = average_square_floor
+(rms_q8 + 1)^2 = average_square_floor + sqrt_high_gap + 1
+sqrt_low_delta, sqrt_high_gap are 16-bit nonnegative decompositions
+```
+
+Together with the verifier-side public-row check that
+`average_square_floor = floor(sum_squares / 64)`, this moves the
+`rms_q8 = isqrt(floor(sum_squares / 64))` inequality from host-only
+recomputation into the AIR for this bounded public scalar surface.
+
 The verifier recomputes the commitment-bearing public-row artifacts before
 proof verification:
 
@@ -29,11 +43,12 @@ proof verification:
 - normalization config commitment,
 - RMS scale tree root.
 
-It also recomputes verifier-side scalar values from the checked rows:
+It still recomputes verifier-side aggregate values from the checked public rows:
 
 - row count,
 - sum of squares,
-- `rms_q8 = isqrt(floor(sum_squares / 64))`.
+- `average_square_floor = floor(sum_squares / 64)`,
+- the public `rms_q8` value before the AIR proof is generated or verified.
 
 The verifier hardening is intentionally fail-closed:
 
@@ -41,6 +56,8 @@ The verifier hardening is intentionally fail-closed:
   before field encoding,
 - `rms_q8` is recomputed with exact integer arithmetic, not floating-point
   square root,
+- the AIR enforces the sqrt inequality using 16-bit nonnegative gap
+  decompositions for the current public-row scalar surface,
 - the proof's PCS configuration must match the d64 public-row v1 PCS profile
   before commitment-root recomputation: `pow_bits=10`,
   `fri_config={log_last_layer_degree_bound=0, log_blowup_factor=1,
@@ -58,9 +75,10 @@ private witness hiding.
 The useful research split is now explicit:
 
 - the per-row arithmetic is proven by native Stwo AIR,
-- the scalar sqrt/range relation is verifier-side checked over public rows,
-- moving that scalar check into AIR-native range or lookup constraints is
-tracked separately in issue `#356`.
+- the bounded scalar sqrt/range inequality is now proven by native Stwo AIR over
+  the verifier-checked public scalar,
+- row aggregation, private witness opening, projection, activation, and residual
+  relations remain outside this proof slice.
 
 ## Non-Claims
 
@@ -69,7 +87,7 @@ The checked non-claims are:
 - `not private witness privacy`
 - `not full d64 block proof`
 - `not projection, activation, SwiGLU, down-projection, or residual proof`
-- `rms_q8 scalar sqrt correctness is verifier-side checked over public rows, not yet AIR-native range proof`
+- `rms_q8 scalar sqrt inequality is AIR-native only for this public scalar row surface`
 - `not proof that private witness rows open to proof_native_parameter_commitment beyond public rms_scale_tree_root recomputation`
 - `not binding the full d64 output_activation_commitment from only RMSNorm local rows`
 
@@ -96,7 +114,8 @@ just gate
 
 ## Next Step
 
-Issue `#356` is the next hardening lane: move the
-`rms_q8 = isqrt(floor(sum_squares / 64))` scalar check from verifier-side
-public-row recomputation into an AIR-native bounded inequality or lookup
-argument.
+Issue `#356` is now closed by this bounded public-scalar AIR hardening. The
+next hardening lane is issue `#358`: introduce an explicit local
+`rmsnorm_output_row_commitment` for `normed_q8` rows and have the next proof
+slice consume that local commitment before any full d64
+`output_activation_commitment` is claimed.
