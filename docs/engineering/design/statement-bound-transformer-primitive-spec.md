@@ -203,6 +203,19 @@ approximate export is a different statement unless it gets a separate target and
 commitment. The receipt target remains reusable once an exact native or custom
 external proof exists.
 
+The native Stwo vector-row surface probe is also checked in:
+
+- `docs/engineering/zkai-d64-stwo-vector-row-surface-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-stwo-vector-row-surface-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-stwo-vector-row-surface-probe-2026-05.tsv`
+
+That probe records the useful split for the next proof PR: the exact d64
+arithmetic surface is a GO (`49,920` trace rows excluding the static activation
+table, `49,152` projection multiplication rows, max checked intermediate
+`849,454`, safely below the signed M31 limit), but exact native proof generation
+is still NO-GO-YET until weight and activation-table commitment consistency are
+verified inside the relation.
+
 ## NO-GO criteria
 
 Record an explicit NO-GO if:

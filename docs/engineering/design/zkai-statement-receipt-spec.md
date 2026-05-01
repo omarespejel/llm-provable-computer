@@ -226,6 +226,20 @@ rounding, integer square-root, bounded lookup, and committed-parameter semantics
 A float-style adapter may still be useful, but only as a different approximate
 statement with its own receipt commitment.
 
+The native d64 Stwo vector-row surface probe adds the corresponding caution for
+the native backend track:
+
+- `docs/engineering/zkai-d64-stwo-vector-row-surface-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-stwo-vector-row-surface-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-stwo-vector-row-surface-probe-2026-05.tsv`
+
+The arithmetic surface is not the immediate blocker: the checked fixture has
+`49,920` trace rows excluding the static activation table and max intermediate
+`849,454`, which fits comfortably below the signed M31 limit. The blocker is
+commitment consistency: the proof must bind private weight/table rows to the
+statement commitments instead of only carrying those commitments as receipt
+metadata.
+
 The correct interpretation is:
 
 > A zkAI system needs an explicit statement-binding layer around proof systems if

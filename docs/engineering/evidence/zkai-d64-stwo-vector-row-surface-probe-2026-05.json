@@ -1,0 +1,200 @@
+{
+  "decision": "GO_ARITHMETIC_SURFACE_NO_GO_EXACT_PROOF_UNTIL_COMMITMENT_CONSISTENCY",
+  "decision_matrix": [
+    {
+      "gate": "vector_row_arithmetic_surface",
+      "next_action": "Implement AIR rows for RMS square, RMS norm, projections, activation lookup, mix, down projection, and residual add.",
+      "reason": "The exact fixture recomputes over a bounded row surface with 49,152 projection multiplication rows.",
+      "status": "GO"
+    },
+    {
+      "gate": "m31_signed_range_fit",
+      "next_action": "Keep range checks explicit before scaling beyond d64 or changing quantization.",
+      "reason": "All checked witness and accumulator values fit below the signed M31 safety limit for this fixture.",
+      "status": "GO"
+    },
+    {
+      "gate": "statement_public_instance_binding",
+      "next_action": "Bind model, weight, table, input, and output commitments inside the verified relation, not only in receipt metadata.",
+      "reason": "The statement commitments can be copied into public instance fields, but that alone does not prove witness consistency.",
+      "status": "PARTIAL"
+    },
+    {
+      "gate": "weight_commitment_consistency",
+      "next_action": "Choose a commitment-consistency method: in-AIR hash, Merkleized table openings, or a smaller proof-friendly parameter commitment.",
+      "reason": "The fixture commits to deterministic weight tables via hashes; a native proof must show the witness rows match those commitments.",
+      "status": "NO_GO_YET"
+    },
+    {
+      "gate": "activation_table_commitment_consistency",
+      "next_action": "Expose the activation-table commitment as a public instance and verify lookup membership against that table.",
+      "reason": "The bounded SiLU lookup table is fixed and small, but the proof still needs a binding from lookup rows to the committed table identity.",
+      "status": "NO_GO_YET"
+    },
+    {
+      "gate": "native_stwo_exact_d64_proof",
+      "next_action": "Do not claim a proved d64 transformer block until the commitment-consistency gates above are implemented and mutation-tested.",
+      "reason": "No Stwo proof is generated in this probe; arithmetic feasibility is positive, exact proof status remains blocked on commitment consistency.",
+      "status": "NO_GO_YET"
+    }
+  ],
+  "decision_matrix_commitment": "blake2b-256:91806bc1c4d24db9d84e7a2f7d53d4607d2402f1e232364722b5c469a4cfc8ee",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "2bb7aa9705be91707aa2cf4904dcd5fe5c171cd7",
+  "non_claims": [
+    "not a Stwo proof",
+    "not a verifier-time benchmark",
+    "not proof that the d64 statement is accepted",
+    "not backend independence evidence",
+    "not full transformer inference",
+    "not a claim that commitment consistency is solved"
+  ],
+  "schema": "zkai-d64-stwo-vector-row-surface-probe-v1",
+  "source_fixture": {
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
+    "statement_commitment": "blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6",
+    "target_id": "rmsnorm-swiglu-residual-d64-v1"
+  },
+  "target": {
+    "activation": "bounded_integer_silu_lookup_for_swiglu",
+    "ff_dim": 256,
+    "ff_dim_multiplier": 4,
+    "fixed_point": "q8_signed_integer",
+    "linear_projection_muls": 49152,
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+    "normalization": "RMSNorm",
+    "projection_weight_scalars": 49152,
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "residual": true,
+    "rms_scale_scalars": 64,
+    "rms_square_rows": 64,
+    "statement_kind": "transformer-block",
+    "swiglu_gate_muls": 256,
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "total_committed_parameter_scalars": 49216,
+    "width": 64
+  },
+  "witness_profile": {
+    "intermediate_maxima": {
+      "down_accumulator": 8900,
+      "down_product": 1632,
+      "gate_accumulator": 25909,
+      "gate_product": 3632,
+      "rms_q8": 115,
+      "sum_squares": 849454,
+      "swiglu_product": 52328,
+      "value_accumulator": 27364,
+      "value_product": 3632
+    },
+    "m31_range": {
+      "fits_signed_m31": true,
+      "max_abs_intermediate": 849454,
+      "modulus": 2147483647,
+      "signed_abs_limit": 1073741823
+    },
+    "projection_stats": {
+      "down": {
+        "cols": 256,
+        "max_abs_accumulator": 8900,
+        "max_abs_input": 204,
+        "max_abs_output": 34,
+        "max_abs_product": 1632,
+        "max_abs_weight": 8,
+        "mul_rows": 16384,
+        "rows": 64
+      },
+      "gate": {
+        "cols": 64,
+        "max_abs_accumulator": 25909,
+        "max_abs_input": 454,
+        "max_abs_output": 405,
+        "max_abs_product": 3632,
+        "max_abs_weight": 8,
+        "mul_rows": 16384,
+        "rows": 256
+      },
+      "value": {
+        "cols": 64,
+        "max_abs_accumulator": 27364,
+        "max_abs_input": 454,
+        "max_abs_output": 428,
+        "max_abs_product": 3632,
+        "max_abs_weight": 8,
+        "mul_rows": 16384,
+        "rows": 256
+      }
+    },
+    "row_counts": {
+      "activation_lookup_rows": 256,
+      "activation_table_rows": 2049,
+      "down_projection_mul_rows": 16384,
+      "gate_projection_mul_rows": 16384,
+      "input_rows": 64,
+      "projection_mul_rows": 49152,
+      "residual_rows": 64,
+      "rms_norm_rows": 64,
+      "rms_square_rows": 64,
+      "swiglu_mix_rows": 256,
+      "trace_rows_excluding_static_table": 49920,
+      "value_projection_mul_rows": 16384
+    },
+    "value_ranges": {
+      "activated_gate_q8": {
+        "count": 256,
+        "max": 237,
+        "max_abs": 237,
+        "min": -146
+      },
+      "gate_projection_q8": {
+        "count": 256,
+        "max": 375,
+        "max_abs": 405,
+        "min": -405
+      },
+      "hidden_q8": {
+        "count": 256,
+        "max": 204,
+        "max_abs": 204,
+        "min": -195
+      },
+      "input_q8": {
+        "count": 64,
+        "max": 190,
+        "max_abs": 192,
+        "min": -192
+      },
+      "normed_q8": {
+        "count": 64,
+        "max": 454,
+        "max_abs": 454,
+        "min": -452
+      },
+      "output_q8": {
+        "count": 64,
+        "max": 200,
+        "max_abs": 208,
+        "min": -208
+      },
+      "residual_delta_q8": {
+        "count": 64,
+        "max": 34,
+        "max_abs": 34,
+        "min": -19
+      },
+      "rms_scale_q8": {
+        "count": 64,
+        "max": 288,
+        "max_abs": 288,
+        "min": 225
+      },
+      "value_projection_q8": {
+        "count": 256,
+        "max": 388,
+        "max_abs": 428,
+        "min": -428
+      }
+    }
+  },
+  "witness_profile_commitment": "blake2b-256:a1a27b8e0097bcbca78e9145c39db11caef0efae34afb0b5b5421404cd286b35"
+}
