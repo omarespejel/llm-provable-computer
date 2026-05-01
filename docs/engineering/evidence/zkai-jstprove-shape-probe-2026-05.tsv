@@ -1,9 +1,9 @@
 fixture	gate	op_sequence	transformer_relevance	status	failed_step	failure_kind	proof_bytes	model_bytes	onnx_bytes	prove_seconds	verify_seconds	primary_observation
-tiny_gemm	GO_CHECKED_SMALL_SHAPE	Gemm	linear_projection_baseline	GO			11645	307	133	0.820710	2.547536	baseline tiny linear projection proves and verifies
-tiny_gemm_add	GO_CHECKED_SMALL_SHAPE	Gemm -> Add	linear_projection_plus_bias_like_add	GO			36449	358	169	1.190031	2.693476	extra Add layer proves and verifies
-tiny_gemm_residual_add	GO_CHECKED_SMALL_SHAPE	Gemm(width-preserving) -> Add(input)	linear_projection_plus_residual_add	GO			56054	367	183	0.920887	2.303404	residual-style Add proves and verifies
-tiny_gemm_layernorm	GO_CHECKED_SMALL_SHAPE	Gemm(width-preserving) -> LayerNormalization	normalization_after_projection	GO			52080	441	287	0.799987	1.977310	LayerNormalization-style tiny shape proves and verifies
-tiny_gemm_batchnorm	GO_CHECKED_SMALL_SHAPE	Gemm -> BatchNormalization	normalization_like_operator_after_projection	GO			95105	419	287	2.639012	7.234345	normalization-like tiny shape proves and verifies
-tiny_gemm_relu	NO_GO_RANGE_CHECK_CAPACITY	Gemm -> Relu	activation_or_range_check_pressure	NO_GO	witness	range_check_capacity		339	153	NA	NA	Relu witness hits Remainder range-check capacity
-tiny_gemm_softmax	NO_GO_UNCONSTRAINED_BACKEND_OP	Gemm(width-preserving) -> Softmax	attention_normalization_pressure	NO_GO	prove	unconstrained_backend_op		382	197	0.013802	NA	Softmax witness is generated but proof construction refuses an unconstrained op
+tiny_gemm	GO_CHECKED_SMALL_SHAPE	Gemm	linear_projection_baseline	GO			11645	307	133	0.781818	1.980332	baseline tiny linear projection proves and verifies
+tiny_gemm_add	GO_CHECKED_SMALL_SHAPE	Gemm -> Add	linear_projection_plus_bias_like_add	GO			36449	361	169	0.912362	2.308319	extra Add layer proves and verifies
+tiny_gemm_residual_add	GO_CHECKED_SMALL_SHAPE	Gemm(width-preserving) -> Add(input)	linear_projection_plus_residual_add	GO			56054	367	183	0.921516	2.328602	residual-style Add proves and verifies
+tiny_gemm_layernorm	GO_CHECKED_SMALL_SHAPE	Gemm(width-preserving) -> LayerNormalization	normalization_after_projection	GO			52080	441	287	0.778382	1.945761	LayerNormalization-style tiny shape proves and verifies
+tiny_gemm_batchnorm	GO_CHECKED_SMALL_SHAPE	Gemm -> BatchNormalization	normalization_like_operator_after_projection	GO			95105	421	287	2.591887	6.078993	normalization-like tiny shape proves and verifies
+tiny_gemm_relu	NO_GO_RANGE_CHECK_CAPACITY	Gemm -> Relu	activation_or_range_check_pressure	NO_GO	witness	range_check_capacity		341	153	NA	NA	Relu witness hits Remainder range-check capacity
+tiny_gemm_softmax	NO_GO_UNCONSTRAINED_BACKEND_OP	Gemm(width-preserving) -> Softmax	attention_normalization_pressure	NO_GO	prove	unconstrained_backend_op		382	197	0.009271	NA	Softmax witness is generated but proof construction refuses an unconstrained op
 tiny_matmul_residual_add	NO_GO_UNSUPPORTED_WITNESS_OP	MatMul -> Add(input)	literal_matmul_projection_plus_residual_add	NO_GO	witness	unsupported_witness_op		339	163	NA	NA	MatMul compiles but witness generation reports unsupported MatMul

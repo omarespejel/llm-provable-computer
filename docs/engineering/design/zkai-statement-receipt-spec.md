@@ -187,10 +187,15 @@ proof; it is a third proof-stack check of the statement-envelope boundary.
 A follow-up JSTprove shape probe keeps that adapter result scoped while making
 the operator-support boundary more concrete. A real `jstprove-remainder` binary
 proves tiny `Gemm -> residual Add`, `Gemm -> LayerNormalization`, and
-`Gemm -> BatchNormalization` fixtures, but the checked `Gemm -> Relu`,
-`Gemm -> Softmax`, and literal `MatMul -> Add` fixtures expose separate backend
-blockers. This is engineering context for proof-stack comparison, not a
-statement-envelope mutation result and not a transformer proof.
+`Gemm -> BatchNormalization` fixtures, and a tiny `Gemm` dimension sweep clears
+dimensions `1`, `2`, and `4`. The checked baseline `Gemm -> Relu` fixture fails
+on range-check capacity, but scaled ReLU variants clear; this makes the ReLU
+blocker magnitude-sensitive rather than a blanket unsupported-op result. The
+checked `Gemm -> Softmax` fixture reaches witness generation but is refused by
+Remainder proof construction as an unconstrained backend op, and literal
+`MatMul -> Add` still fails at witness generation. This is engineering context
+for proof-stack comparison, not a statement-envelope mutation result and not a
+transformer proof.
 
 The fourth checked adapter is native to this repository's Stwo lane
 (`stwo-phase10-linear-block-v4-with-lookup`): a linear-block-with-lookup proof
