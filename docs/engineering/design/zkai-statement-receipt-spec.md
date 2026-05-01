@@ -343,3 +343,18 @@ lookup pilot and does not consume `proof_native_parameter_commitment`, bind the
 RMS scale tree root, or prove the `64 + 64` d64 RMSNorm row surface. The next
 implementation must build a d64-specific RMSNorm AIR component rather than
 relabeling the old primitive as the d64 proof.
+
+The d64 RMSNorm public-row proof is the first native AIR proof on that path:
+
+- `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs`
+
+Decision: `GO_PUBLIC_ROW_D64_RMSNORM_AIR_PROOF`. The proof binds the exact
+public `64`-coordinate RMSNorm rows as verifier-known preprocessed columns and
+proves the square, Q8 scale-division, and normalized-output equations in native
+Stwo AIR. This is still not a full d64 block proof and not a private-witness
+opening proof. The scalar `rms_q8 = isqrt(floor(sum_squares / 64))` relation is
+currently verifier-side checked over public rows; issue `#356` tracks moving
+that integer sqrt/range argument into AIR-native constraints.
