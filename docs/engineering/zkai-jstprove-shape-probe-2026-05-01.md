@@ -21,7 +21,7 @@ Tablero result, and not a full transformer proof.
 - Generator dependencies: Python `3.13.11`, ONNX `1.21.0`,
   NumPy `2.4.4`, msgpack `(1, 1, 2)`, ONNX opset `17`
 - Generator commit recorded in evidence:
-  `376eaa8a80544d5b4121e33314aa6bd28250caa1`
+  `e2f717b549e1a0e27f7aa108aecb5f4483ed56b5`
 
 Checked evidence:
 
@@ -159,7 +159,7 @@ Regenerate the evidence:
 git -C /tmp/jstprove-adapter-check/JSTprove fetch origin \
   '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
 
-ZKAI_JSTPROVE_SHAPE_PROBE_GIT_COMMIT=376eaa8a80544d5b4121e33314aa6bd28250caa1 \
+ZKAI_JSTPROVE_SHAPE_PROBE_GIT_COMMIT=e2f717b549e1a0e27f7aa108aecb5f4483ed56b5 \
 ZKAI_JSTPROVE_REMAINDER_BIN=/tmp/jstprove-adapter-check/JSTprove/target/release/jstprove-remainder \
   /tmp/jstprove-adapter-check/onnx-venv/bin/python \
   scripts/zkai_jstprove_shape_probe.py \
