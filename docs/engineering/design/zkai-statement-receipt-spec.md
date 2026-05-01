@@ -421,9 +421,24 @@ domain-separated projection-input row surface, and emits
 `projection_input_row_commitment`. The verifier recomputes both commitments
 before proof verification, pins the PCS profile, rejects malformed proof
 commitment vectors before indexing, and rejects attempts to relabel the bridge
-as the full d64 `output_activation_commitment`. The remaining native-proof seam
-is now the next relation slice: consume `projection_input_row_commitment` and
-prove the gate/value projection rows before claiming full-block output binding.
+as the full d64 `output_activation_commitment`.
+
+The d64 gate/value projection proof is the next proof-backed consumption step:
+
+- `docs/engineering/zkai-d64-gate-value-projection-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_gate_value_projection_proof.rs`
+
+Decision: `GO_D64_GATE_VALUE_PROJECTION_AIR_PROOF`. The proof consumes
+`projection_input_row_commitment`, checks `32,768` gate/value projection
+multiplication rows in native Stwo AIR, recomputes the gate and value matrix
+roots from checked row weights, recomputes the gate/value output commitments,
+and emits `gate_value_projection_output_commitment`. The verifier rejects
+attempts to relabel that commitment as the full d64
+`output_activation_commitment`. The remaining native-proof seam is now
+activation/SwiGLU, down projection, and residual closure before claiming
+full-block output binding.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 

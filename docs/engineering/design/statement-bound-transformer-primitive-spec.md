@@ -295,6 +295,20 @@ malformed proof commitment vectors, and attempts to relabel the projection input
 as the full d64 `output_activation_commitment`. The next proof target is the
 gate/value projection slice that consumes `projection_input_row_commitment`.
 
+That gate/value projection slice is now checked in:
+
+- `docs/engineering/zkai-d64-gate-value-projection-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_gate_value_projection_proof.rs`
+
+It proves the `32,768` public gate/value multiplication rows in native Stwo AIR,
+recomputes the source projection-input commitment, recomputes gate/value matrix
+roots from checked weights, and binds a domain-separated
+`gate_value_projection_output_commitment`. It is still not a full d64 block
+proof: activation/SwiGLU, down projection, residual addition, and the final
+`output_activation_commitment` remain explicit open proof seams.
+
 The first attention/KV receipt contract is also checked in:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
