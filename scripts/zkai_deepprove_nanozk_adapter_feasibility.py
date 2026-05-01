@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 from typing import Any
 
@@ -75,7 +76,10 @@ def _generated_at() -> str:
 def _git_commit() -> str:
     override = os.environ.get("ZKAI_EXTERNAL_FEASIBILITY_GIT_COMMIT")
     if override and override.strip():
-        return override.strip().lower()
+        normalized = override.strip().lower()
+        if not re.fullmatch(r"[0-9a-f]{7,40}", normalized):
+            raise AdapterFeasibilityError("ZKAI_EXTERNAL_FEASIBILITY_GIT_COMMIT must be a 7-40 character hex SHA")
+        return normalized
     try:
         completed = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -316,17 +320,29 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
+    write_json_output(payload, json_path)
+    write_tsv_output(payload, tsv_path)
+
+
+def write_json_output(payload: dict[str, Any], json_path: pathlib.Path) -> None:
     validate_probe(payload)
     try:
         json_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    except OSError as err:
+        raise AdapterFeasibilityError(f"failed to write feasibility JSON output: {err}") from err
+
+
+def write_tsv_output(payload: dict[str, Any], tsv_path: pathlib.Path) -> None:
+    validate_probe(payload)
+    try:
         tsv_path.parent.mkdir(parents=True, exist_ok=True)
         with tsv_path.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows_for_tsv(payload))
     except OSError as err:
-        raise AdapterFeasibilityError(f"failed to write feasibility outputs: {err}") from err
+        raise AdapterFeasibilityError(f"failed to write feasibility TSV output: {err}") from err
 
 
 def parse_args() -> argparse.Namespace:
@@ -344,8 +360,10 @@ def main() -> None:
         print(json.dumps(payload, indent=2, sort_keys=True))
     json_path = args.write_json
     tsv_path = args.write_tsv
-    if json_path is not None or tsv_path is not None:
-        write_outputs(payload, json_path or JSON_OUT, tsv_path or TSV_OUT)
+    if json_path is not None:
+        write_json_output(payload, json_path)
+    if tsv_path is not None:
+        write_tsv_output(payload, tsv_path)
 
 
 if __name__ == "__main__":

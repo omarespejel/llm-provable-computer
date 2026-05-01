@@ -109,10 +109,29 @@ class ZkAIDeepProveNanoZKAdapterFeasibilityTests(unittest.TestCase):
             self.assertIn("DeepProve-1", tsv_lines[1])
             self.assertIn("NANOZK", tsv_lines[2])
 
+    def test_individual_writers_do_not_create_unrequested_formats(self) -> None:
+        payload = PROBE.build_probe()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "only.json"
+            tsv_path = tmp / "only.tsv"
+
+            PROBE.write_json_output(payload, json_path)
+            self.assertTrue(json_path.exists())
+            self.assertFalse(tsv_path.exists())
+
+            PROBE.write_tsv_output(payload, tsv_path)
+            self.assertTrue(tsv_path.exists())
+
     def test_git_commit_override_is_normalized(self) -> None:
         override = "  " + ("ABCDEF" * 6) + "ABCD  "
         with mock.patch.dict(os.environ, {"ZKAI_EXTERNAL_FEASIBILITY_GIT_COMMIT": override}):
             self.assertEqual(PROBE._git_commit(), ("abcdef" * 6) + "abcd")
+
+    def test_git_commit_override_rejects_non_sha_text(self) -> None:
+        with mock.patch.dict(os.environ, {"ZKAI_EXTERNAL_FEASIBILITY_GIT_COMMIT": "not-a-sha"}):
+            with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "7-40 character hex SHA"):
+                PROBE._git_commit()
 
 
 if __name__ == "__main__":

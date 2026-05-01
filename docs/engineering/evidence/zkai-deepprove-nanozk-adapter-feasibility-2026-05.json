@@ -24,7 +24,7 @@
   },
   "decision": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "cfa331be04c7cfe7dd5345bcd95a2552714539e8",
+  "git_commit": "b644ae9c608a491be52554a47726d7ae71534320",
   "non_claims": [
     "not a DeepProve-1 soundness finding",
     "not a NANOZK soundness finding",

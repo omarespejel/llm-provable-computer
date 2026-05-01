@@ -38,4 +38,10 @@ The statement-binding adapter benchmark uses a stricter reproducibility bar than
 comparison appendix. DeepProve-1 and NANOZK are not listed as adapter rows because the
 May 1, 2026 adapter-feasibility pass did not find public proof artifacts plus verifier inputs
 for baseline acceptance and relabeling mutations. They remain related-system context,
-not local empirical adapter evidence.
+not local empirical adapter evidence. See
+`docs/engineering/zkai-deepprove-nanozk-adapter-feasibility-2026-05-01.md` and
+the accompanying
+`docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.json`
+and
+`docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.tsv`
+records.
