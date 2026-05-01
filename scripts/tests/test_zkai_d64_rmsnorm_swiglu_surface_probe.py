@@ -152,8 +152,8 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         target = PROBE.d64_target()
         limits = {
             "limits_are_current": False,
-            "max_addressable_memory_cells": 65_536,
-            "pc_horizon": 65_536,
+            "max_addressable_memory_cells": 255,
+            "pc_horizon": 256,
         }
         gates = {
             "fixture_gate_detected": True,
