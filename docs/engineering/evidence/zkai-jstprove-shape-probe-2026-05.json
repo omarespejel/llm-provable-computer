@@ -7,10 +7,11 @@
       "tiny_gemm_layernorm",
       "tiny_gemm_batchnorm"
     ],
-    "interpretation": "JSTprove/Remainder can prove tiny projection, residual-add, and normalization-shaped fixtures, but the checked Softmax, ReLU, and literal MatMul variants expose separate backend/operator blockers. The ReLU blocker is input-dependent in this probe: scaled variants clear.",
+    "interpretation": "JSTprove/Remainder can prove tiny projection, residual-add, and normalization-shaped fixtures, but the checked Softmax, ReLU, and literal MatMul variants expose separate backend/operator blockers. The ReLU blocker is magnitude-sensitive in this probe: scaled variants clear.",
     "no_go_count": 3,
     "paper_usage": "engineering_context_only_not_transformer_proof_or_performance_benchmark",
-    "relu_scaling": "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR",
+    "relu_scaling": "MAGNITUDE_SENSITIVE_BASELINE_FAILS_SCALED_VARIANTS_CLEAR",
+    "softmax_alternative_ref_check": "CHECKED_NO_CONSTRAINED_REMAINDER_SOFTMAX_PATH",
     "softmax_source_check": "SOURCE_HIT"
   },
   "decision": "GO_OPERATOR_SUPPORT_SPLIT_NOT_TRANSFORMER_PROOF",
@@ -22,20 +23,20 @@
       "model_bytes": 292,
       "onnx_bytes": 130,
       "proof_bytes": 11726,
-      "prove_seconds": "0.799333",
+      "prove_seconds": "0.912901",
       "status": "GO",
-      "verify_seconds": "1.971647"
+      "verify_seconds": "2.673158"
     },
     {
       "dimension": 2,
       "failed_step": "",
       "failure_kind": "",
-      "model_bytes": 319,
+      "model_bytes": 318,
       "onnx_bytes": 147,
       "proof_bytes": 71040,
-      "prove_seconds": "0.789629",
+      "prove_seconds": "1.019196",
       "status": "GO",
-      "verify_seconds": "1.948071"
+      "verify_seconds": "2.279538"
     },
     {
       "dimension": 4,
@@ -44,12 +45,12 @@
       "model_bytes": 349,
       "onnx_bytes": 203,
       "proof_bytes": 70138,
-      "prove_seconds": "0.781246",
+      "prove_seconds": "0.902361",
       "status": "GO",
-      "verify_seconds": "1.939688"
+      "verify_seconds": "2.237408"
     }
   ],
-  "exploration_commitment": "blake2b-256:2c55f3604c4d174922f3400ab2402e3292f1001d039a83a067914fe1314eb312",
+  "exploration_commitment": "blake2b-256:8973c901b88cb9720279997aa276973750786563c9f47addbde8dec9eda81d54",
   "fixture_catalog": [
     {
       "fixture": "tiny_gemm",
@@ -101,7 +102,14 @@
     }
   ],
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "f8963ade432fa7f999c0eaf4c356ba06d526d57f",
+  "generator_dependencies": {
+    "msgpack": "(1, 1, 2)",
+    "numpy": "2.4.4",
+    "onnx": "1.21.0",
+    "onnx_opset": 17,
+    "python": "3.13.11"
+  },
+  "git_commit": "376eaa8a80544d5b4121e33314aa6bd28250caa1",
   "jstprove": {
     "binary": "/private/tmp/jstprove-adapter-check/JSTprove/target/release/jstprove-remainder",
     "remainder_dependency_commit": "06a5f406",
@@ -120,7 +128,7 @@
     {
       "failed_step": "witness",
       "failure_kind": "range_check_capacity",
-      "model_bytes": 341,
+      "model_bytes": 339,
       "onnx_bytes": 151,
       "proof_bytes": null,
       "prove_seconds": "NA",
@@ -134,10 +142,10 @@
       "model_bytes": 336,
       "onnx_bytes": 154,
       "proof_bytes": 87377,
-      "prove_seconds": "3.995539",
+      "prove_seconds": "5.389730",
       "scale": "0.25",
       "status": "GO",
-      "verify_seconds": "9.395193"
+      "verify_seconds": "9.962077"
     },
     {
       "failed_step": "",
@@ -145,10 +153,10 @@
       "model_bytes": 338,
       "onnx_bytes": 153,
       "proof_bytes": 211088,
-      "prove_seconds": "3.981442",
+      "prove_seconds": "4.116503",
       "scale": "0.1",
       "status": "GO",
-      "verify_seconds": "9.412703"
+      "verify_seconds": "9.468539"
     },
     {
       "failed_step": "",
@@ -156,10 +164,10 @@
       "model_bytes": 343,
       "onnx_bytes": 154,
       "proof_bytes": 227462,
-      "prove_seconds": "3.987476",
+      "prove_seconds": "4.053108",
       "scale": "0.01",
       "status": "GO",
-      "verify_seconds": "9.523842"
+      "verify_seconds": "9.640854"
     },
     {
       "failed_step": "",
@@ -167,10 +175,10 @@
       "model_bytes": 341,
       "onnx_bytes": 155,
       "proof_bytes": 108172,
-      "prove_seconds": "1.592207",
+      "prove_seconds": "1.602478",
       "scale": "0.001",
       "status": "GO",
-      "verify_seconds": "4.051986"
+      "verify_seconds": "4.211324"
     }
   ],
   "results": [
@@ -185,7 +193,7 @@
       "op_sequence": "Gemm",
       "primary_observation": "baseline tiny linear projection proves and verifies",
       "proof_bytes": 11645,
-      "prove_seconds": "0.781818",
+      "prove_seconds": "0.834183",
       "status": "GO",
       "steps": [
         {
@@ -193,13 +201,13 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/tiny_gemm.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/tiny_gemm.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.024744,
-          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      1 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      1 layers, scale=2^18\n[4/4] Serializing\n      307 B\n\n  done Compiled in 0.00s",
+          "seconds": 0.049907,
+          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      1 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      1 layers, scale=2^18\n[4/4] Serializing\n      307 B\n\n  done Compiled in 0.01s",
           "stdout_excerpt": "",
           "step": "compile"
         },
@@ -208,15 +216,15 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.014631,
-          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      1 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      11 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.00s",
+          "seconds": 0.019382,
+          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      1 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      11 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.01s",
           "stdout_excerpt": "",
           "step": "witness"
         },
@@ -225,15 +233,15 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/proof.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.781818,
-          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      1 layers\n[2/4] Loading witness\n      11 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      11.4 KiB\n\n  done Proof generated in 0.77s",
+          "seconds": 0.834183,
+          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      1 layers\n[2/4] Loading witness\n      11 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      11.4 KiB\n\n  done Proof generated in 0.82s",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(4)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(5)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(6)\nLayer that calculates r - table has layer id: Layer(7)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(8)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 8 of build_fractional_sumcheck has layer id: Layer(16)\nLayer that checks that fractions are eq",
           "step": "prove"
         },
@@ -243,21 +251,21 @@
             "--quiet",
             "verify",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/model.msgpack",
             "--proof",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/proof.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/proof.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm/input.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm/input.msgpack"
           ],
           "returncode": 0,
-          "seconds": 1.980332,
+          "seconds": 1.989027,
           "stderr_excerpt": "",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(4)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(5)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(6)\nLayer that calculates r - table has layer id: Layer(7)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(8)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 8 of build_fractional_sumcheck has layer id: Layer(16)\nLayer that checks that fractions are eq",
           "step": "verify"
         }
       ],
       "transformer_relevance": "linear_projection_baseline",
-      "verify_seconds": "1.980332"
+      "verify_seconds": "1.989027"
     },
     {
       "failed_step": "",
@@ -270,7 +278,7 @@
       "op_sequence": "Gemm -> Add",
       "primary_observation": "extra Add layer proves and verifies",
       "proof_bytes": 36449,
-      "prove_seconds": "0.912362",
+      "prove_seconds": "1.044284",
       "status": "GO",
       "steps": [
         {
@@ -278,12 +286,12 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/tiny_gemm_add.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/tiny_gemm_add.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.008935,
+          "seconds": 0.015745,
           "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      361 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
@@ -293,14 +301,14 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.009036,
+          "seconds": 0.016493,
           "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      13 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.00s",
           "stdout_excerpt": "",
           "step": "witness"
@@ -310,15 +318,15 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/proof.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.912362,
-          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      13 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      35.6 KiB\n\n  done Proof generated in 0.90s",
+          "seconds": 1.044284,
+          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      13 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      35.6 KiB\n\n  done Proof generated in 1.03s",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(5)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(6)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(7)\nLayer that calculates r - table has layer id: Layer(8)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 8 of build_fractional_sumcheck has layer id: Layer(17)\nLayer that checks that fractions are e",
           "step": "prove"
         },
@@ -328,21 +336,21 @@
             "--quiet",
             "verify",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/model.msgpack",
             "--proof",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/proof.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/proof.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_add/input.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_add/input.msgpack"
           ],
           "returncode": 0,
-          "seconds": 2.308319,
+          "seconds": 2.411266,
           "stderr_excerpt": "",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(5)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(6)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(7)\nLayer that calculates r - table has layer id: Layer(8)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 8 of build_fractional_sumcheck has layer id: Layer(17)\nLayer that checks that fractions are e",
           "step": "verify"
         }
       ],
       "transformer_relevance": "linear_projection_plus_bias_like_add",
-      "verify_seconds": "2.308319"
+      "verify_seconds": "2.411266"
     },
     {
       "failed_step": "",
@@ -355,7 +363,7 @@
       "op_sequence": "Gemm(width-preserving) -> Add(input)",
       "primary_observation": "residual-style Add proves and verifies",
       "proof_bytes": 56054,
-      "prove_seconds": "0.921516",
+      "prove_seconds": "1.010520",
       "status": "GO",
       "steps": [
         {
@@ -363,12 +371,12 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/tiny_gemm_residual_add.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/tiny_gemm_residual_add.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.015321,
+          "seconds": 0.015333,
           "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      367 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
@@ -378,15 +386,15 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.012706,
-          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.1 KiB\n\n  done Witness generated in 0.00s",
+          "seconds": 0.014828,
+          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.00s",
           "stdout_excerpt": "",
           "step": "witness"
         },
@@ -395,15 +403,15 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/proof.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.921516,
-          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      12 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      54.7 KiB\n\n  done Proof generated in 0.91s",
+          "seconds": 1.01052,
+          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      12 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      54.7 KiB\n\n  done Proof generated in 0.99s",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(5)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(6)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(7)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(8)\nLayer that calculates r - table has layer id: Layer(9)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(17)\nIteration 8 of build_fractional_sumche",
           "step": "prove"
         },
@@ -413,21 +421,21 @@
             "--quiet",
             "verify",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/model.msgpack",
             "--proof",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/proof.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/proof.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_residual_add/input.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_residual_add/input.msgpack"
           ],
           "returncode": 0,
-          "seconds": 2.328602,
+          "seconds": 2.469885,
           "stderr_excerpt": "",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(5)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(6)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(7)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(8)\nLayer that calculates r - table has layer id: Layer(9)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(17)\nIteration 8 of build_fractional_sumche",
           "step": "verify"
         }
       ],
       "transformer_relevance": "linear_projection_plus_residual_add",
-      "verify_seconds": "2.328602"
+      "verify_seconds": "2.469885"
     },
     {
       "failed_step": "",
@@ -435,12 +443,12 @@
       "fixture": "tiny_gemm_layernorm",
       "gate": "GO_CHECKED_SMALL_SHAPE",
       "input_bytes": 26,
-      "model_bytes": 441,
+      "model_bytes": 442,
       "onnx_bytes": 287,
       "op_sequence": "Gemm(width-preserving) -> LayerNormalization",
       "primary_observation": "LayerNormalization-style tiny shape proves and verifies",
       "proof_bytes": 52080,
-      "prove_seconds": "0.778382",
+      "prove_seconds": "0.819784",
       "status": "GO",
       "steps": [
         {
@@ -448,13 +456,13 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/tiny_gemm_layernorm.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/tiny_gemm_layernorm.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.015773,
-          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      441 B\n\n  done Compiled in 0.00s",
+          "seconds": 0.013941,
+          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      442 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
         },
@@ -463,15 +471,15 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.012081,
-          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.1 KiB\n\n  done Witness generated in 0.00s",
+          "seconds": 0.011716,
+          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.00s",
           "stdout_excerpt": "",
           "step": "witness"
         },
@@ -480,15 +488,15 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/proof.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.778382,
-          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      12 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      50.9 KiB\n\n  done Proof generated in 0.77s",
+          "seconds": 0.819784,
+          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      12 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      50.9 KiB\n\n  done Proof generated in 0.81s",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(4)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(5)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(6)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(7)\nLayer that calculates r - table has layer id: Layer(8)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 8 of build_fractional_sumchec",
           "step": "prove"
         },
@@ -498,21 +506,21 @@
             "--quiet",
             "verify",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/model.msgpack",
             "--proof",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/proof.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/proof.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_layernorm/input.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_layernorm/input.msgpack"
           ],
           "returncode": 0,
-          "seconds": 1.945761,
+          "seconds": 2.016979,
           "stderr_excerpt": "",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(4)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(5)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(6)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(7)\nLayer that calculates r - table has layer id: Layer(8)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(9)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(10)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 8 of build_fractional_sumchec",
           "step": "verify"
         }
       ],
       "transformer_relevance": "normalization_after_projection",
-      "verify_seconds": "1.945761"
+      "verify_seconds": "2.016979"
     },
     {
       "failed_step": "",
@@ -525,7 +533,7 @@
       "op_sequence": "Gemm -> BatchNormalization",
       "primary_observation": "normalization-like tiny shape proves and verifies",
       "proof_bytes": 95105,
-      "prove_seconds": "2.591887",
+      "prove_seconds": "2.777716",
       "status": "GO",
       "steps": [
         {
@@ -533,12 +541,12 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/tiny_gemm_batchnorm.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/tiny_gemm_batchnorm.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.016629,
+          "seconds": 0.017722,
           "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      421 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
@@ -548,14 +556,14 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.011738,
+          "seconds": 0.015905,
           "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      19 shreds\n[4/4] Serializing\n      1.1 KiB\n\n  done Witness generated in 0.00s",
           "stdout_excerpt": "",
           "step": "witness"
@@ -565,15 +573,15 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/proof.msgpack"
           ],
           "returncode": 0,
-          "seconds": 2.591887,
-          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      19 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      92.9 KiB\n\n  done Proof generated in 2.58s",
+          "seconds": 2.777716,
+          "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      19 shreds\n[3/4] Generating proof\n[4/4] Serializing\n      92.9 KiB\n\n  done Proof generated in 2.76s",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(6)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(7)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(8)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(9)\nLayer that calculates r - table has layer id: Layer(10)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(17)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(18)\nIteration 8 of build_fractional_sumch",
           "step": "prove"
         },
@@ -583,21 +591,21 @@
             "--quiet",
             "verify",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/model.msgpack",
             "--proof",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/proof.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/proof.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_batchnorm/input.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_batchnorm/input.msgpack"
           ],
           "returncode": 0,
-          "seconds": 6.078993,
+          "seconds": 6.530913,
           "stderr_excerpt": "",
           "stdout_excerpt": "Build the LHS of the equation (defined by the constrained values)\nLayer that calcs r - constrained has layer id: Layer(6)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(7)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(8)\nBuild the RHS of the equation (defined by the table values and multiplicities)\nLayer that aggs the multiplicities has layer id: Layer(9)\nLayer that calculates r - table has layer id: Layer(10)\nIteration 0 of build_fractional_sumcheck has layer id: Layer(11)\nIteration 1 of build_fractional_sumcheck has layer id: Layer(12)\nIteration 2 of build_fractional_sumcheck has layer id: Layer(13)\nIteration 3 of build_fractional_sumcheck has layer id: Layer(14)\nIteration 4 of build_fractional_sumcheck has layer id: Layer(15)\nIteration 5 of build_fractional_sumcheck has layer id: Layer(16)\nIteration 6 of build_fractional_sumcheck has layer id: Layer(17)\nIteration 7 of build_fractional_sumcheck has layer id: Layer(18)\nIteration 8 of build_fractional_sumch",
           "step": "verify"
         }
       ],
       "transformer_relevance": "normalization_like_operator_after_projection",
-      "verify_seconds": "6.078993"
+      "verify_seconds": "6.530913"
     },
     {
       "failed_step": "witness",
@@ -618,12 +626,12 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_relu/tiny_gemm_relu.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_relu/tiny_gemm_relu.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_relu/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_relu/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.0094,
+          "seconds": 0.015574,
           "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      341 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
@@ -633,14 +641,14 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_relu/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_relu/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_relu/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_relu/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_relu/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_relu/witness.msgpack"
           ],
           "returncode": 1,
-          "seconds": 0.009417,
+          "seconds": 0.015934,
           "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n\nerror: Relu layer node_1 delta nv 20 exceeds two-chunk range-check capacity (max 18 bits)\nError: Relu layer node_1 delta nv 20 exceeds two-chunk range-check capacity (max 18 bits)",
           "stdout_excerpt": "",
           "step": "witness"
@@ -655,12 +663,12 @@
       "fixture": "tiny_gemm_softmax",
       "gate": "NO_GO_UNCONSTRAINED_BACKEND_OP",
       "input_bytes": 26,
-      "model_bytes": 382,
+      "model_bytes": 387,
       "onnx_bytes": 197,
       "op_sequence": "Gemm(width-preserving) -> Softmax",
       "primary_observation": "Softmax witness is generated but proof construction refuses an unconstrained op",
       "proof_bytes": null,
-      "prove_seconds": "0.009271",
+      "prove_seconds": "0.016604",
       "status": "NO_GO",
       "steps": [
         {
@@ -668,13 +676,13 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/tiny_gemm_softmax.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/tiny_gemm_softmax.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.009427,
-          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      382 B\n\n  done Compiled in 0.00s",
+          "seconds": 0.013569,
+          "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      387 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
         },
@@ -683,15 +691,15 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/witness.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.007735,
-          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.1 KiB\n\n  done Witness generated in 0.00s",
+          "seconds": 0.014962,
+          "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n      12 shreds\n[4/4] Serializing\n      1.0 KiB\n\n  done Witness generated in 0.00s",
           "stdout_excerpt": "",
           "step": "witness"
         },
@@ -700,14 +708,14 @@
             "jstprove-remainder",
             "prove",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/model.msgpack",
             "--witness",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/witness.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/witness.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_gemm_softmax/proof.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_gemm_softmax/proof.msgpack"
           ],
           "returncode": 1,
-          "seconds": 0.009271,
+          "seconds": 0.016604,
           "stderr_excerpt": "jstprove prove\n\n[1/4] Loading model\n      2 layers\n[2/4] Loading witness\n      12 shreds\n[3/4] Generating proof\n\nerror: circuit builder: Softmax op in layer 'node_1' is not yet constrained in the Remainder backend; refusing to add unconstrained committed shred\nError: circuit builder: Softmax op in layer 'node_1' is not yet constrained in the Remainder backend; refusing to add unconstrained committed shred",
           "stdout_excerpt": "",
           "step": "prove"
@@ -735,12 +743,12 @@
             "jstprove-remainder",
             "compile",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_matmul_residual_add/tiny_matmul_residual_add.onnx",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_matmul_residual_add/tiny_matmul_residual_add.onnx",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_matmul_residual_add/model.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_matmul_residual_add/model.msgpack"
           ],
           "returncode": 0,
-          "seconds": 0.00892,
+          "seconds": 0.013128,
           "stderr_excerpt": "jstprove compile\n\n[1/4] Parsing ONNX model\n      2 nodes\n[2/4] Building layer graph\n[3/4] Quantizing model\n      2 layers, scale=2^18\n[4/4] Serializing\n      339 B\n\n  done Compiled in 0.00s",
           "stdout_excerpt": "",
           "step": "compile"
@@ -750,14 +758,14 @@
             "jstprove-remainder",
             "witness",
             "--model",
-            "/tmp/zkai-jstprove-shape-probe/tiny_matmul_residual_add/model.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_matmul_residual_add/model.msgpack",
             "--input",
-            "/tmp/zkai-jstprove-shape-probe/tiny_matmul_residual_add/input.msgpack",
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_matmul_residual_add/input.msgpack",
             "--output",
-            "/tmp/zkai-jstprove-shape-probe/tiny_matmul_residual_add/witness.msgpack"
+            "/tmp/zkai-jstprove-shape-probe-checked/tiny_matmul_residual_add/witness.msgpack"
           ],
           "returncode": 1,
-          "seconds": 0.009746,
+          "seconds": 0.012468,
           "stderr_excerpt": "jstprove witness\n\n[1/4] Loading model\n      2 layers\n[2/4] Quantizing input\n      2 elements\n[3/4] Computing witness\n\nerror: witness: unsupported op type MatMul in layer node_0\nError: witness: unsupported op type MatMul in layer node_0",
           "stdout_excerpt": "",
           "step": "witness"
@@ -767,8 +775,31 @@
       "verify_seconds": "NA"
     }
   ],
-  "results_commitment": "blake2b-256:a525a858b3a48f0ec111f22fcd1f5c043436a585b14c0f09f74f9e152f620d63",
+  "results_commitment": "blake2b-256:d1cb79c02a1e30caaa18397b07ea3869f42d149cdf854eccee03cb7edd3aae3e",
   "schema": "zkai-jstprove-shape-probe-v1",
+  "softmax_alternative_ref_probe": [
+    {
+      "commit": "d71e49514f90877c1a6551514d1debec9930358e",
+      "observation": "Alternative ref did not expose a constrained Remainder Softmax path in this source probe.",
+      "ref": "origin/main-b",
+      "remainder_softmax_hits": [],
+      "status": "NO_REMAINDER_SOFTMAX_PATH_FOUND"
+    },
+    {
+      "commit": "eae2d6c214a46e8a43480dbab0239ff548786ee5",
+      "observation": "Alternative ref did not expose a constrained Remainder Softmax path in this source probe.",
+      "ref": "refs/tags/v2.12.1",
+      "remainder_softmax_hits": [],
+      "status": "NO_REMAINDER_SOFTMAX_PATH_FOUND"
+    },
+    {
+      "commit": "6d2f0e59343f3840634d028cd0f02309c1c0aa42",
+      "observation": "Alternative ref did not expose a constrained Remainder Softmax path in this source probe.",
+      "ref": "origin/eliminate/relu-zero-delta-range-check",
+      "remainder_softmax_hits": [],
+      "status": "NO_REMAINDER_SOFTMAX_PATH_FOUND"
+    }
+  ],
   "softmax_source_probe": {
     "hits": [
       {
@@ -868,5 +899,5 @@
     "source_root": "/private/tmp/jstprove-adapter-check/JSTprove",
     "status": "SOURCE_HIT"
   },
-  "work_dir": "/tmp/zkai-jstprove-shape-probe"
+  "work_dir": "/tmp/zkai-jstprove-shape-probe-checked"
 }

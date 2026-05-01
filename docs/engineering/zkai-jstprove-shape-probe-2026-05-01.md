@@ -18,8 +18,10 @@ Tablero result, and not a full transformer proof.
 - Remainder dependency commit: `06a5f406`
 - Binary: `/tmp/jstprove-adapter-check/JSTprove/target/release/jstprove-remainder`
 - ONNX generation Python: `/tmp/jstprove-adapter-check/onnx-venv/bin/python`
+- Generator dependencies: Python `3.13.11`, ONNX `1.21.0`,
+  NumPy `2.4.4`, msgpack `(1, 1, 2)`, ONNX opset `17`
 - Generator commit recorded in evidence:
-  `f8963ade432fa7f999c0eaf4c356ba06d526d57f`
+  `376eaa8a80544d5b4121e33314aa6bd28250caa1`
 
 Checked evidence:
 
@@ -93,6 +95,20 @@ split is precise: Softmax exists in the broader codebase, but the checked
 Remainder path refuses this ONNX Softmax fixture at proof construction rather
 than accepting an unconstrained committed shred.
 
+The source probe also checked three additional local refs after fetching the
+JSTprove remote:
+
+| Ref | Commit | Result |
+| --- | --- | --- |
+| `origin/main-b` | `d71e49514f90877c1a6551514d1debec9930358e` | No Remainder Softmax path found. |
+| `refs/tags/v2.12.1` | `eae2d6c214a46e8a43480dbab0239ff548786ee5` | No Remainder Softmax path found. |
+| `origin/eliminate/relu-zero-delta-range-check` | `6d2f0e59343f3840634d028cd0f02309c1c0aa42` | No Remainder Softmax path found. |
+
+This does not prove no future JSTprove branch can constrain Softmax. It does
+close the narrower review question for this gate: the pinned branch refuses
+Remainder Softmax at proof construction, and the checked alternative refs did
+not expose a constrained Remainder Softmax path.
+
 ## Interpretation
 
 This is a useful external proof-stack split:
@@ -139,17 +155,23 @@ The run that generated this gate used:
 Regenerate the evidence:
 
 ```bash
-ZKAI_JSTPROVE_SHAPE_PROBE_GIT_COMMIT=f8963ade432fa7f999c0eaf4c356ba06d526d57f \
+git -C /tmp/jstprove-adapter-check/JSTprove fetch origin \
+  '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+
+ZKAI_JSTPROVE_SHAPE_PROBE_GIT_COMMIT=376eaa8a80544d5b4121e33314aa6bd28250caa1 \
 ZKAI_JSTPROVE_REMAINDER_BIN=/tmp/jstprove-adapter-check/JSTprove/target/release/jstprove-remainder \
   /tmp/jstprove-adapter-check/onnx-venv/bin/python \
   scripts/zkai_jstprove_shape_probe.py \
+  --work-dir /tmp/zkai-jstprove-shape-probe-checked \
   --write-json docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.tsv
 ```
 
 The script generates all ONNX fixtures and intermediate JSTprove artifacts under
-`/tmp/zkai-jstprove-shape-probe` by default. The intermediate proof artifacts
-are intentionally not checked in; the JSON/TSV record the gate result.
+a unique temp directory by default. The checked evidence command uses an
+explicit `--work-dir` so the recorded evidence path is stable. The intermediate
+proof artifacts are intentionally not checked in; the JSON/TSV record the gate
+result.
 
 ## Validation
 
