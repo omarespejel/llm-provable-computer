@@ -177,14 +177,21 @@ The raw `snarkjs groth16 verify` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the public-signal mutation. The statement envelope
 accepts the same baseline and rejects `14 / 14` checked mutations.
 
-The third checked adapter is native to this repository's Stwo lane
+The third checked external adapter is JSTprove/Remainder over a tiny ONNX Gemm
+fixture. The raw `jstprove-remainder verify` path accepts the baseline and
+rejects `1 / 13` checked relabeling mutations: the semantic input-artifact
+mutation. The statement envelope accepts the same baseline and rejects `13 / 13`
+checked mutations. This is not a JSTprove security finding and not a transformer
+proof; it is a third proof-stack check of the statement-envelope boundary.
+
+The fourth checked adapter is native to this repository's Stwo lane
 (`stwo-phase10-linear-block-v4-with-lookup`): a linear-block-with-lookup proof
 over `programs/linear_block_v4_with_lookup.tvm`. The raw Stwo
 `verify-stark --reexecute` path accepts the baseline and rejects `1 / 14`
 checked relabeling mutations: the proof-public-claim mutation. The statement
 envelope accepts the same baseline and rejects `14 / 14` checked mutations.
 
-The fourth checked adapter is a bounded native Stwo transformer-block statement
+The fifth checked adapter is a bounded native Stwo transformer-block statement
 receipt over the same delegated proof backend. It changes the statement kind to
 `transformer-block`, binds a width-4 `rmsnorm-gated-affine-residual-block-v1`
 profile into `config_commitment`, and checks the static program markers,
@@ -206,6 +213,9 @@ Evidence handles:
 - `docs/engineering/zkai-snarkjs-external-adapter-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.tsv`
+- `docs/engineering/zkai-jstprove-external-adapter-gate-2026-05-01.md`
+- `docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.json`
+- `docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.tsv`
 - `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv`
