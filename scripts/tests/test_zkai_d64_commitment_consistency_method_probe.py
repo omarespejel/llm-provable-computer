@@ -180,10 +180,60 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw_tmp:
             json_path = pathlib.Path(raw_tmp) / "probe.json"
             with (
-                mock.patch.object(pathlib.Path, "write_text", side_effect=OSError("disk full")),
+                mock.patch.object(PROBE.tempfile, "NamedTemporaryFile", side_effect=OSError("disk full")),
                 self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "failed to write"),
             ):
                 PROBE.write_outputs(payload, json_path, None)
+
+    def test_write_outputs_rolls_back_json_if_later_replace_fails(self) -> None:
+        payload = PROBE.build_probe()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "probe.json"
+            tsv_path = tmp / "probe.tsv"
+            json_path.write_text("old-json\n", encoding="utf-8")
+            tsv_path.write_text("old-tsv\n", encoding="utf-8")
+            original_replace = pathlib.Path.replace
+            calls = {"count": 0}
+
+            def fail_second_final_replace(self: pathlib.Path, target: pathlib.Path) -> pathlib.Path:
+                calls["count"] += 1
+                if target == tsv_path and ".backup." not in self.name:
+                    raise OSError("tsv replace failed")
+                return original_replace(self, target)
+
+            with (
+                mock.patch.object(pathlib.Path, "replace", new=fail_second_final_replace),
+                self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "failed to write"),
+            ):
+                PROBE.write_outputs(payload, json_path, tsv_path)
+
+            self.assertGreaterEqual(calls["count"], 2)
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
+    def test_checked_output_write_rejects_dirty_source_paths(self) -> None:
+        payload = PROBE.build_probe()
+        with (
+            mock.patch.object(PROBE, "_dirty_worktree_paths", return_value={pathlib.Path("scripts/changed.py")}),
+            self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "dirty worktree"),
+        ):
+            PROBE.write_outputs(payload, PROBE.JSON_OUT, PROBE.TSV_OUT)
+
+    def test_checked_output_write_allows_dirty_checked_outputs_only(self) -> None:
+        allowed = {
+            pathlib.Path("docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.json"),
+            pathlib.Path("docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.tsv"),
+        }
+        with mock.patch.object(PROBE, "_dirty_worktree_paths", return_value=allowed):
+            PROBE._guard_checked_output_write(PROBE.JSON_OUT, PROBE.TSV_OUT)
+
+    def test_temp_output_write_does_not_enforce_checked_artifact_guard(self) -> None:
+        payload = PROBE.build_probe()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            with mock.patch.object(PROBE, "_dirty_worktree_paths", side_effect=AssertionError("unexpected guard")):
+                PROBE.write_outputs(payload, tmp / "probe.json", tmp / "probe.tsv")
 
 
 if __name__ == "__main__":
