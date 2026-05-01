@@ -52,6 +52,7 @@ pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_DECISION: &str = "GO_PUBLIC_ROW_D64_RMSNOR
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_NEXT_BACKEND_STEP: &str =
     "move rms_q8 scalar sqrt/range relation from verifier-side recomputation into AIR-native bounded inequality or lookup argument";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_JSON_BYTES: usize = 1_048_576;
+pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES: usize = 1_048_576;
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const D64_RMSNORM_LOG_SIZE: u32 = 6;
@@ -75,6 +76,15 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not projection, activation, SwiGLU, down-projection, or residual proof",
     "rms_q8 scalar sqrt correctness is verifier-side checked over public rows, not yet AIR-native range proof",
     "not proof that private witness rows open to proof_native_parameter_commitment beyond public rms_scale_tree_root recomputation",
+    "not binding the full d64 output_activation_commitment from only RMSNorm local rows",
+];
+
+const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
+    "signed M31 bounds and checked i64 arithmetic for public-row relations",
+    "exact integer isqrt recomputation without floating-point sqrt",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing",
 ];
 
 #[derive(Debug, Clone)]
@@ -159,12 +169,12 @@ pub struct ZkAiD64RmsnormPublicRowProofInput {
     pub proof_native_parameter_commitment: String,
     pub normalization_config_commitment: String,
     pub input_activation_commitment: String,
-    pub output_activation_commitment: String,
     pub public_instance_commitment: String,
     pub statement_commitment: String,
     pub rms_scale_tree_root: String,
     pub rows: Vec<D64RmsnormPublicRow>,
     pub non_claims: Vec<String>,
+    pub proof_verifier_hardening: Vec<String>,
     pub next_backend_step: String,
     pub validation_commands: Vec<String>,
 }
@@ -279,6 +289,13 @@ fn validate_public_row_envelope(envelope: &ZkAiD64RmsnormPublicRowProofEnvelope)
     if envelope.proof.is_empty() {
         return Err(public_row_error("proof bytes must not be empty"));
     }
+    if envelope.proof.len() > ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES {
+        return Err(public_row_error(format!(
+            "proof bytes exceed bounded verifier limit: got {}, max {}",
+            envelope.proof.len(),
+            ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES
+        )));
+    }
     validate_public_row_input(&envelope.input)
 }
 
@@ -342,6 +359,11 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
         EXPECTED_NON_CLAIMS,
         "non claims",
     )?;
+    expect_str_set_eq(
+        input.proof_verifier_hardening.iter().map(String::as_str),
+        EXPECTED_PROOF_VERIFIER_HARDENING,
+        "proof verifier hardening",
+    )?;
     expect_eq(
         &input.next_backend_step,
         ZKAI_D64_RMSNORM_PUBLIC_ROW_NEXT_BACKEND_STEP,
@@ -360,12 +382,12 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
     let mut scale_values = Vec::with_capacity(input.rows.len());
     for (expected_index, row) in input.rows.iter().enumerate() {
         validate_row(row, expected_index, input.rms_q8)?;
-        sum_squares += row.input_square;
+        sum_squares = checked_add_i64(sum_squares, row.input_square, "sum square accumulation")?;
         input_values.push(row.input_q8);
         scale_values.push(row.rms_scale_q8);
     }
     expect_i64(input.sum_squares, sum_squares, "sum squares")?;
-    let average_square_floor = (sum_squares / ZKAI_D64_WIDTH as i64).max(1);
+    let average_square_floor = sum_squares / ZKAI_D64_WIDTH as i64;
     expect_i64(
         input.average_square_floor,
         average_square_floor,
@@ -401,26 +423,39 @@ fn validate_row(row: &D64RmsnormPublicRow, expected_index: usize, rms_q8: i64) -
     if rms_q8 <= 0 {
         return Err(public_row_error("rms_q8 must be positive"));
     }
+    expect_signed_m31(row.input_q8, "input q8")?;
+    expect_signed_m31(row.rms_scale_q8, "rms scale q8")?;
+    expect_signed_m31(row.input_square, "input square")?;
+    expect_signed_m31(row.scaled_floor, "scaled floor")?;
+    expect_signed_m31(row.scale_remainder, "scale remainder")?;
+    expect_signed_m31(row.normed_q8, "normed q8")?;
+    expect_signed_m31(row.norm_remainder, "norm remainder")?;
+    expect_signed_m31(row.rms_q8, "row rms q8")?;
+    if row.input_square < 0 {
+        return Err(public_row_error("input square must be non-negative"));
+    }
     expect_i64(row.rms_q8, rms_q8, "row rms q8")?;
     expect_i64(
         row.input_square,
-        row.input_q8 * row.input_q8,
+        checked_mul_i64(row.input_q8, row.input_q8, "input square")?,
         "input square",
     )?;
-    let scaled_product = row.input_q8 * row.rms_scale_q8;
-    expect_i64(
-        scaled_product,
-        row.scaled_floor * D64_Q8_SCALE + row.scale_remainder,
+    let scaled_product = checked_mul_i64(row.input_q8, row.rms_scale_q8, "scaled product")?;
+    let scaled_floor_product =
+        checked_mul_i64(row.scaled_floor, D64_Q8_SCALE, "scaled floor q8 product")?;
+    let scaled_relation_rhs = checked_add_i64(
+        scaled_floor_product,
+        row.scale_remainder,
         "scaled floor relation",
     )?;
+    expect_i64(scaled_product, scaled_relation_rhs, "scaled floor relation")?;
     if !(0..D64_Q8_SCALE).contains(&row.scale_remainder) {
         return Err(public_row_error("scale remainder is out of q8 range"));
     }
-    expect_i64(
-        row.scaled_floor * D64_Q8_SCALE,
-        row.normed_q8 * row.rms_q8 + row.norm_remainder,
-        "normed relation",
-    )?;
+    let normed_product = checked_mul_i64(row.normed_q8, row.rms_q8, "normed rms product")?;
+    let normed_relation_rhs =
+        checked_add_i64(normed_product, row.norm_remainder, "normed relation")?;
+    expect_i64(scaled_floor_product, normed_relation_rhs, "normed relation")?;
     if !(0..row.rms_q8).contains(&row.norm_remainder) {
         return Err(public_row_error("norm remainder is out of rms range"));
     }
@@ -465,7 +500,22 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
     let payload: D64RmsnormPublicRowProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     let stark_proof = payload.stark_proof;
-    let config = stark_proof.config;
+    let config = validate_public_row_pcs_config(stark_proof.config)?;
+    let component = public_row_component();
+    let sizes = component.trace_log_degree_bounds();
+    if sizes.len() != 2 {
+        return Err(public_row_error(format!(
+            "internal public-row component commitment count drift: got {}, expected 2",
+            sizes.len()
+        )));
+    }
+    if stark_proof.commitments.len() < sizes.len() {
+        return Err(public_row_error(format!(
+            "proof commitment count mismatch: got {}, expected {}",
+            stark_proof.commitments.len(),
+            sizes.len()
+        )));
+    }
     let expected_roots = public_row_commitment_roots(input, config);
     if stark_proof.commitments[0] != expected_roots[0] {
         return Err(public_row_error(
@@ -479,11 +529,26 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
     }
     let channel = &mut Blake2sM31Channel::default();
     let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
-    let component = public_row_component();
-    let sizes = component.trace_log_degree_bounds();
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
     Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
+}
+
+fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
+    let expected = PcsConfig::default();
+    if actual.pow_bits != expected.pow_bits
+        || actual.fri_config.log_blowup_factor != expected.fri_config.log_blowup_factor
+        || actual.fri_config.n_queries != expected.fri_config.n_queries
+        || actual.fri_config.log_last_layer_degree_bound
+            != expected.fri_config.log_last_layer_degree_bound
+        || actual.fri_config.fold_step != expected.fri_config.fold_step
+        || actual.lifting_log_size != expected.lifting_log_size
+    {
+        return Err(public_row_error(
+            "PCS config does not match d64 RMSNorm public-row verifier profile",
+        ));
+    }
+    Ok(expected)
 }
 
 fn public_row_commitment_roots(
@@ -574,10 +639,17 @@ fn field_i64(value: i64) -> BaseField {
 }
 
 fn integer_sqrt(value: i64) -> i64 {
-    if value <= 1 {
-        return 1;
+    if value <= 0 {
+        return 0;
     }
-    (value as f64).sqrt() as i64
+    let n = value as u128;
+    let mut x = n;
+    let mut y = (x + 1) / 2;
+    while y < x {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    x as i64
 }
 
 fn sequence_commitment(values: &[i64], domain: &str, width: usize) -> String {
@@ -713,6 +785,25 @@ fn expect_i64(actual: i64, expected: i64, label: &str) -> Result<()> {
     Ok(())
 }
 
+fn expect_signed_m31(value: i64, label: &str) -> Result<()> {
+    if value <= -M31_MODULUS || value >= M31_MODULUS {
+        return Err(public_row_error(format!(
+            "{label} is outside signed M31 verifier bound: {value}"
+        )));
+    }
+    Ok(())
+}
+
+fn checked_mul_i64(lhs: i64, rhs: i64, label: &str) -> Result<i64> {
+    lhs.checked_mul(rhs)
+        .ok_or_else(|| public_row_error(format!("{label} overflow")))
+}
+
+fn checked_add_i64(lhs: i64, rhs: i64, label: &str) -> Result<i64> {
+    lhs.checked_add(rhs)
+        .ok_or_else(|| public_row_error(format!("{label} overflow")))
+}
+
 fn expect_str_set_eq<'a>(
     actual: impl IntoIterator<Item = &'a str>,
     expected: &[&str],
@@ -822,6 +913,17 @@ mod tests {
     }
 
     #[test]
+    fn public_row_input_rejects_checked_integer_overflow_surface() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["rows"][0]["input_q8"] = Value::from(i64::MAX);
+        let error = zkai_d64_rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("signed M31 verifier bound"));
+    }
+
+    #[test]
     fn public_row_input_rejects_non_claim_drift() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["non_claims"]
@@ -843,5 +945,58 @@ mod tests {
         let last = envelope.proof.last_mut().expect("proof byte");
         *last ^= 1;
         assert!(verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).is_err());
+    }
+
+    #[test]
+    fn public_row_air_proof_rejects_short_commitment_vector() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d64_rmsnorm_public_row_envelope(&input).expect("public-row proof");
+        let mut payload: Value = serde_json::from_slice(&envelope.proof).expect("proof payload");
+        payload["stark_proof"]["commitments"]
+            .as_array_mut()
+            .expect("commitments")
+            .pop();
+        payload["stark_proof"]["commitments"]
+            .as_array_mut()
+            .expect("commitments")
+            .pop();
+        envelope.proof = serde_json::to_vec(&payload).expect("proof json");
+        let error = verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("proof commitment count"));
+    }
+
+    #[test]
+    fn public_row_air_proof_rejects_pcs_config_drift_before_root_recompute() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d64_rmsnorm_public_row_envelope(&input).expect("public-row proof");
+        let mut payload: Value = serde_json::from_slice(&envelope.proof).expect("proof payload");
+        let pow_bits = payload["stark_proof"]["config"]["pow_bits"]
+            .as_u64()
+            .expect("pow bits");
+        payload["stark_proof"]["config"]["pow_bits"] = Value::from(pow_bits + 1);
+        envelope.proof = serde_json::to_vec(&payload).expect("proof json");
+        let error = verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("PCS config"));
+    }
+
+    #[test]
+    fn public_row_air_proof_rejects_oversized_proof_before_deserialization() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d64_rmsnorm_public_row_envelope(&input).expect("public-row proof");
+        envelope.proof = vec![b'0'; ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES + 1];
+        let error = verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("proof bytes exceed"));
+    }
+
+    #[test]
+    fn exact_integer_sqrt_stays_bounded_without_floating_point() {
+        for value in [0, 1, 2, 3, 4, 13_272, i64::MAX] {
+            let root = integer_sqrt(value);
+            assert!((root as i128) * (root as i128) <= value as i128);
+            assert!(((root + 1) as i128) * ((root + 1) as i128) > value as i128);
+        }
     }
 }

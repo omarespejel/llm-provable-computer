@@ -32,6 +32,17 @@ verification:
 - sum of squares,
 - `rms_q8 = isqrt(floor(sum_squares / 64))`.
 
+The verifier hardening is intentionally fail-closed:
+
+- public-row arithmetic uses signed-M31 bounds and checked integer operations
+  before field encoding,
+- `rms_q8` is recomputed with exact integer arithmetic, not floating-point
+  square root,
+- the proof's PCS configuration must match the d64 public-row verifier profile
+  before commitment-root recomputation,
+- malformed proof commitment vectors are rejected before indexing,
+- proof bytes are bounded before JSON deserialization.
+
 ## Why This Matters
 
 This is the first step that crosses from "statement-bound zkAI target" into
@@ -55,6 +66,7 @@ The checked non-claims are:
 - `not projection, activation, SwiGLU, down-projection, or residual proof`
 - `rms_q8 scalar sqrt correctness is verifier-side checked over public rows, not yet AIR-native range proof`
 - `not proof that private witness rows open to proof_native_parameter_commitment beyond public rms_scale_tree_root recomputation`
+- `not binding the full d64 output_activation_commitment from only RMSNorm local rows`
 
 ## Evidence
 

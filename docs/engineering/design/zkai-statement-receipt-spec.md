@@ -354,7 +354,12 @@ The d64 RMSNorm public-row proof is the first native AIR proof on that path:
 Decision: `GO_PUBLIC_ROW_D64_RMSNORM_AIR_PROOF`. The proof binds the exact
 public `64`-coordinate RMSNorm rows as verifier-known preprocessed columns and
 proves the square, Q8 scale-division, and normalized-output equations in native
-Stwo AIR. This is still not a full d64 block proof and not a private-witness
-opening proof. The scalar `rms_q8 = isqrt(floor(sum_squares / 64))` relation is
-currently verifier-side checked over public rows; issue `#356` tracks moving
-that integer sqrt/range argument into AIR-native constraints.
+Stwo AIR. Its verifier enforces signed-M31 bounds with checked integer
+arithmetic, pins the expected PCS configuration, bounds proof bytes before
+deserialization, rejects malformed commitment-vector shapes before indexing,
+and recomputes `rms_q8` with exact integer arithmetic. This is still not a full
+d64 block proof, not a private-witness opening proof, and not a binding of the
+full d64 `output_activation_commitment` from only RMSNorm-local rows. The scalar
+`rms_q8 = isqrt(floor(sum_squares / 64))` relation is currently verifier-side
+checked over public rows; issue `#356` tracks moving that integer sqrt/range
+argument into AIR-native constraints.
