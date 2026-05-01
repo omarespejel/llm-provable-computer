@@ -16,6 +16,7 @@ import io
 import json
 import os
 import pathlib
+import platform
 import re
 import shutil
 import subprocess
@@ -31,12 +32,18 @@ TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-jstprove-shape-prob
 SCHEMA = "zkai-jstprove-shape-probe-v1"
 DECISION = "GO_OPERATOR_SUPPORT_SPLIT_NOT_TRANSFORMER_PROOF"
 SOURCE_DATE_EPOCH_DEFAULT = 0
-DEFAULT_WORK_DIR = pathlib.Path(os.environ.get("ZKAI_JSTPROVE_SHAPE_WORK_DIR", "/tmp/zkai-jstprove-shape-probe"))
+WORK_DIR_ENV = "ZKAI_JSTPROVE_SHAPE_WORK_DIR"
+DEFAULT_WORK_DIR_PREFIX = "zkai-jstprove-shape-probe-"
 JSTPROVE_BIN_ENV = "ZKAI_JSTPROVE_REMAINDER_BIN"
 GIT_COMMIT_ENV = "ZKAI_JSTPROVE_SHAPE_PROBE_GIT_COMMIT"
 JSTPROVE_COMMIT = "7c3cbbee83aaa01adde700673f00e317a4e902f9"
 REMAINDER_COMMIT = "06a5f406"
 OPSET = 17
+SOFTMAX_ALTERNATIVE_REFS = (
+    "origin/main-b",
+    "refs/tags/v2.12.1",
+    "origin/eliminate/relu-zero-delta-range-check",
+)
 
 EXPECTED_FIXTURE_ORDER = (
     "tiny_gemm",
@@ -136,6 +143,13 @@ def _git_commit() -> str:
     return completed.stdout.strip() or "unavailable"
 
 
+def _default_work_dir() -> pathlib.Path:
+    override = os.environ.get(WORK_DIR_ENV)
+    if override and override.strip():
+        return pathlib.Path(override.strip())
+    return pathlib.Path(tempfile.mkdtemp(prefix=DEFAULT_WORK_DIR_PREFIX))
+
+
 def fixture_catalog() -> list[dict[str, str]]:
     return [
         {
@@ -200,6 +214,17 @@ def _import_generation_deps():
             "shape generation requires onnx, numpy, and msgpack; run with the JSTprove ONNX Python environment"
         ) from err
     return msgpack, np, onnx, TensorProto, helper, numpy_helper
+
+
+def generator_dependency_versions() -> dict[str, str | int]:
+    msgpack, np, onnx, _tensor_proto, _helper, _numpy_helper = _import_generation_deps()
+    return {
+        "python": platform.python_version(),
+        "onnx": str(getattr(onnx, "__version__", "unknown")),
+        "numpy": str(getattr(np, "__version__", "unknown")),
+        "msgpack": str(getattr(msgpack, "version", getattr(msgpack, "__version__", "unknown"))),
+        "onnx_opset": OPSET,
+    }
 
 
 def write_fixture(fixture: str, out_dir: pathlib.Path) -> dict[str, int]:
@@ -551,6 +576,20 @@ def _source_git_commit(source_root: pathlib.Path) -> str:
     return completed.stdout.strip() or "unavailable"
 
 
+def _git_output(source_root: pathlib.Path, args: list[str]) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(source_root), *args],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return completed.stdout
+
+
 def softmax_source_probe(jstprove_bin: pathlib.Path) -> dict[str, Any]:
     candidate_root = _infer_jstprove_source_root(jstprove_bin)
     if candidate_root is None:
@@ -607,9 +646,70 @@ def softmax_source_probe(jstprove_bin: pathlib.Path) -> dict[str, Any]:
     }
 
 
+def softmax_alternative_ref_probe(source_root: str) -> list[dict[str, Any]]:
+    root = pathlib.Path(source_root) if source_root else None
+    if root is None or not (root / ".git").exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for ref in SOFTMAX_ALTERNATIVE_REFS:
+        commit = _git_output(root, ["rev-parse", "--verify", f"{ref}^{{commit}}"])
+        if commit is None:
+            rows.append(
+                {
+                    "ref": ref,
+                    "commit": "unavailable",
+                    "status": "REF_NOT_AVAILABLE",
+                    "remainder_softmax_hits": [],
+                    "observation": "The alternative ref was not available in the local JSTprove checkout.",
+                }
+            )
+            continue
+        grep = _git_output(root, ["grep", "-n", "Softmax\\|not yet constrained", ref, "--", ":(glob)*.rs"])
+        lines = [] if grep is None else grep.splitlines()
+        remainder_hits = []
+        for line in lines:
+            if "jstprove_remainder" not in line:
+                continue
+            parts = line.split(":", 3)
+            if len(parts) < 4:
+                continue
+            _raw_ref, path, line_number, text = parts
+            remainder_hits.append(
+                {
+                    "path": path,
+                    "line": int(line_number) if line_number.isdigit() else line_number,
+                    "text": text.strip()[:240],
+                }
+            )
+            if len(remainder_hits) >= 8:
+                break
+        has_refusal = any("not yet constrained" in hit["text"] for hit in remainder_hits)
+        has_remainder_softmax = any("Softmax" in hit["text"] for hit in remainder_hits)
+        if has_refusal:
+            status = "REMAINDER_SOFTMAX_STILL_REFUSED"
+        elif has_remainder_softmax:
+            status = "POSSIBLE_REMAINDER_SOFTMAX_PATH_FOUND"
+        else:
+            status = "NO_REMAINDER_SOFTMAX_PATH_FOUND"
+        rows.append(
+            {
+                "ref": ref,
+                "commit": commit.strip(),
+                "status": status,
+                "remainder_softmax_hits": remainder_hits,
+                "observation": (
+                    "Alternative ref keeps Softmax in a Remainder unconstrained-op refusal."
+                    if status == "REMAINDER_SOFTMAX_STILL_REFUSED"
+                    else "Alternative ref did not expose a constrained Remainder Softmax path in this source probe."
+                ),
+            }
+        )
+    return rows
+
+
 def run_shape_probe(*, jstprove_bin: pathlib.Path | None = None, work_dir: pathlib.Path | None = None) -> dict[str, Any]:
     resolved_bin = jstprove_bin or _resolve_jstprove_binary()
-    raw_work_dir = work_dir or DEFAULT_WORK_DIR
+    raw_work_dir = work_dir or _default_work_dir()
     raw_work_dir.mkdir(parents=True, exist_ok=True)
     results = [
         run_fixture(fixture, jstprove_bin=resolved_bin, work_dir=raw_work_dir) for fixture in EXPECTED_FIXTURE_ORDER
@@ -617,13 +717,16 @@ def run_shape_probe(*, jstprove_bin: pathlib.Path | None = None, work_dir: pathl
     dimension_sweep = run_gemm_dimension_sweep(jstprove_bin=resolved_bin, work_dir=raw_work_dir / "_gemm_dimension_sweep")
     relu_scaling = run_relu_scaling_probe(jstprove_bin=resolved_bin, work_dir=raw_work_dir / "_relu_scaling_probe")
     softmax_probe = softmax_source_probe(resolved_bin)
+    softmax_alternatives = softmax_alternative_ref_probe(str(softmax_probe.get("source_root", "")))
     return build_payload(
         results,
         jstprove_bin=resolved_bin,
         work_dir=raw_work_dir,
+        generator_dependencies=generator_dependency_versions(),
         dimension_sweep=dimension_sweep,
         relu_scaling_probe=relu_scaling,
         softmax_source=softmax_probe,
+        softmax_alternative_refs=softmax_alternatives,
     )
 
 
@@ -632,14 +735,17 @@ def build_payload(
     *,
     jstprove_bin: pathlib.Path,
     work_dir: pathlib.Path,
+    generator_dependencies: dict[str, str | int] | None = None,
     dimension_sweep: list[dict[str, Any]] | None = None,
     relu_scaling_probe: list[dict[str, Any]] | None = None,
     softmax_source: dict[str, Any] | None = None,
+    softmax_alternative_refs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     go_results = [item for item in results if item["status"] == "GO"]
     no_go_results = [item for item in results if item["status"] == "NO_GO"]
     dimension_sweep = dimension_sweep or []
     relu_scaling_probe = relu_scaling_probe or []
+    generator_dependencies = generator_dependencies or {}
     softmax_source = softmax_source or {
         "status": "SOURCE_NOT_RECORDED",
         "source_root": "",
@@ -648,10 +754,12 @@ def build_payload(
         "softmax_refusal_found": False,
         "observation": "Softmax source inspection was not recorded for this synthetic payload.",
     }
+    softmax_alternative_refs = softmax_alternative_refs or []
     exploration = {
         "dimension_sweep": dimension_sweep,
         "relu_scaling_probe": relu_scaling_probe,
         "softmax_source_probe": softmax_source,
+        "softmax_alternative_ref_probe": softmax_alternative_refs,
     }
     payload = {
         "schema": SCHEMA,
@@ -664,6 +772,7 @@ def build_payload(
             "remainder_dependency_commit": REMAINDER_COMMIT,
             "binary": str(jstprove_bin),
         },
+        "generator_dependencies": generator_dependencies,
         "work_dir": str(work_dir),
         "fixture_catalog": fixture_catalog(),
         "results": results,
@@ -671,6 +780,7 @@ def build_payload(
         "dimension_sweep": dimension_sweep,
         "relu_scaling_probe": relu_scaling_probe,
         "softmax_source_probe": softmax_source,
+        "softmax_alternative_ref_probe": softmax_alternative_refs,
         "exploration_commitment": blake2b_commitment(exploration, "ptvm:zkai:jstprove-shape-exploration:v1"),
         "conclusion": {
             "go_count": len(go_results),
@@ -679,13 +789,14 @@ def build_payload(
                 item["fixture"] for item in go_results if item["fixture"] in EXPECTED_GO_TRANSFORMER_ADJACENT
             ],
             "gemm_dimension_sweep": "GO_DIMS_1_2_4",
-            "relu_scaling": "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR",
+            "relu_scaling": "MAGNITUDE_SENSITIVE_BASELINE_FAILS_SCALED_VARIANTS_CLEAR",
             "softmax_source_check": softmax_source["status"],
+            "softmax_alternative_ref_check": "CHECKED_NO_CONSTRAINED_REMAINDER_SOFTMAX_PATH",
             "paper_usage": "engineering_context_only_not_transformer_proof_or_performance_benchmark",
             "interpretation": (
                 "JSTprove/Remainder can prove tiny projection, residual-add, and normalization-shaped fixtures, "
                 "but the checked Softmax, ReLU, and literal MatMul variants expose separate backend/operator blockers. "
-                "The ReLU blocker is input-dependent in this probe: scaled variants clear."
+                "The ReLU blocker is magnitude-sensitive in this probe: scaled variants clear."
             ),
         },
         "non_claims": [
@@ -709,6 +820,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "decision",
         "question",
         "jstprove",
+        "generator_dependencies",
         "work_dir",
         "fixture_catalog",
         "results",
@@ -716,6 +828,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "dimension_sweep",
         "relu_scaling_probe",
         "softmax_source_probe",
+        "softmax_alternative_ref_probe",
         "exploration_commitment",
         "conclusion",
         "non_claims",
@@ -727,6 +840,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "gemm_dimension_sweep",
         "relu_scaling",
         "softmax_source_check",
+        "softmax_alternative_ref_check",
         "paper_usage",
         "interpretation",
     }
@@ -736,12 +850,27 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise JstproveShapeProbeError("schema drift")
     if payload["decision"] != DECISION:
         raise JstproveShapeProbeError("decision drift")
+    jstprove = payload["jstprove"]
+    if jstprove.get("upstream_commit") != JSTPROVE_COMMIT:
+        raise JstproveShapeProbeError("JSTprove commit drift")
+    if jstprove.get("remainder_dependency_commit") != REMAINDER_COMMIT:
+        raise JstproveShapeProbeError("Remainder commit drift")
+    deps = payload["generator_dependencies"]
+    expected_deps = {"python", "onnx", "numpy", "msgpack", "onnx_opset"}
+    if set(deps) != expected_deps:
+        raise JstproveShapeProbeError("generator dependency field drift")
+    if deps["onnx_opset"] != OPSET:
+        raise JstproveShapeProbeError("ONNX opset drift")
+    for dep_name in expected_deps - {"onnx_opset"}:
+        if not isinstance(deps.get(dep_name), str) or not deps[dep_name]:
+            raise JstproveShapeProbeError("generator dependency version missing")
     if payload["results_commitment"] != blake2b_commitment(payload["results"], "ptvm:zkai:jstprove-shape-results:v1"):
         raise JstproveShapeProbeError("results commitment mismatch")
     exploration = {
         "dimension_sweep": payload["dimension_sweep"],
         "relu_scaling_probe": payload["relu_scaling_probe"],
         "softmax_source_probe": payload["softmax_source_probe"],
+        "softmax_alternative_ref_probe": payload["softmax_alternative_ref_probe"],
     }
     if payload["exploration_commitment"] != blake2b_commitment(
         exploration, "ptvm:zkai:jstprove-shape-exploration:v1"
@@ -804,6 +933,17 @@ def validate_payload(payload: dict[str, Any]) -> None:
             raise JstproveShapeProbeError("Softmax source refusal drift")
         if not payload["softmax_source_probe"].get("hits"):
             raise JstproveShapeProbeError("Softmax source hits missing")
+    if [item.get("ref") for item in payload["softmax_alternative_ref_probe"]] != list(SOFTMAX_ALTERNATIVE_REFS):
+        raise JstproveShapeProbeError("Softmax alternative ref probe drift")
+    for item in payload["softmax_alternative_ref_probe"]:
+        if item.get("status") not in {
+            "REMAINDER_SOFTMAX_STILL_REFUSED",
+            "POSSIBLE_REMAINDER_SOFTMAX_PATH_FOUND",
+            "NO_REMAINDER_SOFTMAX_PATH_FOUND",
+        }:
+            raise JstproveShapeProbeError("Softmax alternative status drift")
+    if any(item.get("status") == "POSSIBLE_REMAINDER_SOFTMAX_PATH_FOUND" for item in payload["softmax_alternative_ref_probe"]):
+        raise JstproveShapeProbeError("Softmax alternative constrained-path claim needs manual gate")
 
     conclusion = payload["conclusion"]
     if set(conclusion) != expected_conclusion_fields:
@@ -816,8 +956,10 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise JstproveShapeProbeError("transformer-adjacent GO drift")
     if conclusion["gemm_dimension_sweep"] != "GO_DIMS_1_2_4":
         raise JstproveShapeProbeError("Gemm dimension conclusion drift")
-    if conclusion["relu_scaling"] != "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR":
+    if conclusion["relu_scaling"] != "MAGNITUDE_SENSITIVE_BASELINE_FAILS_SCALED_VARIANTS_CLEAR":
         raise JstproveShapeProbeError("ReLU scaling conclusion drift")
+    if conclusion["softmax_alternative_ref_check"] != "CHECKED_NO_CONSTRAINED_REMAINDER_SOFTMAX_PATH":
+        raise JstproveShapeProbeError("Softmax alternative conclusion drift")
     required_non_claims = {
         "not a JSTprove security finding",
         "not a full transformer proof",
@@ -865,7 +1007,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jstprove-bin", type=pathlib.Path, help=f"path to jstprove-remainder; defaults to ${JSTPROVE_BIN_ENV} or PATH")
-    parser.add_argument("--work-dir", type=pathlib.Path, default=DEFAULT_WORK_DIR, help="temporary fixture/proof work directory")
+    parser.add_argument(
+        "--work-dir",
+        type=pathlib.Path,
+        help=f"temporary fixture/proof work directory; defaults to ${WORK_DIR_ENV} or a unique temp directory",
+    )
     parser.add_argument("--write-json", type=pathlib.Path, help="write checked JSON evidence")
     parser.add_argument("--write-tsv", type=pathlib.Path, help="write checked TSV evidence")
     parser.add_argument("--json", action="store_true", help="print JSON to stdout")
