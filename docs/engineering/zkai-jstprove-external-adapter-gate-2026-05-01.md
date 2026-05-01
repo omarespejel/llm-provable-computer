@@ -149,6 +149,21 @@ Those results are useful engineering context but not publication evidence for
 this adapter. The checked `tiny_gemm` fixture keeps the external verifier real
 while keeping the repository artifact small enough to audit.
 
+The follow-up shape probe is intentionally kept out of this statement-binding
+PR, but it produced useful scoping data for issue #360:
+
+- `Gemm -> ReLU` compiled, but witness generation failed with
+  `Relu layer node_1 delta nv 19 exceeds two-chunk range-check capacity (max 18 bits)`.
+- `Gemm -> Add` proved and verified with a compressed proof of `36,309` bytes
+  after a `0.94 s` proof-generation run on the same host.
+- `Gemm -> BatchNormalization` proved and verified with a compressed proof of
+  `52,034` bytes after a `2.75 s` proof-generation run on the same host.
+
+Interpretation: the checked adapter result should stay scoped to statement
+binding over a small verifier-facing JSTprove artifact. JSTprove/Remainder shape
+support and proof-size pressure remain a separate research axis, not a hidden
+claim inside this adapter gate.
+
 ## Validation
 
 Final validation used for this gate:
