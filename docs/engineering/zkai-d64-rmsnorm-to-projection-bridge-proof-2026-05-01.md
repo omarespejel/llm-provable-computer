@@ -77,8 +77,10 @@ This closes the most immediate #358 self-deception risk: the RMSNorm-local outpu
 is now consumed by a next proof surface instead of being verbally treated as the
 full block output. The follow-up gate/value projection proof now consumes
 `projection_input_row_commitment` and emits a domain-separated
-`gate_value_projection_output_commitment`; the remaining full-block seams are
-activation/SwiGLU, down projection, and residual closure.
+`gate_value_projection_output_commitment`; the follow-up activation/SwiGLU proof
+then consumes that output and emits a domain-separated
+`hidden_activation_commitment`. The remaining full-block seams are down
+projection and residual closure.
 
 ## Reproduce
 
@@ -93,6 +95,7 @@ cargo +nightly-2025-07-14 test d64_native_rmsnorm_to_projection_bridge_proof --l
 
 ## Next step
 
-Implement the activation/SwiGLU slice that consumes
-`gate_value_projection_output_commitment`. Do not claim the full d64 output until
-down-projection and residual rows are also proven or explicitly source-bound.
+The activation/SwiGLU slice is now recorded in
+`docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`. Do not claim
+the full d64 output until down-projection and residual rows are also proven or
+explicitly source-bound.

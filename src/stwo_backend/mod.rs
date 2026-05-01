@@ -3,6 +3,8 @@ mod adapter;
 mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
+#[cfg(feature = "stwo-backend")]
+mod d64_native_activation_swiglu_proof;
 mod d64_native_export_contract;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_gate_value_projection_proof;
@@ -76,6 +78,18 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_activation_swiglu_proof::{
+    prove_zkai_d64_activation_swiglu_envelope, verify_zkai_d64_activation_swiglu_envelope,
+    zkai_d64_activation_swiglu_input_from_json_str, D64ActivationSwiGluRow,
+    ZkAiD64ActivationSwiGluEnvelope, ZkAiD64ActivationSwiGluProofInput,
+    ZKAI_D64_ACTIVATION_OUTPUT_COMMITMENT, ZKAI_D64_ACTIVATION_SWIGLU_DECISION,
+    ZKAI_D64_ACTIVATION_SWIGLU_INPUT_DECISION, ZKAI_D64_ACTIVATION_SWIGLU_INPUT_SCHEMA,
+    ZKAI_D64_ACTIVATION_SWIGLU_MAX_JSON_BYTES, ZKAI_D64_ACTIVATION_SWIGLU_NEXT_BACKEND_STEP,
+    ZKAI_D64_ACTIVATION_SWIGLU_PROOF_VERSION, ZKAI_D64_ACTIVATION_SWIGLU_ROW_COMMITMENT,
+    ZKAI_D64_ACTIVATION_SWIGLU_SEMANTIC_SCOPE, ZKAI_D64_ACTIVATION_SWIGLU_STATEMENT_VERSION,
+    ZKAI_D64_HIDDEN_ACTIVATION_COMMITMENT,
 };
 pub use d64_native_export_contract::{
     zkai_d64_native_export_contract_from_oracle_json_str,

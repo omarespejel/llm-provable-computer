@@ -436,9 +436,22 @@ multiplication rows in native Stwo AIR, recomputes the gate and value matrix
 roots from checked row weights, recomputes the gate/value output commitments,
 and emits `gate_value_projection_output_commitment`. The verifier rejects
 attempts to relabel that commitment as the full d64
-`output_activation_commitment`. The remaining native-proof seam is now
-activation/SwiGLU, down projection, and residual closure before claiming
-full-block output binding.
+`output_activation_commitment`.
+
+The d64 activation/SwiGLU proof consumes that gate/value surface:
+
+- `docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_activation_swiglu_proof.rs`
+
+Decision: `GO_D64_ACTIVATION_SWIGLU_AIR_PROOF`. The proof consumes
+`gate_value_projection_output_commitment`, checks `256` activation/SwiGLU rows
+in native Stwo AIR, recomputes the bounded activation lookup commitment, and
+emits a domain-separated `hidden_activation_commitment`. The verifier rejects
+attempts to relabel that hidden activation as the full d64
+`output_activation_commitment`. The remaining native-proof seam is now down
+projection and residual closure before claiming full-block output binding.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 
