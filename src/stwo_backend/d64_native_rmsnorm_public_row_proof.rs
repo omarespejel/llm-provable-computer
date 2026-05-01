@@ -7,7 +7,6 @@ use stwo::core::air::Component;
 use stwo::core::channel::Blake2sM31Channel;
 use stwo::core::fields::m31::BaseField;
 use stwo::core::fields::qm31::SecureField;
-use stwo::core::fri::FriConfig;
 use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig};
 use stwo::core::poly::circle::CanonicCoset;
 use stwo::core::proof::StarkProof;
@@ -658,28 +657,12 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
 }
 
 fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
-    let expected = public_row_pcs_config();
-    if actual.pow_bits != expected.pow_bits
-        || actual.fri_config.log_blowup_factor != expected.fri_config.log_blowup_factor
-        || actual.fri_config.n_queries != expected.fri_config.n_queries
-        || actual.fri_config.log_last_layer_degree_bound
-            != expected.fri_config.log_last_layer_degree_bound
-        || actual.fri_config.fold_step != expected.fri_config.fold_step
-        || actual.lifting_log_size != expected.lifting_log_size
-    {
-        return Err(public_row_error(
-            "PCS config does not match d64 RMSNorm public-row verifier profile",
-        ));
-    }
-    Ok(expected)
+    super::validate_publication_v1_pcs_config(actual, "d64 RMSNorm public-row proof")
+        .map_err(|error| public_row_error(error.to_string()))
 }
 
 fn public_row_pcs_config() -> PcsConfig {
-    PcsConfig {
-        pow_bits: 10,
-        fri_config: FriConfig::new(0, 1, 3, 1),
-        lifting_log_size: None,
-    }
+    super::publication_v1_pcs_config()
 }
 
 fn public_row_commitment_roots(
@@ -1027,6 +1010,24 @@ mod tests {
             prove_zkai_d64_rmsnorm_public_row_envelope(&input).expect("public-row proof");
         assert!(!envelope.proof.is_empty());
         assert!(verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).expect("verify"));
+    }
+
+    #[test]
+    fn public_row_pcs_config_uses_shared_publication_v1_profile() {
+        let actual = public_row_pcs_config();
+        let expected = crate::stwo_backend::publication_v1_pcs_config();
+        assert_eq!(actual.pow_bits, expected.pow_bits);
+        assert_eq!(
+            actual.fri_config.log_blowup_factor,
+            expected.fri_config.log_blowup_factor
+        );
+        assert_eq!(actual.fri_config.n_queries, expected.fri_config.n_queries);
+        assert_eq!(
+            actual.fri_config.log_last_layer_degree_bound,
+            expected.fri_config.log_last_layer_degree_bound
+        );
+        assert_eq!(actual.fri_config.fold_step, expected.fri_config.fold_step);
+        assert_eq!(actual.lifting_log_size, expected.lifting_log_size);
     }
 
     #[test]
