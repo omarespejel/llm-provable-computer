@@ -21,26 +21,41 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
     def setUp(self) -> None:
         patcher = mock.patch.dict(
             PROBE.os.environ,
-            {"ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": "a" * 40},
+            {
+                "SOURCE_DATE_EPOCH": "0",
+                "ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": "a" * 40,
+            },
         )
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_git_commit_honors_probe_specific_override(self) -> None:
+        raw_commit = "ABCDEF0123456789ABCDEF0123456789ABCDEF01"
         with mock.patch.dict(
             PROBE.os.environ,
-            {"ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": "ABCDEF"},
+            {
+                "SOURCE_DATE_EPOCH": "0",
+                "ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": raw_commit,
+            },
             clear=True,
         ):
-            self.assertEqual(PROBE._git_commit(), "abcdef")
+            payload = PROBE.build_probe()
+            PROBE.validate_probe(payload)
+            self.assertEqual(payload["git_commit"], raw_commit.lower())
 
     def test_git_commit_honors_external_adapter_override_alias(self) -> None:
+        raw_commit = "1234ABCD1234ABCD1234ABCD1234ABCD1234ABCD"
         with mock.patch.dict(
             PROBE.os.environ,
-            {"ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT": "1234ABCD"},
+            {
+                "SOURCE_DATE_EPOCH": "0",
+                "ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT": raw_commit,
+            },
             clear=True,
         ):
-            self.assertEqual(PROBE._git_commit(), "1234abcd")
+            payload = PROBE.build_probe()
+            PROBE.validate_probe(payload)
+            self.assertEqual(payload["git_commit"], raw_commit.lower())
 
     def test_git_commit_returns_dirty_sentinel(self) -> None:
         with (
@@ -48,6 +63,31 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
             mock.patch.object(PROBE, "_dirty_worktree_paths", return_value={pathlib.Path("scripts/changed.py")}),
         ):
             self.assertEqual(PROBE._git_commit(), PROBE.DIRTY_GIT_COMMIT)
+
+    def test_git_commit_treats_dirty_checked_outputs_as_clean_enough(self) -> None:
+        allowed = {
+            pathlib.Path("docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.json"),
+            pathlib.Path("docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.tsv"),
+        }
+        completed = mock.Mock(stdout="b" * 40 + "\n")
+        with (
+            mock.patch.dict(PROBE.os.environ, {}, clear=True),
+            mock.patch.object(PROBE, "_dirty_worktree_paths", return_value=allowed),
+            mock.patch.object(PROBE.subprocess, "run", return_value=completed),
+        ):
+            self.assertEqual(PROBE._git_commit(), "b" * 40)
+
+    def test_git_commit_timeout_returns_unavailable(self) -> None:
+        with (
+            mock.patch.dict(PROBE.os.environ, {}, clear=True),
+            mock.patch.object(PROBE, "_dirty_worktree_paths", return_value=set()),
+            mock.patch.object(
+                PROBE.subprocess,
+                "run",
+                side_effect=PROBE.subprocess.TimeoutExpired(["git"], PROBE.GIT_TIMEOUT_SECONDS),
+            ),
+        ):
+            self.assertEqual(PROBE._git_commit(), "unavailable")
 
     def test_selects_dual_commitment_as_next_pr_method(self) -> None:
         payload = PROBE.build_probe()

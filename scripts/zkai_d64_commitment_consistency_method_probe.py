@@ -37,6 +37,7 @@ SCHEMA = "zkai-d64-commitment-consistency-method-probe-v1"
 DECISION = "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT"
 SOURCE_DATE_EPOCH_DEFAULT = 0
 DIRTY_GIT_COMMIT = "dirty"
+GIT_TIMEOUT_SECONDS = 10
 GIT_COMMIT_OVERRIDE_ENVS = (
     "ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT",
     "ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT",
@@ -129,7 +130,7 @@ def _git_commit() -> str:
         if override and override.strip():
             return override.strip().lower()
     try:
-        if _dirty_worktree_paths():
+        if _unexpected_dirty_paths(_dirty_worktree_paths()):
             return DIRTY_GIT_COMMIT
     except CommitmentConsistencyProbeError:
         return "unavailable"
@@ -140,8 +141,9 @@ def _git_commit() -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
         )
-    except (OSError, subprocess.CalledProcessError):
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return "unavailable"
     return completed.stdout.strip() or "unavailable"
 
@@ -168,8 +170,9 @@ def _dirty_worktree_paths() -> set[pathlib.Path]:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 text=True,
+                timeout=GIT_TIMEOUT_SECONDS,
             )
-        except (OSError, subprocess.CalledProcessError) as err:
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as err:
             raise CommitmentConsistencyProbeError("failed to inspect git worktree cleanliness") from err
         dirty.update(pathlib.Path(line) for line in completed.stdout.splitlines() if line)
     return dirty
@@ -181,16 +184,22 @@ def _is_checked_output_path(path: pathlib.Path | None) -> bool:
     return path.resolve() in {JSON_OUT.resolve(), TSV_OUT.resolve()}
 
 
-def _guard_checked_output_write(json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
-    if not (_is_checked_output_path(json_path) or _is_checked_output_path(tsv_path)):
-        return
-    allowed_dirty = {
+def _checked_output_relative_paths() -> set[pathlib.Path]:
+    return {
         path
         for path in (_repo_relative(JSON_OUT), _repo_relative(TSV_OUT))
         if path is not None
     }
-    dirty = _dirty_worktree_paths()
-    unexpected = sorted(str(path) for path in dirty - allowed_dirty)
+
+
+def _unexpected_dirty_paths(dirty: set[pathlib.Path]) -> set[pathlib.Path]:
+    return dirty - _checked_output_relative_paths()
+
+
+def _guard_checked_output_write(json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    if not (_is_checked_output_path(json_path) or _is_checked_output_path(tsv_path)):
+        return
+    unexpected = sorted(str(path) for path in _unexpected_dirty_paths(_dirty_worktree_paths()))
     if unexpected:
         preview = ", ".join(unexpected[:8])
         suffix = "" if len(unexpected) <= 8 else f", ... ({len(unexpected)} total)"
