@@ -163,6 +163,12 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
             FIXTURE.validate_payload(payload)
 
         payload = FIXTURE.build_fixture()
+        payload["generated_at"] = "not-a-timestampZ"
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "generated_at"):
+            FIXTURE.validate_payload(payload)
+
+        payload = FIXTURE.build_fixture()
         payload["git_commit"] = ""
 
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "git_commit"):
