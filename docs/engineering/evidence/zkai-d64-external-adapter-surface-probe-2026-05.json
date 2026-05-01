@@ -128,7 +128,7 @@
     "max_abs_output_delta_q8": 10
   },
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "a653a8bd16cffdc1aac2dcb3ebcb3d3b6fb066ea",
+  "git_commit": "4a28a5c5f2b648a36eef74da706c7946bb33d6c0",
   "non_claims": [
     "not an EZKL security finding",
     "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",
@@ -142,12 +142,12 @@
     "decision": "GO_STATEMENT_TARGET_PINNED_NOT_PROVEN",
     "mutation_suite": {
       "decision": "GO",
-      "mutations_checked": 14,
-      "mutations_rejected": 14
+      "mutations_checked": 15,
+      "mutations_rejected": 15
     },
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
-    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
-    "statement_commitment": "blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6"
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247"
   },
   "target": {
     "activation": "bounded_integer_silu_lookup_for_swiglu",
@@ -158,13 +158,13 @@
     "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
     "normalization": "RMSNorm",
     "projection_weight_scalars": 49152,
-    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
     "residual": true,
     "rms_scale_scalars": 64,
     "rms_square_rows": 64,
     "statement_kind": "transformer-block",
     "swiglu_gate_muls": 256,
-    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "target_id": "rmsnorm-swiglu-residual-d64-v2",
     "total_committed_parameter_scalars": 49216,
     "width": 64
   }
