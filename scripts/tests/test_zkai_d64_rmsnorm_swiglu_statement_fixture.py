@@ -112,7 +112,23 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         mutated["statement_commitment"] = FIXTURE._statement_commitment_from_payload(mutated)
 
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "model_id"):
-            FIXTURE.run_mutation_suite(mutated)
+            FIXTURE.validate_statement(mutated)
+
+    def test_rows_for_tsv_rejects_stale_top_level_target(self) -> None:
+        payload = FIXTURE.build_fixture()
+        payload["target"]["width"] = 65
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "canonical target_spec"):
+            FIXTURE.rows_for_tsv(payload)
+
+    def test_write_outputs_rejects_stale_mutation_suite(self) -> None:
+        payload = FIXTURE.build_fixture()
+        payload["mutation_suite"]["mutations_rejected"] = 0
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "mutation_suite"):
+                FIXTURE.write_outputs(payload, tmp / "fixture.json", tmp / "fixture.tsv")
 
     def test_statement_binding_rejects_proof_status_overclaim(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
