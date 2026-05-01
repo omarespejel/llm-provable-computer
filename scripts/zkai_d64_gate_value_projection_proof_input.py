@@ -145,13 +145,16 @@ def require_signed_m31(value: int, label: str) -> None:
 
 def load_bridge(path: pathlib.Path = BRIDGE_JSON) -> dict[str, Any]:
     try:
-        source_size = path.stat().st_size
-        if source_size > MAX_BRIDGE_JSON_BYTES:
+        if not path.is_file():
+            raise GateValueProjectionInputError(f"source bridge evidence is not a regular file: {path}")
+        with path.open("rb") as source_file:
+            source_bytes = source_file.read(MAX_BRIDGE_JSON_BYTES + 1)
+        if len(source_bytes) > MAX_BRIDGE_JSON_BYTES:
             raise GateValueProjectionInputError(
-                f"source bridge evidence exceeds max size: got {source_size} bytes, limit {MAX_BRIDGE_JSON_BYTES} bytes"
+                f"source bridge evidence exceeds max size: got at least {len(source_bytes)} bytes, limit {MAX_BRIDGE_JSON_BYTES} bytes"
             )
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as err:
+        payload = json.loads(source_bytes.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
         raise GateValueProjectionInputError(f"failed to load RMSNorm-to-projection bridge evidence: {err}") from err
     validate_bridge(payload)
     return payload

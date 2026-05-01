@@ -89,6 +89,18 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "exceeds max size"):
                 GATE_VALUE.load_bridge(source_path)
 
+    def test_load_bridge_rejects_non_file_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "regular file"):
+                GATE_VALUE.load_bridge(pathlib.Path(tmp))
+
+    def test_load_bridge_rejects_invalid_utf8_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source_path = pathlib.Path(tmp) / "invalid-utf8.json"
+            source_path.write_bytes(b"\xff")
+            with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "failed to load"):
+                GATE_VALUE.load_bridge(source_path)
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory() as tmp:
