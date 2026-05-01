@@ -36,6 +36,11 @@ TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-commitment-cons
 SCHEMA = "zkai-d64-commitment-consistency-method-probe-v1"
 DECISION = "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT"
 SOURCE_DATE_EPOCH_DEFAULT = 0
+DIRTY_GIT_COMMIT = "dirty"
+GIT_COMMIT_OVERRIDE_ENVS = (
+    "ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT",
+    "ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT",
+)
 
 EXPECTED_MATRIX_ROW_LEAVES = 576
 EXPECTED_PARAMETER_SCALARS = 49_216
@@ -119,6 +124,15 @@ def _validate_generated_at(value: Any) -> None:
 
 
 def _git_commit() -> str:
+    for env_name in GIT_COMMIT_OVERRIDE_ENVS:
+        override = os.environ.get(env_name)
+        if override and override.strip():
+            return override.strip().lower()
+    try:
+        if _dirty_worktree_paths():
+            return DIRTY_GIT_COMMIT
+    except CommitmentConsistencyProbeError:
+        return "unavailable"
     try:
         completed = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -447,7 +461,7 @@ def validate_probe(payload: dict[str, Any]) -> None:
     git_commit = payload["git_commit"]
     if not isinstance(git_commit, str) or not git_commit:
         raise CommitmentConsistencyProbeError("git_commit must be a non-empty string")
-    if git_commit != "unavailable" and (
+    if git_commit not in {"unavailable", DIRTY_GIT_COMMIT} and (
         len(git_commit) != 40 or any(char not in "0123456789abcdef" for char in git_commit)
     ):
         raise CommitmentConsistencyProbeError("git_commit must be a full lowercase hex commit hash")
@@ -601,6 +615,8 @@ def _atomic_write_pair(files: list[tuple[pathlib.Path, str]]) -> None:
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_probe(payload)
+    if payload["git_commit"] == DIRTY_GIT_COMMIT:
+        raise CommitmentConsistencyProbeError("refuse to write commitment-consistency evidence from dirty worktree")
     rows = rows_for_tsv(payload, validated=True)
     _guard_checked_output_write(json_path, tsv_path)
     files: list[tuple[pathlib.Path, str]] = []
