@@ -39,6 +39,22 @@ SIGNED_M31_ABS_LIMIT = 2**30 - 1
 EXPECTED_TOTAL_PROJECTION_MUL_ROWS = 49_152
 EXPECTED_ACTIVATION_TABLE_ROWS = 2_049
 EXPECTED_TRACE_ROWS_EXCLUDING_STATIC_TABLE = 49_920
+PUBLIC_INSTANCE_FIELDS = (
+    "target_id",
+    "width",
+    "ff_dim",
+    "input_activation_commitment",
+    "output_activation_commitment",
+    "model_config_commitment",
+    "proof_native_parameter_commitment",
+)
+BOUND_STATEMENT_FIELDS = (
+    *PUBLIC_INSTANCE_FIELDS,
+    "public_instance_commitment",
+    "statement_commitment",
+    "verifier_domain",
+    "proof_system_version_required",
+)
 
 TSV_COLUMNS = (
     "target_id",
@@ -380,19 +396,7 @@ def proof_public_instance_contract(fixture: dict[str, Any]) -> dict[str, Any]:
         "public_instance": public_instance,
         "public_instance_commitment": public_instance_commitment,
         "statement_commitment": statement["statement_commitment"],
-        "bound_statement_fields": [
-            "target_id",
-            "width",
-            "ff_dim",
-            "model_config_commitment",
-            "proof_native_parameter_commitment",
-            "input_activation_commitment",
-            "output_activation_commitment",
-            "public_instance_commitment",
-            "statement_commitment",
-            "verifier_domain",
-            "proof_system_version_required",
-        ],
+        "bound_statement_fields": list(BOUND_STATEMENT_FIELDS),
         "proof_native_parameter_commitment": statement["proof_native_parameter_commitment"],
         "non_claim": "This is a proof-public-instance contract, not a native Stwo proof.",
     }
@@ -415,6 +419,11 @@ def validate_proof_public_instance_contract(contract: dict[str, Any], fixture: d
     }
     if set(contract) != expected_fields:
         raise D64VectorRowSurfaceError("proof public-instance contract field set mismatch")
+    public_instance = contract["public_instance"]
+    if not isinstance(public_instance, dict) or set(public_instance) != set(PUBLIC_INSTANCE_FIELDS):
+        raise D64VectorRowSurfaceError("proof public-instance field set mismatch")
+    if contract["bound_statement_fields"] != list(BOUND_STATEMENT_FIELDS):
+        raise D64VectorRowSurfaceError("proof public-instance bound field drift")
     fixture = FIXTURE.build_fixture() if fixture is None else fixture
     expected = proof_public_instance_contract(fixture)
     if contract != expected:

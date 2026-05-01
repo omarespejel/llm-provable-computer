@@ -46,7 +46,7 @@
   ],
   "decision_matrix_commitment": "blake2b-256:3be169743e0287f5aa5b91402cec1b5f3af893476a878c121c826e6ab665c797",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "0064e789804efedd05ce14e075ce15b93062c2b6",
+  "git_commit": "ae1bd8ccf8c20b6626e6a4c464544e47fe75f3b5",
   "issue_scope": {
     "closes_related_issue": false,
     "missing_for_issue_go": [
@@ -76,10 +76,10 @@
       "target_id",
       "width",
       "ff_dim",
-      "model_config_commitment",
-      "proof_native_parameter_commitment",
       "input_activation_commitment",
       "output_activation_commitment",
+      "model_config_commitment",
+      "proof_native_parameter_commitment",
       "public_instance_commitment",
       "statement_commitment",
       "verifier_domain",
