@@ -1,0 +1,116 @@
+{
+  "adapter_bar": [
+    {
+      "criterion": "public_verifier",
+      "description": "A runnable verifier command or API is publicly available for the claimed proof object."
+    },
+    {
+      "criterion": "public_baseline_artifact",
+      "description": "A proof artifact plus verifier inputs are public enough to reproduce baseline acceptance."
+    },
+    {
+      "criterion": "statement_surface",
+      "description": "The accepted object exposes model/input/output/config/setup/domain labels that can be mutated."
+    },
+    {
+      "criterion": "local_or_scripted_reproduction",
+      "description": "The baseline verification and relabeling mutations can be reproduced from a checked command."
+    }
+  ],
+  "conclusion": {
+    "benchmark_result": "NOT_RUN",
+    "paper_usage": "source_backed_context_only_not_empirical_adapter_row",
+    "why": "Both candidates are relevant field context, but neither currently exposes the public proof artifact plus verifier inputs required for a reproducible relabeling adapter."
+  },
+  "decision": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "cfa331be04c7cfe7dd5345bcd95a2552714539e8",
+  "non_claims": [
+    "not a DeepProve-1 soundness finding",
+    "not a NANOZK soundness finding",
+    "not evidence that either system is insecure",
+    "not evidence that either system lacks statement binding internally",
+    "not a matched performance benchmark",
+    "not a claim that future public artifacts will fail the relabeling benchmark"
+  ],
+  "question": "Can DeepProve-1 or NANOZK be run through the same zkAI statement-relabeling benchmark used for EZKL, snarkjs, and native Stwo adapters?",
+  "schema": "zkai-deepprove-nanozk-adapter-feasibility-v1",
+  "systems": [
+    {
+      "adapter_gate": "NO_GO_PUBLIC_GPT2_ARTIFACT_NOT_REPRODUCIBLE",
+      "baseline_verification_reproducible": false,
+      "claim_scope": "reported full GPT-2 inference proof and transformer graph/layer support",
+      "next_action": "Revisit if Lagrange publishes a DeepProve-1 proof package with proof bytes, verifier inputs, model/input/output commitments, and a runnable verifier command.",
+      "primary_blocker": "The public deep-prove repository exposes research code and MLP/CNN benchmark paths, but this probe did not find a public DeepProve-1 GPT-2 proof artifact plus verifier test vector matching the blog claim.",
+      "public_proof_artifact_available": false,
+      "public_verifier_available": "PARTIAL_PUBLIC_REPO_API_NOT_MATCHED_TO_DEEPPROVE1_ARTIFACT",
+      "relabeling_benchmark_run": false,
+      "source_inspection": {
+        "checked_commit": "7d21c35e5e1cb006e413f4a9676333e9e1506a87",
+        "clone_command": "git clone --depth 1 https://github.com/Lagrange-Labs/deep-prove.git",
+        "deep_prove_1_gpt2_artifacts_found": [],
+        "nearby_llm_file": "zkml/assets/scripts/llms/gpt2_internal.py",
+        "public_repo_readme_scope": "MLP/CNN public benchmark path; zkml README says supported layers are dense, ReLU, maxpool, and convolution",
+        "why_nearby_file_is_insufficient": "The script dumps GPT-2 internals, but it is not a public proof artifact, verification key, or reproducible DeepProve-1 proof verifier input."
+      },
+      "sources": [
+        {
+          "label": "DeepProve-1 blog",
+          "url": "https://lagrange.dev/blog/deepprove-1",
+          "used_for": "claim scope and transformer-feature context"
+        },
+        {
+          "checked_commit": "7d21c35e5e1cb006e413f4a9676333e9e1506a87",
+          "label": "deep-prove public repository",
+          "url": "https://github.com/Lagrange-Labs/deep-prove",
+          "used_for": "public artifact and verifier-surface inspection"
+        }
+      ],
+      "system": "DeepProve-1"
+    },
+    {
+      "adapter_gate": "NO_GO_NO_PUBLIC_VERIFIER_OR_PROOF_ARTIFACT",
+      "baseline_verification_reproducible": false,
+      "claim_scope": "reported layerwise constant-size transformer proofs up to d=128",
+      "next_action": "Revisit if a NANOZK repository, artifact bundle, or verifier command is published; until then use NANOZK only as source-backed field context.",
+      "primary_blocker": "The arXiv paper/source exposes the method, theorem framing, and reported numbers, but this probe did not find a public verifier implementation or proof artifact for baseline acceptance and relabeling mutations.",
+      "public_proof_artifact_available": false,
+      "public_verifier_available": false,
+      "relabeling_benchmark_run": false,
+      "source_inspection": {
+        "direct_code_links_found": [
+          "https://github.com/zkonduit/ezkl",
+          "https://github.com/zcash/halo2"
+        ],
+        "download_command": "curl -fsSL https://arxiv.org/e-print/2603.18046 -o nanozk-src.tar",
+        "source_files": [
+          "00README.json",
+          "fancyhdr.sty",
+          "iclr2026_conference.bst",
+          "iclr2026_conference.sty",
+          "main.bbl",
+          "main.tex",
+          "natbib.sty",
+          "references.bib"
+        ],
+        "source_sha256": "c505715f18d2bbb8dc01852a764b171984eb51f54a74d03790e29294e78ef2b4",
+        "why_direct_code_links_are_insufficient": "The source links dependency projects, not a NANOZK proof artifact, verifier command, or benchmark reproduction package."
+      },
+      "sources": [
+        {
+          "label": "NANOZK arXiv page",
+          "url": "https://arxiv.org/abs/2603.18046",
+          "used_for": "claim scope, reported d=128 proof size, and verification time"
+        },
+        {
+          "label": "NANOZK arXiv source",
+          "sha256": "c505715f18d2bbb8dc01852a764b171984eb51f54a74d03790e29294e78ef2b4",
+          "url": "https://arxiv.org/e-print/2603.18046",
+          "used_for": "artifact-link inspection"
+        }
+      ],
+      "system": "NANOZK"
+    }
+  ],
+  "systems_commitment": "blake2b-256:d90f493f177cee5021958f636a730e335511c12a4e19758e0e3fc71954acc6e2"
+}
