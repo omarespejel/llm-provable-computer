@@ -54,6 +54,7 @@ TSV_COLUMNS = (
     "mutations_checked",
     "mutations_rejected",
     "weight_commitment",
+    "proof_native_parameter_commitment",
     "input_commitment",
     "output_commitment",
     "statement_commitment",
@@ -78,6 +79,14 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
     return f"blake2b-256:{digest.hexdigest()}"
+
+
+def blake2b_hex(data: bytes, domain: str) -> str:
+    digest = hashlib.blake2b(digest_size=32)
+    digest.update(domain.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(data)
+    return digest.hexdigest()
 
 
 def _generated_at() -> str:
@@ -144,6 +153,126 @@ def _sequence_commitment(values: list[int], domain: str, shape: list[int]) -> st
 def matrix_commitment(matrix: str, rows: int, cols: int) -> str:
     values = [weight_value(matrix, row, col) for row in range(rows) for col in range(cols)]
     return _sequence_commitment(values, f"ptvm:zkai:d64-{matrix}-matrix:v1", [rows, cols])
+
+
+def merkle_leaf(payload: dict[str, Any], domain: str) -> str:
+    return blake2b_hex(canonical_json_bytes(payload), domain)
+
+
+def merkle_parent(left: str, right: str, domain: str) -> str:
+    return blake2b_hex(bytes.fromhex(left) + bytes.fromhex(right), domain)
+
+
+def merkle_root(leaves: list[str], domain: str) -> str:
+    if not leaves:
+        raise StatementFixtureError("cannot commit an empty Merkle tree")
+    level = leaves
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level = [*level, level[-1]]
+        level = [merkle_parent(level[index], level[index + 1], domain) for index in range(0, len(level), 2)]
+    return f"blake2b-256:{level[0]}"
+
+
+def matrix_row_values(matrix: str, row: int) -> list[int]:
+    if matrix in {"gate", "value"}:
+        return [weight_value(matrix, row, col) for col in range(WIDTH)]
+    if matrix == "down":
+        return [weight_value(matrix, row, col) for col in range(FF_DIM)]
+    raise StatementFixtureError(f"unknown matrix: {matrix}")
+
+
+def matrix_row_leaf(matrix: str, row: int, values: list[int]) -> dict[str, Any]:
+    return {
+        "kind": "matrix_row",
+        "matrix": matrix,
+        "row": row,
+        "shape": [len(values)],
+        "values_sha256": sha256_bytes(canonical_json_bytes(values)),
+    }
+
+
+def matrix_tree(matrix: str, rows: int) -> dict[str, Any]:
+    leaves = [matrix_row_leaf(matrix, row, matrix_row_values(matrix, row)) for row in range(rows)]
+    leaf_hashes = [merkle_leaf(leaf, "ptvm:zkai:d64:param-matrix-row-leaf:v1") for leaf in leaves]
+    return {
+        "matrix": matrix,
+        "rows": rows,
+        "row_width": len(matrix_row_values(matrix, 0)),
+        "leaf_count": len(leaves),
+        "root": merkle_root(leaf_hashes, "ptvm:zkai:d64:param-matrix-row-tree:v1"),
+        "leaf_hashes_sha256": sha256_bytes(canonical_json_bytes(leaf_hashes)),
+    }
+
+
+def rms_scale_tree(reference: dict[str, Any]) -> dict[str, Any]:
+    leaves = [
+        {
+            "kind": "rms_scale",
+            "index": index,
+            "value_q8": value,
+        }
+        for index, value in enumerate(reference["rms_scale_q8"])
+    ]
+    leaf_hashes = [merkle_leaf(leaf, "ptvm:zkai:d64:rms-scale-leaf:v1") for leaf in leaves]
+    return {
+        "kind": "rms_scale",
+        "leaf_count": len(leaves),
+        "root": merkle_root(leaf_hashes, "ptvm:zkai:d64:rms-scale-tree:v1"),
+        "leaf_hashes_sha256": sha256_bytes(canonical_json_bytes(leaf_hashes)),
+    }
+
+
+def activation_table_tree() -> dict[str, Any]:
+    table = activation_table()
+    leaves = [
+        {
+            "kind": "activation_table_entry",
+            "x_q8": index - ACTIVATION_CLAMP_Q8,
+            "y_q8": value,
+        }
+        for index, value in enumerate(table)
+    ]
+    leaf_hashes = [merkle_leaf(leaf, "ptvm:zkai:d64:activation-entry-leaf:v1") for leaf in leaves]
+    return {
+        "kind": "bounded_silu_table",
+        "domain_q8": [-ACTIVATION_CLAMP_Q8, ACTIVATION_CLAMP_Q8],
+        "leaf_count": len(leaves),
+        "root": merkle_root(leaf_hashes, "ptvm:zkai:d64:activation-entry-tree:v1"),
+        "leaf_hashes_sha256": sha256_bytes(canonical_json_bytes(leaf_hashes)),
+    }
+
+
+def proof_native_parameter_manifest(reference: dict[str, Any]) -> dict[str, Any]:
+    matrix_trees = {
+        "gate": matrix_tree("gate", FF_DIM),
+        "value": matrix_tree("value", FF_DIM),
+        "down": matrix_tree("down", WIDTH),
+    }
+    rms_tree = rms_scale_tree(reference)
+    activation_tree = activation_table_tree()
+    manifest = {
+        "scheme": "d64-proof-native-parameter-manifest-v1",
+        "matrix_trees": matrix_trees,
+        "rms_scale_tree": rms_tree,
+        "activation_table_tree": activation_tree,
+        "counts": {
+            "matrix_row_leaves": sum(tree["leaf_count"] for tree in matrix_trees.values()),
+            "parameter_scalars": 3 * WIDTH * FF_DIM + WIDTH,
+            "activation_table_leaves": activation_tree["leaf_count"],
+        },
+    }
+    manifest["proof_native_parameter_commitment"] = blake2b_commitment(
+        {
+            "scheme": manifest["scheme"],
+            "matrix_roots": {name: tree["root"] for name, tree in matrix_trees.items()},
+            "rms_scale_root": rms_tree["root"],
+            "activation_table_root": activation_tree["root"],
+            "counts": manifest["counts"],
+        },
+        "ptvm:zkai:d64:proof-native-parameter-manifest:v1",
+    )
+    return manifest
 
 
 def activation_lut_value(x_q8: int) -> int:
@@ -239,6 +368,7 @@ def commitments(reference: dict[str, Any]) -> dict[str, str]:
         "value": matrix_commitment("value", FF_DIM, WIDTH),
         "down": matrix_commitment("down", WIDTH, FF_DIM),
     }
+    proof_native_manifest = proof_native_parameter_manifest(reference)
     return {
         "model_artifact_commitment": blake2b_commitment(
             {
@@ -253,6 +383,7 @@ def commitments(reference: dict[str, Any]) -> dict[str, str]:
         ),
         "model_config_commitment": blake2b_commitment(config, "ptvm:zkai:d64-config:v1"),
         "weight_commitment": blake2b_commitment(matrix_commitments, "ptvm:zkai:d64-weights:v1"),
+        "proof_native_parameter_commitment": proof_native_manifest["proof_native_parameter_commitment"],
         "input_activation_commitment": _sequence_commitment(
             reference["input_q8"], "ptvm:zkai:d64-input-activation:v1", [WIDTH]
         ),
@@ -285,6 +416,7 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "input_activation_commitment": binding["input_activation_commitment"],
         "output_activation_commitment": binding["output_activation_commitment"],
         "model_config_commitment": binding["model_config_commitment"],
+        "proof_native_parameter_commitment": binding["proof_native_parameter_commitment"],
     }
     statement = {
         "receipt_version": RECEIPT_VERSION,
@@ -297,6 +429,7 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "model_artifact_commitment": binding["model_artifact_commitment"],
         "model_config_commitment": binding["model_config_commitment"],
         "weight_commitment": binding["weight_commitment"],
+        "proof_native_parameter_commitment": binding["proof_native_parameter_commitment"],
         "input_activation_commitment": binding["input_activation_commitment"],
         "output_activation_commitment": binding["output_activation_commitment"],
         "normalization_config_commitment": binding["normalization_config_commitment"],
@@ -349,7 +482,7 @@ def build_fixture() -> dict[str, Any]:
                 "encode the RMSNorm rows against the committed scale vector",
                 "encode gate/value/down projection rows against committed matrices",
                 "encode bounded SiLU lookup and SwiGLU multiplication rows",
-                "bind the proof public instance to this statement payload",
+                "bind the proof public instance to proof_native_parameter_commitment and this statement payload",
             ],
         },
     }
@@ -417,6 +550,9 @@ def mutation_cases(statement: dict[str, Any]) -> dict[str, dict[str, Any]]:
             statement, "model_config_commitment", wrong_commitment
         ),
         "weight_commitment_relabeling": mutate_statement(statement, "weight_commitment", wrong_commitment),
+        "proof_native_parameter_commitment_relabeling": mutate_statement(
+            statement, "proof_native_parameter_commitment", wrong_commitment
+        ),
         "input_activation_commitment_relabeling": mutate_statement(
             statement, "input_activation_commitment", wrong_commitment
         ),
@@ -501,6 +637,7 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "mutations_checked": mutations["mutations_checked"],
             "mutations_rejected": mutations["mutations_rejected"],
             "weight_commitment": statement["weight_commitment"],
+            "proof_native_parameter_commitment": statement["proof_native_parameter_commitment"],
             "input_commitment": statement["input_activation_commitment"],
             "output_commitment": statement["output_activation_commitment"],
             "statement_commitment": statement["statement_commitment"],
@@ -544,6 +681,7 @@ def main() -> int:
                 "proof_status": payload["implementation_status"]["proof_status"],
                 "mutations_rejected": payload["mutation_suite"]["mutations_rejected"],
                 "mutations_checked": payload["mutation_suite"]["mutations_checked"],
+                "proof_native_parameter_commitment": payload["statement"]["proof_native_parameter_commitment"],
                 "statement_commitment": payload["statement"]["statement_commitment"],
             },
             sort_keys=True,

@@ -66,10 +66,14 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         mutations = payload["mutation_suite"]
         self.assertTrue(mutations["baseline_valid"])
         self.assertEqual(mutations["decision"], "GO")
-        self.assertEqual(mutations["mutations_checked"], 14)
-        self.assertEqual(mutations["mutations_rejected"], 14)
+        self.assertEqual(mutations["mutations_checked"], 15)
+        self.assertEqual(mutations["mutations_rejected"], 15)
         self.assertTrue(payload["statement"]["statement_commitment"].startswith("blake2b-256:"))
         self.assertTrue(payload["statement"]["weight_commitment"].startswith("blake2b-256:"))
+        self.assertEqual(
+            payload["statement"]["proof_native_parameter_commitment"],
+            "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+        )
 
     def test_statement_binding_rejects_valid_looking_wrong_commitments(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
@@ -77,6 +81,12 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         mutated["weight_commitment"] = "blake2b-256:" + "11" * 32
 
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "weight_commitment"):
+            FIXTURE.validate_statement(mutated)
+
+        mutated = copy.deepcopy(statement)
+        mutated["proof_native_parameter_commitment"] = "blake2b-256:" + "44" * 32
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "proof_native_parameter_commitment"):
             FIXTURE.validate_statement(mutated)
 
     def test_statement_binding_rejects_missing_nullable_fields(self) -> None:
@@ -205,8 +215,12 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         self.assertEqual(rows[0]["projection_weight_scalars"], 49_152)
         self.assertEqual(rows[0]["rms_scale_scalars"], 64)
         self.assertEqual(rows[0]["total_committed_parameter_scalars"], 49_216)
-        self.assertEqual(rows[0]["mutations_checked"], 14)
-        self.assertEqual(rows[0]["mutations_rejected"], 14)
+        self.assertEqual(rows[0]["mutations_checked"], 15)
+        self.assertEqual(rows[0]["mutations_rejected"], 15)
+        self.assertEqual(
+            rows[0]["proof_native_parameter_commitment"],
+            "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+        )
 
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = FIXTURE.build_fixture()
