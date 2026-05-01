@@ -114,6 +114,10 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
             tsv_text = tsv_path.read_text(encoding="utf-8")
             self.assertIn("gate_value_projection_output_commitment", tsv_text)
             self.assertIn(payload["gate_value_projection_output_commitment"], tsv_text)
+            self.assertEqual(
+                rows[0]["non_claims"],
+                json.dumps(payload["non_claims"], separators=(",", ":"), sort_keys=True),
+            )
 
 
 if __name__ == "__main__":

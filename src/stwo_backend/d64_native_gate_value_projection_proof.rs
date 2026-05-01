@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use ark_ff::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
@@ -81,6 +83,8 @@ const GATE_VALUE_PROJECTION_MUL_ROW_DOMAIN: &str =
     "ptvm:zkai:d64-gate-value-projection-mul-rows:v1";
 const MATRIX_ROW_LEAF_DOMAIN: &str = "ptvm:zkai:d64:param-matrix-row-leaf:v1";
 const MATRIX_ROW_TREE_DOMAIN: &str = "ptvm:zkai:d64:param-matrix-row-tree:v1";
+static EXPECTED_GATE_MATRIX_ROOT: OnceLock<String> = OnceLock::new();
+static EXPECTED_VALUE_MATRIX_ROOT: OnceLock<String> = OnceLock::new();
 
 const COLUMN_IDS: [&str; 7] = [
     "zkai/d64/gate-value-projection/row-index",
@@ -343,14 +347,26 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
         ZKAI_D64_PROJECTION_INPUT_ROW_COMMITMENT,
         "source projection input row commitment",
     )?;
+    let expected_gate_matrix_root = expected_gate_matrix_root();
+    let expected_value_matrix_root = expected_value_matrix_root();
+    expect_eq(
+        expected_gate_matrix_root,
+        ZKAI_D64_GATE_MATRIX_ROOT,
+        "gate matrix root generator constant",
+    )?;
     expect_eq(
         &input.gate_matrix_root,
-        ZKAI_D64_GATE_MATRIX_ROOT,
+        expected_gate_matrix_root,
         "gate matrix root",
     )?;
     expect_eq(
-        &input.value_matrix_root,
+        expected_value_matrix_root,
         ZKAI_D64_VALUE_MATRIX_ROOT,
+        "value matrix root generator constant",
+    )?;
+    expect_eq(
+        &input.value_matrix_root,
+        expected_value_matrix_root,
         "value matrix root",
     )?;
     expect_eq(
@@ -844,6 +860,18 @@ fn rows_commitment(rows: &[D64GateValueProjectionMulRow]) -> String {
         rows.len()
     );
     blake2b_commitment_bytes(payload.as_bytes(), GATE_VALUE_PROJECTION_MUL_ROW_DOMAIN)
+}
+
+fn expected_gate_matrix_root() -> &'static str {
+    EXPECTED_GATE_MATRIX_ROOT
+        .get_or_init(|| matrix_root("gate").expect("deterministic gate matrix root"))
+        .as_str()
+}
+
+fn expected_value_matrix_root() -> &'static str {
+    EXPECTED_VALUE_MATRIX_ROOT
+        .get_or_init(|| matrix_root("value").expect("deterministic value matrix root"))
+        .as_str()
 }
 
 fn matrix_root(matrix: &str) -> Result<String> {
