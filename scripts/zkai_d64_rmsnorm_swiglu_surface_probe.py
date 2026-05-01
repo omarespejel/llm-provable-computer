@@ -311,7 +311,7 @@ def classify_surface(
                 "why_it_matters": "the probe could not confirm the current TVM pc/address/immediate limits",
             }
         )
-    if estimated_weight_scalars > memory_limit:
+    if limits_are_current and estimated_weight_scalars > memory_limit:
         blockers.append(
             {
                 "id": "weight_surface_exceeds_u8_memory_addressing",
@@ -320,7 +320,7 @@ def classify_surface(
                 "why_it_matters": "a naive memory-resident d64 block cannot bind all gate/value/down weights in the current TVM memory surface",
             }
         )
-    if estimated_linear_muls > pc_horizon:
+    if limits_are_current and estimated_linear_muls > pc_horizon:
         blockers.append(
             {
                 "id": "unrolled_mul_surface_exceeds_u8_pc_horizon",
