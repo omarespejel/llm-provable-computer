@@ -143,6 +143,12 @@ class ZkAID64NativeRelationWitnessOracleTests(unittest.TestCase):
         with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "next backend step drift"):
             ORACLE.validate_payload(payload)
 
+    def test_payload_validation_does_not_depend_on_ambient_source_date_epoch(self) -> None:
+        payload = ORACLE.build_payload()
+
+        with mock.patch.dict("os.environ", {"SOURCE_DATE_EPOCH": "not-an-int"}):
+            ORACLE.validate_payload(payload)
+
     def test_rows_for_tsv_are_stable(self) -> None:
         payload = ORACLE.build_payload()
         rows = ORACLE.rows_for_tsv(payload)
