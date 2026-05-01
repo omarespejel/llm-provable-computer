@@ -453,8 +453,6 @@ def validate_payload(payload: dict[str, Any]) -> None:
     canonical = build_fixture()
     for field in (
         "schema",
-        "generated_at",
-        "git_commit",
         "decision",
         "target",
         "reference_semantics",
@@ -465,6 +463,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
     ):
         if payload.get(field) != canonical[field]:
             raise StatementFixtureError(f"payload {field} does not match canonical fixture")
+    generated_at = payload.get("generated_at")
+    if not isinstance(generated_at, str) or not generated_at.endswith("Z"):
+        raise StatementFixtureError("payload generated_at must be a UTC timestamp string")
+    git_commit = payload.get("git_commit")
+    if not isinstance(git_commit, str) or not git_commit:
+        raise StatementFixtureError("payload git_commit must be a non-empty string")
     statement = payload.get("statement")
     validate_statement(statement)
 
