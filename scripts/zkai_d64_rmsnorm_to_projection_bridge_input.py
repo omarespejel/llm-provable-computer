@@ -36,6 +36,7 @@ OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3
 RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d64-rmsnorm-output-row:v1"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d64-projection-input-row:v1"
 NEXT_BACKEND_STEP = "encode gate/value projection rows that consume projection_input_row_commitment and produce gate_value_projection_output_commitment"
+MAX_SOURCE_JSON_BYTES = 1_048_576
 
 NON_CLAIMS = [
     "not full d64 block proof",
@@ -104,6 +105,12 @@ def sequence_commitment(values: list[int], domain: str) -> str:
 
 def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
     try:
+        source_size = path.stat().st_size
+        if source_size > MAX_SOURCE_JSON_BYTES:
+            raise BridgeInputError(
+                f"source RMSNorm public-row evidence exceeds max size: got {source_size} bytes, "
+                f"limit {MAX_SOURCE_JSON_BYTES} bytes"
+            )
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as err:
         raise BridgeInputError(f"failed to load source RMSNorm public-row evidence: {err}") from err
