@@ -160,6 +160,19 @@ The next comparison result should move from this width-4 baseline to a matched
 d64 or d128 RMSNorm/SwiGLU/residual target before comparing against public zkML
 systems.
 
+The follow-up implementation-surface probe narrows the required work:
+
+- `docs/engineering/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05.json`
+
+That probe records a direct TVM-fixture-growth NO-GO. A minimal `d=64` target
+needs roughly `49,152` projection multiplications and `49,152` weight scalars,
+while the current TVM representation has a `u8` address/PC surface and the
+checked transformer-block fixture has `21` memory cells, `43` instructions, and
+`7` `MulMemory` operations. The next credible result therefore needs a
+parameterized vector-block AIR/export path with committed weights, not a larger
+hand-written toy fixture.
+
 ## NO-GO criteria
 
 Record an explicit NO-GO if:

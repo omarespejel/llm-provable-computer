@@ -1,0 +1,2 @@
+target_width	decision	ff_dim	estimated_linear_muls	estimated_weight_scalars	current_max_addressable_memory_cells	current_pc_horizon	current_fixture_memory_cells	current_fixture_instruction_count	current_fixture_mul_memory_ops	weight_cells_over_memory_limit	mul_ops_over_pc_horizon	blocker_count
+64	NO_GO_DIRECT_TVM_LOWERING	256	49152	49152	255	256	21	43	7	192.753	192.000	5

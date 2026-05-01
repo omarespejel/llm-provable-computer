@@ -1,0 +1,152 @@
+{
+  "classification": {
+    "blockers": [
+      {
+        "current_limit_cells": 255,
+        "id": "weight_surface_exceeds_u8_memory_addressing",
+        "required_weight_scalars": 49152,
+        "why_it_matters": "a naive memory-resident d64 block cannot bind all gate/value/down weights in the current TVM memory surface"
+      },
+      {
+        "current_pc_horizon": 256,
+        "id": "unrolled_mul_surface_exceeds_u8_pc_horizon",
+        "required_mul_events": 49152,
+        "why_it_matters": "a direct one-instruction-per-scalar lowering cannot fit in the current u8 program-counter horizon"
+      },
+      {
+        "fixture_mul_memory_ops": 7,
+        "id": "current_fixture_is_toy_width",
+        "required_mul_events": 49152,
+        "why_it_matters": "the checked statement-bound block is useful for binding, not for matched d64 compute coverage"
+      },
+      {
+        "id": "missing_parameterized_stwo_backend",
+        "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+        "why_it_matters": "the current Stwo generator recognizes shipped fixtures/decoding families, not the d64 vector-block backend"
+      },
+      {
+        "id": "carry_aware_lane_is_decoding_family_only",
+        "why_it_matters": "the scalable carry-aware proving lane cannot currently be reused as a generic RMSNorm/SwiGLU block prover"
+      }
+    ],
+    "mul_ops_over_pc_horizon": 192.0,
+    "reason": "direct TVM fixture growth is not the right implementation path for a matched d64 RMSNorm-SwiGLU block",
+    "status": "NO_GO_DIRECT_TVM_LOWERING",
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "target_width": 64,
+    "weight_cells_over_memory_limit": 192.75294117647059
+  },
+  "current_fixture_profile": {
+    "instruction_count": 43,
+    "memory_cells": 21,
+    "mul_memory_ops": 7,
+    "program_path": "programs/linear_block_v4_with_lookup.tvm",
+    "program_sha256": "fed75a4eafca96b9fcbb632de7de28757de9ae6a6c1be08428b857bb3d3b5dee"
+  },
+  "current_prover_gates": {
+    "fixture_gate_detected": true,
+    "known_stwo_backend_versions": [
+      "stwo-phase10-linear-block-v4-with-lookup",
+      "stwo-phase11-decoding-step-v1"
+    ],
+    "markers": {
+      "broader_arithmetic_subset_internal": true,
+      "decoding_step_v2_family_matcher": true,
+      "fixture_gate_function": true,
+      "linear_block_v4_exact_matcher": true,
+      "phase12_decoding_only": true
+    },
+    "required_backend_version_present": false,
+    "source_path": "src/stwo_backend/arithmetic_subset_prover.rs",
+    "source_sha256": "b5a3eb01a57774a74188f5952e8e136cbf565d374b8bb0c5bf85774296361858"
+  },
+  "current_tvm_limits": {
+    "address_u8_detected": true,
+    "immediate_i16_detected": true,
+    "instruction_source_path": "src/instruction.rs",
+    "instruction_source_sha256": "f27fe1cc7c67136a8180e3f0323661230d86dad9e4a3d5043a5ec455716cfef0",
+    "limits_are_current": true,
+    "max_addressable_memory_cells": 255,
+    "memory_limit_detected": true,
+    "pc_horizon": 256,
+    "pc_u8_detected": true,
+    "state_source_path": "src/state.rs",
+    "state_source_sha256": "844f14b73455a7b8deeab560dad4b6a2e9c8887d5948a425f7526d622a5d7507"
+  },
+  "decision": "NO_GO_DIRECT_TVM_LOWERING",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "next_required_work": [
+    {
+      "description": "Bind gate, value, and down projection weights through a table/vector commitment instead of TVM memory cells.",
+      "id": "weight_commitment_surface"
+    },
+    {
+      "description": "Represent the d64 block over vector/matrix rows rather than one TVM program counter step per scalar multiplication.",
+      "id": "vector_row_domain"
+    },
+    {
+      "description": "Add an explicit stwo-rmsnorm-swiglu-residual-d64-v1 or equivalent backend version with verifier-facing statement commitments.",
+      "id": "parameterized_backend_version"
+    },
+    {
+      "description": "Use the same model/input/output/config/weight receipt fields for Stwo and external proof-stack comparisons.",
+      "id": "same_statement_comparison"
+    }
+  ],
+  "non_claims": [
+    "This is not a d64 proof.",
+    "This is not a performance benchmark.",
+    "This does not claim Stwo cannot prove the target.",
+    "This does not claim a full transformer-inference result.",
+    "This does not weaken the existing width-4 statement-binding result."
+  ],
+  "repro": {
+    "command": [
+      "python3",
+      "scripts/zkai_d64_rmsnorm_swiglu_surface_probe.py",
+      "--write-json",
+      "docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05.json",
+      "--write-tsv",
+      "docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05.tsv"
+    ],
+    "git_commit": "5fe4e72ecda7463663ae23dec1d1386178911d85"
+  },
+  "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
+  "schema": "zkai-d64-rmsnorm-swiglu-surface-probe-v1",
+  "summary": {
+    "best_next_path": "parameterized vector-block AIR/export surface with committed weights, not a larger hand-written TVM fixture",
+    "direct_fixture_growth": "NO_GO",
+    "first_target": "d64 before d128",
+    "positive_result": "the next implementation blocker is now localized to representation/backend surface rather than statement binding"
+  },
+  "target": {
+    "activation": "SwiGLU",
+    "estimated_activation_rows": 256,
+    "estimated_linear_muls": 49152,
+    "estimated_norm_rows": 1,
+    "estimated_weight_scalars": 49152,
+    "ff_dim": 256,
+    "minimum_public_statement_bindings": [
+      "model_artifact_commitment",
+      "model_config_commitment",
+      "weight_commitment",
+      "input_activation_commitment",
+      "output_activation_commitment",
+      "normalization_config_commitment",
+      "activation_lookup_commitment",
+      "public_instance_commitment",
+      "proof_commitment",
+      "verifying_key_commitment",
+      "setup_commitment",
+      "verifier_domain",
+      "proof_system_version"
+    ],
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+    "normalization": "RMSNorm",
+    "required_proof_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "residual": true,
+    "statement_kind": "transformer-block",
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "width": 64
+  }
+}
