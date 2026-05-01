@@ -188,6 +188,13 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8"))["schema"], PROBE.SCHEMA)
             self.assertEqual(tsv_path.read_text(encoding="utf-8").splitlines()[1].split("\t")[0], "tiny_gemm")
 
+    def test_checked_json_evidence_validates_when_present(self) -> None:
+        if not PROBE.JSON_OUT.exists():
+            self.skipTest("checked shape-probe evidence has not been generated")
+        payload = json.loads(PROBE.JSON_OUT.read_text(encoding="utf-8"))
+
+        PROBE.validate_payload(payload)
+
     def test_git_commit_override_is_validated(self) -> None:
         with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "must be a 7-40 character hex SHA"):
             with mock.patch.dict(os.environ, {PROBE.GIT_COMMIT_ENV: "not-a-sha"}):

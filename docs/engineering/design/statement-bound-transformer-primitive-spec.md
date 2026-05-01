@@ -209,6 +209,20 @@ approximate export is a different statement unless it gets a separate target and
 commitment. The receipt target remains reusable once an exact native or custom
 external proof exists.
 
+The JSTprove/Remainder shape probe adds a smaller external proof-stack axis:
+
+- `docs/engineering/zkai-jstprove-shape-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.tsv`
+
+That probe is not a d64 benchmark and not a transformer proof, but it is useful
+operator-pressure context. Tiny `Gemm -> residual Add` and
+`Gemm -> LayerNormalization` fixtures prove and verify under JSTprove/Remainder,
+while `Gemm -> Softmax` is refused at proof construction as an unconstrained op
+and `Gemm -> Relu` fails witness generation on range-check capacity. This keeps
+the research split explicit: statement binding, exact statement semantics, and
+backend operator support are separate gates.
+
 The native Stwo vector-row surface probe is also checked in:
 
 - `docs/engineering/zkai-d64-stwo-vector-row-surface-probe-2026-05-01.md`
