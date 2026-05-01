@@ -770,6 +770,13 @@ parameterized vector-block AIR. This is useful as claim hygiene: the statement
 receipt result is a binding/composition result, not a competitor-facing zkML
 throughput result. The feasibility gate is anchored to
 `docs/engineering/zkai-matched-rmsnorm-swiglu-block-feasibility-gate-2026-05-01.md`.
+A subsequent implementation-surface probe makes the follow-up path more precise:
+directly growing the current byte-addressed TVM fixture is also NO-GO for `d=64`
+because the target needs roughly `49,152` projection multiplications and weight
+scalars, while the current accepted fixture exposes a bounded `u8` address/PC
+surface. The next credible comparison target is therefore a parameterized
+vector-block proof surface with committed weights, not a larger hand-written
+fixture.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
