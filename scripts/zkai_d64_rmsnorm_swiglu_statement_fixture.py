@@ -93,6 +93,17 @@ def _generated_at() -> str:
     return generated_at.isoformat().replace("+00:00", "Z")
 
 
+def _validate_generated_at(value: Any) -> None:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise StatementFixtureError("payload generated_at must be a UTC timestamp string")
+    try:
+        parsed = dt.datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+    except ValueError as err:
+        raise StatementFixtureError("payload generated_at must be a valid UTC timestamp string") from err
+    if parsed.tzinfo != dt.timezone.utc:
+        raise StatementFixtureError("payload generated_at must be a UTC timestamp string")
+
+
 def _git_commit() -> str:
     return os.environ.get("ZKAI_GIT_COMMIT") or "unspecified"
 
@@ -463,9 +474,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
     ):
         if payload.get(field) != canonical[field]:
             raise StatementFixtureError(f"payload {field} does not match canonical fixture")
-    generated_at = payload.get("generated_at")
-    if not isinstance(generated_at, str) or not generated_at.endswith("Z"):
-        raise StatementFixtureError("payload generated_at must be a UTC timestamp string")
+    _validate_generated_at(payload.get("generated_at"))
     git_commit = payload.get("git_commit")
     if not isinstance(git_commit, str) or not git_commit:
         raise StatementFixtureError("payload git_commit must be a non-empty string")
