@@ -18,6 +18,37 @@ SPEC.loader.exec_module(PROBE)
 
 
 class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        patcher = mock.patch.dict(
+            PROBE.os.environ,
+            {"ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": "a" * 40},
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_git_commit_honors_probe_specific_override(self) -> None:
+        with mock.patch.dict(
+            PROBE.os.environ,
+            {"ZKAI_D64_COMMITMENT_CONSISTENCY_PROBE_GIT_COMMIT": "ABCDEF"},
+            clear=True,
+        ):
+            self.assertEqual(PROBE._git_commit(), "abcdef")
+
+    def test_git_commit_honors_external_adapter_override_alias(self) -> None:
+        with mock.patch.dict(
+            PROBE.os.environ,
+            {"ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT": "1234ABCD"},
+            clear=True,
+        ):
+            self.assertEqual(PROBE._git_commit(), "1234abcd")
+
+    def test_git_commit_returns_dirty_sentinel(self) -> None:
+        with (
+            mock.patch.dict(PROBE.os.environ, {}, clear=True),
+            mock.patch.object(PROBE, "_dirty_worktree_paths", return_value={pathlib.Path("scripts/changed.py")}),
+        ):
+            self.assertEqual(PROBE._git_commit(), PROBE.DIRTY_GIT_COMMIT)
+
     def test_selects_dual_commitment_as_next_pr_method(self) -> None:
         payload = PROBE.build_probe()
         PROBE.validate_probe(payload)
@@ -219,6 +250,13 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
             self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "dirty worktree"),
         ):
             PROBE.write_outputs(payload, PROBE.JSON_OUT, PROBE.TSV_OUT)
+
+    def test_write_outputs_rejects_dirty_commit_sentinel(self) -> None:
+        payload = PROBE.build_probe()
+        payload["git_commit"] = PROBE.DIRTY_GIT_COMMIT
+
+        with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "dirty worktree"):
+            PROBE.write_outputs(payload, None, None)
 
     def test_checked_output_write_allows_dirty_checked_outputs_only(self) -> None:
         allowed = {
