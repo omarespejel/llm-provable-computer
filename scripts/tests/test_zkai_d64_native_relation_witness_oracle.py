@@ -90,6 +90,30 @@ class ZkAID64NativeRelationWitnessOracleTests(unittest.TestCase):
         with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "relation witness mismatch"):
             ORACLE.validate_relation_witness(mutated)
 
+    def test_relation_oracle_recomputes_rmsnorm_and_commitment_surface(self) -> None:
+        fixture = ORACLE.FIXTURE.build_fixture()
+        reference = ORACLE.FIXTURE.evaluate_reference_block()
+
+        mutated = copy.deepcopy(reference)
+        mutated["normed_q8"][0] += 1
+        with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "RMSNorm row relation mismatch"):
+            ORACLE.relation_witness(mutated, fixture)
+
+        mutated = copy.deepcopy(reference)
+        mutated["output_q8"][0] += 1
+        with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "commitment surface mismatch"):
+            ORACLE.relation_witness(mutated, fixture)
+
+    def test_relation_check_names_advertise_recomputed_scope(self) -> None:
+        payload = ORACLE.build_payload()
+        check_names = {case["name"] for case in payload["relation_witness"]["relation_checks"]}
+
+        self.assertIn("proof_native_parameter_manifest_recomputed", check_names)
+        self.assertIn("public_statement_commitments_recomputed", check_names)
+        self.assertIn("rmsnorm_rows_recomputed", check_names)
+        self.assertNotIn("input_output_commitments", check_names)
+        self.assertNotIn("rmsnorm_rows", check_names)
+
     def test_mutation_corpus_is_exact_and_fail_closed(self) -> None:
         payload = ORACLE.build_payload()
         names = {case["name"] for case in payload["mutation_suite"]["cases"]}
@@ -106,6 +130,17 @@ class ZkAID64NativeRelationWitnessOracleTests(unittest.TestCase):
         payload["source_fixture"]["statement_commitment"] = "blake2b-256:" + "bb" * 32
 
         with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "source fixture drift"):
+            ORACLE.validate_payload(payload)
+
+    def test_payload_validation_rejects_claim_boundary_drift(self) -> None:
+        payload = ORACLE.build_payload()
+        payload["non_claims"].remove("not a Stwo proof")
+        with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "non-claims drift"):
+            ORACLE.validate_payload(payload)
+
+        payload = ORACLE.build_payload()
+        payload["next_backend_step"] = "claim this is already a native proof"
+        with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "next backend step drift"):
             ORACLE.validate_payload(payload)
 
     def test_rows_for_tsv_are_stable(self) -> None:
