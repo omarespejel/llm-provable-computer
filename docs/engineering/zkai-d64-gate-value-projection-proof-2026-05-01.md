@@ -115,7 +115,8 @@ cargo +nightly-2025-07-14 test d64_native_gate_value_projection_proof --lib --fe
 
 ## Next step
 
-Implement the activation/SwiGLU slice that consumes
-`gate_value_projection_output_commitment` and produces a domain-separated hidden
-activation commitment. Do not claim the full d64 output until down projection
-and residual rows are also proven or explicitly source-bound.
+The activation/SwiGLU slice is now recorded in
+`docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`. The next
+remaining d64 seam is down projection over the domain-separated
+`hidden_activation_commitment`. Do not claim the full d64 output until down
+projection and residual rows are also proven or explicitly source-bound.

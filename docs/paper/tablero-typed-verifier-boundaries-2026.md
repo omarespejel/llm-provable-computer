@@ -832,17 +832,24 @@ normalized-output, and bounded public-scalar square-root inequalities, and
 recomputes a local `rmsnorm_output_row_commitment` from the checked `normed_q8`
 rows. A follow-up bridge proof then consumes that local RMSNorm commitment and
 emits a separate `projection_input_row_commitment` for the next projection
-slice, while rejecting attempts to relabel that bridge as the final
-`output_activation_commitment`. These proof slices are useful because they make
-the transformer-block route incremental and statement-bound, but they remain
-non-claims for private parameter openings, gate/value/down projection,
-activation, residual rows, and full-block output binding. The checked handles
+slice, a gate/value proof consumes that bridge and proves the `32,768`
+projection multiplication rows, and an activation/SwiGLU proof consumes the
+gate/value output and proves `256` activation and gated-mixing rows. Each slice
+emits a domain-separated intermediate commitment and rejects attempts to relabel
+that intermediate as the final `output_activation_commitment`. These proof
+slices are useful because they make the transformer-block route incremental and
+statement-bound, but they remain non-claims for private parameter openings, down
+projection, residual rows, and full-block output binding. The checked handles
 are
 `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`,
 `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`,
 `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`,
 and
-`docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`.
+`docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`,
+`docs/engineering/zkai-d64-gate-value-projection-proof-2026-05-01.md`,
+`docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json`,
+`docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`, and
+`docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json`.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
