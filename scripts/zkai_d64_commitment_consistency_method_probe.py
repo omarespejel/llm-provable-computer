@@ -256,6 +256,8 @@ def activation_usage(reference: dict[str, Any]) -> dict[str, Any]:
         for value in reference["gate_projection_q8"]
     ]
     indices = [value + FIXTURE.ACTIVATION_CLAMP_Q8 for value in clamped]
+    if not indices:
+        raise CommitmentConsistencyProbeError("activation usage requires at least one projection row")
     if min(indices) < 0 or max(indices) >= EXPECTED_ACTIVATION_TABLE_LEAVES:
         raise CommitmentConsistencyProbeError("activation lookup index escaped table domain")
     return {

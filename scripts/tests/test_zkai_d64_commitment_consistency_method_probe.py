@@ -77,6 +77,13 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
         self.assertEqual(usage["max_lookup_index"], 2 * PROBE.FIXTURE.ACTIVATION_CLAMP_Q8)
         self.assertEqual(usage["clamped_projection_count"], 2)
 
+    def test_activation_usage_rejects_empty_projection_surface(self) -> None:
+        reference = PROBE.FIXTURE.evaluate_reference_block()
+        reference["gate_projection_q8"] = []
+
+        with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "at least one projection row"):
+            PROBE.activation_usage(reference)
+
     def test_roots_are_stable_for_canonical_fixture(self) -> None:
         manifest = PROBE.build_probe()["proof_native_parameter_manifest"]
 
