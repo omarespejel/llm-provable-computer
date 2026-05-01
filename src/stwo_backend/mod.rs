@@ -35,6 +35,40 @@ mod shared_lookup_artifact;
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
 use crate::instruction::Program;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::fri::FriConfig;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::pcs::PcsConfig;
+
+#[cfg(feature = "stwo-backend")]
+pub(crate) fn publication_v1_pcs_config() -> PcsConfig {
+    PcsConfig {
+        pow_bits: 10,
+        fri_config: FriConfig::new(0, 1, 3, 1),
+        lifting_log_size: None,
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+pub(crate) fn validate_publication_v1_pcs_config(
+    actual: PcsConfig,
+    context: &str,
+) -> Result<PcsConfig> {
+    let expected = publication_v1_pcs_config();
+    if actual.pow_bits != expected.pow_bits
+        || actual.fri_config.log_blowup_factor != expected.fri_config.log_blowup_factor
+        || actual.fri_config.n_queries != expected.fri_config.n_queries
+        || actual.fri_config.log_last_layer_degree_bound
+            != expected.fri_config.log_last_layer_degree_bound
+        || actual.fri_config.fold_step != expected.fri_config.fold_step
+        || actual.lifting_log_size != expected.lifting_log_size
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "{context} PCS config does not match publication-v1 verifier profile",
+        )));
+    }
+    Ok(expected)
+}
 
 pub use adapter::{
     phase2_dependency_seam, StwoDependencySeam, STWO_CONSTRAINT_FRAMEWORK_VERSION_PHASE2,
