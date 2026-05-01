@@ -302,8 +302,9 @@ def classify_surface(
     estimated_linear_muls = int(target["estimated_linear_muls"])
     memory_limit = int(tvm_limits["max_addressable_memory_cells"])
     pc_horizon = int(tvm_limits["pc_horizon"])
+    limits_are_current = tvm_limits.get("limits_are_current") is True
 
-    if not tvm_limits.get("limits_are_current"):
+    if not limits_are_current:
         blockers.append(
             {
                 "id": "unsupported_limit_scan",
@@ -372,8 +373,12 @@ def classify_surface(
             else "direct TVM fixture growth is not the right implementation path for a matched d64 RMSNorm-SwiGLU block"
         ),
         "blockers": blockers,
-        "weight_cells_over_memory_limit": _ratio_or_inf(estimated_weight_scalars, memory_limit),
-        "mul_ops_over_pc_horizon": _ratio_or_inf(estimated_linear_muls, pc_horizon),
+        "weight_cells_over_memory_limit": (
+            _ratio_or_inf(estimated_weight_scalars, memory_limit) if limits_are_current else float("inf")
+        ),
+        "mul_ops_over_pc_horizon": (
+            _ratio_or_inf(estimated_linear_muls, pc_horizon) if limits_are_current else float("inf")
+        ),
     }
 
 
