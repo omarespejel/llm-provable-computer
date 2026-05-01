@@ -60,6 +60,13 @@ class AttentionKvTransitionReceiptProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.AttentionKvReceiptError, "mutation rejection"):
             PROBE.validate_payload(payload)
 
+    def test_payload_validation_rejects_detailed_mutation_drift(self) -> None:
+        payload = PROBE.run_probe()
+        payload["mutation_cases"][0]["name"] = "renamed_mutation"
+
+        with self.assertRaisesRegex(PROBE.AttentionKvReceiptError, "mutation case names"):
+            PROBE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = PROBE.run_probe()
 

@@ -17,7 +17,7 @@ The paper claims only the following.
 | Statement-binding adapters | Checked EZKL, snarkjs, JSTprove, and native Stwo adapters show that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-input or proof-public-claim drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
 | Numeric range discipline | A source-backed activation receipt binds scale and preactivation range assumptions and rejects `35 / 35` checked relabeling mutations; this is a receipt-contract result, not a proof benchmark. |
 | Stateful receipt discipline | A source-backed attention/KV receipt binds prior state, input, output, next state, verifier domain, and proof status and rejects `8 / 8` checked relabeling mutations; this is a state-transition claim-boundary result, not a full attention proof. |
-| Native proof hardening | The d64 RMSNorm public-row slice now proves per-row arithmetic and a bounded public-scalar sqrt inequality in native Stwo AIR, while still not claiming private parameter openings or full-block output binding. |
+| Native proof hardening | The d64 RMSNorm public-row slice now proves per-row arithmetic and a bounded public-scalar sqrt inequality in native Stwo AIR, and binds a local RMSNorm output row commitment, while still not claiming private parameter openings or full-block output binding. |
 | Agent receipt composition | A checked native Stwo statement receipt can be consumed as the model subreceipt inside an agent-step receipt, with `36 / 36` checked relabeling and cross-layer mutations rejected. |
 
 ## Negative claim surface

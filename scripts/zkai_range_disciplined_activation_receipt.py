@@ -390,16 +390,38 @@ def validate_payload(payload: Any) -> None:
         raise RangeActivationReceiptError("case corpus drift")
     if tuple(str(case.get("scale")) for case in cases) != EXPECTED_SCALES:
         raise RangeActivationReceiptError("scale order drift")
+    recomputed_checked = 0
+    recomputed_rejected = 0
     for case in cases:
         if not case.get("receipt_accepted"):
             raise RangeActivationReceiptError("baseline receipt was not accepted")
-        if case.get("mutations_checked") != len(EXPECTED_MUTATION_NAMES):
+        mutation_cases = case.get("mutation_cases")
+        if not isinstance(mutation_cases, list):
+            raise RangeActivationReceiptError("mutation cases must be a list")
+        mutation_names = tuple(item.get("name") for item in mutation_cases if isinstance(item, dict))
+        if mutation_names != EXPECTED_MUTATION_NAMES:
+            raise RangeActivationReceiptError("mutation case names drift")
+        if any(not isinstance(item, dict) for item in mutation_cases):
+            raise RangeActivationReceiptError("mutation case entries must be objects")
+        if any(item.get("rejected") is not True for item in mutation_cases):
+            raise RangeActivationReceiptError("mutation case rejection drift")
+        case_checked = len(mutation_cases)
+        case_rejected = sum(1 for item in mutation_cases if item.get("rejected") is True)
+        recomputed_checked += case_checked
+        recomputed_rejected += case_rejected
+        if case.get("mutations_checked") != case_checked:
             raise RangeActivationReceiptError("mutation count drift")
-        if case.get("mutations_rejected") != len(EXPECTED_MUTATION_NAMES):
+        if case.get("mutations_rejected") != case_rejected:
             raise RangeActivationReceiptError("mutation rejection drift")
+        if case.get("all_mutations_rejected") is not True:
+            raise RangeActivationReceiptError("case fail-closed bit drift")
     summary = payload.get("summary")
     if not isinstance(summary, dict) or not summary.get("all_receipts_fail_closed"):
         raise RangeActivationReceiptError("summary fail-closed bit drift")
+    if summary.get("mutations_checked") != recomputed_checked:
+        raise RangeActivationReceiptError("summary mutation count drift")
+    if summary.get("mutations_rejected") != recomputed_rejected:
+        raise RangeActivationReceiptError("summary mutation rejection drift")
 
 
 def to_tsv(payload: dict[str, Any]) -> str:
