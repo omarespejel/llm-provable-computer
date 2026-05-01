@@ -376,6 +376,11 @@ def validate_probe(payload: dict[str, Any]) -> None:
         raise CommitmentConsistencyProbeError("source fixture drift")
 
     expected_manifest = proof_native_parameter_manifest(FIXTURE.evaluate_reference_block())
+    if (
+        payload["source_fixture"]["proof_native_parameter_commitment"]
+        != payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"]
+    ):
+        raise CommitmentConsistencyProbeError("proof-native parameter commitment mismatch")
     counts = expected_manifest["counts"]
     if counts["matrix_row_leaves"] != EXPECTED_MATRIX_ROW_LEAVES:
         raise CommitmentConsistencyProbeError("matrix row leaf count drift")

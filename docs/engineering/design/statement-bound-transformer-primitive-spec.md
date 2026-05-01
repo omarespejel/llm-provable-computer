@@ -97,7 +97,8 @@ mutations for:
 - input commitment,
 - output commitment,
 - config commitment,
-- `proof_native_parameter_commitment`,
+- `proof_native_parameter_commitment` when the statement family uses a
+  proof-native private-parameter binding target,
 - public-instance commitment,
 - proof commitment,
 - `verifying_key_commitment`,
@@ -111,9 +112,10 @@ The result is not credible if rejection happens only because a mutation produces
 malformed syntax. Commitment-valued mutations must use syntactically valid but
 wrong commitments. In particular, the `verifying_key_commitment` mutation must
 swap the verifier/AIR identity commitment to a valid but wrong value and must be
-rejected as a statement-binding failure, not as a parser failure. The same rule
-applies to `proof_native_parameter_commitment`: mutating it must reject because
-the native binding target changed, not because the receipt syntax is malformed.
+rejected as a statement-binding failure, not as a parser failure. For d64-v2 and
+other dual-commitment statement families, the same rule applies to
+`proof_native_parameter_commitment`: mutating it must reject because the native
+binding target changed, not because the receipt syntax is malformed.
 
 ## Minimum GO result
 
@@ -232,8 +234,10 @@ hashes for audit/export identity, but add a
 the native proof public instance. The probe explicitly rejects metadata-only
 binding and external Merkle openings that are not consumed by the proof relation.
 
-The canonical d64 statement fixture carries the field now; the remaining proof
-work is to make the native relation consume it.
+The canonical d64-v2 statement fixture carries the field now and rejects
+`15 / 15` checked relabeling mutations, including
+`proof_native_parameter_commitment`. The remaining proof work is to make the
+native relation consume it.
 
 ## NO-GO criteria
 

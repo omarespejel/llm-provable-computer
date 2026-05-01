@@ -73,7 +73,7 @@ domain-separated.
 | `statement_kind` | Statement category, for example `model-inference`, `transformer-block`, `tool-proof`, or `agent-subreceipt`. |
 | `model_id` | Human-facing model or primitive identifier if claimed. |
 | `model_artifact_commitment` | Commitment to weights, ONNX file, AIR trace generator, circuit, or other model artifact. |
-| `proof_native_parameter_commitment` | Proof-friendly commitment to private parameters/lookups when publication hashes are not directly checked inside the proof relation. |
+| `proof_native_parameter_commitment` | Proof-friendly commitment to private parameters/lookups when publication hashes are not directly checked inside the proof relation; required for statement families that use this binding target. |
 | `input_commitment` | Commitment to the claimed input/context. |
 | `output_commitment` | Commitment to the claimed output/action/logits/hidden state. |
 | `config_commitment` | Commitment to quantization, tokenizer, shape, circuit settings, or runtime config. |
@@ -127,7 +127,8 @@ independently and requires rejection:
 - `input_commitment`,
 - `output_commitment`,
 - `config_commitment`,
-- `proof_native_parameter_commitment`,
+- `proof_native_parameter_commitment` when the statement family uses this
+  binding target,
 - `public_instance_commitment`,
 - `proof_commitment`,
 - `verifying_key_commitment`,

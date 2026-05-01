@@ -210,13 +210,24 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
 
     def test_validation_rejects_manifest_drift(self) -> None:
         payload = PROBE.build_probe()
-        payload["proof_native_parameter_manifest"] = PROBE.tampered_manifest()
+        payload["proof_native_parameter_manifest"]["matrix_trees"]["gate"]["leaf_hashes_sha256"] = "00" * 32
         payload["proof_native_parameter_manifest_commitment"] = PROBE.blake2b_commitment(
             payload["proof_native_parameter_manifest"],
             "ptvm:zkai:d64:proof-native-parameter-manifest-payload:v1",
         )
 
         with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "proof-native parameter manifest drift"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_source_fixture_manifest_commitment_mismatch(self) -> None:
+        payload = PROBE.build_probe()
+        payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"] = "blake2b-256:" + "55" * 32
+        payload["proof_native_parameter_manifest_commitment"] = PROBE.blake2b_commitment(
+            payload["proof_native_parameter_manifest"],
+            "ptvm:zkai:d64:proof-native-parameter-manifest-payload:v1",
+        )
+
+        with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "commitment mismatch"):
             PROBE.validate_probe(payload)
 
     def test_validation_rejects_next_pr_target_drift(self) -> None:
