@@ -73,8 +73,7 @@ This is not:
 - AIR constraints,
 - backend independence evidence,
 - full transformer inference,
-- proof that private witness rows already open to
-  `proof_native_parameter_commitment`.
+- `not proof that private witness rows already open to proof_native_parameter_commitment`.
 
 ## Next Step
 
