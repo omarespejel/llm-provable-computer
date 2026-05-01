@@ -1,0 +1,55 @@
+{
+  "artifacts": {
+    "input.msgpack": "7687c652fe43198eb9ef635a8d9c7b3fa8df4d8e1e082aade31900caacb037cd",
+    "model.msgpack": "31e8c5ea336387e0994d1c3d5b4313f6dddeaa0e56eb88069aa864489c05739d",
+    "proof.msgpack": "d997578c039333b2140078a938e2d41200d6f6fce13fd5248f260967f4f29fda"
+  },
+  "external_system": {
+    "binary": "jstprove-remainder",
+    "name": "JSTprove",
+    "proof_system": "JSTprove/Remainder-GKR-sumcheck",
+    "remainder_commit": "06a5f406",
+    "upstream_commit": "7c3cbbee83aaa01adde700673f00e317a4e902f9",
+    "upstream_repo": "https://github.com/inference-labs-inc/JSTprove",
+    "verification_api": "jstprove-remainder verify --model model.msgpack --proof proof.msgpack --input input.msgpack"
+  },
+  "generation_commands": [
+    "/tmp/jstprove-adapter-check/onnx-venv/bin/python create tiny_gemm.onnx via onnx.helper",
+    "./target/release/jstprove-remainder compile --model tiny_gemm.onnx --output model.msgpack --no-compress",
+    "python3 create raw msgpack input {\"input\": [1.0, 2.0]}",
+    "./target/release/jstprove-remainder witness --model model.msgpack --input input.msgpack --output witness.msgpack --no-compress",
+    "./target/release/jstprove-remainder prove --model model.msgpack --witness witness.msgpack --output proof.msgpack",
+    "./target/release/jstprove-remainder --quiet verify --model model.msgpack --proof proof.msgpack --input input.msgpack"
+  ],
+  "model": {
+    "description": "one-node ONNX Gemm fixture created for a small verifier-facing JSTprove adapter test",
+    "input_shape": [
+      1,
+      2
+    ],
+    "name": "tiny_gemm",
+    "operator_set": [
+      "Gemm"
+    ],
+    "output_shape": [
+      1,
+      1
+    ]
+  },
+  "non_claims": [
+    "not_a_performance_benchmark",
+    "not_a_jstprove_security_audit",
+    "not_a_system_ranking",
+    "tiny_gemm_fixture_not_transformer_proof"
+  ],
+  "schema": "zkai-jstprove-statement-envelope-artifact-metadata-v1",
+  "sizes_bytes": {
+    "input.msgpack": 26,
+    "model.msgpack": 462,
+    "proof.msgpack": 11303,
+    "tiny_gemm.onnx": 209
+  },
+  "source_artifacts": {
+    "tiny_gemm.onnx": "b987cd1756cf1c8ef8b8410b588aaeb51ad7bc508267f295ed5013b0129d1e84"
+  }
+}

@@ -1,0 +1,59 @@
+adapter	mutation	category	baseline_accepted	mutated_accepted	rejected	rejection_layer	error
+jstprove-proof-only	config_id_relabeling	statement_policy	True	True	False	accepted	none
+jstprove-proof-only	input_artifact_bytes_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"JSTprove Remainder verifier rejected: Build the LHS of the equation (defined by the constrained values)
+Layer that calcs r - constrained has layer id: Layer(4)
+Iteration 0 of build_fractional_sumcheck has layer id: Layer(5)
+Build the RHS of the equation (defined by the table values and multiplicities)
+Layer that aggs the multiplicities has layer id: Layer(6)
+Layer that calculates r - table has layer id: Layer(7)
+Iteration 0 of build_fractional_sumcheck has layer id: Layer(8)
+Iteration 1 of build_fractional_sumcheck has layer id: Layer(9)
+Iteration 2 of build_fractional_sumcheck has layer id: Layer(10)
+Iteration 3 of build_fractional_sumcheck has layer id: Layer(11)
+Iteration 4 of build_fractional_sumcheck has layer id: Layer(12)
+Iteration 5 of build_fractional_sumcheck has layer id: Layer(13)
+Iteration 6 of build_fractional_sumcheck has layer id: Layer(14)
+Iteration 7 of build_fractional_sumcheck has layer id: Layer(15)
+Iteration 8 of build_fractional_sumcheck has layer id: Layer(16)
+Layer that checks that fractions are equal has layer id: Layer(17)
+Error: public inputs do not match the proof transcript"
+jstprove-proof-only	input_artifact_hash_relabeling	artifact_binding	True	True	False	accepted	none
+jstprove-proof-only	input_id_relabeling	statement_policy	True	True	False	accepted	none
+jstprove-proof-only	model_artifact_hash_relabeling	artifact_binding	True	True	False	accepted	none
+jstprove-proof-only	model_id_relabeling	statement_policy	True	True	False	accepted	none
+jstprove-proof-only	output_id_relabeling	statement_policy	True	True	False	accepted	none
+jstprove-proof-only	proof_hash_relabeling	artifact_binding	True	True	False	accepted	none
+jstprove-proof-only	proof_system_version_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+jstprove-proof-only	setup_commitment_relabeling	setup_binding	True	True	False	accepted	none
+jstprove-proof-only	statement_commitment_relabeling	statement_commitment	True	True	False	accepted	none
+jstprove-proof-only	upstream_commit_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+jstprove-proof-only	verifier_domain_relabeling	domain_or_version_allowlist	True	True	False	accepted	none
+jstprove-statement-envelope	config_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for quantization_config_id
+jstprove-statement-envelope	input_artifact_bytes_relabeling	external_proof_verifier	True	False	True	external_proof_verifier	"JSTprove Remainder verifier rejected: Build the LHS of the equation (defined by the constrained values)
+Layer that calcs r - constrained has layer id: Layer(4)
+Iteration 0 of build_fractional_sumcheck has layer id: Layer(5)
+Build the RHS of the equation (defined by the table values and multiplicities)
+Layer that aggs the multiplicities has layer id: Layer(6)
+Layer that calculates r - table has layer id: Layer(7)
+Iteration 0 of build_fractional_sumcheck has layer id: Layer(8)
+Iteration 1 of build_fractional_sumcheck has layer id: Layer(9)
+Iteration 2 of build_fractional_sumcheck has layer id: Layer(10)
+Iteration 3 of build_fractional_sumcheck has layer id: Layer(11)
+Iteration 4 of build_fractional_sumcheck has layer id: Layer(12)
+Iteration 5 of build_fractional_sumcheck has layer id: Layer(13)
+Iteration 6 of build_fractional_sumcheck has layer id: Layer(14)
+Iteration 7 of build_fractional_sumcheck has layer id: Layer(15)
+Iteration 8 of build_fractional_sumcheck has layer id: Layer(16)
+Layer that checks that fractions are equal has layer id: Layer(17)
+Error: public inputs do not match the proof transcript"
+jstprove-statement-envelope	input_artifact_hash_relabeling	artifact_binding	True	False	True	artifact_binding	input artifact hash mismatch
+jstprove-statement-envelope	input_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for input_id
+jstprove-statement-envelope	model_artifact_hash_relabeling	artifact_binding	True	False	True	artifact_binding	model artifact hash mismatch
+jstprove-statement-envelope	model_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for model_id
+jstprove-statement-envelope	output_id_relabeling	statement_policy	True	False	True	statement_policy	statement policy mismatch for output_id
+jstprove-statement-envelope	proof_hash_relabeling	artifact_binding	True	False	True	artifact_binding	proof hash mismatch
+jstprove-statement-envelope	proof_system_version_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for proof_system_version
+jstprove-statement-envelope	setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup commitment must be null for JSTprove verifier-facing adapter
+jstprove-statement-envelope	statement_commitment_relabeling	statement_commitment	True	False	True	domain_or_version_allowlist	statement_commitment mismatch
+jstprove-statement-envelope	upstream_commit_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	upstream commit mismatch
+jstprove-statement-envelope	verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	statement policy mismatch for verifier_domain
