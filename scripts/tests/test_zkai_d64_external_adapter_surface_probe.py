@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -80,6 +81,11 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         self.assertEqual(deps["python_modules"]["onnx"], "not_recorded")
         self.assertEqual(deps["cli_tools"]["ezkl"], "not_recorded")
         self.assertEqual(deps["all_vanilla_external_runtime_present"], "not_recorded")
+
+    def test_git_commit_override_is_normalized(self) -> None:
+        override = "  " + ("ABCDEF" * 6) + "ABCD  "
+        with mock.patch.dict(os.environ, {"ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT": override}):
+            self.assertEqual(PROBE._git_commit(), ("abcdef" * 6) + "abcd")
 
     def test_validation_rejects_dependency_probe_drift(self) -> None:
         payload = PROBE.build_probe()

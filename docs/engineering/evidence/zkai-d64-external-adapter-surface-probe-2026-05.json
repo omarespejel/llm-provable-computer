@@ -128,7 +128,7 @@
     "max_abs_output_delta_q8": 10
   },
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "30b9bbdafbc55c4879ab2cfb31f9006541fddaa7",
+  "git_commit": "890a6349e5c097ec4aa8bd85d72eda6c5045d4a6",
   "non_claims": [
     "not an EZKL security finding",
     "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",
