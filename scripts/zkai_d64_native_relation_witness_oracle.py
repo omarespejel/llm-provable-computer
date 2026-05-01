@@ -84,6 +84,7 @@ EXPECTED_NON_CLAIMS = (
     "not AIR constraints",
     "not backend independence evidence",
     "not full transformer inference",
+    "not proof that private witness rows already open to proof_native_parameter_commitment",
 )
 EXPECTED_NEXT_BACKEND_STEP = "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance"
 CANONICAL_UTC_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
