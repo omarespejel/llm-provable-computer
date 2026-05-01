@@ -58,7 +58,7 @@ pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES: usize = 1_048_576;
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const D64_RMSNORM_LOG_SIZE: u32 = 6;
 const D64_Q8_SCALE: i64 = 256;
-const D64_RMSNORM_SCALAR_RANGE_BITS: usize = 16;
+const D64_RMSNORM_SCALAR_RANGE_BITS: usize = 17;
 const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS: usize = 3;
 
@@ -90,7 +90,7 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
     "exact integer isqrt recomputation without floating-point sqrt",
-    "AIR-native bounded sqrt inequality via 16-bit nonnegative gap decompositions",
+    "AIR-native bounded sqrt inequality via 17-bit nonnegative gap decompositions",
     "local RMSNorm output row commitment recomputation before proof verification",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
@@ -1097,11 +1097,8 @@ mod tests {
 
     #[test]
     fn scalar_sqrt_witness_rejects_out_of_bound_gap_surface() {
-        let mut input = input();
-        input.rms_q8 = 46_340;
-        input.average_square_floor = 46_340 * 46_340 + (1 << D64_RMSNORM_SCALAR_RANGE_BITS);
-
-        let error = scalar_sqrt_witness(&input).unwrap_err();
+        let error =
+            decompose_scalar_gap(1 << D64_RMSNORM_SCALAR_RANGE_BITS, "sqrt low delta").unwrap_err();
         assert!(error.to_string().contains("sqrt low delta exceeds"));
     }
 

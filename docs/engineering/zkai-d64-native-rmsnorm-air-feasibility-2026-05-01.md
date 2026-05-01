@@ -79,8 +79,7 @@ AIR component" implementation target.
 Continue from the public-row proof by bridging local RMSNorm rows into the next
 d64 relation surface:
 
-- add a local `rmsnorm_output_row_commitment` for `normed_q8`,
-- make the next proof slice consume the local `rmsnorm_output_row_commitment`,
+- consume the existing local `rmsnorm_output_row_commitment`,
 - only claim the full d64 `output_activation_commitment` after the remaining
   activation, projection, and residual rows are proven or source-bound.
 
