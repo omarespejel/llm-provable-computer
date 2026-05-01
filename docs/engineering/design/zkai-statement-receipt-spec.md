@@ -315,3 +315,16 @@ external composition harness.
 The higher-upside follow-up is now a matched Stwo/EZKL/NANOZK comparison target:
 implement or export a `d=64`, then `d=128`, RMSNorm/SwiGLU/residual block while
 keeping the same receipt and callback discipline.
+
+The d64 native RMSNorm slice contract is the first relation-family consumption
+point after the export contract:
+
+- `docs/engineering/zkai-d64-native-rmsnorm-slice-contract-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-slice-contract-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-slice-contract-2026-05.tsv`
+- `src/stwo_backend/d64_native_rmsnorm_slice_contract.rs`
+
+It still does not claim AIR or proof evidence. Its purpose is to keep the next
+native Stwo slice narrow: consume the export contract, pin the RMSNorm row
+surface, and reject drift before adding projection, activation, or residual
+relations.
