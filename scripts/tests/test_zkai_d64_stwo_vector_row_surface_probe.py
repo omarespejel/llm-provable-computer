@@ -70,6 +70,8 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         )
         self.assertEqual(payload["source_fixture"]["proof_status"], "REFERENCE_FIXTURE_NOT_PROVEN")
         self.assertIn("not a Stwo proof", payload["non_claims"])
+        self.assertFalse(payload["issue_scope"]["closes_related_issue"])
+        self.assertIn("proof_size", payload["issue_scope"]["missing_for_issue_go"])
 
     def test_validation_rejects_top_level_field_drift(self) -> None:
         payload = PROBE.build_probe()
@@ -100,6 +102,13 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "witness profile drift"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_issue_scope_overclaim(self) -> None:
+        payload = PROBE.build_probe()
+        payload["issue_scope"]["closes_related_issue"] = True
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "issue scope drift"):
+            PROBE.validate_probe(payload)
+
     def test_rows_for_tsv_are_stable_and_scoped(self) -> None:
         payload = PROBE.build_probe()
         rows = PROBE.rows_for_tsv(payload)
@@ -126,9 +135,13 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
 
     def test_write_outputs_wraps_os_errors(self) -> None:
         payload = PROBE.build_probe()
-        with mock.patch.object(pathlib.Path, "write_text", side_effect=OSError("disk full")):
-            with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "failed to write"):
-                PROBE.write_outputs(payload, pathlib.Path("/tmp/probe.json"), None)
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            json_path = pathlib.Path(raw_tmp) / "probe.json"
+            with (
+                mock.patch.object(pathlib.Path, "write_text", side_effect=OSError("disk full")),
+                self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "failed to write"),
+            ):
+                PROBE.write_outputs(payload, json_path, None)
 
 
 if __name__ == "__main__":

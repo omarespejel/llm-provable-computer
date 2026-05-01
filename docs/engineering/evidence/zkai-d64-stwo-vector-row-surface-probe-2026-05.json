@@ -40,7 +40,20 @@
   ],
   "decision_matrix_commitment": "blake2b-256:91806bc1c4d24db9d84e7a2f7d53d4607d2402f1e232364722b5c469a4cfc8ee",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "2bb7aa9705be91707aa2cf4904dcd5fe5c171cd7",
+  "git_commit": "cfb6d0a8c3b82bad854446f0ec4426179626e4f6",
+  "issue_scope": {
+    "closes_related_issue": false,
+    "missing_for_issue_go": [
+      "honest_stwo_proof_for_d64_fixture",
+      "statement_commitment_consistency_inside_verified_relation",
+      "proof_size",
+      "proving_time",
+      "verifier_time",
+      "statement_envelope_overhead"
+    ],
+    "pr_scope": "surface_probe_prerequisite",
+    "related_issue": 341
+  },
   "non_claims": [
     "not a Stwo proof",
     "not a verifier-time benchmark",

@@ -111,9 +111,6 @@ def _validate_generated_at(value: Any) -> None:
 
 
 def _git_commit() -> str:
-    override = os.environ.get("ZKAI_D64_STWO_SURFACE_PROBE_GIT_COMMIT")
-    if override and override.strip():
-        return override.strip().lower()
     try:
         completed = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -337,6 +334,22 @@ def expected_non_claims() -> list[str]:
     ]
 
 
+def expected_issue_scope() -> dict[str, Any]:
+    return {
+        "related_issue": 341,
+        "closes_related_issue": False,
+        "pr_scope": "surface_probe_prerequisite",
+        "missing_for_issue_go": [
+            "honest_stwo_proof_for_d64_fixture",
+            "statement_commitment_consistency_inside_verified_relation",
+            "proof_size",
+            "proving_time",
+            "verifier_time",
+            "statement_envelope_overhead",
+        ],
+    }
+
+
 def build_probe() -> dict[str, Any]:
     fixture = FIXTURE.build_fixture()
     FIXTURE.validate_payload(fixture)
@@ -359,6 +372,7 @@ def build_probe() -> dict[str, Any]:
         "witness_profile_commitment": blake2b_commitment(profile, "ptvm:zkai:d64-stwo-vector-row-profile:v1"),
         "decision_matrix": decisions,
         "decision_matrix_commitment": blake2b_commitment(decisions, "ptvm:zkai:d64-stwo-vector-row-decisions:v1"),
+        "issue_scope": expected_issue_scope(),
         "non_claims": expected_non_claims(),
     }
 
@@ -377,6 +391,7 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "witness_profile_commitment",
         "decision_matrix",
         "decision_matrix_commitment",
+        "issue_scope",
         "non_claims",
     }
     if set(payload) != expected_fields:
@@ -439,12 +454,15 @@ def validate_probe(payload: dict[str, Any]) -> None:
         raise D64VectorRowSurfaceError("weight commitment consistency must stay explicit")
     if by_gate["native_stwo_exact_d64_proof"] != "NO_GO_YET":
         raise D64VectorRowSurfaceError("native proof status must not overclaim")
+    if payload["issue_scope"] != expected_issue_scope():
+        raise D64VectorRowSurfaceError("issue scope drift")
     if payload["non_claims"] != expected_non_claims():
         raise D64VectorRowSurfaceError("non-claims drift")
 
 
-def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    validate_probe(payload)
+def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[dict[str, Any]]:
+    if not validated:
+        validate_probe(payload)
     target = payload["target"]
     profile = payload["witness_profile"]
     row_counts = profile["row_counts"]
@@ -468,7 +486,8 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
-    rows = rows_for_tsv(payload)
+    validate_probe(payload)
+    rows = rows_for_tsv(payload, validated=True)
     try:
         if json_path is not None:
             json_path.parent.mkdir(parents=True, exist_ok=True)
