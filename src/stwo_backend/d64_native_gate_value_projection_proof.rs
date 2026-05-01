@@ -50,7 +50,7 @@ pub const ZKAI_D64_GATE_VALUE_PROJECTION_SEMANTIC_SCOPE: &str =
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_DECISION: &str = "GO_D64_GATE_VALUE_PROJECTION_AIR_PROOF";
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_NEXT_BACKEND_STEP: &str =
     "encode activation/SwiGLU rows that consume gate_value_projection_output_commitment and produce hidden_activation_commitment";
-pub const ZKAI_D64_GATE_VALUE_PROJECTION_MAX_JSON_BYTES: usize = 16_777_216;
+pub const ZKAI_D64_GATE_VALUE_PROJECTION_MAX_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES: usize = 16_777_216;
 pub const ZKAI_D64_GATE_MATRIX_ROOT: &str =
     "blake2b-256:c7f5f490cc4140756951d0305a4786a1de9a282687c05a161ea04bd658657cfa";
@@ -493,12 +493,12 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
         return Err(gate_value_error("value projection output drift"));
     }
     expect_eq(
-        &matrix_root(&rows, "gate")?,
+        &matrix_root("gate")?,
         &input.gate_matrix_root,
         "gate matrix root recomputation",
     )?;
     expect_eq(
-        &matrix_root(&rows, "value")?,
+        &matrix_root("value")?,
         &input.value_matrix_root,
         "value matrix root recomputation",
     )?;
@@ -835,7 +835,7 @@ fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
 }
 
 fn field_usize(value: usize) -> BaseField {
-    BaseField::from(value as u32)
+    BaseField::from(u32::try_from(value).expect("field_usize: value out of u32 range"))
 }
 
 fn field_i64(value: i64) -> BaseField {
@@ -873,10 +873,10 @@ fn rows_commitment(rows: &[D64GateValueProjectionMulRow]) -> String {
     blake2b_commitment_bytes(payload.as_bytes(), GATE_VALUE_PROJECTION_MUL_ROW_DOMAIN)
 }
 
-fn matrix_root(rows: &[D64GateValueProjectionMulRow], matrix: &str) -> Result<String> {
+fn matrix_root(matrix: &str) -> Result<String> {
     let mut leaf_hashes = Vec::with_capacity(ZKAI_D64_FF_DIM);
     for output_index in 0..ZKAI_D64_FF_DIM {
-        let values = matrix_row_values(rows, matrix, output_index)?;
+        let values = matrix_row_values(matrix, output_index)?;
         let values_sha256 = sha256_hex(canonical_i64_array(&values).as_bytes());
         let leaf_payload = format!(
             "{{\"kind\":\"matrix_row\",\"matrix\":\"{}\",\"row\":{},\"shape\":[{}],\"values_sha256\":\"{}\"}}",
@@ -887,21 +887,10 @@ fn matrix_root(rows: &[D64GateValueProjectionMulRow], matrix: &str) -> Result<St
     merkle_root(&leaf_hashes, MATRIX_ROW_TREE_DOMAIN)
 }
 
-fn matrix_row_values(
-    rows: &[D64GateValueProjectionMulRow],
-    matrix: &str,
-    output_index: usize,
-) -> Result<Vec<i64>> {
+fn matrix_row_values(matrix: &str, output_index: usize) -> Result<Vec<i64>> {
     let mut values = Vec::with_capacity(ZKAI_D64_WIDTH);
-    for row in rows {
-        if row.matrix == matrix && row.output_index == output_index {
-            values.push(row.weight_q8);
-        }
-    }
-    if values.len() != ZKAI_D64_WIDTH {
-        return Err(gate_value_error(format!(
-            "{matrix} matrix row width mismatch at row {output_index}"
-        )));
+    for input_index in 0..ZKAI_D64_WIDTH {
+        values.push(weight_value(matrix, output_index, input_index)?);
     }
     Ok(values)
 }
@@ -1195,6 +1184,33 @@ mod tests {
         assert!(error
             .to_string()
             .contains("gate projection output commitment"));
+    }
+
+    #[test]
+    fn gate_value_rejects_oversized_input_json() {
+        let oversized = " ".repeat(ZKAI_D64_GATE_VALUE_PROJECTION_MAX_JSON_BYTES + 1);
+        let error = zkai_d64_gate_value_projection_input_from_json_str(&oversized).unwrap_err();
+        assert!(error.to_string().contains("input JSON exceeds max size"));
+    }
+
+    #[test]
+    fn gate_value_rejects_oversized_proof_bytes() {
+        let input = input();
+        let envelope = ZkAiD64GateValueProjectionEnvelope {
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: ZKAI_D64_GATE_VALUE_PROJECTION_PROOF_VERSION.to_string(),
+            statement_version: ZKAI_D64_GATE_VALUE_PROJECTION_STATEMENT_VERSION.to_string(),
+            semantic_scope: ZKAI_D64_GATE_VALUE_PROJECTION_SEMANTIC_SCOPE.to_string(),
+            decision: ZKAI_D64_GATE_VALUE_PROJECTION_DECISION.to_string(),
+            source_bridge_proof_version: ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION
+                .to_string(),
+            input,
+            proof: vec![0u8; ZKAI_D64_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES + 1],
+        };
+        let error = verify_zkai_d64_gate_value_projection_envelope(&envelope).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("proof bytes exceed bounded verifier limit"));
     }
 
     #[test]

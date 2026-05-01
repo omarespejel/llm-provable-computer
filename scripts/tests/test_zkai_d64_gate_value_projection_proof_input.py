@@ -70,6 +70,12 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "gate_matrix_root"):
             GATE_VALUE.validate_payload(payload)
 
+    def test_payload_rejects_value_matrix_root_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["value_matrix_root"] = "blake2b-256:" + "88" * 32
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "value_matrix_root"):
+            GATE_VALUE.validate_payload(payload)
+
     def test_payload_rejects_value_output_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["value_projection_q8"][0] += 1
@@ -93,7 +99,9 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
             self.assertEqual(loaded, payload)
             rows = GATE_VALUE.rows_for_tsv(loaded)
             self.assertEqual(len(rows), 1)
-            self.assertIn("gate_value_projection_output_commitment", tsv_path.read_text(encoding="utf-8"))
+            tsv_text = tsv_path.read_text(encoding="utf-8")
+            self.assertIn("gate_value_projection_output_commitment", tsv_text)
+            self.assertIn(payload["gate_value_projection_output_commitment"], tsv_text)
 
 
 if __name__ == "__main__":
