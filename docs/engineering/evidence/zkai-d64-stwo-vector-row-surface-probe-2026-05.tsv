@@ -1,0 +1,7 @@
+target_id	width	ff_dim	gate	status	projection_mul_rows	trace_rows_excluding_static_table	activation_table_rows	max_abs_intermediate	fits_signed_m31	statement_commitment
+rmsnorm-swiglu-residual-d64-v1	64	256	vector_row_arithmetic_surface	GO	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
+rmsnorm-swiglu-residual-d64-v1	64	256	m31_signed_range_fit	GO	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
+rmsnorm-swiglu-residual-d64-v1	64	256	statement_public_instance_binding	PARTIAL	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
+rmsnorm-swiglu-residual-d64-v1	64	256	weight_commitment_consistency	NO_GO_YET	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
+rmsnorm-swiglu-residual-d64-v1	64	256	activation_table_commitment_consistency	NO_GO_YET	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
+rmsnorm-swiglu-residual-d64-v1	64	256	native_stwo_exact_d64_proof	NO_GO_YET	49152	49920	2049	849454	true	blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6
