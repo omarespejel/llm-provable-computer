@@ -9,7 +9,7 @@
   },
   "decision": "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "3401322f96f7d5cc925132ae0ae386fd8ac39406",
+  "git_commit": "699cf067f21714c287b715899ffc12a75762676b",
   "method_matrix": [
     {
       "method": "metadata_only_statement_commitments",
@@ -122,9 +122,9 @@
     "activation_lookup_commitment": "blake2b-256:3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
     "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
-    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
-    "statement_commitment": "blake2b-256:c962fda54999c83cb3ba82d5ff1107373d9ae0f625b90b326d83f13af40a9714",
-    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
+    "target_id": "rmsnorm-swiglu-residual-d64-v2",
     "weight_commitment": "blake2b-256:1b17805c9ca827683479abf8165a866eeb86d5994ea420f634c298fee1fa2f08"
   }
 }
