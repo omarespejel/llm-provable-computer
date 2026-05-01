@@ -77,6 +77,14 @@ TSV_COLUMNS = (
     "public_instance_commitment",
     "statement_commitment",
 )
+EXPECTED_NON_CLAIMS = (
+    "not a Stwo proof",
+    "not verifier-time evidence",
+    "not AIR constraints",
+    "not backend independence evidence",
+    "not full transformer inference",
+)
+EXPECTED_NEXT_BACKEND_STEP = "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance"
 
 
 class NativeRelationWitnessOracleError(ValueError):
@@ -311,8 +319,27 @@ def relation_witness(reference: dict[str, Any], fixture: dict[str, Any]) -> dict
     }
 
 
-def _expected_payload() -> dict[str, Any]:
-    return build_payload(include_mutations=False)
+def source_fixture_from_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": fixture["schema"],
+        "target_id": fixture["target"]["target_id"],
+        "proof_status": fixture["implementation_status"]["proof_status"],
+        "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
+        "public_instance_commitment": fixture["statement"]["public_instance_commitment"],
+        "statement_commitment": fixture["statement"]["statement_commitment"],
+    }
+
+
+def canonical_validation_fixture() -> dict[str, Any]:
+    reference = FIXTURE.evaluate_reference_block()
+    binding = FIXTURE.commitments(reference)
+    return {
+        "schema": FIXTURE.SCHEMA,
+        "target": FIXTURE.target_spec(),
+        "commitments": binding,
+        "statement": FIXTURE.statement_payload(reference, binding),
+        "implementation_status": {"proof_status": FIXTURE.PROOF_STATUS},
+    }
 
 
 def validate_relation_witness(witness: dict[str, Any], fixture: dict[str, Any] | None = None) -> None:
@@ -330,7 +357,7 @@ def validate_relation_witness(witness: dict[str, Any], fixture: dict[str, Any] |
     }
     if set(witness) != expected_fields:
         raise NativeRelationWitnessOracleError("relation witness field set mismatch")
-    fixture = FIXTURE.build_fixture() if fixture is None else fixture
+    fixture = canonical_validation_fixture() if fixture is None else fixture
     expected = relation_witness(FIXTURE.evaluate_reference_block(), fixture)
     public_instance = witness["public_instance"]
     if not isinstance(public_instance, dict) or set(public_instance) != set(PUBLIC_INSTANCE_FIELDS):
@@ -446,24 +473,11 @@ def build_payload(*, include_mutations: bool = True) -> dict[str, Any]:
         "generated_at": _generated_at(),
         "git_commit": _git_commit(),
         "decision": DECISION,
-        "source_fixture": {
-            "schema": fixture["schema"],
-            "target_id": fixture["target"]["target_id"],
-            "proof_status": fixture["implementation_status"]["proof_status"],
-            "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
-            "public_instance_commitment": fixture["statement"]["public_instance_commitment"],
-            "statement_commitment": fixture["statement"]["statement_commitment"],
-        },
+        "source_fixture": source_fixture_from_fixture(fixture),
         "relation_witness": witness,
         "mutation_suite": mutation_suite,
-        "non_claims": [
-            "not a Stwo proof",
-            "not verifier-time evidence",
-            "not AIR constraints",
-            "not backend independence evidence",
-            "not full transformer inference",
-        ],
-        "next_backend_step": "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance",
+        "non_claims": list(EXPECTED_NON_CLAIMS),
+        "next_backend_step": EXPECTED_NEXT_BACKEND_STEP,
     }
     if mutation_suite is None:
         payload.pop("mutation_suite")
@@ -496,13 +510,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise NativeRelationWitnessOracleError("git_commit must be a full lowercase hex commit hash")
     if payload["decision"] != DECISION:
         raise NativeRelationWitnessOracleError("decision mismatch")
-    fixture = FIXTURE.build_fixture()
-    expected_payload = _expected_payload()
-    if payload["non_claims"] != expected_payload["non_claims"]:
+    fixture = canonical_validation_fixture()
+    if payload["non_claims"] != list(EXPECTED_NON_CLAIMS):
         raise NativeRelationWitnessOracleError("non-claims drift")
-    if payload["next_backend_step"] != expected_payload["next_backend_step"]:
+    if payload["next_backend_step"] != EXPECTED_NEXT_BACKEND_STEP:
         raise NativeRelationWitnessOracleError("next backend step drift")
-    expected_source = expected_payload["source_fixture"]
+    expected_source = source_fixture_from_fixture(fixture)
     if payload["source_fixture"] != expected_source:
         raise NativeRelationWitnessOracleError("source fixture drift")
     validate_relation_witness(payload["relation_witness"], fixture)
