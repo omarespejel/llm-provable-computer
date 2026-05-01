@@ -9,7 +9,7 @@
   },
   "decision": "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "ec0dbc814ce4f43cccf91bdc87f28ce13ea7b0f6",
+  "git_commit": "3d62d2ef58463c9fa39f3fd0c0d4e32a8eaaae0f",
   "method_matrix": [
     {
       "method": "metadata_only_statement_commitments",
