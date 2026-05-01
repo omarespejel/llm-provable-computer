@@ -105,6 +105,15 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "statement_commitment"):
             FIXTURE.validate_statement(mutated)
 
+    def test_mutation_suite_rejects_self_consistent_noncanonical_baseline(self) -> None:
+        statement = FIXTURE.build_fixture()["statement"]
+        mutated = copy.deepcopy(statement)
+        mutated["model_id"] = "urn:zkai:ptvm:wrong-d64-block"
+        mutated["statement_commitment"] = FIXTURE._statement_commitment_from_payload(mutated)
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "model_id"):
+            FIXTURE.run_mutation_suite(mutated)
+
     def test_statement_binding_rejects_proof_status_overclaim(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
         mutated = copy.deepcopy(statement)
