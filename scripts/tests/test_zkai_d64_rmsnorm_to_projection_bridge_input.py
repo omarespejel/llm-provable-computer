@@ -45,6 +45,19 @@ class ZkAiD64RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.BridgeInputError, "source_rmsnorm_output_row_commitment"):
             BRIDGE.validate_payload(payload)
 
+    def test_payload_rejects_projection_commitment_drift(self) -> None:
+        payload = BRIDGE.build_payload()
+        payload["projection_input_row_commitment"] = "blake2b-256:" + "99" * 32
+        with self.assertRaisesRegex(BRIDGE.BridgeInputError, "projection_input_row_commitment"):
+            BRIDGE.validate_payload(payload)
+
+    def test_load_source_rejects_oversized_source_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source_path = pathlib.Path(tmp) / "oversized-source.json"
+            source_path.write_text(" " * (BRIDGE.MAX_SOURCE_JSON_BYTES + 1), encoding="utf-8")
+            with self.assertRaisesRegex(BRIDGE.BridgeInputError, "exceeds max size"):
+                BRIDGE.load_source(source_path)
+
     def test_source_validation_rejects_normed_commitment_drift(self) -> None:
         source = copy.deepcopy(BRIDGE.load_source())
         source["rmsnorm_output_row_commitment"] = "blake2b-256:" + "88" * 32
