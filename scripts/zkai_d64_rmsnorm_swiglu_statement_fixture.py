@@ -77,7 +77,7 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(domain.encode("utf-8"))
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
-    return digest.hexdigest()
+    return f"blake2b-256:{digest.hexdigest()}"
 
 
 def _generated_at() -> str:
@@ -304,7 +304,7 @@ def build_fixture() -> dict[str, Any]:
     reference = evaluate_reference_block()
     binding = commitments(reference)
     statement = statement_payload(reference, binding)
-    mutations = run_mutation_suite(statement)
+    mutations = run_mutation_suite(statement, statement)
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -343,13 +343,42 @@ def build_fixture() -> dict[str, Any]:
     }
 
 
-def validate_statement(statement: dict[str, Any]) -> None:
+def _expected_statement() -> dict[str, Any]:
     reference = evaluate_reference_block()
     binding = commitments(reference)
-    expected = statement_payload(reference, binding)
+    return statement_payload(reference, binding)
+
+
+def _statement_commitment_from_payload(statement: dict[str, Any]) -> str:
+    payload = copy.deepcopy(statement)
+    payload.pop("statement_commitment")
+    return blake2b_commitment(payload, "ptvm:zkai:d64-statement:v1")
+
+
+def validate_statement(statement: dict[str, Any], expected: dict[str, Any] | None = None) -> None:
+    if not isinstance(statement, dict):
+        raise StatementFixtureError("statement must be an object")
+    if expected is None:
+        expected = _expected_statement()
+
+    expected_keys = set(expected)
+    actual_keys = set(statement)
+    if actual_keys != expected_keys:
+        missing = sorted(expected_keys - actual_keys)
+        extra = sorted(actual_keys - expected_keys)
+        raise StatementFixtureError(f"statement field set mismatch: missing={missing}, extra={extra}")
+
     for field, value in expected.items():
-        if statement.get(field) != value:
+        if field == "statement_commitment":
+            continue
+        if statement[field] != value:
             raise StatementFixtureError(f"statement field mismatch: {field}")
+
+    if statement["statement_commitment"] != _statement_commitment_from_payload(statement):
+        raise StatementFixtureError("statement field mismatch: statement_commitment")
+
+    if statement["statement_commitment"] != expected["statement_commitment"]:
+        raise StatementFixtureError("statement field mismatch: statement_commitment")
 
 
 def mutate_statement(statement: dict[str, Any], field: str, value: Any) -> dict[str, Any]:
@@ -359,7 +388,8 @@ def mutate_statement(statement: dict[str, Any], field: str, value: Any) -> dict[
 
 
 def mutation_cases(statement: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    wrong_commitment = "00" * 32
+    wrong_commitment = "blake2b-256:" + "00" * 32
+    wrong_sha256 = "00" * 32
     return {
         "model_id_relabeling": mutate_statement(statement, "model_id", "urn:zkai:ptvm:different-d64-block"),
         "verifier_domain_relabeling": mutate_statement(statement, "verifier_domain", "ptvm:zkai:wrong-domain:v1"),
@@ -390,16 +420,18 @@ def mutation_cases(statement: dict[str, Any]) -> dict[str, dict[str, Any]]:
         ),
         "statement_commitment_relabeling": mutate_statement(statement, "statement_commitment", wrong_commitment),
         "proof_status_overclaim": mutate_statement(statement, "proof_status", "PROVEN"),
-        "reference_output_relabeling": mutate_statement(statement, "reference_output_sha256", wrong_commitment),
+        "reference_output_relabeling": mutate_statement(statement, "reference_output_sha256", wrong_sha256),
     }
 
 
-def run_mutation_suite(statement: dict[str, Any]) -> dict[str, Any]:
-    validate_statement(statement)
+def run_mutation_suite(statement: dict[str, Any], expected: dict[str, Any] | None = None) -> dict[str, Any]:
+    if expected is None:
+        expected = _expected_statement()
+    validate_statement(statement, expected)
     cases = []
     for name, mutated in mutation_cases(statement).items():
         try:
-            validate_statement(mutated)
+            validate_statement(mutated, expected)
         except StatementFixtureError as err:
             cases.append({"name": name, "rejected": True, "reason": str(err)})
         else:
