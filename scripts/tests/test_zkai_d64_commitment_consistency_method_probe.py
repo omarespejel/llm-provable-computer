@@ -180,6 +180,10 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
             payload["source_fixture"]["activation_lookup_commitment"],
             fixture["statement"]["activation_lookup_commitment"],
         )
+        self.assertEqual(
+            payload["source_fixture"]["proof_native_parameter_commitment"],
+            payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"],
+        )
         self.assertNotEqual(
             payload["source_fixture"]["weight_commitment"],
             payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"],

@@ -73,6 +73,7 @@ domain-separated.
 | `statement_kind` | Statement category, for example `model-inference`, `transformer-block`, `tool-proof`, or `agent-subreceipt`. |
 | `model_id` | Human-facing model or primitive identifier if claimed. |
 | `model_artifact_commitment` | Commitment to weights, ONNX file, AIR trace generator, circuit, or other model artifact. |
+| `proof_native_parameter_commitment` | Optional proof-friendly commitment to private parameters/lookups when publication hashes are not directly checked inside the proof relation. |
 | `input_commitment` | Commitment to the claimed input/context. |
 | `output_commitment` | Commitment to the claimed output/action/logits/hidden state. |
 | `config_commitment` | Commitment to quantization, tokenizer, shape, circuit settings, or runtime config. |
@@ -252,6 +253,10 @@ publication hashes remain audit/export identifiers, while the native receipt and
 proof public instance bind a `proof_native_parameter_commitment`. A receipt that
 only carries publication hashes or unconsumed external Merkle openings is not a
 valid statement-binding proof surface.
+
+The canonical d64 statement fixture now carries that field directly. Its
+presence is still not a proof claim: it is the public binding target the next
+native proof relation must consume.
 
 The correct interpretation is:
 

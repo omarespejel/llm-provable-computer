@@ -62,6 +62,7 @@ A `zkAIStatementReceiptV1` for the Stwo-native primitive must bind:
 | `statement_kind` | `transformer-primitive`. |
 | `model_id` | Primitive or block identifier, not a full-model claim. |
 | `model_artifact_commitment` | Program, weights, and/or circuit/AIR identity commitment. |
+| `proof_native_parameter_commitment` | Proof-friendly commitment to private parameter/table rows when publication hashes are retained for audit/export identity. |
 | `input_commitment` | Canonical input vector/state commitment. |
 | `output_commitment` | Canonical output vector/state commitment. |
 | `config_commitment` | Shape, fixed-point, lookup, normalization, and runtime config commitment. |
@@ -227,6 +228,9 @@ hashes for audit/export identity, but add a
 `proof_native_parameter_commitment` to the d64 statement and bind that field in
 the native proof public instance. The probe explicitly rejects metadata-only
 binding and external Merkle openings that are not consumed by the proof relation.
+
+The canonical d64 statement fixture carries the field now; the remaining proof
+work is to make the native relation consume it.
 
 ## NO-GO criteria
 

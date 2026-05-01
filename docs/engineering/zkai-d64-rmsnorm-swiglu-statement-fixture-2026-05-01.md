@@ -44,6 +44,7 @@ The fixture emits a `zkai-statement-target-v1` statement with commitments for:
 - model artifact,
 - model config,
 - gate/value/down weights,
+- proof-native parameter manifest,
 - input activation,
 - output activation,
 - RMSNorm config,
@@ -52,7 +53,12 @@ The fixture emits a `zkai-statement-target-v1` statement with commitments for:
 - reference output digest,
 - statement commitment.
 
-The mutation suite accepts the baseline and rejects `14 / 14` checked relabels:
+The proof-native parameter manifest is the method selected by the later
+commitment-consistency probe: publication hashes remain audit/export identity,
+while `proof_native_parameter_commitment` is the value the native proof public
+instance must bind.
+
+The mutation suite accepts the baseline and rejects `15 / 15` checked relabels:
 
 - model ID,
 - verifier domain,
@@ -60,6 +66,7 @@ The mutation suite accepts the baseline and rejects `14 / 14` checked relabels:
 - model artifact commitment,
 - model config commitment,
 - weight commitment,
+- proof-native parameter commitment,
 - input activation commitment,
 - output activation commitment,
 - normalization config commitment,
@@ -80,7 +87,8 @@ The next implementation step is now concrete:
 1. encode RMSNorm rows against the committed scale vector,
 2. encode gate/value/down projection rows against the committed matrices,
 3. encode bounded SiLU lookup and SwiGLU multiplication rows,
-4. bind the proof public instance to this exact statement payload,
+4. bind the proof public instance to `proof_native_parameter_commitment` and
+   this exact statement payload,
 5. only then report proof size, proving cost, verifier cost, and statement
    overhead.
 

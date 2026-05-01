@@ -298,35 +298,7 @@ def activation_table_tree() -> dict[str, Any]:
 
 
 def proof_native_parameter_manifest(reference: dict[str, Any]) -> dict[str, Any]:
-    matrix_trees = {
-        "gate": matrix_tree("gate", FIXTURE.FF_DIM),
-        "value": matrix_tree("value", FIXTURE.FF_DIM),
-        "down": matrix_tree("down", FIXTURE.WIDTH),
-    }
-    rms_tree = rms_scale_tree(reference)
-    activation_tree = activation_table_tree()
-    manifest = {
-        "scheme": "d64-proof-native-parameter-manifest-v1",
-        "matrix_trees": matrix_trees,
-        "rms_scale_tree": rms_tree,
-        "activation_table_tree": activation_tree,
-        "counts": {
-            "matrix_row_leaves": sum(tree["leaf_count"] for tree in matrix_trees.values()),
-            "parameter_scalars": 3 * FIXTURE.WIDTH * FIXTURE.FF_DIM + FIXTURE.WIDTH,
-            "activation_table_leaves": activation_tree["leaf_count"],
-        },
-    }
-    manifest["proof_native_parameter_commitment"] = blake2b_commitment(
-        {
-            "scheme": manifest["scheme"],
-            "matrix_roots": {name: tree["root"] for name, tree in matrix_trees.items()},
-            "rms_scale_root": rms_tree["root"],
-            "activation_table_root": activation_tree["root"],
-            "counts": manifest["counts"],
-        },
-        "ptvm:zkai:d64:proof-native-parameter-manifest:v1",
-    )
-    return manifest
+    return FIXTURE.proof_native_parameter_manifest(reference)
 
 
 def activation_usage(reference: dict[str, Any]) -> dict[str, Any]:
@@ -427,6 +399,7 @@ def build_probe() -> dict[str, Any]:
             "statement_commitment": fixture["statement"]["statement_commitment"],
             "weight_commitment": fixture["statement"]["weight_commitment"],
             "activation_lookup_commitment": fixture["statement"]["activation_lookup_commitment"],
+            "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
         },
         "proof_native_parameter_manifest": manifest,
         "proof_native_parameter_manifest_commitment": blake2b_commitment(
@@ -485,6 +458,7 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "statement_commitment": fixture["statement"]["statement_commitment"],
         "weight_commitment": fixture["statement"]["weight_commitment"],
         "activation_lookup_commitment": fixture["statement"]["activation_lookup_commitment"],
+        "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
     }
     if payload["source_fixture"] != expected_source:
         raise CommitmentConsistencyProbeError("source fixture drift")
