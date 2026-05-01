@@ -432,8 +432,12 @@ fn verify_bridge_rows(input: &ZkAiD64RmsnormToProjectionBridgeInput, proof: &[u8
 }
 
 fn validate_bridge_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
-    super::validate_publication_v1_pcs_config(actual, "d64 RMSNorm-to-projection bridge proof")
-        .map_err(|error| bridge_error(error.to_string()))
+    if !super::publication_v1_pcs_config_matches(&actual) {
+        return Err(bridge_error(
+            "PCS config does not match publication-v1 verifier profile",
+        ));
+    }
+    Ok(bridge_pcs_config())
 }
 
 fn bridge_pcs_config() -> PcsConfig {
