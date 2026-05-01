@@ -106,6 +106,14 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
             payload["statement"]["proof_native_parameter_commitment"],
         )
         self.assertEqual(
+            public_instance["normalization_config_commitment"],
+            payload["statement"]["normalization_config_commitment"],
+        )
+        self.assertEqual(
+            public_instance["activation_lookup_commitment"],
+            payload["statement"]["activation_lookup_commitment"],
+        )
+        self.assertEqual(
             FIXTURE.public_instance_commitment(payload["commitments"]),
             payload["statement"]["public_instance_commitment"],
         )

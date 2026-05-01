@@ -25,9 +25,9 @@ checked fixture:
 This means the d64 target is not obviously blocked by arithmetic magnitude or
 row count. The latest probe also fixes the next proof-facing public-instance
 contract: the contract binds `proof_native_parameter_commitment`,
-model-config, input, output, verifier-domain, backend-version, public-instance
-commitment, and statement commitment. Its mutation suite rejects `12 / 12`
-checked relabeling attempts.
+model-config, normalization, activation lookup, input, output,
+verifier-domain, backend-version, public-instance commitment, and statement
+commitment. Its mutation suite rejects `14 / 14` checked relabeling attempts.
 
 That is useful, but it is not an exact proof. The remaining proof blocker is
 relation-level commitment consistency: a native proof must show that the weight

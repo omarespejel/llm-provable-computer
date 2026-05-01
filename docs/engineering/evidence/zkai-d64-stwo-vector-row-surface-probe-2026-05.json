@@ -16,7 +16,7 @@
     {
       "gate": "proof_native_public_instance_contract",
       "next_action": "Consume the same public-instance contract inside the native AIR/export path, then verify an honest Stwo proof.",
-      "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config and input/output commitments.",
+      "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config, normalization, activation lookup, input, and output commitments.",
       "status": "GO"
     },
     {
@@ -44,9 +44,9 @@
       "status": "NO_GO_YET"
     }
   ],
-  "decision_matrix_commitment": "blake2b-256:3be169743e0287f5aa5b91402cec1b5f3af893476a878c121c826e6ab665c797",
+  "decision_matrix_commitment": "blake2b-256:2846ec156231c0b4892537c910c0a4e3719486abac42feb9b074428fe1aac9da",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "ae1bd8ccf8c20b6626e6a4c464544e47fe75f3b5",
+  "git_commit": "6e77891536ba7458daafac477b4dc8ff163c70dc",
   "issue_scope": {
     "closes_related_issue": false,
     "missing_for_issue_go": [
@@ -80,6 +80,8 @@
       "output_activation_commitment",
       "model_config_commitment",
       "proof_native_parameter_commitment",
+      "normalization_config_commitment",
+      "activation_lookup_commitment",
       "public_instance_commitment",
       "statement_commitment",
       "verifier_domain",
@@ -88,17 +90,19 @@
     "non_claim": "This is a proof-public-instance contract, not a native Stwo proof.",
     "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "public_instance": {
+      "activation_lookup_commitment": "blake2b-256:3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
       "ff_dim": 256,
       "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
       "model_config_commitment": "blake2b-256:8c74650ddc92619abe50998e3f034312f1e281d5abb35230667518adb493d449",
+      "normalization_config_commitment": "blake2b-256:bfd18a548d24acdf90518744f24e4dd742e68cd2df5f006d3eacc02f3217dc72",
       "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
       "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
       "target_id": "rmsnorm-swiglu-residual-d64-v2",
       "width": 64
     },
-    "public_instance_commitment": "blake2b-256:ea89fa7025ff5409fb184f8279a8186b73354cead32d90d279b2bd79ec395da2",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
     "schema": "zkai-d64-stwo-proof-public-instance-contract-v1",
-    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
     "status": "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
     "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
   },
@@ -141,6 +145,16 @@
         "rejected": true
       },
       {
+        "name": "normalization_config_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "activation_lookup_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
         "name": "target_id_relabeling",
         "reason": "proof public-instance contract mismatch: public_instance",
         "rejected": true
@@ -167,16 +181,16 @@
       }
     ],
     "decision": "GO",
-    "mutations_checked": 12,
-    "mutations_rejected": 12
+    "mutations_checked": 14,
+    "mutations_rejected": 14
   },
   "schema": "zkai-d64-stwo-vector-row-surface-probe-v2",
   "source_fixture": {
     "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
-    "public_instance_commitment": "blake2b-256:ea89fa7025ff5409fb184f8279a8186b73354cead32d90d279b2bd79ec395da2",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
     "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
-    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
     "target_id": "rmsnorm-swiglu-residual-d64-v2"
   },
   "target": {
