@@ -47,7 +47,9 @@ TSV_COLUMNS = (
     "width",
     "ff_dim",
     "linear_projection_muls",
-    "weight_scalars",
+    "projection_weight_scalars",
+    "rms_scale_scalars",
+    "total_committed_parameter_scalars",
     "statement_fixture_valid",
     "mutations_checked",
     "mutations_rejected",
@@ -197,6 +199,7 @@ def evaluate_reference_block() -> dict[str, Any]:
 
 def target_spec() -> dict[str, Any]:
     linear_projection_muls = 3 * WIDTH * FF_DIM
+    rms_scale_scalars = WIDTH
     return {
         "target_id": TARGET_ID,
         "statement_kind": "transformer-block",
@@ -211,7 +214,9 @@ def target_spec() -> dict[str, Any]:
         "linear_projection_muls": linear_projection_muls,
         "swiglu_gate_muls": FF_DIM,
         "rms_square_rows": WIDTH,
-        "weight_scalars": linear_projection_muls,
+        "projection_weight_scalars": linear_projection_muls,
+        "rms_scale_scalars": rms_scale_scalars,
+        "total_committed_parameter_scalars": linear_projection_muls + rms_scale_scalars,
         "required_backend_version": REQUIRED_BACKEND_VERSION,
     }
 
@@ -420,7 +425,9 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "width": target["width"],
             "ff_dim": target["ff_dim"],
             "linear_projection_muls": target["linear_projection_muls"],
-            "weight_scalars": target["weight_scalars"],
+            "projection_weight_scalars": target["projection_weight_scalars"],
+            "rms_scale_scalars": target["rms_scale_scalars"],
+            "total_committed_parameter_scalars": target["total_committed_parameter_scalars"],
             "statement_fixture_valid": str(mutations["baseline_valid"]).lower(),
             "mutations_checked": mutations["mutations_checked"],
             "mutations_rejected": mutations["mutations_rejected"],

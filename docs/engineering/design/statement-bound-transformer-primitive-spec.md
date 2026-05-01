@@ -180,7 +180,9 @@ The next committed-target fixture is also checked in:
 
 That fixture is a GO for a canonical statement target, not for proof generation.
 It pins deterministic signed-q8 RMSNorm-SwiGLU-residual semantics for `d=64`,
-`ff_dim=256`, `49,152` projection multiplications, and `49,152` weight scalars.
+`ff_dim=256`, `49,152` projection multiplications, `49,152` projection weight
+scalars, and `64` RMS scale scalars (`49,216` total committed parameter
+scalars).
 It binds model/config/weight/input/output/normalization/activation/public-instance
 commitments and rejects `14 / 14` checked relabeling mutations, including a
 proof-status overclaim. The next backend must prove this statement, or record an

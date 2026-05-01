@@ -21,7 +21,9 @@ and statement commitments for a matched `d=64`, `ff_dim=256` block.
 | Width | `64` |
 | Feed-forward dimension | `256` |
 | Linear projection multiplications | `49,152` |
-| Weight scalars | `49,152` |
+| Projection weight scalars | `49,152` |
+| RMS scale scalars | `64` |
+| Total committed parameter scalars | `49,216` |
 | SwiGLU gate multiplications | `256` |
 | RMS square rows | `64` |
 
