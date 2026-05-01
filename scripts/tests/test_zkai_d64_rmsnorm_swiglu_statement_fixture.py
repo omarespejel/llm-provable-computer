@@ -27,7 +27,9 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         self.assertEqual(target["width"], 64)
         self.assertEqual(target["ff_dim"], 256)
         self.assertEqual(target["linear_projection_muls"], 49_152)
-        self.assertEqual(target["weight_scalars"], 49_152)
+        self.assertEqual(target["projection_weight_scalars"], 49_152)
+        self.assertEqual(target["rms_scale_scalars"], 64)
+        self.assertEqual(target["total_committed_parameter_scalars"], 49_216)
         self.assertEqual(target["required_backend_version"], "stwo-rmsnorm-swiglu-residual-d64-v1")
 
     def test_reference_block_is_deterministic_and_dimensioned(self) -> None:
@@ -103,6 +105,9 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         self.assertEqual(rows[0]["width"], 64)
         self.assertEqual(rows[0]["ff_dim"], 256)
         self.assertEqual(rows[0]["linear_projection_muls"], 49_152)
+        self.assertEqual(rows[0]["projection_weight_scalars"], 49_152)
+        self.assertEqual(rows[0]["rms_scale_scalars"], 64)
+        self.assertEqual(rows[0]["total_committed_parameter_scalars"], 49_216)
         self.assertEqual(rows[0]["mutations_checked"], 14)
         self.assertEqual(rows[0]["mutations_rejected"], 14)
 
