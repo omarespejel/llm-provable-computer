@@ -216,6 +216,18 @@ table, `49,152` projection multiplication rows, max checked intermediate
 is still NO-GO-YET until weight and activation-table commitment consistency are
 verified inside the relation.
 
+The commitment-consistency method probe chooses the next implementation method:
+
+- `docs/engineering/zkai-d64-commitment-consistency-method-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.tsv`
+
+The checked method is a dual commitment surface. Keep the current publication
+hashes for audit/export identity, but add a
+`proof_native_parameter_commitment` to the d64 statement and bind that field in
+the native proof public instance. The probe explicitly rejects metadata-only
+binding and external Merkle openings that are not consumed by the proof relation.
+
 ## NO-GO criteria
 
 Record an explicit NO-GO if:

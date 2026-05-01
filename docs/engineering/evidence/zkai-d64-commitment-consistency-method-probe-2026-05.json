@@ -1,0 +1,128 @@
+{
+  "activation_usage": {
+    "activation_lookup_rows": 256,
+    "distinct_activation_lookup_rows": 204,
+    "lookup_indices_sha256": "2b83ee17c8634ae1fea3f80bf3361cc83191859db2755fe5264ace164a25990c",
+    "max_lookup_index": 1399,
+    "min_lookup_index": 619
+  },
+  "decision": "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "3db3c53967dc22fa86f17746232aa99043e5d774",
+  "method_matrix": [
+    {
+      "method": "metadata_only_statement_commitments",
+      "next_action": "Do not use this as the native d64 proof method.",
+      "reason": "Receipt metadata can relabel commitments without forcing private witness rows to match them.",
+      "required_statement_change": "none_but_insufficient",
+      "same_statement_target": false,
+      "status": "NO_GO"
+    },
+    {
+      "method": "publication_hash_inside_air",
+      "next_action": "Keep publication hashes for audit/export identity; do not make them the first AIR consistency mechanism.",
+      "reason": "It would bind the existing publication hashes directly, but proving Blake2b/SHA-style hashing inside the AIR is the wrong first implementation target.",
+      "required_statement_change": "none",
+      "same_statement_target": true,
+      "status": "NO_GO_FOR_FIRST_PR"
+    },
+    {
+      "method": "external_merkle_openings_only",
+      "next_action": "Use openings only if the proof relation consumes and checks the opened rows.",
+      "reason": "Opening rows outside the proof does not prove the Stwo witness used those rows.",
+      "required_statement_change": "would_need_relation_level_binding",
+      "same_statement_target": false,
+      "status": "NO_GO"
+    },
+    {
+      "method": "public_parameter_columns",
+      "next_action": "Keep as a debugging fallback for the first exact proof if proof-native private commitments take too long.",
+      "reason": "Making all parameters verifier-visible binds the relation, but exposes 49,216 q8 scalars and is not the best private-model path.",
+      "required_statement_change": "public_parameter_payload_or_commitment_policy",
+      "same_statement_target": true,
+      "status": "POSSIBLE_BUT_EXPENSIVE"
+    },
+    {
+      "method": "dual_publication_and_proof_native_parameter_commitment",
+      "next_action": "Update the d64 statement fixture with this field, then make the native proof public instance bind it.",
+      "reason": "Carry the existing publication hashes and add a proof-native parameter commitment that the AIR/receipt can bind.",
+      "required_statement_change": "add_proof_native_parameter_commitment_to_d64_statement",
+      "same_statement_target": true,
+      "status": "GO_FOR_NEXT_PR"
+    }
+  ],
+  "method_matrix_commitment": "blake2b-256:0d1b3362f200e3dd7835aae8cb8d5942de2e8b381b156281c4a3732f7e95b325",
+  "next_pr_target": {
+    "action": "add proof_native_parameter_commitment to the d64 statement fixture and bind it in the native proof public instance",
+    "chosen_method": "dual_publication_and_proof_native_parameter_commitment",
+    "issue": 346
+  },
+  "non_claims": [
+    "not a Stwo proof",
+    "not a proof-size or timing benchmark",
+    "not a claim that publication hashes are verified inside the AIR",
+    "not a claim that Merkle openings alone bind private witness rows",
+    "not full transformer inference"
+  ],
+  "proof_native_parameter_manifest": {
+    "activation_table_tree": {
+      "domain_q8": [
+        -1024,
+        1024
+      ],
+      "kind": "bounded_silu_table",
+      "leaf_count": 2049,
+      "leaf_hashes_sha256": "fc8caea7f82043dd788c9012878f3b236d5f9c1167dab776aa0bbe2584e34d71",
+      "root": "blake2b-256:393f30234f5f86554d163b2ad0b0759928bce420b878e35576816516f0a8d633"
+    },
+    "counts": {
+      "activation_table_leaves": 2049,
+      "matrix_row_leaves": 576,
+      "parameter_scalars": 49216
+    },
+    "matrix_trees": {
+      "down": {
+        "leaf_count": 64,
+        "leaf_hashes_sha256": "9be02e6d429962f72009990dccc0dba75fb6131ba9410f9b9b890c1897695a04",
+        "matrix": "down",
+        "root": "blake2b-256:19b08584116916a72297047f01e2dc7505fb19e9508b384c7d80dfe3cb82c330",
+        "row_width": 256,
+        "rows": 64
+      },
+      "gate": {
+        "leaf_count": 256,
+        "leaf_hashes_sha256": "ca667bf2cda50aef977dafe04b7d2a7bb2976c8f107259611328b66fcb5c47eb",
+        "matrix": "gate",
+        "root": "blake2b-256:c7f5f490cc4140756951d0305a4786a1de9a282687c05a161ea04bd658657cfa",
+        "row_width": 64,
+        "rows": 256
+      },
+      "value": {
+        "leaf_count": 256,
+        "leaf_hashes_sha256": "b914c485dc9759e1960885f490db3929069a12999da978e5f7cf0b5a5c676617",
+        "matrix": "value",
+        "root": "blake2b-256:e63d0d6839c92386e50314370e8b13dee0aa68c624f8ce88c34f6a4c1a2c3174",
+        "row_width": 64,
+        "rows": 256
+      }
+    },
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "rms_scale_tree": {
+      "kind": "rms_scale",
+      "leaf_count": 64,
+      "leaf_hashes_sha256": "36fdf66103a5f0339ef2f8a94c305d4110e304fa62a4b5f7751d1493ba8e405c",
+      "root": "blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3"
+    },
+    "scheme": "d64-proof-native-parameter-manifest-v1"
+  },
+  "proof_native_parameter_manifest_commitment": "blake2b-256:7f67ba564ed7ab9671034efa5f461cae9eee9fe255dd92a5919ac4373a767825",
+  "schema": "zkai-d64-commitment-consistency-method-probe-v1",
+  "source_fixture": {
+    "activation_lookup_commitment": "blake2b-256:3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
+    "statement_commitment": "blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6",
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "weight_commitment": "blake2b-256:1b17805c9ca827683479abf8165a866eeb86d5994ea420f634c298fee1fa2f08"
+  }
+}
