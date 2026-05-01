@@ -54,7 +54,7 @@ Generator and tests:
 Source fixture:
 
 - `docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05.json`
-- required backend version: `stwo-rmsnorm-swiglu-residual-d64-v1`
+- required backend version: `stwo-rmsnorm-swiglu-residual-d64-v2`
 
 ## Decision Matrix
 

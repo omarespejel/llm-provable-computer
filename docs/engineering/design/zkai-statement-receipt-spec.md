@@ -73,7 +73,7 @@ domain-separated.
 | `statement_kind` | Statement category, for example `model-inference`, `transformer-block`, `tool-proof`, or `agent-subreceipt`. |
 | `model_id` | Human-facing model or primitive identifier if claimed. |
 | `model_artifact_commitment` | Commitment to weights, ONNX file, AIR trace generator, circuit, or other model artifact. |
-| `proof_native_parameter_commitment` | Optional proof-friendly commitment to private parameters/lookups when publication hashes are not directly checked inside the proof relation. |
+| `proof_native_parameter_commitment` | Proof-friendly commitment to private parameters/lookups when publication hashes are not directly checked inside the proof relation. |
 | `input_commitment` | Commitment to the claimed input/context. |
 | `output_commitment` | Commitment to the claimed output/action/logits/hidden state. |
 | `config_commitment` | Commitment to quantization, tokenizer, shape, circuit settings, or runtime config. |
@@ -99,7 +99,9 @@ A verifier accepts a statement receipt only if all of the following hold:
    artifact or accepted artifact reference.
 4. The delegated proof verifier accepts the proof under verifying-key, setup,
    and public-instance values derived from checked artifacts or source handles.
-5. The proof object's public-instance commitment matches the statement field.
+5. The proof object's public-instance commitment matches the statement field,
+   including `proof_native_parameter_commitment` when private parameters are
+   committed through a proof-native binding target.
 6. The evidence manifest commitment recomputes and contains enough source handles
    for third-party reproduction.
 
@@ -125,6 +127,7 @@ independently and requires rejection:
 - `input_commitment`,
 - `output_commitment`,
 - `config_commitment`,
+- `proof_native_parameter_commitment`,
 - `public_instance_commitment`,
 - `proof_commitment`,
 - `verifying_key_commitment`,

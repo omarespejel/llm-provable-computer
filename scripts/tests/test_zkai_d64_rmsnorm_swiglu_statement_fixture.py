@@ -23,14 +23,14 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
     def test_target_shape_and_operation_counts_are_pinned(self) -> None:
         target = FIXTURE.target_spec()
 
-        self.assertEqual(target["target_id"], "rmsnorm-swiglu-residual-d64-v1")
+        self.assertEqual(target["target_id"], "rmsnorm-swiglu-residual-d64-v2")
         self.assertEqual(target["width"], 64)
         self.assertEqual(target["ff_dim"], 256)
         self.assertEqual(target["linear_projection_muls"], 49_152)
         self.assertEqual(target["projection_weight_scalars"], 49_152)
         self.assertEqual(target["rms_scale_scalars"], 64)
         self.assertEqual(target["total_committed_parameter_scalars"], 49_216)
-        self.assertEqual(target["required_backend_version"], "stwo-rmsnorm-swiglu-residual-d64-v1")
+        self.assertEqual(target["required_backend_version"], "stwo-rmsnorm-swiglu-residual-d64-v2")
 
     def test_reference_block_is_deterministic_and_dimensioned(self) -> None:
         first = FIXTURE.evaluate_reference_block()
@@ -51,6 +51,13 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         self.assertEqual(table[FIXTURE.ACTIVATION_CLAMP_Q8], 0)
         self.assertEqual(FIXTURE.activation_lut_value(-10_000), table[0])
         self.assertEqual(FIXTURE.activation_lut_value(10_000), table[-1])
+
+    def test_merkle_parent_wraps_malformed_hashes(self) -> None:
+        good = "00" * 32
+
+        self.assertTrue(FIXTURE.merkle_parent(good, f"blake2b-256:{good}", "test-domain"))
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "invalid Merkle hash"):
+            FIXTURE.merkle_parent("not-hex", good, "test-domain")
 
     def test_statement_fixture_validates_and_rejects_mutations(self) -> None:
         with mock.patch.dict(os.environ, {"ZKAI_GIT_COMMIT": "test-commit"}, clear=True):
@@ -207,7 +214,7 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         payload = FIXTURE.build_fixture()
         rows = FIXTURE.rows_for_tsv(payload)
 
-        self.assertEqual(rows[0]["target_id"], "rmsnorm-swiglu-residual-d64-v1")
+        self.assertEqual(rows[0]["target_id"], "rmsnorm-swiglu-residual-d64-v2")
         self.assertEqual(rows[0]["proof_status"], "REFERENCE_FIXTURE_NOT_PROVEN")
         self.assertEqual(rows[0]["width"], 64)
         self.assertEqual(rows[0]["ff_dim"], 256)
@@ -234,7 +241,7 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8"))["schema"], FIXTURE.SCHEMA)
             tsv = tsv_path.read_text(encoding="utf-8").splitlines()
             self.assertEqual(tsv[0].split("\t"), list(FIXTURE.TSV_COLUMNS))
-            self.assertEqual(tsv[1].split("\t")[0], "rmsnorm-swiglu-residual-d64-v1")
+            self.assertEqual(tsv[1].split("\t")[0], "rmsnorm-swiglu-residual-d64-v2")
 
     def test_generated_at_rejects_bad_env(self) -> None:
         with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "bad"}, clear=True):

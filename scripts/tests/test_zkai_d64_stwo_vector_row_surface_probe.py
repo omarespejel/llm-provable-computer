@@ -114,7 +114,7 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         rows = PROBE.rows_for_tsv(payload)
 
         self.assertEqual(len(rows), 6)
-        self.assertEqual(rows[0]["target_id"], "rmsnorm-swiglu-residual-d64-v1")
+        self.assertEqual(rows[0]["target_id"], "rmsnorm-swiglu-residual-d64-v2")
         self.assertEqual(rows[0]["gate"], "vector_row_arithmetic_surface")
         self.assertEqual(rows[0]["status"], "GO")
         self.assertEqual(rows[0]["projection_mul_rows"], 49_152)
