@@ -304,7 +304,8 @@ def build_fixture() -> dict[str, Any]:
     reference = evaluate_reference_block()
     binding = commitments(reference)
     statement = statement_payload(reference, binding)
-    mutations = run_mutation_suite(statement)
+    expected_statement = statement_payload(reference, binding)
+    mutations = run_mutation_suite(statement, expected_statement)
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -355,11 +356,9 @@ def _statement_commitment_from_payload(statement: dict[str, Any]) -> str:
     return blake2b_commitment(payload, "ptvm:zkai:d64-statement:v1")
 
 
-def validate_statement(statement: dict[str, Any], expected: dict[str, Any] | None = None) -> None:
+def _validate_statement_against_expected(statement: dict[str, Any], expected: dict[str, Any]) -> None:
     if not isinstance(statement, dict):
         raise StatementFixtureError("statement must be an object")
-    if expected is None:
-        expected = _expected_statement()
 
     expected_keys = set(expected)
     actual_keys = set(statement)
@@ -379,6 +378,10 @@ def validate_statement(statement: dict[str, Any], expected: dict[str, Any] | Non
 
     if statement["statement_commitment"] != expected["statement_commitment"]:
         raise StatementFixtureError("statement field mismatch: statement_commitment")
+
+
+def validate_statement(statement: dict[str, Any]) -> None:
+    _validate_statement_against_expected(statement, _expected_statement())
 
 
 def mutate_statement(statement: dict[str, Any], field: str, value: Any) -> dict[str, Any]:
@@ -424,14 +427,12 @@ def mutation_cases(statement: dict[str, Any]) -> dict[str, dict[str, Any]]:
     }
 
 
-def run_mutation_suite(statement: dict[str, Any], expected: dict[str, Any] | None = None) -> dict[str, Any]:
-    if expected is None:
-        expected = _expected_statement()
-    validate_statement(statement, expected)
+def run_mutation_suite(statement: dict[str, Any], expected: dict[str, Any]) -> dict[str, Any]:
+    _validate_statement_against_expected(statement, expected)
     cases = []
     for name, mutated in mutation_cases(statement).items():
         try:
-            validate_statement(mutated, expected)
+            _validate_statement_against_expected(mutated, expected)
         except StatementFixtureError as err:
             cases.append({"name": name, "rejected": True, "reason": str(err)})
         else:
@@ -446,14 +447,33 @@ def run_mutation_suite(statement: dict[str, Any], expected: dict[str, Any] | Non
     }
 
 
+def validate_payload(payload: dict[str, Any]) -> None:
+    if not isinstance(payload, dict):
+        raise StatementFixtureError("payload must be an object")
+    target = payload.get("target")
+    if target != target_spec():
+        raise StatementFixtureError("payload target does not match canonical target_spec")
+    statement = payload.get("statement")
+    validate_statement(statement)
+    implementation_status = payload.get("implementation_status")
+    if not isinstance(implementation_status, dict):
+        raise StatementFixtureError("payload implementation_status must be an object")
+    if implementation_status.get("proof_status") != statement["proof_status"]:
+        raise StatementFixtureError("payload proof_status does not match statement proof_status")
+    expected_mutations = run_mutation_suite(statement, _expected_statement())
+    if payload.get("mutation_suite") != expected_mutations:
+        raise StatementFixtureError("payload mutation_suite does not match canonical mutation suite")
+
+
 def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    target = payload["target"]
+    validate_payload(payload)
+    target = target_spec()
     statement = payload["statement"]
     mutations = payload["mutation_suite"]
     return [
         {
             "target_id": target["target_id"],
-            "proof_status": payload["implementation_status"]["proof_status"],
+            "proof_status": statement["proof_status"],
             "width": target["width"],
             "ff_dim": target["ff_dim"],
             "linear_projection_muls": target["linear_projection_muls"],
@@ -472,6 +492,7 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    rows = rows_for_tsv(payload)
     try:
         if json_path is not None:
             json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -481,7 +502,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             with tsv_path.open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
                 writer.writeheader()
-                for row in rows_for_tsv(payload):
+                for row in rows:
                     writer.writerow(row)
     except OSError as err:
         raise StatementFixtureError(f"failed to write statement fixture output: {err}") from err
