@@ -134,6 +134,38 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance contract mismatch"):
             PROBE.validate_probe(payload)
 
+    def test_validation_hard_pins_public_instance_field_set(self) -> None:
+        payload = PROBE.build_probe()
+        contract = payload["proof_public_instance_contract"]
+
+        self.assertEqual(
+            PROBE.PUBLIC_INSTANCE_FIELDS,
+            (
+                "target_id",
+                "width",
+                "ff_dim",
+                "input_activation_commitment",
+                "output_activation_commitment",
+                "model_config_commitment",
+                "proof_native_parameter_commitment",
+            ),
+        )
+
+        del contract["public_instance"]["proof_native_parameter_commitment"]
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance field set mismatch"):
+            PROBE.validate_proof_public_instance_contract(contract)
+
+    def test_validation_hard_pins_bound_statement_fields(self) -> None:
+        payload = PROBE.build_probe()
+        contract = payload["proof_public_instance_contract"]
+        contract["bound_statement_fields"] = [
+            field for field in contract["bound_statement_fields"] if field != "proof_native_parameter_commitment"
+        ]
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance bound field drift"):
+            PROBE.validate_proof_public_instance_contract(contract)
+
     def test_validation_rejects_public_instance_mutation_suite_drift(self) -> None:
         payload = PROBE.build_probe()
         payload["proof_public_instance_mutation_suite"]["mutations_rejected"] -= 1
