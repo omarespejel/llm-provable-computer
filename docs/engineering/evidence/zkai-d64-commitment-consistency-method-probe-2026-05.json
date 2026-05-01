@@ -9,7 +9,7 @@
   },
   "decision": "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "e9aed5e21e090c58ce05fa6c0b22bc9e9a69920f",
+  "git_commit": "fc69b84219dc25f0a1b71760d05cd99cb04dbf58",
   "method_matrix": [
     {
       "method": "metadata_only_statement_commitments",
@@ -123,7 +123,7 @@
     "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
     "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
-    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
     "target_id": "rmsnorm-swiglu-residual-d64-v2",
     "weight_commitment": "blake2b-256:1b17805c9ca827683479abf8165a866eeb86d5994ea420f634c298fee1fa2f08"
   }
