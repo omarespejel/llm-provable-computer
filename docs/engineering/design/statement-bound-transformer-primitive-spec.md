@@ -218,10 +218,14 @@ The JSTprove/Remainder shape probe adds a smaller external proof-stack axis:
 That probe is not a d64 benchmark and not a transformer proof, but it is useful
 operator-pressure context. Tiny `Gemm -> residual Add` and
 `Gemm -> LayerNormalization` fixtures prove and verify under JSTprove/Remainder,
-while `Gemm -> Softmax` is refused at proof construction as an unconstrained op
-and `Gemm -> Relu` fails witness generation on range-check capacity. This keeps
-the research split explicit: statement binding, exact statement semantics, and
-backend operator support are separate gates.
+the checked `Gemm` dimension sweep clears widths `1`, `2`, and `4`, and scaled
+`Gemm -> Relu` variants clear even though the baseline magnitude fails witness
+generation on range-check capacity. `Gemm -> Softmax` is still refused at proof
+construction as an unconstrained op, with the refusal tied to the pinned
+Remainder source, and literal `MatMul -> Add` still fails witness generation.
+This keeps the research split explicit: statement binding, exact statement
+semantics, numeric range discipline, and backend operator support are separate
+gates.
 
 The native Stwo vector-row surface probe is also checked in:
 
