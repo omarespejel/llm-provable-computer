@@ -26,6 +26,19 @@ row count. The proof blocker is commitment consistency: a native proof must show
 that the weight rows and activation-table rows used inside the AIR match the
 committed statement, not merely copy those commitments into receipt metadata.
 
+## Issue Scope
+
+This PR is a prerequisite probe for issue `#341`; it does not close `#341`.
+
+Missing before `#341` can be considered GO:
+
+- an honest Stwo proof for the d64 fixture,
+- relation-level statement commitment consistency,
+- proof size,
+- proving time,
+- verifier time,
+- statement-envelope overhead.
+
 ## Evidence
 
 Machine-readable evidence:
@@ -41,6 +54,7 @@ Generator and tests:
 Source fixture:
 
 - `docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05.json`
+- required backend version: `stwo-rmsnorm-swiglu-residual-d64-v1`
 
 ## Decision Matrix
 
