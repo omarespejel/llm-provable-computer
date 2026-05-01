@@ -404,9 +404,26 @@ decompositions. It also recomputes a local
 surface relabeling-resistant before the next slice consumes it. This is still
 not a full d64 block proof, not a private-witness opening proof, and not a
 binding of the full d64 `output_activation_commitment` from only RMSNorm-local
-rows. The remaining native-proof seam in issue `#358` is to make the next
-relation slice consume that local row commitment before claiming full-block
-output binding.
+rows.
+
+The RMSNorm-to-projection bridge is the first proof-backed consumption of that
+local row commitment:
+
+- `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
+
+Decision: `GO_D64_RMSNORM_TO_PROJECTION_INPUT_BRIDGE_AIR_PROOF`. The bridge
+consumes the checked RMSNorm-local `normed_q8` rows under
+`rmsnorm_output_row_commitment`, proves row equality to a separately
+domain-separated projection-input row surface, and emits
+`projection_input_row_commitment`. The verifier recomputes both commitments
+before proof verification, pins the PCS profile, rejects malformed proof
+commitment vectors before indexing, and rejects attempts to relabel the bridge
+as the full d64 `output_activation_commitment`. The remaining native-proof seam
+is now the next relation slice: consume `projection_input_row_commitment` and
+prove the gate/value projection rows before claiming full-block output binding.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 

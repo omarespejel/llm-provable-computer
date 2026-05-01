@@ -123,5 +123,13 @@ just gate
 Issue `#356` is now closed by this bounded public-scalar AIR hardening. The
 first part of issue `#358` is also closed: the proof input now carries a
 recomputed local `rmsnorm_output_row_commitment` for `normed_q8` rows. The
-remaining #358 lane is to make the next proof slice consume that local
-commitment before any full d64 `output_activation_commitment` is claimed.
+follow-up bridge proof now consumes that local commitment and emits a
+domain-separated `projection_input_row_commitment`:
+
+- `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
+
+The next native-proof lane is to make the gate/value projection slice consume
+`projection_input_row_commitment` before any full d64
+`output_activation_commitment` is claimed.

@@ -825,6 +825,25 @@ surface. The next credible comparison target is therefore a parameterized
 vector-block proof surface with committed weights, not a larger hand-written
 fixture.
 
+The first native d64 proof slices on that route are now deliberately narrower
+than a benchmark row. A public-row RMSNorm AIR proof binds the checked
+`64`-coordinate RMSNorm row surface, proves the square, scale-division,
+normalized-output, and bounded public-scalar square-root inequalities, and
+recomputes a local `rmsnorm_output_row_commitment` from the checked `normed_q8`
+rows. A follow-up bridge proof then consumes that local RMSNorm commitment and
+emits a separate `projection_input_row_commitment` for the next projection
+slice, while rejecting attempts to relabel that bridge as the final
+`output_activation_commitment`. These proof slices are useful because they make
+the transformer-block route incremental and statement-bound, but they remain
+non-claims for private parameter openings, gate/value/down projection,
+activation, residual rows, and full-block output binding. The checked handles
+are
+`docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`,
+`docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`,
+`docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`,
+and
+`docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model

@@ -10,6 +10,8 @@ mod d64_native_rmsnorm_air_feasibility;
 mod d64_native_rmsnorm_public_row_proof;
 mod d64_native_rmsnorm_slice_contract;
 #[cfg(feature = "stwo-backend")]
+mod d64_native_rmsnorm_to_projection_bridge_proof;
+#[cfg(feature = "stwo-backend")]
 mod decoding;
 #[cfg(feature = "stwo-backend")]
 mod history_replay_projection_prover;
@@ -91,6 +93,22 @@ pub use d64_native_rmsnorm_slice_contract::{
     ZKAI_D64_NATIVE_RMSNORM_SLICE_DECISION, ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES,
     ZKAI_D64_NATIVE_RMSNORM_SLICE_NEXT_BACKEND_STEP, ZKAI_D64_RMSNORM_RELATION_CHECK_NAME,
     ZKAI_D64_RMS_SCALE_TREE_ROOT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_rmsnorm_to_projection_bridge_proof::{
+    prove_zkai_d64_rmsnorm_to_projection_bridge_envelope,
+    verify_zkai_d64_rmsnorm_to_projection_bridge_envelope,
+    zkai_d64_rmsnorm_to_projection_bridge_input_from_json_str, D64RmsnormToProjectionBridgeRow,
+    ZkAiD64RmsnormToProjectionBridgeEnvelope, ZkAiD64RmsnormToProjectionBridgeInput,
+    ZKAI_D64_PROJECTION_INPUT_ROW_COMMITMENT, ZKAI_D64_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_DECISION,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_INPUT_DECISION,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_INPUT_SCHEMA,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_MAX_JSON_BYTES,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_NEXT_BACKEND_STEP,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_SEMANTIC_SCOPE,
+    ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_VERSION,
 };
 #[cfg(all(feature = "stwo-backend", test))]
 pub(crate) use decoding::phase12_demo_initial_memories_for_steps;
