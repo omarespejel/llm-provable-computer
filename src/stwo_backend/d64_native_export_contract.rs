@@ -127,6 +127,19 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RelationCheckRecord {
+    pub name: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MutationRecord {
+    pub name: String,
+    pub rejected: bool,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ZkAiD64NativeExportContract {
     pub contract_version: String,
     pub decision: String,
@@ -149,8 +162,10 @@ pub struct ZkAiD64NativeExportContract {
     pub trace_rows_excluding_static_table: usize,
     pub activation_table_rows: usize,
     pub relation_checks: usize,
+    pub relation_check_records: Vec<RelationCheckRecord>,
     pub mutations_checked: usize,
     pub mutations_rejected: usize,
+    pub mutation_records: Vec<MutationRecord>,
     pub oracle_schema: String,
     pub oracle_decision: String,
     pub non_claims: Vec<String>,
@@ -266,6 +281,7 @@ impl ZkAiD64NativeExportContract {
             ZKAI_D64_RELATION_CHECKS,
             "relation checks",
         )?;
+        validate_relation_check_records(&self.relation_check_records)?;
         expect_usize(
             self.mutations_checked,
             ZKAI_D64_MUTATIONS_CHECKED,
@@ -275,6 +291,11 @@ impl ZkAiD64NativeExportContract {
             self.mutations_rejected,
             ZKAI_D64_MUTATIONS_CHECKED,
             "mutations rejected",
+        )?;
+        validate_mutation_records(
+            &self.mutation_records,
+            self.mutations_checked,
+            self.mutations_rejected,
         )?;
         expect_eq(
             &self.oracle_schema,
@@ -503,8 +524,9 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
     )?;
     validate_row_count_constants(oracle)?;
     validate_projection_row_additivity(oracle)?;
-    validate_relation_checks(oracle)?;
-    let (mutations_checked, mutations_rejected) = validate_mutation_suite(oracle)?;
+    let relation_check_records = validate_relation_checks(oracle)?;
+    let (mutations_checked, mutations_rejected, mutation_records) =
+        validate_mutation_suite(oracle)?;
 
     let contract = ZkAiD64NativeExportContract {
         contract_version: ZKAI_D64_NATIVE_EXPORT_CONTRACT_VERSION.to_string(),
@@ -569,8 +591,10 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         trace_rows_excluding_static_table,
         activation_table_rows,
         relation_checks: EXPECTED_RELATION_CHECK_NAMES.len(),
+        relation_check_records,
         mutations_checked,
         mutations_rejected,
+        mutation_records,
         oracle_schema: schema.to_string(),
         oracle_decision: oracle_decision.to_string(),
         non_claims,
@@ -672,7 +696,7 @@ fn validate_projection_row_additivity(oracle: &Value) -> Result<()> {
     Ok(())
 }
 
-fn validate_relation_checks(oracle: &Value) -> Result<()> {
+fn validate_relation_checks(oracle: &Value) -> Result<Vec<RelationCheckRecord>> {
     let checks = array_at(oracle, &["relation_witness", "relation_checks"])?;
     if checks.len() != EXPECTED_RELATION_CHECK_NAMES.len() {
         return Err(contract_error(format!(
@@ -681,6 +705,7 @@ fn validate_relation_checks(oracle: &Value) -> Result<()> {
             EXPECTED_RELATION_CHECK_NAMES.len()
         )));
     }
+    let mut records = Vec::with_capacity(checks.len());
     let mut names = BTreeSet::new();
     for check in checks {
         let name = string_field(check, "name", "relation check")?;
@@ -691,11 +716,16 @@ fn validate_relation_checks(oracle: &Value) -> Result<()> {
             )));
         }
         names.insert(name.to_string());
+        records.push(RelationCheckRecord {
+            name: name.to_string(),
+            status: status.to_string(),
+        });
     }
-    expect_set_eq(names, EXPECTED_RELATION_CHECK_NAMES, "relation check names")
+    expect_set_eq(names, EXPECTED_RELATION_CHECK_NAMES, "relation check names")?;
+    Ok(records)
 }
 
-fn validate_mutation_suite(oracle: &Value) -> Result<(usize, usize)> {
+fn validate_mutation_suite(oracle: &Value) -> Result<(usize, usize, Vec<MutationRecord>)> {
     let suite = object_at(oracle, &["mutation_suite"], "mutation suite")?;
     expect_exact_keys(
         suite,
@@ -737,6 +767,7 @@ fn validate_mutation_suite(oracle: &Value) -> Result<(usize, usize)> {
             EXPECTED_MUTATION_NAMES.len()
         )));
     }
+    let mut records = Vec::with_capacity(cases.len());
     let mut names = BTreeSet::new();
     for case in cases {
         let name = string_field(case, "name", "mutation case")?;
@@ -750,9 +781,80 @@ fn validate_mutation_suite(oracle: &Value) -> Result<(usize, usize)> {
             )));
         }
         names.insert(name.to_string());
+        records.push(MutationRecord {
+            name: name.to_string(),
+            rejected: true,
+            reason: reason.to_string(),
+        });
     }
     expect_set_eq(names, EXPECTED_MUTATION_NAMES, "mutation names")?;
-    Ok((mutations_checked, mutations_rejected))
+    Ok((mutations_checked, mutations_rejected, records))
+}
+
+fn validate_relation_check_records(records: &[RelationCheckRecord]) -> Result<()> {
+    if records.len() != EXPECTED_RELATION_CHECK_NAMES.len() {
+        return Err(contract_error(format!(
+            "relation check record count mismatch: got {}, expected {}",
+            records.len(),
+            EXPECTED_RELATION_CHECK_NAMES.len()
+        )));
+    }
+    let mut names = BTreeSet::new();
+    for record in records {
+        if record.status != "GO" {
+            return Err(contract_error(format!(
+                "relation check {} has non-GO status {}",
+                record.name, record.status
+            )));
+        }
+        names.insert(record.name.clone());
+    }
+    expect_set_eq(
+        names,
+        EXPECTED_RELATION_CHECK_NAMES,
+        "relation check record names",
+    )
+}
+
+fn validate_mutation_records(
+    records: &[MutationRecord],
+    mutations_checked: usize,
+    mutations_rejected: usize,
+) -> Result<()> {
+    expect_usize(
+        mutations_checked,
+        EXPECTED_MUTATION_NAMES.len(),
+        "mutation record checked count",
+    )?;
+    expect_usize(
+        mutations_rejected,
+        EXPECTED_MUTATION_NAMES.len(),
+        "mutation record rejected count",
+    )?;
+    if records.len() != EXPECTED_MUTATION_NAMES.len() {
+        return Err(contract_error(format!(
+            "mutation record count mismatch: got {}, expected {}",
+            records.len(),
+            EXPECTED_MUTATION_NAMES.len()
+        )));
+    }
+    let mut names = BTreeSet::new();
+    for record in records {
+        if !record.rejected {
+            return Err(contract_error(format!(
+                "mutation record {} was accepted",
+                record.name
+            )));
+        }
+        if record.reason.is_empty() || record.reason == "accepted" {
+            return Err(contract_error(format!(
+                "mutation record {} has invalid rejection reason",
+                record.name
+            )));
+        }
+        names.insert(record.name.clone());
+    }
+    expect_set_eq(names, EXPECTED_MUTATION_NAMES, "mutation record names")
 }
 
 fn object_at<'a>(value: &'a Value, path: &[&str], label: &str) -> Result<&'a Map<String, Value>> {
@@ -968,6 +1070,11 @@ mod tests {
         );
         assert_eq!(contract.mutations_checked, ZKAI_D64_MUTATIONS_CHECKED);
         assert_eq!(contract.mutations_rejected, ZKAI_D64_MUTATIONS_CHECKED);
+        assert_eq!(
+            contract.relation_check_records.len(),
+            ZKAI_D64_RELATION_CHECKS
+        );
+        assert_eq!(contract.mutation_records.len(), ZKAI_D64_MUTATIONS_CHECKED);
         contract.validate().expect("contract validates");
     }
 
@@ -1134,5 +1241,34 @@ mod tests {
 
         zkai_d64_native_export_contract_from_oracle_value(&value)
             .expect("set-equivalent non claims accepted");
+    }
+
+    #[test]
+    fn native_export_contract_round_trip_rejects_relation_record_drift() {
+        let contract =
+            zkai_d64_native_export_contract_from_oracle_json_str(ORACLE_JSON).expect("contract");
+        let mut value = serde_json::to_value(&contract).expect("contract json");
+        value["relation_check_records"][0]["name"] = Value::String("weaker_check".into());
+        let drifted: ZkAiD64NativeExportContract =
+            serde_json::from_value(value).expect("drifted contract json shape");
+
+        let err = drifted.validate().unwrap_err();
+        assert!(
+            err.to_string().contains("relation check record names"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn native_export_contract_round_trip_rejects_mutation_record_drift() {
+        let contract =
+            zkai_d64_native_export_contract_from_oracle_json_str(ORACLE_JSON).expect("contract");
+        let mut value = serde_json::to_value(&contract).expect("contract json");
+        value["mutation_records"][0]["rejected"] = Value::Bool(false);
+        let drifted: ZkAiD64NativeExportContract =
+            serde_json::from_value(value).expect("drifted contract json shape");
+
+        let err = drifted.validate().unwrap_err();
+        assert!(err.to_string().contains("was accepted"), "{err}");
     }
 }

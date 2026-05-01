@@ -3,6 +3,88 @@
   "decision": "GO_NATIVE_EXPORT_CONTRACT_NOT_AIR_PROOF",
   "ff_dim": 256,
   "generated_at": "1970-01-01T00:00:00Z",
+  "mutation_records": [
+    {
+      "name": "proof_native_parameter_commitment_public_instance_relabeling",
+      "reason": "relation witness mismatch: public_instance",
+      "rejected": true
+    },
+    {
+      "name": "proof_native_parameter_commitment_manifest_relabeling",
+      "reason": "relation witness mismatch: parameter_manifest",
+      "rejected": true
+    },
+    {
+      "name": "gate_parameter_root_relabeling",
+      "reason": "relation witness mismatch: parameter_manifest",
+      "rejected": true
+    },
+    {
+      "name": "rms_scale_root_relabeling",
+      "reason": "relation witness mismatch: parameter_manifest",
+      "rejected": true
+    },
+    {
+      "name": "activation_table_root_relabeling",
+      "reason": "relation witness mismatch: parameter_manifest",
+      "rejected": true
+    },
+    {
+      "name": "input_activation_commitment_relabeling",
+      "reason": "relation witness mismatch: public_instance",
+      "rejected": true
+    },
+    {
+      "name": "output_activation_commitment_relabeling",
+      "reason": "relation witness mismatch: public_instance",
+      "rejected": true
+    },
+    {
+      "name": "normalization_config_commitment_relabeling",
+      "reason": "relation witness mismatch: public_instance",
+      "rejected": true
+    },
+    {
+      "name": "activation_lookup_commitment_relabeling",
+      "reason": "relation witness mismatch: public_instance",
+      "rejected": true
+    },
+    {
+      "name": "public_instance_commitment_relabeling",
+      "reason": "relation witness mismatch: statement_binding",
+      "rejected": true
+    },
+    {
+      "name": "statement_commitment_relabeling",
+      "reason": "relation witness mismatch: statement_binding",
+      "rejected": true
+    },
+    {
+      "name": "backend_version_relabeling",
+      "reason": "relation witness mismatch: statement_binding",
+      "rejected": true
+    },
+    {
+      "name": "relation_row_count_relabeling",
+      "reason": "relation witness mismatch: row_counts",
+      "rejected": true
+    },
+    {
+      "name": "gate_projection_output_relabeling",
+      "reason": "relation witness mismatch: relation_samples",
+      "rejected": true
+    },
+    {
+      "name": "activation_lookup_output_relabeling",
+      "reason": "relation witness mismatch: relation_samples",
+      "rejected": true
+    },
+    {
+      "name": "residual_output_relabeling",
+      "reason": "relation witness mismatch: relation_samples",
+      "rejected": true
+    }
+  ],
   "mutations_checked": 16,
   "mutations_rejected": 16,
   "next_backend_step": "native AIR/export slice that consumes this contract without weakening rmsnorm-swiglu-residual-d64-v2",
@@ -17,6 +99,44 @@
   "projection_mul_rows": 49152,
   "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
   "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+  "relation_check_records": [
+    {
+      "name": "public_instance_field_set",
+      "status": "GO"
+    },
+    {
+      "name": "proof_native_parameter_manifest_recomputed",
+      "status": "GO"
+    },
+    {
+      "name": "public_statement_commitments_recomputed",
+      "status": "GO"
+    },
+    {
+      "name": "rmsnorm_rows_recomputed",
+      "status": "GO"
+    },
+    {
+      "name": "gate_value_projection_rows",
+      "status": "GO"
+    },
+    {
+      "name": "activation_lookup_rows",
+      "status": "GO"
+    },
+    {
+      "name": "swiglu_mix_rows",
+      "status": "GO"
+    },
+    {
+      "name": "down_projection_rows",
+      "status": "GO"
+    },
+    {
+      "name": "residual_rows",
+      "status": "GO"
+    }
+  ],
   "relation_checks": 9,
   "relation_commitment": "blake2b-256:0903d8b3dd480a59ce2e47e3b4762ca0743794715492caae304d99629bfdb686",
   "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
