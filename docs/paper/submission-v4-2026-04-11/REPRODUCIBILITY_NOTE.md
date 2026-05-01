@@ -32,7 +32,7 @@ production-scale zkML deployment.
 
 Minimum practical setup:
 
-- Python 3.9+,
+- Python 3.11+,
 - Rust toolchain used by the repository CI,
 - dependencies from `scripts/requirements.txt`.
 
