@@ -213,6 +213,18 @@ Evidence handles:
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv`
 
+The d64 external-adapter surface probe adds a separate caution for matched
+transformer-block comparisons:
+
+- `docs/engineering/zkai-d64-external-adapter-surface-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.json`
+
+For an exact signed-q8 RMSNorm-SwiGLU-residual statement, the receipt is not
+enough by itself. The delegated proof must also encode the same integer
+rounding, integer square-root, bounded lookup, and committed-parameter semantics.
+A float-style adapter may still be useful, but only as a different approximate
+statement with its own receipt commitment.
+
 The correct interpretation is:
 
 > A zkAI system needs an explicit statement-binding layer around proof systems if

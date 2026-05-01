@@ -1,0 +1,167 @@
+{
+  "candidate_adapters": [
+    {
+      "candidate_adapter": "vanilla_onnx_ezkl_exact_export",
+      "gate": "NO_GO",
+      "next_action": "Do not report an EZKL verifier-time row for this statement until a circuit/export path encodes these semantics exactly.",
+      "primary_blocker": "exact_d64_semantics_not_encoded_by_a_vanilla_float_export",
+      "proof_generated": false,
+      "required_custom_semantics": [
+        "floor_division_rounding",
+        "integer_square_root",
+        "bounded_integer_silu_lookup",
+        "committed_parameter_tables"
+      ],
+      "same_statement_proof_claim": "NO_GO"
+    },
+    {
+      "candidate_adapter": "float_onnx_approximation",
+      "gate": "NO_GO_FOR_SAME_STATEMENT",
+      "next_action": "Allowed only as a separate approximate-inference statement, not as evidence for the canonical d64 target.",
+      "primary_blocker": "approximate_float_graph_would_change_the_committed_output_statement",
+      "proof_generated": false,
+      "required_custom_semantics": [
+        "new_statement_definition_if_used"
+      ],
+      "same_statement_proof_claim": "NO_GO"
+    },
+    {
+      "candidate_adapter": "custom_table_range_external_circuit",
+      "gate": "POSSIBLE_NOT_CHECKED",
+      "next_action": "Explore only if it can bind the existing statement commitment without redefining the target.",
+      "primary_blocker": "requires_custom_table_range_circuit_or_adapter_work",
+      "proof_generated": false,
+      "required_custom_semantics": [
+        "range_checks",
+        "integer_isqrt_or_checked_rms_witness",
+        "floor_division_constraints",
+        "bounded_silu_lookup_table",
+        "statement_receipt_binding"
+      ],
+      "same_statement_proof_claim": "NOT_CHECKED"
+    },
+    {
+      "candidate_adapter": "stwo_vector_row_air",
+      "gate": "REFERRED_TO_BACKEND_TRACK",
+      "next_action": "Continue issue #341 as the native proof path for the exact statement.",
+      "primary_blocker": "needs_parameterized_vector_block_air_or_export_path",
+      "proof_generated": false,
+      "required_custom_semantics": [
+        "committed_weight_rows",
+        "rmsnorm_rows",
+        "projection_rows",
+        "bounded_activation_lookup_rows",
+        "public_instance_binding"
+      ],
+      "same_statement_proof_claim": "NOT_CHECKED"
+    },
+    {
+      "candidate_adapter": "zkai_statement_receipt_only",
+      "gate": "GO_FOR_BINDING_TARGET_NOT_PROOF",
+      "next_action": "Reuse the receipt fields and mutation suite once an exact external or native proof exists.",
+      "primary_blocker": "receipt_binds_claims_but_delegated_proof_is_absent",
+      "proof_generated": false,
+      "required_custom_semantics": [
+        "delegated_exact_statement_proof"
+      ],
+      "same_statement_proof_claim": "NO_GO"
+    }
+  ],
+  "candidate_matrix_commitment": "blake2b-256:c3b67ffdf96c85316270221d9ab7bcd9faa2c9e33a91980e19d3f36a9fdc6dfc",
+  "conclusion": {
+    "exact_vanilla_external_export": "NO_GO",
+    "external_custom_circuit_track": "POSSIBLE_NOT_CHECKED",
+    "native_stwo_backend_track": "REFERRED_TO_ISSUE_341",
+    "statement_receipt_reuse": "GO_FOR_BINDING_TARGET_NOT_PROOF"
+  },
+  "decision": "NO_GO_EXACT_VANILLA_EXTERNAL_EXPORT_GO_FOR_STATEMENT_RECEIPT_TARGET",
+  "dependency_probe": {
+    "all_vanilla_external_runtime_present": false,
+    "cli_tools": {
+      "ezkl": false
+    },
+    "python_modules": {
+      "ezkl": false,
+      "numpy": false,
+      "onnx": false,
+      "onnxruntime": false,
+      "torch": false
+    }
+  },
+  "exact_semantic_requirements": [
+    {
+      "requirement": "signed_q8_integer_arithmetic",
+      "why_it_matters": "The fixture statement is over deterministic signed-q8 integer values, not over floating-point tensors."
+    },
+    {
+      "requirement": "floor_division_rounding",
+      "why_it_matters": "RMSNorm, projection averages, hidden mixing, and down projection all use Python integer floor division."
+    },
+    {
+      "requirement": "integer_square_root",
+      "why_it_matters": "The reference RMS value is math.isqrt(sum_squares // width), not sqrt over reals."
+    },
+    {
+      "requirement": "bounded_integer_silu_lookup",
+      "why_it_matters": "The SwiGLU gate uses a 2049-entry clamped integer lookup table, not floating-point SiLU."
+    },
+    {
+      "requirement": "committed_parameter_tables",
+      "why_it_matters": "The statement binds 49,216 committed parameter scalars across RMS scale and gate/value/down matrices."
+    },
+    {
+      "requirement": "statement_receipt_binding",
+      "why_it_matters": "The proof must bind model/config/weight/input/output/public-instance commitments, not only proof bytes."
+    }
+  ],
+  "exact_semantic_requirements_commitment": "blake2b-256:1265fbc04813e56207f458bd8928ff8fc82498aadfd1842f5ad7208c226f5d10",
+  "float_drift_summary": {
+    "canary": "naive_float_style_export_not_same_statement",
+    "changed_output_positions": 61,
+    "exact_output_sha256": "d85e1accebec91047bc31f32ca56366a6b794bd83abf0b8eb235f5339c90f956",
+    "float_like_output_sha256": "191b7ce0ffa77dc76584d271c31ec84f24b6b1daa6805ed9577de5c55d482c0f",
+    "interpretation": "A float-style graph is a different statement unless the exact integer rounding, isqrt, and lookup semantics are encoded.",
+    "max_abs_output_delta_q8": 10
+  },
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "unspecified",
+  "non_claims": [
+    "not an EZKL security finding",
+    "not a claim that EZKL or ONNX cannot encode custom exact integer circuits",
+    "not a proof-generation benchmark",
+    "not a verifier-time benchmark",
+    "not evidence that the d64 statement is proven",
+    "not a full transformer inference claim"
+  ],
+  "schema": "zkai-d64-external-adapter-surface-probe-v1",
+  "source_fixture": {
+    "decision": "GO_STATEMENT_TARGET_PINNED_NOT_PROVEN",
+    "mutation_suite": {
+      "decision": "GO",
+      "mutations_checked": 14,
+      "mutations_rejected": 14
+    },
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
+    "statement_commitment": "blake2b-256:c548a003ed77ad02736fe31f3d24ee1d941994e9b14351d57fad9799970cecc6"
+  },
+  "target": {
+    "activation": "bounded_integer_silu_lookup_for_swiglu",
+    "ff_dim": 256,
+    "ff_dim_multiplier": 4,
+    "fixed_point": "q8_signed_integer",
+    "linear_projection_muls": 49152,
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+    "normalization": "RMSNorm",
+    "projection_weight_scalars": 49152,
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "residual": true,
+    "rms_scale_scalars": 64,
+    "rms_square_rows": 64,
+    "statement_kind": "transformer-block",
+    "swiglu_gate_muls": 256,
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "total_committed_parameter_scalars": 49216,
+    "width": 64
+  }
+}
