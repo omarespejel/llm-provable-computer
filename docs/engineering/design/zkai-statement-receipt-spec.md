@@ -240,6 +240,19 @@ commitment consistency: the proof must bind private weight/table rows to the
 statement commitments instead of only carrying those commitments as receipt
 metadata.
 
+The d64 commitment-consistency method probe selects the next statement-field
+upgrade:
+
+- `docs/engineering/zkai-d64-commitment-consistency-method-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-commitment-consistency-method-probe-2026-05.tsv`
+
+The selected method is `dual_publication_and_proof_native_parameter_commitment`:
+publication hashes remain audit/export identifiers, while the native receipt and
+proof public instance bind a `proof_native_parameter_commitment`. A receipt that
+only carries publication hashes or unconsumed external Merkle openings is not a
+valid statement-binding proof surface.
+
 The correct interpretation is:
 
 > A zkAI system needs an explicit statement-binding layer around proof systems if
