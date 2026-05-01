@@ -266,6 +266,20 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "conclusion",
         "non_claims",
     }
+    expected_system_fields = {
+        "system",
+        "claim_scope",
+        "adapter_gate",
+        "public_verifier_available",
+        "public_proof_artifact_available",
+        "baseline_verification_reproducible",
+        "relabeling_benchmark_run",
+        "primary_blocker",
+        "next_action",
+        "sources",
+        "source_inspection",
+    }
+    expected_conclusion_fields = {"benchmark_result", "why", "paper_usage"}
     if set(payload) != expected_fields:
         raise AdapterFeasibilityError("payload field set mismatch")
     if payload["schema"] != SCHEMA:
@@ -281,6 +295,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
     if names != ["DeepProve-1", "NANOZK"]:
         raise AdapterFeasibilityError("candidate system drift")
     for system in systems:
+        if set(system) != expected_system_fields:
+            raise AdapterFeasibilityError("system field set mismatch")
         if system.get("public_verifier_available") is not False:
             raise AdapterFeasibilityError("verifier availability overclaim")
         if system.get("public_proof_artifact_available") is not False:
@@ -292,6 +308,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
         if not str(system.get("adapter_gate", "")).startswith("NO_GO"):
             raise AdapterFeasibilityError("adapter gate drift")
     conclusion = payload["conclusion"]
+    if set(conclusion) != expected_conclusion_fields:
+        raise AdapterFeasibilityError("conclusion field set mismatch")
     if conclusion.get("benchmark_result") != "NOT_RUN":
         raise AdapterFeasibilityError("conclusion overclaim")
     if conclusion.get("paper_usage") != PAPER_USAGE:
