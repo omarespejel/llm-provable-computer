@@ -57,6 +57,8 @@ pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES: usize = 1_048_576;
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const D64_RMSNORM_LOG_SIZE: u32 = 6;
 const D64_Q8_SCALE: i64 = 256;
+const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS: usize = 2;
+const ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS: usize = 3;
 
 const COLUMN_IDS: [&str; 9] = [
     "zkai/d64/rmsnorm/index",
@@ -469,7 +471,7 @@ fn validate_row(row: &D64RmsnormPublicRow, expected_index: usize, rms_q8: i64) -
 
 fn prove_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput) -> Result<Vec<u8>> {
     let component = public_row_component();
-    let config = PcsConfig::default();
+    let config = public_row_pcs_config();
     let twiddles = SimdBackend::precompute_twiddles(
         CanonicCoset::new(
             component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
@@ -508,17 +510,18 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
     let config = validate_public_row_pcs_config(stark_proof.config)?;
     let component = public_row_component();
     let sizes = component.trace_log_degree_bounds();
-    if sizes.len() != 2 {
+    if sizes.len() != ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS {
         return Err(public_row_error(format!(
-            "internal public-row component commitment count drift: got {}, expected 2",
-            sizes.len()
+            "internal public-row component commitment count drift: got {}, expected {}",
+            sizes.len(),
+            ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS
         )));
     }
-    if stark_proof.commitments.len() < sizes.len() {
+    if stark_proof.commitments.len() != ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS {
         return Err(public_row_error(format!(
-            "proof commitment count mismatch: got {}, expected {}",
+            "proof commitment count mismatch: got {}, expected exactly {}",
             stark_proof.commitments.len(),
-            sizes.len()
+            ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS
         )));
     }
     let expected_roots = public_row_commitment_roots(input, config);
@@ -540,7 +543,7 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
 }
 
 fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
-    let expected = PcsConfig::default();
+    let expected = public_row_pcs_config();
     if actual.pow_bits != expected.pow_bits
         || actual.fri_config.log_blowup_factor != expected.fri_config.log_blowup_factor
         || actual.fri_config.n_queries != expected.fri_config.n_queries
@@ -554,6 +557,10 @@ fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
         ));
     }
     Ok(expected)
+}
+
+fn public_row_pcs_config() -> PcsConfig {
+    PcsConfig::default()
 }
 
 fn public_row_commitment_roots(
@@ -966,6 +973,22 @@ mod tests {
             .as_array_mut()
             .expect("commitments")
             .pop();
+        envelope.proof = serde_json::to_vec(&payload).expect("proof json");
+        let error = verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("proof commitment count"));
+    }
+
+    #[test]
+    fn public_row_air_proof_rejects_extra_commitment_vector_entry() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d64_rmsnorm_public_row_envelope(&input).expect("public-row proof");
+        let mut payload: Value = serde_json::from_slice(&envelope.proof).expect("proof payload");
+        let commitments = payload["stark_proof"]["commitments"]
+            .as_array_mut()
+            .expect("commitments");
+        let extra_commitment = commitments[0].clone();
+        commitments.push(extra_commitment);
         envelope.proof = serde_json::to_vec(&payload).expect("proof json");
         let error = verify_zkai_d64_rmsnorm_public_row_envelope(&envelope).unwrap_err();
         assert!(error.to_string().contains("proof commitment count"));
