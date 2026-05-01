@@ -385,7 +385,6 @@ def validate_payload(payload: Any) -> None:
             raise GateValueProjectionInputError("projection input must be integer")
         require_signed_m31(input_value, f"projection input {value_index}")
     rows, recomputed_gate, recomputed_value = build_rows(inputs)
-    accumulators = {"gate": [0] * FF_DIM, "value": [0] * FF_DIM}
     for expected_row_index, row in enumerate(rows):
         expected_keys = {"row_index", "matrix", "matrix_selector", "output_index", "input_index", "projection_input_q8", "weight_q8", "product_q8"}
         if not isinstance(row, dict) or set(row) != expected_keys:
@@ -409,7 +408,6 @@ def validate_payload(payload: Any) -> None:
             raise GateValueProjectionInputError("projection weight drift")
         if inputs[row["input_index"]] != row["projection_input_q8"]:
             raise GateValueProjectionInputError("projection input value drift")
-        accumulators[matrix][row["output_index"]] += row["product_q8"]
     if sequence_commitment(inputs, PROJECTION_INPUT_ROW_DOMAIN, [WIDTH]) != payload["source_projection_input_row_commitment"]:
         raise GateValueProjectionInputError("projection input commitment recomputation drift")
     if recomputed_gate != gate:
