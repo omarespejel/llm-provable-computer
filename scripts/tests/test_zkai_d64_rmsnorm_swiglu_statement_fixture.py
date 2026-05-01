@@ -118,7 +118,7 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         payload = FIXTURE.build_fixture()
         payload["target"]["width"] = 65
 
-        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "canonical target_spec"):
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "target"):
             FIXTURE.rows_for_tsv(payload)
 
     def test_write_outputs_rejects_stale_mutation_suite(self) -> None:
@@ -129,6 +129,24 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
             tmp = pathlib.Path(raw_tmp)
             with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "mutation_suite"):
                 FIXTURE.write_outputs(payload, tmp / "fixture.json", tmp / "fixture.tsv")
+
+    def test_write_outputs_rejects_top_level_claim_drift(self) -> None:
+        cases = {
+            "schema": lambda payload: payload.__setitem__("schema", "wrong-schema"),
+            "decision": lambda payload: payload.__setitem__("decision", "PROVEN"),
+            "commitments": lambda payload: payload["commitments"].__setitem__("weight_commitment", "blake2b-256:" + "33" * 32),
+            "reference_semantics": lambda payload: payload["reference_semantics"].__setitem__("output_min_q8", 0),
+        }
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            for field, mutate in cases.items():
+                payload = FIXTURE.build_fixture()
+                mutate(payload)
+
+                with self.subTest(field=field):
+                    with self.assertRaisesRegex(FIXTURE.StatementFixtureError, field):
+                        FIXTURE.write_outputs(payload, tmp / f"{field}.json", tmp / f"{field}.tsv")
 
     def test_statement_binding_rejects_proof_status_overclaim(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
