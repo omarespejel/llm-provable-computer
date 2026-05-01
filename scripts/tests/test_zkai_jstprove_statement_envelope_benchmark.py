@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -140,6 +141,23 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
                 with mock.patch.object(BENCH.subprocess, "run", side_effect=OSError("exec format error")):
                     with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "failed to start"):
                         BENCH.jstprove_verify(BENCH.baseline_envelope())
+
+    def test_jstprove_verify_rejects_missing_absolute_binary(self) -> None:
+        missing = str(ROOT / "target" / "definitely-missing-jstprove-remainder")
+
+        with mock.patch.dict(os.environ, {BENCH.JSTPROVE_BIN_ENV: missing}, clear=False):
+            with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "verifier is missing"):
+                BENCH.jstprove_verify(BENCH.baseline_envelope())
+
+    def test_jstprove_verify_rejects_non_executable_absolute_binary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = pathlib.Path(tmp) / "jstprove-remainder"
+            binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            binary.chmod(0o600)
+
+            with mock.patch.dict(os.environ, {BENCH.JSTPROVE_BIN_ENV: str(binary)}, clear=False):
+                with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "verifier is not executable"):
+                    BENCH.jstprove_verify(BENCH.baseline_envelope())
 
     def test_classify_error_prefers_specific_statement_layers(self) -> None:
         self.assertEqual(
