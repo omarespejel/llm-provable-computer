@@ -372,18 +372,24 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "activation_lookup_commitment": fixture["statement"]["activation_lookup_commitment"],
         "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
     }
-    if payload["source_fixture"] != expected_source:
-        raise CommitmentConsistencyProbeError("source fixture drift")
-
     expected_manifest = proof_native_parameter_manifest(FIXTURE.evaluate_reference_block())
+    source_fixture = payload["source_fixture"]
+    if not isinstance(source_fixture, dict):
+        raise CommitmentConsistencyProbeError("source fixture must be an object")
+    source_commitment = source_fixture.get("proof_native_parameter_commitment")
+    if not isinstance(source_commitment, str):
+        raise CommitmentConsistencyProbeError("source fixture missing proof-native parameter commitment")
     manifest_payload = payload["proof_native_parameter_manifest"]
     if not isinstance(manifest_payload, dict):
         raise CommitmentConsistencyProbeError("proof-native parameter manifest must be an object")
     manifest_commitment = manifest_payload.get("proof_native_parameter_commitment")
     if not isinstance(manifest_commitment, str):
         raise CommitmentConsistencyProbeError("proof-native parameter manifest missing commitment")
-    if payload["source_fixture"]["proof_native_parameter_commitment"] != manifest_commitment:
+    if source_commitment != manifest_commitment:
         raise CommitmentConsistencyProbeError("proof-native parameter commitment mismatch")
+    if source_fixture != expected_source:
+        raise CommitmentConsistencyProbeError("source fixture drift")
+
     counts = expected_manifest["counts"]
     if counts["matrix_row_leaves"] != EXPECTED_MATRIX_ROW_LEAVES:
         raise CommitmentConsistencyProbeError("matrix row leaf count drift")
