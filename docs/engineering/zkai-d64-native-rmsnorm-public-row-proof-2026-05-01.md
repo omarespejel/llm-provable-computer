@@ -41,8 +41,10 @@ The verifier hardening is intentionally fail-closed:
   before field encoding,
 - `rms_q8` is recomputed with exact integer arithmetic, not floating-point
   square root,
-- the proof's PCS configuration must match the d64 public-row verifier profile
-  before commitment-root recomputation,
+- the proof's PCS configuration must match the d64 public-row v1 PCS profile
+  before commitment-root recomputation: `pow_bits=10`,
+  `fri_config={log_last_layer_degree_bound=0, log_blowup_factor=1,
+  n_queries=3, fold_step=1}`, `lifting_log_size=None`,
 - malformed proof commitment vectors are rejected before indexing,
 - proof bytes are bounded before JSON deserialization.
 
