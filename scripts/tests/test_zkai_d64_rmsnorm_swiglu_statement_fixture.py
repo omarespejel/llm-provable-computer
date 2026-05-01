@@ -148,6 +148,26 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
                     with self.assertRaisesRegex(FIXTURE.StatementFixtureError, field):
                         FIXTURE.write_outputs(payload, tmp / f"{field}.json", tmp / f"{field}.tsv")
 
+    def test_payload_validation_allows_different_generation_environment_metadata(self) -> None:
+        with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "1", "ZKAI_GIT_COMMIT": "source-env"}, clear=True):
+            payload = FIXTURE.build_fixture()
+
+        with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "2", "ZKAI_GIT_COMMIT": "validator-env"}, clear=True):
+            FIXTURE.validate_payload(payload)
+
+    def test_payload_validation_rejects_malformed_environment_metadata(self) -> None:
+        payload = FIXTURE.build_fixture()
+        payload["generated_at"] = "not-a-utc-timestamp"
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "generated_at"):
+            FIXTURE.validate_payload(payload)
+
+        payload = FIXTURE.build_fixture()
+        payload["git_commit"] = ""
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "git_commit"):
+            FIXTURE.validate_payload(payload)
+
     def test_statement_binding_rejects_proof_status_overclaim(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
         mutated = copy.deepcopy(statement)
