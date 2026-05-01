@@ -246,6 +246,8 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         self.assertFalse(gates["markers"]["fixture_gate_function"])
         self.assertFalse(gates["markers"]["linear_block_v4_exact_matcher"])
         self.assertFalse(gates["markers"]["decoding_step_v2_family_matcher"])
+        self.assertTrue(gates["markers"]["broader_arithmetic_subset_internal"])
+        self.assertTrue(gates["markers"]["phase12_decoding_only"])
 
     def test_fixture_profile_rejects_missing_memory_directive(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:
