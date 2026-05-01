@@ -24,7 +24,7 @@
   },
   "decision": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "b644ae9c608a491be52554a47726d7ae71534320",
+  "git_commit": "67163541aaee221862491b2a4ca6c2d713e6aca4",
   "non_claims": [
     "not a DeepProve-1 soundness finding",
     "not a NANOZK soundness finding",
@@ -43,7 +43,7 @@
       "next_action": "Revisit if Lagrange publishes a DeepProve-1 proof package with proof bytes, verifier inputs, model/input/output commitments, and a runnable verifier command.",
       "primary_blocker": "The public deep-prove repository exposes research code and MLP/CNN benchmark paths, but this probe did not find a public DeepProve-1 GPT-2 proof artifact plus verifier test vector matching the blog claim.",
       "public_proof_artifact_available": false,
-      "public_verifier_available": "PARTIAL_PUBLIC_REPO_API_NOT_MATCHED_TO_DEEPPROVE1_ARTIFACT",
+      "public_verifier_available": false,
       "relabeling_benchmark_run": false,
       "source_inspection": {
         "checked_commit": "7d21c35e5e1cb006e413f4a9676333e9e1506a87",
@@ -112,5 +112,5 @@
       "system": "NANOZK"
     }
   ],
-  "systems_commitment": "blake2b-256:d90f493f177cee5021958f636a730e335511c12a4e19758e0e3fc71954acc6e2"
+  "systems_commitment": "blake2b-256:11a39e6a7b1d067860b80c66bf11b4efb1a4c20cd24a6512cc670f752006daf5"
 }

@@ -120,7 +120,7 @@ def candidate_systems() -> list[dict[str, Any]]:
             "system": "DeepProve-1",
             "claim_scope": "reported full GPT-2 inference proof and transformer graph/layer support",
             "adapter_gate": "NO_GO_PUBLIC_GPT2_ARTIFACT_NOT_REPRODUCIBLE",
-            "public_verifier_available": "PARTIAL_PUBLIC_REPO_API_NOT_MATCHED_TO_DEEPPROVE1_ARTIFACT",
+            "public_verifier_available": False,
             "public_proof_artifact_available": False,
             "baseline_verification_reproducible": False,
             "relabeling_benchmark_run": False,
@@ -275,6 +275,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
     if names != ["DeepProve-1", "NANOZK"]:
         raise AdapterFeasibilityError("candidate system drift")
     for system in systems:
+        if system.get("public_verifier_available") is not False:
+            raise AdapterFeasibilityError("verifier availability overclaim")
         if system.get("public_proof_artifact_available") is not False:
             raise AdapterFeasibilityError("public proof artifact overclaim")
         if system.get("baseline_verification_reproducible") is not False:

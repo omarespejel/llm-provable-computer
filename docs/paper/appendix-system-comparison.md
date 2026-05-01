@@ -44,4 +44,5 @@ the accompanying
 `docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.json`
 and
 `docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.tsv`
-records.
+records. Reproduce the pass from the repository root with:
+`python3 scripts/zkai_deepprove_nanozk_adapter_feasibility.py --write-json docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.json --write-tsv docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.tsv`.

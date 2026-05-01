@@ -68,6 +68,17 @@ class ZkAIDeepProveNanoZKAdapterFeasibilityTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "benchmark-run overclaim"):
             PROBE.validate_probe(payload)
 
+
+    def test_validation_rejects_public_verifier_overclaims(self) -> None:
+        payload = PROBE.build_probe()
+        payload["systems"][0]["public_verifier_available"] = True
+        payload["systems_commitment"] = PROBE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:external-adapter-systems:v1"
+        )
+
+        with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "verifier availability overclaim"):
+            PROBE.validate_probe(payload)
+
     def test_validation_rejects_public_artifact_overclaims(self) -> None:
         payload = PROBE.build_probe()
         payload["systems"][1]["public_proof_artifact_available"] = True
