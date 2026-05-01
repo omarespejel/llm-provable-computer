@@ -29,6 +29,11 @@ TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-deepprove-nanozk-ad
 SCHEMA = "zkai-deepprove-nanozk-adapter-feasibility-v1"
 SOURCE_DATE_EPOCH_DEFAULT = 0
 DECISION = "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK"
+QUESTION = (
+    "Can DeepProve-1 or NANOZK be run through the same zkAI statement-relabeling "
+    "benchmark used for EZKL, snarkjs, and native Stwo adapters?"
+)
+PAPER_USAGE = "source_backed_context_only_not_empirical_adapter_row"
 
 DEEPPROVE_COMMIT = "7d21c35e5e1cb006e413f4a9676333e9e1506a87"
 NANOZK_ARXIV_SOURCE_SHA256 = "c505715f18d2bbb8dc01852a764b171984eb51f54a74d03790e29294e78ef2b4"
@@ -223,10 +228,7 @@ def build_probe() -> dict[str, Any]:
         "generated_at": _generated_at(),
         "git_commit": _git_commit(),
         "decision": DECISION,
-        "question": (
-            "Can DeepProve-1 or NANOZK be run through the same zkAI statement-relabeling "
-            "benchmark used for EZKL, snarkjs, and native Stwo adapters?"
-        ),
+        "question": QUESTION,
         "adapter_bar": adapter_bar(),
         "systems": systems,
         "systems_commitment": blake2b_commitment(systems, "ptvm:zkai:external-adapter-systems:v1"),
@@ -236,7 +238,7 @@ def build_probe() -> dict[str, Any]:
                 "Both candidates are relevant field context, but neither currently exposes the public "
                 "proof artifact plus verifier inputs required for a reproducible relabeling adapter."
             ),
-            "paper_usage": "source_backed_context_only_not_empirical_adapter_row",
+            "paper_usage": PAPER_USAGE,
         },
         "non_claims": [
             "not a DeepProve-1 soundness finding",
@@ -270,6 +272,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
         raise AdapterFeasibilityError("schema drift")
     if payload["decision"] != DECISION:
         raise AdapterFeasibilityError("decision drift")
+    if payload["question"] != QUESTION:
+        raise AdapterFeasibilityError("question drift")
     systems = payload["systems"]
     if payload["systems_commitment"] != blake2b_commitment(systems, "ptvm:zkai:external-adapter-systems:v1"):
         raise AdapterFeasibilityError("systems commitment mismatch")
@@ -290,6 +294,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
     conclusion = payload["conclusion"]
     if conclusion.get("benchmark_result") != "NOT_RUN":
         raise AdapterFeasibilityError("conclusion overclaim")
+    if conclusion.get("paper_usage") != PAPER_USAGE:
+        raise AdapterFeasibilityError("paper usage overclaim")
     required_non_claims = {
         "not a DeepProve-1 soundness finding",
         "not a NANOZK soundness finding",

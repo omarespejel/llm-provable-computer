@@ -68,6 +68,20 @@ class ZkAIDeepProveNanoZKAdapterFeasibilityTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "benchmark-run overclaim"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_paper_usage_overclaims(self) -> None:
+        payload = PROBE.build_probe()
+        payload["conclusion"]["paper_usage"] = "empirical_adapter_row"
+
+        with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "paper usage overclaim"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_question_drift(self) -> None:
+        payload = PROBE.build_probe()
+        payload["question"] = "Can these systems be cited as passing adapter rows?"
+
+        with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "question drift"):
+            PROBE.validate_probe(payload)
+
 
     def test_validation_rejects_public_verifier_overclaims(self) -> None:
         payload = PROBE.build_probe()
