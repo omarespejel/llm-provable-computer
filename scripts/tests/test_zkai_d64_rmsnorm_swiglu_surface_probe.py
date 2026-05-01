@@ -200,6 +200,20 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
             self.assertEqual(tsv[0].split("\t"), list(PROBE.TSV_COLUMNS))
             self.assertEqual(tsv[1].split("\t")[0], "64")
 
+    def test_write_outputs_wraps_os_errors(self) -> None:
+        payload = {
+            "schema": PROBE.SCHEMA,
+            "rows": [],
+        }
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            not_a_dir = tmp / "not-a-dir"
+            not_a_dir.write_text("file", encoding="utf-8")
+
+            with self.assertRaisesRegex(PROBE.SurfaceProbeError, "failed to write probe output"):
+                PROBE.write_outputs(payload, not_a_dir / "out.json", None)
+
     def test_generated_at_is_deterministic_and_rejects_bad_env(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
             self.assertEqual(PROBE._generated_at(), "1970-01-01T00:00:00Z")
@@ -209,6 +223,12 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(10**100)}, clear=True):
             with self.assertRaisesRegex(PROBE.SurfaceProbeError, "timestamp range"):
                 PROBE._generated_at()
+
+    def test_git_commit_is_deterministic_by_default_and_overrideable(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(PROBE._git_commit(), "unspecified")
+        with mock.patch.dict(os.environ, {"ZKAI_GIT_COMMIT": "test-commit"}, clear=True):
+            self.assertEqual(PROBE._git_commit(), "test-commit")
 
 
 if __name__ == "__main__":

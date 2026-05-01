@@ -112,7 +112,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05.tsv"
     ],
-    "git_commit": "da5991733fbe6e06b681eaaf535ea378df893d8d"
+    "git_commit": "unspecified"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "schema": "zkai-d64-rmsnorm-swiglu-surface-probe-v1",
