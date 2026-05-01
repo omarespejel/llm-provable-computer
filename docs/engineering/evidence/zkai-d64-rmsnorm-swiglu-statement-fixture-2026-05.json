@@ -1,0 +1,185 @@
+{
+  "commitments": {
+    "activation_lookup_commitment": "3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
+    "input_activation_commitment": "4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+    "model_artifact_commitment": "12e92ea9cb25f102b6fe039b3faa04b17d22562ea39c401f20ef361048a2a098",
+    "model_config_commitment": "c167ebab4e8db9fae9802e09fd55b864012f102cede4ba8bade9dd89edd8071f",
+    "normalization_config_commitment": "08bfcf3b261e2bdc729070db2b6b73abd458a48f610ff0fa41148d2c5f5967fa",
+    "output_activation_commitment": "c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "weight_commitment": "63d3b1020f248d839d8b1c33e047590456798daa06ecca832944fe51679f22db"
+  },
+  "decision": "GO_STATEMENT_TARGET_PINNED_NOT_PROVEN",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "unspecified",
+  "implementation_status": {
+    "next_backend_work": [
+      "encode the RMSNorm rows against the committed scale vector",
+      "encode gate/value/down projection rows against committed matrices",
+      "encode bounded SiLU lookup and SwiGLU multiplication rows",
+      "bind the proof public instance to this statement payload"
+    ],
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "what_this_is": "canonical committed statement fixture for the next d64 prover target",
+    "what_this_is_not": [
+      "not a Stwo proof",
+      "not a verifier-time benchmark",
+      "not a PyTorch equivalence claim",
+      "not a full transformer inference claim"
+    ]
+  },
+  "mutation_suite": {
+    "baseline_valid": true,
+    "cases": [
+      {
+        "name": "model_id_relabeling",
+        "reason": "statement field mismatch: model_id",
+        "rejected": true
+      },
+      {
+        "name": "verifier_domain_relabeling",
+        "reason": "statement field mismatch: verifier_domain",
+        "rejected": true
+      },
+      {
+        "name": "backend_version_relabeling",
+        "reason": "statement field mismatch: proof_system_version_required",
+        "rejected": true
+      },
+      {
+        "name": "model_artifact_commitment_relabeling",
+        "reason": "statement field mismatch: model_artifact_commitment",
+        "rejected": true
+      },
+      {
+        "name": "model_config_commitment_relabeling",
+        "reason": "statement field mismatch: model_config_commitment",
+        "rejected": true
+      },
+      {
+        "name": "weight_commitment_relabeling",
+        "reason": "statement field mismatch: weight_commitment",
+        "rejected": true
+      },
+      {
+        "name": "input_activation_commitment_relabeling",
+        "reason": "statement field mismatch: input_activation_commitment",
+        "rejected": true
+      },
+      {
+        "name": "output_activation_commitment_relabeling",
+        "reason": "statement field mismatch: output_activation_commitment",
+        "rejected": true
+      },
+      {
+        "name": "normalization_config_commitment_relabeling",
+        "reason": "statement field mismatch: normalization_config_commitment",
+        "rejected": true
+      },
+      {
+        "name": "activation_lookup_commitment_relabeling",
+        "reason": "statement field mismatch: activation_lookup_commitment",
+        "rejected": true
+      },
+      {
+        "name": "public_instance_commitment_relabeling",
+        "reason": "statement field mismatch: public_instance_commitment",
+        "rejected": true
+      },
+      {
+        "name": "statement_commitment_relabeling",
+        "reason": "statement field mismatch: statement_commitment",
+        "rejected": true
+      },
+      {
+        "name": "proof_status_overclaim",
+        "reason": "statement field mismatch: proof_status",
+        "rejected": true
+      },
+      {
+        "name": "reference_output_relabeling",
+        "reason": "statement field mismatch: reference_output_sha256",
+        "rejected": true
+      }
+    ],
+    "decision": "GO",
+    "mutations_checked": 14,
+    "mutations_rejected": 14
+  },
+  "reference_semantics": {
+    "activation_lut_domain_q8": [
+      -1024,
+      1024
+    ],
+    "activation_lut_sample_q8": [
+      -256,
+      -171,
+      0,
+      341,
+      768
+    ],
+    "input_sample_q8": [
+      24,
+      -47,
+      49,
+      -104,
+      -114,
+      -113,
+      127,
+      58
+    ],
+    "output_max_q8": 200,
+    "output_min_q8": -208,
+    "output_sample_q8": [
+      40,
+      -53,
+      75,
+      -122,
+      -108,
+      -102,
+      135,
+      39
+    ],
+    "rms_q8": 115,
+    "seed": "zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05-v1"
+  },
+  "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v1",
+  "statement": {
+    "activation_lookup_commitment": "3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
+    "input_activation_commitment": "4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+    "model_artifact_commitment": "12e92ea9cb25f102b6fe039b3faa04b17d22562ea39c401f20ef361048a2a098",
+    "model_config_commitment": "c167ebab4e8db9fae9802e09fd55b864012f102cede4ba8bade9dd89edd8071f",
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+    "normalization_config_commitment": "08bfcf3b261e2bdc729070db2b6b73abd458a48f610ff0fa41148d2c5f5967fa",
+    "output_activation_commitment": "c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "proof_commitment": null,
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "proof_system": "stwo-transparent-stark",
+    "proof_system_version_required": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "public_instance_commitment": "daf64501645ab630435f4c15cd886479965a80295486213163ef9a4f142f45b9",
+    "receipt_version": "zkai-statement-target-v1",
+    "reference_output_sha256": "d85e1accebec91047bc31f32ca56366a6b794bd83abf0b8eb235f5339c90f956",
+    "setup_commitment": null,
+    "statement_commitment": "19896c2fcb7cb9e8039babb63b5d41c1f8fdc18480694c9d7e78ce834dcb0a65",
+    "statement_kind": "transformer-block",
+    "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v1",
+    "verifying_key_commitment": null,
+    "weight_commitment": "63d3b1020f248d839d8b1c33e047590456798daa06ecca832944fe51679f22db"
+  },
+  "target": {
+    "activation": "bounded_integer_silu_lookup_for_swiglu",
+    "ff_dim": 256,
+    "ff_dim_multiplier": 4,
+    "fixed_point": "q8_signed_integer",
+    "linear_projection_muls": 49152,
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+    "normalization": "RMSNorm",
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
+    "residual": true,
+    "rms_square_rows": 64,
+    "statement_kind": "transformer-block",
+    "swiglu_gate_muls": 256,
+    "target_id": "rmsnorm-swiglu-residual-d64-v1",
+    "weight_scalars": 49152,
+    "width": 64
+  }
+}

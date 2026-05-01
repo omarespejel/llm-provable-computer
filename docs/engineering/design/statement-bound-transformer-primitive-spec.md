@@ -173,6 +173,19 @@ checked transformer-block fixture has `21` memory cells, `43` instructions, and
 parameterized vector-block AIR/export path with committed weights, not a larger
 hand-written toy fixture.
 
+The next committed-target fixture is also checked in:
+
+- `docs/engineering/zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05.json`
+
+That fixture is a GO for a canonical statement target, not for proof generation.
+It pins deterministic signed-q8 RMSNorm-SwiGLU-residual semantics for `d=64`,
+`ff_dim=256`, `49,152` projection multiplications, and `49,152` weight scalars.
+It binds model/config/weight/input/output/normalization/activation/public-instance
+commitments and rejects `14 / 14` checked relabeling mutations, including a
+proof-status overclaim. The next backend must prove this statement, or record an
+exact blocker against this fixture rather than against a drifting prose target.
+
 ## NO-GO criteria
 
 Record an explicit NO-GO if:
