@@ -109,6 +109,13 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "not valid base64"):
             BENCH.verify_proof_only(envelope, external_verify=fake_external_verify)
 
+    def test_proof_only_rejects_falsey_non_dict_artifact_overrides(self) -> None:
+        envelope = BENCH.baseline_envelope()
+        envelope["artifact_overrides"] = []
+
+        with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "artifact_overrides must be an object"):
+            BENCH.verify_proof_only(envelope, external_verify=fake_external_verify)
+
     def test_artifact_reference_rejects_path_escape(self) -> None:
         envelope = BENCH.baseline_envelope()
         envelope["artifacts"]["proof_path"] = "../proof.msgpack"
@@ -117,20 +124,32 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
             BENCH.verify_statement_envelope(envelope, external_verify=fake_external_verify)
 
     def test_jstprove_verify_times_out_fail_closed(self) -> None:
-        with mock.patch.object(BENCH.shutil, "which", return_value="/usr/bin/jstprove-remainder"):
-            with mock.patch.object(
-                BENCH.subprocess,
-                "run",
-                side_effect=BENCH.subprocess.TimeoutExpired(cmd=["jstprove-remainder"], timeout=180),
-            ):
-                with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "timed out"):
-                    BENCH.jstprove_verify(BENCH.baseline_envelope())
+        with mock.patch.dict(os.environ, {BENCH.JSTPROVE_BIN_ENV: "jstprove-remainder"}, clear=False):
+            with mock.patch.object(BENCH.shutil, "which", return_value="/usr/bin/jstprove-remainder"):
+                with mock.patch.object(
+                    BENCH.subprocess,
+                    "run",
+                    side_effect=BENCH.subprocess.TimeoutExpired(cmd=["jstprove-remainder"], timeout=180),
+                ):
+                    with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "timed out"):
+                        BENCH.jstprove_verify(BENCH.baseline_envelope())
 
     def test_jstprove_verify_wraps_spawn_errors(self) -> None:
-        with mock.patch.object(BENCH.shutil, "which", return_value="/usr/bin/jstprove-remainder"):
-            with mock.patch.object(BENCH.subprocess, "run", side_effect=OSError("exec format error")):
-                with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "failed to start"):
-                    BENCH.jstprove_verify(BENCH.baseline_envelope())
+        with mock.patch.dict(os.environ, {BENCH.JSTPROVE_BIN_ENV: "jstprove-remainder"}, clear=False):
+            with mock.patch.object(BENCH.shutil, "which", return_value="/usr/bin/jstprove-remainder"):
+                with mock.patch.object(BENCH.subprocess, "run", side_effect=OSError("exec format error")):
+                    with self.assertRaisesRegex(BENCH.JstproveEnvelopeError, "failed to start"):
+                        BENCH.jstprove_verify(BENCH.baseline_envelope())
+
+    def test_classify_error_prefers_specific_statement_layers(self) -> None:
+        self.assertEqual(
+            BENCH.classify_error("statement_commitment mismatch"),
+            "statement_commitment",
+        )
+        self.assertEqual(
+            BENCH.classify_error("statement policy mismatch for verifier_domain"),
+            "statement_policy",
+        )
 
     def test_case_result_propagates_harness_bugs(self) -> None:
         def buggy_verify(_envelope, *, external_verify):  # noqa: ARG001
@@ -168,6 +187,7 @@ class ZkAIJstproveStatementEnvelopeBenchmarkTests(unittest.TestCase):
                 case["rejection_layer"] = "accepted"
                 case["error"] = ""
                 break
+        payload["summary"] = BENCH.summarize_cases(payload["cases"])
 
         self.assertFalse(BENCH.benchmark_passed(payload))
 

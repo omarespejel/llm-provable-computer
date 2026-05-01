@@ -127,17 +127,16 @@ def _artifact_bytes(envelope: dict[str, Any], name: str) -> bytes:
     if name not in ALLOWED_ARTIFACTS:
         raise JstproveEnvelopeError(f"unsupported JSTprove artifact reference: {name}")
     overrides = envelope.get("artifact_overrides", {})
-    if overrides:
-        if not isinstance(overrides, dict):
-            raise JstproveEnvelopeError("artifact_overrides must be an object")
-        encoded = overrides.get(name)
-        if encoded is not None:
-            if not isinstance(encoded, str):
-                raise JstproveEnvelopeError(f"artifact override for {name} must be base64 text")
-            try:
-                return base64.b64decode(encoded.encode("ascii"), validate=True)
-            except (ValueError, UnicodeEncodeError) as err:
-                raise JstproveEnvelopeError(f"artifact override for {name} is not valid base64") from err
+    if not isinstance(overrides, dict):
+        raise JstproveEnvelopeError("artifact_overrides must be an object")
+    encoded = overrides.get(name)
+    if encoded is not None:
+        if not isinstance(encoded, str):
+            raise JstproveEnvelopeError(f"artifact override for {name} must be base64 text")
+        try:
+            return base64.b64decode(encoded.encode("ascii"), validate=True)
+        except (ValueError, UnicodeEncodeError) as err:
+            raise JstproveEnvelopeError(f"artifact override for {name} is not valid base64") from err
     return _artifact_path(name).read_bytes()
 
 
@@ -419,12 +418,12 @@ def classify_error(message: str) -> str:
         return "setup_binding"
     if "must be" in lowered:
         return "parser_or_schema"
-    if "domain" in lowered or "version" in lowered or "commit" in lowered:
-        return "domain_or_version_allowlist"
     if "policy mismatch" in lowered:
         return "statement_policy"
     if "commitment" in lowered:
         return "statement_commitment"
+    if "domain" in lowered or "version" in lowered or "commit" in lowered:
+        return "domain_or_version_allowlist"
     return "adapter_policy"
 
 
@@ -620,7 +619,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-tsv", type=pathlib.Path, help="write TSV result to this path")
     args = parser.parse_args(argv)
 
-    payload = run_benchmark(command=[os.environ.get("PYTHON", "python3"), *sys.argv])
+    effective_argv = list(sys.argv[1:] if argv is None else argv)
+    payload = run_benchmark(
+        command=[
+            os.environ.get("PYTHON", "python3"),
+            "scripts/zkai_jstprove_statement_envelope_benchmark.py",
+            *effective_argv,
+        ]
+    )
     repro = payload.get("repro")
     if isinstance(repro, dict) and "git_commit" in repro:
         repro["git_commit"] = _validated_git_commit(str(repro["git_commit"]))
