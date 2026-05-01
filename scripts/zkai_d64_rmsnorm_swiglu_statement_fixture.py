@@ -450,19 +450,23 @@ def run_mutation_suite(statement: dict[str, Any], expected: dict[str, Any]) -> d
 def validate_payload(payload: dict[str, Any]) -> None:
     if not isinstance(payload, dict):
         raise StatementFixtureError("payload must be an object")
-    target = payload.get("target")
-    if target != target_spec():
-        raise StatementFixtureError("payload target does not match canonical target_spec")
+    canonical = build_fixture()
+    for field in (
+        "schema",
+        "generated_at",
+        "git_commit",
+        "decision",
+        "target",
+        "reference_semantics",
+        "commitments",
+        "statement",
+        "mutation_suite",
+        "implementation_status",
+    ):
+        if payload.get(field) != canonical[field]:
+            raise StatementFixtureError(f"payload {field} does not match canonical fixture")
     statement = payload.get("statement")
     validate_statement(statement)
-    implementation_status = payload.get("implementation_status")
-    if not isinstance(implementation_status, dict):
-        raise StatementFixtureError("payload implementation_status must be an object")
-    if implementation_status.get("proof_status") != statement["proof_status"]:
-        raise StatementFixtureError("payload proof_status does not match statement proof_status")
-    expected_mutations = run_mutation_suite(statement, _expected_statement())
-    if payload.get("mutation_suite") != expected_mutations:
-        raise StatementFixtureError("payload mutation_suite does not match canonical mutation suite")
 
 
 def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
