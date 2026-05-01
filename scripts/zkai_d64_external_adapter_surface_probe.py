@@ -449,8 +449,10 @@ def _validate_candidate(candidate: dict[str, Any]) -> None:
 def validate_probe(payload: dict[str, Any]) -> None:
     if not isinstance(payload, dict):
         raise D64ExternalAdapterProbeError("payload must be an object")
-    for field in (
+    expected_fields = {
         "schema",
+        "generated_at",
+        "git_commit",
         "decision",
         "target",
         "source_fixture",
@@ -463,9 +465,9 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "candidate_matrix_commitment",
         "conclusion",
         "non_claims",
-    ):
-        if field not in payload:
-            raise D64ExternalAdapterProbeError(f"missing payload field: {field}")
+    }
+    if set(payload) != expected_fields:
+        raise D64ExternalAdapterProbeError("payload field set mismatch")
     if payload["schema"] != SCHEMA:
         raise D64ExternalAdapterProbeError("schema mismatch")
     if payload["decision"] != DECISION:
@@ -607,9 +609,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.include_host_deps and (args.write_json is not None or args.write_tsv is not None):
-        raise D64ExternalAdapterProbeError("--include-host-deps is diagnostic-only and cannot write output files")
+    if args.include_host_deps:
+        if not args.json:
+            raise D64ExternalAdapterProbeError("--include-host-deps requires --json")
+        if args.write_json is not None or args.write_tsv is not None:
+            raise D64ExternalAdapterProbeError("--include-host-deps is diagnostic-only and cannot write output files")
     payload = build_probe(include_host_dependencies=args.include_host_deps)
+    if not args.include_host_deps:
+        validate_probe(payload)
     if args.write_json is not None or args.write_tsv is not None:
         write_outputs(payload, args.write_json, args.write_tsv)
     if args.json:

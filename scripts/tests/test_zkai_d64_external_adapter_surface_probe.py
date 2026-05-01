@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import tempfile
+import types
 import unittest
 from unittest import mock
 
@@ -92,6 +93,13 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         payload["dependency_probe"]["all_vanilla_external_runtime_present"] = True
 
         with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "dependency probe drift"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_unknown_payload_fields(self) -> None:
+        payload = PROBE.build_probe()
+        payload["unvalidated_claim"] = "must not ride along with checked evidence"
+
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "payload field set mismatch"):
             PROBE.validate_probe(payload)
 
     def test_float_approximation_is_not_same_statement(self) -> None:
@@ -193,6 +201,27 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
 
         with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "non-claims drift"):
             PROBE.validate_probe(payload)
+
+    def test_main_validates_non_diagnostic_stdout_paths(self) -> None:
+        payload = PROBE.build_probe()
+        payload["unvalidated_claim"] = "stdout must not bypass validation"
+        args = types.SimpleNamespace(include_host_deps=False, write_json=None, write_tsv=None, json=False)
+
+        with (
+            mock.patch.object(PROBE, "parse_args", return_value=args),
+            mock.patch.object(PROBE, "build_probe", return_value=payload),
+            self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "payload field set mismatch"),
+        ):
+            PROBE.main()
+
+    def test_host_dependency_probe_requires_json_stdout(self) -> None:
+        args = types.SimpleNamespace(include_host_deps=True, write_json=None, write_tsv=None, json=False)
+
+        with (
+            mock.patch.object(PROBE, "parse_args", return_value=args),
+            self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "--include-host-deps requires --json"),
+        ):
+            PROBE.main()
 
 
 if __name__ == "__main__":
