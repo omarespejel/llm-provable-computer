@@ -285,6 +285,7 @@ The first bridge consuming that local RMSNorm output is also checked in:
 
 - `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`
 - `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
 - `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
 
 This bridge proves a narrow handoff from RMSNorm-local `normed_q8` rows to a
