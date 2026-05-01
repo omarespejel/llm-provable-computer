@@ -23,6 +23,7 @@ pub const ZKAI_D64_NATIVE_RMSNORM_SLICE_NEXT_BACKEND_STEP: &str =
 pub const ZKAI_D64_RMS_SCALE_TREE_ROOT: &str =
     "blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3";
 pub const ZKAI_D64_RMSNORM_RELATION_CHECK_NAME: &str = "rmsnorm_rows_recomputed";
+pub const ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES: usize = 1_048_576;
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not a Stwo proof",
@@ -188,6 +189,13 @@ impl ZkAiD64NativeRmsnormSliceContract {
 pub fn zkai_d64_native_rmsnorm_slice_contract_from_oracle_json_str(
     raw_oracle_json: &str,
 ) -> Result<ZkAiD64NativeRmsnormSliceContract> {
+    if raw_oracle_json.len() > ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES {
+        return Err(rmsnorm_error(format!(
+            "oracle JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_oracle_json.len(),
+            ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES
+        )));
+    }
     let value: Value = serde_json::from_str(raw_oracle_json)
         .map_err(|err| VmError::Serialization(err.to_string()))?;
     zkai_d64_native_rmsnorm_slice_contract_from_oracle_value(&value)
@@ -443,10 +451,27 @@ mod tests {
     #[test]
     fn rmsnorm_slice_contract_rejects_relation_check_drift() {
         let mut value = oracle_value();
-        value["relation_witness"]["relation_checks"][3]["status"] = Value::String("NO_GO".into());
+        let checks = value["relation_witness"]["relation_checks"]
+            .as_array_mut()
+            .expect("relation checks array");
+        let rmsnorm_check = checks
+            .iter_mut()
+            .find(|check| check["name"].as_str() == Some(ZKAI_D64_RMSNORM_RELATION_CHECK_NAME))
+            .expect("rmsnorm relation check");
+        rmsnorm_check["status"] = Value::String("NO_GO".into());
 
         let err = zkai_d64_native_rmsnorm_slice_contract_from_oracle_value(&value).unwrap_err();
         assert!(err.to_string().contains("non-GO status"), "{err}");
+    }
+
+    #[test]
+    fn rmsnorm_slice_contract_rejects_oversized_oracle_json_before_parse() {
+        let oversized =
+            "{".to_string() + &" ".repeat(ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES);
+
+        let err = zkai_d64_native_rmsnorm_slice_contract_from_oracle_json_str(&oversized)
+            .expect_err("oversized JSON is rejected");
+        assert!(err.to_string().contains("exceeds max size"), "{err}");
     }
 
     #[test]

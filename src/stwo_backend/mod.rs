@@ -65,8 +65,9 @@ pub use d64_native_rmsnorm_slice_contract::{
     zkai_d64_native_rmsnorm_slice_contract_from_oracle_json_str,
     zkai_d64_native_rmsnorm_slice_contract_from_oracle_value, D64ValueRangeRecord,
     ZkAiD64NativeRmsnormSliceContract, ZKAI_D64_NATIVE_RMSNORM_SLICE_CONTRACT_VERSION,
-    ZKAI_D64_NATIVE_RMSNORM_SLICE_DECISION, ZKAI_D64_NATIVE_RMSNORM_SLICE_NEXT_BACKEND_STEP,
-    ZKAI_D64_RMSNORM_RELATION_CHECK_NAME, ZKAI_D64_RMS_SCALE_TREE_ROOT,
+    ZKAI_D64_NATIVE_RMSNORM_SLICE_DECISION, ZKAI_D64_NATIVE_RMSNORM_SLICE_MAX_ORACLE_JSON_BYTES,
+    ZKAI_D64_NATIVE_RMSNORM_SLICE_NEXT_BACKEND_STEP, ZKAI_D64_RMSNORM_RELATION_CHECK_NAME,
+    ZKAI_D64_RMS_SCALE_TREE_ROOT,
 };
 #[cfg(all(feature = "stwo-backend", test))]
 pub(crate) use decoding::phase12_demo_initial_memories_for_steps;
