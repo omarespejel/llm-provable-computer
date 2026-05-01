@@ -148,6 +148,31 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         self.assertEqual(row["weight_cells_over_memory_limit"], float("inf"))
         self.assertEqual(row["mul_ops_over_pc_horizon"], float("inf"))
 
+    def test_classifier_marks_ratios_infinite_when_limit_scan_is_unconfirmed(self) -> None:
+        target = PROBE.d64_target()
+        limits = {
+            "limits_are_current": False,
+            "max_addressable_memory_cells": 65_536,
+            "pc_horizon": 65_536,
+        }
+        gates = {
+            "fixture_gate_detected": True,
+            "required_backend_version_present": True,
+            "markers": {"phase12_decoding_only": False},
+        }
+        fixture = {
+            "memory_cells": 65_536,
+            "instruction_count": 49_153,
+            "mul_memory_ops": 49_152,
+        }
+
+        row = PROBE.classify_surface(target, limits, gates, fixture)
+
+        self.assertEqual(row["status"], PROBE.DECISION_NO_GO)
+        self.assertEqual(row["weight_cells_over_memory_limit"], float("inf"))
+        self.assertEqual(row["mul_ops_over_pc_horizon"], float("inf"))
+        self.assertEqual([blocker["id"] for blocker in row["blockers"]], ["unsupported_limit_scan"])
+
     def test_scan_tvm_limits_fails_closed_when_markers_are_missing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
