@@ -68,13 +68,41 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         self.assertEqual(mutations["decision"], "GO")
         self.assertEqual(mutations["mutations_checked"], 14)
         self.assertEqual(mutations["mutations_rejected"], 14)
+        self.assertTrue(payload["statement"]["statement_commitment"].startswith("blake2b-256:"))
+        self.assertTrue(payload["statement"]["weight_commitment"].startswith("blake2b-256:"))
 
     def test_statement_binding_rejects_valid_looking_wrong_commitments(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
         mutated = copy.deepcopy(statement)
-        mutated["weight_commitment"] = "11" * 32
+        mutated["weight_commitment"] = "blake2b-256:" + "11" * 32
 
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "weight_commitment"):
+            FIXTURE.validate_statement(mutated)
+
+    def test_statement_binding_rejects_missing_nullable_fields(self) -> None:
+        statement = FIXTURE.build_fixture()["statement"]
+        for key in ("proof_commitment", "verifying_key_commitment", "setup_commitment"):
+            mutated = copy.deepcopy(statement)
+            del mutated[key]
+
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "field set mismatch"):
+                    FIXTURE.validate_statement(mutated)
+
+    def test_statement_binding_rejects_extra_uncommitted_fields(self) -> None:
+        statement = FIXTURE.build_fixture()["statement"]
+        mutated = copy.deepcopy(statement)
+        mutated["uncommitted_policy_label"] = "should-not-pass"
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "field set mismatch"):
+            FIXTURE.validate_statement(mutated)
+
+    def test_statement_binding_rejects_stale_statement_commitment(self) -> None:
+        statement = FIXTURE.build_fixture()["statement"]
+        mutated = copy.deepcopy(statement)
+        mutated["statement_commitment"] = "blake2b-256:" + "22" * 32
+
+        with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "statement_commitment"):
             FIXTURE.validate_statement(mutated)
 
     def test_statement_binding_rejects_proof_status_overclaim(self) -> None:
