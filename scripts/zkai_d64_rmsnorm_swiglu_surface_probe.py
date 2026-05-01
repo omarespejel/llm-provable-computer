@@ -275,12 +275,20 @@ def classify_surface(
                 "why_it_matters": "the checked statement-bound block is useful for binding, not for matched d64 compute coverage",
             }
         )
-    if prover_gates.get("fixture_gate_detected") and not prover_gates.get("required_backend_version_present"):
+    fixture_gate_detected = prover_gates.get("fixture_gate_detected") is True
+    required_backend_version_present = prover_gates.get("required_backend_version_present") is True
+    if not fixture_gate_detected or not required_backend_version_present:
+        missing = []
+        if not fixture_gate_detected:
+            missing.append("confirmed fixture-gate scan")
+        if not required_backend_version_present:
+            missing.append(target["required_proof_backend_version"])
         blockers.append(
             {
                 "id": "missing_parameterized_stwo_backend",
                 "required_backend_version": target["required_proof_backend_version"],
-                "why_it_matters": "the current Stwo generator recognizes shipped fixtures/decoding families, not the d64 vector-block backend",
+                "missing": missing,
+                "why_it_matters": "the probe should only report GO when it confirms both the current gate surface and the explicit d64 vector-block backend",
             }
         )
     if prover_gates.get("markers", {}).get("phase12_decoding_only"):

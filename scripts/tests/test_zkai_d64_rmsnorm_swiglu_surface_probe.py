@@ -82,7 +82,7 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
             "pc_horizon": 65_536,
         }
         gates = {
-            "fixture_gate_detected": False,
+            "fixture_gate_detected": True,
             "required_backend_version_present": True,
             "markers": {"phase12_decoding_only": False},
         }
@@ -96,6 +96,33 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
 
         self.assertEqual(row["status"], PROBE.DECISION_GO)
         self.assertEqual(row["blockers"], [])
+
+    def test_classifier_fails_closed_when_gate_scan_is_incomplete(self) -> None:
+        target = PROBE.d64_target()
+        limits = {
+            "limits_are_current": True,
+            "max_addressable_memory_cells": 65_536,
+            "pc_horizon": 65_536,
+        }
+        gates = {
+            "fixture_gate_detected": False,
+            "required_backend_version_present": True,
+            "markers": {"phase12_decoding_only": False},
+        }
+        fixture = {
+            "memory_cells": 65_536,
+            "instruction_count": 49_153,
+            "mul_memory_ops": 49_152,
+        }
+
+        row = PROBE.classify_surface(target, limits, gates, fixture)
+
+        self.assertEqual(row["status"], PROBE.DECISION_NO_GO)
+        self.assertEqual(
+            [blocker["id"] for blocker in row["blockers"]],
+            ["missing_parameterized_stwo_backend"],
+        )
+        self.assertIn("confirmed fixture-gate scan", row["blockers"][0]["missing"])
 
     def test_scan_tvm_limits_fails_closed_when_markers_are_missing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
