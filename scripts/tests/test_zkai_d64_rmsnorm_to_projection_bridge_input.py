@@ -58,6 +58,19 @@ class ZkAiD64RmsnormToProjectionBridgeInputTests(unittest.TestCase):
             with self.assertRaisesRegex(BRIDGE.BridgeInputError, "exceeds max size"):
                 BRIDGE.load_source(source_path)
 
+    def test_source_validation_rejects_normed_m31_bound_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["rows"][0]["normed_q8"] = BRIDGE.M31_MODULUS
+        with self.assertRaisesRegex(BRIDGE.BridgeInputError, "signed M31 bounds"):
+            BRIDGE.validate_source(source)
+
+    def test_payload_rejects_row_value_m31_bound_drift(self) -> None:
+        payload = BRIDGE.build_payload()
+        payload["rows"][0]["rmsnorm_normed_q8"] = BRIDGE.M31_MODULUS
+        payload["rows"][0]["projection_input_q8"] = BRIDGE.M31_MODULUS
+        with self.assertRaisesRegex(BRIDGE.BridgeInputError, "signed M31 bounds"):
+            BRIDGE.validate_payload(payload)
+
     def test_source_validation_rejects_normed_commitment_drift(self) -> None:
         source = copy.deepcopy(BRIDGE.load_source())
         source["rmsnorm_output_row_commitment"] = "blake2b-256:" + "88" * 32

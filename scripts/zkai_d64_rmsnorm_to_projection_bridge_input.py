@@ -37,6 +37,7 @@ RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d64-rmsnorm-output-row:v1"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d64-projection-input-row:v1"
 NEXT_BACKEND_STEP = "encode gate/value projection rows that consume projection_input_row_commitment and produce gate_value_projection_output_commitment"
 MAX_SOURCE_JSON_BYTES = 1_048_576
+M31_MODULUS = (1 << 31) - 1
 
 NON_CLAIMS = [
     "not full d64 block proof",
@@ -103,6 +104,11 @@ def sequence_commitment(values: list[int], domain: str) -> str:
     )
 
 
+def require_signed_m31(value: int, label: str) -> None:
+    if value <= -M31_MODULUS or value >= M31_MODULUS:
+        raise BridgeInputError(f"{label} outside signed M31 bounds")
+
+
 def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
     try:
         source_size = path.stat().st_size
@@ -137,6 +143,7 @@ def validate_source(source: Any) -> None:
         value = row.get("normed_q8")
         if not isinstance(value, int):
             raise BridgeInputError("source normed_q8 must be integer")
+        require_signed_m31(value, "source normed_q8")
         values.append(value)
     if source.get("rmsnorm_output_row_commitment") != sequence_commitment(values, RMSNORM_OUTPUT_ROW_DOMAIN):
         raise BridgeInputError("source RMSNorm output row commitment drift")
@@ -238,6 +245,8 @@ def validate_payload(payload: Any) -> None:
             raise BridgeInputError("row index drift")
         if not isinstance(row["rmsnorm_normed_q8"], int) or not isinstance(row["projection_input_q8"], int):
             raise BridgeInputError("row values must be integers")
+        require_signed_m31(row["rmsnorm_normed_q8"], "rmsnorm_normed_q8")
+        require_signed_m31(row["projection_input_q8"], "projection_input_q8")
         if row["rmsnorm_normed_q8"] != row["projection_input_q8"]:
             raise BridgeInputError("bridge row equality drift")
         rms_values.append(row["rmsnorm_normed_q8"])
