@@ -76,16 +76,17 @@
   },
   "decision": "NO_GO_EXACT_VANILLA_EXTERNAL_EXPORT_GO_FOR_STATEMENT_RECEIPT_TARGET",
   "dependency_probe": {
-    "all_vanilla_external_runtime_present": false,
+    "all_vanilla_external_runtime_present": "not_recorded",
     "cli_tools": {
-      "ezkl": false
+      "ezkl": "not_recorded"
     },
+    "mode": "declared_requirements_only",
     "python_modules": {
-      "ezkl": false,
-      "numpy": false,
-      "onnx": false,
-      "onnxruntime": false,
-      "torch": false
+      "ezkl": "not_recorded",
+      "numpy": "not_recorded",
+      "onnx": "not_recorded",
+      "onnxruntime": "not_recorded",
+      "torch": "not_recorded"
     }
   },
   "exact_semantic_requirements": [

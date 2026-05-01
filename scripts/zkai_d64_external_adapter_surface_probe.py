@@ -34,6 +34,10 @@ PROOF_STATUS = "REFERENCE_FIXTURE_NOT_PROVEN"
 
 PYTHON_MODULES = ("onnx", "onnxruntime", "numpy", "torch", "ezkl")
 CLI_TOOLS = ("ezkl",)
+EXPECTED_FLOAT_DRIFT_CHANGED_POSITIONS = 61
+EXPECTED_FLOAT_DRIFT_MAX_ABS_DELTA_Q8 = 10
+EXPECTED_EXACT_OUTPUT_SHA256 = "d85e1accebec91047bc31f32ca56366a6b794bd83abf0b8eb235f5339c90f956"
+EXPECTED_FLOAT_LIKE_OUTPUT_SHA256 = "191b7ce0ffa77dc76584d271c31ec84f24b6b1daa6805ed9577de5c55d482c0f"
 
 TSV_COLUMNS = (
     "candidate_adapter",
@@ -107,41 +111,54 @@ def _validate_generated_at(value: Any) -> None:
 
 
 def _git_commit() -> str:
-    return (
-        os.environ.get("ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT")
-        or os.environ.get("ZKAI_GIT_COMMIT")
-        or "unspecified"
-    )
+    return "unspecified"
 
 
 def dependency_probe(
     module_overrides: dict[str, bool] | None = None,
     cli_overrides: dict[str, bool] | None = None,
+    *,
+    include_host_dependencies: bool = False,
 ) -> dict[str, Any]:
     module_overrides = module_overrides or {}
     cli_overrides = cli_overrides or {}
-    modules: dict[str, bool] = {}
+    if not include_host_dependencies and not module_overrides and not cli_overrides:
+        return {
+            "mode": "declared_requirements_only",
+            "python_modules": {name: "not_recorded" for name in PYTHON_MODULES},
+            "cli_tools": {name: "not_recorded" for name in CLI_TOOLS},
+            "all_vanilla_external_runtime_present": "not_recorded",
+        }
+
+    modules: dict[str, bool | str] = {}
     for name in PYTHON_MODULES:
         if name in module_overrides:
             modules[name] = bool(module_overrides[name])
-        else:
+        elif include_host_dependencies:
             modules[name] = importlib.util.find_spec(name) is not None
-    cli_tools: dict[str, bool] = {}
+        else:
+            modules[name] = "not_recorded"
+    cli_tools: dict[str, bool | str] = {}
     for name in CLI_TOOLS:
         if name in cli_overrides:
             cli_tools[name] = bool(cli_overrides[name])
-        else:
+        elif include_host_dependencies:
             cli_tools[name] = shutil.which(name) is not None
+        else:
+            cli_tools[name] = "not_recorded"
+    all_runtime_present = (
+        modules.get("onnx") is True
+        and modules.get("onnxruntime") is True
+        and modules.get("numpy") is True
+        and modules.get("ezkl") is True
+        and cli_tools.get("ezkl") is True
+    )
+    mode = "host_dependency_probe" if include_host_dependencies else "declared_requirements_with_overrides"
     return {
+        "mode": mode,
         "python_modules": modules,
         "cli_tools": cli_tools,
-        "all_vanilla_external_runtime_present": bool(
-            modules.get("onnx")
-            and modules.get("onnxruntime")
-            and modules.get("numpy")
-            and modules.get("ezkl")
-            and cli_tools.get("ezkl")
-        ),
+        "all_vanilla_external_runtime_present": all_runtime_present,
     }
 
 
@@ -321,12 +338,18 @@ def adapter_candidates() -> list[dict[str, Any]]:
 def build_probe(
     module_overrides: dict[str, bool] | None = None,
     cli_overrides: dict[str, bool] | None = None,
+    *,
+    include_host_dependencies: bool = False,
 ) -> dict[str, Any]:
     fixture = FIXTURE.build_fixture()
     FIXTURE.validate_payload(fixture)
     reference = FIXTURE.evaluate_reference_block()
     statement = fixture["statement"]
-    dependencies = dependency_probe(module_overrides=module_overrides, cli_overrides=cli_overrides)
+    dependencies = dependency_probe(
+        module_overrides=module_overrides,
+        cli_overrides=cli_overrides,
+        include_host_dependencies=include_host_dependencies,
+    )
     drift = float_drift_summary(reference)
     exact_requirements = exact_semantic_requirements()
     exact_requirements_commitment = blake2b_commitment(
@@ -424,46 +447,53 @@ def validate_probe(payload: dict[str, Any]) -> None:
     fixture = FIXTURE.build_fixture()
     if payload["target"] != fixture["target"]:
         raise D64ExternalAdapterProbeError("target drift")
-    source = payload["source_fixture"]
-    if source.get("statement_commitment") != fixture["statement"]["statement_commitment"]:
-        raise D64ExternalAdapterProbeError("source statement commitment drift")
-    if source.get("proof_status") != PROOF_STATUS:
-        raise D64ExternalAdapterProbeError("source proof status drift")
-    if source.get("mutation_suite") != {
-        "mutations_checked": 14,
-        "mutations_rejected": 14,
-        "decision": "GO",
-    }:
-        raise D64ExternalAdapterProbeError("source mutation suite drift")
+    expected_source = {
+        "schema": fixture["schema"],
+        "decision": fixture["decision"],
+        "proof_status": fixture["implementation_status"]["proof_status"],
+        "statement_commitment": fixture["statement"]["statement_commitment"],
+        "mutation_suite": {
+            "mutations_checked": fixture["mutation_suite"]["mutations_checked"],
+            "mutations_rejected": fixture["mutation_suite"]["mutations_rejected"],
+            "decision": fixture["mutation_suite"]["decision"],
+        },
+    }
+    if payload["source_fixture"] != expected_source:
+        raise D64ExternalAdapterProbeError("source fixture drift")
 
     requirements = payload["exact_semantic_requirements"]
+    expected_requirements = exact_semantic_requirements()
+    if requirements != expected_requirements:
+        raise D64ExternalAdapterProbeError("semantic requirements drift")
     if payload["exact_semantic_requirements_commitment"] != blake2b_commitment(
-        requirements, "ptvm:zkai:d64-external-adapter-requirements:v1"
+        expected_requirements,
+        "ptvm:zkai:d64-external-adapter-requirements:v1",
     ):
         raise D64ExternalAdapterProbeError("semantic requirements commitment drift")
-    names = {item.get("requirement") for item in requirements if isinstance(item, dict)}
-    for name in (
-        "floor_division_rounding",
-        "integer_square_root",
-        "bounded_integer_silu_lookup",
-        "statement_receipt_binding",
-    ):
-        if name not in names:
-            raise D64ExternalAdapterProbeError(f"missing semantic requirement: {name}")
 
-    drift = payload["float_drift_summary"]
-    if drift.get("changed_output_positions", 0) <= 0:
-        raise D64ExternalAdapterProbeError("float drift canary must differ from exact output")
-    if drift.get("exact_output_sha256") == drift.get("float_like_output_sha256"):
-        raise D64ExternalAdapterProbeError("float drift canary hashes unexpectedly match")
+    expected_drift = float_drift_summary(FIXTURE.evaluate_reference_block())
+    if expected_drift["changed_output_positions"] != EXPECTED_FLOAT_DRIFT_CHANGED_POSITIONS:
+        raise D64ExternalAdapterProbeError("internal float drift changed-position constant drift")
+    if expected_drift["max_abs_output_delta_q8"] != EXPECTED_FLOAT_DRIFT_MAX_ABS_DELTA_Q8:
+        raise D64ExternalAdapterProbeError("internal float drift max-delta constant drift")
+    if expected_drift["exact_output_sha256"] != EXPECTED_EXACT_OUTPUT_SHA256:
+        raise D64ExternalAdapterProbeError("internal exact output hash constant drift")
+    if expected_drift["float_like_output_sha256"] != EXPECTED_FLOAT_LIKE_OUTPUT_SHA256:
+        raise D64ExternalAdapterProbeError("internal float-like output hash constant drift")
+    if payload["float_drift_summary"] != expected_drift:
+        raise D64ExternalAdapterProbeError("float drift summary drift")
 
     candidates = payload["candidate_adapters"]
+    expected_candidates = adapter_candidates()
+    if candidates != expected_candidates:
+        raise D64ExternalAdapterProbeError("candidate adapter matrix drift")
     if not isinstance(candidates, list) or len(candidates) != 5:
         raise D64ExternalAdapterProbeError("candidate adapter matrix must contain five rows")
     for candidate in candidates:
         _validate_candidate(candidate)
     if payload["candidate_matrix_commitment"] != blake2b_commitment(
-        candidates, "ptvm:zkai:d64-external-adapter-candidates:v1"
+        expected_candidates,
+        "ptvm:zkai:d64-external-adapter-candidates:v1",
     ):
         raise D64ExternalAdapterProbeError("candidate matrix commitment drift")
     by_name = {candidate["candidate_adapter"]: candidate for candidate in candidates}
@@ -521,12 +551,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--write-json", type=pathlib.Path, default=None)
     parser.add_argument("--write-tsv", type=pathlib.Path, default=None)
     parser.add_argument("--json", action="store_true", help="print the full probe payload")
+    parser.add_argument(
+        "--include-host-deps",
+        action="store_true",
+        help="include local dependency availability in printed/generated output; off by default for reproducibility",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    payload = build_probe()
+    payload = build_probe(include_host_dependencies=args.include_host_deps)
     write_outputs(payload, args.write_json, args.write_tsv)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))

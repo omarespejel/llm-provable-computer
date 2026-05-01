@@ -57,12 +57,24 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         self.assertFalse(deps["python_modules"]["torch"])
         self.assertTrue(deps["cli_tools"]["ezkl"])
         self.assertTrue(deps["all_vanilla_external_runtime_present"])
+        self.assertEqual(deps["mode"], "declared_requirements_with_overrides")
+
+    def test_default_dependency_probe_is_reproducible_and_host_free(self) -> None:
+        deps = PROBE.dependency_probe()
+
+        self.assertEqual(deps["mode"], "declared_requirements_only")
+        self.assertEqual(deps["python_modules"]["onnx"], "not_recorded")
+        self.assertEqual(deps["cli_tools"]["ezkl"], "not_recorded")
+        self.assertEqual(deps["all_vanilla_external_runtime_present"], "not_recorded")
 
     def test_float_approximation_is_not_same_statement(self) -> None:
         reference = PROBE.FIXTURE.evaluate_reference_block()
         drift = PROBE.float_drift_summary(reference)
 
-        self.assertGreater(drift["changed_output_positions"], 0)
+        self.assertEqual(drift["changed_output_positions"], 61)
+        self.assertEqual(drift["max_abs_output_delta_q8"], 10)
+        self.assertEqual(drift["exact_output_sha256"], PROBE.EXPECTED_EXACT_OUTPUT_SHA256)
+        self.assertEqual(drift["float_like_output_sha256"], PROBE.EXPECTED_FLOAT_LIKE_OUTPUT_SHA256)
         self.assertNotEqual(drift["exact_output_sha256"], drift["float_like_output_sha256"])
 
     def test_rows_for_tsv_are_stable_and_scoped(self) -> None:
@@ -102,7 +114,7 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
             payload["exact_semantic_requirements"], "ptvm:zkai:d64-external-adapter-requirements:v1"
         )
 
-        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "integer_square_root"):
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "semantic requirements drift"):
             PROBE.validate_probe(payload)
 
     def test_validation_rejects_proof_generation_overclaim(self) -> None:
@@ -112,21 +124,21 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
             payload["candidate_adapters"], "ptvm:zkai:d64-external-adapter-candidates:v1"
         )
 
-        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "proof generation"):
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "candidate adapter matrix drift"):
             PROBE.validate_probe(payload)
 
     def test_validation_rejects_stale_source_statement_commitment(self) -> None:
         payload = PROBE.build_probe()
         payload["source_fixture"]["statement_commitment"] = "blake2b-256:" + "00" * 32
 
-        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "statement commitment"):
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "source fixture drift"):
             PROBE.validate_probe(payload)
 
     def test_validation_rejects_float_drift_canary_erasure(self) -> None:
         payload = PROBE.build_probe()
         payload["float_drift_summary"]["changed_output_positions"] = 0
 
-        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "float drift"):
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "float drift summary drift"):
             PROBE.validate_probe(payload)
 
     def test_write_outputs_wraps_os_errors(self) -> None:
@@ -139,7 +151,7 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
         payload = PROBE.build_probe()
         payload["candidate_adapters"][0]["gate"] = "GO"
 
-        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "candidate matrix commitment"):
+        with self.assertRaisesRegex(PROBE.D64ExternalAdapterProbeError, "candidate adapter matrix drift"):
             PROBE.validate_probe(payload)
 
 
