@@ -54,7 +54,7 @@ class ZkAID64ExternalAdapterSurfaceProbeTests(unittest.TestCase):
             fixture["statement"]["statement_commitment"],
         )
         self.assertEqual(payload["source_fixture"]["proof_status"], "REFERENCE_FIXTURE_NOT_PROVEN")
-        self.assertEqual(payload["source_fixture"]["mutation_suite"]["mutations_rejected"], 14)
+        self.assertEqual(payload["source_fixture"]["mutation_suite"]["mutations_rejected"], 15)
         self.assertIn("not evidence that the d64 statement is proven", payload["non_claims"])
 
     def test_dependency_probe_can_be_injected_for_reproducible_tests(self) -> None:

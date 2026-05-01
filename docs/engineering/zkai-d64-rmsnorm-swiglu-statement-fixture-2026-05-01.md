@@ -39,12 +39,12 @@ The fixture uses a deterministic signed-q8 reference semantics:
 
 ## Checked statement binding
 
-The fixture emits a `zkai-statement-target-v1` statement with commitments for:
+The fixture emits a `zkai-statement-target-v2` statement with commitments for:
 
 - model artifact,
 - model config,
 - gate/value/down weights,
-- proof-native parameter manifest,
+- `proof_native_parameter_commitment`,
 - input activation,
 - output activation,
 - RMSNorm config,
@@ -53,10 +53,10 @@ The fixture emits a `zkai-statement-target-v1` statement with commitments for:
 - reference output digest,
 - statement commitment.
 
-The proof-native parameter manifest is the method selected by the later
-commitment-consistency probe: publication hashes remain audit/export identity,
-while `proof_native_parameter_commitment` is the value the native proof public
-instance must bind.
+The `proof_native_parameter_commitment` field is the method selected by the
+later commitment-consistency probe: publication hashes remain audit/export
+identity, while this proof-native commitment is the value the native proof
+public instance must bind.
 
 The mutation suite accepts the baseline and rejects `15 / 15` checked relabels:
 
@@ -66,7 +66,7 @@ The mutation suite accepts the baseline and rejects `15 / 15` checked relabels:
 - model artifact commitment,
 - model config commitment,
 - weight commitment,
-- proof-native parameter commitment,
+- `proof_native_parameter_commitment`,
 - input activation commitment,
 - output activation commitment,
 - normalization config commitment,

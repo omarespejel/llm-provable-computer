@@ -24,11 +24,11 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-SCHEMA = "zkai-d64-rmsnorm-swiglu-statement-fixture-v1"
-RECEIPT_VERSION = "zkai-statement-target-v1"
-TARGET_ID = "rmsnorm-swiglu-residual-d64-v1"
+SCHEMA = "zkai-d64-rmsnorm-swiglu-statement-fixture-v2"
+RECEIPT_VERSION = "zkai-statement-target-v2"
+TARGET_ID = "rmsnorm-swiglu-residual-d64-v2"
 MODEL_ID = "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1"
-REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d64-v1"
+REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d64-v2"
 PROOF_STATUS = "REFERENCE_FIXTURE_NOT_PROVEN"
 WIDTH = 64
 FF_DIM_MULTIPLIER = 4
@@ -159,8 +159,22 @@ def merkle_leaf(payload: dict[str, Any], domain: str) -> str:
     return blake2b_hex(canonical_json_bytes(payload), domain)
 
 
+def parse_merkle_hash(value: str, field: str) -> bytes:
+    if not isinstance(value, str):
+        raise StatementFixtureError(f"invalid Merkle hash for {field}: expected string")
+    raw = value.removeprefix("blake2b-256:")
+    if len(raw) != 64 or any(char not in "0123456789abcdef" for char in raw):
+        raise StatementFixtureError(f"invalid Merkle hash for {field}")
+    try:
+        return bytes.fromhex(raw)
+    except ValueError as err:
+        raise StatementFixtureError(f"invalid Merkle hash for {field}") from err
+
+
 def merkle_parent(left: str, right: str, domain: str) -> str:
-    return blake2b_hex(bytes.fromhex(left) + bytes.fromhex(right), domain)
+    return blake2b_hex(parse_merkle_hash(left, "left") + parse_merkle_hash(right, "right"), domain)
+
+
 
 
 def merkle_root(leaves: list[str], domain: str) -> str:
@@ -422,7 +436,7 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "receipt_version": RECEIPT_VERSION,
         "statement_kind": "transformer-block",
         "model_id": MODEL_ID,
-        "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v1",
+        "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2",
         "proof_system": "stwo-transparent-stark",
         "proof_status": PROOF_STATUS,
         "proof_system_version_required": REQUIRED_BACKEND_VERSION,
@@ -434,13 +448,13 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "output_activation_commitment": binding["output_activation_commitment"],
         "normalization_config_commitment": binding["normalization_config_commitment"],
         "activation_lookup_commitment": binding["activation_lookup_commitment"],
-        "public_instance_commitment": blake2b_commitment(public_instance, "ptvm:zkai:d64-public-instance:v1"),
+        "public_instance_commitment": blake2b_commitment(public_instance, "ptvm:zkai:d64-public-instance:v2"),
         "proof_commitment": None,
         "verifying_key_commitment": None,
         "setup_commitment": None,
         "reference_output_sha256": sha256_bytes(canonical_json_bytes(reference["output_q8"])),
     }
-    statement["statement_commitment"] = blake2b_commitment(statement, "ptvm:zkai:d64-statement:v1")
+    statement["statement_commitment"] = blake2b_commitment(statement, "ptvm:zkai:d64-statement:v2")
     return statement
 
 
@@ -497,7 +511,7 @@ def _expected_statement() -> dict[str, Any]:
 def _statement_commitment_from_payload(statement: dict[str, Any]) -> str:
     payload = copy.deepcopy(statement)
     payload.pop("statement_commitment")
-    return blake2b_commitment(payload, "ptvm:zkai:d64-statement:v1")
+    return blake2b_commitment(payload, "ptvm:zkai:d64-statement:v2")
 
 
 def _validate_statement_against_expected(statement: dict[str, Any], expected: dict[str, Any]) -> None:
