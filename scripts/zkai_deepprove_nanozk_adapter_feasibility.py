@@ -12,11 +12,13 @@ import argparse
 import csv
 import datetime as dt
 import hashlib
+import io
 import json
 import os
 import pathlib
 import re
 import subprocess
+import tempfile
 from typing import Any
 
 
@@ -321,30 +323,91 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, str]]:
     return rows
 
 
+def _atomic_write_pair(files: list[tuple[pathlib.Path, str]]) -> None:
+    staged: list[tuple[pathlib.Path, pathlib.Path]] = []
+    backups: list[tuple[pathlib.Path, pathlib.Path, bool]] = []
+    try:
+        for final_path, content in files:
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                "w",
+                encoding="utf-8",
+                newline="",
+                dir=final_path.parent,
+                prefix=f".{final_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                tmp_path = pathlib.Path(handle.name)
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            staged.append((tmp_path, final_path))
+        for tmp_path, final_path in staged:
+            with tempfile.NamedTemporaryFile(
+                dir=final_path.parent,
+                prefix=f".{final_path.name}.backup.",
+                suffix=".tmp",
+                delete=False,
+            ) as backup_handle:
+                backup_path = pathlib.Path(backup_handle.name)
+            backup_path.unlink(missing_ok=True)
+            existed = final_path.exists()
+            if existed:
+                final_path.replace(backup_path)
+            backups.append((final_path, backup_path, existed))
+            tmp_path.replace(final_path)
+    except OSError as err:
+        for final_path, backup_path, existed in reversed(backups):
+            try:
+                final_path.unlink(missing_ok=True)
+                if existed:
+                    backup_path.replace(final_path)
+            except OSError:
+                pass
+        for tmp_path, _ in staged:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        for _, backup_path, _ in backups:
+            try:
+                backup_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise AdapterFeasibilityError(f"failed to write feasibility probe output: {err}") from err
+    for _, backup_path, _ in backups:
+        try:
+            backup_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _json_text(payload: dict[str, Any]) -> str:
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+
+def _tsv_text(payload: dict[str, Any]) -> str:
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows_for_tsv(payload))
+    return buffer.getvalue()
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
-    write_json_output(payload, json_path)
-    write_tsv_output(payload, tsv_path)
+    validate_probe(payload)
+    _atomic_write_pair([(json_path, _json_text(payload)), (tsv_path, _tsv_text(payload))])
 
 
 def write_json_output(payload: dict[str, Any], json_path: pathlib.Path) -> None:
     validate_probe(payload)
-    try:
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    except OSError as err:
-        raise AdapterFeasibilityError(f"failed to write feasibility JSON output: {err}") from err
+    _atomic_write_pair([(json_path, _json_text(payload))])
 
 
 def write_tsv_output(payload: dict[str, Any], tsv_path: pathlib.Path) -> None:
     validate_probe(payload)
-    try:
-        tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        with tsv_path.open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows_for_tsv(payload))
-    except OSError as err:
-        raise AdapterFeasibilityError(f"failed to write feasibility TSV output: {err}") from err
+    _atomic_write_pair([(tsv_path, _tsv_text(payload))])
 
 
 def parse_args() -> argparse.Namespace:
@@ -362,9 +425,11 @@ def main() -> None:
         print(json.dumps(payload, indent=2, sort_keys=True))
     json_path = args.write_json
     tsv_path = args.write_tsv
-    if json_path is not None:
+    if json_path is not None and tsv_path is not None:
+        write_outputs(payload, json_path, tsv_path)
+    elif json_path is not None:
         write_json_output(payload, json_path)
-    if tsv_path is not None:
+    elif tsv_path is not None:
         write_tsv_output(payload, tsv_path)
 
 

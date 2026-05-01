@@ -120,6 +120,43 @@ class ZkAIDeepProveNanoZKAdapterFeasibilityTests(unittest.TestCase):
             self.assertIn("DeepProve-1", tsv_lines[1])
             self.assertIn("NANOZK", tsv_lines[2])
 
+    def test_write_outputs_wraps_os_errors(self) -> None:
+        payload = PROBE.build_probe()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            out_path = pathlib.Path(raw_tmp) / "feasibility.json"
+            with (
+                mock.patch.object(PROBE.tempfile, "NamedTemporaryFile", side_effect=OSError("disk full")),
+                self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "failed to write"),
+            ):
+                PROBE.write_json_output(payload, out_path)
+
+    def test_write_outputs_rolls_back_json_if_tsv_replace_fails(self) -> None:
+        payload = PROBE.build_probe()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "feasibility.json"
+            tsv_path = tmp / "feasibility.tsv"
+            json_path.write_text("old-json\n", encoding="utf-8")
+            tsv_path.write_text("old-tsv\n", encoding="utf-8")
+            original_replace = pathlib.Path.replace
+            calls = {"count": 0}
+
+            def fail_second_final_replace(self: pathlib.Path, target: pathlib.Path) -> pathlib.Path:
+                calls["count"] += 1
+                if target == tsv_path and ".backup." not in self.name:
+                    raise OSError("tsv replace failed")
+                return original_replace(self, target)
+
+            with (
+                mock.patch.object(pathlib.Path, "replace", new=fail_second_final_replace),
+                self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "failed to write"),
+            ):
+                PROBE.write_outputs(payload, json_path, tsv_path)
+
+            self.assertGreaterEqual(calls["count"], 2)
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
     def test_individual_writers_do_not_create_unrequested_formats(self) -> None:
         payload = PROBE.build_probe()
         with tempfile.TemporaryDirectory() as raw_tmp:
