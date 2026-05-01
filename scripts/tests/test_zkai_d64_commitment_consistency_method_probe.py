@@ -230,6 +230,17 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "commitment mismatch"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_malformed_manifest_without_keyerror(self) -> None:
+        payload = PROBE.build_probe()
+        del payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"]
+        payload["proof_native_parameter_manifest_commitment"] = PROBE.blake2b_commitment(
+            payload["proof_native_parameter_manifest"],
+            "ptvm:zkai:d64:proof-native-parameter-manifest-payload:v1",
+        )
+
+        with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "missing commitment"):
+            PROBE.validate_probe(payload)
+
     def test_validation_rejects_next_pr_target_drift(self) -> None:
         payload = PROBE.build_probe()
         payload["next_pr_target"]["chosen_method"] = "metadata_only_statement_commitments"
