@@ -188,6 +188,20 @@ commitments and rejects `14 / 14` checked relabeling mutations, including a
 proof-status overclaim. The next backend must prove this statement, or record an
 exact blocker against this fixture rather than against a drifting prose target.
 
+The external-adapter surface probe is now also checked in:
+
+- `docs/engineering/zkai-d64-external-adapter-surface-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.json`
+
+That probe records a NO-GO for treating a vanilla external float-style export as
+an exact proof of the canonical d64 statement. The exact statement requires
+signed-q8 arithmetic, floor-division rounding, integer square-root, a bounded
+integer SiLU lookup table, committed parameter tables, and statement-receipt
+binding. A naive float-style drift canary changes `61 / 64` output positions, so
+approximate export is a different statement unless it gets a separate target and
+commitment. The receipt target remains reusable once an exact native or custom
+external proof exists.
+
 ## NO-GO criteria
 
 Record an explicit NO-GO if:

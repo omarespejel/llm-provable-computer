@@ -22,5 +22,6 @@ Tablero itself proves agents, reasoning, tool truth, or policy semantics.
 - [Matched RMSNorm-SwiGLU block feasibility gate](../zkai-matched-rmsnorm-swiglu-block-feasibility-gate-2026-05-01.md)
 - [d64 RMSNorm-SwiGLU implementation-surface probe](../zkai-d64-rmsnorm-swiglu-surface-probe-2026-05-01.md)
 - [d64 RMSNorm-SwiGLU statement fixture](../zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05-01.md)
+- [d64 external-adapter surface probe](../zkai-d64-external-adapter-surface-probe-2026-05-01.md)
 - [Agent-step zkAI Stwo composition gate](../agent-step-zkai-stwo-composition-gate-2026-04-29.md)
 - [Agent-step model subreceipt callback gate](../agent-step-model-subreceipt-callback-gate-2026-04-29.md)
