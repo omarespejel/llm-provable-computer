@@ -14,11 +14,13 @@ import csv
 import datetime as dt
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 
@@ -128,6 +130,60 @@ def _git_commit() -> str:
     except (OSError, subprocess.CalledProcessError):
         return "unavailable"
     return completed.stdout.strip() or "unavailable"
+
+
+def _repo_relative(path: pathlib.Path) -> pathlib.Path | None:
+    try:
+        return path.resolve().relative_to(ROOT.resolve())
+    except ValueError:
+        return None
+
+
+def _dirty_worktree_paths() -> set[pathlib.Path]:
+    commands = (
+        ["git", "-C", str(ROOT), "diff", "--name-only"],
+        ["git", "-C", str(ROOT), "diff", "--cached", "--name-only"],
+        ["git", "-C", str(ROOT), "ls-files", "--others", "--exclude-standard"],
+    )
+    dirty: set[pathlib.Path] = set()
+    for command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError) as err:
+            raise CommitmentConsistencyProbeError("failed to inspect git worktree cleanliness") from err
+        dirty.update(pathlib.Path(line) for line in completed.stdout.splitlines() if line)
+    return dirty
+
+
+def _is_checked_output_path(path: pathlib.Path | None) -> bool:
+    if path is None:
+        return False
+    return path.resolve() in {JSON_OUT.resolve(), TSV_OUT.resolve()}
+
+
+def _guard_checked_output_write(json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    if not (_is_checked_output_path(json_path) or _is_checked_output_path(tsv_path)):
+        return
+    allowed_dirty = {
+        path
+        for path in (_repo_relative(JSON_OUT), _repo_relative(TSV_OUT))
+        if path is not None
+    }
+    dirty = _dirty_worktree_paths()
+    unexpected = sorted(str(path) for path in dirty - allowed_dirty)
+    if unexpected:
+        preview = ", ".join(unexpected[:8])
+        suffix = "" if len(unexpected) <= 8 else f", ... ({len(unexpected)} total)"
+        raise CommitmentConsistencyProbeError(
+            "refuse to write checked commitment-consistency evidence from dirty worktree: "
+            f"{preview}{suffix}"
+        )
 
 
 def merkle_leaf(payload: dict[str, Any], domain: str) -> str:
@@ -484,22 +540,80 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
     ]
 
 
+def _reserve_temp_path(parent: pathlib.Path, name: str) -> pathlib.Path:
+    with tempfile.NamedTemporaryFile(dir=parent, prefix=f".{name}.", suffix=".tmp", delete=False) as handle:
+        return pathlib.Path(handle.name)
+
+
+def _atomic_write_pair(files: list[tuple[pathlib.Path, str]]) -> None:
+    staged: list[tuple[pathlib.Path, pathlib.Path]] = []
+    backups: list[tuple[pathlib.Path, pathlib.Path, bool]] = []
+    try:
+        for final_path, content in files:
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                "w",
+                encoding="utf-8",
+                newline="",
+                dir=final_path.parent,
+                prefix=f".{final_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                tmp_path = pathlib.Path(handle.name)
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            staged.append((tmp_path, final_path))
+        for tmp_path, final_path in staged:
+            backup_path = _reserve_temp_path(final_path.parent, f"{final_path.name}.backup")
+            backup_path.unlink(missing_ok=True)
+            existed = final_path.exists()
+            if existed:
+                final_path.replace(backup_path)
+            backups.append((final_path, backup_path, existed))
+            tmp_path.replace(final_path)
+    except OSError as err:
+        for final_path, backup_path, existed in reversed(backups):
+            try:
+                final_path.unlink(missing_ok=True)
+                if existed:
+                    backup_path.replace(final_path)
+            except OSError:
+                pass
+        for tmp_path, _ in staged:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        for _, backup_path, _ in backups:
+            try:
+                backup_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise CommitmentConsistencyProbeError(f"failed to write commitment consistency probe output: {err}") from err
+    for _, backup_path, _ in backups:
+        try:
+            backup_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_probe(payload)
     rows = rows_for_tsv(payload, validated=True)
-    try:
-        if json_path is not None:
-            json_path.parent.mkdir(parents=True, exist_ok=True)
-            json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        if tsv_path is not None:
-            tsv_path.parent.mkdir(parents=True, exist_ok=True)
-            with tsv_path.open("w", encoding="utf-8", newline="") as handle:
-                writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
-    except OSError as err:
-        raise CommitmentConsistencyProbeError(f"failed to write commitment consistency probe output: {err}") from err
+    _guard_checked_output_write(json_path, tsv_path)
+    files: list[tuple[pathlib.Path, str]] = []
+    if json_path is not None:
+        files.append((json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n"))
+    if tsv_path is not None:
+        buffer = io.StringIO()
+        writer = csv.DictWriter(buffer, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+        files.append((tsv_path, buffer.getvalue()))
+    _atomic_write_pair(files)
 
 
 def tampered_manifest(matrix: str = "gate") -> dict[str, Any]:
