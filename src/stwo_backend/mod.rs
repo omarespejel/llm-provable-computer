@@ -3,6 +3,7 @@ mod adapter;
 mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
+mod d64_native_export_contract;
 #[cfg(feature = "stwo-backend")]
 mod decoding;
 #[cfg(feature = "stwo-backend")]
@@ -41,6 +42,20 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+pub use d64_native_export_contract::{
+    zkai_d64_native_export_contract_from_oracle_json_str,
+    zkai_d64_native_export_contract_from_oracle_value, ZkAiD64NativeExportContract,
+    ZKAI_D64_ACTIVATION_LOOKUP_COMMITMENT, ZKAI_D64_ACTIVATION_TABLE_ROWS, ZKAI_D64_FF_DIM,
+    ZKAI_D64_INPUT_ACTIVATION_COMMITMENT, ZKAI_D64_MODEL_CONFIG_COMMITMENT,
+    ZKAI_D64_MUTATIONS_CHECKED, ZKAI_D64_NATIVE_EXPORT_CONTRACT_DECISION,
+    ZKAI_D64_NATIVE_EXPORT_CONTRACT_VERSION, ZKAI_D64_NATIVE_RELATION_ORACLE_DECISION,
+    ZKAI_D64_NATIVE_RELATION_ORACLE_SCHEMA, ZKAI_D64_NORMALIZATION_CONFIG_COMMITMENT,
+    ZKAI_D64_OUTPUT_ACTIVATION_COMMITMENT, ZKAI_D64_PROJECTION_MUL_ROWS,
+    ZKAI_D64_PROOF_NATIVE_PARAMETER_COMMITMENT, ZKAI_D64_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D64_RELATION_CHECKS, ZKAI_D64_RELATION_COMMITMENT, ZKAI_D64_REQUIRED_BACKEND_VERSION,
+    ZKAI_D64_STATEMENT_COMMITMENT, ZKAI_D64_TARGET_ID, ZKAI_D64_TRACE_ROWS_EXCLUDING_STATIC_TABLE,
+    ZKAI_D64_VERIFIER_DOMAIN, ZKAI_D64_WIDTH,
 };
 #[cfg(all(feature = "stwo-backend", test))]
 pub(crate) use decoding::phase12_demo_initial_memories_for_steps;

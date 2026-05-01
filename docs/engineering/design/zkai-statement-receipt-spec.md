@@ -278,6 +278,21 @@ It consumes the same public instance, recomputes the RMSNorm-SwiGLU-residual
 relation rows, and rejects `16 / 16` checked mutations. It is still not a Stwo
 proof; it is the fail-closed oracle the native AIR/export path should match.
 
+The d64 native export contract is the first Rust-side consumption point for the
+same checked oracle:
+
+- `docs/engineering/zkai-d64-native-export-contract-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-export-contract-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-native-export-contract-2026-05.tsv`
+- `src/stwo_backend/d64_native_export_contract.rs`
+
+It pins the target ID, backend version, verifier domain, proof-native parameter
+commitment, public-instance commitments, statement commitment, relation
+commitment, row counts, relation checks, mutation suite, and non-claim boundary.
+It is still not AIR or proof evidence. Its purpose is to prevent the next
+native Stwo slice from accepting a looser duplicate of the d64 statement
+contract.
+
 The correct interpretation is:
 
 > A zkAI system needs an explicit statement-binding layer around proof systems if
