@@ -393,6 +393,11 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
         average_square_floor,
         "average square floor",
     )?;
+    if average_square_floor == 0 {
+        return Err(public_row_error(
+            "average square floor must be positive for public-row rms_q8",
+        ));
+    }
     expect_i64(input.rms_q8, integer_sqrt(average_square_floor), "rms q8")?;
     expect_eq(
         &sequence_commitment(
