@@ -323,7 +323,7 @@ def source_fixture_from_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": fixture["schema"],
         "target_id": fixture["target"]["target_id"],
-        "proof_status": fixture["implementation_status"]["proof_status"],
+        "proof_status": fixture["statement"]["proof_status"],
         "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
         "public_instance_commitment": fixture["statement"]["public_instance_commitment"],
         "statement_commitment": fixture["statement"]["statement_commitment"],
@@ -333,12 +333,13 @@ def source_fixture_from_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
 def canonical_validation_fixture() -> dict[str, Any]:
     reference = FIXTURE.evaluate_reference_block()
     binding = FIXTURE.commitments(reference)
+    statement = FIXTURE.statement_payload(reference, binding)
     return {
         "schema": FIXTURE.SCHEMA,
         "target": FIXTURE.target_spec(),
         "commitments": binding,
-        "statement": FIXTURE.statement_payload(reference, binding),
-        "implementation_status": {"proof_status": FIXTURE.PROOF_STATUS},
+        "statement": statement,
+        "implementation_status": {"proof_status": statement["proof_status"]},
     }
 
 
@@ -463,11 +464,11 @@ def run_mutation_suite(witness: dict[str, Any], fixture: dict[str, Any]) -> dict
     }
 
 
-def build_payload(*, include_mutations: bool = True) -> dict[str, Any]:
+def build_payload() -> dict[str, Any]:
     fixture = FIXTURE.build_fixture()
     FIXTURE.validate_payload(fixture)
     witness = relation_witness(FIXTURE.evaluate_reference_block(), fixture)
-    mutation_suite = run_mutation_suite(witness, fixture) if include_mutations else None
+    mutation_suite = run_mutation_suite(witness, fixture)
     payload = {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -479,8 +480,6 @@ def build_payload(*, include_mutations: bool = True) -> dict[str, Any]:
         "non_claims": list(EXPECTED_NON_CLAIMS),
         "next_backend_step": EXPECTED_NEXT_BACKEND_STEP,
     }
-    if mutation_suite is None:
-        payload.pop("mutation_suite")
     return payload
 
 

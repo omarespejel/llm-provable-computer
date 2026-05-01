@@ -14,6 +14,7 @@ and recomputes the canonical RMSNorm-SwiGLU-residual witness rows:
 
 - width: `64`
 - feed-forward dimension: `256`
+- pinned `proof_system_version_required`: `stwo-rmsnorm-swiglu-residual-d64-v2`
 - projection multiplication rows: `49,152`
 - trace rows excluding the static activation table: `49,920`
 - bounded activation table rows: `2,049`
