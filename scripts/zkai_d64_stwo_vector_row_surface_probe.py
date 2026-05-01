@@ -30,8 +30,9 @@ FIXTURE_PATH = ROOT / "scripts" / "zkai_d64_rmsnorm_swiglu_statement_fixture.py"
 JSON_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-stwo-vector-row-surface-probe-2026-05.json"
 TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-stwo-vector-row-surface-probe-2026-05.tsv"
 
-SCHEMA = "zkai-d64-stwo-vector-row-surface-probe-v1"
-DECISION = "GO_ARITHMETIC_SURFACE_NO_GO_EXACT_PROOF_UNTIL_COMMITMENT_CONSISTENCY"
+SCHEMA = "zkai-d64-stwo-vector-row-surface-probe-v2"
+PUBLIC_INSTANCE_CONTRACT_SCHEMA = "zkai-d64-stwo-proof-public-instance-contract-v1"
+DECISION = "GO_PUBLIC_INSTANCE_CONTRACT_NO_GO_EXACT_PROOF_UNTIL_NATIVE_AIR"
 SOURCE_DATE_EPOCH_DEFAULT = 0
 M31_MODULUS = 2**31 - 1
 SIGNED_M31_ABS_LIMIT = 2**30 - 1
@@ -50,6 +51,10 @@ TSV_COLUMNS = (
     "activation_table_rows",
     "max_abs_intermediate",
     "fits_signed_m31",
+    "public_instance_contract_status",
+    "public_instance_mutations_rejected",
+    "proof_native_parameter_commitment",
+    "public_instance_commitment",
     "statement_commitment",
 )
 
@@ -297,22 +302,28 @@ def decision_matrix() -> list[dict[str, str]]:
             "next_action": "Keep range checks explicit before scaling beyond d64 or changing quantization.",
         },
         {
+            "gate": "proof_native_public_instance_contract",
+            "status": "GO",
+            "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config and input/output commitments.",
+            "next_action": "Consume the same public-instance contract inside the native AIR/export path, then verify an honest Stwo proof.",
+        },
+        {
             "gate": "statement_public_instance_binding",
             "status": "PARTIAL",
-            "reason": "The statement commitments can be copied into public instance fields, but that alone does not prove witness consistency.",
-            "next_action": "Bind model, weight, table, input, and output commitments inside the verified relation, not only in receipt metadata.",
+            "reason": "The statement commitments can be copied into proof-facing public instance fields, but that alone does not prove witness consistency.",
+            "next_action": "Bind model, parameter, table, input, and output commitments inside the verified relation, not only in receipt metadata.",
         },
         {
             "gate": "weight_commitment_consistency",
             "status": "NO_GO_YET",
-            "reason": "The fixture commits to deterministic weight tables via hashes; a native proof must show the witness rows match those commitments.",
-            "next_action": "Choose a commitment-consistency method: in-AIR hash, Merkleized table openings, or a smaller proof-friendly parameter commitment.",
+            "reason": "The fixture now exposes a proof-native parameter commitment, but a native proof must still show witness rows match that commitment.",
+            "next_action": "Implement the AIR/export rows that consume proof_native_parameter_commitment rather than only carrying it in the public instance.",
         },
         {
             "gate": "activation_table_commitment_consistency",
             "status": "NO_GO_YET",
-            "reason": "The bounded SiLU lookup table is fixed and small, but the proof still needs a binding from lookup rows to the committed table identity.",
-            "next_action": "Expose the activation-table commitment as a public instance and verify lookup membership against that table.",
+            "reason": "The bounded SiLU table is represented in the proof-native parameter commitment, but lookup rows are not yet checked by a native proof.",
+            "next_action": "Verify activation lookup membership against the committed table inside the native relation.",
         },
         {
             "gate": "native_stwo_exact_d64_proof",
@@ -328,6 +339,7 @@ def expected_non_claims() -> list[str]:
         "not a Stwo proof",
         "not a verifier-time benchmark",
         "not proof that the d64 statement is accepted",
+        "not relation-level consumption of proof_native_parameter_commitment",
         "not backend independence evidence",
         "not full transformer inference",
         "not a claim that commitment consistency is solved",
@@ -341,6 +353,7 @@ def expected_issue_scope() -> dict[str, Any]:
         "pr_scope": "surface_probe_prerequisite",
         "missing_for_issue_go": [
             "honest_stwo_proof_for_d64_fixture",
+            "native_air_consumes_proof_native_parameter_commitment",
             "statement_commitment_consistency_inside_verified_relation",
             "proof_size",
             "proving_time",
@@ -350,12 +363,138 @@ def expected_issue_scope() -> dict[str, Any]:
     }
 
 
+def proof_public_instance_contract(fixture: dict[str, Any]) -> dict[str, Any]:
+    statement = fixture["statement"]
+    binding = fixture["commitments"]
+    public_instance = FIXTURE.public_instance_payload(binding)
+    public_instance_commitment = FIXTURE.public_instance_commitment(binding)
+    if public_instance_commitment != statement["public_instance_commitment"]:
+        raise D64VectorRowSurfaceError("fixture public-instance commitment mismatch")
+    if public_instance["proof_native_parameter_commitment"] != statement["proof_native_parameter_commitment"]:
+        raise D64VectorRowSurfaceError("fixture proof-native parameter commitment mismatch")
+    return {
+        "schema": PUBLIC_INSTANCE_CONTRACT_SCHEMA,
+        "status": "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
+        "backend_version_required": fixture["target"]["required_backend_version"],
+        "verifier_domain": statement["verifier_domain"],
+        "public_instance": public_instance,
+        "public_instance_commitment": public_instance_commitment,
+        "statement_commitment": statement["statement_commitment"],
+        "bound_statement_fields": [
+            "target_id",
+            "width",
+            "ff_dim",
+            "model_config_commitment",
+            "proof_native_parameter_commitment",
+            "input_activation_commitment",
+            "output_activation_commitment",
+            "public_instance_commitment",
+            "statement_commitment",
+            "verifier_domain",
+            "proof_system_version_required",
+        ],
+        "proof_native_parameter_commitment": statement["proof_native_parameter_commitment"],
+        "non_claim": "This is a proof-public-instance contract, not a native Stwo proof.",
+    }
+
+
+def validate_proof_public_instance_contract(contract: dict[str, Any], fixture: dict[str, Any] | None = None) -> None:
+    if not isinstance(contract, dict):
+        raise D64VectorRowSurfaceError("proof public-instance contract must be an object")
+    expected_fields = {
+        "schema",
+        "status",
+        "backend_version_required",
+        "verifier_domain",
+        "public_instance",
+        "public_instance_commitment",
+        "statement_commitment",
+        "bound_statement_fields",
+        "proof_native_parameter_commitment",
+        "non_claim",
+    }
+    if set(contract) != expected_fields:
+        raise D64VectorRowSurfaceError("proof public-instance contract field set mismatch")
+    fixture = FIXTURE.build_fixture() if fixture is None else fixture
+    expected = proof_public_instance_contract(fixture)
+    if contract != expected:
+        for field in expected_fields:
+            if contract.get(field) != expected[field]:
+                raise D64VectorRowSurfaceError(f"proof public-instance contract mismatch: {field}")
+        raise D64VectorRowSurfaceError("proof public-instance contract mismatch")
+
+
+def mutate_contract(contract: dict[str, Any], path: tuple[str, ...], value: Any) -> dict[str, Any]:
+    out = json.loads(json.dumps(contract))
+    cursor = out
+    for key in path[:-1]:
+        cursor = cursor[key]
+    cursor[path[-1]] = value
+    return out
+
+
+def proof_public_instance_mutation_cases(contract: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    wrong_commitment = "blake2b-256:" + "55" * 32
+    return {
+        "proof_native_parameter_commitment_public_instance_relabeling": mutate_contract(
+            contract, ("public_instance", "proof_native_parameter_commitment"), wrong_commitment
+        ),
+        "proof_native_parameter_commitment_top_level_relabeling": mutate_contract(
+            contract, ("proof_native_parameter_commitment",), wrong_commitment
+        ),
+        "public_instance_commitment_relabeling": mutate_contract(
+            contract, ("public_instance_commitment",), wrong_commitment
+        ),
+        "statement_commitment_relabeling": mutate_contract(contract, ("statement_commitment",), wrong_commitment),
+        "model_config_commitment_relabeling": mutate_contract(
+            contract, ("public_instance", "model_config_commitment"), wrong_commitment
+        ),
+        "input_activation_commitment_relabeling": mutate_contract(
+            contract, ("public_instance", "input_activation_commitment"), wrong_commitment
+        ),
+        "output_activation_commitment_relabeling": mutate_contract(
+            contract, ("public_instance", "output_activation_commitment"), wrong_commitment
+        ),
+        "target_id_relabeling": mutate_contract(contract, ("public_instance", "target_id"), "wrong-d64-target"),
+        "width_relabeling": mutate_contract(contract, ("public_instance", "width"), FIXTURE.WIDTH + 1),
+        "ff_dim_relabeling": mutate_contract(contract, ("public_instance", "ff_dim"), FIXTURE.FF_DIM + 1),
+        "backend_version_relabeling": mutate_contract(
+            contract, ("backend_version_required",), "stwo-rmsnorm-swiglu-residual-d64-v999"
+        ),
+        "verifier_domain_relabeling": mutate_contract(
+            contract, ("verifier_domain",), "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v999"
+        ),
+    }
+
+
+def run_public_instance_mutation_suite(contract: dict[str, Any], fixture: dict[str, Any]) -> dict[str, Any]:
+    validate_proof_public_instance_contract(contract, fixture)
+    cases = []
+    for name, mutated in proof_public_instance_mutation_cases(contract).items():
+        try:
+            validate_proof_public_instance_contract(mutated, fixture)
+        except D64VectorRowSurfaceError as err:
+            cases.append({"name": name, "rejected": True, "reason": str(err)})
+        else:
+            cases.append({"name": name, "rejected": False, "reason": "accepted"})
+    rejected = sum(1 for case in cases if case["rejected"])
+    return {
+        "baseline_valid": True,
+        "mutations_checked": len(cases),
+        "mutations_rejected": rejected,
+        "decision": "GO" if rejected == len(cases) else "NO_GO",
+        "cases": cases,
+    }
+
+
 def build_probe() -> dict[str, Any]:
     fixture = FIXTURE.build_fixture()
     FIXTURE.validate_payload(fixture)
     reference = FIXTURE.evaluate_reference_block()
     profile = _witness_profile(reference)
     decisions = decision_matrix()
+    public_instance_contract = proof_public_instance_contract(fixture)
+    public_instance_mutations = run_public_instance_mutation_suite(public_instance_contract, fixture)
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -366,8 +505,12 @@ def build_probe() -> dict[str, Any]:
             "target_id": fixture["target"]["target_id"],
             "proof_status": fixture["implementation_status"]["proof_status"],
             "statement_commitment": fixture["statement"]["statement_commitment"],
+            "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
+            "public_instance_commitment": fixture["statement"]["public_instance_commitment"],
         },
         "target": fixture["target"],
+        "proof_public_instance_contract": public_instance_contract,
+        "proof_public_instance_mutation_suite": public_instance_mutations,
         "witness_profile": profile,
         "witness_profile_commitment": blake2b_commitment(profile, "ptvm:zkai:d64-stwo-vector-row-profile:v1"),
         "decision_matrix": decisions,
@@ -387,6 +530,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "decision",
         "source_fixture",
         "target",
+        "proof_public_instance_contract",
+        "proof_public_instance_mutation_suite",
         "witness_profile",
         "witness_profile_commitment",
         "decision_matrix",
@@ -415,11 +560,19 @@ def validate_probe(payload: dict[str, Any]) -> None:
         "target_id": fixture["target"]["target_id"],
         "proof_status": fixture["implementation_status"]["proof_status"],
         "statement_commitment": fixture["statement"]["statement_commitment"],
+        "proof_native_parameter_commitment": fixture["statement"]["proof_native_parameter_commitment"],
+        "public_instance_commitment": fixture["statement"]["public_instance_commitment"],
     }
     if payload["source_fixture"] != expected_source:
         raise D64VectorRowSurfaceError("source fixture drift")
     if payload["target"] != fixture["target"]:
         raise D64VectorRowSurfaceError("target drift")
+    validate_proof_public_instance_contract(payload["proof_public_instance_contract"], fixture)
+    expected_mutations = run_public_instance_mutation_suite(payload["proof_public_instance_contract"], fixture)
+    if payload["proof_public_instance_mutation_suite"] != expected_mutations:
+        raise D64VectorRowSurfaceError("proof public-instance mutation suite drift")
+    if expected_mutations["decision"] != "GO":
+        raise D64VectorRowSurfaceError("proof public-instance mutation suite must reject all cases")
 
     expected_profile = _witness_profile(FIXTURE.evaluate_reference_block())
     row_counts = expected_profile["row_counts"]
@@ -450,6 +603,8 @@ def validate_probe(payload: dict[str, Any]) -> None:
     by_gate = {row["gate"]: row["status"] for row in payload["decision_matrix"]}
     if by_gate["vector_row_arithmetic_surface"] != "GO":
         raise D64VectorRowSurfaceError("arithmetic surface must stay GO")
+    if by_gate["proof_native_public_instance_contract"] != "GO":
+        raise D64VectorRowSurfaceError("proof-native public-instance contract must stay GO")
     if by_gate["weight_commitment_consistency"] != "NO_GO_YET":
         raise D64VectorRowSurfaceError("weight commitment consistency must stay explicit")
     if by_gate["native_stwo_exact_d64_proof"] != "NO_GO_YET":
@@ -467,6 +622,8 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
     profile = payload["witness_profile"]
     row_counts = profile["row_counts"]
     m31_range = profile["m31_range"]
+    contract = payload["proof_public_instance_contract"]
+    mutation_suite = payload["proof_public_instance_mutation_suite"]
     return [
         {
             "target_id": target["target_id"],
@@ -479,6 +636,10 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
             "activation_table_rows": row_counts["activation_table_rows"],
             "max_abs_intermediate": m31_range["max_abs_intermediate"],
             "fits_signed_m31": str(m31_range["fits_signed_m31"]).lower(),
+            "public_instance_contract_status": contract["status"],
+            "public_instance_mutations_rejected": mutation_suite["mutations_rejected"],
+            "proof_native_parameter_commitment": contract["proof_native_parameter_commitment"],
+            "public_instance_commitment": contract["public_instance_commitment"],
             "statement_commitment": payload["source_fixture"]["statement_commitment"],
         }
         for row in payload["decision_matrix"]
@@ -530,6 +691,10 @@ def main() -> int:
                     "trace_rows_excluding_static_table": profile["row_counts"]["trace_rows_excluding_static_table"],
                     "max_abs_intermediate": profile["m31_range"]["max_abs_intermediate"],
                     "fits_signed_m31": profile["m31_range"]["fits_signed_m31"],
+                    "proof_public_instance_contract": payload["proof_public_instance_contract"]["status"],
+                    "proof_public_instance_mutations_rejected": payload["proof_public_instance_mutation_suite"][
+                        "mutations_rejected"
+                    ],
                     "native_stwo_exact_d64_proof": "NO_GO_YET",
                 },
                 sort_keys=True,

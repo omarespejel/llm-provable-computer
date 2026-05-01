@@ -240,10 +240,14 @@ the native backend track:
 
 The arithmetic surface is not the immediate blocker: the checked fixture has
 `49,920` trace rows excluding the static activation table and max intermediate
-`849,454`, which fits comfortably below the signed M31 limit. The blocker is
-commitment consistency: the proof must bind private weight/table rows to the
-statement commitments instead of only carrying those commitments as receipt
-metadata.
+`849,454`, which fits comfortably below the signed M31 limit. The proof-facing
+public-instance contract is also now pinned: it binds
+`proof_native_parameter_commitment`, model-config, input, output,
+verifier-domain, backend-version, public-instance commitment, and statement
+commitment, and rejects `12 / 12` checked contract relabeling mutations. The
+remaining blocker is relation-level commitment consistency: the proof must bind
+private weight/table rows to that proof-native parameter commitment instead of
+only carrying the commitment as public instance data.
 
 The d64 commitment-consistency method probe selects the next statement-field
 upgrade:
@@ -258,9 +262,9 @@ proof public instance bind a `proof_native_parameter_commitment`. A receipt that
 only carries publication hashes or unconsumed external Merkle openings is not a
 valid statement-binding proof surface.
 
-The canonical d64 statement fixture now carries that field directly. Its
-presence is still not a proof claim: it is the public binding target the next
-native proof relation must consume.
+The canonical d64 statement fixture and vector-row probe now carry that field
+directly. Its presence is still not a proof claim: it is the public binding
+target the next native proof relation must consume.
 
 The correct interpretation is:
 
