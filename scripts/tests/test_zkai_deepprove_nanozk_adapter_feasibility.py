@@ -110,6 +110,23 @@ class ZkAIDeepProveNanoZKAdapterFeasibilityTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "payload field set mismatch"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_unknown_conclusion_fields(self) -> None:
+        payload = PROBE.build_probe()
+        payload["conclusion"]["empirical_adapter_row"] = True
+
+        with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "conclusion field set mismatch"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_unknown_system_fields_after_recommit(self) -> None:
+        payload = PROBE.build_probe()
+        payload["systems"][0]["unreviewed_public_claim"] = "benchmark passed"
+        payload["systems_commitment"] = PROBE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:external-adapter-systems:v1"
+        )
+
+        with self.assertRaisesRegex(PROBE.AdapterFeasibilityError, "system field set mismatch"):
+            PROBE.validate_probe(payload)
+
     def test_rows_for_tsv_are_stable(self) -> None:
         payload = PROBE.build_probe()
         rows = PROBE.rows_for_tsv(payload)
