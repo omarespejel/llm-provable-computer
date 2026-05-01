@@ -450,7 +450,7 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
             "projection_output_relabels_full_output": str(
                 payload["gate_value_projection_output_commitment"] == OUTPUT_ACTIVATION_COMMITMENT
             ).lower(),
-            "non_claims": len(payload["non_claims"]),
+            "non_claims": json.dumps(payload["non_claims"], separators=(",", ":"), sort_keys=True),
             "next_backend_step": payload["next_backend_step"],
         }
     ]
