@@ -19,6 +19,13 @@ verifier over a tiny ONNX `Gemm` fixture:
 This is a statement-binding benchmark, not a performance benchmark and not a
 JSTprove security audit.
 
+Claim boundary: the checked `tiny_gemm.onnx` fixture is intentionally small and
+is **not** transformer-shaped. It answers only whether a real JSTprove verifier
+can sit behind the zkAI statement-envelope adapter and reject metadata
+relabeling. It does not satisfy, and must not be cited as satisfying, a
+transformer-shaped JSTprove proof requirement. Issue #360 is the separate shape
+track for a JSTprove-supported MatMul/Gemm-plus-extra-op fixture.
+
 ## Checked artifacts
 
 Artifact directory:
