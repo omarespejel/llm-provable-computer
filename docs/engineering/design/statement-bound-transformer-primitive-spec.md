@@ -192,6 +192,7 @@ The external-adapter surface probe is now also checked in:
 
 - `docs/engineering/zkai-d64-external-adapter-surface-probe-2026-05-01.md`
 - `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.tsv`
 
 That probe records a NO-GO for treating a vanilla external float-style export as
 an exact proof of the canonical d64 statement. The exact statement requires

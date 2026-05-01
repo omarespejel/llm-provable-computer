@@ -218,6 +218,7 @@ transformer-block comparisons:
 
 - `docs/engineering/zkai-d64-external-adapter-surface-probe-2026-05-01.md`
 - `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-external-adapter-surface-probe-2026-05.tsv`
 
 For an exact signed-q8 RMSNorm-SwiGLU-residual statement, the receipt is not
 enough by itself. The delegated proof must also encode the same integer

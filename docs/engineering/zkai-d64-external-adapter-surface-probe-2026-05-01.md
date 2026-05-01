@@ -60,20 +60,14 @@ absolute output delta `10` q8 units. That is a strong enough warning that a
 floating export should be treated as a different statement, not as an adapter for
 this one.
 
-## Local environment note
+## Dependency note
 
-The current local environment also lacks the vanilla external runtime surface
-used by earlier adapter experiments:
+The checked evidence intentionally does not record host dependency availability.
+That keeps the JSON/TSV reproducible across machines. For local diagnosis, run
+the probe with `--include-host-deps`.
 
-- `onnx`: absent
-- `onnxruntime`: absent
-- `numpy`: absent
-- `torch`: absent
-- `ezkl` Python module: absent
-- `ezkl` CLI: absent
-
-That is an environment blocker, not the main research blocker. Even with those
-dependencies installed, the exact-semantics blocker above remains unless the
+Host dependency availability is not the main research blocker. Even with the
+external runtime installed, the exact-semantics blocker above remains unless the
 adapter circuit encodes the fixture's integer operations and statement receipt.
 
 ## Why this matters
