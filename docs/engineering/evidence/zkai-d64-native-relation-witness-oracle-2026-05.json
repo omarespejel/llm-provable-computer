@@ -1,7 +1,7 @@
 {
   "decision": "GO_RELATION_WITNESS_ORACLE_NOT_STWO_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "3b9b58550c41d911104bc220b6a8df04e21e4c08",
+  "git_commit": "5f61990a3d7e0928acf0db01009d4c31d2895059",
   "mutation_suite": {
     "baseline_valid": true,
     "cases": [
@@ -167,15 +167,15 @@
         "status": "GO"
       },
       {
-        "name": "proof_native_parameter_manifest",
+        "name": "proof_native_parameter_manifest_recomputed",
         "status": "GO"
       },
       {
-        "name": "input_output_commitments",
+        "name": "public_statement_commitments_recomputed",
         "status": "GO"
       },
       {
-        "name": "rmsnorm_rows",
+        "name": "rmsnorm_rows_recomputed",
         "status": "GO"
       },
       {

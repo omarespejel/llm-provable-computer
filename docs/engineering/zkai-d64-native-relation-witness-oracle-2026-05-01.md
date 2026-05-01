@@ -32,9 +32,10 @@ This PR only answers the first question.
 The oracle recomputes and binds:
 
 - the proof-native parameter manifest and commitment,
-- model/config/input/output public-instance commitments,
+- model/config/input/output public-instance commitments from the underlying vectors,
 - normalization config commitment,
 - activation lookup commitment,
+- RMSNorm rows from the input vector and RMS scale vector,
 - gate/value/down projection rows,
 - bounded activation lookup rows,
 - SwiGLU mix rows,
@@ -93,6 +94,8 @@ Generator and tests:
 ## Validation
 
 ```bash
+just gate-fast
+
 python3 -m py_compile \
   scripts/zkai_d64_native_relation_witness_oracle.py \
   scripts/tests/test_zkai_d64_native_relation_witness_oracle.py
@@ -105,4 +108,6 @@ python3 -m unittest \
 python3 scripts/zkai_d64_native_relation_witness_oracle.py \
   --write-json docs/engineering/evidence/zkai-d64-native-relation-witness-oracle-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d64-native-relation-witness-oracle-2026-05.tsv
+
+just gate
 ```

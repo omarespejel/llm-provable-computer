@@ -16,18 +16,14 @@ import datetime as dt
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import pathlib
 import subprocess
-import sys
 from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
-
 FIXTURE_PATH = ROOT / "scripts" / "zkai_d64_rmsnorm_swiglu_statement_fixture.py"
 JSON_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-native-relation-witness-oracle-2026-05.json"
 TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-native-relation-witness-oracle-2026-05.tsv"
@@ -178,9 +174,27 @@ def _projection_outputs(inputs: list[int], matrix: str, rows: int, cols: int) ->
     }
 
 
+def _rmsnorm_outputs(inputs: list[int], scales: list[int]) -> tuple[int, list[int]]:
+    if len(inputs) != FIXTURE.WIDTH or len(scales) != FIXTURE.WIDTH:
+        raise NativeRelationWitnessOracleError("RMSNorm vector width mismatch")
+    sum_squares = sum(value * value for value in inputs)
+    rms_q8 = max(1, math.isqrt(max(1, sum_squares // FIXTURE.WIDTH)))
+    normed = [
+        ((value * scale) // FIXTURE.SCALE_Q8 * FIXTURE.SCALE_Q8) // rms_q8
+        for value, scale in zip(inputs, scales, strict=True)
+    ]
+    return rms_q8, normed
+
+
 def relation_witness(reference: dict[str, Any], fixture: dict[str, Any]) -> dict[str, Any]:
     statement = fixture["statement"]
     binding = fixture["commitments"]
+    computed_binding = FIXTURE.commitments(reference)
+    if computed_binding != binding:
+        raise NativeRelationWitnessOracleError("commitment surface mismatch")
+    computed_statement = FIXTURE.statement_payload(reference, computed_binding)
+    if computed_statement != statement:
+        raise NativeRelationWitnessOracleError("statement surface mismatch")
     public_instance = FIXTURE.public_instance_payload(binding)
     statement_binding = {
         "backend_version_required": statement["proof_system_version_required"],
@@ -194,8 +208,14 @@ def relation_witness(reference: dict[str, Any], fixture: dict[str, Any]) -> dict
     if parameter_manifest["proof_native_parameter_commitment"] != public_instance["proof_native_parameter_commitment"]:
         raise NativeRelationWitnessOracleError("proof-native parameter commitment mismatch")
 
-    gate, gate_stats = _projection_outputs(reference["normed_q8"], "gate", FIXTURE.FF_DIM, FIXTURE.WIDTH)
-    value, value_stats = _projection_outputs(reference["normed_q8"], "value", FIXTURE.FF_DIM, FIXTURE.WIDTH)
+    rms_q8, normed = _rmsnorm_outputs(reference["input_q8"], reference["rms_scale_q8"])
+    if rms_q8 != reference["rms_q8"]:
+        raise NativeRelationWitnessOracleError("RMSNorm scalar relation mismatch")
+    if normed != reference["normed_q8"]:
+        raise NativeRelationWitnessOracleError("RMSNorm row relation mismatch")
+
+    gate, gate_stats = _projection_outputs(normed, "gate", FIXTURE.FF_DIM, FIXTURE.WIDTH)
+    value, value_stats = _projection_outputs(normed, "value", FIXTURE.FF_DIM, FIXTURE.WIDTH)
     if gate != reference["gate_projection_q8"]:
         raise NativeRelationWitnessOracleError("gate projection relation mismatch")
     if value != reference["value_projection_q8"]:
@@ -252,9 +272,9 @@ def relation_witness(reference: dict[str, Any], fixture: dict[str, Any]) -> dict
     }
     checks = [
         {"name": "public_instance_field_set", "status": "GO"},
-        {"name": "proof_native_parameter_manifest", "status": "GO"},
-        {"name": "input_output_commitments", "status": "GO"},
-        {"name": "rmsnorm_rows", "status": "GO"},
+        {"name": "proof_native_parameter_manifest_recomputed", "status": "GO"},
+        {"name": "public_statement_commitments_recomputed", "status": "GO"},
+        {"name": "rmsnorm_rows_recomputed", "status": "GO"},
         {"name": "gate_value_projection_rows", "status": "GO"},
         {"name": "activation_lookup_rows", "status": "GO"},
         {"name": "swiglu_mix_rows", "status": "GO"},
@@ -477,7 +497,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
     if payload["decision"] != DECISION:
         raise NativeRelationWitnessOracleError("decision mismatch")
     fixture = FIXTURE.build_fixture()
-    expected_source = build_payload(include_mutations=False)["source_fixture"]
+    expected_payload = _expected_payload()
+    if payload["non_claims"] != expected_payload["non_claims"]:
+        raise NativeRelationWitnessOracleError("non-claims drift")
+    if payload["next_backend_step"] != expected_payload["next_backend_step"]:
+        raise NativeRelationWitnessOracleError("next backend step drift")
+    expected_source = expected_payload["source_fixture"]
     if payload["source_fixture"] != expected_source:
         raise NativeRelationWitnessOracleError("source fixture drift")
     validate_relation_witness(payload["relation_witness"], fixture)
