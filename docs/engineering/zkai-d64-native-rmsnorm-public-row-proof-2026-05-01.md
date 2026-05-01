@@ -22,12 +22,15 @@ input_i * rms_scale_i = scaled_floor_i * 256 + scale_remainder_i
 scaled_floor_i * 256 = normed_i * rms_q8 + norm_remainder_i
 ```
 
-The verifier also recomputes the public-row commitments before proof
-verification:
+The verifier recomputes the commitment-bearing public-row artifacts before
+proof verification:
 
 - input activation commitment,
 - normalization config commitment,
-- RMS scale tree root,
+- RMS scale tree root.
+
+It also recomputes verifier-side scalar values from the checked rows:
+
 - row count,
 - sum of squares,
 - `rms_q8 = isqrt(floor(sum_squares / 64))`.
