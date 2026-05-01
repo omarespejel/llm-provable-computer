@@ -124,6 +124,30 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         )
         self.assertIn("confirmed fixture-gate scan", row["blockers"][0]["missing"])
 
+    def test_classifier_handles_zero_limits_without_crashing(self) -> None:
+        target = PROBE.d64_target()
+        limits = {
+            "limits_are_current": False,
+            "max_addressable_memory_cells": 0,
+            "pc_horizon": 0,
+        }
+        gates = {
+            "fixture_gate_detected": False,
+            "required_backend_version_present": False,
+            "markers": {"phase12_decoding_only": False},
+        }
+        fixture = {
+            "memory_cells": 0,
+            "instruction_count": 0,
+            "mul_memory_ops": 0,
+        }
+
+        row = PROBE.classify_surface(target, limits, gates, fixture)
+
+        self.assertEqual(row["status"], PROBE.DECISION_NO_GO)
+        self.assertEqual(row["weight_cells_over_memory_limit"], float("inf"))
+        self.assertEqual(row["mul_ops_over_pc_horizon"], float("inf"))
+
     def test_scan_tvm_limits_fails_closed_when_markers_are_missing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
@@ -138,6 +162,30 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         self.assertFalse(limits["pc_u8_detected"])
         self.assertFalse(limits["address_u8_detected"])
 
+    def test_scan_tvm_limits_ignores_comment_and_string_spoofed_markers(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            instruction = tmp / "instruction.rs"
+            state = tmp / "state.rs"
+            instruction.write_text(
+                "\n".join(
+                    [
+                        "// memory_size > usize::from(u8::MAX)",
+                        "const SPOOF: &str = \"Load(u8) MulMemory(u8) LoadImmediate(i16)\";",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            state.write_text('const SPOOF: &str = "pub pc: u8 instruction_at(&self, pc: u8)";\n', encoding="utf-8")
+
+            limits = PROBE.scan_tvm_limits(instruction_path=instruction, state_path=state)
+
+        self.assertFalse(limits["limits_are_current"])
+        self.assertFalse(limits["memory_limit_detected"])
+        self.assertFalse(limits["pc_u8_detected"])
+        self.assertFalse(limits["address_u8_detected"])
+        self.assertFalse(limits["immediate_i16_detected"])
+
     def test_scan_prover_gates_fails_closed_when_markers_are_missing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
@@ -149,6 +197,30 @@ class ZkAID64RMSNormSwiGLUSurfaceProbeTests(unittest.TestCase):
         self.assertFalse(gates["fixture_gate_detected"])
         self.assertTrue(gates["markers"]["fixture_gate_function"])
         self.assertFalse(gates["markers"]["linear_block_v4_exact_matcher"])
+
+    def test_scan_prover_gates_ignores_comment_and_string_spoofed_identifiers(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            source = tmp / "arithmetic_subset_prover.rs"
+            source.write_text(
+                "\n".join(
+                    [
+                        "// validate_phase5_proven_fixture matches_linear_block_v4_with_lookup",
+                        "// matches_decoding_step_v2",
+                        'const SPOOF: &str = "validate_phase5_proven_fixture matches_linear_block_v4_with_lookup matches_decoding_step_v2";',
+                        'const MESSAGE: &str = "broader arithmetic-subset AIR coverage remains internal";',
+                        'const MESSAGE_2: &str = "experimental Phase12 carry-aware proving supports only the decoding_step_v2 family";',
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            gates = PROBE.scan_prover_gates(source)
+
+        self.assertFalse(gates["fixture_gate_detected"])
+        self.assertFalse(gates["markers"]["fixture_gate_function"])
+        self.assertFalse(gates["markers"]["linear_block_v4_exact_matcher"])
+        self.assertFalse(gates["markers"]["decoding_step_v2_family_matcher"])
 
     def test_fixture_profile_rejects_missing_memory_directive(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:

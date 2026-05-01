@@ -105,6 +105,76 @@ def _read_text(path: pathlib.Path) -> str:
         raise SurfaceProbeError(f"failed to read {path}: {err}") from err
 
 
+def _strip_rust_comments(source: str) -> str:
+    output: list[str] = []
+    i = 0
+    in_string = False
+    escaped = False
+    while i < len(source):
+        ch = source[i]
+        nxt = source[i + 1] if i + 1 < len(source) else ""
+        if in_string:
+            output.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == "/" and nxt == "/":
+            while i < len(source) and source[i] != "\n":
+                i += 1
+            if i < len(source):
+                output.append("\n")
+                i += 1
+            continue
+        if ch == "/" and nxt == "*":
+            i += 2
+            while i + 1 < len(source) and not (source[i] == "*" and source[i + 1] == "/"):
+                output.append("\n" if source[i] == "\n" else " ")
+                i += 1
+            i = min(i + 2, len(source))
+            continue
+        output.append(ch)
+        if ch == '"':
+            in_string = True
+        i += 1
+    return "".join(output)
+
+
+def _strip_rust_comments_and_strings(source: str) -> str:
+    source = _strip_rust_comments(source)
+    output: list[str] = []
+    i = 0
+    in_string = False
+    escaped = False
+    while i < len(source):
+        ch = source[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+                output.append('"')
+            else:
+                output.append(" ")
+            i += 1
+            continue
+        output.append(ch)
+        if ch == '"':
+            in_string = True
+        i += 1
+    return "".join(output)
+
+
+def _ratio_or_inf(numerator: int, denominator: int) -> float:
+    return numerator / float(denominator) if denominator > 0 else float("inf")
+
+
 def d64_target() -> dict[str, Any]:
     ff_dim = TARGET_WIDTH * FF_DIM_MULTIPLIER
     linear_muls = 3 * TARGET_WIDTH * ff_dim
@@ -151,8 +221,8 @@ def scan_tvm_limits(
     instruction_path: pathlib.Path = INSTRUCTION_SOURCE,
     state_path: pathlib.Path = STATE_SOURCE,
 ) -> dict[str, Any]:
-    instruction_source = _read_text(instruction_path)
-    state_source = _read_text(state_path)
+    instruction_source = _strip_rust_comments_and_strings(_read_text(instruction_path))
+    state_source = _strip_rust_comments_and_strings(_read_text(state_path))
     memory_limit_detected = "memory_size > usize::from(u8::MAX)" in instruction_source
     pc_u8_detected = "pub pc: u8" in state_source and "instruction_at(&self, pc: u8)" in instruction_source
     address_u8_detected = "Load(u8)" in instruction_source and "MulMemory(u8)" in instruction_source
@@ -180,23 +250,24 @@ def scan_tvm_limits(
 
 
 def scan_prover_gates(source_path: pathlib.Path = ARITHMETIC_PROVER_SOURCE) -> dict[str, Any]:
-    source = _read_text(source_path)
+    source_without_comments = _strip_rust_comments(_read_text(source_path))
+    code_source = _strip_rust_comments_and_strings(source_without_comments)
     markers = {
-        "fixture_gate_function": "validate_phase5_proven_fixture" in source,
-        "linear_block_v4_exact_matcher": "matches_linear_block_v4_with_lookup" in source,
-        "decoding_step_v2_family_matcher": "matches_decoding_step_v2" in source,
+        "fixture_gate_function": "validate_phase5_proven_fixture" in code_source,
+        "linear_block_v4_exact_matcher": "matches_linear_block_v4_with_lookup" in code_source,
+        "decoding_step_v2_family_matcher": "matches_decoding_step_v2" in code_source,
         "broader_arithmetic_subset_internal": "broader arithmetic-subset AIR coverage remains internal"
-        in source,
+        in source_without_comments,
         "phase12_decoding_only": "experimental Phase12 carry-aware proving supports only the decoding_step_v2 family"
-        in source,
+        in source_without_comments,
     }
-    backend_versions = sorted(set(re.findall(r"stwo-[a-zA-Z0-9_.\\-]+", source)))
+    backend_versions = sorted(set(re.findall(r"stwo-[a-zA-Z0-9_.\\-]+", source_without_comments)))
     return {
         "source_path": _display_path(source_path),
         "source_sha256": sha256_file(source_path),
         "markers": markers,
         "fixture_gate_detected": all(markers.values()),
-        "required_backend_version_present": REQUIRED_BACKEND_VERSION in source,
+        "required_backend_version_present": REQUIRED_BACKEND_VERSION in source_without_comments,
         "known_stwo_backend_versions": backend_versions,
     }
 
@@ -301,8 +372,8 @@ def classify_surface(
             else "direct TVM fixture growth is not the right implementation path for a matched d64 RMSNorm-SwiGLU block"
         ),
         "blockers": blockers,
-        "weight_cells_over_memory_limit": estimated_weight_scalars / float(memory_limit),
-        "mul_ops_over_pc_horizon": estimated_linear_muls / float(pc_horizon),
+        "weight_cells_over_memory_limit": _ratio_or_inf(estimated_weight_scalars, memory_limit),
+        "mul_ops_over_pc_horizon": _ratio_or_inf(estimated_linear_muls, pc_horizon),
     }
 
 
