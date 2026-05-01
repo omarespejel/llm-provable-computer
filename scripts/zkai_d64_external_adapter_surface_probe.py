@@ -113,8 +113,8 @@ def _validate_generated_at(value: Any) -> None:
 
 def _git_commit() -> str:
     override = os.environ.get("ZKAI_D64_EXTERNAL_ADAPTER_PROBE_GIT_COMMIT")
-    if override:
-        return override
+    if override and override.strip():
+        return override.strip().lower()
     try:
         completed = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -600,7 +600,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-host-deps",
         action="store_true",
-        help="include local dependency availability in printed/generated output; off by default for reproducibility",
+        help="include local dependency availability in stdout JSON only; cannot be combined with write flags",
     )
     return parser.parse_args()
 
@@ -608,7 +608,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if args.include_host_deps and (args.write_json is not None or args.write_tsv is not None):
-        raise D64ExternalAdapterProbeError("--include-host-deps is diagnostic-only and cannot write checked evidence")
+        raise D64ExternalAdapterProbeError("--include-host-deps is diagnostic-only and cannot write output files")
     payload = build_probe(include_host_dependencies=args.include_host_deps)
     if args.write_json is not None or args.write_tsv is not None:
         write_outputs(payload, args.write_json, args.write_tsv)

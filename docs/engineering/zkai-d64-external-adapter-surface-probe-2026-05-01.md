@@ -65,7 +65,7 @@ this one.
 The checked evidence intentionally does not record host dependency availability.
 That keeps the JSON/TSV reproducible across machines. For local diagnosis, run
 the probe with `--json --include-host-deps`. The diagnostic mode is not allowed
-to write checked evidence files.
+to write output files.
 
 Host dependency availability is not the main research blocker. Even with the
 external runtime installed, the exact-semantics blocker above remains unless the
@@ -132,4 +132,4 @@ just gate
 - This is not a proof-generation benchmark.
 - This is not a verifier-time benchmark.
 - This is not evidence that the d64 statement is proven.
-- This is not full transformer inference.
+- This is not a full transformer inference claim.
