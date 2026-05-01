@@ -373,6 +373,9 @@ fn prove_bridge_rows(input: &ZkAiD64RmsnormToProjectionBridgeInput) -> Result<Ve
     tree_builder.extend_evals(bridge_trace(input));
     tree_builder.commit(channel);
 
+    // This mirrors the public-row proof shape: the framework component exposes
+    // two trace-tree slots, and both deterministic roots are recomputed before
+    // verification so a stale or substituted row surface still fails closed.
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(bridge_trace(input));
     tree_builder.commit(channel);
@@ -424,7 +427,9 @@ fn verify_bridge_rows(input: &ZkAiD64RmsnormToProjectionBridgeInput, proof: &[u8
     let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
-    Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
+    verify(&[&component], channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| bridge_error(format!("STARK verification failed: {error}")))
 }
 
 fn validate_bridge_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
