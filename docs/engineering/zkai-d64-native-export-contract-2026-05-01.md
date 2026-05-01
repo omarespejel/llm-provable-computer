@@ -46,14 +46,14 @@ commitment value and rejects that drift.
 
 ## Non-Claims
 
-This is not:
+The checked `non_claims` literals are:
 
-- a Stwo proof,
-- verifier-time evidence,
-- AIR constraints,
-- backend independence evidence,
-- full transformer inference,
-- `not proof that private witness rows already open to proof_native_parameter_commitment`.
+- `not a Stwo proof`
+- `not verifier-time evidence`
+- `not AIR constraints`
+- `not backend independence evidence`
+- `not full transformer inference`
+- `not proof that private witness rows already open to proof_native_parameter_commitment`
 
 ## Next Step
 
