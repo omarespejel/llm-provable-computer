@@ -75,9 +75,10 @@ and round-trip JSON/TSV output generation.
 
 This closes the most immediate #358 self-deception risk: the RMSNorm-local output
 is now consumed by a next proof surface instead of being verbally treated as the
-full block output. The next proof target is no longer vague. It must consume
-`projection_input_row_commitment` and prove gate/value projection rows before it
-can emit a gate/value projection output commitment.
+full block output. The follow-up gate/value projection proof now consumes
+`projection_input_row_commitment` and emits a domain-separated
+`gate_value_projection_output_commitment`; the remaining full-block seams are
+activation/SwiGLU, down projection, and residual closure.
 
 ## Reproduce
 
@@ -92,8 +93,6 @@ cargo +nightly-2025-07-14 test d64_native_rmsnorm_to_projection_bridge_proof --l
 
 ## Next step
 
-Implement the gate/value projection slice that consumes
-`projection_input_row_commitment` and produces a domain-separated
+Implement the activation/SwiGLU slice that consumes
 `gate_value_projection_output_commitment`. Do not claim the full d64 output until
-activation, SwiGLU, down-projection, and residual rows are also proven or
-explicitly source-bound.
+down-projection and residual rows are also proven or explicitly source-bound.

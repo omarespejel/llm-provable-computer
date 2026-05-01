@@ -5,6 +5,8 @@ mod arithmetic_component;
 mod arithmetic_subset_prover;
 mod d64_native_export_contract;
 #[cfg(feature = "stwo-backend")]
+mod d64_native_gate_value_projection_proof;
+#[cfg(feature = "stwo-backend")]
 mod d64_native_rmsnorm_air_feasibility;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_rmsnorm_public_row_proof;
@@ -66,6 +68,21 @@ pub use d64_native_export_contract::{
     ZKAI_D64_RMS_SQUARE_ROWS, ZKAI_D64_STATEMENT_COMMITMENT, ZKAI_D64_SWIGLU_MIX_ROWS,
     ZKAI_D64_TARGET_ID, ZKAI_D64_TRACE_ROWS_EXCLUDING_STATIC_TABLE,
     ZKAI_D64_VALUE_PROJECTION_MUL_ROWS, ZKAI_D64_VERIFIER_DOMAIN, ZKAI_D64_WIDTH,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_gate_value_projection_proof::{
+    prove_zkai_d64_gate_value_projection_envelope, verify_zkai_d64_gate_value_projection_envelope,
+    zkai_d64_gate_value_projection_input_from_json_str, D64GateValueProjectionMulRow,
+    ZkAiD64GateValueProjectionEnvelope, ZkAiD64GateValueProjectionProofInput,
+    ZKAI_D64_GATE_MATRIX_ROOT, ZKAI_D64_GATE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D64_GATE_VALUE_PROJECTION_DECISION, ZKAI_D64_GATE_VALUE_PROJECTION_INPUT_DECISION,
+    ZKAI_D64_GATE_VALUE_PROJECTION_INPUT_SCHEMA, ZKAI_D64_GATE_VALUE_PROJECTION_MAX_JSON_BYTES,
+    ZKAI_D64_GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT,
+    ZKAI_D64_GATE_VALUE_PROJECTION_NEXT_BACKEND_STEP,
+    ZKAI_D64_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT, ZKAI_D64_GATE_VALUE_PROJECTION_PROOF_VERSION,
+    ZKAI_D64_GATE_VALUE_PROJECTION_SEMANTIC_SCOPE,
+    ZKAI_D64_GATE_VALUE_PROJECTION_STATEMENT_VERSION, ZKAI_D64_VALUE_MATRIX_ROOT,
+    ZKAI_D64_VALUE_PROJECTION_OUTPUT_COMMITMENT,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d64_native_rmsnorm_air_feasibility::{
