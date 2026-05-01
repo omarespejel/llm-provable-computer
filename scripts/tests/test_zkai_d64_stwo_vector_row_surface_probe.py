@@ -26,10 +26,17 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         statuses = {row["gate"]: row["status"] for row in payload["decision_matrix"]}
         self.assertEqual(statuses["vector_row_arithmetic_surface"], "GO")
         self.assertEqual(statuses["m31_signed_range_fit"], "GO")
+        self.assertEqual(statuses["proof_native_public_instance_contract"], "GO")
         self.assertEqual(statuses["statement_public_instance_binding"], "PARTIAL")
         self.assertEqual(statuses["weight_commitment_consistency"], "NO_GO_YET")
         self.assertEqual(statuses["activation_table_commitment_consistency"], "NO_GO_YET")
         self.assertEqual(statuses["native_stwo_exact_d64_proof"], "NO_GO_YET")
+        self.assertEqual(
+            payload["proof_public_instance_contract"]["status"],
+            "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
+        )
+        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_checked"], 12)
+        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_rejected"], 12)
 
     def test_row_counts_are_pinned_to_d64_statement_shape(self) -> None:
         payload = PROBE.build_probe()
@@ -70,8 +77,17 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         )
         self.assertEqual(payload["source_fixture"]["proof_status"], "REFERENCE_FIXTURE_NOT_PROVEN")
         self.assertIn("not a Stwo proof", payload["non_claims"])
+        self.assertIn("not relation-level consumption of proof_native_parameter_commitment", payload["non_claims"])
         self.assertFalse(payload["issue_scope"]["closes_related_issue"])
         self.assertIn("proof_size", payload["issue_scope"]["missing_for_issue_go"])
+        self.assertEqual(
+            payload["source_fixture"]["proof_native_parameter_commitment"],
+            fixture["statement"]["proof_native_parameter_commitment"],
+        )
+        self.assertEqual(
+            payload["source_fixture"]["public_instance_commitment"],
+            fixture["statement"]["public_instance_commitment"],
+        )
 
     def test_validation_rejects_top_level_field_drift(self) -> None:
         payload = PROBE.build_probe()
@@ -109,16 +125,38 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "issue scope drift"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_proof_public_instance_contract_drift(self) -> None:
+        payload = PROBE.build_probe()
+        payload["proof_public_instance_contract"]["public_instance"][
+            "proof_native_parameter_commitment"
+        ] = "blake2b-256:" + "99" * 32
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance contract mismatch"):
+            PROBE.validate_probe(payload)
+
+    def test_validation_rejects_public_instance_mutation_suite_drift(self) -> None:
+        payload = PROBE.build_probe()
+        payload["proof_public_instance_mutation_suite"]["mutations_rejected"] -= 1
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance mutation suite drift"):
+            PROBE.validate_probe(payload)
+
     def test_rows_for_tsv_are_stable_and_scoped(self) -> None:
         payload = PROBE.build_probe()
         rows = PROBE.rows_for_tsv(payload)
 
-        self.assertEqual(len(rows), 6)
+        self.assertEqual(len(rows), 7)
         self.assertEqual(rows[0]["target_id"], "rmsnorm-swiglu-residual-d64-v2")
         self.assertEqual(rows[0]["gate"], "vector_row_arithmetic_surface")
         self.assertEqual(rows[0]["status"], "GO")
         self.assertEqual(rows[0]["projection_mul_rows"], 49_152)
         self.assertEqual(rows[0]["fits_signed_m31"], "true")
+        self.assertEqual(rows[0]["public_instance_contract_status"], "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF")
+        self.assertEqual(rows[0]["public_instance_mutations_rejected"], 12)
+        self.assertEqual(
+            rows[0]["proof_native_parameter_commitment"],
+            "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+        )
 
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = PROBE.build_probe()

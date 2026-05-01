@@ -1,5 +1,5 @@
 {
-  "decision": "GO_ARITHMETIC_SURFACE_NO_GO_EXACT_PROOF_UNTIL_COMMITMENT_CONSISTENCY",
+  "decision": "GO_PUBLIC_INSTANCE_CONTRACT_NO_GO_EXACT_PROOF_UNTIL_NATIVE_AIR",
   "decision_matrix": [
     {
       "gate": "vector_row_arithmetic_surface",
@@ -14,21 +14,27 @@
       "status": "GO"
     },
     {
+      "gate": "proof_native_public_instance_contract",
+      "next_action": "Consume the same public-instance contract inside the native AIR/export path, then verify an honest Stwo proof.",
+      "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config and input/output commitments.",
+      "status": "GO"
+    },
+    {
       "gate": "statement_public_instance_binding",
-      "next_action": "Bind model, weight, table, input, and output commitments inside the verified relation, not only in receipt metadata.",
-      "reason": "The statement commitments can be copied into public instance fields, but that alone does not prove witness consistency.",
+      "next_action": "Bind model, parameter, table, input, and output commitments inside the verified relation, not only in receipt metadata.",
+      "reason": "The statement commitments can be copied into proof-facing public instance fields, but that alone does not prove witness consistency.",
       "status": "PARTIAL"
     },
     {
       "gate": "weight_commitment_consistency",
-      "next_action": "Choose a commitment-consistency method: in-AIR hash, Merkleized table openings, or a smaller proof-friendly parameter commitment.",
-      "reason": "The fixture commits to deterministic weight tables via hashes; a native proof must show the witness rows match those commitments.",
+      "next_action": "Implement the AIR/export rows that consume proof_native_parameter_commitment rather than only carrying it in the public instance.",
+      "reason": "The fixture now exposes a proof-native parameter commitment, but a native proof must still show witness rows match that commitment.",
       "status": "NO_GO_YET"
     },
     {
       "gate": "activation_table_commitment_consistency",
-      "next_action": "Expose the activation-table commitment as a public instance and verify lookup membership against that table.",
-      "reason": "The bounded SiLU lookup table is fixed and small, but the proof still needs a binding from lookup rows to the committed table identity.",
+      "next_action": "Verify activation lookup membership against the committed table inside the native relation.",
+      "reason": "The bounded SiLU table is represented in the proof-native parameter commitment, but lookup rows are not yet checked by a native proof.",
       "status": "NO_GO_YET"
     },
     {
@@ -38,13 +44,14 @@
       "status": "NO_GO_YET"
     }
   ],
-  "decision_matrix_commitment": "blake2b-256:91806bc1c4d24db9d84e7a2f7d53d4607d2402f1e232364722b5c469a4cfc8ee",
+  "decision_matrix_commitment": "blake2b-256:3be169743e0287f5aa5b91402cec1b5f3af893476a878c121c826e6ab665c797",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "4a28a5c5f2b648a36eef74da706c7946bb33d6c0",
+  "git_commit": "0064e789804efedd05ce14e075ce15b93062c2b6",
   "issue_scope": {
     "closes_related_issue": false,
     "missing_for_issue_go": [
       "honest_stwo_proof_for_d64_fixture",
+      "native_air_consumes_proof_native_parameter_commitment",
       "statement_commitment_consistency_inside_verified_relation",
       "proof_size",
       "proving_time",
@@ -58,13 +65,116 @@
     "not a Stwo proof",
     "not a verifier-time benchmark",
     "not proof that the d64 statement is accepted",
+    "not relation-level consumption of proof_native_parameter_commitment",
     "not backend independence evidence",
     "not full transformer inference",
     "not a claim that commitment consistency is solved"
   ],
-  "schema": "zkai-d64-stwo-vector-row-surface-probe-v1",
+  "proof_public_instance_contract": {
+    "backend_version_required": "stwo-rmsnorm-swiglu-residual-d64-v2",
+    "bound_statement_fields": [
+      "target_id",
+      "width",
+      "ff_dim",
+      "model_config_commitment",
+      "proof_native_parameter_commitment",
+      "input_activation_commitment",
+      "output_activation_commitment",
+      "public_instance_commitment",
+      "statement_commitment",
+      "verifier_domain",
+      "proof_system_version_required"
+    ],
+    "non_claim": "This is a proof-public-instance contract, not a native Stwo proof.",
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "public_instance": {
+      "ff_dim": 256,
+      "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+      "model_config_commitment": "blake2b-256:8c74650ddc92619abe50998e3f034312f1e281d5abb35230667518adb493d449",
+      "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+      "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+      "target_id": "rmsnorm-swiglu-residual-d64-v2",
+      "width": 64
+    },
+    "public_instance_commitment": "blake2b-256:ea89fa7025ff5409fb184f8279a8186b73354cead32d90d279b2bd79ec395da2",
+    "schema": "zkai-d64-stwo-proof-public-instance-contract-v1",
+    "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
+    "status": "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
+    "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
+  },
+  "proof_public_instance_mutation_suite": {
+    "baseline_valid": true,
+    "cases": [
+      {
+        "name": "proof_native_parameter_commitment_public_instance_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "proof_native_parameter_commitment_top_level_relabeling",
+        "reason": "proof public-instance contract mismatch: proof_native_parameter_commitment",
+        "rejected": true
+      },
+      {
+        "name": "public_instance_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance_commitment",
+        "rejected": true
+      },
+      {
+        "name": "statement_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: statement_commitment",
+        "rejected": true
+      },
+      {
+        "name": "model_config_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "input_activation_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "output_activation_commitment_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "target_id_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "width_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "ff_dim_relabeling",
+        "reason": "proof public-instance contract mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "backend_version_relabeling",
+        "reason": "proof public-instance contract mismatch: backend_version_required",
+        "rejected": true
+      },
+      {
+        "name": "verifier_domain_relabeling",
+        "reason": "proof public-instance contract mismatch: verifier_domain",
+        "rejected": true
+      }
+    ],
+    "decision": "GO",
+    "mutations_checked": 12,
+    "mutations_rejected": 12
+  },
+  "schema": "zkai-d64-stwo-vector-row-surface-probe-v2",
   "source_fixture": {
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
     "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "public_instance_commitment": "blake2b-256:ea89fa7025ff5409fb184f8279a8186b73354cead32d90d279b2bd79ec395da2",
     "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
     "statement_commitment": "blake2b-256:cac2f3b12fc41a55213f56ebbc6425dd6572cf47bf80d7b8dbd41e314e636247",
     "target_id": "rmsnorm-swiglu-residual-d64-v2"

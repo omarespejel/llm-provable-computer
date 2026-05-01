@@ -96,6 +96,20 @@ class ZkAID64RMSNormSwiGLUStatementFixtureTests(unittest.TestCase):
         with self.assertRaisesRegex(FIXTURE.StatementFixtureError, "proof_native_parameter_commitment"):
             FIXTURE.validate_statement(mutated)
 
+    def test_public_instance_payload_binds_proof_native_parameter_commitment(self) -> None:
+        payload = FIXTURE.build_fixture()
+        public_instance = FIXTURE.public_instance_payload(payload["commitments"])
+
+        self.assertEqual(public_instance["target_id"], "rmsnorm-swiglu-residual-d64-v2")
+        self.assertEqual(
+            public_instance["proof_native_parameter_commitment"],
+            payload["statement"]["proof_native_parameter_commitment"],
+        )
+        self.assertEqual(
+            FIXTURE.public_instance_commitment(payload["commitments"]),
+            payload["statement"]["public_instance_commitment"],
+        )
+
     def test_statement_binding_rejects_missing_nullable_fields(self) -> None:
         statement = FIXTURE.build_fixture()["statement"]
         for key in ("proof_commitment", "verifying_key_commitment", "setup_commitment"):

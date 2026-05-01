@@ -422,8 +422,8 @@ def commitments(reference: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dict[str, Any]:
-    public_instance = {
+def public_instance_payload(binding: dict[str, str]) -> dict[str, Any]:
+    return {
         "target_id": TARGET_ID,
         "width": WIDTH,
         "ff_dim": FF_DIM,
@@ -432,6 +432,13 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "model_config_commitment": binding["model_config_commitment"],
         "proof_native_parameter_commitment": binding["proof_native_parameter_commitment"],
     }
+
+
+def public_instance_commitment(binding: dict[str, str]) -> str:
+    return blake2b_commitment(public_instance_payload(binding), "ptvm:zkai:d64-public-instance:v2")
+
+
+def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dict[str, Any]:
     statement = {
         "receipt_version": RECEIPT_VERSION,
         "statement_kind": "transformer-block",
@@ -448,7 +455,7 @@ def statement_payload(reference: dict[str, Any], binding: dict[str, str]) -> dic
         "output_activation_commitment": binding["output_activation_commitment"],
         "normalization_config_commitment": binding["normalization_config_commitment"],
         "activation_lookup_commitment": binding["activation_lookup_commitment"],
-        "public_instance_commitment": blake2b_commitment(public_instance, "ptvm:zkai:d64-public-instance:v2"),
+        "public_instance_commitment": public_instance_commitment(binding),
         "proof_commitment": None,
         "verifying_key_commitment": None,
         "setup_commitment": None,
