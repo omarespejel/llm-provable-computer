@@ -34,4 +34,5 @@ jobs:
 
       - name: Run paper preflight checks
         run: |
-          python3 scripts/paper/paper_preflight.py --repo-root .
+          python --version
+          python scripts/paper/paper_preflight.py --repo-root .
