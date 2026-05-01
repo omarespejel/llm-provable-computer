@@ -493,16 +493,6 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
         return Err(gate_value_error("value projection output drift"));
     }
     expect_eq(
-        &matrix_root("gate")?,
-        &input.gate_matrix_root,
-        "gate matrix root recomputation",
-    )?;
-    expect_eq(
-        &matrix_root("value")?,
-        &input.value_matrix_root,
-        "value matrix root recomputation",
-    )?;
-    expect_eq(
         &sequence_commitment(
             &input.gate_projection_q8,
             GATE_PROJECTION_OUTPUT_DOMAIN,
@@ -1107,6 +1097,18 @@ mod tests {
         assert_ne!(
             input.gate_value_projection_output_commitment,
             ZKAI_D64_OUTPUT_ACTIVATION_COMMITMENT
+        );
+    }
+
+    #[test]
+    fn gate_value_matrix_roots_match_deterministic_generator() {
+        assert_eq!(
+            matrix_root("gate").expect("gate root"),
+            ZKAI_D64_GATE_MATRIX_ROOT
+        );
+        assert_eq!(
+            matrix_root("value").expect("value root"),
+            ZKAI_D64_VALUE_MATRIX_ROOT
         );
     }
 
