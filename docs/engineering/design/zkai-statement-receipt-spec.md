@@ -197,6 +197,20 @@ Remainder proof construction as an unconstrained backend op, and literal
 for proof-stack comparison, not a statement-envelope mutation result and not a
 transformer proof.
 
+The range-disciplined activation receipt turns that magnitude sensitivity into
+a receipt rule:
+
+- `docs/engineering/zkai-range-disciplined-activation-receipt-2026-05-01.md`
+- `docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.json`
+- `docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.tsv`
+
+It consumes the JSTprove ReLU scaling rows, binds the activation operator,
+numeric scale, scale scope, preactivation range contract, backend status, and
+source evidence, and rejects `35 / 35` checked relabeling mutations across five
+scale cases. The lesson is portable: if backend acceptance depends on a numeric
+range or approximation discipline, that discipline is statement data rather than
+benchmark metadata.
+
 The fourth checked adapter is native to this repository's Stwo lane
 (`stwo-phase10-linear-block-v4-with-lookup`): a linear-block-with-lookup proof
 over `programs/linear_block_v4_with_lookup.tvm`. The raw Stwo
@@ -383,9 +397,22 @@ proves the square, Q8 scale-division, and normalized-output equations in native
 Stwo AIR. Its verifier enforces signed-M31 bounds with checked integer
 arithmetic, pins the expected PCS configuration, bounds proof bytes before
 deserialization, rejects malformed commitment-vector shapes before indexing,
-and recomputes `rms_q8` with exact integer arithmetic. This is still not a full
-d64 block proof, not a private-witness opening proof, and not a binding of the
-full d64 `output_activation_commitment` from only RMSNorm-local rows. The scalar
-`rms_q8 = isqrt(floor(sum_squares / 64))` relation is currently verifier-side
-checked over public rows; issue `#356` tracks moving that integer sqrt/range
-argument into AIR-native constraints.
+recomputes the public average scalar from the checked rows, and proves the
+bounded public-scalar sqrt inequality in AIR with 16-bit nonnegative gap
+decompositions. This is still not a full d64 block proof, not a private-witness
+opening proof, and not a binding of the full d64 `output_activation_commitment`
+from only RMSNorm-local rows. The next native-proof seam is issue `#358`: bridge
+the local `normed_q8` row commitment into the next relation slice before claiming
+full-block output binding.
+
+The attention/KV transition receipt adds the first stateful receipt seam:
+
+- `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
+- `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.tsv`
+
+It is source-backed, not proof-backed. The tiny single-head integer-attention
+fixture binds prior KV state, input/query state, attention output, next KV
+state, model config, verifier domain, and proof status, then rejects `8 / 8`
+checked relabeling mutations. This keeps the agent/autoregressive claim boundary
+explicit: an output commitment is not enough when the model carries state.

@@ -53,10 +53,11 @@ study showing when and why replay elimination opens a growing latency gap in a l
 STARK stack.
 
 Finally, we use the same boundary discipline as a small statement-binding check
-outside the main performance result. Two external zkAI proof adapters and one
-native Stwo primitive show the same separation: raw proof verification establishes
-proof validity, but a typed statement receipt is needed to bind that proof to the
-claimed model, input, output, configuration, setup, and verifier domain. This is
+outside the main performance result. External zkAI proof adapters, native Stwo
+proof receipts, and two source-backed receipt gates show the same separation:
+raw proof verification establishes proof validity, but a typed statement receipt
+is needed to bind that proof to the claimed model, input, output, configuration,
+numeric range assumptions, setup, verifier domain, and carried state. This is
 supporting systems evidence, not a claim that those proof systems are flawed and
 not a claim of end-to-end verifiable intelligence.
 
@@ -781,6 +782,30 @@ receipt. It is anchored to
 and
 `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`.
 
+Two subsequent receipt gates add claim-boundary pressure rather than new
+performance rows. First, the range-disciplined activation receipt consumes the
+JSTprove/Remainder ReLU scaling evidence: the baseline `Gemm -> Relu` fixture
+fails with `range_check_capacity`, while scaled variants clear. The receipt
+binds the activation operator, numeric scale, scale scope, preactivation range
+contract, backend status, and source evidence, and rejects `35 / 35` checked
+relabeling mutations across five scale cases. This result is not a proof
+benchmark. It says that when backend acceptance depends on a numeric range or
+approximation discipline, that discipline is part of the statement. It is
+anchored to
+`docs/engineering/zkai-range-disciplined-activation-receipt-2026-05-01.md` and
+`docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.json`.
+
+Second, the attention/KV transition receipt fixes the stateful surface that
+future autoregressive or agentic model receipts must bind. A tiny source-backed
+single-head integer-attention fixture binds prior KV state, input/query state,
+attention output, next KV state, model configuration, verifier domain, and proof
+status, then rejects `8 / 8` checked relabeling mutations. This is not a Stwo
+proof and not a Softmax result. It records the next statement shape: for a model
+with carried state, output binding alone is insufficient because stale prior or
+next state can change what the claim means. It is anchored to
+`docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md` and
+`docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`.
+
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
 a `d=64` or `d=128` RMSNorm-SwiGLU-residual benchmark. The current answer is
@@ -910,8 +935,10 @@ bounded compactness no-go that marks where the pattern does not yet apply.
 
 The same discipline also explains the statement-binding result in Section 7.1:
 proof validity is not statement validity. A typed receipt is the object that
-binds a valid proof to the application-level claim it is supposed to support
-before another verifier, agent receipt, or settlement layer accepts it.
+binds a valid proof to the application-level claim it is supposed to support:
+model identity, input, output, setup, verifier domain, numeric range assumptions,
+and carried state. Another verifier, agent receipt, or settlement layer should
+accept the proof only after that typed claim boundary is fixed.
 
 This is not the end of the story. Several open directions remain in the
 broader space: broader cryptographic-backend transfer, stronger external

@@ -1,0 +1,6 @@
+case_id	scale	backend_status	failure_kind	preactivation_min	preactivation_max	receipt_accepted	mutations_checked	mutations_rejected	statement_commitment
+tiny_gemm_relu_scale_1	1	NO_GO	range_check_capacity	3.75	3.75	true	7	7	blake2b-256:8c97628b8eedde06e1ea4c858152603085e1cd832c236a4bc0a67ffe7fd3282f
+tiny_gemm_relu_scale_0.25	0.25	GO		0.28125	0.28125	true	7	7	blake2b-256:e6cacda513ed02dc333cda24e871cf910b0976ef9988aeb88f9c9ca50f868b5a
+tiny_gemm_relu_scale_0.1	0.1	GO		0.06	0.06	true	7	7	blake2b-256:09a5404aacc93f001bf7fe8d72c47296d5ff9061311867b6ad824ff737a42e12
+tiny_gemm_relu_scale_0.01	0.01	GO		0.00285	0.00285	true	7	7	blake2b-256:ee34bc4c38359f5efa7f41b1e2fbe69281f89216fd4c66a90b8fe7f4d8450a31
+tiny_gemm_relu_scale_0.001	0.001	GO		0.0002535	0.0002535	true	7	7	blake2b-256:8644e308bec8a12882b976ac0c70cdfbaec9a3d41d784420f6f6ac83a10f24f7

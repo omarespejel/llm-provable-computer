@@ -14,7 +14,10 @@ The paper claims only the following.
 | Supporting second boundary | A distinct emitted-source surface also clears as a real second typed boundary with a modest verifier-side gain on the conservative publication row. |
 | Negative evidence | A narrower compact handoff object is reported honestly as a compactness-only surface rather than a replay-avoidance win. |
 | Assurance posture | Deterministic tamper tests, bounded model checking, differential fuzzing, and fail-closed runtime guards materially reduce implementation-side self-deception risk. |
-| Statement-binding adapters | Checked EZKL, snarkjs, and native Stwo primitive adapters show that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-input or proof-public-claim drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
+| Statement-binding adapters | Checked EZKL, snarkjs, JSTprove, and native Stwo adapters show that proof validity and statement binding are distinct layers: raw proof verification rejects proof-public-input or proof-public-claim drift, while a statement envelope rejects model/input/output/config/setup/domain relabeling. |
+| Numeric range discipline | A source-backed activation receipt binds scale and preactivation range assumptions and rejects `35 / 35` checked relabeling mutations; this is a receipt-contract result, not a proof benchmark. |
+| Stateful receipt discipline | A source-backed attention/KV receipt binds prior state, input, output, next state, verifier domain, and proof status and rejects `8 / 8` checked relabeling mutations; this is a state-transition claim-boundary result, not a full attention proof. |
+| Native proof hardening | The d64 RMSNorm public-row slice now proves per-row arithmetic and a bounded public-scalar sqrt inequality in native Stwo AIR, while still not claiming private parameter openings or full-block output binding. |
 | Agent receipt composition | A checked native Stwo statement receipt can be consumed as the model subreceipt inside an agent-step receipt, with `36 / 36` checked relabeling and cross-layer mutations rejected. |
 
 ## Negative claim surface
@@ -29,6 +32,8 @@ The paper does **not** claim the following.
 | Universal speedup | No claim that typed boundaries always improve verifier performance. |
 | Implementation-invariant baseline | No claim that every manifest implementation in every system would pay the same replay cost as this codebase. |
 | Full zkML frontier result | No claim of full end-to-end transformer inference proving or a matched full-model benchmark against public competitors. |
+| Numeric-range universality | No claim that a range-disciplined activation receipt solves ReLU, GELU, Softmax, or activation proving at model scale. |
+| Attention proving | No claim that the attention/KV receipt is a Stwo proof, a Softmax proof, or an autoregressive inference proof. |
 | Onchain deployment | No claim that the typed-boundary path itself has already been deployed onchain. |
 | External-system weakness | No claim that EZKL, snarkjs, Stwo, or any proof stack is weak because application metadata outside its verifier path is not bound by raw proof verification. |
 | Verifiable intelligence | No claim that Tablero by itself proves agent reasoning, tool truth, model truthfulness, or policy compliance. |
