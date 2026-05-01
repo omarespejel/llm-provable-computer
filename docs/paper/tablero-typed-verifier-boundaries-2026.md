@@ -718,6 +718,16 @@ small-width workload [1]. The closest local compact handoff object is smaller bu
 on its current path. That is another example of the paper's central claim: different
 verifier-facing layers improve different costs.
 
+DeepProve-1 and NANOZK are not included in the statement-binding adapter table below.
+That exclusion is intentional rather than negative. A May 1, 2026 feasibility pass checked
+for public proof artifacts and verifier inputs suitable for the same relabeling benchmark:
+DeepProve-1 has strong public related-system material and a public `deep-prove`
+repository, but no public GPT-2 proof artifact plus verifier-input bundle was found;
+NANOZK exposes paper/source material and reported layer-proof metrics, but no public
+verifier implementation or proof artifact was found. Both remain source-backed context,
+not empirical adapter rows, until public artifacts make baseline verification and
+metadata mutation reproducible.
+
 ### 7.1 Statement-binding adapters
 
 Separate engineering adapters apply the same boundary discipline to two external

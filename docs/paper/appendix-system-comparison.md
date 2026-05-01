@@ -33,3 +33,9 @@ materials report a small verifier-facing proof object with fast verification. Th
 closest local compact handoff object is smaller but slower on its present path. That is
 useful precisely because it reinforces the paper's main lesson: different layers improve
 different costs.
+
+The statement-binding adapter benchmark uses a stricter reproducibility bar than this
+comparison appendix. DeepProve-1 and NANOZK are not listed as adapter rows because the
+May 1, 2026 adapter-feasibility pass did not find public proof artifacts plus verifier inputs
+for baseline acceptance and relabeling mutations. They remain related-system context,
+not local empirical adapter evidence.
