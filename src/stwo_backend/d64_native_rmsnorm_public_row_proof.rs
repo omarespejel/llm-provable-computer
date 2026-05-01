@@ -7,6 +7,7 @@ use stwo::core::air::Component;
 use stwo::core::channel::Blake2sM31Channel;
 use stwo::core::fields::m31::BaseField;
 use stwo::core::fields::qm31::SecureField;
+use stwo::core::fri::FriConfig;
 use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig};
 use stwo::core::poly::circle::CanonicCoset;
 use stwo::core::proof::StarkProof;
@@ -517,6 +518,8 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
             ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS
         )));
     }
+    // The v1 proof format is intentionally fail-closed: any extra commitment
+    // roots are a shape change that should bump the proof version.
     if stark_proof.commitments.len() != ZKAI_D64_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS {
         return Err(public_row_error(format!(
             "proof commitment count mismatch: got {}, expected exactly {}",
@@ -560,7 +563,11 @@ fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
 }
 
 fn public_row_pcs_config() -> PcsConfig {
-    PcsConfig::default()
+    PcsConfig {
+        pow_bits: 10,
+        fri_config: FriConfig::new(0, 1, 3, 1),
+        lifting_log_size: None,
+    }
 }
 
 fn public_row_commitment_roots(
