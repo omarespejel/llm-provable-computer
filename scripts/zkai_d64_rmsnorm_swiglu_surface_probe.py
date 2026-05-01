@@ -18,7 +18,6 @@ import json
 import os
 import pathlib
 import re
-import subprocess
 import sys
 from typing import Any
 
@@ -96,15 +95,7 @@ def _git_commit() -> str:
     override = os.environ.get("ZKAI_GIT_COMMIT")
     if override:
         return override
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=ROOT,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
+    return "unspecified"
 
 
 def _read_text(path: pathlib.Path) -> str:
@@ -407,15 +398,18 @@ def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
-    if json_path is not None:
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    if tsv_path is not None:
-        tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        with tsv_path.open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows_for_tsv(payload))
+    try:
+        if json_path is not None:
+            json_path.parent.mkdir(parents=True, exist_ok=True)
+            json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        if tsv_path is not None:
+            tsv_path.parent.mkdir(parents=True, exist_ok=True)
+            with tsv_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
+                writer.writeheader()
+                writer.writerows(rows_for_tsv(payload))
+    except OSError as err:
+        raise SurfaceProbeError(f"failed to write probe output: {err}") from err
 
 
 def main(argv: list[str] | None = None) -> int:
