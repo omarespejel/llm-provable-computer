@@ -17,6 +17,15 @@ pub const ZKAI_D64_REQUIRED_BACKEND_VERSION: &str = "stwo-rmsnorm-swiglu-residua
 pub const ZKAI_D64_VERIFIER_DOMAIN: &str = "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2";
 pub const ZKAI_D64_WIDTH: usize = 64;
 pub const ZKAI_D64_FF_DIM: usize = 256;
+pub const ZKAI_D64_INPUT_ROWS: usize = 64;
+pub const ZKAI_D64_RMS_SQUARE_ROWS: usize = 64;
+pub const ZKAI_D64_RMS_NORM_ROWS: usize = 64;
+pub const ZKAI_D64_GATE_PROJECTION_MUL_ROWS: usize = 16_384;
+pub const ZKAI_D64_VALUE_PROJECTION_MUL_ROWS: usize = 16_384;
+pub const ZKAI_D64_ACTIVATION_LOOKUP_ROWS: usize = 256;
+pub const ZKAI_D64_SWIGLU_MIX_ROWS: usize = 256;
+pub const ZKAI_D64_DOWN_PROJECTION_MUL_ROWS: usize = 16_384;
+pub const ZKAI_D64_RESIDUAL_ROWS: usize = 64;
 pub const ZKAI_D64_PROJECTION_MUL_ROWS: usize = 49_152;
 pub const ZKAI_D64_TRACE_ROWS_EXCLUDING_STATIC_TABLE: usize = 49_920;
 pub const ZKAI_D64_ACTIVATION_TABLE_ROWS: usize = 2_049;
@@ -114,6 +123,15 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not full transformer inference",
 ];
 
+const EXPECTED_EXPORT_CONTRACT_NON_CLAIMS: &[&str] = &[
+    "not a Stwo proof",
+    "not verifier-time evidence",
+    "not AIR constraints",
+    "not backend independence evidence",
+    "not full transformer inference",
+    "not proof that private witness rows already open to the parameter commitment",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ZkAiD64NativeExportContract {
     pub contract_version: String,
@@ -141,6 +159,7 @@ pub struct ZkAiD64NativeExportContract {
     pub mutations_rejected: usize,
     pub oracle_schema: String,
     pub oracle_decision: String,
+    pub non_claims: Vec<String>,
 }
 
 impl ZkAiD64NativeExportContract {
@@ -273,6 +292,11 @@ impl ZkAiD64NativeExportContract {
             ZKAI_D64_NATIVE_RELATION_ORACLE_DECISION,
             "oracle decision",
         )?;
+        expect_str_set_eq(
+            self.non_claims.iter().map(String::as_str),
+            EXPECTED_EXPORT_CONTRACT_NON_CLAIMS,
+            "export contract non claims",
+        )?;
         Ok(())
     }
 }
@@ -316,7 +340,7 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         ZKAI_D64_NATIVE_RELATION_ORACLE_DECISION,
         "oracle decision",
     )?;
-    expect_string_array(oracle, &["non_claims"], EXPECTED_NON_CLAIMS, "non claims")?;
+    expect_string_set(oracle, &["non_claims"], EXPECTED_NON_CLAIMS, "non claims")?;
 
     let witness = object_at(oracle, &["relation_witness"], "relation witness")?;
     expect_exact_keys(
@@ -477,6 +501,7 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         ZKAI_D64_ACTIVATION_TABLE_ROWS,
         "activation table rows",
     )?;
+    validate_row_count_constants(oracle)?;
     validate_projection_row_additivity(oracle)?;
     validate_relation_checks(oracle)?;
     let (mutations_checked, mutations_rejected) = validate_mutation_suite(oracle)?;
@@ -548,9 +573,49 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         mutations_rejected,
         oracle_schema: schema.to_string(),
         oracle_decision: oracle_decision.to_string(),
+        non_claims: EXPECTED_EXPORT_CONTRACT_NON_CLAIMS
+            .iter()
+            .map(|item| item.to_string())
+            .collect(),
     };
     contract.validate()?;
     Ok(contract)
+}
+
+fn validate_row_count_constants(oracle: &Value) -> Result<()> {
+    for (field, expected) in [
+        ("input_rows", ZKAI_D64_INPUT_ROWS),
+        ("rms_square_rows", ZKAI_D64_RMS_SQUARE_ROWS),
+        ("rms_norm_rows", ZKAI_D64_RMS_NORM_ROWS),
+        (
+            "gate_projection_mul_rows",
+            ZKAI_D64_GATE_PROJECTION_MUL_ROWS,
+        ),
+        (
+            "value_projection_mul_rows",
+            ZKAI_D64_VALUE_PROJECTION_MUL_ROWS,
+        ),
+        ("activation_lookup_rows", ZKAI_D64_ACTIVATION_LOOKUP_ROWS),
+        ("swiglu_mix_rows", ZKAI_D64_SWIGLU_MIX_ROWS),
+        (
+            "down_projection_mul_rows",
+            ZKAI_D64_DOWN_PROJECTION_MUL_ROWS,
+        ),
+        ("residual_rows", ZKAI_D64_RESIDUAL_ROWS),
+        ("projection_mul_rows", ZKAI_D64_PROJECTION_MUL_ROWS),
+        (
+            "trace_rows_excluding_static_table",
+            ZKAI_D64_TRACE_ROWS_EXCLUDING_STATIC_TABLE,
+        ),
+        ("activation_table_rows", ZKAI_D64_ACTIVATION_TABLE_ROWS),
+    ] {
+        expect_usize(
+            usize_at(oracle, &["relation_witness", "row_counts", field])?,
+            expected,
+            field,
+        )?;
+    }
+    Ok(())
 }
 
 fn validate_projection_row_additivity(oracle: &Value) -> Result<()> {
@@ -755,7 +820,7 @@ fn bool_field(value: &Value, key: &str, label: &str) -> Result<bool> {
         .ok_or_else(|| contract_error(format!("{label} field {key} must be a bool")))
 }
 
-fn expect_string_array(value: &Value, path: &[&str], expected: &[&str], label: &str) -> Result<()> {
+fn expect_string_set(value: &Value, path: &[&str], expected: &[&str], label: &str) -> Result<()> {
     let items = array_at(value, path)?;
     let actual: Vec<&str> = items
         .iter()
@@ -764,10 +829,31 @@ fn expect_string_array(value: &Value, path: &[&str], expected: &[&str], label: &
                 .ok_or_else(|| contract_error(format!("{label} item must be a string")))
         })
         .collect::<Result<_>>()?;
-    if actual != expected {
+    expect_str_set_eq(actual, expected, label)
+}
+
+fn expect_str_set_eq<'a>(
+    actual: impl IntoIterator<Item = &'a str>,
+    expected: &[&str],
+    label: &str,
+) -> Result<()> {
+    let actual_vec: Vec<&str> = actual.into_iter().collect();
+    if actual_vec.len() != expected.len() {
+        return Err(contract_error(format!(
+            "{label} count mismatch: got {}, expected {}",
+            actual_vec.len(),
+            expected.len()
+        )));
+    }
+    let actual_set: BTreeSet<String> = actual_vec.iter().map(|item| item.to_string()).collect();
+    if actual_set.len() != actual_vec.len() {
+        return Err(contract_error(format!("{label} contains duplicates")));
+    }
+    let expected_set: BTreeSet<String> = expected.iter().map(|item| item.to_string()).collect();
+    if actual_set != expected_set {
         return Err(contract_error(format!(
             "{label} mismatch: got {:?}, expected {:?}",
-            actual, expected
+            actual_set, expected_set
         )));
     }
     Ok(())
@@ -965,6 +1051,16 @@ mod tests {
     }
 
     #[test]
+    fn native_export_contract_rejects_balanced_row_count_drift() {
+        let mut value = oracle_value();
+        value["relation_witness"]["row_counts"]["input_rows"] = Value::from(65u64);
+        value["relation_witness"]["row_counts"]["residual_rows"] = Value::from(63u64);
+
+        let err = zkai_d64_native_export_contract_from_oracle_value(&value).unwrap_err();
+        assert!(err.to_string().contains("input_rows"), "{err}");
+    }
+
+    #[test]
     fn native_export_contract_rejects_relation_check_drift() {
         let mut value = oracle_value();
         value["relation_witness"]["relation_checks"][0]["name"] = Value::String("weaker".into());
@@ -994,5 +1090,18 @@ mod tests {
 
         let err = zkai_d64_native_export_contract_from_oracle_value(&value).unwrap_err();
         assert!(err.to_string().contains("non claims mismatch"), "{err}");
+    }
+
+    #[test]
+    fn native_export_contract_accepts_oracle_non_claim_reordering() {
+        let mut value = oracle_value();
+        let array = value["non_claims"]
+            .as_array_mut()
+            .expect("non claims array");
+        let first = array.remove(0);
+        array.push(first);
+
+        zkai_d64_native_export_contract_from_oracle_value(&value)
+            .expect("set-equivalent non claims accepted");
     }
 }
