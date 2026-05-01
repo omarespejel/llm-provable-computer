@@ -50,24 +50,15 @@ pub(crate) fn publication_v1_pcs_config() -> PcsConfig {
 }
 
 #[cfg(feature = "stwo-backend")]
-pub(crate) fn validate_publication_v1_pcs_config(
-    actual: PcsConfig,
-    context: &str,
-) -> Result<PcsConfig> {
+pub(crate) fn publication_v1_pcs_config_matches(actual: &PcsConfig) -> bool {
     let expected = publication_v1_pcs_config();
-    if actual.pow_bits != expected.pow_bits
-        || actual.fri_config.log_blowup_factor != expected.fri_config.log_blowup_factor
-        || actual.fri_config.n_queries != expected.fri_config.n_queries
-        || actual.fri_config.log_last_layer_degree_bound
-            != expected.fri_config.log_last_layer_degree_bound
-        || actual.fri_config.fold_step != expected.fri_config.fold_step
-        || actual.lifting_log_size != expected.lifting_log_size
-    {
-        return Err(VmError::InvalidConfig(format!(
-            "{context} PCS config does not match publication-v1 verifier profile",
-        )));
-    }
-    Ok(expected)
+    actual.pow_bits == expected.pow_bits
+        && actual.fri_config.log_blowup_factor == expected.fri_config.log_blowup_factor
+        && actual.fri_config.n_queries == expected.fri_config.n_queries
+        && actual.fri_config.log_last_layer_degree_bound
+            == expected.fri_config.log_last_layer_degree_bound
+        && actual.fri_config.fold_step == expected.fri_config.fold_step
+        && actual.lifting_log_size == expected.lifting_log_size
 }
 
 pub use adapter::{

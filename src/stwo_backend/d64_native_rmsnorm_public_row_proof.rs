@@ -657,8 +657,12 @@ fn verify_public_rows(input: &ZkAiD64RmsnormPublicRowProofInput, proof: &[u8]) -
 }
 
 fn validate_public_row_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
-    super::validate_publication_v1_pcs_config(actual, "d64 RMSNorm public-row proof")
-        .map_err(|error| public_row_error(error.to_string()))
+    if !super::publication_v1_pcs_config_matches(&actual) {
+        return Err(public_row_error(
+            "PCS config does not match publication-v1 verifier profile",
+        ));
+    }
+    Ok(public_row_pcs_config())
 }
 
 fn public_row_pcs_config() -> PcsConfig {
