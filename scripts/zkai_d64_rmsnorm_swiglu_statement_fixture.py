@@ -304,7 +304,7 @@ def build_fixture() -> dict[str, Any]:
     reference = evaluate_reference_block()
     binding = commitments(reference)
     statement = statement_payload(reference, binding)
-    mutations = run_mutation_suite(statement, statement)
+    mutations = run_mutation_suite(statement)
     return {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
