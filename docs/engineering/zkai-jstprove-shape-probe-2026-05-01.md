@@ -149,7 +149,8 @@ Create or reuse a Python environment with `onnx`, `numpy`, and `msgpack`.
 The run that generated this gate used:
 
 ```bash
-/tmp/jstprove-adapter-check/onnx-venv/bin/python -m pip install onnx numpy msgpack
+/tmp/jstprove-adapter-check/onnx-venv/bin/python -m pip install \
+  onnx==1.21.0 numpy==2.4.4 msgpack==1.1.2
 ```
 
 Regenerate the evidence:

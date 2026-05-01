@@ -649,21 +649,17 @@ def softmax_source_probe(jstprove_bin: pathlib.Path) -> dict[str, Any]:
 def softmax_alternative_ref_probe(source_root: str) -> list[dict[str, Any]]:
     root = pathlib.Path(source_root) if source_root else None
     if root is None or not (root / ".git").exists():
-        return []
+        raise JstproveShapeProbeError(
+            "Softmax alternative refs require a local JSTprove git checkout; "
+            "use a jstprove-remainder binary built from a fetched JSTprove clone"
+        )
     rows: list[dict[str, Any]] = []
     for ref in SOFTMAX_ALTERNATIVE_REFS:
         commit = _git_output(root, ["rev-parse", "--verify", f"{ref}^{{commit}}"])
         if commit is None:
-            rows.append(
-                {
-                    "ref": ref,
-                    "commit": "unavailable",
-                    "status": "REF_NOT_AVAILABLE",
-                    "remainder_softmax_hits": [],
-                    "observation": "The alternative ref was not available in the local JSTprove checkout.",
-                }
+            raise JstproveShapeProbeError(
+                f"Softmax alternative ref {ref} missing locally; fetch origin heads/tags before checked probe run"
             )
-            continue
         grep = _git_output(root, ["grep", "-n", "Softmax\\|not yet constrained", ref, "--", ":(glob)*.rs"])
         lines = [] if grep is None else grep.splitlines()
         remainder_hits = []
@@ -935,6 +931,15 @@ def validate_payload(payload: dict[str, Any]) -> None:
             raise JstproveShapeProbeError("Softmax source hits missing")
     if [item.get("ref") for item in payload["softmax_alternative_ref_probe"]] != list(SOFTMAX_ALTERNATIVE_REFS):
         raise JstproveShapeProbeError("Softmax alternative ref probe drift")
+    missing_ref = next(
+        (item for item in payload["softmax_alternative_ref_probe"] if item.get("status") == "REF_NOT_AVAILABLE"),
+        None,
+    )
+    if missing_ref is not None:
+        raise JstproveShapeProbeError(
+            f"Softmax alternative ref {missing_ref.get('ref')} missing locally; "
+            "fetch origin heads/tags before checked probe run"
+        )
     for item in payload["softmax_alternative_ref_probe"]:
         if item.get("status") not in {
             "REMAINDER_SOFTMAX_STILL_REFUSED",
