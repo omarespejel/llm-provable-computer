@@ -28,7 +28,7 @@ nonnegative-gap decompositions:
 ```text
 rms_q8^2 + sqrt_low_delta = average_square_floor
 (rms_q8 + 1)^2 = average_square_floor + sqrt_high_gap + 1
-sqrt_low_delta, sqrt_high_gap are 16-bit nonnegative decompositions
+sqrt_low_delta, sqrt_high_gap are 17-bit nonnegative decompositions
 ```
 
 Together with the verifier-side public-row check that
@@ -57,7 +57,7 @@ The verifier hardening is intentionally fail-closed:
   before field encoding,
 - `rms_q8` is recomputed with exact integer arithmetic, not floating-point
   square root,
-- the AIR enforces the sqrt inequality using 16-bit nonnegative gap
+- the AIR enforces the sqrt inequality using 17-bit nonnegative gap
   decompositions for the current public-row scalar surface,
 - the RMSNorm-local output row commitment is recomputed from `normed_q8` before
   proof verification, so it cannot be relabeled independently of the checked

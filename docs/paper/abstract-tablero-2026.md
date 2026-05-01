@@ -61,6 +61,12 @@ small family of zkAI adapters and receipt gates shows that raw proof
 verification and application statement binding are distinct verifier layers:
 model labels, numeric range assumptions, and carried state transitions must be
 bound explicitly. This is not a security claim against those proof systems. It
-shows why a typed receipt is needed to bind a valid proof to the claimed model,
-input, output, configuration, setup, verifier domain, and state transition
-before a higher-level receipt or settlement layer accepts it.
+shows why a typed proof-backed receipt must bind a valid proof to the claimed
+model, input, output, configuration, setup or verifier identity, and verifier
+domain before a higher-level receipt or settlement layer accepts it. We keep the
+weaker source-backed receipts labeled separately: the attention/KV transition
+gate binds source-origin and state-transition metadata, but does not itself bind
+prover setup, verifying keys, or nested proof checks. The extension therefore
+treats nested-proof verification, commitment binding, resource bounds, and
+publication-versus-experimental drift as validation risks rather than established
+facts.

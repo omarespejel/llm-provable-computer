@@ -398,7 +398,7 @@ Stwo AIR. Its verifier enforces signed-M31 bounds with checked integer
 arithmetic, pins the expected PCS configuration, bounds proof bytes before
 deserialization, rejects malformed commitment-vector shapes before indexing,
 recomputes the public average scalar from the checked rows, and proves the
-bounded public-scalar sqrt inequality in AIR with 16-bit nonnegative gap
+bounded public-scalar sqrt inequality in AIR with 17-bit nonnegative gap
 decompositions. It also recomputes a local
 `rmsnorm_output_row_commitment` from `normed_q8`, making the RMSNorm-local output
 surface relabeling-resistant before the next slice consumes it. This is still

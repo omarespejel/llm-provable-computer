@@ -58,6 +58,13 @@ class RangeDisciplinedActivationReceiptTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "scaling conclusion"):
             PROBE.validate_source_evidence(source)
 
+    def test_source_evidence_softmax_conclusion_is_required(self) -> None:
+        source = PROBE.load_source_evidence()
+        source["conclusion"].pop("softmax_source_check")
+
+        with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "Softmax source-check"):
+            PROBE.validate_source_evidence(source)
+
     def test_payload_validation_rejects_missing_mutation_rejection(self) -> None:
         payload = PROBE.build_payload()
         payload["cases"][0]["mutations_rejected"] -= 1
@@ -70,6 +77,13 @@ class RangeDisciplinedActivationReceiptTests(unittest.TestCase):
         payload["cases"][0]["mutation_cases"][0]["rejected"] = False
 
         with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "mutation case rejection"):
+            PROBE.validate_payload(payload)
+
+    def test_payload_validation_rejects_summary_counter_drift(self) -> None:
+        payload = PROBE.build_payload()
+        payload["summary"]["scaled_go_count"] -= 1
+
+        with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "summary scaled GO"):
             PROBE.validate_payload(payload)
 
     def test_tsv_columns_are_stable(self) -> None:

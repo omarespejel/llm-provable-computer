@@ -123,6 +123,8 @@ def validate_source_evidence(payload: Any) -> None:
         raise RangeActivationReceiptError("source evidence lacks conclusion")
     if conclusion.get("relu_scaling") != "MAGNITUDE_SENSITIVE_BASELINE_FAILS_SCALED_VARIANTS_CLEAR":
         raise RangeActivationReceiptError("source ReLU scaling conclusion drift")
+    if not isinstance(conclusion.get("softmax_source_check"), str) or not conclusion["softmax_source_check"]:
+        raise RangeActivationReceiptError("source Softmax source-check conclusion drift")
     rows = payload.get("relu_scaling_probe")
     if not isinstance(rows, list):
         raise RangeActivationReceiptError("source evidence lacks ReLU scaling rows")
@@ -418,6 +420,13 @@ def validate_payload(payload: Any) -> None:
     summary = payload.get("summary")
     if not isinstance(summary, dict) or not summary.get("all_receipts_fail_closed"):
         raise RangeActivationReceiptError("summary fail-closed bit drift")
+    if summary.get("baseline_scale_status") != cases[0].get("backend_status"):
+        raise RangeActivationReceiptError("summary baseline status drift")
+    scaled_go_count = sum(1 for case in cases[1:] if case.get("backend_status") == EXPECTED_SCALED_STATUS)
+    if summary.get("scaled_go_count") != scaled_go_count:
+        raise RangeActivationReceiptError("summary scaled GO count drift")
+    if summary.get("case_count") != len(cases):
+        raise RangeActivationReceiptError("summary case count drift")
     if summary.get("mutations_checked") != recomputed_checked:
         raise RangeActivationReceiptError("summary mutation count drift")
     if summary.get("mutations_rejected") != recomputed_rejected:

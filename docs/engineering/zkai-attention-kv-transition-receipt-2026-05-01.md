@@ -32,6 +32,8 @@ surface and requires rejection.
 | Mutations checked | 8 |
 | Mutations rejected | 8 |
 | Proof status | `SOURCE_BACKED_RECEIPT_NOT_PROVEN` |
+| Verifier domain | `ptvm:zkai:attention-kv-transition:v1` |
+| Proof-system version | `attention-kv-transition-reference-v1` |
 
 The mutation suite covers:
 

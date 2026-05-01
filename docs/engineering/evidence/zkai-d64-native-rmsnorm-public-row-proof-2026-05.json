@@ -16,7 +16,7 @@
   "proof_verifier_hardening": [
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
     "exact integer isqrt recomputation without floating-point sqrt",
-    "AIR-native bounded sqrt inequality via 16-bit nonnegative gap decompositions",
+    "AIR-native bounded sqrt inequality via 17-bit nonnegative gap decompositions",
     "local RMSNorm output row commitment recomputation before proof verification",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",

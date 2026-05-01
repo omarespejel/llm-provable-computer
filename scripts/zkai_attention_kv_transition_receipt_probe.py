@@ -293,23 +293,52 @@ def validate_payload(payload: Any) -> None:
         raise AttentionKvReceiptError("decision drift")
     if payload.get("baseline_accepted") is not True:
         raise AttentionKvReceiptError("baseline receipt must be accepted")
-    mutation_cases = payload.get("mutation_cases")
-    if not isinstance(mutation_cases, list):
+    fixture = payload.get("fixture")
+    if not isinstance(fixture, dict):
+        raise AttentionKvReceiptError("fixture must be an object")
+    transition = evaluate_transition(fixture)
+    if payload.get("transition") != transition:
+        raise AttentionKvReceiptError("transition drift")
+    payload_mutation_cases = payload.get("mutation_cases")
+    if not isinstance(payload_mutation_cases, list):
         raise AttentionKvReceiptError("mutation cases must be a list")
-    if any(not isinstance(item, dict) for item in mutation_cases):
+    if any(not isinstance(item, dict) for item in payload_mutation_cases):
         raise AttentionKvReceiptError("mutation case entries must be objects")
-    if tuple(item.get("name") for item in mutation_cases) != EXPECTED_MUTATION_NAMES:
+    expected_receipt = build_receipt(fixture)
+    expected_mutations = []
+    for name, mutated in mutation_cases(expected_receipt).items():
+        try:
+            verify_receipt(mutated, fixture)
+        except AttentionKvReceiptError as err:
+            expected_mutations.append({"name": name, "rejected": True, "reason": str(err)})
+        else:
+            expected_mutations.append({"name": name, "rejected": False, "reason": "accepted"})
+    if tuple(item.get("name") for item in payload_mutation_cases) != EXPECTED_MUTATION_NAMES:
         raise AttentionKvReceiptError("mutation case names drift")
-    if any(item.get("rejected") is not True for item in mutation_cases):
+    if any(item.get("rejected") is not True for item in payload_mutation_cases):
         raise AttentionKvReceiptError("mutation case rejection drift")
-    mutation_count = len(mutation_cases)
-    mutation_rejections = sum(1 for item in mutation_cases if item.get("rejected") is True)
+    if payload_mutation_cases != expected_mutations:
+        raise AttentionKvReceiptError("mutation case details drift")
+    mutation_count = len(payload_mutation_cases)
+    mutation_rejections = sum(1 for item in payload_mutation_cases if item.get("rejected") is True)
     if payload.get("mutations_checked") != mutation_count:
         raise AttentionKvReceiptError("mutation count drift")
     if payload.get("mutations_rejected") != mutation_rejections:
         raise AttentionKvReceiptError("mutation rejection drift")
     if payload.get("all_mutations_rejected") is not True:
         raise AttentionKvReceiptError("fail-closed summary drift")
+    expected_summary = {
+        "prior_kv_items": len(fixture["prior_kv_cache"]),
+        "next_kv_items": len(transition["next_kv_cache"]),
+        "selected_position": transition["selected_position"],
+        "proof_status": expected_receipt["proof_status"],
+        "interpretation": (
+            "A verifiable-intelligence receipt must bind state transition semantics, not only "
+            "a model output label. Prior KV, input, output, and next KV are separate relabeling surfaces."
+        ),
+    }
+    if payload.get("summary") != expected_summary:
+        raise AttentionKvReceiptError("summary drift")
     receipt = payload.get("receipt")
     if not isinstance(receipt, dict):
         raise AttentionKvReceiptError("receipt must be an object")

@@ -498,7 +498,7 @@
   ],
   "decision": "GO_RANGE_DISCIPLINE_BOUND_IN_STATEMENT_RECEIPT",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "930cdb87571f5d8d35915d1eae8b7a14b1dea9fb",
+  "git_commit": "29f108f2c9f70146f8144ae27c06ad208167c121",
   "non_claims": [
     "not a new proof benchmark",
     "not a transformer proof",
