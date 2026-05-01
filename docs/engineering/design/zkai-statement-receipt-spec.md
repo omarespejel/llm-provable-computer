@@ -328,3 +328,18 @@ It still does not claim AIR or proof evidence. Its purpose is to keep the next
 native Stwo slice narrow: consume the export contract, pin the RMSNorm row
 surface, and reject drift before adding projection, activation, or residual
 relations.
+
+The d64 RMSNorm AIR feasibility gate records the first honest implementation
+barrier after that slice:
+
+- `docs/engineering/zkai-d64-native-rmsnorm-air-feasibility-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-air-feasibility-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-native-rmsnorm-air-feasibility-2026-05.tsv`
+- `src/stwo_backend/d64_native_rmsnorm_air_feasibility.rs`
+
+Decision: `NO_GO_EXISTING_NORMALIZATION_LOOKUP_NOT_D64_RMSNORM_AIR`. The
+existing normalization lookup primitive is only a five-row reciprocal-square-root
+lookup pilot and does not consume `proof_native_parameter_commitment`, bind the
+RMS scale tree root, or prove the `64 + 64` d64 RMSNorm row surface. The next
+implementation must build a d64-specific RMSNorm AIR component rather than
+relabeling the old primitive as the d64 proof.

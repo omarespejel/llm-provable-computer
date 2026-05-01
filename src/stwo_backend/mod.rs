@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 mod d64_native_export_contract;
+#[cfg(feature = "stwo-backend")]
+mod d64_native_rmsnorm_air_feasibility;
 mod d64_native_rmsnorm_slice_contract;
 #[cfg(feature = "stwo-backend")]
 mod decoding;
@@ -60,6 +62,15 @@ pub use d64_native_export_contract::{
     ZKAI_D64_RMS_SQUARE_ROWS, ZKAI_D64_STATEMENT_COMMITMENT, ZKAI_D64_SWIGLU_MIX_ROWS,
     ZKAI_D64_TARGET_ID, ZKAI_D64_TRACE_ROWS_EXCLUDING_STATIC_TABLE,
     ZKAI_D64_VALUE_PROJECTION_MUL_ROWS, ZKAI_D64_VERIFIER_DOMAIN, ZKAI_D64_WIDTH,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_rmsnorm_air_feasibility::{
+    zkai_d64_native_rmsnorm_air_feasibility_from_json_str,
+    zkai_d64_native_rmsnorm_air_feasibility_from_oracle_json_str,
+    zkai_d64_native_rmsnorm_air_feasibility_from_slice, ExistingNormalizationComponentSummary,
+    ZkAiD64NativeRmsnormAirFeasibilityGate, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_DECISION,
+    ZKAI_D64_RMSNORM_AIR_FEASIBILITY_KIND, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_NEXT_BACKEND_STEP,
+    ZKAI_D64_RMSNORM_AIR_FEASIBILITY_RUST_MODULE, ZKAI_D64_RMSNORM_AIR_FEASIBILITY_SCHEMA,
 };
 pub use d64_native_rmsnorm_slice_contract::{
     zkai_d64_native_rmsnorm_slice_contract_from_oracle_json_str,

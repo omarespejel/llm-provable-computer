@@ -1,0 +1,76 @@
+{
+  "schema": "zkai-d64-native-rmsnorm-air-feasibility-gate-v1",
+  "evidence_kind": "research-gate",
+  "rust_module": "src/stwo_backend/d64_native_rmsnorm_air_feasibility.rs",
+  "decision": "NO_GO_EXISTING_NORMALIZATION_LOOKUP_NOT_D64_RMSNORM_AIR",
+  "target_id": "rmsnorm-swiglu-residual-d64-v2",
+  "source_rmsnorm_slice_contract_version": "zkai-d64-native-rmsnorm-slice-contract-v1",
+  "source_rmsnorm_slice_decision": "GO_NATIVE_RMSNORM_SLICE_NOT_AIR_PROOF",
+  "source_rmsnorm_slice_next_backend_step": "encode rms_square_rows and rms_norm_rows as native Stwo AIR constraints bound to proof_native_parameter_commitment",
+  "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+  "rms_scale_tree_root": "blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3",
+  "width": 64,
+  "d64_rms_square_rows": 64,
+  "d64_rms_norm_rows": 64,
+  "existing_component": {
+    "component_name": "Phase5NormalizationLookupRelation",
+    "log_size": 4,
+    "semantics": "bounded reciprocal-square-root normalization lookup pilot (Q8 fixed point)",
+    "statement_contract": "statement-v1 preserved; normalization lookup primitive remains internal",
+    "lookup_table_row_count": 5,
+    "lookup_table_rows": [
+      {
+        "norm_sq": 1,
+        "inv_sqrt_q8": 256
+      },
+      {
+        "norm_sq": 2,
+        "inv_sqrt_q8": 181
+      },
+      {
+        "norm_sq": 4,
+        "inv_sqrt_q8": 128
+      },
+      {
+        "norm_sq": 8,
+        "inv_sqrt_q8": 91
+      },
+      {
+        "norm_sq": 16,
+        "inv_sqrt_q8": 64
+      }
+    ],
+    "logup_relations_per_row": [
+      [
+        "Phase5NormalizationLookupRelation",
+        2
+      ]
+    ],
+    "consumes_proof_native_parameter_commitment": false,
+    "binds_rms_scale_tree_root": false,
+    "proves_d64_rmsnorm_arithmetic_rows": false
+  },
+  "blockers": [
+    "existing_component_table_rows_5_not_d64_rms_square_rows_64",
+    "existing_component_has_no_proof_native_parameter_commitment_input",
+    "existing_component_has_no_rms_scale_tree_root_binding",
+    "existing_component_claims_lookup_membership_not_rmsnorm_arithmetic_rows",
+    "existing_component_statement_contract_marks_primitive_internal"
+  ],
+  "non_claims": [
+    "not a d64 AIR proof",
+    "not verifier-time evidence",
+    "not proof-native parameter opening evidence",
+    "not a 64-row RMSNorm constraint system",
+    "not safe to reuse the Phase5/Phase10 normalization primitive as the d64 slice proof"
+  ],
+  "next_backend_step": "implement a d64-specific RMSNorm AIR component with 64 square rows, 64 normalization rows, proof_native_parameter_commitment binding, and rms_scale_tree_root binding",
+  "validation_commands": [
+    "cargo test d64_native_rmsnorm_air_feasibility --lib --features stwo-backend",
+    "cargo test d64_native_rmsnorm_slice_contract --lib",
+    "cargo test d64_native_export_contract --lib",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate"
+  ]
+}
