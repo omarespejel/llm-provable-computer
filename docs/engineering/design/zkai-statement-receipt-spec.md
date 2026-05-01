@@ -242,9 +242,10 @@ The arithmetic surface is not the immediate blocker: the checked fixture has
 `49,920` trace rows excluding the static activation table and max intermediate
 `849,454`, which fits comfortably below the signed M31 limit. The proof-facing
 public-instance contract is also now pinned: it binds
-`proof_native_parameter_commitment`, model-config, input, output,
-verifier-domain, backend-version, public-instance commitment, and statement
-commitment, and rejects `12 / 12` checked contract relabeling mutations. The
+`proof_native_parameter_commitment`, model-config, normalization, activation
+lookup, input, output, verifier-domain, backend-version, public-instance
+commitment, and statement commitment, and rejects `14 / 14` checked contract
+relabeling mutations. The
 remaining blocker is relation-level commitment consistency: the proof must bind
 private weight/table rows to that proof-native parameter commitment instead of
 only carrying the commitment as public instance data.

@@ -47,6 +47,8 @@ PUBLIC_INSTANCE_FIELDS = (
     "output_activation_commitment",
     "model_config_commitment",
     "proof_native_parameter_commitment",
+    "normalization_config_commitment",
+    "activation_lookup_commitment",
 )
 BOUND_STATEMENT_FIELDS = (
     *PUBLIC_INSTANCE_FIELDS,
@@ -320,7 +322,7 @@ def decision_matrix() -> list[dict[str, str]]:
         {
             "gate": "proof_native_public_instance_contract",
             "status": "GO",
-            "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config and input/output commitments.",
+            "reason": "The proof-facing public-instance contract binds proof_native_parameter_commitment together with model config, normalization, activation lookup, input, and output commitments.",
             "next_action": "Consume the same public-instance contract inside the native AIR/export path, then verify an honest Stwo proof.",
         },
         {
@@ -381,6 +383,9 @@ def expected_issue_scope() -> dict[str, Any]:
 
 def proof_public_instance_contract(fixture: dict[str, Any]) -> dict[str, Any]:
     statement = fixture["statement"]
+    backend_version_required = statement["proof_system_version_required"]
+    if backend_version_required != fixture["target"]["required_backend_version"]:
+        raise D64VectorRowSurfaceError("fixture backend version mismatch between target and statement")
     binding = fixture["commitments"]
     public_instance = FIXTURE.public_instance_payload(binding)
     public_instance_commitment = FIXTURE.public_instance_commitment(binding)
@@ -391,7 +396,7 @@ def proof_public_instance_contract(fixture: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": PUBLIC_INSTANCE_CONTRACT_SCHEMA,
         "status": "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
-        "backend_version_required": fixture["target"]["required_backend_version"],
+        "backend_version_required": backend_version_required,
         "verifier_domain": statement["verifier_domain"],
         "public_instance": public_instance,
         "public_instance_commitment": public_instance_commitment,
@@ -463,6 +468,12 @@ def proof_public_instance_mutation_cases(contract: dict[str, Any]) -> dict[str, 
         ),
         "output_activation_commitment_relabeling": mutate_contract(
             contract, ("public_instance", "output_activation_commitment"), wrong_commitment
+        ),
+        "normalization_config_commitment_relabeling": mutate_contract(
+            contract, ("public_instance", "normalization_config_commitment"), wrong_commitment
+        ),
+        "activation_lookup_commitment_relabeling": mutate_contract(
+            contract, ("public_instance", "activation_lookup_commitment"), wrong_commitment
         ),
         "target_id_relabeling": mutate_contract(contract, ("public_instance", "target_id"), "wrong-d64-target"),
         "width_relabeling": mutate_contract(contract, ("public_instance", "width"), FIXTURE.WIDTH + 1),

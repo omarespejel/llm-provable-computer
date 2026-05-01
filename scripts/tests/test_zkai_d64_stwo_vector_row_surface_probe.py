@@ -35,8 +35,8 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
             payload["proof_public_instance_contract"]["status"],
             "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF",
         )
-        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_checked"], 12)
-        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_rejected"], 12)
+        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_checked"], 14)
+        self.assertEqual(payload["proof_public_instance_mutation_suite"]["mutations_rejected"], 14)
 
     def test_row_counts_are_pinned_to_d64_statement_shape(self) -> None:
         payload = PROBE.build_probe()
@@ -148,6 +148,8 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
                 "output_activation_commitment",
                 "model_config_commitment",
                 "proof_native_parameter_commitment",
+                "normalization_config_commitment",
+                "activation_lookup_commitment",
             ),
         )
 
@@ -165,6 +167,13 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
 
         with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "proof public-instance bound field drift"):
             PROBE.validate_proof_public_instance_contract(contract)
+
+    def test_contract_builder_rejects_backend_version_drift_between_target_and_statement(self) -> None:
+        fixture = PROBE.FIXTURE.build_fixture()
+        fixture["statement"]["proof_system_version_required"] = "stwo-rmsnorm-swiglu-residual-d64-v999"
+
+        with self.assertRaisesRegex(PROBE.D64VectorRowSurfaceError, "backend version mismatch"):
+            PROBE.proof_public_instance_contract(fixture)
 
     def test_validation_rejects_public_instance_mutation_suite_drift(self) -> None:
         payload = PROBE.build_probe()
@@ -184,7 +193,7 @@ class ZkAID64StwoVectorRowSurfaceProbeTests(unittest.TestCase):
         self.assertEqual(rows[0]["projection_mul_rows"], 49_152)
         self.assertEqual(rows[0]["fits_signed_m31"], "true")
         self.assertEqual(rows[0]["public_instance_contract_status"], "GO_CONTRACT_BOUND_NOT_NATIVE_PROOF")
-        self.assertEqual(rows[0]["public_instance_mutations_rejected"], 12)
+        self.assertEqual(rows[0]["public_instance_mutations_rejected"], 14)
         self.assertEqual(
             rows[0]["proof_native_parameter_commitment"],
             "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",

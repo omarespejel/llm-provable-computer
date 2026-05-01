@@ -431,6 +431,8 @@ def public_instance_payload(binding: dict[str, str]) -> dict[str, Any]:
         "output_activation_commitment": binding["output_activation_commitment"],
         "model_config_commitment": binding["model_config_commitment"],
         "proof_native_parameter_commitment": binding["proof_native_parameter_commitment"],
+        "normalization_config_commitment": binding["normalization_config_commitment"],
+        "activation_lookup_commitment": binding["activation_lookup_commitment"],
     }
 
 
