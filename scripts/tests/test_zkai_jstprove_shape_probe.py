@@ -264,6 +264,27 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "manual gate"):
             PROBE.validate_payload(payload)
 
+    def test_validation_reports_missing_softmax_alternative_ref_actionably(self) -> None:
+        payload = synthetic_payload()
+        payload["softmax_alternative_ref_probe"][0]["status"] = "REF_NOT_AVAILABLE"
+        payload["exploration_commitment"] = PROBE.blake2b_commitment(
+            {
+                "dimension_sweep": payload["dimension_sweep"],
+                "relu_scaling_probe": payload["relu_scaling_probe"],
+                "softmax_source_probe": payload["softmax_source_probe"],
+                "softmax_alternative_ref_probe": payload["softmax_alternative_ref_probe"],
+            },
+            "ptvm:zkai:jstprove-shape-exploration:v1",
+        )
+
+        with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "fetch origin heads/tags"):
+            PROBE.validate_payload(payload)
+
+    def test_softmax_alternative_probe_requires_git_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "local JSTprove git checkout"):
+                PROBE.softmax_alternative_ref_probe(raw_tmp)
+
     def test_classify_failure_keeps_interesting_blockers_distinct(self) -> None:
         self.assertEqual(
             PROBE.classify_failure("witness", "Relu delta nv 20 exceeds two-chunk range-check capacity"),
