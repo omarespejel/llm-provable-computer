@@ -40,7 +40,7 @@ use super::d64_native_rmsnorm_slice_contract::{
 };
 
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_SCHEMA: &str =
-    "zkai-d64-native-rmsnorm-public-row-air-proof-input-v1";
+    "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_INPUT_DECISION: &str =
     "GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF";
 pub const ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION: &str =
@@ -76,6 +76,7 @@ const COLUMN_IDS: [&str; 9] = [
 const AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/average_square_floor";
 const SQRT_LOW_DELTA_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/sqrt_low_delta";
 const SQRT_HIGH_GAP_COLUMN_ID: &str = "zkai/d64/rmsnorm/scalar/sqrt_high_gap";
+const RMSNORM_OUTPUT_ROW_COMMITMENT_DOMAIN: &str = "ptvm:zkai:d64-rmsnorm-output-row:v1";
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not private witness privacy",
@@ -90,6 +91,7 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
     "exact integer isqrt recomputation without floating-point sqrt",
     "AIR-native bounded sqrt inequality via 16-bit nonnegative gap decompositions",
+    "local RMSNorm output row commitment recomputation before proof verification",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing",
@@ -219,6 +221,7 @@ pub struct ZkAiD64RmsnormPublicRowProofInput {
     pub proof_native_parameter_commitment: String,
     pub normalization_config_commitment: String,
     pub input_activation_commitment: String,
+    pub rmsnorm_output_row_commitment: String,
     pub public_instance_commitment: String,
     pub statement_commitment: String,
     pub rms_scale_tree_root: String,
@@ -429,11 +432,13 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
 
     let mut sum_squares = 0i64;
     let mut input_values = Vec::with_capacity(input.rows.len());
+    let mut normed_values = Vec::with_capacity(input.rows.len());
     let mut scale_values = Vec::with_capacity(input.rows.len());
     for (expected_index, row) in input.rows.iter().enumerate() {
         validate_row(row, expected_index, input.rms_q8)?;
         sum_squares = checked_add_i64(sum_squares, row.input_square, "sum square accumulation")?;
         input_values.push(row.input_q8);
+        normed_values.push(row.normed_q8);
         scale_values.push(row.rms_scale_q8);
     }
     expect_i64(input.sum_squares, sum_squares, "sum squares")?;
@@ -458,6 +463,15 @@ fn validate_public_row_input(input: &ZkAiD64RmsnormPublicRowProofInput) -> Resul
         ),
         ZKAI_D64_INPUT_ACTIVATION_COMMITMENT,
         "input activation recomputed commitment",
+    )?;
+    expect_eq(
+        &sequence_commitment(
+            &normed_values,
+            RMSNORM_OUTPUT_ROW_COMMITMENT_DOMAIN,
+            ZKAI_D64_WIDTH,
+        ),
+        &input.rmsnorm_output_row_commitment,
+        "RMSNorm output row recomputed commitment",
     )?;
     let scale_commitment =
         sequence_commitment(&scale_values, "ptvm:zkai:d64-rms-scale:v1", ZKAI_D64_WIDTH);
@@ -1065,6 +1079,20 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("average square floor"));
+    }
+
+    #[test]
+    fn public_row_input_rejects_rmsnorm_output_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["rmsnorm_output_row_commitment"] =
+            Value::from(format!("blake2b-256:{}", "77".repeat(32)));
+        let error = zkai_d64_rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("RMSNorm output row recomputed commitment"));
     }
 
     #[test]

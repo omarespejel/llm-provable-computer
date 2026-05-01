@@ -17,6 +17,7 @@
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
     "exact integer isqrt recomputation without floating-point sqrt",
     "AIR-native bounded sqrt inequality via 16-bit nonnegative gap decompositions",
+    "local RMSNorm output row commitment recomputation before proof verification",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing"
@@ -25,6 +26,7 @@
   "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
   "rms_q8": 115,
   "rms_scale_tree_root": "blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3",
+  "rmsnorm_output_row_commitment": "blake2b-256:c9ab975e440661ce7796f33b75008d20e7eb26a4c41956d2f723093e4ac373a7",
   "row_count": 64,
   "rows": [
     {
@@ -733,7 +735,7 @@
     }
   ],
   "scale_q8": 256,
-  "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v1",
+  "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2",
   "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
   "sum_squares": 849454,
   "target_id": "rmsnorm-swiglu-residual-d64-v2",

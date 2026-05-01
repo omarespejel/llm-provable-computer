@@ -399,11 +399,14 @@ arithmetic, pins the expected PCS configuration, bounds proof bytes before
 deserialization, rejects malformed commitment-vector shapes before indexing,
 recomputes the public average scalar from the checked rows, and proves the
 bounded public-scalar sqrt inequality in AIR with 16-bit nonnegative gap
-decompositions. This is still not a full d64 block proof, not a private-witness
-opening proof, and not a binding of the full d64 `output_activation_commitment`
-from only RMSNorm-local rows. The next native-proof seam is issue `#358`: bridge
-the local `normed_q8` row commitment into the next relation slice before claiming
-full-block output binding.
+decompositions. It also recomputes a local
+`rmsnorm_output_row_commitment` from `normed_q8`, making the RMSNorm-local output
+surface relabeling-resistant before the next slice consumes it. This is still
+not a full d64 block proof, not a private-witness opening proof, and not a
+binding of the full d64 `output_activation_commitment` from only RMSNorm-local
+rows. The remaining native-proof seam in issue `#358` is to make the next
+relation slice consume that local row commitment before claiming full-block
+output binding.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 

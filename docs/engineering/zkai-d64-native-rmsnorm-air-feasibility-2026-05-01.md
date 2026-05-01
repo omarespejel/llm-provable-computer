@@ -13,9 +13,10 @@ RMSNorm AIR proof.
 The follow-up d64-specific public-row AIR component now exists and supersedes
 the implementation-target half of this feasibility note. That later proof
 consumes the same public-row surface and adds an AIR-native bounded sqrt
-inequality for the public `rms_q8` scalar. This note remains the checked NO-GO
-for relabeling the old five-row normalization lookup primitive as the d64
-RMSNorm proof.
+inequality for the public `rms_q8` scalar, plus a recomputed
+RMSNorm-local output row commitment over `normed_q8`. This note remains the
+checked NO-GO for relabeling the old five-row normalization lookup primitive as
+the d64 RMSNorm proof.
 
 ## Why This Matters
 
@@ -79,7 +80,7 @@ Continue from the public-row proof by bridging local RMSNorm rows into the next
 d64 relation surface:
 
 - add a local `rmsnorm_output_row_commitment` for `normed_q8`,
-- make the next proof slice consume that local commitment,
+- make the next proof slice consume the local `rmsnorm_output_row_commitment`,
 - only claim the full d64 `output_activation_commitment` after the remaining
   activation, projection, and residual rows are proven or source-bound.
 

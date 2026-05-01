@@ -293,9 +293,20 @@ def validate_payload(payload: Any) -> None:
         raise AttentionKvReceiptError("decision drift")
     if payload.get("baseline_accepted") is not True:
         raise AttentionKvReceiptError("baseline receipt must be accepted")
-    if payload.get("mutations_checked") != len(EXPECTED_MUTATION_NAMES):
+    mutation_cases = payload.get("mutation_cases")
+    if not isinstance(mutation_cases, list):
+        raise AttentionKvReceiptError("mutation cases must be a list")
+    if any(not isinstance(item, dict) for item in mutation_cases):
+        raise AttentionKvReceiptError("mutation case entries must be objects")
+    if tuple(item.get("name") for item in mutation_cases) != EXPECTED_MUTATION_NAMES:
+        raise AttentionKvReceiptError("mutation case names drift")
+    if any(item.get("rejected") is not True for item in mutation_cases):
+        raise AttentionKvReceiptError("mutation case rejection drift")
+    mutation_count = len(mutation_cases)
+    mutation_rejections = sum(1 for item in mutation_cases if item.get("rejected") is True)
+    if payload.get("mutations_checked") != mutation_count:
         raise AttentionKvReceiptError("mutation count drift")
-    if payload.get("mutations_rejected") != len(EXPECTED_MUTATION_NAMES):
+    if payload.get("mutations_rejected") != mutation_rejections:
         raise AttentionKvReceiptError("mutation rejection drift")
     if payload.get("all_mutations_rejected") is not True:
         raise AttentionKvReceiptError("fail-closed summary drift")

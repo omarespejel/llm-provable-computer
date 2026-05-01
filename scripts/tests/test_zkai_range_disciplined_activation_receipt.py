@@ -65,6 +65,13 @@ class RangeDisciplinedActivationReceiptTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "mutation rejection"):
             PROBE.validate_payload(payload)
 
+    def test_payload_validation_rejects_detailed_mutation_drift(self) -> None:
+        payload = PROBE.build_payload()
+        payload["cases"][0]["mutation_cases"][0]["rejected"] = False
+
+        with self.assertRaisesRegex(PROBE.RangeActivationReceiptError, "mutation case rejection"):
+            PROBE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = PROBE.build_payload()
 

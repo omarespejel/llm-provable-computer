@@ -40,6 +40,7 @@ The verifier recomputes the commitment-bearing public-row artifacts before
 proof verification:
 
 - input activation commitment,
+- RMSNorm-local output row commitment over `normed_q8`,
 - normalization config commitment,
 - RMS scale tree root.
 
@@ -58,6 +59,9 @@ The verifier hardening is intentionally fail-closed:
   square root,
 - the AIR enforces the sqrt inequality using 16-bit nonnegative gap
   decompositions for the current public-row scalar surface,
+- the RMSNorm-local output row commitment is recomputed from `normed_q8` before
+  proof verification, so it cannot be relabeled independently of the checked
+  rows,
 - the proof's PCS configuration must match the d64 public-row v1 PCS profile
   before commitment-root recomputation: `pow_bits=10`,
   `fri_config={log_last_layer_degree_bound=0, log_blowup_factor=1,
@@ -77,6 +81,8 @@ The useful research split is now explicit:
 - the per-row arithmetic is proven by native Stwo AIR,
 - the bounded scalar sqrt/range inequality is now proven by native Stwo AIR over
   the verifier-checked public scalar,
+- the RMSNorm-local output row commitment is bound to the checked `normed_q8`
+  rows,
 - row aggregation, private witness opening, projection, activation, and residual
   relations remain outside this proof slice.
 
@@ -115,7 +121,7 @@ just gate
 ## Next Step
 
 Issue `#356` is now closed by this bounded public-scalar AIR hardening. The
-next hardening lane is issue `#358`: introduce an explicit local
-`rmsnorm_output_row_commitment` for `normed_q8` rows and have the next proof
-slice consume that local commitment before any full d64
-`output_activation_commitment` is claimed.
+first part of issue `#358` is also closed: the proof input now carries a
+recomputed local `rmsnorm_output_row_commitment` for `normed_q8` rows. The
+remaining #358 lane is to make the next proof slice consume that local
+commitment before any full d64 `output_activation_commitment` is claimed.

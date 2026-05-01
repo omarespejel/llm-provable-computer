@@ -275,9 +275,11 @@ The first native d64 proof slice is now checked in:
 
 This proof consumes the public RMSNorm row surface and proves square,
 Q8 scale-division, normalized-output, and bounded public-scalar sqrt inequality
-constraints in native Stwo AIR. It is still a public-row RMSNorm-local slice:
-it does not prove private parameter openings, projection, activation, residual
-relations, or the full d64 `output_activation_commitment`.
+constraints in native Stwo AIR. It also binds a local
+`rmsnorm_output_row_commitment` recomputed from `normed_q8` rows. It is still a
+public-row RMSNorm-local slice: it does not prove private parameter openings,
+projection, activation, residual relations, or the full d64
+`output_activation_commitment`.
 
 The first attention/KV receipt contract is also checked in:
 
