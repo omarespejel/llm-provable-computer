@@ -21,8 +21,11 @@
       },
       {
         "id": "missing_parameterized_stwo_backend",
+        "missing": [
+          "stwo-rmsnorm-swiglu-residual-d64-v1"
+        ],
         "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v1",
-        "why_it_matters": "the current Stwo generator recognizes shipped fixtures/decoding families, not the d64 vector-block backend"
+        "why_it_matters": "the probe should only report GO when it confirms both the current gate surface and the explicit d64 vector-block backend"
       },
       {
         "id": "carry_aware_lane_is_decoding_family_only",
@@ -109,7 +112,7 @@
       "--write-tsv",
       "docs/engineering/evidence/zkai-d64-rmsnorm-swiglu-surface-probe-2026-05.tsv"
     ],
-    "git_commit": "5fe4e72ecda7463663ae23dec1d1386178911d85"
+    "git_commit": "da5991733fbe6e06b681eaaf535ea378df893d8d"
   },
   "research_issue": "https://github.com/omarespejel/provable-transformer-vm/issues/335",
   "schema": "zkai-d64-rmsnorm-swiglu-surface-probe-v1",
