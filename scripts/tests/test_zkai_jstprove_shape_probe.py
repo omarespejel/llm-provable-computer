@@ -54,18 +54,96 @@ def synthetic_results() -> list[dict[str, object]]:
     return results
 
 
+def synthetic_dimension_sweep() -> list[dict[str, object]]:
+    return [
+        {
+            "dimension": dimension,
+            "status": "GO",
+            "failed_step": "",
+            "failure_kind": "",
+            "proof_bytes": 20_000 + dimension,
+            "model_bytes": 1_000 + dimension,
+            "onnx_bytes": 400 + dimension,
+            "prove_seconds": "0.100000",
+            "verify_seconds": "0.200000",
+        }
+        for dimension in PROBE.GEMM_SWEEP_DIMENSIONS
+    ]
+
+
+def synthetic_relu_scaling_probe() -> list[dict[str, object]]:
+    rows = []
+    for scale in PROBE.RELU_SCALE_FACTORS:
+        if scale == "1":
+            rows.append(
+                {
+                    "scale": scale,
+                    "status": "NO_GO",
+                    "failed_step": "witness",
+                    "failure_kind": "range_check_capacity",
+                    "proof_bytes": None,
+                    "model_bytes": 1_100,
+                    "onnx_bytes": 410,
+                    "prove_seconds": "NA",
+                    "verify_seconds": "NA",
+                }
+            )
+        else:
+            rows.append(
+                {
+                    "scale": scale,
+                    "status": "GO",
+                    "failed_step": "",
+                    "failure_kind": "",
+                    "proof_bytes": 30_000 + len(rows),
+                    "model_bytes": 1_100,
+                    "onnx_bytes": 410,
+                    "prove_seconds": "0.300000",
+                    "verify_seconds": "0.400000",
+                }
+            )
+    return rows
+
+
+def synthetic_softmax_source_probe() -> dict[str, object]:
+    return {
+        "status": "SOURCE_HIT",
+        "source_root": "/tmp/JSTprove",
+        "source_commit": "7c3cbbee83aaa01adde700673f00e317a4e902f9",
+        "hits": [
+            {
+                "category": "remainder_refusal",
+                "path": "src/remainder.rs",
+                "line": 123,
+                "text": "Softmax op is not yet constrained",
+            }
+        ],
+        "softmax_refusal_found": True,
+        "observation": "Pinned source inspection found Softmax-related backend code.",
+    }
+
+
+def synthetic_payload() -> dict[str, object]:
+    return PROBE.build_payload(
+        synthetic_results(),
+        jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
+        work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
+        dimension_sweep=synthetic_dimension_sweep(),
+        relu_scaling_probe=synthetic_relu_scaling_probe(),
+        softmax_source=synthetic_softmax_source_probe(),
+    )
+
+
 class ZkAIJstproveShapeProbeTests(unittest.TestCase):
     def test_payload_records_operator_support_split_without_transformer_claim(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         PROBE.validate_payload(payload)
 
         self.assertEqual(payload["decision"], PROBE.DECISION)
         self.assertEqual(payload["conclusion"]["go_count"], 5)
         self.assertEqual(payload["conclusion"]["no_go_count"], 3)
+        self.assertEqual(payload["conclusion"]["gemm_dimension_sweep"], "GO_DIMS_1_2_4")
+        self.assertEqual(payload["conclusion"]["relu_scaling"], "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR")
         self.assertEqual(
             set(payload["conclusion"]["go_transformer_adjacent_fixtures"]),
             {"tiny_gemm_residual_add", "tiny_gemm_layernorm", "tiny_gemm_batchnorm"},
@@ -74,11 +152,7 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
         self.assertIn("not a Tablero result", payload["non_claims"])
 
     def test_rows_for_tsv_are_stable(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         rows = PROBE.rows_for_tsv(payload)
 
         self.assertEqual(len(rows), 8)
@@ -89,11 +163,7 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
         self.assertEqual(PROBE.to_tsv(payload).splitlines()[0].split("\t"), list(PROBE.TSV_COLUMNS))
 
     def test_validation_rejects_status_overclaim(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         for result in payload["results"]:
             if result["fixture"] == "tiny_gemm_relu":
                 result["status"] = "GO"
@@ -109,11 +179,7 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
             PROBE.validate_payload(payload)
 
     def test_validation_rejects_failure_kind_drift(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         for result in payload["results"]:
             if result["fixture"] == "tiny_gemm_softmax":
                 result["failure_kind"] = "external_tool_error"
@@ -126,22 +192,14 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
             PROBE.validate_payload(payload)
 
     def test_validation_rejects_paper_usage_overclaim(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         payload["conclusion"]["paper_usage"] = "transformer_proof_row"
 
         with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "paper usage overclaim"):
             PROBE.validate_payload(payload)
 
     def test_validation_rejects_unknown_conclusion_fields(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         payload["conclusion"]["publish_as_performance_result"] = True
 
         with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "conclusion field set mismatch"):
@@ -173,12 +231,24 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
             with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "verifier is not executable"):
                 PROBE._resolve_jstprove_binary(str(binary))
 
+    def test_resolve_jstprove_binary_resolves_relative_path_before_fixture_cwd(self) -> None:
+        original_cwd = pathlib.Path.cwd()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            binary = tmp / "bin" / "jstprove-remainder"
+            binary.parent.mkdir()
+            binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            binary.chmod(0o700)
+            os.chdir(tmp)
+            try:
+                resolved = PROBE._resolve_jstprove_binary("bin/jstprove-remainder")
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertEqual(resolved, binary.resolve())
+
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
-        payload = PROBE.build_payload(
-            synthetic_results(),
-            jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
-            work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
-        )
+        payload = synthetic_payload()
         with tempfile.TemporaryDirectory() as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             json_path = tmp / "shape.json"

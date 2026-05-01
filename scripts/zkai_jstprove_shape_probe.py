@@ -68,6 +68,8 @@ EXPECTED_GO_TRANSFORMER_ADJACENT = {
     "tiny_gemm_layernorm",
     "tiny_gemm_batchnorm",
 }
+GEMM_SWEEP_DIMENSIONS = (1, 2, 4)
+RELU_SCALE_FACTORS = ("1", "0.25", "0.1", "0.01", "0.001")
 TSV_COLUMNS = (
     "fixture",
     "gate",
@@ -283,19 +285,81 @@ def write_fixture(fixture: str, out_dir: pathlib.Path) -> dict[str, int]:
     return {"onnx_bytes": onnx_path.stat().st_size, "input_bytes": input_path.stat().st_size}
 
 
+def write_gemm_dimension_fixture(dimension: int, out_dir: pathlib.Path) -> dict[str, int]:
+    msgpack, np, onnx, TensorProto, helper, numpy_helper = _import_generation_deps()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fixture = f"gemm_dim_{dimension}"
+    input_value = helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, dimension])
+    output_value = helper.make_tensor_value_info("Z", TensorProto.FLOAT, [1, dimension])
+    weights = np.zeros((dimension, dimension), dtype=np.float32)
+    for row in range(dimension):
+        for col in range(dimension):
+            weights[row, col] = (row + col + 1) / (dimension + 2)
+    bias = np.array([(index + 1) / (dimension + 3) for index in range(dimension)], dtype=np.float32)
+    w = numpy_helper.from_array(weights, name="W")
+    b = numpy_helper.from_array(bias, name="B")
+    graph = helper.make_graph(
+        [helper.make_node("Gemm", ["input", "W", "B"], ["Z"])],
+        f"{fixture}_graph",
+        [input_value],
+        [output_value],
+        initializer=[w, b],
+    )
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)])
+    model.ir_version = 8
+    onnx.checker.check_model(model)
+    onnx_path = out_dir / f"{fixture}.onnx"
+    input_path = out_dir / "input.msgpack"
+    onnx.save(model, onnx_path)
+    input_path.write_bytes(msgpack.packb({"input": [float(index + 1) for index in range(dimension)]}))
+    return {"onnx_bytes": onnx_path.stat().st_size, "input_bytes": input_path.stat().st_size}
+
+
+def write_relu_scaled_fixture(scale_label: str, out_dir: pathlib.Path) -> dict[str, int]:
+    msgpack, np, onnx, TensorProto, helper, numpy_helper = _import_generation_deps()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    scale = float(scale_label)
+    fixture = f"relu_scale_{scale_label.replace('.', 'p')}"
+    input_value = helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 2])
+    output_value = helper.make_tensor_value_info("Z", TensorProto.FLOAT, [1, 1])
+    w = numpy_helper.from_array(np.array([[0.5], [1.5]], dtype=np.float32) * scale, name="W")
+    b = numpy_helper.from_array(np.array([0.25], dtype=np.float32) * scale, name="B")
+    graph = helper.make_graph(
+        [helper.make_node("Gemm", ["input", "W", "B"], ["Y"]), helper.make_node("Relu", ["Y"], ["Z"])],
+        f"{fixture}_graph",
+        [input_value],
+        [output_value],
+        initializer=[w, b],
+    )
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)])
+    model.ir_version = 8
+    onnx.checker.check_model(model)
+    onnx_path = out_dir / f"{fixture}.onnx"
+    input_path = out_dir / "input.msgpack"
+    onnx.save(model, onnx_path)
+    input_path.write_bytes(msgpack.packb({"input": [1.0 * scale, 2.0 * scale]}))
+    return {"onnx_bytes": onnx_path.stat().st_size, "input_bytes": input_path.stat().st_size}
+
+
+def _validate_executable_path(path: pathlib.Path, raw: str) -> pathlib.Path:
+    if not path.is_file():
+        raise JstproveShapeProbeError(f"JSTprove Remainder verifier is missing: {raw}")
+    if not os.access(path, os.X_OK):
+        raise JstproveShapeProbeError(f"JSTprove Remainder verifier is not executable: {raw}")
+    return path.resolve()
+
+
 def _resolve_jstprove_binary(raw: str | None = None) -> pathlib.Path:
     value = raw or os.environ.get(JSTPROVE_BIN_ENV, "jstprove-remainder")
     path = pathlib.Path(value)
     if path.is_absolute():
-        if not path.is_file():
-            raise JstproveShapeProbeError(f"JSTprove Remainder verifier is missing: {value}")
-        if not os.access(path, os.X_OK):
-            raise JstproveShapeProbeError(f"JSTprove Remainder verifier is not executable: {value}")
-        return path
+        return _validate_executable_path(path, value)
+    if path.parent != pathlib.Path("."):
+        return _validate_executable_path((pathlib.Path.cwd() / path).resolve(), value)
     resolved = shutil.which(value)
     if resolved is None:
         raise JstproveShapeProbeError(f"JSTprove Remainder verifier is not on PATH: {value}")
-    return pathlib.Path(resolved)
+    return pathlib.Path(resolved).resolve()
 
 
 def _run_command(command: list[str], *, cwd: pathlib.Path, timeout: int = 240) -> dict[str, Any]:
@@ -349,12 +413,7 @@ def _step_seconds(steps: list[dict[str, Any]], step: str) -> str:
     return "NA"
 
 
-def run_fixture(fixture: str, *, jstprove_bin: pathlib.Path, work_dir: pathlib.Path) -> dict[str, Any]:
-    fixture_dir = work_dir / fixture
-    if fixture_dir.exists():
-        shutil.rmtree(fixture_dir)
-    fixture_dir.mkdir(parents=True)
-    sizes = write_fixture(fixture, fixture_dir)
+def _run_pipeline(fixture: str, *, jstprove_bin: pathlib.Path, fixture_dir: pathlib.Path, sizes: dict[str, int]) -> dict[str, Any]:
     model = fixture_dir / "model.msgpack"
     witness = fixture_dir / "witness.msgpack"
     proof = fixture_dir / "proof.msgpack"
@@ -384,13 +443,10 @@ def run_fixture(fixture: str, *, jstprove_bin: pathlib.Path, work_dir: pathlib.P
 
     status = "GO" if failed_step is None else "NO_GO"
     failure_kind = "" if status == "GO" else classify_failure(failed_step, failure_message)
-    catalog = {item["fixture"]: item for item in fixture_catalog()}[fixture]
     gate = "GO_CHECKED_SMALL_SHAPE" if status == "GO" else f"NO_GO_{failure_kind.upper()}"
     return {
         "fixture": fixture,
         "gate": gate,
-        "op_sequence": catalog["op_sequence"],
-        "transformer_relevance": catalog["transformer_relevance"],
         "status": status,
         "failed_step": failed_step or "",
         "failure_kind": failure_kind,
@@ -400,8 +456,154 @@ def run_fixture(fixture: str, *, jstprove_bin: pathlib.Path, work_dir: pathlib.P
         "input_bytes": sizes["input_bytes"],
         "prove_seconds": _step_seconds(steps, "prove"),
         "verify_seconds": _step_seconds(steps, "verify"),
-        "primary_observation": catalog["primary_observation"],
         "steps": steps,
+    }
+
+
+def run_fixture(fixture: str, *, jstprove_bin: pathlib.Path, work_dir: pathlib.Path) -> dict[str, Any]:
+    fixture_dir = work_dir / fixture
+    if fixture_dir.exists():
+        shutil.rmtree(fixture_dir)
+    fixture_dir.mkdir(parents=True)
+    sizes = write_fixture(fixture, fixture_dir)
+    catalog = {item["fixture"]: item for item in fixture_catalog()}[fixture]
+    result = _run_pipeline(fixture, jstprove_bin=jstprove_bin, fixture_dir=fixture_dir, sizes=sizes)
+    result.update(
+        {
+            "op_sequence": catalog["op_sequence"],
+            "transformer_relevance": catalog["transformer_relevance"],
+            "primary_observation": catalog["primary_observation"],
+        }
+    )
+    return result
+
+
+def run_gemm_dimension_sweep(*, jstprove_bin: pathlib.Path, work_dir: pathlib.Path) -> list[dict[str, Any]]:
+    rows = []
+    for dimension in GEMM_SWEEP_DIMENSIONS:
+        fixture = f"gemm_dim_{dimension}"
+        fixture_dir = work_dir / fixture
+        if fixture_dir.exists():
+            shutil.rmtree(fixture_dir)
+        fixture_dir.mkdir(parents=True, exist_ok=True)
+        sizes = write_gemm_dimension_fixture(dimension, fixture_dir)
+        result = _run_pipeline(fixture, jstprove_bin=jstprove_bin, fixture_dir=fixture_dir, sizes=sizes)
+        rows.append(
+            {
+                "dimension": dimension,
+                "status": result["status"],
+                "failed_step": result["failed_step"],
+                "failure_kind": result["failure_kind"],
+                "proof_bytes": result["proof_bytes"],
+                "model_bytes": result["model_bytes"],
+                "onnx_bytes": result["onnx_bytes"],
+                "prove_seconds": result["prove_seconds"],
+                "verify_seconds": result["verify_seconds"],
+            }
+        )
+    return rows
+
+
+def run_relu_scaling_probe(*, jstprove_bin: pathlib.Path, work_dir: pathlib.Path) -> list[dict[str, Any]]:
+    rows = []
+    for scale_label in RELU_SCALE_FACTORS:
+        fixture = f"relu_scale_{scale_label.replace('.', 'p')}"
+        fixture_dir = work_dir / fixture
+        if fixture_dir.exists():
+            shutil.rmtree(fixture_dir)
+        fixture_dir.mkdir(parents=True, exist_ok=True)
+        sizes = write_relu_scaled_fixture(scale_label, fixture_dir)
+        result = _run_pipeline(fixture, jstprove_bin=jstprove_bin, fixture_dir=fixture_dir, sizes=sizes)
+        rows.append(
+            {
+                "scale": scale_label,
+                "status": result["status"],
+                "failed_step": result["failed_step"],
+                "failure_kind": result["failure_kind"],
+                "proof_bytes": result["proof_bytes"],
+                "model_bytes": result["model_bytes"],
+                "onnx_bytes": result["onnx_bytes"],
+                "prove_seconds": result["prove_seconds"],
+                "verify_seconds": result["verify_seconds"],
+            }
+        )
+    return rows
+
+
+def _infer_jstprove_source_root(jstprove_bin: pathlib.Path) -> pathlib.Path | None:
+    for candidate in jstprove_bin.resolve().parents:
+        if (candidate / "Cargo.toml").exists() and (candidate / "rust" / "jstprove_remainder").exists():
+            return candidate
+    return None
+
+
+def _source_git_commit(source_root: pathlib.Path) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(source_root), "rev-parse", "HEAD"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unavailable"
+    return completed.stdout.strip() or "unavailable"
+
+
+def softmax_source_probe(jstprove_bin: pathlib.Path) -> dict[str, Any]:
+    candidate_root = _infer_jstprove_source_root(jstprove_bin)
+    if candidate_root is None:
+        return {
+            "status": "SOURCE_NOT_AVAILABLE",
+            "source_root": "",
+            "source_commit": "unavailable",
+            "hits": [],
+            "softmax_refusal_found": False,
+            "observation": "JSTprove source root was not inferable from the binary path.",
+        }
+    hits = []
+    priority_needles = (
+        ("remainder_refusal", ("Softmax", "not yet constrained")),
+        ("remainder_refusal", ("refusing to add unconstrained committed shred",)),
+        ("remainder_witness", ("OpType::Softmax",)),
+        ("circuit_hint", ("Softmax", "hint alone adds no constraint")),
+        ("circuit_layer", ("SoftmaxLayer",)),
+    )
+    for path in sorted(candidate_root.rglob("*.rs")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for line_number, line in enumerate(lines, start=1):
+            for category, needles in priority_needles:
+                if all(needle in line for needle in needles):
+                    hits.append(
+                        {
+                            "category": category,
+                            "path": str(path.relative_to(candidate_root)),
+                            "line": line_number,
+                            "text": line.strip()[:240],
+                        }
+                    )
+                    break
+            if len(hits) >= 16:
+                break
+        if len(hits) >= 12:
+            break
+    softmax_refusal_found = any(hit["category"] == "remainder_refusal" for hit in hits)
+    status = "SOURCE_HIT" if softmax_refusal_found else "SOURCE_NO_HIT"
+    return {
+        "status": status,
+        "source_root": str(candidate_root),
+        "source_commit": _source_git_commit(candidate_root),
+        "hits": hits,
+        "softmax_refusal_found": softmax_refusal_found,
+        "observation": (
+            "Pinned source inspection found the Remainder Softmax unconstrained-op refusal."
+            if softmax_refusal_found
+            else "Pinned source inspection did not find the Remainder Softmax refusal."
+        ),
     }
 
 
@@ -412,12 +614,45 @@ def run_shape_probe(*, jstprove_bin: pathlib.Path | None = None, work_dir: pathl
     results = [
         run_fixture(fixture, jstprove_bin=resolved_bin, work_dir=raw_work_dir) for fixture in EXPECTED_FIXTURE_ORDER
     ]
-    return build_payload(results, jstprove_bin=resolved_bin, work_dir=raw_work_dir)
+    dimension_sweep = run_gemm_dimension_sweep(jstprove_bin=resolved_bin, work_dir=raw_work_dir / "_gemm_dimension_sweep")
+    relu_scaling = run_relu_scaling_probe(jstprove_bin=resolved_bin, work_dir=raw_work_dir / "_relu_scaling_probe")
+    softmax_probe = softmax_source_probe(resolved_bin)
+    return build_payload(
+        results,
+        jstprove_bin=resolved_bin,
+        work_dir=raw_work_dir,
+        dimension_sweep=dimension_sweep,
+        relu_scaling_probe=relu_scaling,
+        softmax_source=softmax_probe,
+    )
 
 
-def build_payload(results: list[dict[str, Any]], *, jstprove_bin: pathlib.Path, work_dir: pathlib.Path) -> dict[str, Any]:
+def build_payload(
+    results: list[dict[str, Any]],
+    *,
+    jstprove_bin: pathlib.Path,
+    work_dir: pathlib.Path,
+    dimension_sweep: list[dict[str, Any]] | None = None,
+    relu_scaling_probe: list[dict[str, Any]] | None = None,
+    softmax_source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     go_results = [item for item in results if item["status"] == "GO"]
     no_go_results = [item for item in results if item["status"] == "NO_GO"]
+    dimension_sweep = dimension_sweep or []
+    relu_scaling_probe = relu_scaling_probe or []
+    softmax_source = softmax_source or {
+        "status": "SOURCE_NOT_RECORDED",
+        "source_root": "",
+        "source_commit": "unavailable",
+        "hits": [],
+        "softmax_refusal_found": False,
+        "observation": "Softmax source inspection was not recorded for this synthetic payload.",
+    }
+    exploration = {
+        "dimension_sweep": dimension_sweep,
+        "relu_scaling_probe": relu_scaling_probe,
+        "softmax_source_probe": softmax_source,
+    }
     payload = {
         "schema": SCHEMA,
         "generated_at": _generated_at(),
@@ -433,16 +668,24 @@ def build_payload(results: list[dict[str, Any]], *, jstprove_bin: pathlib.Path, 
         "fixture_catalog": fixture_catalog(),
         "results": results,
         "results_commitment": blake2b_commitment(results, "ptvm:zkai:jstprove-shape-results:v1"),
+        "dimension_sweep": dimension_sweep,
+        "relu_scaling_probe": relu_scaling_probe,
+        "softmax_source_probe": softmax_source,
+        "exploration_commitment": blake2b_commitment(exploration, "ptvm:zkai:jstprove-shape-exploration:v1"),
         "conclusion": {
             "go_count": len(go_results),
             "no_go_count": len(no_go_results),
             "go_transformer_adjacent_fixtures": [
                 item["fixture"] for item in go_results if item["fixture"] in EXPECTED_GO_TRANSFORMER_ADJACENT
             ],
+            "gemm_dimension_sweep": "GO_DIMS_1_2_4",
+            "relu_scaling": "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR",
+            "softmax_source_check": softmax_source["status"],
             "paper_usage": "engineering_context_only_not_transformer_proof_or_performance_benchmark",
             "interpretation": (
                 "JSTprove/Remainder can prove tiny projection, residual-add, and normalization-shaped fixtures, "
-                "but the checked Softmax, ReLU, and literal MatMul variants expose separate backend/operator blockers."
+                "but the checked Softmax, ReLU, and literal MatMul variants expose separate backend/operator blockers. "
+                "The ReLU blocker is input-dependent in this probe: scaled variants clear."
             ),
         },
         "non_claims": [
@@ -470,6 +713,10 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "fixture_catalog",
         "results",
         "results_commitment",
+        "dimension_sweep",
+        "relu_scaling_probe",
+        "softmax_source_probe",
+        "exploration_commitment",
         "conclusion",
         "non_claims",
     }
@@ -477,6 +724,9 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "go_count",
         "no_go_count",
         "go_transformer_adjacent_fixtures",
+        "gemm_dimension_sweep",
+        "relu_scaling",
+        "softmax_source_check",
         "paper_usage",
         "interpretation",
     }
@@ -488,6 +738,15 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise JstproveShapeProbeError("decision drift")
     if payload["results_commitment"] != blake2b_commitment(payload["results"], "ptvm:zkai:jstprove-shape-results:v1"):
         raise JstproveShapeProbeError("results commitment mismatch")
+    exploration = {
+        "dimension_sweep": payload["dimension_sweep"],
+        "relu_scaling_probe": payload["relu_scaling_probe"],
+        "softmax_source_probe": payload["softmax_source_probe"],
+    }
+    if payload["exploration_commitment"] != blake2b_commitment(
+        exploration, "ptvm:zkai:jstprove-shape-exploration:v1"
+    ):
+        raise JstproveShapeProbeError("exploration commitment mismatch")
     catalog_names = [item.get("fixture") for item in payload["fixture_catalog"]]
     if catalog_names != list(EXPECTED_FIXTURE_ORDER):
         raise JstproveShapeProbeError("fixture catalog drift")
@@ -514,6 +773,38 @@ def validate_payload(payload: dict[str, Any]) -> None:
             if not result.get("failed_step"):
                 raise JstproveShapeProbeError(f"{fixture} missing failed step")
 
+    sweep_dimensions = [item.get("dimension") for item in payload["dimension_sweep"]]
+    if sweep_dimensions != list(GEMM_SWEEP_DIMENSIONS):
+        raise JstproveShapeProbeError("Gemm dimension sweep drift")
+    for item in payload["dimension_sweep"]:
+        if item.get("status") != "GO":
+            raise JstproveShapeProbeError("Gemm dimension sweep no-go drift")
+        if not isinstance(item.get("proof_bytes"), int) or item["proof_bytes"] <= 0:
+            raise JstproveShapeProbeError("Gemm dimension sweep proof size missing")
+
+    relu_scales = [item.get("scale") for item in payload["relu_scaling_probe"]]
+    if relu_scales != list(RELU_SCALE_FACTORS):
+        raise JstproveShapeProbeError("ReLU scaling probe drift")
+    for item in payload["relu_scaling_probe"]:
+        if item["scale"] == "1":
+            if item.get("status") != "NO_GO" or item.get("failure_kind") != "range_check_capacity":
+                raise JstproveShapeProbeError("ReLU baseline scaling drift")
+        elif item.get("status") != "GO":
+            raise JstproveShapeProbeError("ReLU scaled variant drift")
+
+    if payload["softmax_source_probe"].get("status") not in {
+        "SOURCE_HIT",
+        "SOURCE_NO_HIT",
+        "SOURCE_NOT_AVAILABLE",
+        "SOURCE_NOT_RECORDED",
+    }:
+        raise JstproveShapeProbeError("Softmax source probe drift")
+    if payload["softmax_source_probe"].get("status") == "SOURCE_HIT":
+        if not payload["softmax_source_probe"].get("softmax_refusal_found"):
+            raise JstproveShapeProbeError("Softmax source refusal drift")
+        if not payload["softmax_source_probe"].get("hits"):
+            raise JstproveShapeProbeError("Softmax source hits missing")
+
     conclusion = payload["conclusion"]
     if set(conclusion) != expected_conclusion_fields:
         raise JstproveShapeProbeError("conclusion field set mismatch")
@@ -523,6 +814,10 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise JstproveShapeProbeError("summary count drift")
     if set(conclusion["go_transformer_adjacent_fixtures"]) != EXPECTED_GO_TRANSFORMER_ADJACENT:
         raise JstproveShapeProbeError("transformer-adjacent GO drift")
+    if conclusion["gemm_dimension_sweep"] != "GO_DIMS_1_2_4":
+        raise JstproveShapeProbeError("Gemm dimension conclusion drift")
+    if conclusion["relu_scaling"] != "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR":
+        raise JstproveShapeProbeError("ReLU scaling conclusion drift")
     required_non_claims = {
         "not a JSTprove security finding",
         "not a full transformer proof",
