@@ -1,6 +1,7 @@
 {
   "activation_usage": {
     "activation_lookup_rows": 256,
+    "clamped_projection_count": 0,
     "distinct_activation_lookup_rows": 204,
     "lookup_indices_sha256": "2b83ee17c8634ae1fea3f80bf3361cc83191859db2755fe5264ace164a25990c",
     "max_lookup_index": 1399,
@@ -8,7 +9,7 @@
   },
   "decision": "GO_DUAL_PUBLICATION_AND_PROOF_NATIVE_PARAMETER_COMMITMENT",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "3db3c53967dc22fa86f17746232aa99043e5d774",
+  "git_commit": "87b5ba7d8b1dd48150a2f7ebf59693a90f39470b",
   "method_matrix": [
     {
       "method": "metadata_only_statement_commitments",

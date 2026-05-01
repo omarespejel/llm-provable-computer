@@ -251,7 +251,11 @@ def proof_native_parameter_manifest(reference: dict[str, Any]) -> dict[str, Any]
 
 
 def activation_usage(reference: dict[str, Any]) -> dict[str, Any]:
-    indices = [value + FIXTURE.ACTIVATION_CLAMP_Q8 for value in reference["gate_projection_q8"]]
+    clamped = [
+        max(-FIXTURE.ACTIVATION_CLAMP_Q8, min(FIXTURE.ACTIVATION_CLAMP_Q8, value))
+        for value in reference["gate_projection_q8"]
+    ]
+    indices = [value + FIXTURE.ACTIVATION_CLAMP_Q8 for value in clamped]
     if min(indices) < 0 or max(indices) >= EXPECTED_ACTIVATION_TABLE_LEAVES:
         raise CommitmentConsistencyProbeError("activation lookup index escaped table domain")
     return {
@@ -260,6 +264,11 @@ def activation_usage(reference: dict[str, Any]) -> dict[str, Any]:
         "min_lookup_index": min(indices),
         "max_lookup_index": max(indices),
         "lookup_indices_sha256": sha256_bytes(canonical_json_bytes(indices)),
+        "clamped_projection_count": sum(
+            1
+            for raw, bounded in zip(reference["gate_projection_q8"], clamped, strict=True)
+            if raw != bounded
+        ),
     }
 
 
