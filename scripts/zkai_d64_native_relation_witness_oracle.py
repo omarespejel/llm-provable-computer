@@ -19,6 +19,7 @@ import json
 import math
 import os
 import pathlib
+import re
 import subprocess
 from typing import Any
 
@@ -85,6 +86,7 @@ EXPECTED_NON_CLAIMS = (
     "not full transformer inference",
 )
 EXPECTED_NEXT_BACKEND_STEP = "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance"
+CANONICAL_UTC_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 class NativeRelationWitnessOracleError(ValueError):
@@ -133,14 +135,18 @@ def _generated_at() -> str:
 
 
 def _validate_generated_at(value: Any) -> None:
-    if not isinstance(value, str) or not value.endswith("Z"):
-        raise NativeRelationWitnessOracleError("generated_at must be a UTC timestamp string")
+    if not isinstance(value, str) or CANONICAL_UTC_TIMESTAMP_RE.fullmatch(value) is None:
+        raise NativeRelationWitnessOracleError(
+            "generated_at must be a canonical UTC timestamp string (YYYY-MM-DDTHH:MM:SSZ)"
+        )
     try:
         parsed = dt.datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
     except ValueError as err:
-        raise NativeRelationWitnessOracleError("generated_at must be a valid UTC timestamp string") from err
+        raise NativeRelationWitnessOracleError(
+            "generated_at must be a valid canonical UTC timestamp string"
+        ) from err
     if parsed.tzinfo != dt.timezone.utc:
-        raise NativeRelationWitnessOracleError("generated_at must be a UTC timestamp string")
+        raise NativeRelationWitnessOracleError("generated_at must be a canonical UTC timestamp string")
 
 
 def _git_commit() -> str:

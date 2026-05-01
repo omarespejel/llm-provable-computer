@@ -149,6 +149,13 @@ class ZkAID64NativeRelationWitnessOracleTests(unittest.TestCase):
         with mock.patch.dict("os.environ", {"SOURCE_DATE_EPOCH": "not-an-int"}):
             ORACLE.validate_payload(payload)
 
+    def test_payload_validation_rejects_noncanonical_generated_at(self) -> None:
+        payload = ORACLE.build_payload()
+        payload["generated_at"] = "1970-01-01T00:00:00.000000Z"
+
+        with self.assertRaisesRegex(ORACLE.NativeRelationWitnessOracleError, "canonical UTC"):
+            ORACLE.validate_payload(payload)
+
     def test_rows_for_tsv_are_stable(self) -> None:
         payload = ORACLE.build_payload()
         rows = ORACLE.rows_for_tsv(payload)
