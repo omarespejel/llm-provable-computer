@@ -184,6 +184,14 @@ mutation. The statement envelope accepts the same baseline and rejects `13 / 13`
 checked mutations. This is not a JSTprove security finding and not a transformer
 proof; it is a third proof-stack check of the statement-envelope boundary.
 
+A follow-up JSTprove shape probe keeps that adapter result scoped while making
+the operator-support boundary more concrete. A real `jstprove-remainder` binary
+proves tiny `Gemm -> residual Add`, `Gemm -> LayerNormalization`, and
+`Gemm -> BatchNormalization` fixtures, but the checked `Gemm -> Relu`,
+`Gemm -> Softmax`, and literal `MatMul -> Add` fixtures expose separate backend
+blockers. This is engineering context for proof-stack comparison, not a
+statement-envelope mutation result and not a transformer proof.
+
 The fourth checked adapter is native to this repository's Stwo lane
 (`stwo-phase10-linear-block-v4-with-lookup`): a linear-block-with-lookup proof
 over `programs/linear_block_v4_with_lookup.tvm`. The raw Stwo
@@ -216,6 +224,9 @@ Evidence handles:
 - `docs/engineering/zkai-jstprove-external-adapter-gate-2026-05-01.md`
 - `docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.json`
 - `docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.tsv`
+- `docs/engineering/zkai-jstprove-shape-probe-2026-05-01.md`
+- `docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.json`
+- `docs/engineering/evidence/zkai-jstprove-shape-probe-2026-05.tsv`
 - `docs/engineering/zkai-stwo-statement-bound-primitive-gate-2026-04-29.md`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json`
 - `docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.tsv`
