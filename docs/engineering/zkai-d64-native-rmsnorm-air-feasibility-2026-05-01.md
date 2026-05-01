@@ -64,22 +64,30 @@ The checked non-claims are:
 
 ## Superseding Result
 
-The d64-specific public-row proof is recorded in:
+The d64-specific public-row proof and its first downstream bridge are recorded
+in:
 
 - `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`
 - `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`
 - `src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs`
+- `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
 
 That result still does not prove private parameter openings or full d64 block
-output semantics. It only supersedes the earlier "build a d64-specific RMSNorm
-AIR component" implementation target.
+output semantics. The public-row proof supersedes the earlier "build a
+d64-specific RMSNorm AIR component" implementation target; the bridge consumes
+the local RMSNorm output rows under a separate projection-input commitment so
+the next slice can consume them without relabeling them as the final block
+output.
 
 ## Next Step
 
-Continue from the public-row proof by bridging local RMSNorm rows into the next
-d64 relation surface:
+Continue from the bridge proof by implementing the next d64 relation surface:
 
-- consume the existing local `rmsnorm_output_row_commitment`,
+- consume the existing `projection_input_row_commitment`,
+- prove the gate/value projection rows that produce a new projection-output
+  commitment,
 - only claim the full d64 `output_activation_commitment` after the remaining
   activation, projection, and residual rows are proven or source-bound.
 

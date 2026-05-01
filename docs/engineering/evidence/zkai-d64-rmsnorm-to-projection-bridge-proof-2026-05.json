@@ -1,0 +1,358 @@
+{
+  "decision": "GO_INPUT_FOR_D64_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+  "next_backend_step": "encode gate/value projection rows that consume projection_input_row_commitment and produce gate_value_projection_output_commitment",
+  "non_claims": [
+    "not full d64 block proof",
+    "not gate, value, or down projection proof",
+    "not activation, SwiGLU, or residual proof",
+    "not binding the full d64 output_activation_commitment",
+    "bridge proves only the domain-separated handoff from RMSNorm-local rows to projection-input rows"
+  ],
+  "projection_input_row_commitment": "blake2b-256:3a84feca5eab58736fdf01369fc64d3afc45c97ecdc629e64f0bb2eb2f8de094",
+  "proof_verifier_hardening": [
+    "source RMSNorm output row commitment recomputation before proof verification",
+    "projection input row commitment recomputation before proof verification",
+    "AIR equality between RMSNorm-local rows and projection-input rows",
+    "full output_activation_commitment relabeling rejection",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing"
+  ],
+  "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+  "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
+  "row_count": 64,
+  "rows": [
+    {
+      "index": 0,
+      "projection_input_q8": 46,
+      "rmsnorm_normed_q8": 46
+    },
+    {
+      "index": 1,
+      "projection_input_q8": -94,
+      "rmsnorm_normed_q8": -94
+    },
+    {
+      "index": 2,
+      "projection_input_q8": 95,
+      "rmsnorm_normed_q8": 95
+    },
+    {
+      "index": 3,
+      "projection_input_q8": -245,
+      "rmsnorm_normed_q8": -245
+    },
+    {
+      "index": 4,
+      "projection_input_q8": -268,
+      "rmsnorm_normed_q8": -268
+    },
+    {
+      "index": 5,
+      "projection_input_q8": -281,
+      "rmsnorm_normed_q8": -281
+    },
+    {
+      "index": 6,
+      "projection_input_q8": 249,
+      "rmsnorm_normed_q8": 249
+    },
+    {
+      "index": 7,
+      "projection_input_q8": 115,
+      "rmsnorm_normed_q8": 115
+    },
+    {
+      "index": 8,
+      "projection_input_q8": -348,
+      "rmsnorm_normed_q8": -348
+    },
+    {
+      "index": 9,
+      "projection_input_q8": 48,
+      "rmsnorm_normed_q8": 48
+    },
+    {
+      "index": 10,
+      "projection_input_q8": 164,
+      "rmsnorm_normed_q8": 164
+    },
+    {
+      "index": 11,
+      "projection_input_q8": -176,
+      "rmsnorm_normed_q8": -176
+    },
+    {
+      "index": 12,
+      "projection_input_q8": -232,
+      "rmsnorm_normed_q8": -232
+    },
+    {
+      "index": 13,
+      "projection_input_q8": -90,
+      "rmsnorm_normed_q8": -90
+    },
+    {
+      "index": 14,
+      "projection_input_q8": 247,
+      "rmsnorm_normed_q8": 247
+    },
+    {
+      "index": 15,
+      "projection_input_q8": -299,
+      "rmsnorm_normed_q8": -299
+    },
+    {
+      "index": 16,
+      "projection_input_q8": -123,
+      "rmsnorm_normed_q8": -123
+    },
+    {
+      "index": 17,
+      "projection_input_q8": 369,
+      "rmsnorm_normed_q8": 369
+    },
+    {
+      "index": 18,
+      "projection_input_q8": -448,
+      "rmsnorm_normed_q8": -448
+    },
+    {
+      "index": 19,
+      "projection_input_q8": -435,
+      "rmsnorm_normed_q8": -435
+    },
+    {
+      "index": 20,
+      "projection_input_q8": -228,
+      "rmsnorm_normed_q8": -228
+    },
+    {
+      "index": 21,
+      "projection_input_q8": -270,
+      "rmsnorm_normed_q8": -270
+    },
+    {
+      "index": 22,
+      "projection_input_q8": -38,
+      "rmsnorm_normed_q8": -38
+    },
+    {
+      "index": 23,
+      "projection_input_q8": -127,
+      "rmsnorm_normed_q8": -127
+    },
+    {
+      "index": 24,
+      "projection_input_q8": -283,
+      "rmsnorm_normed_q8": -283
+    },
+    {
+      "index": 25,
+      "projection_input_q8": -415,
+      "rmsnorm_normed_q8": -415
+    },
+    {
+      "index": 26,
+      "projection_input_q8": -83,
+      "rmsnorm_normed_q8": -83
+    },
+    {
+      "index": 27,
+      "projection_input_q8": 345,
+      "rmsnorm_normed_q8": 345
+    },
+    {
+      "index": 28,
+      "projection_input_q8": -399,
+      "rmsnorm_normed_q8": -399
+    },
+    {
+      "index": 29,
+      "projection_input_q8": -261,
+      "rmsnorm_normed_q8": -261
+    },
+    {
+      "index": 30,
+      "projection_input_q8": 273,
+      "rmsnorm_normed_q8": 273
+    },
+    {
+      "index": 31,
+      "projection_input_q8": 282,
+      "rmsnorm_normed_q8": 282
+    },
+    {
+      "index": 32,
+      "projection_input_q8": -196,
+      "rmsnorm_normed_q8": -196
+    },
+    {
+      "index": 33,
+      "projection_input_q8": 133,
+      "rmsnorm_normed_q8": 133
+    },
+    {
+      "index": 34,
+      "projection_input_q8": -408,
+      "rmsnorm_normed_q8": -408
+    },
+    {
+      "index": 35,
+      "projection_input_q8": 454,
+      "rmsnorm_normed_q8": 454
+    },
+    {
+      "index": 36,
+      "projection_input_q8": 46,
+      "rmsnorm_normed_q8": 46
+    },
+    {
+      "index": 37,
+      "projection_input_q8": -161,
+      "rmsnorm_normed_q8": -161
+    },
+    {
+      "index": 38,
+      "projection_input_q8": 158,
+      "rmsnorm_normed_q8": 158
+    },
+    {
+      "index": 39,
+      "projection_input_q8": -392,
+      "rmsnorm_normed_q8": -392
+    },
+    {
+      "index": 40,
+      "projection_input_q8": 267,
+      "rmsnorm_normed_q8": 267
+    },
+    {
+      "index": 41,
+      "projection_input_q8": -114,
+      "rmsnorm_normed_q8": -114
+    },
+    {
+      "index": 42,
+      "projection_input_q8": -27,
+      "rmsnorm_normed_q8": -27
+    },
+    {
+      "index": 43,
+      "projection_input_q8": 402,
+      "rmsnorm_normed_q8": 402
+    },
+    {
+      "index": 44,
+      "projection_input_q8": -29,
+      "rmsnorm_normed_q8": -29
+    },
+    {
+      "index": 45,
+      "projection_input_q8": 55,
+      "rmsnorm_normed_q8": 55
+    },
+    {
+      "index": 46,
+      "projection_input_q8": 327,
+      "rmsnorm_normed_q8": 327
+    },
+    {
+      "index": 47,
+      "projection_input_q8": -125,
+      "rmsnorm_normed_q8": -125
+    },
+    {
+      "index": 48,
+      "projection_input_q8": 429,
+      "rmsnorm_normed_q8": 429
+    },
+    {
+      "index": 49,
+      "projection_input_q8": 6,
+      "rmsnorm_normed_q8": 6
+    },
+    {
+      "index": 50,
+      "projection_input_q8": -34,
+      "rmsnorm_normed_q8": -34
+    },
+    {
+      "index": 51,
+      "projection_input_q8": 242,
+      "rmsnorm_normed_q8": 242
+    },
+    {
+      "index": 52,
+      "projection_input_q8": -72,
+      "rmsnorm_normed_q8": -72
+    },
+    {
+      "index": 53,
+      "projection_input_q8": 296,
+      "rmsnorm_normed_q8": 296
+    },
+    {
+      "index": 54,
+      "projection_input_q8": 371,
+      "rmsnorm_normed_q8": 371
+    },
+    {
+      "index": 55,
+      "projection_input_q8": -312,
+      "rmsnorm_normed_q8": -312
+    },
+    {
+      "index": 56,
+      "projection_input_q8": -252,
+      "rmsnorm_normed_q8": -252
+    },
+    {
+      "index": 57,
+      "projection_input_q8": -441,
+      "rmsnorm_normed_q8": -441
+    },
+    {
+      "index": 58,
+      "projection_input_q8": -172,
+      "rmsnorm_normed_q8": -172
+    },
+    {
+      "index": 59,
+      "projection_input_q8": -452,
+      "rmsnorm_normed_q8": -452
+    },
+    {
+      "index": 60,
+      "projection_input_q8": 316,
+      "rmsnorm_normed_q8": 316
+    },
+    {
+      "index": 61,
+      "projection_input_q8": -172,
+      "rmsnorm_normed_q8": -172
+    },
+    {
+      "index": 62,
+      "projection_input_q8": -167,
+      "rmsnorm_normed_q8": -167
+    },
+    {
+      "index": 63,
+      "projection_input_q8": 146,
+      "rmsnorm_normed_q8": 146
+    }
+  ],
+  "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1",
+  "source_rmsnorm_output_row_commitment": "blake2b-256:c9ab975e440661ce7796f33b75008d20e7eb26a4c41956d2f723093e4ac373a7",
+  "source_rmsnorm_public_row_proof_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+  "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+  "target_id": "rmsnorm-swiglu-residual-d64-v2",
+  "validation_commands": [
+    "python3 scripts/zkai_d64_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d64_rmsnorm_to_projection_bridge_input",
+    "cargo +nightly-2025-07-14 test d64_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend"
+  ],
+  "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2",
+  "width": 64
+}

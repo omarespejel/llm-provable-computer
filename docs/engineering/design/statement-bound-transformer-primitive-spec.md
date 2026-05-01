@@ -281,6 +281,19 @@ public-row RMSNorm-local slice: it does not prove private parameter openings,
 projection, activation, residual relations, or the full d64
 `output_activation_commitment`.
 
+The first bridge consuming that local RMSNorm output is also checked in:
+
+- `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
+
+This bridge proves a narrow handoff from RMSNorm-local `normed_q8` rows to a
+domain-separated `projection_input_row_commitment`. It rejects source commitment
+drift, projection commitment drift, row-equality drift, proof-byte tampering,
+malformed proof commitment vectors, and attempts to relabel the projection input
+as the full d64 `output_activation_commitment`. The next proof target is the
+gate/value projection slice that consumes `projection_input_row_commitment`.
+
 The first attention/KV receipt contract is also checked in:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
