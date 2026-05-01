@@ -35,7 +35,7 @@ class ZkAiD64RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         payload = BRIDGE.build_payload()
         row0 = payload["rows"][0]
         base = row0["rmsnorm_normed_q8"]
-        row0["projection_input_q8"] = base + 1 if base < (2**31 - 2) else base - 1
+        row0["projection_input_q8"] = base + 1 if base < 127 else base - 1
         with self.assertRaisesRegex(BRIDGE.BridgeInputError, "bridge row equality drift"):
             BRIDGE.validate_payload(payload)
 
