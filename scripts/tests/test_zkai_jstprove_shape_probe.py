@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -123,14 +124,39 @@ def synthetic_softmax_source_probe() -> dict[str, object]:
     }
 
 
+def synthetic_softmax_alternative_refs() -> list[dict[str, object]]:
+    return [
+        {
+            "ref": ref,
+            "commit": f"{index:040x}",
+            "status": "NO_REMAINDER_SOFTMAX_PATH_FOUND",
+            "remainder_softmax_hits": [],
+            "observation": "Alternative ref did not expose a constrained Remainder Softmax path in this source probe.",
+        }
+        for index, ref in enumerate(PROBE.SOFTMAX_ALTERNATIVE_REFS, start=1)
+    ]
+
+
+def synthetic_generator_dependencies() -> dict[str, object]:
+    return {
+        "python": "3.13.0",
+        "onnx": "1.18.0",
+        "numpy": "2.2.0",
+        "msgpack": "1.1.0",
+        "onnx_opset": PROBE.OPSET,
+    }
+
+
 def synthetic_payload() -> dict[str, object]:
     return PROBE.build_payload(
         synthetic_results(),
         jstprove_bin=pathlib.Path("/tmp/jstprove-remainder"),
         work_dir=pathlib.Path("/tmp/jstprove-shape-test"),
+        generator_dependencies=synthetic_generator_dependencies(),
         dimension_sweep=synthetic_dimension_sweep(),
         relu_scaling_probe=synthetic_relu_scaling_probe(),
         softmax_source=synthetic_softmax_source_probe(),
+        softmax_alternative_refs=synthetic_softmax_alternative_refs(),
     )
 
 
@@ -143,7 +169,11 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
         self.assertEqual(payload["conclusion"]["go_count"], 5)
         self.assertEqual(payload["conclusion"]["no_go_count"], 3)
         self.assertEqual(payload["conclusion"]["gemm_dimension_sweep"], "GO_DIMS_1_2_4")
-        self.assertEqual(payload["conclusion"]["relu_scaling"], "INPUT_DEPENDENT_BASELINE_FAILS_SCALED_VARIANTS_CLEAR")
+        self.assertEqual(payload["conclusion"]["relu_scaling"], "MAGNITUDE_SENSITIVE_BASELINE_FAILS_SCALED_VARIANTS_CLEAR")
+        self.assertEqual(
+            payload["conclusion"]["softmax_alternative_ref_check"],
+            "CHECKED_NO_CONSTRAINED_REMAINDER_SOFTMAX_PATH",
+        )
         self.assertEqual(
             set(payload["conclusion"]["go_transformer_adjacent_fixtures"]),
             {"tiny_gemm_residual_add", "tiny_gemm_layernorm", "tiny_gemm_batchnorm"},
@@ -205,6 +235,35 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "conclusion field set mismatch"):
             PROBE.validate_payload(payload)
 
+    def test_validation_rejects_toolchain_metadata_drift(self) -> None:
+        payload = synthetic_payload()
+        payload["jstprove"]["upstream_commit"] = "0" * 40
+
+        with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "JSTprove commit drift"):
+            PROBE.validate_payload(payload)
+
+        payload = synthetic_payload()
+        payload["generator_dependencies"]["onnx_opset"] = 18
+
+        with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "ONNX opset drift"):
+            PROBE.validate_payload(payload)
+
+    def test_validation_rejects_softmax_alternative_overclaim(self) -> None:
+        payload = synthetic_payload()
+        payload["softmax_alternative_ref_probe"][0]["status"] = "POSSIBLE_REMAINDER_SOFTMAX_PATH_FOUND"
+        payload["exploration_commitment"] = PROBE.blake2b_commitment(
+            {
+                "dimension_sweep": payload["dimension_sweep"],
+                "relu_scaling_probe": payload["relu_scaling_probe"],
+                "softmax_source_probe": payload["softmax_source_probe"],
+                "softmax_alternative_ref_probe": payload["softmax_alternative_ref_probe"],
+            },
+            "ptvm:zkai:jstprove-shape-exploration:v1",
+        )
+
+        with self.assertRaisesRegex(PROBE.JstproveShapeProbeError, "manual gate"):
+            PROBE.validate_payload(payload)
+
     def test_classify_failure_keeps_interesting_blockers_distinct(self) -> None:
         self.assertEqual(
             PROBE.classify_failure("witness", "Relu delta nv 20 exceeds two-chunk range-check capacity"),
@@ -247,6 +306,19 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
 
         self.assertEqual(resolved, binary.resolve())
 
+    def test_default_work_dir_is_unique_without_override(self) -> None:
+        with mock.patch.dict(os.environ, {PROBE.WORK_DIR_ENV: ""}):
+            first = PROBE._default_work_dir()
+            second = PROBE._default_work_dir()
+
+        try:
+            self.assertNotEqual(first, second)
+            self.assertTrue(first.is_dir())
+            self.assertTrue(second.is_dir())
+        finally:
+            shutil.rmtree(first, ignore_errors=True)
+            shutil.rmtree(second, ignore_errors=True)
+
     def test_write_outputs_round_trips_json_and_tsv(self) -> None:
         payload = synthetic_payload()
         with tempfile.TemporaryDirectory() as raw_tmp:
@@ -259,8 +331,7 @@ class ZkAIJstproveShapeProbeTests(unittest.TestCase):
             self.assertEqual(tsv_path.read_text(encoding="utf-8").splitlines()[1].split("\t")[0], "tiny_gemm")
 
     def test_checked_json_evidence_validates_when_present(self) -> None:
-        if not PROBE.JSON_OUT.exists():
-            self.skipTest("checked shape-probe evidence has not been generated")
+        self.assertTrue(PROBE.JSON_OUT.exists(), f"expected checked shape-probe evidence at {PROBE.JSON_OUT}")
         payload = json.loads(PROBE.JSON_OUT.read_text(encoding="utf-8"))
 
         PROBE.validate_payload(payload)
