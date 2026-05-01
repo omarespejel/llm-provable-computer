@@ -267,6 +267,17 @@ The canonical d64 statement fixture and vector-row probe now carry that field
 directly. Its presence is still not a proof claim: it is the public binding
 target the next native proof relation must consume.
 
+The d64 native relation witness oracle is the executable pre-AIR specification
+for that next relation:
+
+- `docs/engineering/zkai-d64-native-relation-witness-oracle-2026-05-01.md`
+- `docs/engineering/evidence/zkai-d64-native-relation-witness-oracle-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-native-relation-witness-oracle-2026-05.tsv`
+
+It consumes the same public instance, recomputes the RMSNorm-SwiGLU-residual
+relation rows, and rejects `16 / 16` checked mutations. It is still not a Stwo
+proof; it is the fail-closed oracle the native AIR/export path should match.
+
 The correct interpretation is:
 
 > A zkAI system needs an explicit statement-binding layer around proof systems if

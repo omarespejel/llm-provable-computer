@@ -1,0 +1,345 @@
+{
+  "decision": "GO_RELATION_WITNESS_ORACLE_NOT_STWO_PROOF",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "3b9b58550c41d911104bc220b6a8df04e21e4c08",
+  "mutation_suite": {
+    "baseline_valid": true,
+    "cases": [
+      {
+        "name": "proof_native_parameter_commitment_public_instance_relabeling",
+        "reason": "relation witness mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "proof_native_parameter_commitment_manifest_relabeling",
+        "reason": "relation witness mismatch: parameter_manifest",
+        "rejected": true
+      },
+      {
+        "name": "gate_parameter_root_relabeling",
+        "reason": "relation witness mismatch: parameter_manifest",
+        "rejected": true
+      },
+      {
+        "name": "rms_scale_root_relabeling",
+        "reason": "relation witness mismatch: parameter_manifest",
+        "rejected": true
+      },
+      {
+        "name": "activation_table_root_relabeling",
+        "reason": "relation witness mismatch: parameter_manifest",
+        "rejected": true
+      },
+      {
+        "name": "input_activation_commitment_relabeling",
+        "reason": "relation witness mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "output_activation_commitment_relabeling",
+        "reason": "relation witness mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "normalization_config_commitment_relabeling",
+        "reason": "relation witness mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "activation_lookup_commitment_relabeling",
+        "reason": "relation witness mismatch: public_instance",
+        "rejected": true
+      },
+      {
+        "name": "public_instance_commitment_relabeling",
+        "reason": "relation witness mismatch: statement_binding",
+        "rejected": true
+      },
+      {
+        "name": "statement_commitment_relabeling",
+        "reason": "relation witness mismatch: statement_binding",
+        "rejected": true
+      },
+      {
+        "name": "backend_version_relabeling",
+        "reason": "relation witness mismatch: statement_binding",
+        "rejected": true
+      },
+      {
+        "name": "relation_row_count_relabeling",
+        "reason": "relation witness mismatch: row_counts",
+        "rejected": true
+      },
+      {
+        "name": "gate_projection_output_relabeling",
+        "reason": "relation witness mismatch: relation_samples",
+        "rejected": true
+      },
+      {
+        "name": "activation_lookup_output_relabeling",
+        "reason": "relation witness mismatch: relation_samples",
+        "rejected": true
+      },
+      {
+        "name": "residual_output_relabeling",
+        "reason": "relation witness mismatch: relation_samples",
+        "rejected": true
+      }
+    ],
+    "decision": "GO",
+    "mutations_checked": 16,
+    "mutations_rejected": 16
+  },
+  "next_backend_step": "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance",
+  "non_claims": [
+    "not a Stwo proof",
+    "not verifier-time evidence",
+    "not AIR constraints",
+    "not backend independence evidence",
+    "not full transformer inference"
+  ],
+  "relation_witness": {
+    "parameter_manifest": {
+      "activation_table_tree": {
+        "domain_q8": [
+          -1024,
+          1024
+        ],
+        "kind": "bounded_silu_table",
+        "leaf_count": 2049,
+        "leaf_hashes_sha256": "fc8caea7f82043dd788c9012878f3b236d5f9c1167dab776aa0bbe2584e34d71",
+        "root": "blake2b-256:393f30234f5f86554d163b2ad0b0759928bce420b878e35576816516f0a8d633"
+      },
+      "counts": {
+        "activation_table_leaves": 2049,
+        "matrix_row_leaves": 576,
+        "parameter_scalars": 49216
+      },
+      "matrix_trees": {
+        "down": {
+          "leaf_count": 64,
+          "leaf_hashes_sha256": "9be02e6d429962f72009990dccc0dba75fb6131ba9410f9b9b890c1897695a04",
+          "matrix": "down",
+          "root": "blake2b-256:19b08584116916a72297047f01e2dc7505fb19e9508b384c7d80dfe3cb82c330",
+          "row_width": 256,
+          "rows": 64
+        },
+        "gate": {
+          "leaf_count": 256,
+          "leaf_hashes_sha256": "ca667bf2cda50aef977dafe04b7d2a7bb2976c8f107259611328b66fcb5c47eb",
+          "matrix": "gate",
+          "root": "blake2b-256:c7f5f490cc4140756951d0305a4786a1de9a282687c05a161ea04bd658657cfa",
+          "row_width": 64,
+          "rows": 256
+        },
+        "value": {
+          "leaf_count": 256,
+          "leaf_hashes_sha256": "b914c485dc9759e1960885f490db3929069a12999da978e5f7cf0b5a5c676617",
+          "matrix": "value",
+          "root": "blake2b-256:e63d0d6839c92386e50314370e8b13dee0aa68c624f8ce88c34f6a4c1a2c3174",
+          "row_width": 64,
+          "rows": 256
+        }
+      },
+      "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+      "rms_scale_tree": {
+        "kind": "rms_scale",
+        "leaf_count": 64,
+        "leaf_hashes_sha256": "36fdf66103a5f0339ef2f8a94c305d4110e304fa62a4b5f7751d1493ba8e405c",
+        "root": "blake2b-256:c803dcaebdd6a3ec0e39a60bd71c64914e5badaceca9445e8cabfa0ac8fb90f3"
+      },
+      "scheme": "d64-proof-native-parameter-manifest-v1"
+    },
+    "public_instance": {
+      "activation_lookup_commitment": "blake2b-256:3487a9ab6cd871b7b46e54c004bf547fe9db9ba8e90b3872ba6ae3cfb990c4b3",
+      "ff_dim": 256,
+      "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+      "model_config_commitment": "blake2b-256:8c74650ddc92619abe50998e3f034312f1e281d5abb35230667518adb493d449",
+      "normalization_config_commitment": "blake2b-256:bfd18a548d24acdf90518744f24e4dd742e68cd2df5f006d3eacc02f3217dc72",
+      "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+      "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+      "target_id": "rmsnorm-swiglu-residual-d64-v2",
+      "width": 64
+    },
+    "relation_checks": [
+      {
+        "name": "public_instance_field_set",
+        "status": "GO"
+      },
+      {
+        "name": "proof_native_parameter_manifest",
+        "status": "GO"
+      },
+      {
+        "name": "input_output_commitments",
+        "status": "GO"
+      },
+      {
+        "name": "rmsnorm_rows",
+        "status": "GO"
+      },
+      {
+        "name": "gate_value_projection_rows",
+        "status": "GO"
+      },
+      {
+        "name": "activation_lookup_rows",
+        "status": "GO"
+      },
+      {
+        "name": "swiglu_mix_rows",
+        "status": "GO"
+      },
+      {
+        "name": "down_projection_rows",
+        "status": "GO"
+      },
+      {
+        "name": "residual_rows",
+        "status": "GO"
+      }
+    ],
+    "relation_commitment": "blake2b-256:0903d8b3dd480a59ce2e47e3b4762ca0743794715492caae304d99629bfdb686",
+    "relation_samples": {
+      "activation_head_q8": [
+        -125,
+        146,
+        49,
+        -94,
+        -23,
+        -146,
+        -94,
+        -80
+      ],
+      "gate_projection_head_q8": [
+        -328,
+        246,
+        91,
+        -229,
+        -48,
+        -405,
+        -230,
+        -189
+      ],
+      "hidden_head_q8": [
+        -68,
+        28,
+        15,
+        0,
+        7,
+        -27,
+        -50,
+        -2
+      ],
+      "input_head_q8": [
+        24,
+        -47,
+        49,
+        -104,
+        -114,
+        -113,
+        127,
+        58
+      ],
+      "output_head_q8": [
+        40,
+        -53,
+        75,
+        -122,
+        -108,
+        -102,
+        135,
+        39
+      ],
+      "residual_delta_head_q8": [
+        16,
+        -6,
+        26,
+        -18,
+        6,
+        11,
+        8,
+        -19
+      ]
+    },
+    "row_counts": {
+      "activation_lookup_rows": 256,
+      "activation_table_rows": 2049,
+      "down_projection_mul_rows": 16384,
+      "gate_projection_mul_rows": 16384,
+      "input_rows": 64,
+      "projection_mul_rows": 49152,
+      "residual_rows": 64,
+      "rms_norm_rows": 64,
+      "rms_square_rows": 64,
+      "swiglu_mix_rows": 256,
+      "trace_rows_excluding_static_table": 49920,
+      "value_projection_mul_rows": 16384
+    },
+    "statement_binding": {
+      "backend_version_required": "stwo-rmsnorm-swiglu-residual-d64-v2",
+      "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+      "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+      "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
+    },
+    "value_ranges": {
+      "activation_q8": {
+        "count": 256,
+        "max": 237,
+        "max_abs": 237,
+        "min": -146
+      },
+      "gate_projection_q8": {
+        "count": 256,
+        "max": 375,
+        "max_abs": 405,
+        "min": -405
+      },
+      "hidden_q8": {
+        "count": 256,
+        "max": 204,
+        "max_abs": 204,
+        "min": -195
+      },
+      "input_q8": {
+        "count": 64,
+        "max": 190,
+        "max_abs": 192,
+        "min": -192
+      },
+      "normed_q8": {
+        "count": 64,
+        "max": 454,
+        "max_abs": 454,
+        "min": -452
+      },
+      "output_q8": {
+        "count": 64,
+        "max": 200,
+        "max_abs": 208,
+        "min": -208
+      },
+      "residual_delta_q8": {
+        "count": 64,
+        "max": 34,
+        "max_abs": 34,
+        "min": -19
+      },
+      "value_projection_q8": {
+        "count": 256,
+        "max": 388,
+        "max_abs": 428,
+        "min": -428
+      }
+    }
+  },
+  "schema": "zkai-d64-native-relation-witness-oracle-v1",
+  "source_fixture": {
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "proof_status": "REFERENCE_FIXTURE_NOT_PROVEN",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+    "schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+    "target_id": "rmsnorm-swiglu-residual-d64-v2"
+  }
+}
