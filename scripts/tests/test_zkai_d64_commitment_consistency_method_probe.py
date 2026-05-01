@@ -230,6 +230,13 @@ class ZkAID64CommitmentConsistencyMethodProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "commitment mismatch"):
             PROBE.validate_probe(payload)
 
+    def test_validation_rejects_source_fixture_commitment_tamper(self) -> None:
+        payload = PROBE.build_probe()
+        payload["source_fixture"]["proof_native_parameter_commitment"] = "blake2b-256:" + "55" * 32
+
+        with self.assertRaisesRegex(PROBE.CommitmentConsistencyProbeError, "commitment mismatch"):
+            PROBE.validate_probe(payload)
+
     def test_validation_rejects_malformed_manifest_without_keyerror(self) -> None:
         payload = PROBE.build_probe()
         del payload["proof_native_parameter_manifest"]["proof_native_parameter_commitment"]
