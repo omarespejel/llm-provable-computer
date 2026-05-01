@@ -1,7 +1,7 @@
 {
   "decision": "GO_RELATION_WITNESS_ORACLE_NOT_STWO_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "5f61990a3d7e0928acf0db01009d4c31d2895059",
+  "git_commit": "1499a876b8a41dedb02f17e0413ec9f16464d415",
   "mutation_suite": {
     "baseline_valid": true,
     "cases": [
@@ -96,7 +96,8 @@
     "not verifier-time evidence",
     "not AIR constraints",
     "not backend independence evidence",
-    "not full transformer inference"
+    "not full transformer inference",
+    "not proof that private witness rows already open to proof_native_parameter_commitment"
   ],
   "relation_witness": {
     "parameter_manifest": {

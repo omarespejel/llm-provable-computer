@@ -27,7 +27,10 @@ checked relation-oracle JSON and exports a pinned
 - projection, trace, and activation-table row counts,
 - relation check names and statuses,
 - mutation names, mutation count, and rejection count,
-- non-claim wording that keeps this out of the proof/AIR claim lane.
+- exact `next_backend_step` wording,
+- non-claim wording that keeps this out of the proof/AIR claim lane and
+  prevents implying that private witness rows are already opened by the native
+  parameter commitment.
 
 ## Why This Matters
 
@@ -50,7 +53,8 @@ This is not:
 - AIR constraints,
 - backend independence evidence,
 - full transformer inference,
-- proof that private witness rows already open to the parameter commitment.
+- proof that private witness rows already open to
+  `proof_native_parameter_commitment`.
 
 ## Next Step
 

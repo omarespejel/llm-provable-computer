@@ -8,6 +8,8 @@ use crate::error::{Result, VmError};
 pub const ZKAI_D64_NATIVE_EXPORT_CONTRACT_VERSION: &str = "zkai-d64-native-export-contract-v1";
 pub const ZKAI_D64_NATIVE_EXPORT_CONTRACT_DECISION: &str =
     "GO_NATIVE_EXPORT_CONTRACT_NOT_AIR_PROOF";
+pub const ZKAI_D64_NATIVE_EXPORT_NEXT_BACKEND_STEP: &str =
+    "encode this relation oracle as native Stwo AIR/export rows that consume the same public instance";
 pub const ZKAI_D64_NATIVE_RELATION_ORACLE_SCHEMA: &str =
     "zkai-d64-native-relation-witness-oracle-v1";
 pub const ZKAI_D64_NATIVE_RELATION_ORACLE_DECISION: &str =
@@ -121,15 +123,7 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not AIR constraints",
     "not backend independence evidence",
     "not full transformer inference",
-];
-
-const EXPECTED_EXPORT_CONTRACT_NON_CLAIMS: &[&str] = &[
-    "not a Stwo proof",
-    "not verifier-time evidence",
-    "not AIR constraints",
-    "not backend independence evidence",
-    "not full transformer inference",
-    "not proof that private witness rows already open to the parameter commitment",
+    "not proof that private witness rows already open to proof_native_parameter_commitment",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -294,7 +288,7 @@ impl ZkAiD64NativeExportContract {
         )?;
         expect_str_set_eq(
             self.non_claims.iter().map(String::as_str),
-            EXPECTED_EXPORT_CONTRACT_NON_CLAIMS,
+            EXPECTED_NON_CLAIMS,
             "export contract non claims",
         )?;
         Ok(())
@@ -340,7 +334,13 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         ZKAI_D64_NATIVE_RELATION_ORACLE_DECISION,
         "oracle decision",
     )?;
-    expect_string_set(oracle, &["non_claims"], EXPECTED_NON_CLAIMS, "non claims")?;
+    let next_backend_step = string_at(oracle, &["next_backend_step"])?;
+    expect_eq(
+        next_backend_step,
+        ZKAI_D64_NATIVE_EXPORT_NEXT_BACKEND_STEP,
+        "next backend step",
+    )?;
+    let non_claims = expect_string_set(oracle, &["non_claims"], EXPECTED_NON_CLAIMS, "non claims")?;
 
     let witness = object_at(oracle, &["relation_witness"], "relation witness")?;
     expect_exact_keys(
@@ -573,10 +573,7 @@ pub fn zkai_d64_native_export_contract_from_oracle_value(
         mutations_rejected,
         oracle_schema: schema.to_string(),
         oracle_decision: oracle_decision.to_string(),
-        non_claims: EXPECTED_EXPORT_CONTRACT_NON_CLAIMS
-            .iter()
-            .map(|item| item.to_string())
-            .collect(),
+        non_claims,
     };
     contract.validate()?;
     Ok(contract)
@@ -820,7 +817,12 @@ fn bool_field(value: &Value, key: &str, label: &str) -> Result<bool> {
         .ok_or_else(|| contract_error(format!("{label} field {key} must be a bool")))
 }
 
-fn expect_string_set(value: &Value, path: &[&str], expected: &[&str], label: &str) -> Result<()> {
+fn expect_string_set(
+    value: &Value,
+    path: &[&str],
+    expected: &[&str],
+    label: &str,
+) -> Result<Vec<String>> {
     let items = array_at(value, path)?;
     let actual: Vec<&str> = items
         .iter()
@@ -829,7 +831,8 @@ fn expect_string_set(value: &Value, path: &[&str], expected: &[&str], label: &st
                 .ok_or_else(|| contract_error(format!("{label} item must be a string")))
         })
         .collect::<Result<_>>()?;
-    expect_str_set_eq(actual, expected, label)
+    expect_str_set_eq(actual.iter().copied(), expected, label)?;
+    Ok(actual.into_iter().map(str::to_string).collect())
 }
 
 fn expect_str_set_eq<'a>(
@@ -1090,6 +1093,34 @@ mod tests {
 
         let err = zkai_d64_native_export_contract_from_oracle_value(&value).unwrap_err();
         assert!(err.to_string().contains("non claims mismatch"), "{err}");
+    }
+
+    #[test]
+    fn native_export_contract_rejects_missing_export_non_claim_caveat() {
+        let mut value = oracle_value();
+        let array = value["non_claims"]
+            .as_array_mut()
+            .expect("non claims array");
+        array.retain(|item| {
+            item.as_str()
+                != Some(
+                    "not proof that private witness rows already open to proof_native_parameter_commitment",
+                )
+        });
+
+        let err = zkai_d64_native_export_contract_from_oracle_value(&value).unwrap_err();
+        assert!(err.to_string().contains("non claims count"), "{err}");
+    }
+
+    #[test]
+    fn native_export_contract_rejects_next_backend_step_drift() {
+        let value = mutate(
+            &["next_backend_step"],
+            Value::String("claim this is already native AIR".into()),
+        );
+
+        let err = zkai_d64_native_export_contract_from_oracle_value(&value).unwrap_err();
+        assert!(err.to_string().contains("next backend step"), "{err}");
     }
 
     #[test]
