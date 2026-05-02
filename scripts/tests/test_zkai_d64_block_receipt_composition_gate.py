@@ -35,9 +35,9 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(payload["result"], "GO")
         self.assertEqual(payload["summary"]["slice_count"], 6)
         self.assertEqual(payload["summary"]["total_checked_rows"], 49600)
-        self.assertEqual(payload["case_count"], 12)
+        self.assertEqual(payload["case_count"], 13)
         self.assertTrue(payload["all_mutations_rejected"])
-        self.assertEqual(payload["summary"]["mutations_rejected"], 12)
+        self.assertEqual(payload["summary"]["mutations_rejected"], 13)
         self.assertEqual(
             payload["block_receipt"]["output_activation_commitment"],
             COMPOSITION.OUTPUT_ACTIVATION_COMMITMENT,
@@ -75,6 +75,9 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertTrue(cases["source_file_hash_drift"]["rejected"])
         self.assertEqual(cases["source_file_hash_drift"]["rejection_layer"], "source_evidence_manifest")
         self.assertIn("source file hash", cases["source_file_hash_drift"]["error"])
+        self.assertTrue(cases["source_payload_hash_drift"]["rejected"])
+        self.assertEqual(cases["source_payload_hash_drift"]["rejection_layer"], "source_evidence_manifest")
+        self.assertIn("source payload hash", cases["source_payload_hash_drift"]["error"])
 
     def test_rejects_self_consistent_wrong_model_config(self) -> None:
         payload = self.fresh_payload()
@@ -101,6 +104,13 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
                 COMPOSITION.refresh_commitments(payload)
                 with self.assertRaisesRegex(COMPOSITION.D64BlockReceiptError, "row_count"):
                     COMPOSITION.validate_payload(payload)
+
+    def test_rejects_missing_slice_commitment_key_without_raw_exception(self) -> None:
+        payload = self.fresh_payload()
+        del payload["slice_chain"][5]["source_commitments"]["residual_delta_commitment"]
+        COMPOSITION.refresh_commitments(payload)
+        with self.assertRaisesRegex(COMPOSITION.D64BlockReceiptError, "source commitment keys"):
+            COMPOSITION.validate_payload(payload)
 
     def test_receipt_commitment_mutations_report_block_receipt_layer(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}

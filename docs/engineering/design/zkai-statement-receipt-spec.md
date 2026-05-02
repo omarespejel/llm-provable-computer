@@ -490,10 +490,10 @@ Decision: `GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE`. The gate verifies the six
 slice handles as one ordered commitment chain and exposes
 `zkai-d64-block-receipt-v1`, a statement-bound receipt over model config,
 input/output commitments, backend version, verifier domain, exact slice
-versions, and source evidence hashes. It rejects `12 / 12` checked composition
-mutations, including missing, reordered, duplicated, stale, and relabeled slice
-surfaces. This is a receipt-composition result, not a recursive compression
-claim.
+versions, and source evidence hashes. It rejects `13 / 13` checked composition
+mutations, including missing, reordered, duplicated, stale, relabeled, and
+source-hash-drift surfaces. This is a receipt-composition result, not a
+recursive compression claim.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 

@@ -82,6 +82,41 @@ TSV_COLUMNS = (
     "error",
 )
 
+EXPECTED_COMMITMENT_KEYS: dict[str, tuple[set[str], set[str]]] = {
+    "rmsnorm_public_rows": (
+        {"input_activation_commitment"},
+        {"rmsnorm_output_row_commitment"},
+    ),
+    "rmsnorm_projection_bridge": (
+        {"rmsnorm_output_row_commitment"},
+        {"projection_input_row_commitment"},
+    ),
+    "gate_value_projection": (
+        {"projection_input_row_commitment"},
+        {
+            "gate_projection_output_commitment",
+            "value_projection_output_commitment",
+            "gate_value_projection_output_commitment",
+        },
+    ),
+    "activation_swiglu": (
+        {
+            "gate_projection_output_commitment",
+            "value_projection_output_commitment",
+            "gate_value_projection_output_commitment",
+        },
+        {"hidden_activation_commitment"},
+    ),
+    "down_projection": (
+        {"hidden_activation_commitment"},
+        {"residual_delta_commitment"},
+    ),
+    "residual_add": (
+        {"input_activation_commitment", "residual_delta_commitment"},
+        {"output_activation_commitment"},
+    ),
+}
+
 
 class D64BlockReceiptError(ValueError):
     pass
@@ -648,6 +683,11 @@ def _chain_by_slice(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
             raise D64BlockReceiptError(f"{spec.slice_id} source commitments must be an object")
         if not isinstance(item.get("target_commitments"), dict):
             raise D64BlockReceiptError(f"{spec.slice_id} target commitments must be an object")
+        expected_source_keys, expected_target_keys = EXPECTED_COMMITMENT_KEYS[spec.slice_id]
+        if set(item["source_commitments"]) != expected_source_keys:
+            raise D64BlockReceiptError(f"{spec.slice_id} source commitment keys mismatch")
+        if set(item["target_commitments"]) != expected_target_keys:
+            raise D64BlockReceiptError(f"{spec.slice_id} target commitment keys mismatch")
         for field, value in [*item["source_commitments"].items(), *item["target_commitments"].items()]:
             require_commitment(value, f"{spec.slice_id} {field}")
     return by_slice
@@ -874,6 +914,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "output_commitment_drift",
         "block_receipt",
         lambda p: p["block_receipt"].__setitem__("output_activation_commitment", "blake2b-256:" + "44" * 32),
+    )
+    add(
+        "source_payload_hash_drift",
+        "source_evidence_manifest",
+        lambda p: p["source_evidence_manifest"][0].__setitem__("payload_sha256", "66" * 32),
     )
     add(
         "source_file_hash_drift",
