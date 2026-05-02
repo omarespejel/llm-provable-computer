@@ -1189,6 +1189,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "d128 RMSNorm-to-projection bridge projection-input commitment",
     )
     expect_equal(
+        bridge_projection_input_commitment,
+        D128_BRIDGE_GATE.PROJECTION_INPUT_ROW_COMMITMENT,
+        "d128 RMSNorm-to-projection bridge authoritative projection-input commitment",
+    )
+    expect_equal(
         bridge_probe.get("source_rmsnorm_statement_commitment"),
         rmsnorm_statement_commitment,
         "bridge source RMSNorm statement commitment",
