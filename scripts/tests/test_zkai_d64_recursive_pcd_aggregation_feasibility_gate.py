@@ -96,6 +96,25 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "recursive proof artifact"):
             GATE.validate_payload(payload)
 
+    def test_rejects_inconsistent_mutation_case_count(self) -> None:
+        payload = self.fresh_payload()
+        payload["case_count"] = payload["case_count"] + 1
+        payload["summary"]["mutation_cases"] = payload["case_count"]
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "mutation case_count"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_inconsistent_all_mutations_rejected(self) -> None:
+        payload = self.fresh_payload()
+        payload["all_mutations_rejected"] = False
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "all_mutations_rejected"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_inconsistent_case_rejected_flag(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["rejected"] = False
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "rejected/accepted"):
+            GATE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)

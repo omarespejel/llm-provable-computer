@@ -386,6 +386,51 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
     )
 
 
+def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int] | None:
+    has_cases = "cases" in payload
+    has_case_count = "case_count" in payload
+    has_all_mutations_rejected = "all_mutations_rejected" in payload
+    if not (has_cases or has_case_count or has_all_mutations_rejected):
+        return None
+    if not (has_cases and has_case_count and has_all_mutations_rejected):
+        raise D64RecursivePCDFeasibilityError("mutation metadata must include cases, case_count, and all_mutations_rejected together")
+
+    cases = require_list(payload.get("cases"), "mutation cases")
+    computed_rejected = 0
+    for index, raw_case in enumerate(cases):
+        case = require_object(raw_case, f"mutation case {index}")
+        for column in TSV_COLUMNS:
+            if column not in case:
+                raise D64RecursivePCDFeasibilityError(f"mutation case {index} missing {column}")
+        if not isinstance(case["mutation"], str) or not case["mutation"]:
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} mutation must be a non-empty string")
+        if not isinstance(case["surface"], str) or not case["surface"]:
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} surface must be a non-empty string")
+        if case["baseline_result"] != RESULT:
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} baseline_result mismatch")
+        if not isinstance(case["mutated_accepted"], bool):
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} mutated_accepted must be boolean")
+        if not isinstance(case["rejected"], bool):
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} rejected must be boolean")
+        if case["rejected"] == case["mutated_accepted"]:
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} rejected/accepted fields are inconsistent")
+        if not isinstance(case["rejection_layer"], str) or not case["rejection_layer"]:
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} rejection_layer must be a non-empty string")
+        if not isinstance(case["error"], str):
+            raise D64RecursivePCDFeasibilityError(f"mutation case {index} error must be a string")
+        if case["rejected"]:
+            computed_rejected += 1
+
+    computed_case_count = len(cases)
+    expect_equal(payload.get("case_count"), computed_case_count, "mutation case_count")
+    expect_equal(
+        payload.get("all_mutations_rejected"),
+        all(case["rejected"] for case in cases),
+        "all_mutations_rejected",
+    )
+    return computed_case_count, computed_rejected
+
+
 def validate_payload(payload: Any) -> None:
     payload = require_object(payload, "recursive/PCD feasibility payload")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
@@ -394,6 +439,7 @@ def validate_payload(payload: Any) -> None:
     expect_equal(payload.get("aggregation_target_result"), TARGET_RESULT, "aggregation target result")
     expect_equal(payload.get("recursive_or_pcd_proof_result"), RECURSIVE_OR_PCD_RESULT, "recursive or PCD proof result")
     source = _validate_source_descriptor(payload)
+    case_metadata = _validate_case_metadata(payload)
     expect_equal(
         payload.get("block_receipt_projection"),
         block_receipt_projection(source),
@@ -421,9 +467,10 @@ def validate_payload(payload: Any) -> None:
         "aggregation_target_kind": TARGET_KIND,
         "aggregation_target_version": TARGET_VERSION,
     }
-    if "case_count" in payload or "cases" in payload:
-        expected_summary["mutation_cases"] = payload.get("case_count")
-        expected_summary["mutations_rejected"] = sum(1 for case in payload.get("cases", []) if case.get("rejected"))
+    if case_metadata is not None:
+        computed_case_count, computed_rejected = case_metadata
+        expected_summary["mutation_cases"] = computed_case_count
+        expected_summary["mutations_rejected"] = computed_rejected
     expect_equal(summary, expected_summary, "summary")
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non-claims")
 
