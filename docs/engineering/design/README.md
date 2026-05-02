@@ -30,6 +30,7 @@ Tablero itself proves agents, reasoning, tool truth, or policy semantics.
 - [d64 recursive/PCD aggregation feasibility gate](../zkai-d64-recursive-pcd-aggregation-feasibility-2026-05-02.md)
 - [d64 nested-verifier backend spike gate](../zkai-d64-nested-verifier-backend-spike-2026-05-02.md)
 - [d128 layerwise comparator target gate](../zkai-d128-layerwise-comparator-target-2026-05-02.md)
+- [d128 vector residual-add proof](../zkai-d128-vector-residual-add-proof-2026-05-02.md)
 - [d128 proof artifact backend spike](../zkai-d128-proof-artifact-backend-spike-2026-05-02.md)
 - [Agent-step zkAI Stwo composition gate](../agent-step-zkai-stwo-composition-gate-2026-04-29.md)
 - [Agent-step model subreceipt callback gate](../agent-step-model-subreceipt-callback-gate-2026-04-29.md)

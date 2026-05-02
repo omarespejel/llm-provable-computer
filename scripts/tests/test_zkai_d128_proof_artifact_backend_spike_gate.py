@@ -36,7 +36,8 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["issue"], 387)
         self.assertEqual(payload["summary"]["d64_anchor_route"], "GO_ANCHOR_ONLY")
         self.assertEqual(payload["summary"]["direct_d128_route"], "NO_GO")
-        self.assertEqual(payload["summary"]["parameterized_route"], "NO_GO_FIRST_BLOCKER")
+        self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
+        self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
         self.assertEqual(payload["case_count"], 14)
         self.assertTrue(payload["all_mutations_rejected"])
 
@@ -74,7 +75,9 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
             probe["missing_d128_export_symbols"],
         )
-        self.assertEqual(probe["missing_parameterized_symbols"], list(GATE.PARAMETERIZED_SYMBOLS))
+        self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
+        self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
+        self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
         self.assertEqual(len(probe["d64_hardcoded_markers"]), len(GATE.D64_HARDCODE_MARKERS))
         markers = {row["path"]: row["markers"] for row in probe["d64_hardcoded_markers"]}
         self.assertIn("src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs", markers)
@@ -83,12 +86,58 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             markers["src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"],
         )
 
+    def test_source_probe_runs_full_residual_add_evidence_validator(self) -> None:
+        original = GATE.VECTOR_RESIDUAL_GATE.validate_payload
+
+        def reject(_payload: dict) -> None:
+            raise GATE.VECTOR_RESIDUAL_GATE.D128VectorResidualAddInputError("simulated residual evidence drift")
+
+        try:
+            GATE.VECTOR_RESIDUAL_GATE.validate_payload = reject
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "residual-add evidence"):
+                GATE.build_source_probe()
+        finally:
+            GATE.VECTOR_RESIDUAL_GATE.validate_payload = original
+
+    def test_rust_symbol_probe_rejects_comment_only_surfaces(self) -> None:
+        self.assertTrue(
+            GATE.rust_declares_symbol(
+                "pub fn prove_zkai_vector_block_envelope() {}\n",
+                "prove_zkai_vector_block_envelope",
+            )
+        )
+        self.assertFalse(
+            GATE.rust_declares_symbol(
+                "// pub fn prove_zkai_vector_block_envelope() {}\n",
+                "prove_zkai_vector_block_envelope",
+            )
+        )
+        self.assertTrue(
+            GATE.rust_reexports_symbol(
+                "pub use zkai_vector_block_residual_add_proof::{\n"
+                "    prove_zkai_vector_block_envelope,\n"
+                "};\n",
+                "zkai_vector_block_residual_add_proof",
+                "prove_zkai_vector_block_envelope",
+            )
+        )
+        self.assertFalse(
+            GATE.rust_reexports_symbol(
+                "// pub use zkai_vector_block_residual_add_proof::{prove_zkai_vector_block_envelope};\n",
+                "zkai_vector_block_residual_add_proof",
+                "prove_zkai_vector_block_envelope",
+            )
+        )
+
     def test_backend_routes_block_metrics_until_proof_exists(self) -> None:
         routes = {row["route"]: row for row in self.fresh_payload()["backend_routes"]}
         self.assertEqual(routes["existing_d64_slice_chain"]["status"], "GO_ANCHOR_ONLY")
         self.assertEqual(routes["direct_d128_native_modules"]["status"], "NO_GO")
         self.assertEqual(routes["lift_existing_d64_modules_by_metadata"]["status"], "NO_GO")
-        self.assertEqual(routes["parameterized_vector_block_air"]["status"], "NO_GO_FIRST_BLOCKER")
+        self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
+        self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
+        self.assertFalse(routes["parameterized_vector_residual_add_air"]["checked_in_proof_artifact_exists"])
+        self.assertEqual(routes["parameterized_transformer_block_air"]["status"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
         self.assertEqual(routes["d128_metrics_and_relabeling_suite"]["status"], "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT")
         for name, row in routes.items():
             self.assertIsNone(row["proof_size_bytes"], name)
@@ -98,6 +147,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         status = self.fresh_payload()["proof_status"]
         self.assertFalse(status["proof_artifact_exists"])
         self.assertFalse(status["verifier_handle_exists"])
+        self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
+        self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
+        self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
+        self.assertFalse(status["partial_parameterized_residual_add_checked_in_proof_artifact_exists"])
         self.assertFalse(status["statement_relabeling_suite_exists"])
         self.assertTrue(status["blocked_before_metrics"])
         self.assertIsNone(status["proof_size_bytes"])
@@ -113,9 +166,9 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
 
     def test_rejects_route_promotion(self) -> None:
         payload = self.fresh_payload()
-        route = next(row for row in payload["backend_routes"] if row["route"] == "parameterized_vector_block_air")
+        route = next(row for row in payload["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
         route["status"] = "GO"
-        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "parameterized route status"):
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "parameterized full-block route status"):
             GATE.validate_payload(payload)
 
     def test_rejects_removed_missing_module(self) -> None:
@@ -126,7 +179,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
 
     def test_rejects_removed_non_claim(self) -> None:
         payload = self.fresh_payload()
-        payload["non_claims"].remove("not a local d128 proof artifact")
+        payload["non_claims"].remove("not a full local d128 transformer-block proof artifact")
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "non-claims"):
             GATE.validate_payload(payload)
 
@@ -134,7 +187,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
         self.assertEqual(cases["decision_promoted_to_go"]["rejection_layer"], "top_level")
         self.assertEqual(cases["direct_d128_route_promoted"]["rejection_layer"], "backend_routes")
-        self.assertEqual(cases["parameterized_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(cases["full_block_parameterized_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(cases["missing_module_removed"]["rejection_layer"], "source_probe")
         self.assertEqual(cases["proof_size_metric_smuggled"]["rejection_layer"], "metrics")
         for case in cases.values():
@@ -167,7 +220,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             tsv = tsv_path.read_text(encoding="utf-8").splitlines()
             self.assertEqual(tsv[0].split("\t"), list(GATE.TSV_COLUMNS))
             self.assertIn("direct_d128_native_modules", tsv[2])
-            self.assertEqual(tsv[7].split("\t"), list(GATE.MUTATION_TSV_COLUMNS))
+            self.assertEqual(tsv[len(payload["backend_routes"]) + 2].split("\t"), list(GATE.MUTATION_TSV_COLUMNS))
 
     def test_write_outputs_rejects_paths_outside_repo(self) -> None:
         payload = self.fresh_payload()
