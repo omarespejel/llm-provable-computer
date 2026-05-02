@@ -239,6 +239,7 @@ pub struct ZkAiD128GateValueProjectionEnvelope {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct D128GateValueProjectionProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
 }
@@ -262,7 +263,7 @@ pub fn zkai_d128_gate_value_projection_input_from_json_str(
 pub fn prove_zkai_d128_gate_value_projection_envelope(
     input: &ZkAiD128GateValueProjectionProofInput,
 ) -> Result<ZkAiD128GateValueProjectionEnvelope> {
-    validate_gate_value_input(input)?;
+    let rows = validate_gate_value_input(input)?;
     Ok(ZkAiD128GateValueProjectionEnvelope {
         proof_backend: StarkProofBackend::Stwo,
         proof_backend_version: ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION.to_string(),
@@ -272,18 +273,20 @@ pub fn prove_zkai_d128_gate_value_projection_envelope(
         source_bridge_proof_version: ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION
             .to_string(),
         input: input.clone(),
-        proof: prove_gate_value_rows(input)?,
+        proof: prove_gate_value_rows(&rows)?,
     })
 }
 
 pub fn verify_zkai_d128_gate_value_projection_envelope(
     envelope: &ZkAiD128GateValueProjectionEnvelope,
 ) -> Result<bool> {
-    validate_gate_value_envelope(envelope)?;
-    verify_gate_value_rows(&envelope.input, &envelope.proof)
+    let rows = validate_gate_value_envelope(envelope)?;
+    verify_gate_value_rows(&envelope.proof, &rows)
 }
 
-fn validate_gate_value_envelope(envelope: &ZkAiD128GateValueProjectionEnvelope) -> Result<()> {
+fn validate_gate_value_envelope(
+    envelope: &ZkAiD128GateValueProjectionEnvelope,
+) -> Result<Vec<D128GateValueProjectionMulRow>> {
     if envelope.proof_backend != StarkProofBackend::Stwo {
         return Err(gate_value_error("proof backend is not Stwo"));
     }
@@ -325,7 +328,9 @@ fn validate_gate_value_envelope(envelope: &ZkAiD128GateValueProjectionEnvelope) 
     validate_gate_value_input(&envelope.input)
 }
 
-fn validate_gate_value_input(input: &ZkAiD128GateValueProjectionProofInput) -> Result<()> {
+fn validate_gate_value_input(
+    input: &ZkAiD128GateValueProjectionProofInput,
+) -> Result<Vec<D128GateValueProjectionMulRow>> {
     expect_eq(
         &input.schema,
         ZKAI_D128_GATE_VALUE_PROJECTION_INPUT_SCHEMA,
@@ -573,7 +578,7 @@ fn validate_gate_value_input(input: &ZkAiD128GateValueProjectionProofInput) -> R
         &input.public_instance_commitment,
         "public instance recomputed commitment",
     )?;
-    Ok(())
+    Ok(rows)
 }
 
 fn validate_gate_value_row(
@@ -691,7 +696,7 @@ fn deterministic_int(
     Ok(min_value + (raw % width) as i64)
 }
 
-fn prove_gate_value_rows(input: &ZkAiD128GateValueProjectionProofInput) -> Result<Vec<u8>> {
+fn prove_gate_value_rows(rows: &[D128GateValueProjectionMulRow]) -> Result<Vec<u8>> {
     let component = gate_value_component();
     let config = gate_value_pcs_config();
     let twiddles = SimdBackend::precompute_twiddles(
@@ -707,11 +712,11 @@ fn prove_gate_value_rows(input: &ZkAiD128GateValueProjectionProofInput) -> Resul
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(input));
+    tree_builder.extend_evals(gate_value_trace(rows));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(input));
+    tree_builder.extend_evals(gate_value_trace(rows));
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -725,10 +730,7 @@ fn prove_gate_value_rows(input: &ZkAiD128GateValueProjectionProofInput) -> Resul
         .map_err(|error| VmError::Serialization(error.to_string()))
 }
 
-fn verify_gate_value_rows(
-    input: &ZkAiD128GateValueProjectionProofInput,
-    proof: &[u8],
-) -> Result<bool> {
+fn verify_gate_value_rows(proof: &[u8], rows: &[D128GateValueProjectionMulRow]) -> Result<bool> {
     let payload: D128GateValueProjectionProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     let stark_proof = payload.stark_proof;
@@ -749,7 +751,7 @@ fn verify_gate_value_rows(
             ZKAI_D128_GATE_VALUE_EXPECTED_PROOF_COMMITMENTS
         )));
     }
-    let expected_roots = gate_value_commitment_roots(input, config);
+    let expected_roots = gate_value_commitment_roots(rows, config);
     if stark_proof.commitments[0] != expected_roots[0] {
         return Err(gate_value_error(
             "preprocessed row commitment does not match checked gate/value rows",
@@ -783,7 +785,7 @@ fn gate_value_pcs_config() -> PcsConfig {
 }
 
 fn gate_value_commitment_roots(
-    input: &ZkAiD128GateValueProjectionProofInput,
+    rows: &[D128GateValueProjectionMulRow],
     config: PcsConfig,
 ) -> stwo::core::pcs::TreeVec<
     <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
@@ -802,11 +804,11 @@ fn gate_value_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(input));
+    tree_builder.extend_evals(gate_value_trace(rows));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(input));
+    tree_builder.extend_evals(gate_value_trace(rows));
     tree_builder.commit(channel);
 
     commitment_scheme.roots()
@@ -823,11 +825,9 @@ fn gate_value_component() -> FrameworkComponent<D128GateValueProjectionEval> {
 }
 
 fn gate_value_trace(
-    input: &ZkAiD128GateValueProjectionProofInput,
+    rows: &[D128GateValueProjectionMulRow],
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
     let domain = CanonicCoset::new(D128_GATE_VALUE_LOG_SIZE).circle_domain();
-    let rows =
-        build_rows(&input.projection_input_q8).expect("validated gate/value projection rows");
     let columns: Vec<Vec<BaseField>> = vec![
         rows.iter().map(|row| field_usize(row.row_index)).collect(),
         rows.iter()
