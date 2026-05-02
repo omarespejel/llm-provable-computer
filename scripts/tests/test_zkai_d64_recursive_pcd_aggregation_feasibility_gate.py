@@ -113,6 +113,15 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "all_mutations_rejected"):
             GATE.validate_payload(payload)
 
+    def test_rejects_consistent_but_non_fail_closed_mutation_metadata(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["mutated_accepted"] = True
+        payload["cases"][0]["rejected"] = False
+        payload["all_mutations_rejected"] = False
+        payload["summary"]["mutations_rejected"] -= 1
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "not all recursive/PCD feasibility mutations"):
+            GATE.validate_payload(payload)
+
     def test_rejects_inconsistent_case_rejected_flag(self) -> None:
         payload = self.fresh_payload()
         payload["cases"][0]["rejected"] = False

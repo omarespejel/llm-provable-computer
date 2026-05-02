@@ -529,8 +529,11 @@ def _validate_draft_payload(payload: Any) -> None:
 
 
 def validate_payload(payload: Any) -> None:
+    payload = require_object(payload, "recursive/PCD feasibility payload")
     _, expected_summary = _validate_common_payload(payload)
-    computed_case_count, computed_rejected = _validate_case_metadata(require_object(payload, "recursive/PCD feasibility payload"))
+    computed_case_count, computed_rejected = _validate_case_metadata(payload)
+    if computed_rejected != computed_case_count:
+        raise D64RecursivePCDFeasibilityError("not all recursive/PCD feasibility mutations rejected")
     expected_summary["mutation_cases"] = computed_case_count
     expected_summary["mutations_rejected"] = computed_rejected
     summary = require_object(payload.get("summary"), "summary")
