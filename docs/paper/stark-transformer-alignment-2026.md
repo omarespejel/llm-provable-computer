@@ -1086,6 +1086,16 @@ Use that pairing as compact-object calibration only. It is explicitly not a matc
 workload benchmark, but it is still informative: the local receipt surface is smaller,
 while the public `NANOZK` compact proof verifies faster.
 
+A follow-up `d=128` gate now makes the next comparison target explicit without
+turning it into a result. It pins a `d=128`, `ff_dim=512`
+RMSNorm-SwiGLU-residual receipt target with model/config/weight, activation,
+lookup, proof, verifying-key, setup, domain, and proof-system-version
+commitments. That is a GO for the target specification and source-backed public
+context, but a bounded NO-GO for local proof size or verifier time until a
+local `d=128` proof artifact and relabeling suite exist. This is the correct
+shape of the next comparison: define the same layerwise object first, then
+measure only after the proof object exists.
+
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope
 discipline.
