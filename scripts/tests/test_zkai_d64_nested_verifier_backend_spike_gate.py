@@ -72,6 +72,35 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         for item in inventory.values():
             self.assertFalse(item["accepted_as_outer_backend"])
 
+    def test_candidate_inventory_treats_directories_as_missing_artifacts(self) -> None:
+        original_specs = GATE.CANDIDATE_SPECS
+        inventory = []
+        try:
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+                tmp = pathlib.Path(raw_tmp)
+                artifact_dir = tmp / "fake-proof.json"
+                artifact_dir.mkdir()
+                GATE.CANDIDATE_SPECS = [
+                    {
+                        "candidate_id": "directory_is_not_artifact",
+                        "path": str(artifact_dir.relative_to(ROOT)),
+                        "kind": "required_go_artifact",
+                        "required_for_go": True,
+                        "status_if_present": "PRESENT_BUT_UNVALIDATED_BY_SPIKE_GATE",
+                        "status_if_missing": "MISSING_REQUIRED_GO_ARTIFACT",
+                        "reason": "directories must not count as proof artifacts",
+                    }
+                ]
+                GATE.candidate_inventory.cache_clear()
+
+                inventory = GATE.candidate_inventory()
+        finally:
+            GATE.CANDIDATE_SPECS = original_specs
+            GATE.candidate_inventory.cache_clear()
+
+        self.assertEqual(inventory[0]["status"], "MISSING_REQUIRED_GO_ARTIFACT")
+        self.assertFalse(inventory[0]["exists"])
+
     def test_summary_counts_required_missing_artifacts(self) -> None:
         payload = self.fresh_payload()
         self.assertEqual(payload["summary"]["candidate_count"], len(GATE.CANDIDATE_SPECS))

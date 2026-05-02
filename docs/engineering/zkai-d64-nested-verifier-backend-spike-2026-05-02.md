@@ -131,7 +131,5 @@ python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py \
 
 python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_spike_gate
 
-python3 -m py_compile \
-  scripts/zkai_d64_nested_verifier_backend_spike_gate.py \
-  scripts/tests/test_zkai_d64_nested_verifier_backend_spike_gate.py
+python3 scripts/paper/paper_preflight.py --repo-root .
 ```
