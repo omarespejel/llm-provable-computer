@@ -32,9 +32,13 @@ TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 VERIFIER_DOMAIN = "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
 WIDTH = 128
+TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 SOURCE_RMSNORM_SCHEMA = "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3"
 SOURCE_RMSNORM_DECISION = "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF"
 SOURCE_RMSNORM_PUBLIC_ROW_PROOF_VERSION = "stwo-d128-rmsnorm-public-row-air-proof-v3"
+SOURCE_RMSNORM_STATEMENT_COMMITMENT = "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72"
+SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT = "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
 SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d128-rmsnorm-output-row:v1"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d128-projection-input-row:v1"
 PROOF_NATIVE_PARAMETER_KIND = "d128-rmsnorm-to-projection-bridge-synthetic-parameters-v1"
@@ -204,12 +208,18 @@ def load_target(path: pathlib.Path = TARGET_JSON) -> dict[str, Any]:
         raise D128BridgeInputError("target summary missing")
     if summary.get("target_commitment") is None:
         raise D128BridgeInputError("target commitment missing")
-    require_commitment(summary["target_commitment"], "target commitment")
+    target_commitment = require_commitment(summary["target_commitment"], "target commitment")
+    if target_commitment != TARGET_COMMITMENT:
+        raise D128BridgeInputError("target commitment drift")
     spec = target.get("target_spec")
     if not isinstance(spec, dict):
         raise D128BridgeInputError("target spec missing")
     if spec.get("target_id") != TARGET_ID or spec.get("width") != WIDTH:
         raise D128BridgeInputError("target spec mismatch")
+    if spec.get("target_commitment") != TARGET_COMMITMENT:
+        raise D128BridgeInputError("target spec commitment drift")
+    if spec.get("required_proof_backend_version") != REQUIRED_BACKEND_VERSION:
+        raise D128BridgeInputError("target backend version drift")
     return target
 
 
@@ -241,6 +251,12 @@ def validate_source(source: Any) -> None:
         "rmsnorm_output_row_commitment",
     ):
         require_commitment(source.get(field), f"source {field}")
+    if source["statement_commitment"] != SOURCE_RMSNORM_STATEMENT_COMMITMENT:
+        raise D128BridgeInputError("source RMSNorm statement commitment drift")
+    if source["public_instance_commitment"] != SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT:
+        raise D128BridgeInputError("source RMSNorm public-instance commitment drift")
+    if source["rmsnorm_output_row_commitment"] != SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT:
+        raise D128BridgeInputError("source RMSNorm output row commitment drift")
     rows = source.get("rows")
     if not isinstance(rows, list) or len(rows) != WIDTH:
         raise D128BridgeInputError("source rows mismatch")

@@ -620,7 +620,7 @@ def build_source_probe() -> dict[str, Any]:
             "rms_q8": d128_rmsnorm_evidence["rms_q8"],
         },
         "d128_rmsnorm_to_projection_bridge": {
-            "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
             "module": repo_file_descriptor(d128_bridge_module_path),
             "evidence": source_descriptor(D128_BRIDGE_EVIDENCE, d128_bridge_evidence),
             "present_symbols": list(D128_BRIDGE_SYMBOLS),
@@ -692,7 +692,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "route": "direct_d128_rmsnorm_to_projection_bridge_air",
-            "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
             "target_width": TARGET_WIDTH,
             "target_ff_dim": None,
             "proof_artifact_exists": True,
@@ -786,7 +786,7 @@ def build_payload() -> dict[str, Any]:
         "d64_anchor_route": "GO_ANCHOR_ONLY",
         "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
         "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
-        "d128_rmsnorm_to_projection_bridge_route": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "d128_rmsnorm_to_projection_bridge_route": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
@@ -1065,7 +1065,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         summary.get("d128_rmsnorm_to_projection_bridge_route"),
-        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "summary d128 RMSNorm-to-projection bridge route",
     )
     expect_equal(
@@ -1124,7 +1124,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         bridge_probe.get("status"),
-        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "d128 RMSNorm-to-projection bridge status",
     )
     expect_equal(
@@ -1192,7 +1192,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get("status"),
-        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "direct d128 RMSNorm-to-projection bridge route status",
     )
     expect_equal(

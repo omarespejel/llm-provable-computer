@@ -23,6 +23,7 @@ transformer-block proof.
 | --- | --- |
 | Input schema | `zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1` |
 | Input decision | `GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF` |
+| Proof decision | `GO_D128_RMSNORM_TO_PROJECTION_INPUT_BRIDGE_AIR_PROOF` |
 | Rust proof version | `stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1` |
 | Statement version | `zkai-d128-rmsnorm-to-projection-bridge-statement-v1` |
 | Target | `rmsnorm-swiglu-residual-d128-v1` |
@@ -94,10 +95,14 @@ python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py \
   --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv
 
+just gate-fast
+
 python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input
 
 cargo +nightly-2025-07-14 test \
   d128_native_rmsnorm_to_projection_bridge_proof \
   --lib \
   --features stwo-backend
+
+just gate
 ```
