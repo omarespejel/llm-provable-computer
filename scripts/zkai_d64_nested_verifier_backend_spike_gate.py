@@ -21,6 +21,7 @@ import io
 import json
 import pathlib
 import sys
+import tempfile
 from typing import Any, Callable
 
 
@@ -89,9 +90,11 @@ NON_CLAIMS = [
 ]
 
 VALIDATION_COMMANDS = [
+    "just gate-fast",
     "python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_spike_gate",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate",
 ]
 
 TSV_COLUMNS = (
@@ -628,6 +631,13 @@ def classify_error(error: Exception) -> str:
     return "parser_or_schema"
 
 
+def _candidate_row(payload: dict[str, Any], candidate_id: str) -> dict[str, Any]:
+    for item in payload["backend_attempt"]["candidate_inventory"]:
+        if item["candidate_id"] == candidate_id:
+            return item
+    raise D64NestedVerifierBackendSpikeError(f"candidate inventory row missing: {candidate_id}")
+
+
 def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
     cases: list[tuple[str, str, dict[str, Any]]] = []
 
@@ -643,9 +653,9 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("source_contract_result_drift", "source_contract_evidence", lambda p: p["source_contract_evidence"].__setitem__("contract_result", "NO_GO"))
     add("nested_verifier_contract_commitment_drift", "nested_verifier_contract", lambda p: p.__setitem__("nested_verifier_contract_commitment", "blake2b-256:" + "33" * 32))
     add("selected_slice_id_drift", "nested_verifier_contract", lambda p: p["selected_slice_ids"].__setitem__(1, "tampered_bridge"))
-    add("candidate_inventory_status_relabel", "candidate_inventory", lambda p: p["backend_attempt"]["candidate_inventory"][2].__setitem__("status", "OUTER_PROOF_VERIFIED"))
-    add("candidate_inventory_acceptance_relabel", "candidate_inventory", lambda p: p["backend_attempt"]["candidate_inventory"][2].__setitem__("accepted_as_outer_backend", True))
-    add("candidate_inventory_missing_required_path_removed", "candidate_inventory", lambda p: p["backend_attempt"]["candidate_inventory"].pop())
+    add("candidate_inventory_status_relabel", "candidate_inventory", lambda p: _candidate_row(p, "phase36_recursive_verifier_harness_receipt").__setitem__("status", "OUTER_PROOF_VERIFIED"))
+    add("candidate_inventory_acceptance_relabel", "candidate_inventory", lambda p: _candidate_row(p, "phase36_recursive_verifier_harness_receipt").__setitem__("accepted_as_outer_backend", True))
+    add("candidate_inventory_missing_required_path_removed", "candidate_inventory", lambda p: p["backend_attempt"]["candidate_inventory"].remove(_candidate_row(p, "required_two_slice_outer_mutation_tests")))
     add("proof_object_claimed_without_artifact", "backend_attempt", lambda p: p["backend_attempt"].__setitem__("proof_object_exists", True))
     add("verifier_handle_claimed_without_artifact", "backend_attempt", lambda p: p["backend_attempt"].__setitem__("verifier_handle_exists", True))
     add("proof_size_metric_smuggled_before_proof", "backend_attempt", lambda p: p["backend_attempt"].__setitem__("proof_size_bytes", 4096))
@@ -721,18 +731,40 @@ def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
     return resolved
 
 
+def _stage_text(path: pathlib.Path, text: str) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        handle.write(text)
+        return pathlib.Path(handle.name)
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
     json_output = _validated_output_path(json_path) if json_path is not None else None
     tsv_output = _validated_output_path(tsv_path) if tsv_path is not None else None
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n" if json_path is not None else None
     tsv_text = to_tsv(payload) if tsv_path is not None else None
-    if json_output is not None:
-        json_output.parent.mkdir(parents=True, exist_ok=True)
-        json_output.write_text(json_text, encoding="utf-8")
-    if tsv_output is not None:
-        tsv_output.parent.mkdir(parents=True, exist_ok=True)
-        tsv_output.write_text(tsv_text, encoding="utf-8")
+    staged: list[tuple[pathlib.Path, pathlib.Path]] = []
+    committed: list[tuple[pathlib.Path, bool, bytes | None]] = []
+    try:
+        if json_output is not None:
+            staged.append((_stage_text(json_output, json_text), json_output))
+        if tsv_output is not None:
+            staged.append((_stage_text(tsv_output, tsv_text), tsv_output))
+        for tmp_path, output_path in staged:
+            existed = output_path.exists()
+            previous = output_path.read_bytes() if existed else None
+            tmp_path.replace(output_path)
+            committed.append((output_path, existed, previous))
+    except Exception:
+        for tmp_path, _ in staged:
+            tmp_path.unlink(missing_ok=True)
+        for output_path, existed, previous in reversed(committed):
+            if existed and previous is not None:
+                output_path.write_bytes(previous)
+            else:
+                output_path.unlink(missing_ok=True)
+        raise
 
 
 def main(argv: list[str] | None = None) -> int:

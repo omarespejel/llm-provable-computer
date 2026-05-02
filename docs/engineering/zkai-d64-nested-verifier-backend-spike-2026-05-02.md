@@ -125,6 +125,8 @@ This result does **not** claim:
 ## Reproduce
 
 ```bash
+just gate-fast
+
 python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py \
   --write-json docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.tsv
@@ -132,4 +134,6 @@ python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py \
 python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_spike_gate
 
 python3 scripts/paper/paper_preflight.py --repo-root .
+
+just gate
 ```
