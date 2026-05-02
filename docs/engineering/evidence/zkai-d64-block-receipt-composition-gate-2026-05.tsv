@@ -1,0 +1,13 @@
+mutation	surface	baseline_accepted	mutated_accepted	rejected	rejection_layer	error
+missing_bridge_slice	slice_chain_shape	True	False	True	slice_chain_shape	slice chain index mismatch
+reordered_bridge_and_projection	slice_chain_shape	True	False	True	slice_chain_shape	slice chain index mismatch
+duplicated_final_slice_missing_down	slice_chain_shape	True	False	True	slice_chain_shape	slice chain index mismatch
+stale_hidden_activation_edge	commitment_chain	True	False	True	commitment_chain	activation-to-down commitment edge mismatch
+stale_residual_delta_edge	commitment_chain	True	False	True	commitment_chain	down-to-residual commitment edge mismatch
+residual_delta_relabels_output	commitment_chain	True	False	True	commitment_chain	down-to-residual commitment edge mismatch
+backend_version_drift	block_receipt	True	False	True	block_receipt	block receipt required_backend_version mismatch
+slice_version_drift	block_receipt	True	False	True	block_receipt	block receipt slice proof version mismatch
+model_config_drift	block_receipt	True	False	True	block_receipt	block receipt model_config mismatch
+input_commitment_drift	block_receipt	True	False	True	commitment_chain	block receipt input_activation_commitment mismatch
+output_commitment_drift	block_receipt	True	False	True	commitment_chain	block receipt output_activation_commitment mismatch
+source_file_hash_drift	source_evidence_manifest	True	False	True	source_evidence_manifest	rmsnorm_public_rows source file hash mismatch

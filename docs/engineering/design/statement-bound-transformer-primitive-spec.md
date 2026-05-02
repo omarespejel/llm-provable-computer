@@ -350,6 +350,22 @@ canonical `input_activation_commitment` and the down-projection
 slice chain. It is still not recursive composition of all d64 proof slices and
 not a private parameter-opening proof.
 
+The d64 block receipt composition gate is also checked in:
+
+- `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.tsv`
+- `scripts/zkai_d64_block_receipt_composition_gate.py`
+
+It consumes the six checked d64 slice evidence handles, verifies their ordered
+source/target commitment chain, and exposes one
+`zkai-d64-block-receipt-v1` commitment bound to model config,
+`input_activation_commitment`, `output_activation_commitment`, backend version,
+verifier domain, slice versions, and source evidence hashes. It rejects `12 / 12`
+checked missing/reordered/duplicated/stale/relabeling mutations. This is the
+first single receipt for the d64 native route. It is still not recursive
+aggregation or a private parameter-opening proof.
+
 The first attention/KV receipt contract is also checked in:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`

@@ -859,6 +859,18 @@ and
 `docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`, and
 `docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json`.
 
+A d64 block-receipt composition gate now packages those six checked slice
+handles into one verifier-facing receipt. The gate verifies the ordered
+source/target commitment chain, source evidence hashes, slice schemas, proof
+versions, model config, backend version, verifier domain, and final
+input/output commitments, then exposes one `zkai-d64-block-receipt-v1`
+commitment. Its mutation suite rejects `12 / 12` missing, reordered, duplicated,
+stale, and relabeled slice surfaces. This is the right object for a future
+recursive or proof-carrying-data layer to aggregate, but it is not itself
+recursive compression. It is anchored to
+`docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md` and
+`docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model

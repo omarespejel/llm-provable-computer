@@ -103,9 +103,9 @@ fixture assumption after down projection. It is checked by a native residual-add
 AIR slice that consumes the intermediate residual-delta commitment and the public
 input activation commitment.
 
-The next honest strengthening is a composition step: consume all checked slice
-receipts as one statement-bound block receipt, without claiming recursive
-compression unless a real recursive proof exists.
+The next honest strengthening has landed as the d64 block receipt composition
+gate: consume all checked slice receipts as one statement-bound block receipt,
+without claiming recursive compression unless a real recursive proof exists.
 
 ## Reproduce
 
@@ -118,8 +118,8 @@ python3 -m unittest scripts.tests.test_zkai_d64_residual_add_proof_input
 cargo +nightly-2025-07-14 test d64_native_residual_add_proof --lib --features stwo-backend
 ```
 
-## Next step
+## Follow-up
 
-Issue #374 tracks composing the native d64 proof slices into a single
-statement-bound block receipt that validates the slice chain and exposes one
-final receipt object for the agent/verifiable-AI layer.
+The next research step is a true aggregation layer over the block receipt:
+recursive/proof-carrying composition if a future verifier proves the slice
+verifiers inside one object, or an explicit NO-GO if that surface is too heavy.

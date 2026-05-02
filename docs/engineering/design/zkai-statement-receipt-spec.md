@@ -480,6 +480,21 @@ row commitment, and recomputes the final `output_activation_commitment`. This
 closes the native d64 final-output seam for the slice chain. It is still not a
 recursive aggregate proof and not a private parameter-opening proof.
 
+The d64 block receipt composition gate consumes the checked slice handles:
+
+- `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.tsv`
+
+Decision: `GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE`. The gate verifies the six
+slice handles as one ordered commitment chain and exposes
+`zkai-d64-block-receipt-v1`, a statement-bound receipt over model config,
+input/output commitments, backend version, verifier domain, exact slice
+versions, and source evidence hashes. It rejects `12 / 12` checked composition
+mutations, including missing, reordered, duplicated, stale, and relabeled slice
+surfaces. This is a receipt-composition result, not a recursive compression
+claim.
+
 The attention/KV transition receipt adds the first stateful receipt seam:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
