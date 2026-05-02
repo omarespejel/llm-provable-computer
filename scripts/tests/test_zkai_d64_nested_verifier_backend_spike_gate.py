@@ -222,6 +222,17 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             self.assertFalse(json_path.exists())
             self.assertFalse(tsv_path.exists())
 
+    def test_write_outputs_rejects_directory_paths_inside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_dir = tmp / "json-output"
+            tsv_path = tmp / "backend-spike.tsv"
+            json_dir.mkdir()
+            with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "not a directory"):
+                GATE.write_outputs(payload, json_dir, tsv_path)
+            self.assertFalse(tsv_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

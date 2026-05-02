@@ -716,6 +716,8 @@ def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
     root = ROOT.resolve()
     if resolved != root and root not in resolved.parents:
         raise D64NestedVerifierBackendSpikeError(f"output path escapes repository: {path}")
+    if resolved.exists() and resolved.is_dir():
+        raise D64NestedVerifierBackendSpikeError(f"output path must be a file, not a directory: {path}")
     return resolved
 
 
