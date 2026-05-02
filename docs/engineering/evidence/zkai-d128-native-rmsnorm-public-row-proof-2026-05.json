@@ -15,9 +15,10 @@
   "normalization_config_commitment": "blake2b-256:4892f61745c7bdb70f66660675528545e5f42892142f81b7d4b363cccfeaa30c",
   "normalization_config_domain": "ptvm:zkai:d128-rmsnorm-config:v1",
   "operation": "rmsnorm_public_rows",
-  "proof_native_parameter_commitment": "blake2b-256:d4cdf63d81d1550acfb8f10e43509c17e288c45c2bbcb3e2490240bf8acf96d2",
+  "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
   "proof_verifier_hardening": [
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
+    "AIR-native remainder range constraints via bit-decomposed quotient remainders",
     "exact integer isqrt recomputation without floating-point sqrt",
     "AIR-native bounded sqrt inequality via 17-bit nonnegative gap decompositions",
     "canonical d128 RMSNorm commitment domains checked before proof verification",
@@ -28,7 +29,7 @@
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing"
   ],
-  "public_instance_commitment": "blake2b-256:f35e46710d9b0590ff5f7c14b4a09ecd7a943716be65d563a566e23a4cbf4fc9",
+  "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
   "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
   "rms_q8": 55,
   "rms_scale_domain": "ptvm:zkai:d128-rms-scale:v1",
@@ -1449,9 +1450,9 @@
     }
   ],
   "scale_q8": 256,
-  "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2",
+  "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3",
   "source_proof_backend_version": "synthetic-d128-rmsnorm-source-v1",
-  "statement_commitment": "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18",
+  "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
   "sum_squares": 391210,
   "target_id": "rmsnorm-swiglu-residual-d128-v1",
   "validation_commands": [

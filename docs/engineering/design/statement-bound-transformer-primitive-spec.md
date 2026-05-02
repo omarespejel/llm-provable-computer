@@ -373,10 +373,11 @@ The first d128 normalization slice is also checked in:
 - `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv`
 - `src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs`
 
-It proves `128` public RMSNorm rows in native Stwo AIR and binds them to the
-pinned d128 RMSNorm-SwiGLU-residual statement commitment. This is the first
-normalization-specific d128 proof slice: it checks square, scale-division,
-normalized-output, remainder, scale-tree, and scalar square-root constraints.
+It proves `128` public RMSNorm rows in native Stwo AIR and binds them through a
+statement commitment recomputed from the checked slice commitments and domains.
+This is the first normalization-specific d128 proof slice: it checks square,
+scale-division, normalized-output, bit-constrained remainder, scale-tree, and
+scalar square-root constraints.
 Together with the d128 residual-add proof, it shows the d128 backend route is no
 longer residual-only. It is still not a full d128 block proof and still reports
 no full-block proof size or verifier time.

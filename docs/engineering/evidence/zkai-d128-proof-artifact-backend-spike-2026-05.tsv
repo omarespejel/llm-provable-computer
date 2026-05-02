@@ -16,6 +16,11 @@ local_verifier_handle_smuggled	proof_status	False	True	proof_status	verifier han
 proof_size_metric_smuggled	metrics	False	True	metrics	proof size mismatch
 verifier_time_metric_smuggled	metrics	False	True	metrics	verifier time mismatch
 direct_d128_route_promoted	backend_routes	False	True	backend_routes	direct d128 route status mismatch
+d128_rmsnorm_public_row_route_promoted	backend_routes	False	True	backend_routes	summary d128 RMSNorm public-row route mismatch
+partial_d128_rmsnorm_public_row_proof_removed	proof_status	False	True	proof_status	partial d128 RMSNorm public-row proof exists mismatch
+partial_d128_rmsnorm_public_row_verifier_removed	proof_status	False	True	proof_status	partial d128 RMSNorm public-row verifier exists mismatch
+partial_d128_rmsnorm_public_row_local_roundtrip_removed	proof_status	False	True	proof_status	partial d128 RMSNorm public-row local roundtrip proof mismatch
+partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled	proof_status	False	True	proof_status	partial d128 RMSNorm public-row checked-in proof artifact mismatch
 full_block_parameterized_route_promoted	backend_routes	False	True	backend_routes	parameterized full-block route status mismatch
 d64_anchor_removed	d64_anchor	False	True	d64_anchor	d64 anchor status mismatch
 missing_module_removed	source_probe	False	True	source_probe	missing d128 module inventory mismatch

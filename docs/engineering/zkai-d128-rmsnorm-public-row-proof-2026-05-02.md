@@ -20,7 +20,7 @@ opening proof.
 | --- | --- |
 | Input decision | `GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF` |
 | Proof decision | `GO_PUBLIC_ROW_D128_RMSNORM_AIR_PROOF` |
-| Rust proof version | `stwo-d128-rmsnorm-public-row-air-proof-v2` |
+| Rust proof version | `stwo-d128-rmsnorm-public-row-air-proof-v3` |
 | Operation | `rmsnorm_public_rows` |
 | Target | `rmsnorm-swiglu-residual-d128-v1` |
 | Width | `128` |
@@ -50,8 +50,10 @@ scaled_floor * 256 = normed_q8 * rms_q8 + norm_remainder
 
 The verifier recomputes the input-activation commitment, RMS scale sequence
 commitment, normalization config commitment, RMS scale-tree root, RMSNorm output
-row commitment, public-instance commitment, proof-native parameter commitment,
-and statement commitment before verifying the Stwo proof.
+row commitment, statement commitment, public-instance commitment, and
+proof-native parameter commitment before verifying the Stwo proof. The statement
+commitment is a hash of the checked slice commitments and domains, not a pinned
+constant standing in for the slice.
 
 The AIR also checks the integer-square-root witness for the public RMS scalar by
 bit-decomposing the two nonnegative gaps:
@@ -62,7 +64,8 @@ rms_q8^2 + sqrt_low_delta = average_square_floor
 ```
 
 That makes the `rms_q8` scalar discipline proof-native for this public-row
-surface.
+surface. The quotient remainders are also range-constrained in AIR through
+bit-decomposed scale-remainder and norm-remainder-gap witnesses.
 
 ## What this does not prove
 

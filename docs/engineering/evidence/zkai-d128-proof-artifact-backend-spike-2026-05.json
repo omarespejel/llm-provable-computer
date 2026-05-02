@@ -178,7 +178,7 @@
       "verifier_time_ms": null
     }
   ],
-  "case_count": 14,
+  "case_count": 19,
   "cases": [
     {
       "error": "decision mismatch",
@@ -253,8 +253,53 @@
       "surface": "backend_routes"
     },
     {
-      "error": "parameterized full-block route status mismatch",
+      "error": "summary d128 RMSNorm public-row route mismatch",
       "index": 8,
+      "mutated_accepted": false,
+      "mutation": "d128_rmsnorm_public_row_route_promoted",
+      "rejected": true,
+      "rejection_layer": "backend_routes",
+      "surface": "backend_routes"
+    },
+    {
+      "error": "partial d128 RMSNorm public-row proof exists mismatch",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "partial_d128_rmsnorm_public_row_proof_removed",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "partial d128 RMSNorm public-row verifier exists mismatch",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "partial_d128_rmsnorm_public_row_verifier_removed",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "partial d128 RMSNorm public-row local roundtrip proof mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "partial_d128_rmsnorm_public_row_local_roundtrip_removed",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "partial d128 RMSNorm public-row checked-in proof artifact mismatch",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "parameterized full-block route status mismatch",
+      "index": 13,
       "mutated_accepted": false,
       "mutation": "full_block_parameterized_route_promoted",
       "rejected": true,
@@ -263,7 +308,7 @@
     },
     {
       "error": "d64 anchor status mismatch",
-      "index": 9,
+      "index": 14,
       "mutated_accepted": false,
       "mutation": "d64_anchor_removed",
       "rejected": true,
@@ -272,7 +317,7 @@
     },
     {
       "error": "missing d128 module inventory mismatch",
-      "index": 10,
+      "index": 15,
       "mutated_accepted": false,
       "mutation": "missing_module_removed",
       "rejected": true,
@@ -281,7 +326,7 @@
     },
     {
       "error": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch",
-      "index": 11,
+      "index": 16,
       "mutated_accepted": false,
       "mutation": "d64_hardcoded_marker_removed",
       "rejected": true,
@@ -290,7 +335,7 @@
     },
     {
       "error": "non-claims inventory mismatch",
-      "index": 12,
+      "index": 17,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
       "rejected": true,
@@ -299,7 +344,7 @@
     },
     {
       "error": "summary mutation count mismatch",
-      "index": 13,
+      "index": 18,
       "mutated_accepted": false,
       "mutation": "mutation_case_accepted",
       "rejected": true,
@@ -484,31 +529,56 @@
     },
     {
       "index": 8,
-      "mutation": "full_block_parameterized_route_promoted",
+      "mutation": "d128_rmsnorm_public_row_route_promoted",
       "surface": "backend_routes"
     },
     {
       "index": 9,
+      "mutation": "partial_d128_rmsnorm_public_row_proof_removed",
+      "surface": "proof_status"
+    },
+    {
+      "index": 10,
+      "mutation": "partial_d128_rmsnorm_public_row_verifier_removed",
+      "surface": "proof_status"
+    },
+    {
+      "index": 11,
+      "mutation": "partial_d128_rmsnorm_public_row_local_roundtrip_removed",
+      "surface": "proof_status"
+    },
+    {
+      "index": 12,
+      "mutation": "partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled",
+      "surface": "proof_status"
+    },
+    {
+      "index": 13,
+      "mutation": "full_block_parameterized_route_promoted",
+      "surface": "backend_routes"
+    },
+    {
+      "index": 14,
       "mutation": "d64_anchor_removed",
       "surface": "d64_anchor"
     },
     {
-      "index": 10,
+      "index": 15,
       "mutation": "missing_module_removed",
       "surface": "source_probe"
     },
     {
-      "index": 11,
+      "index": 16,
       "mutation": "d64_hardcoded_marker_removed",
       "surface": "source_probe"
     },
     {
-      "index": 12,
+      "index": 17,
       "mutation": "non_claim_removed",
       "surface": "claim_boundary"
     },
     {
-      "index": 13,
+      "index": 18,
       "mutation": "mutation_case_accepted",
       "surface": "mutation_harness"
     }
@@ -547,15 +617,15 @@
     "d128_rmsnorm_public_row": {
       "evidence": {
         "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
-        "file_sha256": "4122da7d20b618220301832df159e5105483bddc1017199163c644f21cc84b91",
+        "file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
         "path": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
-        "payload_sha256": "d883c8b09ffb9db7a36cf42196f07ceef0c53edb083922625f3887e70e2042e6",
+        "payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
         "result": null,
-        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2"
+        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3"
       },
       "module": {
         "exists": true,
-        "file_sha256": "cf8f39e5a7c25b88e4d2aa9f2cd49d2152bc1f1560b939925a52cf8ce23fa484",
+        "file_sha256": "8dc5f59eac0a6f6f160f8ec17d7800dc6a8eab201ed17c59b8cb45fa9a12a5ac",
         "path": "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs"
       },
       "operation": "rmsnorm_public_rows",
@@ -799,8 +869,8 @@
     "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
     "first_blocker": "d128 RMSNorm public-row and residual-add proof handles exist, but projection, activation, down-projection, bridge, and full transformer-block composition handles are still missing",
     "issue": 387,
-    "mutation_cases": 14,
-    "mutations_rejected": 14,
+    "mutation_cases": 19,
+    "mutations_rejected": 19,
     "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
     "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,

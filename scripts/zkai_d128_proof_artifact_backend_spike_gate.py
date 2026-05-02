@@ -235,6 +235,11 @@ EXPECTED_MUTATION_INVENTORY = (
     ("proof_size_metric_smuggled", "metrics"),
     ("verifier_time_metric_smuggled", "metrics"),
     ("direct_d128_route_promoted", "backend_routes"),
+    ("d128_rmsnorm_public_row_route_promoted", "backend_routes"),
+    ("partial_d128_rmsnorm_public_row_proof_removed", "proof_status"),
+    ("partial_d128_rmsnorm_public_row_verifier_removed", "proof_status"),
+    ("partial_d128_rmsnorm_public_row_local_roundtrip_removed", "proof_status"),
+    ("partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled", "proof_status"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
@@ -450,7 +455,7 @@ def build_source_probe() -> dict[str, Any]:
     except Exception as err:
         raise D128BackendSpikeError("d128 RMSNorm public-row evidence failed validation") from err
     for field, expected in {
-        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2",
+        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3",
         "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
         "operation": "rmsnorm_public_rows",
         "target_id": TARGET_ID,
@@ -773,6 +778,44 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         route["verifier_handle_exists"] = True
 
     add("direct_d128_route_promoted", "backend_routes", promote_direct_route)
+
+    def promote_d128_rmsnorm_public_row_route(p: dict[str, Any]) -> None:
+        p["summary"]["d128_rmsnorm_public_row_route"] = "GO_D128_FULL_RMSNORM_BLOCK"
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_rmsnorm_public_row_air")
+        route["status"] = "GO_D128_FULL_RMSNORM_BLOCK"
+        route["proof_size_bytes"] = 4096
+
+    add(
+        "d128_rmsnorm_public_row_route_promoted",
+        "backend_routes",
+        promote_d128_rmsnorm_public_row_route,
+    )
+    add(
+        "partial_d128_rmsnorm_public_row_proof_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_rmsnorm_public_row_proof_exists", False),
+    )
+    add(
+        "partial_d128_rmsnorm_public_row_verifier_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_rmsnorm_public_row_verifier_exists", False),
+    )
+    add(
+        "partial_d128_rmsnorm_public_row_local_roundtrip_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed",
+            False,
+        ),
+    )
+    add(
+        "partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists",
+            True,
+        ),
+    )
 
     def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
         route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
