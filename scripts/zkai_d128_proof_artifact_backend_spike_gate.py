@@ -325,8 +325,10 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_activation_swiglu_local_roundtrip_removed", "proof_status"),
     ("partial_d128_activation_swiglu_checked_in_artifact_smuggled", "proof_status"),
     ("d128_activation_swiglu_source_statement_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_source_output_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_activation_lookup_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_hidden_activation_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_hidden_relabels_full_output", "source_probe"),
     ("d128_activation_swiglu_row_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_statement_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_public_instance_commitment_drift", "source_probe"),
@@ -1456,6 +1458,13 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
     add(
+        "d128_activation_swiglu_source_output_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "source_gate_value_projection_output_commitment", "blake2b-256:" + "58" * 32
+        ),
+    )
+    add(
         "d128_activation_swiglu_activation_lookup_commitment_drift",
         "source_probe",
         lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
@@ -1468,6 +1477,19 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
             "hidden_activation_commitment", "blake2b-256:" + "53" * 32
         ),
+    )
+
+    def relabel_d128_activation_swiglu_hidden_output(p: dict[str, Any]) -> None:
+        activation = p["source_probe"]["d128_activation_swiglu"]
+        activation["hidden_activation_commitment"] = D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT
+        activation["hidden_relabels_full_output"] = True
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["hidden_activation_commitment"] = D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT
+
+    add(
+        "d128_activation_swiglu_hidden_relabels_full_output",
+        "source_probe",
+        relabel_d128_activation_swiglu_hidden_output,
     )
     add(
         "d128_activation_swiglu_row_commitment_drift",

@@ -125,23 +125,39 @@ class ZkAiD128ActivationSwiGluProofInputTests(unittest.TestCase):
             ACTIVATION_SWIGLU.validate_payload(payload)
 
     def test_load_source_rejects_oversized_source_json(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
             source_path = pathlib.Path(tmp) / "oversized-source.json"
             source_path.write_text(" " * (ACTIVATION_SWIGLU.MAX_SOURCE_JSON_BYTES + 1), encoding="utf-8")
             with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "exceeds max size"):
                 ACTIVATION_SWIGLU.load_source(source_path)
 
     def test_load_source_rejects_non_file_source(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
             with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "regular file"):
                 ACTIVATION_SWIGLU.load_source(pathlib.Path(tmp))
 
     def test_load_source_rejects_invalid_utf8_source(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
             source_path = pathlib.Path(tmp) / "invalid-utf8.json"
             source_path.write_bytes(b"\xff")
             with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "failed to load"):
                 ACTIVATION_SWIGLU.load_source(source_path)
+
+    def test_load_source_rejects_path_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source_path = pathlib.Path(tmp) / "source.json"
+            source_path.write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "escapes repository"):
+                ACTIVATION_SWIGLU.load_source(source_path)
+
+    def test_load_source_rejects_symlink_source(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            real = pathlib.Path(tmp) / "source.json"
+            real.write_text("{}", encoding="utf-8")
+            symlink = pathlib.Path(tmp) / "source-link.json"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "symlink"):
+                ACTIVATION_SWIGLU.load_source(symlink)
 
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()

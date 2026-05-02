@@ -1254,6 +1254,20 @@ mod tests {
     }
 
     #[test]
+    fn activation_swiglu_rejects_source_gate_value_output_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["source_gate_value_projection_output_commitment"] =
+            Value::String(format!("blake2b-256:{}", "aa".repeat(32)));
+        let error = zkai_d128_activation_swiglu_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("source gate/value projection output commitment"));
+    }
+
+    #[test]
     fn activation_swiglu_rejects_proof_native_parameter_commitment_drift() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["proof_native_parameter_commitment"] =

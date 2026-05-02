@@ -138,8 +138,9 @@ Tablero boundary.
 - Recursive/PCD compression remains a bounded no-go until a real outer proof or
   accumulator backend exists.
 - The `d=128` route now has five partial proof handles: RMSNorm public rows,
-  RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and
-  residual add.
+  RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and a
+  parameterized vector residual-add slice. The fifth handle is not a native
+  residual proof or a composed full-block receipt.
 - The d128 gate/value projection handle proves `131,072` public multiplication
   rows (`65,536` gate and `65,536` value rows), consumes the bridge's
   `projection_input_row_commitment`, recomputes deterministic gate/value matrix

@@ -39,7 +39,8 @@ This repository currently has three live lanes.
    - The `d=64` native route has a six-slice proof-backed receipt chain.
    - The `d=128` route now has five partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
-     and residual add.
+     and a parameterized vector residual-add slice. The fifth handle is not a
+     native residual proof or a composed full-block receipt.
    - The d128 gate/value projection handle proves `131,072` public
      multiplication rows and emits `gate_value_projection_output_commitment`.
    - The d128 activation/SwiGLU handle consumes

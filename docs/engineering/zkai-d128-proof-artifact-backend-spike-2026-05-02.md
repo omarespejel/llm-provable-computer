@@ -14,7 +14,7 @@ This gate separates:
 - the partial `d=128` RMSNorm-to-projection bridge proof handle;
 - the partial `d=128` gate/value projection proof handle;
 - the partial `d=128` activation/SwiGLU proof handle;
-- the partial `d=128` residual-add proof handle;
+- the partial `d=128` parameterized vector residual-add slice handle;
 - the still-missing full `d=128` transformer-block proof object.
 
 ## Decision
@@ -22,19 +22,21 @@ This gate separates:
 **Bounded NO-GO for a full d128 transformer-block proof artifact on the current
 backend route. Partial GO for d128 RMSNorm public rows, the
 RMSNorm-to-projection bridge, d128 gate/value projection, d128 activation/SwiGLU,
-and d128 residual add.**
+and the parameterized d128 vector residual-add slice.**
 
 The current first full-block blocker is:
 
 > d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection,
-> activation/SwiGLU, and residual-add proof handles exist, but down-projection,
-> native residual, and full transformer-block composition handles are still
+> activation/SwiGLU, and parameterized vector residual-add proof handles exist,
+> but down-projection, native residual, and full transformer-block composition
+> handles are still
 > missing
 
 This supersedes the earlier residual-only, RMSNorm-plus-residual, and
 RMSNorm-bridge-plus-residual states. The repository can now prove five d128
-slice surfaces. It still cannot report a full d128 block proof size, verifier
-time, or relabeling suite.
+slice surfaces. The residual-add slice is parameterized and not a native
+residual proof. The repository still cannot report a full d128 block proof size,
+verifier time, or relabeling suite.
 
 ## Result
 
@@ -53,16 +55,16 @@ time, or relabeling suite.
 | d128 RMSNorm-to-projection bridge route | `GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` |
 | d128 gate/value projection route | `GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY` |
 | d128 activation/SwiGLU route | `GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY` |
-| d128 residual-add route | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` |
+| d128 parameterized residual-add route | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` |
 | Parameterized full-block route | `NO_GO_FULL_BLOCK_SLICES_MISSING` |
 | RMSNorm proof roundtrip | locally constructed and verified by Rust tests |
 | Bridge proof roundtrip | locally constructed and verified by Rust tests |
 | Gate/value proof roundtrip | locally constructed and verified by Rust tests |
 | Activation/SwiGLU proof roundtrip | locally constructed and verified by Rust tests |
-| Residual-add proof roundtrip | locally constructed and verified by Rust tests |
+| Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `48 / 48` rejected |
+| Mutation checks | `50 / 50` rejected |
 
 ## Backend-route classification
 
