@@ -631,6 +631,13 @@ def classify_error(error: Exception) -> str:
     return "parser_or_schema"
 
 
+def exception_message(error: Exception) -> str:
+    text = str(error)
+    if text:
+        return text
+    return f"{type(error).__name__} with empty message"
+
+
 def _candidate_row(payload: dict[str, Any], candidate_id: str) -> dict[str, Any]:
     for item in payload["backend_attempt"]["candidate_inventory"]:
         if item["candidate_id"] == candidate_id:
@@ -680,7 +687,7 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
     for mutation, surface, mutated, generation_error in _mutated_cases(baseline):
         if generation_error is not None:
             accepted = False
-            error = str(generation_error)
+            error = exception_message(generation_error)
             layer = classify_error(generation_error)
         else:
             try:
