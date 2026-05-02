@@ -37,6 +37,8 @@ mod primitive_benchmark;
 mod recursion;
 #[cfg(feature = "stwo-backend")]
 mod shared_lookup_artifact;
+#[cfg(feature = "stwo-backend")]
+mod zkai_vector_block_residual_add_proof;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -1008,6 +1010,16 @@ pub use shared_lookup_artifact::{
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
     STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+};
+#[cfg(feature = "stwo-backend")]
+pub use zkai_vector_block_residual_add_proof::{
+    prove_zkai_vector_block_envelope, verify_zkai_vector_block_envelope,
+    zkai_vector_block_input_from_json_str, ZkAiVectorBlockProofEnvelope, ZkAiVectorBlockProofInput,
+    ZkAiVectorBlockResidualAddRow, ZKAI_VECTOR_BLOCK_DECISION, ZKAI_VECTOR_BLOCK_INPUT_DECISION,
+    ZKAI_VECTOR_BLOCK_INPUT_SCHEMA, ZKAI_VECTOR_BLOCK_MAX_JSON_BYTES,
+    ZKAI_VECTOR_BLOCK_MAX_PROOF_BYTES, ZKAI_VECTOR_BLOCK_NEXT_BACKEND_STEP,
+    ZKAI_VECTOR_BLOCK_OPERATION, ZKAI_VECTOR_BLOCK_PROOF_VERSION, ZKAI_VECTOR_BLOCK_SEMANTIC_SCOPE,
+    ZKAI_VECTOR_BLOCK_STATEMENT_VERSION,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

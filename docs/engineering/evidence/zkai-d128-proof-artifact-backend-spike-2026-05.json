@@ -111,18 +111,38 @@
       "verifier_time_ms": null
     },
     {
-      "blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
-      "missing_symbols": [
+      "blocker": "residual-add vector slice only; not a full d128 transformer-block proof",
+      "checked_in_proof_artifact_exists": false,
+      "evidence": "docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json",
+      "local_roundtrip_proof_constructed": true,
+      "present_symbols": [
         "ZkAiVectorBlockProofInput",
-        "ZkAiParameterizedTransformerBlockProof",
+        "ZkAiVectorBlockProofEnvelope",
+        "zkai_vector_block_input_from_json_str",
         "prove_zkai_vector_block_envelope",
-        "verify_zkai_vector_block_envelope",
-        "parameterized_vector_block_air"
+        "verify_zkai_vector_block_envelope"
+      ],
+      "proof_artifact_exists": true,
+      "proof_size_bytes": null,
+      "route": "parameterized_vector_residual_add_air",
+      "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+      "target_ff_dim": null,
+      "target_width": 128,
+      "verifier_handle_exists": true,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
+      "missing_symbols": [
+        "ZkAiParameterizedTransformerBlockProof",
+        "parameterized_transformer_block_air",
+        "prove_zkai_parameterized_transformer_block_envelope",
+        "verify_zkai_parameterized_transformer_block_envelope"
       ],
       "proof_artifact_exists": false,
       "proof_size_bytes": null,
-      "route": "parameterized_vector_block_air",
-      "status": "NO_GO_FIRST_BLOCKER",
+      "route": "parameterized_transformer_block_air",
+      "status": "NO_GO_FULL_BLOCK_SLICES_MISSING",
       "target_ff_dim": 512,
       "target_width": 128,
       "verifier_handle_exists": false,
@@ -215,10 +235,10 @@
       "surface": "backend_routes"
     },
     {
-      "error": "parameterized route status mismatch",
+      "error": "parameterized full-block route status mismatch",
       "index": 8,
       "mutated_accepted": false,
-      "mutation": "parameterized_route_promoted",
+      "mutation": "full_block_parameterized_route_promoted",
       "rejected": true,
       "rejection_layer": "backend_routes",
       "surface": "backend_routes"
@@ -400,8 +420,8 @@
     "status": "GO_ANCHOR_ONLY",
     "total_checked_rows": 49600
   },
-  "decision": "NO_GO_D128_PROOF_ARTIFACT_PARAMETERIZED_AIR_MISSING",
-  "gate_commitment": "blake2b-256:b8b1f02d211e8541e0f8c44a64e94a9041661680c4051dbc33d720c685241163",
+  "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
+  "gate_commitment": "blake2b-256:c6bb96e0abe4dc2d28de8d117be1b2fb411b45b1f25590f4066b473fdf451c0a",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -446,7 +466,7 @@
     },
     {
       "index": 8,
-      "mutation": "parameterized_route_promoted",
+      "mutation": "full_block_parameterized_route_promoted",
       "surface": "backend_routes"
     },
     {
@@ -476,9 +496,9 @@
     }
   ],
   "non_claims": [
-    "not a local d128 proof artifact",
-    "not verifier-time evidence for d128",
-    "not proof-size evidence for d128",
+    "not a full local d128 transformer-block proof artifact",
+    "not verifier-time evidence for a full d128 transformer block",
+    "not proof-size evidence for a full d128 transformer block",
     "not recursive aggregation",
     "not backend independence evidence",
     "not a matched NANOZK or DeepProve benchmark",
@@ -486,7 +506,11 @@
   ],
   "proof_status": {
     "blocked_before_metrics": true,
-    "first_blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
+    "first_blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
+    "partial_parameterized_residual_add_checked_in_proof_artifact_exists": false,
+    "partial_parameterized_residual_add_local_roundtrip_proof_constructed": true,
+    "partial_parameterized_residual_add_proof_exists": true,
+    "partial_parameterized_residual_add_verifier_exists": true,
     "proof_artifact_exists": false,
     "proof_size_bytes": null,
     "required_toolchain": "nightly-2025-07-14",
@@ -689,23 +713,49 @@
       "src/stwo_backend/d128_native_residual_add_proof.rs",
       "src/stwo_backend/d128_native_transformer_block_proof.rs"
     ],
-    "missing_parameterized_symbols": [
-      "ZkAiVectorBlockProofInput",
+    "missing_parameterized_full_block_symbols": [
       "ZkAiParameterizedTransformerBlockProof",
-      "prove_zkai_vector_block_envelope",
-      "verify_zkai_vector_block_envelope",
-      "parameterized_vector_block_air"
-    ]
+      "parameterized_transformer_block_air",
+      "prove_zkai_parameterized_transformer_block_envelope",
+      "verify_zkai_parameterized_transformer_block_envelope"
+    ],
+    "parameterized_residual_add": {
+      "evidence": {
+        "decision": "GO_INPUT_FOR_VECTOR_BLOCK_RESIDUAL_ADD_AIR_PROOF",
+        "file_sha256": "fb3d8000f3a52c60d777b513c5f7458e82426efa195ee1c35013a2cca627b36b",
+        "path": "docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json",
+        "payload_sha256": "5ced4037b2bd41dec0a790cbdebc1ed52019542a72570dc9b85a4cfa409e63e4",
+        "result": null,
+        "schema": "zkai-vector-block-residual-add-air-proof-input-v1"
+      },
+      "module": {
+        "exists": true,
+        "file_sha256": "ff0a02e4a97ffbd09fbf531992fb350e67112527db6d4baf9092c050fe5017f3",
+        "path": "src/stwo_backend/zkai_vector_block_residual_add_proof.rs"
+      },
+      "operation": "residual_add",
+      "present_symbols": [
+        "ZkAiVectorBlockProofInput",
+        "ZkAiVectorBlockProofEnvelope",
+        "zkai_vector_block_input_from_json_str",
+        "prove_zkai_vector_block_envelope",
+        "verify_zkai_vector_block_envelope"
+      ],
+      "row_count": 128,
+      "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+      "target_width": 128
+    }
   },
   "summary": {
     "blocked_before_metrics": true,
     "d64_anchor_route": "GO_ANCHOR_ONLY",
     "direct_d128_route": "NO_GO",
-    "first_blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
+    "first_blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
     "issue": 387,
     "mutation_cases": 14,
     "mutations_rejected": 14,
-    "parameterized_route": "NO_GO_FIRST_BLOCKER",
+    "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
+    "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "target_width": 128
@@ -729,7 +779,11 @@
   "validation_commands": [
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
-    "cargo +nightly-2025-07-14 test --lib d64 --features stwo-backend -- --nocapture",
-    "python3 scripts/paper/paper_preflight.py --repo-root ."
+    "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
+    "just gate-fast",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate"
   ]
 }

@@ -1,0 +1,1212 @@
+{
+  "decision": "GO_INPUT_FOR_VECTOR_BLOCK_RESIDUAL_ADD_AIR_PROOF",
+  "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+  "input_activation_domain": "ptvm:zkai:d128-input-activation:v1",
+  "input_q8": [
+    -89,
+    -76,
+    -63,
+    -50,
+    -37,
+    -24,
+    -11,
+    2,
+    15,
+    28,
+    41,
+    54,
+    67,
+    80,
+    93,
+    -87,
+    -74,
+    -61,
+    -48,
+    -35,
+    -22,
+    -9,
+    4,
+    17,
+    30,
+    43,
+    56,
+    69,
+    82,
+    95,
+    -85,
+    -72,
+    -59,
+    -46,
+    -33,
+    -20,
+    -7,
+    6,
+    19,
+    32,
+    45,
+    58,
+    71,
+    84,
+    -96,
+    -83,
+    -70,
+    -57,
+    -44,
+    -31,
+    -18,
+    -5,
+    8,
+    21,
+    34,
+    47,
+    60,
+    73,
+    86,
+    -94,
+    -81,
+    -68,
+    -55,
+    -42,
+    -29,
+    -16,
+    -3,
+    10,
+    23,
+    36,
+    49,
+    62,
+    75,
+    88,
+    -92,
+    -79,
+    -66,
+    -53,
+    -40,
+    -27,
+    -14,
+    -1,
+    12,
+    25,
+    38,
+    51,
+    64,
+    77,
+    90,
+    -90,
+    -77,
+    -64,
+    -51,
+    -38,
+    -25,
+    -12,
+    1,
+    14,
+    27,
+    40,
+    53,
+    66,
+    79,
+    92,
+    -88,
+    -75,
+    -62,
+    -49,
+    -36,
+    -23,
+    -10,
+    3,
+    16,
+    29,
+    42,
+    55,
+    68,
+    81,
+    94,
+    -86,
+    -73,
+    -60,
+    -47,
+    -34,
+    -21,
+    -8,
+    5,
+    18
+  ],
+  "next_backend_step": "parameterize RMSNorm, projection, activation, and down-projection slices before claiming a full d128 transformer-block proof",
+  "non_claims": [
+    "not a full transformer-block proof",
+    "not RMSNorm, projection, activation, or down-projection proof",
+    "not recursive composition",
+    "not private parameter-opening proof",
+    "not model-scale transformer inference",
+    "not onchain deployment evidence"
+  ],
+  "operation": "residual_add",
+  "output_activation_commitment": "blake2b-256:7e6ae6d301fc60ac2232d807d155785eabe653cf4e91971adda470a04246a572",
+  "output_activation_domain": "ptvm:zkai:d128-output-activation:v1",
+  "output_q8": [
+    -126,
+    -96,
+    -66,
+    -36,
+    -6,
+    24,
+    -43,
+    -13,
+    17,
+    47,
+    77,
+    10,
+    40,
+    70,
+    100,
+    -63,
+    -33,
+    -100,
+    -70,
+    -40,
+    -10,
+    20,
+    50,
+    -17,
+    13,
+    43,
+    73,
+    103,
+    36,
+    66,
+    -97,
+    -67,
+    -37,
+    -7,
+    -74,
+    -44,
+    -14,
+    16,
+    46,
+    76,
+    9,
+    39,
+    69,
+    99,
+    -64,
+    -131,
+    -101,
+    -71,
+    -41,
+    -11,
+    19,
+    -48,
+    -18,
+    12,
+    42,
+    72,
+    102,
+    35,
+    65,
+    -98,
+    -68,
+    -38,
+    -8,
+    -75,
+    -45,
+    -15,
+    15,
+    45,
+    -22,
+    8,
+    38,
+    68,
+    98,
+    128,
+    -132,
+    -102,
+    -72,
+    -42,
+    -12,
+    18,
+    -49,
+    -19,
+    11,
+    41,
+    71,
+    4,
+    34,
+    64,
+    94,
+    -69,
+    -39,
+    -106,
+    -76,
+    -46,
+    -16,
+    14,
+    44,
+    -23,
+    7,
+    37,
+    67,
+    97,
+    127,
+    60,
+    -103,
+    -73,
+    -43,
+    -13,
+    -80,
+    -50,
+    -20,
+    10,
+    40,
+    70,
+    3,
+    33,
+    63,
+    93,
+    123,
+    -40,
+    -107,
+    -77,
+    -47,
+    -17,
+    13,
+    -54,
+    -24,
+    6
+  ],
+  "proof_native_parameter_commitment": "blake2b-256:f1a24e9f1782d1d12c01a3febc0aae61e09d4b1572ffdbd583fc304104515f39",
+  "proof_verifier_hardening": [
+    "pinned d128 target width checked before proof verification",
+    "canonical d128 vector and row commitment domains checked before proof verification",
+    "explicit power-of-two trace domain check before proving",
+    "input activation commitment recomputation before proof verification",
+    "residual-delta commitment recomputation before proof verification",
+    "output activation commitment recomputation before proof verification",
+    "residual-add row commitment recomputation before proof verification",
+    "statement/public-instance/native-parameter commitments recomputed before proof verification",
+    "AIR residual-add relation for every checked output coordinate",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing"
+  ],
+  "public_instance_commitment": "blake2b-256:bf7a21fed3dbd53a665b45e036d7c2622e8ee63f2063d14b69a92a2bc05adc29",
+  "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+  "residual_add_row_commitment": "blake2b-256:151f17f701c8a7e1e9720bbf8c0665a032734131b9b5b1f4efee3bfc00994594",
+  "residual_add_row_domain": "ptvm:zkai:d128-residual-add-rows:v1",
+  "residual_delta_commitment": "blake2b-256:13d466dc6882d2bf9f89850c0190e9ed6e80f78be0e13b039c9f2bdb49535f89",
+  "residual_delta_domain": "ptvm:zkai:d128-residual-delta:v1",
+  "residual_delta_q8": [
+    -37,
+    -20,
+    -3,
+    14,
+    31,
+    48,
+    -32,
+    -15,
+    2,
+    19,
+    36,
+    -44,
+    -27,
+    -10,
+    7,
+    24,
+    41,
+    -39,
+    -22,
+    -5,
+    12,
+    29,
+    46,
+    -34,
+    -17,
+    0,
+    17,
+    34,
+    -46,
+    -29,
+    -12,
+    5,
+    22,
+    39,
+    -41,
+    -24,
+    -7,
+    10,
+    27,
+    44,
+    -36,
+    -19,
+    -2,
+    15,
+    32,
+    -48,
+    -31,
+    -14,
+    3,
+    20,
+    37,
+    -43,
+    -26,
+    -9,
+    8,
+    25,
+    42,
+    -38,
+    -21,
+    -4,
+    13,
+    30,
+    47,
+    -33,
+    -16,
+    1,
+    18,
+    35,
+    -45,
+    -28,
+    -11,
+    6,
+    23,
+    40,
+    -40,
+    -23,
+    -6,
+    11,
+    28,
+    45,
+    -35,
+    -18,
+    -1,
+    16,
+    33,
+    -47,
+    -30,
+    -13,
+    4,
+    21,
+    38,
+    -42,
+    -25,
+    -8,
+    9,
+    26,
+    43,
+    -37,
+    -20,
+    -3,
+    14,
+    31,
+    48,
+    -32,
+    -15,
+    2,
+    19,
+    36,
+    -44,
+    -27,
+    -10,
+    7,
+    24,
+    41,
+    -39,
+    -22,
+    -5,
+    12,
+    29,
+    46,
+    -34,
+    -17,
+    0,
+    17,
+    34,
+    -46,
+    -29,
+    -12
+  ],
+  "row_count": 128,
+  "rows": [
+    {
+      "input_q8": -89,
+      "output_q8": -126,
+      "residual_delta_q8": -37,
+      "row_index": 0
+    },
+    {
+      "input_q8": -76,
+      "output_q8": -96,
+      "residual_delta_q8": -20,
+      "row_index": 1
+    },
+    {
+      "input_q8": -63,
+      "output_q8": -66,
+      "residual_delta_q8": -3,
+      "row_index": 2
+    },
+    {
+      "input_q8": -50,
+      "output_q8": -36,
+      "residual_delta_q8": 14,
+      "row_index": 3
+    },
+    {
+      "input_q8": -37,
+      "output_q8": -6,
+      "residual_delta_q8": 31,
+      "row_index": 4
+    },
+    {
+      "input_q8": -24,
+      "output_q8": 24,
+      "residual_delta_q8": 48,
+      "row_index": 5
+    },
+    {
+      "input_q8": -11,
+      "output_q8": -43,
+      "residual_delta_q8": -32,
+      "row_index": 6
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -13,
+      "residual_delta_q8": -15,
+      "row_index": 7
+    },
+    {
+      "input_q8": 15,
+      "output_q8": 17,
+      "residual_delta_q8": 2,
+      "row_index": 8
+    },
+    {
+      "input_q8": 28,
+      "output_q8": 47,
+      "residual_delta_q8": 19,
+      "row_index": 9
+    },
+    {
+      "input_q8": 41,
+      "output_q8": 77,
+      "residual_delta_q8": 36,
+      "row_index": 10
+    },
+    {
+      "input_q8": 54,
+      "output_q8": 10,
+      "residual_delta_q8": -44,
+      "row_index": 11
+    },
+    {
+      "input_q8": 67,
+      "output_q8": 40,
+      "residual_delta_q8": -27,
+      "row_index": 12
+    },
+    {
+      "input_q8": 80,
+      "output_q8": 70,
+      "residual_delta_q8": -10,
+      "row_index": 13
+    },
+    {
+      "input_q8": 93,
+      "output_q8": 100,
+      "residual_delta_q8": 7,
+      "row_index": 14
+    },
+    {
+      "input_q8": -87,
+      "output_q8": -63,
+      "residual_delta_q8": 24,
+      "row_index": 15
+    },
+    {
+      "input_q8": -74,
+      "output_q8": -33,
+      "residual_delta_q8": 41,
+      "row_index": 16
+    },
+    {
+      "input_q8": -61,
+      "output_q8": -100,
+      "residual_delta_q8": -39,
+      "row_index": 17
+    },
+    {
+      "input_q8": -48,
+      "output_q8": -70,
+      "residual_delta_q8": -22,
+      "row_index": 18
+    },
+    {
+      "input_q8": -35,
+      "output_q8": -40,
+      "residual_delta_q8": -5,
+      "row_index": 19
+    },
+    {
+      "input_q8": -22,
+      "output_q8": -10,
+      "residual_delta_q8": 12,
+      "row_index": 20
+    },
+    {
+      "input_q8": -9,
+      "output_q8": 20,
+      "residual_delta_q8": 29,
+      "row_index": 21
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 50,
+      "residual_delta_q8": 46,
+      "row_index": 22
+    },
+    {
+      "input_q8": 17,
+      "output_q8": -17,
+      "residual_delta_q8": -34,
+      "row_index": 23
+    },
+    {
+      "input_q8": 30,
+      "output_q8": 13,
+      "residual_delta_q8": -17,
+      "row_index": 24
+    },
+    {
+      "input_q8": 43,
+      "output_q8": 43,
+      "residual_delta_q8": 0,
+      "row_index": 25
+    },
+    {
+      "input_q8": 56,
+      "output_q8": 73,
+      "residual_delta_q8": 17,
+      "row_index": 26
+    },
+    {
+      "input_q8": 69,
+      "output_q8": 103,
+      "residual_delta_q8": 34,
+      "row_index": 27
+    },
+    {
+      "input_q8": 82,
+      "output_q8": 36,
+      "residual_delta_q8": -46,
+      "row_index": 28
+    },
+    {
+      "input_q8": 95,
+      "output_q8": 66,
+      "residual_delta_q8": -29,
+      "row_index": 29
+    },
+    {
+      "input_q8": -85,
+      "output_q8": -97,
+      "residual_delta_q8": -12,
+      "row_index": 30
+    },
+    {
+      "input_q8": -72,
+      "output_q8": -67,
+      "residual_delta_q8": 5,
+      "row_index": 31
+    },
+    {
+      "input_q8": -59,
+      "output_q8": -37,
+      "residual_delta_q8": 22,
+      "row_index": 32
+    },
+    {
+      "input_q8": -46,
+      "output_q8": -7,
+      "residual_delta_q8": 39,
+      "row_index": 33
+    },
+    {
+      "input_q8": -33,
+      "output_q8": -74,
+      "residual_delta_q8": -41,
+      "row_index": 34
+    },
+    {
+      "input_q8": -20,
+      "output_q8": -44,
+      "residual_delta_q8": -24,
+      "row_index": 35
+    },
+    {
+      "input_q8": -7,
+      "output_q8": -14,
+      "residual_delta_q8": -7,
+      "row_index": 36
+    },
+    {
+      "input_q8": 6,
+      "output_q8": 16,
+      "residual_delta_q8": 10,
+      "row_index": 37
+    },
+    {
+      "input_q8": 19,
+      "output_q8": 46,
+      "residual_delta_q8": 27,
+      "row_index": 38
+    },
+    {
+      "input_q8": 32,
+      "output_q8": 76,
+      "residual_delta_q8": 44,
+      "row_index": 39
+    },
+    {
+      "input_q8": 45,
+      "output_q8": 9,
+      "residual_delta_q8": -36,
+      "row_index": 40
+    },
+    {
+      "input_q8": 58,
+      "output_q8": 39,
+      "residual_delta_q8": -19,
+      "row_index": 41
+    },
+    {
+      "input_q8": 71,
+      "output_q8": 69,
+      "residual_delta_q8": -2,
+      "row_index": 42
+    },
+    {
+      "input_q8": 84,
+      "output_q8": 99,
+      "residual_delta_q8": 15,
+      "row_index": 43
+    },
+    {
+      "input_q8": -96,
+      "output_q8": -64,
+      "residual_delta_q8": 32,
+      "row_index": 44
+    },
+    {
+      "input_q8": -83,
+      "output_q8": -131,
+      "residual_delta_q8": -48,
+      "row_index": 45
+    },
+    {
+      "input_q8": -70,
+      "output_q8": -101,
+      "residual_delta_q8": -31,
+      "row_index": 46
+    },
+    {
+      "input_q8": -57,
+      "output_q8": -71,
+      "residual_delta_q8": -14,
+      "row_index": 47
+    },
+    {
+      "input_q8": -44,
+      "output_q8": -41,
+      "residual_delta_q8": 3,
+      "row_index": 48
+    },
+    {
+      "input_q8": -31,
+      "output_q8": -11,
+      "residual_delta_q8": 20,
+      "row_index": 49
+    },
+    {
+      "input_q8": -18,
+      "output_q8": 19,
+      "residual_delta_q8": 37,
+      "row_index": 50
+    },
+    {
+      "input_q8": -5,
+      "output_q8": -48,
+      "residual_delta_q8": -43,
+      "row_index": 51
+    },
+    {
+      "input_q8": 8,
+      "output_q8": -18,
+      "residual_delta_q8": -26,
+      "row_index": 52
+    },
+    {
+      "input_q8": 21,
+      "output_q8": 12,
+      "residual_delta_q8": -9,
+      "row_index": 53
+    },
+    {
+      "input_q8": 34,
+      "output_q8": 42,
+      "residual_delta_q8": 8,
+      "row_index": 54
+    },
+    {
+      "input_q8": 47,
+      "output_q8": 72,
+      "residual_delta_q8": 25,
+      "row_index": 55
+    },
+    {
+      "input_q8": 60,
+      "output_q8": 102,
+      "residual_delta_q8": 42,
+      "row_index": 56
+    },
+    {
+      "input_q8": 73,
+      "output_q8": 35,
+      "residual_delta_q8": -38,
+      "row_index": 57
+    },
+    {
+      "input_q8": 86,
+      "output_q8": 65,
+      "residual_delta_q8": -21,
+      "row_index": 58
+    },
+    {
+      "input_q8": -94,
+      "output_q8": -98,
+      "residual_delta_q8": -4,
+      "row_index": 59
+    },
+    {
+      "input_q8": -81,
+      "output_q8": -68,
+      "residual_delta_q8": 13,
+      "row_index": 60
+    },
+    {
+      "input_q8": -68,
+      "output_q8": -38,
+      "residual_delta_q8": 30,
+      "row_index": 61
+    },
+    {
+      "input_q8": -55,
+      "output_q8": -8,
+      "residual_delta_q8": 47,
+      "row_index": 62
+    },
+    {
+      "input_q8": -42,
+      "output_q8": -75,
+      "residual_delta_q8": -33,
+      "row_index": 63
+    },
+    {
+      "input_q8": -29,
+      "output_q8": -45,
+      "residual_delta_q8": -16,
+      "row_index": 64
+    },
+    {
+      "input_q8": -16,
+      "output_q8": -15,
+      "residual_delta_q8": 1,
+      "row_index": 65
+    },
+    {
+      "input_q8": -3,
+      "output_q8": 15,
+      "residual_delta_q8": 18,
+      "row_index": 66
+    },
+    {
+      "input_q8": 10,
+      "output_q8": 45,
+      "residual_delta_q8": 35,
+      "row_index": 67
+    },
+    {
+      "input_q8": 23,
+      "output_q8": -22,
+      "residual_delta_q8": -45,
+      "row_index": 68
+    },
+    {
+      "input_q8": 36,
+      "output_q8": 8,
+      "residual_delta_q8": -28,
+      "row_index": 69
+    },
+    {
+      "input_q8": 49,
+      "output_q8": 38,
+      "residual_delta_q8": -11,
+      "row_index": 70
+    },
+    {
+      "input_q8": 62,
+      "output_q8": 68,
+      "residual_delta_q8": 6,
+      "row_index": 71
+    },
+    {
+      "input_q8": 75,
+      "output_q8": 98,
+      "residual_delta_q8": 23,
+      "row_index": 72
+    },
+    {
+      "input_q8": 88,
+      "output_q8": 128,
+      "residual_delta_q8": 40,
+      "row_index": 73
+    },
+    {
+      "input_q8": -92,
+      "output_q8": -132,
+      "residual_delta_q8": -40,
+      "row_index": 74
+    },
+    {
+      "input_q8": -79,
+      "output_q8": -102,
+      "residual_delta_q8": -23,
+      "row_index": 75
+    },
+    {
+      "input_q8": -66,
+      "output_q8": -72,
+      "residual_delta_q8": -6,
+      "row_index": 76
+    },
+    {
+      "input_q8": -53,
+      "output_q8": -42,
+      "residual_delta_q8": 11,
+      "row_index": 77
+    },
+    {
+      "input_q8": -40,
+      "output_q8": -12,
+      "residual_delta_q8": 28,
+      "row_index": 78
+    },
+    {
+      "input_q8": -27,
+      "output_q8": 18,
+      "residual_delta_q8": 45,
+      "row_index": 79
+    },
+    {
+      "input_q8": -14,
+      "output_q8": -49,
+      "residual_delta_q8": -35,
+      "row_index": 80
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -19,
+      "residual_delta_q8": -18,
+      "row_index": 81
+    },
+    {
+      "input_q8": 12,
+      "output_q8": 11,
+      "residual_delta_q8": -1,
+      "row_index": 82
+    },
+    {
+      "input_q8": 25,
+      "output_q8": 41,
+      "residual_delta_q8": 16,
+      "row_index": 83
+    },
+    {
+      "input_q8": 38,
+      "output_q8": 71,
+      "residual_delta_q8": 33,
+      "row_index": 84
+    },
+    {
+      "input_q8": 51,
+      "output_q8": 4,
+      "residual_delta_q8": -47,
+      "row_index": 85
+    },
+    {
+      "input_q8": 64,
+      "output_q8": 34,
+      "residual_delta_q8": -30,
+      "row_index": 86
+    },
+    {
+      "input_q8": 77,
+      "output_q8": 64,
+      "residual_delta_q8": -13,
+      "row_index": 87
+    },
+    {
+      "input_q8": 90,
+      "output_q8": 94,
+      "residual_delta_q8": 4,
+      "row_index": 88
+    },
+    {
+      "input_q8": -90,
+      "output_q8": -69,
+      "residual_delta_q8": 21,
+      "row_index": 89
+    },
+    {
+      "input_q8": -77,
+      "output_q8": -39,
+      "residual_delta_q8": 38,
+      "row_index": 90
+    },
+    {
+      "input_q8": -64,
+      "output_q8": -106,
+      "residual_delta_q8": -42,
+      "row_index": 91
+    },
+    {
+      "input_q8": -51,
+      "output_q8": -76,
+      "residual_delta_q8": -25,
+      "row_index": 92
+    },
+    {
+      "input_q8": -38,
+      "output_q8": -46,
+      "residual_delta_q8": -8,
+      "row_index": 93
+    },
+    {
+      "input_q8": -25,
+      "output_q8": -16,
+      "residual_delta_q8": 9,
+      "row_index": 94
+    },
+    {
+      "input_q8": -12,
+      "output_q8": 14,
+      "residual_delta_q8": 26,
+      "row_index": 95
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 44,
+      "residual_delta_q8": 43,
+      "row_index": 96
+    },
+    {
+      "input_q8": 14,
+      "output_q8": -23,
+      "residual_delta_q8": -37,
+      "row_index": 97
+    },
+    {
+      "input_q8": 27,
+      "output_q8": 7,
+      "residual_delta_q8": -20,
+      "row_index": 98
+    },
+    {
+      "input_q8": 40,
+      "output_q8": 37,
+      "residual_delta_q8": -3,
+      "row_index": 99
+    },
+    {
+      "input_q8": 53,
+      "output_q8": 67,
+      "residual_delta_q8": 14,
+      "row_index": 100
+    },
+    {
+      "input_q8": 66,
+      "output_q8": 97,
+      "residual_delta_q8": 31,
+      "row_index": 101
+    },
+    {
+      "input_q8": 79,
+      "output_q8": 127,
+      "residual_delta_q8": 48,
+      "row_index": 102
+    },
+    {
+      "input_q8": 92,
+      "output_q8": 60,
+      "residual_delta_q8": -32,
+      "row_index": 103
+    },
+    {
+      "input_q8": -88,
+      "output_q8": -103,
+      "residual_delta_q8": -15,
+      "row_index": 104
+    },
+    {
+      "input_q8": -75,
+      "output_q8": -73,
+      "residual_delta_q8": 2,
+      "row_index": 105
+    },
+    {
+      "input_q8": -62,
+      "output_q8": -43,
+      "residual_delta_q8": 19,
+      "row_index": 106
+    },
+    {
+      "input_q8": -49,
+      "output_q8": -13,
+      "residual_delta_q8": 36,
+      "row_index": 107
+    },
+    {
+      "input_q8": -36,
+      "output_q8": -80,
+      "residual_delta_q8": -44,
+      "row_index": 108
+    },
+    {
+      "input_q8": -23,
+      "output_q8": -50,
+      "residual_delta_q8": -27,
+      "row_index": 109
+    },
+    {
+      "input_q8": -10,
+      "output_q8": -20,
+      "residual_delta_q8": -10,
+      "row_index": 110
+    },
+    {
+      "input_q8": 3,
+      "output_q8": 10,
+      "residual_delta_q8": 7,
+      "row_index": 111
+    },
+    {
+      "input_q8": 16,
+      "output_q8": 40,
+      "residual_delta_q8": 24,
+      "row_index": 112
+    },
+    {
+      "input_q8": 29,
+      "output_q8": 70,
+      "residual_delta_q8": 41,
+      "row_index": 113
+    },
+    {
+      "input_q8": 42,
+      "output_q8": 3,
+      "residual_delta_q8": -39,
+      "row_index": 114
+    },
+    {
+      "input_q8": 55,
+      "output_q8": 33,
+      "residual_delta_q8": -22,
+      "row_index": 115
+    },
+    {
+      "input_q8": 68,
+      "output_q8": 63,
+      "residual_delta_q8": -5,
+      "row_index": 116
+    },
+    {
+      "input_q8": 81,
+      "output_q8": 93,
+      "residual_delta_q8": 12,
+      "row_index": 117
+    },
+    {
+      "input_q8": 94,
+      "output_q8": 123,
+      "residual_delta_q8": 29,
+      "row_index": 118
+    },
+    {
+      "input_q8": -86,
+      "output_q8": -40,
+      "residual_delta_q8": 46,
+      "row_index": 119
+    },
+    {
+      "input_q8": -73,
+      "output_q8": -107,
+      "residual_delta_q8": -34,
+      "row_index": 120
+    },
+    {
+      "input_q8": -60,
+      "output_q8": -77,
+      "residual_delta_q8": -17,
+      "row_index": 121
+    },
+    {
+      "input_q8": -47,
+      "output_q8": -47,
+      "residual_delta_q8": 0,
+      "row_index": 122
+    },
+    {
+      "input_q8": -34,
+      "output_q8": -17,
+      "residual_delta_q8": 17,
+      "row_index": 123
+    },
+    {
+      "input_q8": -21,
+      "output_q8": 13,
+      "residual_delta_q8": 34,
+      "row_index": 124
+    },
+    {
+      "input_q8": -8,
+      "output_q8": -54,
+      "residual_delta_q8": -46,
+      "row_index": 125
+    },
+    {
+      "input_q8": 5,
+      "output_q8": -24,
+      "residual_delta_q8": -29,
+      "row_index": 126
+    },
+    {
+      "input_q8": 18,
+      "output_q8": 6,
+      "residual_delta_q8": -12,
+      "row_index": 127
+    }
+  ],
+  "schema": "zkai-vector-block-residual-add-air-proof-input-v1",
+  "source_proof_backend_version": "synthetic-d128-residual-delta-source-v1",
+  "statement_commitment": "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18",
+  "target_id": "rmsnorm-swiglu-residual-d128-v1",
+  "validation_commands": [
+    "python3 scripts/zkai_d128_vector_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv",
+    "just gate-fast",
+    "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
+    "just gate"
+  ],
+  "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+  "width": 128
+}

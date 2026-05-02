@@ -17,6 +17,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 from typing import Any
@@ -26,13 +27,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 TARGET_GATE_PATH = ROOT / "scripts" / "zkai_d128_layerwise_comparator_target_gate.py"
 D64_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d64_block_receipt_composition_gate.py"
+VECTOR_RESIDUAL_GATE_PATH = ROOT / "scripts" / "zkai_d128_vector_residual_add_proof_input.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
+VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
 SCHEMA = "zkai-d128-proof-artifact-backend-spike-v1"
-DECISION = "NO_GO_D128_PROOF_ARTIFACT_PARAMETERIZED_AIR_MISSING"
+DECISION = "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING"
 RESULT = "BOUNDED_NO_GO"
 ISSUE = 387
 TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
@@ -41,9 +44,9 @@ TARGET_FF_DIM = 512
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 FIRST_BLOCKER = (
-    "no parameterized d128 vector-block AIR/prover/verifier handle; current "
-    "native proof modules are d64 target/domain/width hard-coded and no d128 "
-    "native module exports exist"
+    "a parameterized d128 residual-add vector proof handle exists, but "
+    "parameterized RMSNorm, projection, activation, down-projection, and full "
+    "transformer-block composition handles are still missing"
 )
 
 D64_PROOF_SLICES = (
@@ -124,12 +127,19 @@ EXPECTED_D128_EXPORT_SYMBOLS = (
     "verify_zkai_d128_transformer_block_envelope",
 )
 
-PARAMETERIZED_SYMBOLS = (
+PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
     "ZkAiVectorBlockProofInput",
-    "ZkAiParameterizedTransformerBlockProof",
+    "ZkAiVectorBlockProofEnvelope",
+    "zkai_vector_block_input_from_json_str",
     "prove_zkai_vector_block_envelope",
     "verify_zkai_vector_block_envelope",
-    "parameterized_vector_block_air",
+)
+
+MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS = (
+    "ZkAiParameterizedTransformerBlockProof",
+    "parameterized_transformer_block_air",
+    "prove_zkai_parameterized_transformer_block_envelope",
+    "verify_zkai_parameterized_transformer_block_envelope",
 )
 
 D64_HARDCODE_MARKERS = {
@@ -166,9 +176,9 @@ D64_HARDCODE_MARKERS = {
 }
 
 NON_CLAIMS = [
-    "not a local d128 proof artifact",
-    "not verifier-time evidence for d128",
-    "not proof-size evidence for d128",
+    "not a full local d128 transformer-block proof artifact",
+    "not verifier-time evidence for a full d128 transformer block",
+    "not proof-size evidence for a full d128 transformer block",
     "not recursive aggregation",
     "not backend independence evidence",
     "not a matched NANOZK or DeepProve benchmark",
@@ -178,8 +188,12 @@ NON_CLAIMS = [
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
-    "cargo +nightly-2025-07-14 test --lib d64 --features stwo-backend -- --nocapture",
+    "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
+    "just gate-fast",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate",
 ]
 
 TSV_COLUMNS = (
@@ -212,7 +226,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("proof_size_metric_smuggled", "metrics"),
     ("verifier_time_metric_smuggled", "metrics"),
     ("direct_d128_route_promoted", "backend_routes"),
-    ("parameterized_route_promoted", "backend_routes"),
+    ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
     ("d64_hardcoded_marker_removed", "source_probe"),
@@ -237,6 +251,10 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
 
 TARGET_GATE = _load_module(TARGET_GATE_PATH, "zkai_d128_target_for_backend_spike")
 D64_BLOCK_GATE = _load_module(D64_BLOCK_GATE_PATH, "zkai_d64_block_for_d128_backend_spike")
+VECTOR_RESIDUAL_GATE = _load_module(
+    VECTOR_RESIDUAL_GATE_PATH,
+    "zkai_d128_vector_residual_add_for_backend_spike",
+)
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -354,11 +372,24 @@ def repo_file_descriptor(path: str) -> dict[str, Any]:
     }
 
 
-def rust_source_corpus() -> str:
-    chunks = []
-    for path in sorted((ROOT / "src").rglob("*.rs")):
-        chunks.append(path.read_text(encoding="utf-8"))
-    return "\n".join(chunks)
+def rust_declares_symbol(module_text: str, symbol: str) -> bool:
+    escaped = re.escape(symbol)
+    return bool(
+        re.search(rf"(?m)^\s*pub(?:\s*\([^)]*\))?\s+(?:struct|fn)\s+{escaped}\b", module_text)
+    )
+
+
+def rust_reexports_symbol(mod_rs: str, module_name: str, symbol: str) -> bool:
+    escaped_module = re.escape(module_name)
+    escaped_symbol = re.escape(symbol)
+    direct = rf"(?m)^\s*pub\s+use\s+{escaped_module}::{escaped_symbol}\b"
+    if re.search(direct, mod_rs):
+        return True
+    block_pattern = rf"(?ms)^\s*pub\s+use\s+{escaped_module}::\{{(?P<body>.*?)^\s*\}};"
+    for match in re.finditer(block_pattern, mod_rs, flags=re.DOTALL):
+        if re.search(rf"\b{escaped_symbol}\b", match.group("body")):
+            return True
+    return False
 
 
 def build_source_probe() -> dict[str, Any]:
@@ -405,14 +436,51 @@ def build_source_probe() -> dict[str, Any]:
         )
     missing_d128_symbols = list(EXPECTED_D128_EXPORT_SYMBOLS)
 
-    repo_text = rust_source_corpus()
-    present_parameterized_symbols = [
-        symbol for symbol in PARAMETERIZED_SYMBOLS if symbol in repo_text
-    ]
-    if present_parameterized_symbols:
+    residual_module_path = "src/stwo_backend/zkai_vector_block_residual_add_proof.rs"
+    residual_module = read_repo_file(residual_module_path)
+    if "mod zkai_vector_block_residual_add_proof;" not in mod_rs:
+        raise D128BackendSpikeError("parameterized residual-add module missing from mod.rs")
+    missing_parameterized_residual_symbols = []
+    for symbol in PARAMETERIZED_RESIDUAL_ADD_SYMBOLS:
+        if not rust_declares_symbol(
+            residual_module, symbol
+        ) or not rust_reexports_symbol(mod_rs, "zkai_vector_block_residual_add_proof", symbol):
+            missing_parameterized_residual_symbols.append(symbol)
+    if missing_parameterized_residual_symbols:
         raise D128BackendSpikeError(
-            "parameterized vector-block route may now exist; refresh this no-go gate before relying on it"
+            "parameterized residual-add vector route disappeared; refresh this partial-go gate"
         )
+    present_parameterized_residual_symbols = list(PARAMETERIZED_RESIDUAL_ADD_SYMBOLS)
+    missing_parameterized_full_block_symbols = [
+        symbol
+        for symbol in MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS
+        if not rust_reexports_symbol(mod_rs, "zkai_parameterized_transformer_block_proof", symbol)
+    ]
+    present_parameterized_full_block_symbols = [
+        symbol
+        for symbol in MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS
+        if rust_reexports_symbol(mod_rs, "zkai_parameterized_transformer_block_proof", symbol)
+    ]
+    if present_parameterized_full_block_symbols:
+        raise D128BackendSpikeError(
+            "parameterized full transformer-block route may now exist; refresh this no-go gate before relying on it"
+        )
+
+    residual_evidence = load_json(VECTOR_RESIDUAL_EVIDENCE)
+    try:
+        VECTOR_RESIDUAL_GATE.validate_payload(residual_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("parameterized residual-add evidence failed validation") from err
+    for field, expected in {
+        "schema": "zkai-vector-block-residual-add-air-proof-input-v1",
+        "decision": "GO_INPUT_FOR_VECTOR_BLOCK_RESIDUAL_ADD_AIR_PROOF",
+        "operation": "residual_add",
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "width": TARGET_WIDTH,
+        "row_count": TARGET_WIDTH,
+    }.items():
+        expect_equal(residual_evidence.get(field), expected, f"parameterized residual-add {field}")
 
     hardcoded_markers = []
     for path, markers in D64_HARDCODE_MARKERS.items():
@@ -426,7 +494,16 @@ def build_source_probe() -> dict[str, Any]:
         "d64_slices": d64_slices,
         "missing_d128_modules": missing_d128_modules,
         "missing_d128_export_symbols": missing_d128_symbols,
-        "missing_parameterized_symbols": list(PARAMETERIZED_SYMBOLS),
+        "parameterized_residual_add": {
+            "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+            "module": repo_file_descriptor(residual_module_path),
+            "evidence": source_descriptor(VECTOR_RESIDUAL_EVIDENCE, residual_evidence),
+            "present_symbols": present_parameterized_residual_symbols,
+            "operation": residual_evidence["operation"],
+            "target_width": residual_evidence["width"],
+            "row_count": residual_evidence["row_count"],
+        },
+        "missing_parameterized_full_block_symbols": missing_parameterized_full_block_symbols,
         "d64_hardcoded_markers": hardcoded_markers,
     }
 
@@ -471,8 +548,23 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "hardcoded_markers": source_probe["d64_hardcoded_markers"],
         },
         {
-            "route": "parameterized_vector_block_air",
-            "status": "NO_GO_FIRST_BLOCKER",
+            "route": "parameterized_vector_residual_add_air",
+            "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": None,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "local_roundtrip_proof_constructed": True,
+            "checked_in_proof_artifact_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "residual-add vector slice only; not a full d128 transformer-block proof",
+            "evidence": "docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json",
+            "present_symbols": source_probe["parameterized_residual_add"]["present_symbols"],
+        },
+        {
+            "route": "parameterized_transformer_block_air",
+            "status": "NO_GO_FULL_BLOCK_SLICES_MISSING",
             "target_width": TARGET_WIDTH,
             "target_ff_dim": TARGET_FF_DIM,
             "proof_artifact_exists": False,
@@ -480,7 +572,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "proof_size_bytes": None,
             "verifier_time_ms": None,
             "blocker": FIRST_BLOCKER,
-            "missing_symbols": source_probe["missing_parameterized_symbols"],
+            "missing_symbols": source_probe["missing_parameterized_full_block_symbols"],
         },
         {
             "route": "d128_metrics_and_relabeling_suite",
@@ -517,13 +609,18 @@ def build_payload() -> dict[str, Any]:
         "first_blocker": FIRST_BLOCKER,
         "d64_anchor_route": "GO_ANCHOR_ONLY",
         "direct_d128_route": "NO_GO",
-        "parameterized_route": "NO_GO_FIRST_BLOCKER",
+        "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+        "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
         "mutation_cases": len(EXPECTED_MUTATION_INVENTORY),
     }
     proof_status = {
         "proof_artifact_exists": False,
         "verifier_handle_exists": False,
+        "partial_parameterized_residual_add_proof_exists": True,
+        "partial_parameterized_residual_add_verifier_exists": True,
+        "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
+        "partial_parameterized_residual_add_checked_in_proof_artifact_exists": False,
         "statement_relabeling_suite_exists": False,
         "proof_size_bytes": None,
         "verifier_time_ms": None,
@@ -606,12 +703,14 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
 
     add("direct_d128_route_promoted", "backend_routes", promote_direct_route)
 
-    def promote_parameterized_route(p: dict[str, Any]) -> None:
-        route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_vector_block_air")
+    def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
         route["status"] = "GO"
         route["missing_symbols"] = []
+        route["proof_artifact_exists"] = True
+        route["verifier_handle_exists"] = True
 
-    add("parameterized_route_promoted", "backend_routes", promote_parameterized_route)
+    add("full_block_parameterized_route_promoted", "backend_routes", promote_full_block_parameterized_route)
     add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
 
     def remove_missing_module(p: dict[str, Any]) -> None:
@@ -627,7 +726,7 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         route["hardcoded_markers"][0]["markers"] = []
 
     add("d64_hardcoded_marker_removed", "source_probe", remove_hardcoded_marker)
-    add("non_claim_removed", "claim_boundary", lambda p: p["non_claims"].remove("not a local d128 proof artifact"))
+    add("non_claim_removed", "claim_boundary", lambda p: p["non_claims"].remove("not a full local d128 transformer-block proof artifact"))
     add("mutation_case_accepted", "mutation_harness", lambda p: p["summary"].__setitem__("mutation_cases", 0))
     return cases
 
@@ -692,7 +791,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(summary.get("target_ff_dim"), TARGET_FF_DIM, "summary target ff_dim")
     expect_equal(summary.get("first_blocker"), FIRST_BLOCKER, "summary first blocker")
     expect_equal(summary.get("direct_d128_route"), "NO_GO", "summary direct d128 route")
-    expect_equal(summary.get("parameterized_route"), "NO_GO_FIRST_BLOCKER", "summary parameterized route")
+    expect_equal(
+        summary.get("parameterized_residual_add_route"),
+        "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+        "summary parameterized residual-add route",
+    )
+    expect_equal(
+        summary.get("parameterized_full_block_route"),
+        "NO_GO_FULL_BLOCK_SLICES_MISSING",
+        "summary parameterized full-block route",
+    )
     expect_equal(summary.get("blocked_before_metrics"), True, "summary blocked-before-metrics")
     expect_equal(summary.get("mutation_cases"), len(EXPECTED_MUTATION_INVENTORY), "summary mutation count")
 
@@ -719,10 +827,24 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         list(EXPECTED_D128_EXPORT_SYMBOLS),
         "missing d128 export inventory",
     )
+    residual_probe = require_object(
+        source_probe.get("parameterized_residual_add"),
+        "parameterized residual-add probe",
+    )
     expect_equal(
-        source_probe.get("missing_parameterized_symbols"),
-        list(PARAMETERIZED_SYMBOLS),
-        "missing parameterized symbol inventory",
+        residual_probe.get("status"),
+        "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+        "parameterized residual-add status",
+    )
+    expect_equal(
+        residual_probe.get("present_symbols"),
+        list(PARAMETERIZED_RESIDUAL_ADD_SYMBOLS),
+        "present parameterized residual-add symbol inventory",
+    )
+    expect_equal(
+        source_probe.get("missing_parameterized_full_block_symbols"),
+        list(MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS),
+        "missing parameterized full-block symbol inventory",
     )
     hardcoded = require_list(source_probe.get("d64_hardcoded_markers"), "d64 hardcoded markers")
     expect_equal(len(hardcoded), len(D64_HARDCODE_MARKERS), "hardcoded marker file count")
@@ -739,7 +861,8 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "existing_d64_slice_chain",
         "direct_d128_native_modules",
         "lift_existing_d64_modules_by_metadata",
-        "parameterized_vector_block_air",
+        "parameterized_vector_residual_add_air",
+        "parameterized_transformer_block_air",
         "d128_metrics_and_relabeling_suite",
     }
     if set(route_by_name) != expected_routes:
@@ -747,24 +870,65 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(route_by_name["existing_d64_slice_chain"].get("status"), "GO_ANCHOR_ONLY", "d64 anchor route status")
     expect_equal(route_by_name["direct_d128_native_modules"].get("status"), "NO_GO", "direct d128 route status")
     expect_equal(
-        route_by_name["parameterized_vector_block_air"].get("status"),
-        "NO_GO_FIRST_BLOCKER",
-        "parameterized route status",
+        route_by_name["parameterized_vector_residual_add_air"].get("status"),
+        "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
+        "parameterized residual-add route status",
     )
-    for route in routes:
-        route = require_object(route, "backend route")
-        if route["route"] != "existing_d64_slice_chain":
-            expect_equal(route.get("target_width"), TARGET_WIDTH, f"{route['route']} target width")
-            expect_equal(route.get("proof_artifact_exists"), False, f"{route['route']} proof artifact")
-            expect_equal(route.get("verifier_handle_exists"), False, f"{route['route']} verifier handle")
-        if route.get("proof_size_bytes") is not None:
+    expect_equal(
+        route_by_name["parameterized_transformer_block_air"].get("status"),
+        "NO_GO_FULL_BLOCK_SLICES_MISSING",
+        "parameterized full-block route status",
+    )
+    for raw_route in routes:
+        route_obj = require_object(raw_route, "backend route")
+        if route_obj["route"] == "existing_d64_slice_chain":
+            continue
+        if route_obj["route"] == "parameterized_vector_residual_add_air":
+            expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
+            expect_equal(route_obj.get("proof_artifact_exists"), True, f"{route_obj['route']} proof artifact")
+            expect_equal(route_obj.get("verifier_handle_exists"), True, f"{route_obj['route']} verifier handle")
+            expect_equal(
+                route_obj.get("local_roundtrip_proof_constructed"),
+                True,
+                f"{route_obj['route']} local proof roundtrip",
+            )
+            expect_equal(
+                route_obj.get("checked_in_proof_artifact_exists"),
+                False,
+                f"{route_obj['route']} checked-in proof artifact",
+            )
+        else:
+            expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
+            expect_equal(route_obj.get("proof_artifact_exists"), False, f"{route_obj['route']} proof artifact")
+            expect_equal(route_obj.get("verifier_handle_exists"), False, f"{route_obj['route']} verifier handle")
+        if route_obj.get("proof_size_bytes") is not None:
             raise D128BackendSpikeError("proof-size metric must remain absent before d128 proof exists")
-        if route.get("verifier_time_ms") is not None:
+        if route_obj.get("verifier_time_ms") is not None:
             raise D128BackendSpikeError("verifier-time metric must remain absent before d128 proof exists")
 
     proof_status = require_object(data.get("proof_status"), "proof status")
     expect_equal(proof_status.get("proof_artifact_exists"), False, "proof artifact exists")
     expect_equal(proof_status.get("verifier_handle_exists"), False, "verifier handle exists")
+    expect_equal(
+        proof_status.get("partial_parameterized_residual_add_proof_exists"),
+        True,
+        "partial residual-add proof exists",
+    )
+    expect_equal(
+        proof_status.get("partial_parameterized_residual_add_verifier_exists"),
+        True,
+        "partial residual-add verifier exists",
+    )
+    expect_equal(
+        proof_status.get("partial_parameterized_residual_add_local_roundtrip_proof_constructed"),
+        True,
+        "partial residual-add local roundtrip proof",
+    )
+    expect_equal(
+        proof_status.get("partial_parameterized_residual_add_checked_in_proof_artifact_exists"),
+        False,
+        "partial residual-add checked-in proof artifact",
+    )
     expect_equal(proof_status.get("statement_relabeling_suite_exists"), False, "relabeling suite exists")
     expect_equal(proof_status.get("proof_size_bytes"), None, "proof size")
     expect_equal(proof_status.get("verifier_time_ms"), None, "verifier time")
