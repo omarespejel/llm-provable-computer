@@ -41,9 +41,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             payload["summary"]["d128_rmsnorm_to_projection_bridge_route"],
             "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
+        self.assertEqual(payload["summary"]["d128_gate_value_projection_route"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
-        self.assertEqual(payload["case_count"], 24)
+        self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
         self.assertTrue(payload["all_mutations_rejected"])
 
     def test_target_matches_pinned_d128_comparator_shape(self) -> None:
@@ -77,7 +78,9 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(probe["missing_d128_modules"], list(GATE.EXPECTED_D128_MODULES))
         self.assertEqual(probe["missing_d128_export_symbols"], list(GATE.EXPECTED_D128_EXPORT_SYMBOLS))
         self.assertNotIn("src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs", probe["missing_d128_modules"])
+        self.assertNotIn("src/stwo_backend/d128_native_gate_value_projection_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("prove_zkai_d128_rmsnorm_to_projection_bridge_envelope", probe["missing_d128_export_symbols"])
+        self.assertNotIn("prove_zkai_d128_gate_value_projection_envelope", probe["missing_d128_export_symbols"])
         self.assertEqual(probe["d128_rmsnorm_public_row"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(
@@ -113,6 +116,20 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             probe["d128_rmsnorm_public_row"]["rmsnorm_output_row_commitment"],
         )
         self.assertFalse(probe["d128_rmsnorm_to_projection_bridge"]["projection_input_relabels_full_output"])
+        self.assertEqual(probe["d128_gate_value_projection"]["status"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
+        self.assertEqual(probe["d128_gate_value_projection"]["present_symbols"], list(GATE.D128_GATE_VALUE_SYMBOLS))
+        self.assertEqual(
+            probe["d128_gate_value_projection"]["source_projection_input_row_commitment"],
+            probe["d128_rmsnorm_to_projection_bridge"]["projection_input_row_commitment"],
+        )
+        gate_value_evidence = GATE.load_json(GATE.D128_GATE_VALUE_EVIDENCE)
+        for field in GATE.D128_GATE_VALUE_COMMITMENT_FIELDS:
+            self.assertIn(field, probe["d128_gate_value_projection"])
+            self.assertEqual(
+                probe["d128_gate_value_projection"][field],
+                gate_value_evidence[field],
+            )
+        self.assertFalse(probe["d128_gate_value_projection"]["projection_output_relabels_full_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
@@ -149,6 +166,19 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 GATE.build_source_probe()
         finally:
             GATE.D128_RMSNORM_GATE.validate_payload = original
+
+    def test_source_probe_runs_full_gate_value_evidence_validator(self) -> None:
+        original = GATE.D128_GATE_VALUE_GATE.validate_payload
+
+        def reject(_payload: dict) -> None:
+            raise GATE.D128_GATE_VALUE_GATE.GateValueProjectionInputError("simulated gate/value evidence drift")
+
+        try:
+            GATE.D128_GATE_VALUE_GATE.validate_payload = reject
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "gate/value projection evidence"):
+                GATE.build_source_probe()
+        finally:
+            GATE.D128_GATE_VALUE_GATE.validate_payload = original
 
     def test_source_probe_runs_full_bridge_evidence_validator(self) -> None:
         original = GATE.D128_BRIDGE_GATE.validate_payload
@@ -227,6 +257,9 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertTrue(routes["direct_d128_rmsnorm_to_projection_bridge_air"]["local_roundtrip_proof_constructed"])
         self.assertFalse(routes["direct_d128_rmsnorm_to_projection_bridge_air"]["checked_in_proof_artifact_exists"])
+        self.assertEqual(routes["direct_d128_gate_value_projection_air"]["status"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
+        self.assertTrue(routes["direct_d128_gate_value_projection_air"]["local_roundtrip_proof_constructed"])
+        self.assertFalse(routes["direct_d128_gate_value_projection_air"]["checked_in_proof_artifact_exists"])
         self.assertEqual(routes["lift_existing_d64_modules_by_metadata"]["status"], "NO_GO")
         self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
@@ -249,6 +282,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_rmsnorm_to_projection_bridge_verifier_exists"])
         self.assertTrue(status["partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists"])
+        self.assertTrue(status["partial_d128_gate_value_projection_proof_exists"])
+        self.assertTrue(status["partial_d128_gate_value_projection_verifier_exists"])
+        self.assertTrue(status["partial_d128_gate_value_projection_local_roundtrip_proof_constructed"])
+        self.assertFalse(status["partial_d128_gate_value_projection_checked_in_proof_artifact_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
@@ -358,6 +395,15 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(cases["decision_promoted_to_go"]["rejection_layer"], "top_level")
         self.assertEqual(cases["direct_d128_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(cases["d128_rmsnorm_to_projection_bridge_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(cases["d128_gate_value_projection_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(
+            cases["d128_gate_value_projection_statement_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_gate_value_projection_route_statement_commitment_drift"]["rejection_layer"],
+            "backend_routes",
+        )
         self.assertEqual(cases["full_block_parameterized_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(cases["missing_module_removed"]["rejection_layer"], "source_probe")
         self.assertEqual(cases["proof_size_metric_smuggled"]["rejection_layer"], "metrics")

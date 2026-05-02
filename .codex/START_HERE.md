@@ -24,7 +24,7 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 
 ## What this repository is now
 
-This repository currently has two live lanes.
+This repository currently has three live lanes.
 
 1. Publication/default lane
    - The paper-facing package and shipped default backend remain on the carry-free path.
@@ -35,7 +35,17 @@ This repository currently has two live lanes.
    - It clears the honest `8`-step Phase12 family, has AIR-level `wrap_delta` range constraints, and the experimental Phase44D scaling sweep currently clears through `2,4,8,16,32,64,128,256,512,1024`.
    - The focused April 25-26 follow-up now covers signed/non-unit `MulMemory` wrap patterns, sticky-carry `Store` preservation, a full honest `8`-step trace sweep, serialized experimental proof-file tamper coverage, serialized proof-checked Phase12-chain tamper coverage, serialized Phase44D typed-boundary tamper coverage, serialized Phase44D handoff / Phase45 bridge / Phase46 receipt tamper coverage, serialized Phase47 wrapper-candidate / Phase48 wrapper-attempt tamper coverage including stale-commitment rejection, one bounded differential serialized-artifact mutator across the full Phase44D→48 chain, and raw serialized-bundle fuzz coverage for the Phase44D→48 against-sources acceptance chain.
 
-Do not collapse these two lanes into one claim.
+3. Verifiable-AI statement-bound transformer lane
+   - The `d=64` native route has a six-slice proof-backed receipt chain.
+   - The `d=128` route now has four partial proof handles: RMSNorm public rows,
+     RMSNorm-to-projection bridge, gate/value projection, and residual add.
+   - The d128 gate/value projection handle proves `131,072` public
+     multiplication rows and emits `gate_value_projection_output_commitment`.
+   - This is a partial GO only: activation/SwiGLU, down projection, native
+     residual, full composition, recursion, and full-block metrics remain
+     blocked.
+
+Do not collapse these lanes into one claim.
 
 ## Current strongest experimental results
 
@@ -104,6 +114,10 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
+10. Continue the verifiable-AI d128 lane with the activation/SwiGLU proof
+    handle that consumes `gate_value_projection_output_commitment`; do not
+    report full-block metrics until the full d128 receipt or a checked no-go
+    exists.
 
 ## What not to do
 

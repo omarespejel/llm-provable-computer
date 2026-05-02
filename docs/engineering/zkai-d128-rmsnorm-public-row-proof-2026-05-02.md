@@ -72,7 +72,7 @@ bit-decomposed scale-remainder and norm-remainder-gap witnesses.
 This is not:
 
 - a full d128 transformer-block proof;
-- a gate/value projection, activation, down-projection, or residual proof;
+- an activation, down-projection, native residual, or composition proof;
 - a private parameter-opening proof;
 - recursive aggregation;
 - verifier-time or proof-size evidence for the full d128 target;
@@ -84,19 +84,21 @@ proof bytes are not checked in.
 
 ## Why this matters
 
-The d128 route now has three real proof slices:
+The d128 route now has four real proof slices:
 
 - RMSNorm public rows, which exercise normalization-specific square, division,
   remainder, scale-tree, and scalar square-root constraints;
 - RMSNorm-to-projection bridge rows, which exercise statement-bound consumption
   of the RMSNorm-local output under a projection-input domain;
+- gate/value projection rows, which exercise the first large matrix-style d128
+  arithmetic surface after the bridge;
 - residual add, which exercises statement-bound vector addition at width `128`.
 
 That is still not enough to benchmark a full block against external systems, but
 it is a real advance over a residual-only route. The next blocker is no longer
-"can anything at d128 prove?" or "can the RMSNorm output be consumed?" It is now
-the gate/value projection, activation, down-projection, native residual, and
-composition ladder.
+"can anything at d128 prove?", "can the RMSNorm output be consumed?", or "can
+the first projection surface prove?" It is now the activation/SwiGLU,
+down-projection, native residual, and composition ladder.
 
 ## Reproduce
 

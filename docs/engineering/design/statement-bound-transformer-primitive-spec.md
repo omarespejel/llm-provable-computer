@@ -389,11 +389,24 @@ It proves the domain-separated handoff from checked RMSNorm-local `normed_q8`
 rows to projection-input rows, recomputes source and destination row
 commitments, recomputes statement/public-instance/proof-native parameter
 commitments, and rejects attempts to relabel the bridge output as the full block
-output commitment. Together with the d128 residual-add proof, this shows the
-d128 backend route is no longer residual-only and now has three proof-backed
-slice surfaces. It is still not a full d128 block proof and still reports no
-full-block proof size or verifier time. The next blocker is the gate/value
-projection slice that consumes `projection_input_row_commitment`.
+output commitment.
+
+The first d128 gate/value projection slice is also checked in:
+
+- `docs/engineering/zkai-d128-gate-value-projection-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_gate_value_projection_proof.rs`
+
+It proves `131,072` public gate/value projection multiplication rows in native
+Stwo AIR (`65,536` gate rows and `65,536` value rows), recomputes the bridge's
+projection-input commitment, recomputes deterministic gate/value matrix roots
+from checked row weights, and emits a domain-separated
+`gate_value_projection_output_commitment`. Together with the d128 RMSNorm,
+bridge, and residual-add proofs, this shows the d128 backend route now has four
+proof-backed slice surfaces. It is still not a full d128 block proof and still
+reports no full-block proof size or verifier time. The next blocker is the
+activation/SwiGLU slice that consumes `gate_value_projection_output_commitment`.
 
 The first attention/KV receipt contract is also checked in:
 

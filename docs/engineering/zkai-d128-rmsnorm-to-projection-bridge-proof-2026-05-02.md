@@ -85,9 +85,11 @@ as projection-input rows only when the source commitment, destination commitment
 statement, public instance, proof-native parameters, row equality relation, and
 proof bytes all agree.
 
-The next backend blocker is now the real arithmetic surface after the bridge:
-gate/value projection rows that consume `projection_input_row_commitment` and
-produce gate/value output commitments. That follow-up is tracked in Issue `#394`.
+The real arithmetic surface after the bridge has since landed as
+`docs/engineering/zkai-d128-gate-value-projection-proof-2026-05-02.md`: it
+consumes `projection_input_row_commitment` and produces a gate/value output
+commitment. The next backend blocker is now the activation/SwiGLU slice that
+consumes that gate/value output.
 
 ## Reproduce
 
