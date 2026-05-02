@@ -45,7 +45,7 @@ d128 block proof size, verifier time, or relabeling suite.
 | d64 anchor | `GO_ANCHOR_ONLY` |
 | Direct d128 native chain route | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` |
 | d128 RMSNorm public-row route | `GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY` |
-| d128 RMSNorm-to-projection bridge route | `GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` |
+| d128 RMSNorm-to-projection bridge route | `GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` |
 | d128 residual-add route | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` |
 | Parameterized full-block route | `NO_GO_FULL_BLOCK_SLICES_MISSING` |
 | RMSNorm proof roundtrip | locally constructed and verified by Rust tests |
@@ -62,7 +62,7 @@ d128 block proof size, verifier time, or relabeling suite.
 | `existing_d64_slice_chain` | `GO_ANCHOR_ONLY` | The six-slice `d=64` proof chain exists and remains the working local anchor. It is not a `d=128` proof. |
 | `direct_d128_native_modules` | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` | d128 RMSNorm public-row and bridge native modules exist, but the rest of the native d128 slice chain and full-block verifier are missing. |
 | `direct_d128_rmsnorm_public_row_air` | `GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY` | A real Stwo proof handle exists for the d128 RMSNorm public-row slice. |
-| `direct_d128_rmsnorm_to_projection_bridge_air` | `GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` | A real Stwo proof handle exists for the d128 handoff from RMSNorm-local rows to projection-input rows. |
+| `direct_d128_rmsnorm_to_projection_bridge_air` | `GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` | A real Stwo proof handle exists for the d128 handoff from RMSNorm-local rows to projection-input rows. |
 | `lift_existing_d64_modules_by_metadata` | `NO_GO` | The d64 modules validate d64 width, target id, domains, proof versions, and log sizes. A metadata relabel cannot make them d128. |
 | `parameterized_vector_residual_add_air` | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` | A real parameterized Stwo proof handle exists for the d128 residual-add vector slice. |
 | `parameterized_transformer_block_air` | `NO_GO_FULL_BLOCK_SLICES_MISSING` | Gate/value projection, activation, down-projection, native residual, and full block composition do not exist yet. |

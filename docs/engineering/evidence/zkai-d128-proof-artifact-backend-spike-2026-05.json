@@ -82,7 +82,7 @@
       "proof_size_bytes": null,
       "route": "direct_d128_rmsnorm_to_projection_bridge_air",
       "source_rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
-      "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+      "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
       "target_ff_dim": null,
       "target_width": 128,
       "verifier_handle_exists": true,
@@ -550,7 +550,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:2dbf6d18887d6d8c395a13d4ebdd13a48a11c41b15fb1f90baf38fa4ddd0bc38",
+  "gate_commitment": "blake2b-256:424fda7fcb6ff1614ebda62afe29fd1a7922f9470150c6c84b497501fd460b31",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -763,7 +763,7 @@
       "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
       "row_count": 128,
       "source_rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
-      "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+      "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
       "target_width": 128
     },
     "d64_hardcoded_markers": [
@@ -987,7 +987,7 @@
   "summary": {
     "blocked_before_metrics": true,
     "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
-    "d128_rmsnorm_to_projection_bridge_route": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+    "d128_rmsnorm_to_projection_bridge_route": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
     "d64_anchor_route": "GO_ANCHOR_ONLY",
     "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
     "first_blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, and residual-add proof handles exist, but gate/value projection, activation, down-projection, native residual, and full transformer-block composition handles are still missing",

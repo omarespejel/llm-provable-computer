@@ -80,6 +80,27 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm output row commitment"):
             BRIDGE.validate_source(source)
 
+    def test_source_validation_rejects_statement_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["statement_commitment"] = "blake2b-256:" + "aa" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm statement commitment"):
+            BRIDGE.validate_source(source)
+
+    def test_source_validation_rejects_public_instance_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["public_instance_commitment"] = "blake2b-256:" + "bb" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm public-instance commitment"):
+            BRIDGE.validate_source(source)
+
+    def test_target_validation_rejects_target_commitment_drift(self) -> None:
+        target = copy.deepcopy(BRIDGE.load_target())
+        target["summary"]["target_commitment"] = "blake2b-256:" + "cc" * 32
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            path = pathlib.Path(raw_tmp) / "target.json"
+            path.write_text(json.dumps(target), encoding="utf-8")
+            with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "target commitment drift"):
+                BRIDGE.load_target(path)
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:

@@ -39,7 +39,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["d128_rmsnorm_public_row_route"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(
             payload["summary"]["d128_rmsnorm_to_projection_bridge_route"],
-            "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
@@ -82,7 +82,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(
             probe["d128_rmsnorm_to_projection_bridge"]["status"],
-            "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
         self.assertEqual(
             probe["d128_rmsnorm_to_projection_bridge"]["present_symbols"],
@@ -178,7 +178,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertFalse(routes["direct_d128_rmsnorm_public_row_air"]["checked_in_proof_artifact_exists"])
         self.assertEqual(
             routes["direct_d128_rmsnorm_to_projection_bridge_air"]["status"],
-            "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
         self.assertTrue(routes["direct_d128_rmsnorm_to_projection_bridge_air"]["local_roundtrip_proof_constructed"])
         self.assertFalse(routes["direct_d128_rmsnorm_to_projection_bridge_air"]["checked_in_proof_artifact_exists"])
