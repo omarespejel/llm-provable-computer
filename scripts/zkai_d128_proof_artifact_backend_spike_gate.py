@@ -45,6 +45,7 @@ TARGET_WIDTH = 128
 TARGET_FF_DIM = 512
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
+GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
 FIRST_BLOCKER = (
     "d128 RMSNorm public-row and residual-add proof handles exist, but "
     "projection, activation, down-projection, bridge, and full transformer-block "
@@ -293,6 +294,14 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
     return f"blake2b-256:{digest.hexdigest()}"
+
+
+def gate_commitment_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in payload.items() if key != "gate_commitment"}
+
+
+def set_gate_commitment(payload: dict[str, Any]) -> None:
+    payload["gate_commitment"] = blake2b_commitment(gate_commitment_payload(payload), GATE_COMMITMENT_DOMAIN)
 
 
 def file_sha256(path: pathlib.Path) -> str:
@@ -737,17 +746,7 @@ def build_payload() -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
     }
-    payload["gate_commitment"] = blake2b_commitment(
-        {
-            "schema": payload["schema"],
-            "decision": payload["decision"],
-            "target": payload["target"],
-            "backend_routes": payload["backend_routes"],
-            "proof_status": payload["proof_status"],
-            "non_claims": payload["non_claims"],
-        },
-        "ptvm:zkai:d128-proof-artifact-backend-spike:v1",
-    )
+    set_gate_commitment(payload)
     return payload
 
 
@@ -890,6 +889,7 @@ def build_gate_result() -> dict[str, Any]:
     payload["case_count"] = len(cases)
     payload["all_mutations_rejected"] = all(case["rejected"] for case in cases)
     payload["summary"]["mutations_rejected"] = sum(1 for case in cases if case["rejected"])
+    set_gate_commitment(payload)
     validate_payload(payload)
     return payload
 
@@ -1129,6 +1129,8 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             if not case.get("error"):
                 raise D128BackendSpikeError(f"mutation case error must be non-empty: {mutation}")
         expect_equal(seen, {name for name, _surface in EXPECTED_MUTATION_INVENTORY}, "mutation case set")
+        expected_gate_commitment = blake2b_commitment(gate_commitment_payload(data), GATE_COMMITMENT_DOMAIN)
+        expect_equal(data.get("gate_commitment"), expected_gate_commitment, "gate commitment")
 
 
 def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
