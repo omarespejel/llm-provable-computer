@@ -1,0 +1,715 @@
+{
+  "all_mutations_rejected": true,
+  "backend_routes": [
+    {
+      "blocker": "d64 slice proofs exist, but this is not the d128 target",
+      "evidence": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+      "proof_artifact_exists": true,
+      "proof_size_bytes": null,
+      "route": "existing_d64_slice_chain",
+      "status": "GO_ANCHOR_ONLY",
+      "target_ff_dim": 256,
+      "target_width": 64,
+      "verifier_handle_exists": true,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "no d128 native proof modules or exported prove/verify handles exist",
+      "missing_export_symbols": [
+        "prove_zkai_d128_rmsnorm_public_row_envelope",
+        "verify_zkai_d128_rmsnorm_public_row_envelope",
+        "prove_zkai_d128_gate_value_projection_envelope",
+        "verify_zkai_d128_gate_value_projection_envelope",
+        "prove_zkai_d128_activation_swiglu_envelope",
+        "verify_zkai_d128_activation_swiglu_envelope",
+        "prove_zkai_d128_down_projection_envelope",
+        "verify_zkai_d128_down_projection_envelope",
+        "prove_zkai_d128_residual_add_envelope",
+        "verify_zkai_d128_residual_add_envelope",
+        "prove_zkai_d128_transformer_block_envelope",
+        "verify_zkai_d128_transformer_block_envelope"
+      ],
+      "missing_modules": [
+        "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
+        "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
+        "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
+        "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
+        "src/stwo_backend/d128_native_down_projection_proof.rs",
+        "src/stwo_backend/d128_native_residual_add_proof.rs",
+        "src/stwo_backend/d128_native_transformer_block_proof.rs"
+      ],
+      "proof_artifact_exists": false,
+      "proof_size_bytes": null,
+      "route": "direct_d128_native_modules",
+      "status": "NO_GO",
+      "target_ff_dim": 512,
+      "target_width": 128,
+      "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "d64 modules validate hard-coded width, target id, domains, and log sizes",
+      "hardcoded_markers": [
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION",
+            "ZKAI_D64_TARGET_ID"
+          ],
+          "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+        },
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+            "D64_GATE_VALUE_LOG_SIZE"
+          ],
+          "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
+        },
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+            "D64_ACTIVATION_SWIGLU_LOG_SIZE"
+          ],
+          "path": "src/stwo_backend/d64_native_activation_swiglu_proof.rs"
+        },
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+            "D64_DOWN_PROJECTION_LOG_SIZE"
+          ],
+          "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
+        },
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "ZKAI_D64_RESIDUAL_ADD_PROOF_VERSION",
+            "D64_RESIDUAL_ADD_LOG_SIZE"
+          ],
+          "path": "src/stwo_backend/d64_native_residual_add_proof.rs"
+        }
+      ],
+      "proof_artifact_exists": false,
+      "proof_size_bytes": null,
+      "route": "lift_existing_d64_modules_by_metadata",
+      "status": "NO_GO",
+      "target_ff_dim": 512,
+      "target_width": 128,
+      "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
+      "missing_symbols": [
+        "ZkAiVectorBlockProofInput",
+        "ZkAiParameterizedTransformerBlockProof",
+        "prove_zkai_vector_block_envelope",
+        "verify_zkai_vector_block_envelope",
+        "parameterized_vector_block_air"
+      ],
+      "proof_artifact_exists": false,
+      "proof_size_bytes": null,
+      "route": "parameterized_vector_block_air",
+      "status": "NO_GO_FIRST_BLOCKER",
+      "target_ff_dim": 512,
+      "target_width": 128,
+      "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist",
+      "proof_artifact_exists": false,
+      "proof_size_bytes": null,
+      "route": "d128_metrics_and_relabeling_suite",
+      "status": "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT",
+      "target_ff_dim": 512,
+      "target_width": 128,
+      "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    }
+  ],
+  "case_count": 14,
+  "cases": [
+    {
+      "error": "decision mismatch",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "decision_promoted_to_go",
+      "rejected": true,
+      "rejection_layer": "top_level",
+      "surface": "top_level"
+    },
+    {
+      "error": "target width mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "target_width_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "error": "target backend version mismatch",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "target_backend_version_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "error": "proof artifact exists mismatch",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "local_proof_artifact_smuggled",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "verifier handle exists mismatch",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "local_verifier_handle_smuggled",
+      "rejected": true,
+      "rejection_layer": "proof_status",
+      "surface": "proof_status"
+    },
+    {
+      "error": "proof size mismatch",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "proof_size_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "metrics",
+      "surface": "metrics"
+    },
+    {
+      "error": "verifier time mismatch",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "verifier_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "metrics",
+      "surface": "metrics"
+    },
+    {
+      "error": "direct d128 route status mismatch",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "direct_d128_route_promoted",
+      "rejected": true,
+      "rejection_layer": "backend_routes",
+      "surface": "backend_routes"
+    },
+    {
+      "error": "parameterized route status mismatch",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "parameterized_route_promoted",
+      "rejected": true,
+      "rejection_layer": "backend_routes",
+      "surface": "backend_routes"
+    },
+    {
+      "error": "d64 anchor status mismatch",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "d64_anchor_removed",
+      "rejected": true,
+      "rejection_layer": "d64_anchor",
+      "surface": "d64_anchor"
+    },
+    {
+      "error": "missing d128 module inventory mismatch",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "missing_module_removed",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "d64_hardcoded_marker_removed",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "non-claims inventory mismatch",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "claim_boundary",
+      "surface": "claim_boundary"
+    },
+    {
+      "error": "summary mutation count mismatch",
+      "index": 13,
+      "mutated_accepted": false,
+      "mutation": "mutation_case_accepted",
+      "rejected": true,
+      "rejection_layer": "mutation_harness",
+      "surface": "mutation_harness"
+    }
+  ],
+  "d64_anchor": {
+    "claim_boundary": "working d64 slice proof chain, not a d128 proof route",
+    "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
+    "slice_count": 6,
+    "slices": [
+      {
+        "evidence": {
+          "decision": "GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF",
+          "file_sha256": "24083515ddc3ce7a690ac33698157956f6c35427dad8a41c033012616160db1d",
+          "path": "docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json",
+          "payload_sha256": "1d1f5ec67a770e8c98088e3924b53bf24e91462946b84a2a8cba3d4387f43c75",
+          "result": null,
+          "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "ff7be7374f917ca21e2a3f85055c963015e421b56b6dfebc26aebaaa50c15fb6",
+          "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+        },
+        "proof_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_public_row_envelope",
+        "slice": "rmsnorm_public_rows",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_public_row_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+          "file_sha256": "84b7998b53679c6dd2f221392ee688c499bfdbc6bca0a737e9df40d720a8fccc",
+          "path": "docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json",
+          "payload_sha256": "2680f43d467a2da07ef8441e4b8051afef2d381a6cf2569130f322c5ddbe81cd",
+          "result": null,
+          "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "47539bf485b97dac370ee35c2dd44200d1c017c895fbdedd3a79e43c4efb67d3",
+          "path": "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"
+        },
+        "proof_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_to_projection_bridge_envelope",
+        "slice": "rmsnorm_projection_bridge",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_to_projection_bridge_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF",
+          "file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+          "path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
+          "payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7",
+          "result": null,
+          "schema": "zkai-d64-gate-value-projection-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "baa70ad8c741bae962031677d80bcfe51fcf597ce5301775f6043713d722ac42",
+          "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
+        },
+        "proof_version": "stwo-d64-gate-value-projection-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_gate_value_projection_envelope",
+        "slice": "gate_value_projection",
+        "verify_symbol": "verify_zkai_d64_gate_value_projection_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_ACTIVATION_SWIGLU_AIR_PROOF",
+          "file_sha256": "3cb30766f1665398fc54ea98a686e258eb7f247f0599ffae8d0f28a13c5f313d",
+          "path": "docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json",
+          "payload_sha256": "d810411fadb50a8f830c099550942475640708bc7631a47b687640061ab3ced6",
+          "result": null,
+          "schema": "zkai-d64-activation-swiglu-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "6387e781bb03beacaceed43f6d44fdd25ee2ef0ccbd8f2a7b7e6c2bbe9c6b8c0",
+          "path": "src/stwo_backend/d64_native_activation_swiglu_proof.rs"
+        },
+        "proof_version": "stwo-d64-activation-swiglu-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_activation_swiglu_envelope",
+        "slice": "activation_swiglu",
+        "verify_symbol": "verify_zkai_d64_activation_swiglu_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF",
+          "file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+          "path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
+          "payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc",
+          "result": null,
+          "schema": "zkai-d64-down-projection-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "163f3b2c62be8256c7005789bb5e77805836320183c4f04a348ab0e4c45a086f",
+          "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
+        },
+        "proof_version": "stwo-d64-down-projection-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_down_projection_envelope",
+        "slice": "down_projection",
+        "verify_symbol": "verify_zkai_d64_down_projection_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_RESIDUAL_ADD_AIR_PROOF",
+          "file_sha256": "088a14a2ba54b993798e32b8a39e2a0ecffd3d49d335a4f07c2b9f5ee249c2c3",
+          "path": "docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json",
+          "payload_sha256": "90ea0939379010467d56116df9e82355a12dcba05526925cfa53b19c184fa8ba",
+          "result": null,
+          "schema": "zkai-d64-residual-add-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "9547d8cf3e6cdaeb7dc0e1cb3a28af44700e552417461cdd2bea296c82a39c60",
+          "path": "src/stwo_backend/d64_native_residual_add_proof.rs"
+        },
+        "proof_version": "stwo-d64-residual-add-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_residual_add_envelope",
+        "slice": "residual_add",
+        "verify_symbol": "verify_zkai_d64_residual_add_envelope"
+      }
+    ],
+    "source": {
+      "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
+      "file_sha256": "8e924e15535a4f5a57660fed6ea3a11cf8b1ae123f6d05723230416100659206",
+      "path": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+      "payload_sha256": "ec98a1fd52bf344b35d586c47608ab80a0b8a771e8c5d7b3a017cc5e564dc599",
+      "result": "GO",
+      "schema": "zkai-d64-block-receipt-composition-gate-v1"
+    },
+    "status": "GO_ANCHOR_ONLY",
+    "total_checked_rows": 49600
+  },
+  "decision": "NO_GO_D128_PROOF_ARTIFACT_PARAMETERIZED_AIR_MISSING",
+  "gate_commitment": "blake2b-256:a87a7e47f496a354a4ebca8b76c057d49bf2ace8e7ff0974b2e96b7b6755bb5d",
+  "issue": 387,
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "decision_promoted_to_go",
+      "surface": "top_level"
+    },
+    {
+      "index": 1,
+      "mutation": "target_width_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 2,
+      "mutation": "target_backend_version_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 3,
+      "mutation": "local_proof_artifact_smuggled",
+      "surface": "proof_status"
+    },
+    {
+      "index": 4,
+      "mutation": "local_verifier_handle_smuggled",
+      "surface": "proof_status"
+    },
+    {
+      "index": 5,
+      "mutation": "proof_size_metric_smuggled",
+      "surface": "metrics"
+    },
+    {
+      "index": 6,
+      "mutation": "verifier_time_metric_smuggled",
+      "surface": "metrics"
+    },
+    {
+      "index": 7,
+      "mutation": "direct_d128_route_promoted",
+      "surface": "backend_routes"
+    },
+    {
+      "index": 8,
+      "mutation": "parameterized_route_promoted",
+      "surface": "backend_routes"
+    },
+    {
+      "index": 9,
+      "mutation": "d64_anchor_removed",
+      "surface": "d64_anchor"
+    },
+    {
+      "index": 10,
+      "mutation": "missing_module_removed",
+      "surface": "source_probe"
+    },
+    {
+      "index": 11,
+      "mutation": "d64_hardcoded_marker_removed",
+      "surface": "source_probe"
+    },
+    {
+      "index": 12,
+      "mutation": "non_claim_removed",
+      "surface": "claim_boundary"
+    },
+    {
+      "index": 13,
+      "mutation": "mutation_case_accepted",
+      "surface": "mutation_harness"
+    }
+  ],
+  "non_claims": [
+    "not a local d128 proof artifact",
+    "not verifier-time evidence for d128",
+    "not proof-size evidence for d128",
+    "not recursive aggregation",
+    "not backend independence evidence",
+    "not a matched NANOZK or DeepProve benchmark",
+    "not a claim that d128 is impossible"
+  ],
+  "proof_status": {
+    "blocked_before_metrics": true,
+    "first_blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
+    "proof_artifact_exists": false,
+    "proof_size_bytes": null,
+    "required_toolchain": "nightly-2025-07-14",
+    "stable_toolchain_status": "not_supported_by_upstream_stwo_feature_gates",
+    "statement_relabeling_suite_exists": false,
+    "verifier_handle_exists": false,
+    "verifier_time_ms": null
+  },
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d128-proof-artifact-backend-spike-v1",
+  "source_probe": {
+    "d64_hardcoded_markers": [
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION",
+          "ZKAI_D64_TARGET_ID"
+        ],
+        "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+      },
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+          "D64_GATE_VALUE_LOG_SIZE"
+        ],
+        "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
+      },
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+          "D64_ACTIVATION_SWIGLU_LOG_SIZE"
+        ],
+        "path": "src/stwo_backend/d64_native_activation_swiglu_proof.rs"
+      },
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+          "D64_DOWN_PROJECTION_LOG_SIZE"
+        ],
+        "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
+      },
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "ZKAI_D64_RESIDUAL_ADD_PROOF_VERSION",
+          "D64_RESIDUAL_ADD_LOG_SIZE"
+        ],
+        "path": "src/stwo_backend/d64_native_residual_add_proof.rs"
+      }
+    ],
+    "d64_slices": [
+      {
+        "evidence": {
+          "decision": "GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF",
+          "file_sha256": "24083515ddc3ce7a690ac33698157956f6c35427dad8a41c033012616160db1d",
+          "path": "docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json",
+          "payload_sha256": "1d1f5ec67a770e8c98088e3924b53bf24e91462946b84a2a8cba3d4387f43c75",
+          "result": null,
+          "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "ff7be7374f917ca21e2a3f85055c963015e421b56b6dfebc26aebaaa50c15fb6",
+          "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+        },
+        "proof_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_public_row_envelope",
+        "slice": "rmsnorm_public_rows",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_public_row_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+          "file_sha256": "84b7998b53679c6dd2f221392ee688c499bfdbc6bca0a737e9df40d720a8fccc",
+          "path": "docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json",
+          "payload_sha256": "2680f43d467a2da07ef8441e4b8051afef2d381a6cf2569130f322c5ddbe81cd",
+          "result": null,
+          "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "47539bf485b97dac370ee35c2dd44200d1c017c895fbdedd3a79e43c4efb67d3",
+          "path": "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"
+        },
+        "proof_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_to_projection_bridge_envelope",
+        "slice": "rmsnorm_projection_bridge",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_to_projection_bridge_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF",
+          "file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+          "path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
+          "payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7",
+          "result": null,
+          "schema": "zkai-d64-gate-value-projection-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "baa70ad8c741bae962031677d80bcfe51fcf597ce5301775f6043713d722ac42",
+          "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
+        },
+        "proof_version": "stwo-d64-gate-value-projection-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_gate_value_projection_envelope",
+        "slice": "gate_value_projection",
+        "verify_symbol": "verify_zkai_d64_gate_value_projection_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_ACTIVATION_SWIGLU_AIR_PROOF",
+          "file_sha256": "3cb30766f1665398fc54ea98a686e258eb7f247f0599ffae8d0f28a13c5f313d",
+          "path": "docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json",
+          "payload_sha256": "d810411fadb50a8f830c099550942475640708bc7631a47b687640061ab3ced6",
+          "result": null,
+          "schema": "zkai-d64-activation-swiglu-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "6387e781bb03beacaceed43f6d44fdd25ee2ef0ccbd8f2a7b7e6c2bbe9c6b8c0",
+          "path": "src/stwo_backend/d64_native_activation_swiglu_proof.rs"
+        },
+        "proof_version": "stwo-d64-activation-swiglu-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_activation_swiglu_envelope",
+        "slice": "activation_swiglu",
+        "verify_symbol": "verify_zkai_d64_activation_swiglu_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF",
+          "file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+          "path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
+          "payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc",
+          "result": null,
+          "schema": "zkai-d64-down-projection-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "163f3b2c62be8256c7005789bb5e77805836320183c4f04a348ab0e4c45a086f",
+          "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
+        },
+        "proof_version": "stwo-d64-down-projection-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_down_projection_envelope",
+        "slice": "down_projection",
+        "verify_symbol": "verify_zkai_d64_down_projection_envelope"
+      },
+      {
+        "evidence": {
+          "decision": "GO_INPUT_FOR_D64_RESIDUAL_ADD_AIR_PROOF",
+          "file_sha256": "088a14a2ba54b993798e32b8a39e2a0ecffd3d49d335a4f07c2b9f5ee249c2c3",
+          "path": "docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json",
+          "payload_sha256": "90ea0939379010467d56116df9e82355a12dcba05526925cfa53b19c184fa8ba",
+          "result": null,
+          "schema": "zkai-d64-residual-add-air-proof-input-v1"
+        },
+        "module": {
+          "exists": true,
+          "file_sha256": "9547d8cf3e6cdaeb7dc0e1cb3a28af44700e552417461cdd2bea296c82a39c60",
+          "path": "src/stwo_backend/d64_native_residual_add_proof.rs"
+        },
+        "proof_version": "stwo-d64-residual-add-air-proof-v1",
+        "prove_symbol": "prove_zkai_d64_residual_add_envelope",
+        "slice": "residual_add",
+        "verify_symbol": "verify_zkai_d64_residual_add_envelope"
+      }
+    ],
+    "missing_d128_export_symbols": [
+      "prove_zkai_d128_rmsnorm_public_row_envelope",
+      "verify_zkai_d128_rmsnorm_public_row_envelope",
+      "prove_zkai_d128_gate_value_projection_envelope",
+      "verify_zkai_d128_gate_value_projection_envelope",
+      "prove_zkai_d128_activation_swiglu_envelope",
+      "verify_zkai_d128_activation_swiglu_envelope",
+      "prove_zkai_d128_down_projection_envelope",
+      "verify_zkai_d128_down_projection_envelope",
+      "prove_zkai_d128_residual_add_envelope",
+      "verify_zkai_d128_residual_add_envelope",
+      "prove_zkai_d128_transformer_block_envelope",
+      "verify_zkai_d128_transformer_block_envelope"
+    ],
+    "missing_d128_modules": [
+      "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
+      "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
+      "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
+      "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
+      "src/stwo_backend/d128_native_down_projection_proof.rs",
+      "src/stwo_backend/d128_native_residual_add_proof.rs",
+      "src/stwo_backend/d128_native_transformer_block_proof.rs"
+    ],
+    "missing_parameterized_symbols": [
+      "ZkAiVectorBlockProofInput",
+      "ZkAiParameterizedTransformerBlockProof",
+      "prove_zkai_vector_block_envelope",
+      "verify_zkai_vector_block_envelope",
+      "parameterized_vector_block_air"
+    ]
+  },
+  "summary": {
+    "blocked_before_metrics": true,
+    "d64_anchor_route": "GO_ANCHOR_ONLY",
+    "direct_d128_route": "NO_GO",
+    "first_blocker": "no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist",
+    "issue": 387,
+    "mutation_cases": 14,
+    "mutations_rejected": 14,
+    "parameterized_route": "NO_GO_FIRST_BLOCKER",
+    "target_ff_dim": 512,
+    "target_id": "rmsnorm-swiglu-residual-d128-v1",
+    "target_width": 128
+  },
+  "target": {
+    "ff_dim": 512,
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+    "source": {
+      "decision": "NO_GO_D128_LAYERWISE_PROOF_ARTIFACT_MISSING",
+      "file_sha256": "bf1b5cb0dc3471d5c7421f091b4f94f986e38f2ed80e91f325f26fc8080617a0",
+      "path": "docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json",
+      "payload_sha256": "573cfa48a9e56b722604c51f7210ef405e74d9902a90eeb5b8ed16ca27bca506",
+      "result": "BOUNDED_NO_GO",
+      "schema": "zkai-d128-layerwise-comparator-target-v1"
+    },
+    "statement_kind": "transformer-block",
+    "target_commitment": "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18",
+    "target_id": "rmsnorm-swiglu-residual-d128-v1",
+    "width": 128
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
+    "cargo +nightly-2025-07-14 test --lib d64 --features stwo-backend -- --nocapture",
+    "python3 scripts/paper/paper_preflight.py --repo-root ."
+  ]
+}

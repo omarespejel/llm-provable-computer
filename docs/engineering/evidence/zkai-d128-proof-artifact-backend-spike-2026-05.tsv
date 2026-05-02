@@ -1,0 +1,22 @@
+route	status	target_width	target_ff_dim	proof_artifact_exists	verifier_handle_exists	proof_size_bytes	verifier_time_ms	blocker
+existing_d64_slice_chain	GO_ANCHOR_ONLY	64	256	True	True			d64 slice proofs exist, but this is not the d128 target
+direct_d128_native_modules	NO_GO	128	512	False	False			no d128 native proof modules or exported prove/verify handles exist
+lift_existing_d64_modules_by_metadata	NO_GO	128	512	False	False			d64 modules validate hard-coded width, target id, domains, and log sizes
+parameterized_vector_block_air	NO_GO_FIRST_BLOCKER	128	512	False	False			no parameterized d128 vector-block AIR/prover/verifier handle; current native proof modules are d64 target/domain/width hard-coded and no d128 native module exports exist
+d128_metrics_and_relabeling_suite	NO_GO_BLOCKED_BEFORE_PROOF_OBJECT	128	512	False	False			do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist
+
+mutation	surface	mutated_accepted	rejected	rejection_layer	error
+decision_promoted_to_go	top_level	False	True	top_level	decision mismatch
+target_width_drift	target_spec	False	True	target_spec	target width mismatch
+target_backend_version_drift	target_spec	False	True	target_spec	target backend version mismatch
+local_proof_artifact_smuggled	proof_status	False	True	proof_status	proof artifact exists mismatch
+local_verifier_handle_smuggled	proof_status	False	True	proof_status	verifier handle exists mismatch
+proof_size_metric_smuggled	metrics	False	True	metrics	proof size mismatch
+verifier_time_metric_smuggled	metrics	False	True	metrics	verifier time mismatch
+direct_d128_route_promoted	backend_routes	False	True	backend_routes	direct d128 route status mismatch
+parameterized_route_promoted	backend_routes	False	True	backend_routes	parameterized route status mismatch
+d64_anchor_removed	d64_anchor	False	True	d64_anchor	d64 anchor status mismatch
+missing_module_removed	source_probe	False	True	source_probe	missing d128 module inventory mismatch
+d64_hardcoded_marker_removed	source_probe	False	True	source_probe	src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch
+non_claim_removed	claim_boundary	False	True	claim_boundary	non-claims inventory mismatch
+mutation_case_accepted	mutation_harness	False	True	mutation_harness	summary mutation count mismatch
