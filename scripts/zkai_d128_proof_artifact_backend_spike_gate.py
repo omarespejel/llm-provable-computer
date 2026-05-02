@@ -325,6 +325,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_activation_swiglu_local_roundtrip_removed", "proof_status"),
     ("partial_d128_activation_swiglu_checked_in_artifact_smuggled", "proof_status"),
     ("d128_activation_swiglu_source_statement_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_source_gate_projection_output_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_source_value_projection_output_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_source_output_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_activation_lookup_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_hidden_activation_commitment_drift", "source_probe"),
@@ -865,6 +867,7 @@ def build_source_probe() -> dict[str, Any]:
             "target_ff_dim": d128_activation_evidence["ff_dim"],
             "row_count": d128_activation_evidence["row_count"],
             "activation_lookup_rows": d128_activation_evidence["activation_lookup_rows"],
+            "swiglu_mix_rows": d128_activation_evidence["swiglu_mix_rows"],
             "source_gate_value_projection_statement_commitment": d128_activation_evidence[
                 "source_gate_value_projection_statement_commitment"
             ],
@@ -1458,6 +1461,20 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
     add(
+        "d128_activation_swiglu_source_gate_projection_output_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "source_gate_projection_output_commitment", "blake2b-256:" + "56" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_source_value_projection_output_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "source_value_projection_output_commitment", "blake2b-256:" + "57" * 32
+        ),
+    )
+    add(
         "d128_activation_swiglu_source_output_commitment_drift",
         "source_probe",
         lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
@@ -1806,6 +1823,21 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         activation_probe.get("present_symbols"),
         list(D128_ACTIVATION_SYMBOLS),
         "present d128 activation/SwiGLU symbol inventory",
+    )
+    expect_equal(
+        activation_probe.get("row_count"),
+        TARGET_FF_DIM,
+        "d128 activation/SwiGLU row count",
+    )
+    expect_equal(
+        activation_probe.get("activation_lookup_rows"),
+        D128_ACTIVATION_GATE.ACTIVATION_TABLE_ROWS,
+        "d128 activation/SwiGLU activation lookup rows",
+    )
+    expect_equal(
+        activation_probe.get("swiglu_mix_rows"),
+        TARGET_FF_DIM,
+        "d128 activation/SwiGLU swiglu mix rows",
     )
     expect_equal(
         activation_probe.get("hidden_relabels_full_output"),

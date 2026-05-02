@@ -261,7 +261,7 @@
       "verifier_time_ms": null
     }
   ],
-  "case_count": 50,
+  "case_count": 52,
   "cases": [
     {
       "error": "decision mismatch",
@@ -588,8 +588,26 @@
       "surface": "source_probe"
     },
     {
-      "error": "d128 activation/SwiGLU source gate/value output commitment mismatch",
+      "error": "d128 activation/SwiGLU source_gate_projection_output_commitment mismatch",
       "index": 36,
+      "mutated_accepted": false,
+      "mutation": "d128_activation_swiglu_source_gate_projection_output_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "d128 activation/SwiGLU source_value_projection_output_commitment mismatch",
+      "index": 37,
+      "mutated_accepted": false,
+      "mutation": "d128_activation_swiglu_source_value_projection_output_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "d128 activation/SwiGLU source gate/value output commitment mismatch",
+      "index": 38,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_source_output_commitment_drift",
       "rejected": true,
@@ -598,7 +616,7 @@
     },
     {
       "error": "d128 activation/SwiGLU activation_lookup_commitment mismatch",
-      "index": 37,
+      "index": 39,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_activation_lookup_commitment_drift",
       "rejected": true,
@@ -607,7 +625,7 @@
     },
     {
       "error": "d128 activation/SwiGLU hidden_activation_commitment mismatch",
-      "index": 38,
+      "index": 40,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_hidden_activation_commitment_drift",
       "rejected": true,
@@ -616,7 +634,7 @@
     },
     {
       "error": "d128 activation/SwiGLU hidden relabel guard mismatch",
-      "index": 39,
+      "index": 41,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_hidden_relabels_full_output",
       "rejected": true,
@@ -625,7 +643,7 @@
     },
     {
       "error": "d128 activation/SwiGLU activation_swiglu_row_commitment mismatch",
-      "index": 40,
+      "index": 42,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_row_commitment_drift",
       "rejected": true,
@@ -634,7 +652,7 @@
     },
     {
       "error": "d128 activation/SwiGLU statement_commitment mismatch",
-      "index": 41,
+      "index": 43,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_statement_commitment_drift",
       "rejected": true,
@@ -643,7 +661,7 @@
     },
     {
       "error": "d128 activation/SwiGLU public_instance_commitment mismatch",
-      "index": 42,
+      "index": 44,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_public_instance_commitment_drift",
       "rejected": true,
@@ -652,7 +670,7 @@
     },
     {
       "error": "direct d128 activation/SwiGLU route statement_commitment mismatch",
-      "index": 43,
+      "index": 45,
       "mutated_accepted": false,
       "mutation": "d128_activation_swiglu_route_statement_commitment_drift",
       "rejected": true,
@@ -661,7 +679,7 @@
     },
     {
       "error": "parameterized full-block route status mismatch",
-      "index": 44,
+      "index": 46,
       "mutated_accepted": false,
       "mutation": "full_block_parameterized_route_promoted",
       "rejected": true,
@@ -670,7 +688,7 @@
     },
     {
       "error": "d64 anchor status mismatch",
-      "index": 45,
+      "index": 47,
       "mutated_accepted": false,
       "mutation": "d64_anchor_removed",
       "rejected": true,
@@ -679,7 +697,7 @@
     },
     {
       "error": "missing d128 module inventory mismatch",
-      "index": 46,
+      "index": 48,
       "mutated_accepted": false,
       "mutation": "missing_module_removed",
       "rejected": true,
@@ -688,7 +706,7 @@
     },
     {
       "error": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch",
-      "index": 47,
+      "index": 49,
       "mutated_accepted": false,
       "mutation": "d64_hardcoded_marker_removed",
       "rejected": true,
@@ -697,7 +715,7 @@
     },
     {
       "error": "non-claims inventory mismatch",
-      "index": 48,
+      "index": 50,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
       "rejected": true,
@@ -706,7 +724,7 @@
     },
     {
       "error": "summary mutation count mismatch",
-      "index": 49,
+      "index": 51,
       "mutated_accepted": false,
       "mutation": "mutation_case_accepted",
       "rejected": true,
@@ -846,7 +864,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:79bdea0165679ef35ad504955f2b3be9f1685b0436e7cffb3705b9c299714786",
+  "gate_commitment": "blake2b-256:7eda34f9a05b57fede426b3a45fc801b23f409fb592f2df9928c424d6f3399f5",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1031,71 +1049,81 @@
     },
     {
       "index": 36,
-      "mutation": "d128_activation_swiglu_source_output_commitment_drift",
+      "mutation": "d128_activation_swiglu_source_gate_projection_output_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 37,
-      "mutation": "d128_activation_swiglu_activation_lookup_commitment_drift",
+      "mutation": "d128_activation_swiglu_source_value_projection_output_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 38,
-      "mutation": "d128_activation_swiglu_hidden_activation_commitment_drift",
+      "mutation": "d128_activation_swiglu_source_output_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 39,
-      "mutation": "d128_activation_swiglu_hidden_relabels_full_output",
+      "mutation": "d128_activation_swiglu_activation_lookup_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 40,
-      "mutation": "d128_activation_swiglu_row_commitment_drift",
+      "mutation": "d128_activation_swiglu_hidden_activation_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 41,
-      "mutation": "d128_activation_swiglu_statement_commitment_drift",
+      "mutation": "d128_activation_swiglu_hidden_relabels_full_output",
       "surface": "source_probe"
     },
     {
       "index": 42,
-      "mutation": "d128_activation_swiglu_public_instance_commitment_drift",
+      "mutation": "d128_activation_swiglu_row_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 43,
+      "mutation": "d128_activation_swiglu_statement_commitment_drift",
+      "surface": "source_probe"
+    },
+    {
+      "index": 44,
+      "mutation": "d128_activation_swiglu_public_instance_commitment_drift",
+      "surface": "source_probe"
+    },
+    {
+      "index": 45,
       "mutation": "d128_activation_swiglu_route_statement_commitment_drift",
       "surface": "backend_routes"
     },
     {
-      "index": 44,
+      "index": 46,
       "mutation": "full_block_parameterized_route_promoted",
       "surface": "backend_routes"
     },
     {
-      "index": 45,
+      "index": 47,
       "mutation": "d64_anchor_removed",
       "surface": "d64_anchor"
     },
     {
-      "index": 46,
+      "index": 48,
       "mutation": "missing_module_removed",
       "surface": "source_probe"
     },
     {
-      "index": 47,
+      "index": 49,
       "mutation": "d64_hardcoded_marker_removed",
       "surface": "source_probe"
     },
     {
-      "index": 48,
+      "index": 50,
       "mutation": "non_claim_removed",
       "surface": "claim_boundary"
     },
     {
-      "index": 49,
+      "index": 51,
       "mutation": "mutation_case_accepted",
       "surface": "mutation_harness"
     }
@@ -1150,9 +1178,9 @@
       "activation_swiglu_row_commitment": "blake2b-256:a46737e3b428a61a3be499c268a74249b87b78b0950df5148bf0666a27413e9f",
       "evidence": {
         "decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
-        "file_sha256": "dc65d98be7ff6e913c4e9f2545b88650431529fc4c284a5b845a4e5c7bc686ff",
+        "file_sha256": "282c660c69934f57d66136e369550fe7b207a3ca41e12c9bc1e0d65ec3e34380",
         "path": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json",
-        "payload_sha256": "505964f97d815c0109a1a284dc102d59e198cea0996f577089725fbe4eb4fc6c",
+        "payload_sha256": "eeb5161946e8851642fa68b725d870fc8207b62254a302d21e06b848a23d5147",
         "result": null,
         "schema": "zkai-d128-activation-swiglu-air-proof-input-v1"
       },
@@ -1160,7 +1188,7 @@
       "hidden_relabels_full_output": false,
       "module": {
         "exists": true,
-        "file_sha256": "6ef9702194eb6d78de19f0ab900e5ac4ac981b9ad7cbee53f6309f11f761caed",
+        "file_sha256": "439055d440a8ec46b55bd4f3f49f981e3f937cf2257c3b3a346e08d6b929817d",
         "path": "src/stwo_backend/d128_native_activation_swiglu_proof.rs"
       },
       "present_symbols": [
@@ -1181,6 +1209,7 @@
       "source_value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf",
       "statement_commitment": "blake2b-256:b6f7c2b52c71ff5b096c6151305d24a07f40d162c65836d72b7c39bbdc319f31",
       "status": "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+      "swiglu_mix_rows": 512,
       "target_ff_dim": 512,
       "target_width": 128
     },
@@ -1506,8 +1535,8 @@
     "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
     "first_blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and residual-add proof handles exist, but down-projection, native residual, and full transformer-block composition handles are still missing",
     "issue": 387,
-    "mutation_cases": 50,
-    "mutations_rejected": 50,
+    "mutation_cases": 52,
+    "mutations_rejected": 52,
     "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
     "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,

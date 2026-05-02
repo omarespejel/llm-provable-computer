@@ -96,6 +96,8 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --write-json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
     "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
 ]
 
 TSV_COLUMNS = (
@@ -592,7 +594,14 @@ def _atomic_write_text(path: pathlib.Path, text: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
         os.replace(tmp_path, resolved)
+        dir_fd = os.open(resolved.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
     except Exception:
         try:
             tmp_path.unlink(missing_ok=True)

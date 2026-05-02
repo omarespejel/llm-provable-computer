@@ -1592,7 +1592,9 @@
   "validation_commands": [
     "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --write-json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
-    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend"
+    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate"
   ],
   "value_projection_q8": [
     -2658,
