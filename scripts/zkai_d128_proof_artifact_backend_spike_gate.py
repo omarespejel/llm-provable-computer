@@ -28,9 +28,11 @@ EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 TARGET_GATE_PATH = ROOT / "scripts" / "zkai_d128_layerwise_comparator_target_gate.py"
 D64_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d64_block_receipt_composition_gate.py"
 VECTOR_RESIDUAL_GATE_PATH = ROOT / "scripts" / "zkai_d128_vector_residual_add_proof_input.py"
+D128_RMSNORM_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_public_row_proof_input.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
+D128_RMSNORM_EVIDENCE = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
@@ -44,9 +46,9 @@ TARGET_FF_DIM = 512
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 FIRST_BLOCKER = (
-    "a parameterized d128 residual-add vector proof handle exists, but "
-    "parameterized RMSNorm, projection, activation, down-projection, and full "
-    "transformer-block composition handles are still missing"
+    "d128 RMSNorm public-row and residual-add proof handles exist, but "
+    "projection, activation, down-projection, bridge, and full transformer-block "
+    "composition handles are still missing"
 )
 
 D64_PROOF_SLICES = (
@@ -101,7 +103,6 @@ D64_PROOF_SLICES = (
 )
 
 EXPECTED_D128_MODULES = (
-    "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
     "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
     "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
     "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
@@ -111,8 +112,6 @@ EXPECTED_D128_MODULES = (
 )
 
 EXPECTED_D128_EXPORT_SYMBOLS = (
-    "prove_zkai_d128_rmsnorm_public_row_envelope",
-    "verify_zkai_d128_rmsnorm_public_row_envelope",
     "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
     "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
     "prove_zkai_d128_gate_value_projection_envelope",
@@ -125,6 +124,14 @@ EXPECTED_D128_EXPORT_SYMBOLS = (
     "verify_zkai_d128_residual_add_envelope",
     "prove_zkai_d128_transformer_block_envelope",
     "verify_zkai_d128_transformer_block_envelope",
+)
+
+D128_RMSNORM_SYMBOLS = (
+    "ZkAiD128RmsnormPublicRowProofInput",
+    "ZkAiD128RmsnormPublicRowProofEnvelope",
+    "zkai_d128_rmsnorm_public_row_input_from_json_str",
+    "prove_zkai_d128_rmsnorm_public_row_envelope",
+    "verify_zkai_d128_rmsnorm_public_row_envelope",
 )
 
 PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
@@ -188,7 +195,9 @@ NON_CLAIMS = [
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_public_row_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
     "just gate-fast",
@@ -254,6 +263,10 @@ D64_BLOCK_GATE = _load_module(D64_BLOCK_GATE_PATH, "zkai_d64_block_for_d128_back
 VECTOR_RESIDUAL_GATE = _load_module(
     VECTOR_RESIDUAL_GATE_PATH,
     "zkai_d128_vector_residual_add_for_backend_spike",
+)
+D128_RMSNORM_GATE = _load_module(
+    D128_RMSNORM_GATE_PATH,
+    "zkai_d128_rmsnorm_public_row_for_backend_spike",
 )
 
 
@@ -416,18 +429,46 @@ def build_source_probe() -> dict[str, Any]:
             }
         )
 
+    d128_rmsnorm_module_path = "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs"
+    d128_rmsnorm_module = read_repo_file(d128_rmsnorm_module_path)
+    if "mod d128_native_rmsnorm_public_row_proof;" not in mod_rs:
+        raise D128BackendSpikeError("d128 RMSNorm public-row module missing from mod.rs")
+    missing_d128_rmsnorm_symbols = []
+    for symbol in D128_RMSNORM_SYMBOLS:
+        if not rust_declares_symbol(
+            d128_rmsnorm_module, symbol
+        ) or not rust_reexports_symbol(mod_rs, "d128_native_rmsnorm_public_row_proof", symbol):
+            missing_d128_rmsnorm_symbols.append(symbol)
+    if missing_d128_rmsnorm_symbols:
+        raise D128BackendSpikeError(
+            "d128 RMSNorm public-row route disappeared; refresh this partial-go gate"
+        )
+
+    d128_rmsnorm_evidence = load_json(D128_RMSNORM_EVIDENCE)
+    try:
+        D128_RMSNORM_GATE.validate_payload(d128_rmsnorm_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("d128 RMSNorm public-row evidence failed validation") from err
+    for field, expected in {
+        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2",
+        "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
+        "operation": "rmsnorm_public_rows",
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "width": TARGET_WIDTH,
+        "row_count": TARGET_WIDTH,
+    }.items():
+        expect_equal(d128_rmsnorm_evidence.get(field), expected, f"d128 RMSNorm public-row {field}")
+
     missing_d128_modules = []
-    present_d128_modules = []
     for path in EXPECTED_D128_MODULES:
         full = ROOT / path
         if full.exists():
-            present_d128_modules.append(path)
+            raise D128BackendSpikeError(
+                "additional d128 native module route may now exist; refresh this gate before relying on it"
+            )
         else:
             missing_d128_modules.append(path)
-    if present_d128_modules:
-        raise D128BackendSpikeError(
-            "d128 module route may now exist; refresh this no-go gate before relying on it"
-        )
 
     present_d128_symbols = [symbol for symbol in EXPECTED_D128_EXPORT_SYMBOLS if symbol in mod_rs]
     if present_d128_symbols:
@@ -494,6 +535,16 @@ def build_source_probe() -> dict[str, Any]:
         "d64_slices": d64_slices,
         "missing_d128_modules": missing_d128_modules,
         "missing_d128_export_symbols": missing_d128_symbols,
+        "d128_rmsnorm_public_row": {
+            "status": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+            "module": repo_file_descriptor(d128_rmsnorm_module_path),
+            "evidence": source_descriptor(D128_RMSNORM_EVIDENCE, d128_rmsnorm_evidence),
+            "present_symbols": list(D128_RMSNORM_SYMBOLS),
+            "operation": d128_rmsnorm_evidence["operation"],
+            "target_width": d128_rmsnorm_evidence["width"],
+            "row_count": d128_rmsnorm_evidence["row_count"],
+            "rms_q8": d128_rmsnorm_evidence["rms_q8"],
+        },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
             "module": repo_file_descriptor(residual_module_path),
@@ -524,16 +575,31 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "route": "direct_d128_native_modules",
-            "status": "NO_GO",
+            "status": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
             "target_width": TARGET_WIDTH,
             "target_ff_dim": TARGET_FF_DIM,
             "proof_artifact_exists": False,
             "verifier_handle_exists": False,
             "proof_size_bytes": None,
             "verifier_time_ms": None,
-            "blocker": "no d128 native proof modules or exported prove/verify handles exist",
+            "blocker": "d128 RMSNorm public-row native proof exists, but the remaining native d128 slices and full block verifier do not",
             "missing_modules": source_probe["missing_d128_modules"],
             "missing_export_symbols": source_probe["missing_d128_export_symbols"],
+        },
+        {
+            "route": "direct_d128_rmsnorm_public_row_air",
+            "status": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": None,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "local_roundtrip_proof_constructed": True,
+            "checked_in_proof_artifact_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "RMSNorm public-row slice only; not projection, activation, down-projection, residual, bridge, or full block",
+            "evidence": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+            "present_symbols": source_probe["d128_rmsnorm_public_row"]["present_symbols"],
         },
         {
             "route": "lift_existing_d64_modules_by_metadata",
@@ -608,7 +674,8 @@ def build_payload() -> dict[str, Any]:
         "target_ff_dim": TARGET_FF_DIM,
         "first_blocker": FIRST_BLOCKER,
         "d64_anchor_route": "GO_ANCHOR_ONLY",
-        "direct_d128_route": "NO_GO",
+        "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
+        "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
@@ -617,6 +684,10 @@ def build_payload() -> dict[str, Any]:
     proof_status = {
         "proof_artifact_exists": False,
         "verifier_handle_exists": False,
+        "partial_d128_rmsnorm_public_row_proof_exists": True,
+        "partial_d128_rmsnorm_public_row_verifier_exists": True,
+        "partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed": True,
+        "partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists": False,
         "partial_parameterized_residual_add_proof_exists": True,
         "partial_parameterized_residual_add_verifier_exists": True,
         "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
@@ -790,7 +861,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(summary.get("target_width"), TARGET_WIDTH, "summary target width")
     expect_equal(summary.get("target_ff_dim"), TARGET_FF_DIM, "summary target ff_dim")
     expect_equal(summary.get("first_blocker"), FIRST_BLOCKER, "summary first blocker")
-    expect_equal(summary.get("direct_d128_route"), "NO_GO", "summary direct d128 route")
+    expect_equal(
+        summary.get("direct_d128_route"),
+        "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
+        "summary direct d128 route",
+    )
+    expect_equal(
+        summary.get("d128_rmsnorm_public_row_route"),
+        "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+        "summary d128 RMSNorm public-row route",
+    )
     expect_equal(
         summary.get("parameterized_residual_add_route"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
@@ -827,6 +907,20 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         list(EXPECTED_D128_EXPORT_SYMBOLS),
         "missing d128 export inventory",
     )
+    rmsnorm_probe = require_object(
+        source_probe.get("d128_rmsnorm_public_row"),
+        "d128 RMSNorm public-row probe",
+    )
+    expect_equal(
+        rmsnorm_probe.get("status"),
+        "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+        "d128 RMSNorm public-row status",
+    )
+    expect_equal(
+        rmsnorm_probe.get("present_symbols"),
+        list(D128_RMSNORM_SYMBOLS),
+        "present d128 RMSNorm public-row symbol inventory",
+    )
     residual_probe = require_object(
         source_probe.get("parameterized_residual_add"),
         "parameterized residual-add probe",
@@ -860,6 +954,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expected_routes = {
         "existing_d64_slice_chain",
         "direct_d128_native_modules",
+        "direct_d128_rmsnorm_public_row_air",
         "lift_existing_d64_modules_by_metadata",
         "parameterized_vector_residual_add_air",
         "parameterized_transformer_block_air",
@@ -868,7 +963,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     if set(route_by_name) != expected_routes:
         raise D128BackendSpikeError("backend route inventory mismatch")
     expect_equal(route_by_name["existing_d64_slice_chain"].get("status"), "GO_ANCHOR_ONLY", "d64 anchor route status")
-    expect_equal(route_by_name["direct_d128_native_modules"].get("status"), "NO_GO", "direct d128 route status")
+    expect_equal(
+        route_by_name["direct_d128_native_modules"].get("status"),
+        "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
+        "direct d128 route status",
+    )
+    expect_equal(
+        route_by_name["direct_d128_rmsnorm_public_row_air"].get("status"),
+        "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+        "direct d128 RMSNorm public-row route status",
+    )
     expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
@@ -883,7 +987,10 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         route_obj = require_object(raw_route, "backend route")
         if route_obj["route"] == "existing_d64_slice_chain":
             continue
-        if route_obj["route"] == "parameterized_vector_residual_add_air":
+        if route_obj["route"] in {
+            "direct_d128_rmsnorm_public_row_air",
+            "parameterized_vector_residual_add_air",
+        }:
             expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
             expect_equal(route_obj.get("proof_artifact_exists"), True, f"{route_obj['route']} proof artifact")
             expect_equal(route_obj.get("verifier_handle_exists"), True, f"{route_obj['route']} verifier handle")
@@ -909,6 +1016,26 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     proof_status = require_object(data.get("proof_status"), "proof status")
     expect_equal(proof_status.get("proof_artifact_exists"), False, "proof artifact exists")
     expect_equal(proof_status.get("verifier_handle_exists"), False, "verifier handle exists")
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_public_row_proof_exists"),
+        True,
+        "partial d128 RMSNorm public-row proof exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_public_row_verifier_exists"),
+        True,
+        "partial d128 RMSNorm public-row verifier exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed"),
+        True,
+        "partial d128 RMSNorm public-row local roundtrip proof",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists"),
+        False,
+        "partial d128 RMSNorm public-row checked-in proof artifact",
+    )
     expect_equal(
         proof_status.get("partial_parameterized_residual_add_proof_exists"),
         True,

@@ -366,6 +366,21 @@ checked missing/reordered/duplicated/stale/relabeling/verifier-domain/source-has
 mutations. This is the first single receipt for the d64 native route. It is still not recursive
 aggregation or a private parameter-opening proof.
 
+The first d128 normalization slice is also checked in:
+
+- `docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs`
+
+It proves `128` public RMSNorm rows in native Stwo AIR and binds them to the
+pinned d128 RMSNorm-SwiGLU-residual statement commitment. This is the first
+normalization-specific d128 proof slice: it checks square, scale-division,
+normalized-output, remainder, scale-tree, and scalar square-root constraints.
+Together with the d128 residual-add proof, it shows the d128 backend route is no
+longer residual-only. It is still not a full d128 block proof and still reports
+no full-block proof size or verifier time.
+
 The first attention/KV receipt contract is also checked in:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`

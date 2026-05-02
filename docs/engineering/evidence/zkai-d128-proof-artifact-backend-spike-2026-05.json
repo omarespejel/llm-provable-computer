@@ -14,10 +14,8 @@
       "verifier_time_ms": null
     },
     {
-      "blocker": "no d128 native proof modules or exported prove/verify handles exist",
+      "blocker": "d128 RMSNorm public-row native proof exists, but the remaining native d128 slices and full block verifier do not",
       "missing_export_symbols": [
-        "prove_zkai_d128_rmsnorm_public_row_envelope",
-        "verify_zkai_d128_rmsnorm_public_row_envelope",
         "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
         "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
         "prove_zkai_d128_gate_value_projection_envelope",
@@ -32,7 +30,6 @@
         "verify_zkai_d128_transformer_block_envelope"
       ],
       "missing_modules": [
-        "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
         "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
         "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
         "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
@@ -43,10 +40,31 @@
       "proof_artifact_exists": false,
       "proof_size_bytes": null,
       "route": "direct_d128_native_modules",
-      "status": "NO_GO",
+      "status": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
       "target_ff_dim": 512,
       "target_width": 128,
       "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    },
+    {
+      "blocker": "RMSNorm public-row slice only; not projection, activation, down-projection, residual, bridge, or full block",
+      "checked_in_proof_artifact_exists": false,
+      "evidence": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+      "local_roundtrip_proof_constructed": true,
+      "present_symbols": [
+        "ZkAiD128RmsnormPublicRowProofInput",
+        "ZkAiD128RmsnormPublicRowProofEnvelope",
+        "zkai_d128_rmsnorm_public_row_input_from_json_str",
+        "prove_zkai_d128_rmsnorm_public_row_envelope",
+        "verify_zkai_d128_rmsnorm_public_row_envelope"
+      ],
+      "proof_artifact_exists": true,
+      "proof_size_bytes": null,
+      "route": "direct_d128_rmsnorm_public_row_air",
+      "status": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+      "target_ff_dim": null,
+      "target_width": 128,
+      "verifier_handle_exists": true,
       "verifier_time_ms": null
     },
     {
@@ -132,7 +150,7 @@
       "verifier_time_ms": null
     },
     {
-      "blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
+      "blocker": "d128 RMSNorm public-row and residual-add proof handles exist, but projection, activation, down-projection, bridge, and full transformer-block composition handles are still missing",
       "missing_symbols": [
         "ZkAiParameterizedTransformerBlockProof",
         "parameterized_transformer_block_air",
@@ -421,7 +439,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:c6bb96e0abe4dc2d28de8d117be1b2fb411b45b1f25590f4066b473fdf451c0a",
+  "gate_commitment": "blake2b-256:53a2081cf2ac1391a03084d02c12a605d7b28479ba1ab2a8b3c50f7f2ec892a3",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -506,7 +524,11 @@
   ],
   "proof_status": {
     "blocked_before_metrics": true,
-    "first_blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
+    "first_blocker": "d128 RMSNorm public-row and residual-add proof handles exist, but projection, activation, down-projection, bridge, and full transformer-block composition handles are still missing",
+    "partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists": false,
+    "partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed": true,
+    "partial_d128_rmsnorm_public_row_proof_exists": true,
+    "partial_d128_rmsnorm_public_row_verifier_exists": true,
     "partial_parameterized_residual_add_checked_in_proof_artifact_exists": false,
     "partial_parameterized_residual_add_local_roundtrip_proof_constructed": true,
     "partial_parameterized_residual_add_proof_exists": true,
@@ -522,6 +544,33 @@
   "result": "BOUNDED_NO_GO",
   "schema": "zkai-d128-proof-artifact-backend-spike-v1",
   "source_probe": {
+    "d128_rmsnorm_public_row": {
+      "evidence": {
+        "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
+        "file_sha256": "4122da7d20b618220301832df159e5105483bddc1017199163c644f21cc84b91",
+        "path": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+        "payload_sha256": "d883c8b09ffb9db7a36cf42196f07ceef0c53edb083922625f3887e70e2042e6",
+        "result": null,
+        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2"
+      },
+      "module": {
+        "exists": true,
+        "file_sha256": "cf8f39e5a7c25b88e4d2aa9f2cd49d2152bc1f1560b939925a52cf8ce23fa484",
+        "path": "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs"
+      },
+      "operation": "rmsnorm_public_rows",
+      "present_symbols": [
+        "ZkAiD128RmsnormPublicRowProofInput",
+        "ZkAiD128RmsnormPublicRowProofEnvelope",
+        "zkai_d128_rmsnorm_public_row_input_from_json_str",
+        "prove_zkai_d128_rmsnorm_public_row_envelope",
+        "verify_zkai_d128_rmsnorm_public_row_envelope"
+      ],
+      "rms_q8": 55,
+      "row_count": 128,
+      "status": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+      "target_width": 128
+    },
     "d64_hardcoded_markers": [
       {
         "markers": [
@@ -689,8 +738,6 @@
       }
     ],
     "missing_d128_export_symbols": [
-      "prove_zkai_d128_rmsnorm_public_row_envelope",
-      "verify_zkai_d128_rmsnorm_public_row_envelope",
       "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
       "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
       "prove_zkai_d128_gate_value_projection_envelope",
@@ -705,7 +752,6 @@
       "verify_zkai_d128_transformer_block_envelope"
     ],
     "missing_d128_modules": [
-      "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
       "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
       "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
       "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
@@ -748,9 +794,10 @@
   },
   "summary": {
     "blocked_before_metrics": true,
+    "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
     "d64_anchor_route": "GO_ANCHOR_ONLY",
-    "direct_d128_route": "NO_GO",
-    "first_blocker": "a parameterized d128 residual-add vector proof handle exists, but parameterized RMSNorm, projection, activation, down-projection, and full transformer-block composition handles are still missing",
+    "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
+    "first_blocker": "d128 RMSNorm public-row and residual-add proof handles exist, but projection, activation, down-projection, bridge, and full transformer-block composition handles are still missing",
     "issue": 387,
     "mutation_cases": 14,
     "mutations_rejected": 14,
@@ -779,7 +826,9 @@
   "validation_commands": [
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_public_row_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
     "just gate-fast",

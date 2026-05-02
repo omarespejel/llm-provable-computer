@@ -35,7 +35,8 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["result"], GATE.RESULT)
         self.assertEqual(payload["issue"], 387)
         self.assertEqual(payload["summary"]["d64_anchor_route"], "GO_ANCHOR_ONLY")
-        self.assertEqual(payload["summary"]["direct_d128_route"], "NO_GO")
+        self.assertEqual(payload["summary"]["direct_d128_route"], "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING")
+        self.assertEqual(payload["summary"]["d128_rmsnorm_public_row_route"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
         self.assertEqual(payload["case_count"], 14)
@@ -75,6 +76,8 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
             probe["missing_d128_export_symbols"],
         )
+        self.assertEqual(probe["d128_rmsnorm_public_row"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
+        self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
@@ -98,6 +101,19 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 GATE.build_source_probe()
         finally:
             GATE.VECTOR_RESIDUAL_GATE.validate_payload = original
+
+    def test_source_probe_runs_full_rmsnorm_evidence_validator(self) -> None:
+        original = GATE.D128_RMSNORM_GATE.validate_payload
+
+        def reject(_payload: dict) -> None:
+            raise GATE.D128_RMSNORM_GATE.D128RmsnormPublicRowInputError("simulated rmsnorm evidence drift")
+
+        try:
+            GATE.D128_RMSNORM_GATE.validate_payload = reject
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "RMSNorm public-row evidence"):
+                GATE.build_source_probe()
+        finally:
+            GATE.D128_RMSNORM_GATE.validate_payload = original
 
     def test_rust_symbol_probe_rejects_comment_only_surfaces(self) -> None:
         self.assertTrue(
@@ -132,7 +148,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
     def test_backend_routes_block_metrics_until_proof_exists(self) -> None:
         routes = {row["route"]: row for row in self.fresh_payload()["backend_routes"]}
         self.assertEqual(routes["existing_d64_slice_chain"]["status"], "GO_ANCHOR_ONLY")
-        self.assertEqual(routes["direct_d128_native_modules"]["status"], "NO_GO")
+        self.assertEqual(routes["direct_d128_native_modules"]["status"], "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING")
+        self.assertEqual(routes["direct_d128_rmsnorm_public_row_air"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
+        self.assertTrue(routes["direct_d128_rmsnorm_public_row_air"]["local_roundtrip_proof_constructed"])
+        self.assertFalse(routes["direct_d128_rmsnorm_public_row_air"]["checked_in_proof_artifact_exists"])
         self.assertEqual(routes["lift_existing_d64_modules_by_metadata"]["status"], "NO_GO")
         self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
@@ -147,6 +166,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         status = self.fresh_payload()["proof_status"]
         self.assertFalse(status["proof_artifact_exists"])
         self.assertFalse(status["verifier_handle_exists"])
+        self.assertTrue(status["partial_d128_rmsnorm_public_row_proof_exists"])
+        self.assertTrue(status["partial_d128_rmsnorm_public_row_verifier_exists"])
+        self.assertTrue(status["partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed"])
+        self.assertFalse(status["partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])

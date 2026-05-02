@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_rmsnorm_public_row_proof;
+#[cfg(feature = "stwo-backend")]
 mod d64_native_activation_swiglu_proof;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_down_projection_proof;
@@ -84,6 +86,20 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_rmsnorm_public_row_proof::{
+    prove_zkai_d128_rmsnorm_public_row_envelope, verify_zkai_d128_rmsnorm_public_row_envelope,
+    zkai_d128_rmsnorm_public_row_input_from_json_str, D128RmsnormPublicRow,
+    ZkAiD128RmsnormPublicRowProofEnvelope, ZkAiD128RmsnormPublicRowProofInput,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_DECISION, ZKAI_D128_RMSNORM_PUBLIC_ROW_INPUT_DECISION,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_INPUT_SCHEMA, ZKAI_D128_RMSNORM_PUBLIC_ROW_MAX_JSON_BYTES,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_MAX_PROOF_BYTES, ZKAI_D128_RMSNORM_PUBLIC_ROW_NEXT_BACKEND_STEP,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_OPERATION, ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_SEMANTIC_SCOPE,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_SOURCE_PROOF_BACKEND_VERSION,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d64_native_activation_swiglu_proof::{
