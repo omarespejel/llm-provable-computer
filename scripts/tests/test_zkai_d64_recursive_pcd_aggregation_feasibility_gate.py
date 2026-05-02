@@ -40,6 +40,10 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["composition_mutation_cases"], 14)
         self.assertEqual(payload["summary"]["composition_mutations_rejected"], 14)
         self.assertEqual(payload["case_count"], 16)
+        self.assertEqual(
+            [(case["mutation"], case["surface"]) for case in payload["mutation_inventory"]],
+            list(GATE.EXPECTED_MUTATION_INVENTORY),
+        )
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertIn("missing recursive verifier", payload["summary"]["first_blocker"])
 
@@ -115,8 +119,27 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "rejected/accepted"):
             GATE.validate_payload(payload)
 
+    def test_rejects_duplicate_mutation_case(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][1] = copy.deepcopy(payload["cases"][0])
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "duplicate mutation case"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_mutation_inventory_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["mutation_inventory"][0]["mutation"] = "tampered_mutation"
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "mutation inventory"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_case_inventory_reordering(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0], payload["cases"][1] = payload["cases"][1], payload["cases"][0]
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "mutation case inventory"):
+            GATE.validate_payload(payload)
+
     def test_rejects_missing_mutation_metadata_on_serialized_gate_result(self) -> None:
         payload = self.fresh_payload()
+        del payload["mutation_inventory"]
         del payload["cases"]
         del payload["case_count"]
         del payload["all_mutations_rejected"]
