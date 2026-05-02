@@ -1,0 +1,420 @@
+{
+  "all_mutations_rejected": true,
+  "backend_attempt": {
+    "blocked_before_metrics": [
+      "outer_proof_size",
+      "outer_verifier_time",
+      "recursive_verifier_rows",
+      "onchain_cost"
+    ],
+    "first_blocker": "missing executable nested-verifier backend artifact that proves the selected d64 slice-verifier checks inside one verifier-facing proof or PCD accumulator",
+    "go_criterion": "one checked outer proof or PCD accumulator verifies the selected d64 slice-verifier checks and binds nested_verifier_contract_commitment as public input",
+    "minimum_nested_slice_checks": 2,
+    "missing_artifacts": [
+      "nested verifier program/AIR/circuit for the d64 RMSNorm public-row slice verifier",
+      "nested verifier program/AIR/circuit for the d64 RMSNorm-to-projection bridge verifier",
+      "outer proof or PCD accumulator object over the selected nested verifier checks",
+      "outer verifier handle for the resulting nested-verifier proof or accumulator",
+      "public-input binding test that derives nested_verifier_contract_commitment inside the outer backend"
+    ],
+    "nested_verifier_proof_claimed": false,
+    "outer_backend_artifacts": [],
+    "pcd_accumulator_claimed": false,
+    "proof_or_accumulator_artifacts": [],
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ]
+  },
+  "backend_proof_result": "NO_GO_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
+  "case_count": 20,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source feasibility file_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_feasibility_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_feasibility_evidence",
+      "surface": "source_feasibility_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source feasibility payload_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_feasibility_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_feasibility_evidence",
+      "surface": "source_feasibility_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "aggregation_target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "input_block_receipt_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "public_instance_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "proof_native_parameter_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "statement_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_version_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_source_hash_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_removed",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_duplicated",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_reordered",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract mismatch",
+      "mutated_accepted": false,
+      "mutation": "minimum_slice_check_count_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier contract commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_contract_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract_commitment",
+      "surface": "nested_verifier_contract_commitment"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "nested verifier proof claimed without a checked backend artifact",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_claim_true_without_artifact",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "PCD accumulator claimed without a checked backend artifact",
+      "mutated_accepted": false,
+      "mutation": "pcd_accumulator_claim_true_without_artifact",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "outer backend artifact supplied to no-go contract gate",
+      "mutated_accepted": false,
+      "mutation": "invented_outer_backend_artifact",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "first backend blocker mismatch",
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "contract_result": "GO_D64_NESTED_VERIFIER_BACKEND_CONTRACT",
+  "decision": "NO_GO_D64_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "source_feasibility_file_hash_drift",
+      "surface": "source_feasibility_evidence"
+    },
+    {
+      "index": 1,
+      "mutation": "source_feasibility_payload_hash_drift",
+      "surface": "source_feasibility_evidence"
+    },
+    {
+      "index": 2,
+      "mutation": "aggregation_target_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 3,
+      "mutation": "input_block_receipt_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 4,
+      "mutation": "verifier_domain_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 5,
+      "mutation": "public_instance_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 6,
+      "mutation": "proof_native_parameter_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 7,
+      "mutation": "statement_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 8,
+      "mutation": "selected_slice_version_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 9,
+      "mutation": "selected_slice_source_hash_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 10,
+      "mutation": "selected_slice_removed",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 11,
+      "mutation": "selected_slice_duplicated",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 12,
+      "mutation": "selected_slice_reordered",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 13,
+      "mutation": "minimum_slice_check_count_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 14,
+      "mutation": "nested_verifier_contract_commitment_drift",
+      "surface": "nested_verifier_contract_commitment"
+    },
+    {
+      "index": 15,
+      "mutation": "nested_verifier_claim_true_without_artifact",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 16,
+      "mutation": "pcd_accumulator_claim_true_without_artifact",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 17,
+      "mutation": "invented_outer_backend_artifact",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 18,
+      "mutation": "first_blocker_removed",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 19,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "nested_verifier_contract": {
+    "contract_kind": "d64-two-slice-nested-verifier-backend-contract",
+    "contract_version": "zkai-d64-two-slice-nested-verifier-contract-v1",
+    "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+    "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+    "input_block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "minimum_nested_slice_checks": 2,
+    "model_config": {
+      "activation_clamp_q8": 1024,
+      "ff_dim": 256,
+      "fixture_schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
+      "scale_q8": 256,
+      "statement_kind": "d64-rmsnorm-swiglu-residual-block",
+      "target_id": "rmsnorm-swiglu-residual-d64-v2",
+      "width": 64
+    },
+    "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+    "selected_nested_verifier_checks": [
+      {
+        "index": 0,
+        "proof_backend_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+        "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2",
+        "slice_id": "rmsnorm_public_rows",
+        "source_file_sha256": "24083515ddc3ce7a690ac33698157956f6c35427dad8a41c033012616160db1d",
+        "source_path": "docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json",
+        "source_payload_sha256": "1d1f5ec67a770e8c98088e3924b53bf24e91462946b84a2a8cba3d4387f43c75"
+      },
+      {
+        "index": 1,
+        "proof_backend_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+        "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1",
+        "slice_id": "rmsnorm_projection_bridge",
+        "source_file_sha256": "84b7998b53679c6dd2f221392ee688c499bfdbc6bca0a737e9df40d720a8fccc",
+        "source_path": "docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json",
+        "source_payload_sha256": "2680f43d467a2da07ef8441e4b8051afef2d381a6cf2569130f322c5ddbe81cd"
+      }
+    ],
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+    "source_aggregation_target": {
+      "composition_mutation_cases": 14,
+      "feasibility_mutation_cases": 16,
+      "feasibility_mutations_rejected": 16,
+      "recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_PROOF_ARTIFACT_UNAVAILABLE",
+      "slice_count": 6,
+      "target_kind": "d64-block-receipt-recursive-pcd-target",
+      "target_version": "zkai-d64-recursive-pcd-aggregation-target-v1",
+      "total_checked_rows": 49600
+    },
+    "source_aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+    "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
+  },
+  "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+  "non_claims": [
+    "not a recursive proof object",
+    "not a PCD accumulator",
+    "not aggregation of all six d64 slice proofs",
+    "not proof-size or verifier-time evidence",
+    "not onchain deployment evidence",
+    "not private parameter-opening proof",
+    "not full transformer inference"
+  ],
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d64-nested-verifier-backend-contract-v1",
+  "source_feasibility_evidence": {
+    "aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "decision": "NO_GO_D64_RECURSIVE_PCD_AGGREGATION_PROVER_UNAVAILABLE",
+    "file_sha256": "7b5df1c747dce73094026a32b5af7b10592fe3ce8376041122a6ccb1e0168beb",
+    "path": "docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json",
+    "payload_sha256": "1852ddfb13e722511544e2a863ad8f44ab37af8dfe8d790a5dea319bf76bbad9",
+    "schema": "zkai-d64-recursive-pcd-aggregation-feasibility-v1"
+  },
+  "summary": {
+    "backend_status": "NO_GO_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
+    "contract_status": "GO_D64_NESTED_VERIFIER_BACKEND_CONTRACT",
+    "first_blocker": "missing executable nested-verifier backend artifact that proves the selected d64 slice-verifier checks inside one verifier-facing proof or PCD accumulator",
+    "minimum_nested_slice_checks": 2,
+    "mutation_cases": 20,
+    "mutations_rejected": 20,
+    "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "selected_slice_count": 2,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "source_aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "source_feasibility_mutation_cases": 16,
+    "source_feasibility_mutations_rejected": 16,
+    "source_recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_PROOF_ARTIFACT_UNAVAILABLE"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d64_nested_verifier_backend_contract_gate.py --write-json docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_contract_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root ."
+  ]
+}
