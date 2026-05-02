@@ -129,9 +129,9 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         candidate = next(
             (
-            item
-            for item in payload["backend_attempt"]["candidate_inventory"]
-            if item["candidate_id"] == "phase36_recursive_verifier_harness_receipt"
+                item
+                for item in payload["backend_attempt"]["candidate_inventory"]
+                if item["candidate_id"] == "phase36_recursive_verifier_harness_receipt"
             ),
             None,
         )
@@ -209,6 +209,23 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(harness_case["rejected"])
         self.assertEqual(harness_case["rejection_layer"], "candidate_inventory")
         self.assertIn("candidate inventory row missing", harness_case["error"])
+
+    def test_empty_mutation_generation_errors_get_non_empty_diagnostics(self) -> None:
+        payload = GATE.build_payload()
+        original_candidate_row = GATE._candidate_row
+
+        def empty_candidate_row(_payload: dict, _candidate_id: str) -> dict:
+            raise RuntimeError()
+
+        try:
+            GATE._candidate_row = empty_candidate_row
+            cases = GATE.mutation_cases(payload)
+        finally:
+            GATE._candidate_row = original_candidate_row
+
+        harness_case = next(case for case in cases if case["mutation"] == "candidate_inventory_status_relabel")
+        self.assertTrue(harness_case["rejected"])
+        self.assertEqual(harness_case["error"], "RuntimeError with empty message")
 
     def test_rejects_rejected_mutation_case_without_error_message(self) -> None:
         payload = self.fresh_payload()
