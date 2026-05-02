@@ -18,6 +18,7 @@ import io
 import json
 import os
 import pathlib
+import stat as stat_module
 import tempfile
 from typing import Any
 
@@ -176,10 +177,22 @@ def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
             resolved.relative_to(ROOT.resolve())
         except ValueError as err:
             raise ActivationSwiGluInputError(f"source gate/value evidence escapes repository: {path}") from err
-        if not resolved.is_file():
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
             raise ActivationSwiGluInputError(f"source gate/value evidence is not a regular file: {path}")
-        with resolved.open("rb") as source_file:
-            source_bytes = source_file.read(MAX_SOURCE_JSON_BYTES + 1)
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise ActivationSwiGluInputError(f"source gate/value evidence is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise ActivationSwiGluInputError(f"source gate/value evidence changed while reading: {path}")
+            with os.fdopen(fd, "rb") as source_file:
+                fd = None
+                source_bytes = source_file.read(MAX_SOURCE_JSON_BYTES + 1)
+        finally:
+            if fd is not None:
+                os.close(fd)
         if len(source_bytes) > MAX_SOURCE_JSON_BYTES:
             raise ActivationSwiGluInputError(
                 f"source gate/value evidence exceeds max size: got at least {len(source_bytes)} bytes, limit {MAX_SOURCE_JSON_BYTES} bytes"

@@ -159,6 +159,24 @@ class ZkAiD128ActivationSwiGluProofInputTests(unittest.TestCase):
             with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "symlink"):
                 ACTIVATION_SWIGLU.load_source(symlink)
 
+    def test_load_source_rejects_swap_between_lstat_and_open(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            source_path = pathlib.Path(tmp) / "source.json"
+            source_path.write_bytes(ACTIVATION_SWIGLU.SOURCE_JSON.read_bytes())
+            original_open = ACTIVATION_SWIGLU.os.open
+
+            def swapping_open(path: pathlib.Path, flags: int) -> int:
+                source_path.unlink()
+                source_path.write_text("{}", encoding="utf-8")
+                return original_open(path, flags)
+
+            ACTIVATION_SWIGLU.os.open = swapping_open
+            try:
+                with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "changed while reading"):
+                    ACTIVATION_SWIGLU.load_source(source_path)
+            finally:
+                ACTIVATION_SWIGLU.os.open = original_open
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
