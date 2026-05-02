@@ -871,6 +871,20 @@ aggregate, but it is not itself recursive compression. It is anchored to
 `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md` and
 `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`.
 
+A follow-up recursive/PCD feasibility gate makes that boundary sharper. It
+classifies the same d64 block receipt as a valid aggregation target, but records
+a bounded no-go for actual recursive aggregation because the repository does not
+yet contain a recursive verifier or proof-carrying-data backend artifact that
+proves the six slice-verifier checks inside one proof or accumulator. The gate
+rejects `16 / 16` checked mutations over the aggregation target, block-receipt
+projection, source-evidence handle, and recursive-claim surface, including
+invented recursive proof artifacts and attempts to relabel the bounded no-go as
+a go result. This keeps the next frontier precise: build the nested-verifier
+backend, not another receipt wrapper. It is anchored to
+`docs/engineering/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05-02.md`
+and
+`docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model
@@ -947,6 +961,10 @@ replacement of verifier-side replay. The paper therefore does not claim:
 - backend-independent proof of the pattern,
 - full end-to-end transformer inference proving,
 - onchain deployment of the typed boundary path itself.
+
+The d64 recursive/PCD feasibility gate strengthens this non-claim rather than
+weakening it: it says the receipt is the right aggregation input, and that the
+missing work is a real nested-verifier backend.
 
 ### 8.4 No universal speedup claim
 

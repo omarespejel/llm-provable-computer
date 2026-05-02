@@ -27,5 +27,6 @@ Tablero itself proves agents, reasoning, tool truth, or policy semantics.
 - [d64 external-adapter surface probe](../zkai-d64-external-adapter-surface-probe-2026-05-01.md)
 - [d64 residual-add AIR proof](../zkai-d64-residual-add-proof-2026-05-02.md)
 - [d64 block receipt composition gate](../zkai-d64-block-receipt-composition-gate-2026-05-02.md)
+- [d64 recursive/PCD aggregation feasibility gate](../zkai-d64-recursive-pcd-aggregation-feasibility-2026-05-02.md)
 - [Agent-step zkAI Stwo composition gate](../agent-step-zkai-stwo-composition-gate-2026-04-29.md)
 - [Agent-step model subreceipt callback gate](../agent-step-model-subreceipt-callback-gate-2026-04-29.md)

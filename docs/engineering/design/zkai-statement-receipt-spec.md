@@ -228,6 +228,16 @@ normalization and bounded activation rows. The raw proof-only path again rejects
 `14 / 14`. This is a statement-binding and composition result, not a full
 SwiGLU MLP proof and not a `d=64` or `d=128` matched benchmark.
 
+The d64 native block receipt is the first checked transformer-shaped receipt in
+this repository that composes six native proof-slice handles into one
+statement-bound block object. A follow-up recursive/PCD feasibility gate now
+classifies that receipt as a valid aggregation target while explicitly recording
+a bounded no-go for recursive aggregation: the missing artifact is a recursive
+verifier or PCD backend that proves the six slice-verifier checks inside one
+proof or accumulator. The gate rejects `16 / 16` checked relabeling and
+claim-drift mutations, including attempts to smuggle in an invented recursive
+proof artifact or relabel the bounded no-go as a go result.
+
 These counts are adapter-scoped calibration suites, not full
 `zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
 for a production receipt remains the relabeling threat model above.
@@ -255,6 +265,10 @@ Evidence handles:
 - `docs/engineering/zkai-stwo-statement-bound-transformer-block-result-gate-2026-05-01.md`
 - `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.json`
 - `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.tsv`
+- `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`
+- `docs/engineering/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json`
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv`
 
