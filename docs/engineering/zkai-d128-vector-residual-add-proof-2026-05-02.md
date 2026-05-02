@@ -76,6 +76,12 @@ vector-block route existed. That is no longer true. The state is now sharper:
 a parameterized d128 residual-add proof exists, while the full d128 block remains
 blocked on the other parameterized slices and composition.
 
+The d128 RMSNorm-to-projection bridge has since landed as
+`docs/engineering/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05-02.md`,
+so the remaining upstream blocker is no longer the first handoff after RMSNorm.
+It is the gate/value projection slice that consumes the bridge's
+`projection_input_row_commitment`.
+
 This is progress because the next backend task is no longer generic. The next
 slice to parameterize should be one of:
 

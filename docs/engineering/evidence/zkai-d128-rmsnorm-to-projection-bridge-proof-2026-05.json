@@ -1,0 +1,690 @@
+{
+  "decision": "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+  "forbidden_output_activation_commitment": "blake2b-256:7e6ae6d301fc60ac2232d807d155785eabe653cf4e91971adda470a04246a572",
+  "next_backend_step": "encode d128 gate/value projection rows that consume projection_input_row_commitment and produce gate/value projection output commitments",
+  "non_claims": [
+    "not full d128 block proof",
+    "not gate, value, or down projection proof",
+    "not activation, SwiGLU, or residual proof",
+    "not binding the full d128 output_activation_commitment",
+    "bridge proves only the domain-separated handoff from RMSNorm-local rows to projection-input rows"
+  ],
+  "operation": "rmsnorm_to_projection_bridge",
+  "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
+  "projection_input_row_domain": "ptvm:zkai:d128-projection-input-row:v1",
+  "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+  "proof_verifier_hardening": [
+    "source d128 RMSNorm evidence validation before bridge construction",
+    "source RMSNorm statement commitment binding before bridge verification",
+    "source RMSNorm output row commitment recomputation before proof verification",
+    "projection input row commitment recomputation before proof verification",
+    "statement/public-instance/native-parameter commitments recomputed before proof verification",
+    "AIR equality between RMSNorm-local rows and projection-input rows",
+    "full output_activation_commitment relabeling rejection",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing"
+  ],
+  "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+  "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+  "row_count": 128,
+  "rows": [
+    {
+      "index": 0,
+      "projection_input_q8": -387,
+      "rmsnorm_normed_q8": -387
+    },
+    {
+      "index": 1,
+      "projection_input_q8": -354,
+      "rmsnorm_normed_q8": -354
+    },
+    {
+      "index": 2,
+      "projection_input_q8": -317,
+      "rmsnorm_normed_q8": -317
+    },
+    {
+      "index": 3,
+      "projection_input_q8": -224,
+      "rmsnorm_normed_q8": -224
+    },
+    {
+      "index": 4,
+      "projection_input_q8": -182,
+      "rmsnorm_normed_q8": -182
+    },
+    {
+      "index": 5,
+      "projection_input_q8": -103,
+      "rmsnorm_normed_q8": -103
+    },
+    {
+      "index": 6,
+      "projection_input_q8": -52,
+      "rmsnorm_normed_q8": -52
+    },
+    {
+      "index": 7,
+      "projection_input_q8": 9,
+      "rmsnorm_normed_q8": 9
+    },
+    {
+      "index": 8,
+      "projection_input_q8": 65,
+      "rmsnorm_normed_q8": 65
+    },
+    {
+      "index": 9,
+      "projection_input_q8": 130,
+      "rmsnorm_normed_q8": 130
+    },
+    {
+      "index": 10,
+      "projection_input_q8": 204,
+      "rmsnorm_normed_q8": 204
+    },
+    {
+      "index": 11,
+      "projection_input_q8": 242,
+      "rmsnorm_normed_q8": 242
+    },
+    {
+      "index": 12,
+      "projection_input_q8": 325,
+      "rmsnorm_normed_q8": 325
+    },
+    {
+      "index": 13,
+      "projection_input_q8": 344,
+      "rmsnorm_normed_q8": 344
+    },
+    {
+      "index": 14,
+      "projection_input_q8": 432,
+      "rmsnorm_normed_q8": 432
+    },
+    {
+      "index": 15,
+      "projection_input_q8": -443,
+      "rmsnorm_normed_q8": -443
+    },
+    {
+      "index": 16,
+      "projection_input_q8": -336,
+      "rmsnorm_normed_q8": -336
+    },
+    {
+      "index": 17,
+      "projection_input_q8": -298,
+      "rmsnorm_normed_q8": -298
+    },
+    {
+      "index": 18,
+      "projection_input_q8": -210,
+      "rmsnorm_normed_q8": -210
+    },
+    {
+      "index": 19,
+      "projection_input_q8": -163,
+      "rmsnorm_normed_q8": -163
+    },
+    {
+      "index": 20,
+      "projection_input_q8": -112,
+      "rmsnorm_normed_q8": -112
+    },
+    {
+      "index": 21,
+      "projection_input_q8": -42,
+      "rmsnorm_normed_q8": -42
+    },
+    {
+      "index": 22,
+      "projection_input_q8": 18,
+      "rmsnorm_normed_q8": 18
+    },
+    {
+      "index": 23,
+      "projection_input_q8": 69,
+      "rmsnorm_normed_q8": 69
+    },
+    {
+      "index": 24,
+      "projection_input_q8": 134,
+      "rmsnorm_normed_q8": 134
+    },
+    {
+      "index": 25,
+      "projection_input_q8": 209,
+      "rmsnorm_normed_q8": 209
+    },
+    {
+      "index": 26,
+      "projection_input_q8": 242,
+      "rmsnorm_normed_q8": 242
+    },
+    {
+      "index": 27,
+      "projection_input_q8": 325,
+      "rmsnorm_normed_q8": 325
+    },
+    {
+      "index": 28,
+      "projection_input_q8": 414,
+      "rmsnorm_normed_q8": 414
+    },
+    {
+      "index": 29,
+      "projection_input_q8": 428,
+      "rmsnorm_normed_q8": 428
+    },
+    {
+      "index": 30,
+      "projection_input_q8": -415,
+      "rmsnorm_normed_q8": -415
+    },
+    {
+      "index": 31,
+      "projection_input_q8": -312,
+      "rmsnorm_normed_q8": -312
+    },
+    {
+      "index": 32,
+      "projection_input_q8": -280,
+      "rmsnorm_normed_q8": -280
+    },
+    {
+      "index": 33,
+      "projection_input_q8": -233,
+      "rmsnorm_normed_q8": -233
+    },
+    {
+      "index": 34,
+      "projection_input_q8": -149,
+      "rmsnorm_normed_q8": -149
+    },
+    {
+      "index": 35,
+      "projection_input_q8": -98,
+      "rmsnorm_normed_q8": -98
+    },
+    {
+      "index": 36,
+      "projection_input_q8": -33,
+      "rmsnorm_normed_q8": -33
+    },
+    {
+      "index": 37,
+      "projection_input_q8": 23,
+      "rmsnorm_normed_q8": 23
+    },
+    {
+      "index": 38,
+      "projection_input_q8": 93,
+      "rmsnorm_normed_q8": 93
+    },
+    {
+      "index": 39,
+      "projection_input_q8": 139,
+      "rmsnorm_normed_q8": 139
+    },
+    {
+      "index": 40,
+      "projection_input_q8": 214,
+      "rmsnorm_normed_q8": 214
+    },
+    {
+      "index": 41,
+      "projection_input_q8": 242,
+      "rmsnorm_normed_q8": 242
+    },
+    {
+      "index": 42,
+      "projection_input_q8": 321,
+      "rmsnorm_normed_q8": 321
+    },
+    {
+      "index": 43,
+      "projection_input_q8": 409,
+      "rmsnorm_normed_q8": 409
+    },
+    {
+      "index": 44,
+      "projection_input_q8": -419,
+      "rmsnorm_normed_q8": -419
+    },
+    {
+      "index": 45,
+      "projection_input_q8": -391,
+      "rmsnorm_normed_q8": -391
+    },
+    {
+      "index": 46,
+      "projection_input_q8": -359,
+      "rmsnorm_normed_q8": -359
+    },
+    {
+      "index": 47,
+      "projection_input_q8": -261,
+      "rmsnorm_normed_q8": -261
+    },
+    {
+      "index": 48,
+      "projection_input_q8": -215,
+      "rmsnorm_normed_q8": -215
+    },
+    {
+      "index": 49,
+      "projection_input_q8": -135,
+      "rmsnorm_normed_q8": -135
+    },
+    {
+      "index": 50,
+      "projection_input_q8": -84,
+      "rmsnorm_normed_q8": -84
+    },
+    {
+      "index": 51,
+      "projection_input_q8": -28,
+      "rmsnorm_normed_q8": -28
+    },
+    {
+      "index": 52,
+      "projection_input_q8": 32,
+      "rmsnorm_normed_q8": 32
+    },
+    {
+      "index": 53,
+      "projection_input_q8": 97,
+      "rmsnorm_normed_q8": 97
+    },
+    {
+      "index": 54,
+      "projection_input_q8": 144,
+      "rmsnorm_normed_q8": 144
+    },
+    {
+      "index": 55,
+      "projection_input_q8": 214,
+      "rmsnorm_normed_q8": 214
+    },
+    {
+      "index": 56,
+      "projection_input_q8": 293,
+      "rmsnorm_normed_q8": 293
+    },
+    {
+      "index": 57,
+      "projection_input_q8": 321,
+      "rmsnorm_normed_q8": 321
+    },
+    {
+      "index": 58,
+      "projection_input_q8": 404,
+      "rmsnorm_normed_q8": 404
+    },
+    {
+      "index": 59,
+      "projection_input_q8": -480,
+      "rmsnorm_normed_q8": -480
+    },
+    {
+      "index": 60,
+      "projection_input_q8": -373,
+      "rmsnorm_normed_q8": -373
+    },
+    {
+      "index": 61,
+      "projection_input_q8": -336,
+      "rmsnorm_normed_q8": -336
+    },
+    {
+      "index": 62,
+      "projection_input_q8": -243,
+      "rmsnorm_normed_q8": -243
+    },
+    {
+      "index": 63,
+      "projection_input_q8": -201,
+      "rmsnorm_normed_q8": -201
+    },
+    {
+      "index": 64,
+      "projection_input_q8": -149,
+      "rmsnorm_normed_q8": -149
+    },
+    {
+      "index": 65,
+      "projection_input_q8": -75,
+      "rmsnorm_normed_q8": -75
+    },
+    {
+      "index": 66,
+      "projection_input_q8": -19,
+      "rmsnorm_normed_q8": -19
+    },
+    {
+      "index": 67,
+      "projection_input_q8": 41,
+      "rmsnorm_normed_q8": 41
+    },
+    {
+      "index": 68,
+      "projection_input_q8": 102,
+      "rmsnorm_normed_q8": 102
+    },
+    {
+      "index": 69,
+      "projection_input_q8": 176,
+      "rmsnorm_normed_q8": 176
+    },
+    {
+      "index": 70,
+      "projection_input_q8": 214,
+      "rmsnorm_normed_q8": 214
+    },
+    {
+      "index": 71,
+      "projection_input_q8": 293,
+      "rmsnorm_normed_q8": 293
+    },
+    {
+      "index": 72,
+      "projection_input_q8": 316,
+      "rmsnorm_normed_q8": 316
+    },
+    {
+      "index": 73,
+      "projection_input_q8": 400,
+      "rmsnorm_normed_q8": 400
+    },
+    {
+      "index": 74,
+      "projection_input_q8": -457,
+      "rmsnorm_normed_q8": -457
+    },
+    {
+      "index": 75,
+      "projection_input_q8": -350,
+      "rmsnorm_normed_q8": -350
+    },
+    {
+      "index": 76,
+      "projection_input_q8": -317,
+      "rmsnorm_normed_q8": -317
+    },
+    {
+      "index": 77,
+      "projection_input_q8": -270,
+      "rmsnorm_normed_q8": -270
+    },
+    {
+      "index": 78,
+      "projection_input_q8": -182,
+      "rmsnorm_normed_q8": -182
+    },
+    {
+      "index": 79,
+      "projection_input_q8": -135,
+      "rmsnorm_normed_q8": -135
+    },
+    {
+      "index": 80,
+      "projection_input_q8": -66,
+      "rmsnorm_normed_q8": -66
+    },
+    {
+      "index": 81,
+      "projection_input_q8": -10,
+      "rmsnorm_normed_q8": -10
+    },
+    {
+      "index": 82,
+      "projection_input_q8": 55,
+      "rmsnorm_normed_q8": 55
+    },
+    {
+      "index": 83,
+      "projection_input_q8": 111,
+      "rmsnorm_normed_q8": 111
+    },
+    {
+      "index": 84,
+      "projection_input_q8": 181,
+      "rmsnorm_normed_q8": 181
+    },
+    {
+      "index": 85,
+      "projection_input_q8": 214,
+      "rmsnorm_normed_q8": 214
+    },
+    {
+      "index": 86,
+      "projection_input_q8": 293,
+      "rmsnorm_normed_q8": 293
+    },
+    {
+      "index": 87,
+      "projection_input_q8": 381,
+      "rmsnorm_normed_q8": 381
+    },
+    {
+      "index": 88,
+      "projection_input_q8": 395,
+      "rmsnorm_normed_q8": 395
+    },
+    {
+      "index": 89,
+      "projection_input_q8": -433,
+      "rmsnorm_normed_q8": -433
+    },
+    {
+      "index": 90,
+      "projection_input_q8": -326,
+      "rmsnorm_normed_q8": -326
+    },
+    {
+      "index": 91,
+      "projection_input_q8": -294,
+      "rmsnorm_normed_q8": -294
+    },
+    {
+      "index": 92,
+      "projection_input_q8": -252,
+      "rmsnorm_normed_q8": -252
+    },
+    {
+      "index": 93,
+      "projection_input_q8": -168,
+      "rmsnorm_normed_q8": -168
+    },
+    {
+      "index": 94,
+      "projection_input_q8": -122,
+      "rmsnorm_normed_q8": -122
+    },
+    {
+      "index": 95,
+      "projection_input_q8": -66,
+      "rmsnorm_normed_q8": -66
+    },
+    {
+      "index": 96,
+      "projection_input_q8": 0,
+      "rmsnorm_normed_q8": 0
+    },
+    {
+      "index": 97,
+      "projection_input_q8": 65,
+      "rmsnorm_normed_q8": 65
+    },
+    {
+      "index": 98,
+      "projection_input_q8": 111,
+      "rmsnorm_normed_q8": 111
+    },
+    {
+      "index": 99,
+      "projection_input_q8": 186,
+      "rmsnorm_normed_q8": 186
+    },
+    {
+      "index": 100,
+      "projection_input_q8": 260,
+      "rmsnorm_normed_q8": 260
+    },
+    {
+      "index": 101,
+      "projection_input_q8": 293,
+      "rmsnorm_normed_q8": 293
+    },
+    {
+      "index": 102,
+      "projection_input_q8": 377,
+      "rmsnorm_normed_q8": 377
+    },
+    {
+      "index": 103,
+      "projection_input_q8": 390,
+      "rmsnorm_normed_q8": 390
+    },
+    {
+      "index": 104,
+      "projection_input_q8": -405,
+      "rmsnorm_normed_q8": -405
+    },
+    {
+      "index": 105,
+      "projection_input_q8": -373,
+      "rmsnorm_normed_q8": -373
+    },
+    {
+      "index": 106,
+      "projection_input_q8": -275,
+      "rmsnorm_normed_q8": -275
+    },
+    {
+      "index": 107,
+      "projection_input_q8": -233,
+      "rmsnorm_normed_q8": -233
+    },
+    {
+      "index": 108,
+      "projection_input_q8": -187,
+      "rmsnorm_normed_q8": -187
+    },
+    {
+      "index": 109,
+      "projection_input_q8": -108,
+      "rmsnorm_normed_q8": -108
+    },
+    {
+      "index": 110,
+      "projection_input_q8": -52,
+      "rmsnorm_normed_q8": -52
+    },
+    {
+      "index": 111,
+      "projection_input_q8": 9,
+      "rmsnorm_normed_q8": 9
+    },
+    {
+      "index": 112,
+      "projection_input_q8": 74,
+      "rmsnorm_normed_q8": 74
+    },
+    {
+      "index": 113,
+      "projection_input_q8": 144,
+      "rmsnorm_normed_q8": 144
+    },
+    {
+      "index": 114,
+      "projection_input_q8": 186,
+      "rmsnorm_normed_q8": 186
+    },
+    {
+      "index": 115,
+      "projection_input_q8": 265,
+      "rmsnorm_normed_q8": 265
+    },
+    {
+      "index": 116,
+      "projection_input_q8": 288,
+      "rmsnorm_normed_q8": 288
+    },
+    {
+      "index": 117,
+      "projection_input_q8": 372,
+      "rmsnorm_normed_q8": 372
+    },
+    {
+      "index": 118,
+      "projection_input_q8": 465,
+      "rmsnorm_normed_q8": 465
+    },
+    {
+      "index": 119,
+      "projection_input_q8": -382,
+      "rmsnorm_normed_q8": -382
+    },
+    {
+      "index": 120,
+      "projection_input_q8": -350,
+      "rmsnorm_normed_q8": -350
+    },
+    {
+      "index": 121,
+      "projection_input_q8": -256,
+      "rmsnorm_normed_q8": -256
+    },
+    {
+      "index": 122,
+      "projection_input_q8": -219,
+      "rmsnorm_normed_q8": -219
+    },
+    {
+      "index": 123,
+      "projection_input_q8": -168,
+      "rmsnorm_normed_q8": -168
+    },
+    {
+      "index": 124,
+      "projection_input_q8": -94,
+      "rmsnorm_normed_q8": -94
+    },
+    {
+      "index": 125,
+      "projection_input_q8": -42,
+      "rmsnorm_normed_q8": -42
+    },
+    {
+      "index": 126,
+      "projection_input_q8": 23,
+      "rmsnorm_normed_q8": 23
+    },
+    {
+      "index": 127,
+      "projection_input_q8": 79,
+      "rmsnorm_normed_q8": 79
+    }
+  ],
+  "schema": "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1",
+  "source_rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
+  "source_rmsnorm_output_row_domain": "ptvm:zkai:d128-rmsnorm-output-row:v1",
+  "source_rmsnorm_public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+  "source_rmsnorm_public_row_proof_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+  "source_rmsnorm_statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+  "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728",
+  "target_id": "rmsnorm-swiglu-residual-d128-v1",
+  "validation_commands": [
+    "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate"
+  ],
+  "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+  "width": 128
+}

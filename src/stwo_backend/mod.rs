@@ -6,6 +6,8 @@ mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_rmsnorm_to_projection_bridge_proof;
+#[cfg(feature = "stwo-backend")]
 mod d64_native_activation_swiglu_proof;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_down_projection_proof;
@@ -100,6 +102,32 @@ pub use d128_native_rmsnorm_public_row_proof::{
     ZKAI_D128_RMSNORM_PUBLIC_ROW_SOURCE_PROOF_BACKEND_VERSION,
     ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
     ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_VERSION,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_rmsnorm_to_projection_bridge_proof::{
+    prove_zkai_d128_rmsnorm_to_projection_bridge_envelope,
+    verify_zkai_d128_rmsnorm_to_projection_bridge_envelope,
+    zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str, D128RmsnormToProjectionBridgeRow,
+    ZkAiD128RmsnormToProjectionBridgeEnvelope, ZkAiD128RmsnormToProjectionBridgeInput,
+    ZKAI_D128_BRIDGE_FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT,
+    ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT, ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_DECISION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_INPUT_DECISION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_INPUT_SCHEMA,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_MAX_JSON_BYTES,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_MAX_PROOF_BYTES,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_NEXT_BACKEND_STEP,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_OPERATION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_NATIVE_PARAMETER_COMMITMENT,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_REQUIRED_BACKEND_VERSION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_SEMANTIC_SCOPE,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_VERSION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_TARGET_ID,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_VERIFIER_DOMAIN,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_WIDTH,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d64_native_activation_swiglu_proof::{

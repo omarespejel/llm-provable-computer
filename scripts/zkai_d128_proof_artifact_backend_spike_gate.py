@@ -29,10 +29,12 @@ TARGET_GATE_PATH = ROOT / "scripts" / "zkai_d128_layerwise_comparator_target_gat
 D64_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d64_block_receipt_composition_gate.py"
 VECTOR_RESIDUAL_GATE_PATH = ROOT / "scripts" / "zkai_d128_vector_residual_add_proof_input.py"
 D128_RMSNORM_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_public_row_proof_input.py"
+D128_BRIDGE_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_to_projection_bridge_input.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
 D128_RMSNORM_EVIDENCE = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
+D128_BRIDGE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
@@ -47,9 +49,9 @@ REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
 FIRST_BLOCKER = (
-    "d128 RMSNorm public-row and residual-add proof handles exist, but "
-    "projection, activation, down-projection, bridge, and full transformer-block "
-    "composition handles are still missing"
+    "d128 RMSNorm public-row, RMSNorm-to-projection bridge, and residual-add proof "
+    "handles exist, but gate/value projection, activation, down-projection, native "
+    "residual, and full transformer-block composition handles are still missing"
 )
 
 D64_PROOF_SLICES = (
@@ -104,7 +106,6 @@ D64_PROOF_SLICES = (
 )
 
 EXPECTED_D128_MODULES = (
-    "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
     "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
     "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
     "src/stwo_backend/d128_native_down_projection_proof.rs",
@@ -113,8 +114,6 @@ EXPECTED_D128_MODULES = (
 )
 
 EXPECTED_D128_EXPORT_SYMBOLS = (
-    "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
-    "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
     "prove_zkai_d128_gate_value_projection_envelope",
     "verify_zkai_d128_gate_value_projection_envelope",
     "prove_zkai_d128_activation_swiglu_envelope",
@@ -133,6 +132,15 @@ D128_RMSNORM_SYMBOLS = (
     "zkai_d128_rmsnorm_public_row_input_from_json_str",
     "prove_zkai_d128_rmsnorm_public_row_envelope",
     "verify_zkai_d128_rmsnorm_public_row_envelope",
+)
+
+D128_BRIDGE_SYMBOLS = (
+    "D128RmsnormToProjectionBridgeRow",
+    "ZkAiD128RmsnormToProjectionBridgeInput",
+    "ZkAiD128RmsnormToProjectionBridgeEnvelope",
+    "zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str",
+    "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+    "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
 )
 
 PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
@@ -194,10 +202,13 @@ NON_CLAIMS = [
 ]
 
 VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_public_row_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
@@ -241,6 +252,11 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_rmsnorm_public_row_verifier_removed", "proof_status"),
     ("partial_d128_rmsnorm_public_row_local_roundtrip_removed", "proof_status"),
     ("partial_d128_rmsnorm_public_row_checked_in_artifact_smuggled", "proof_status"),
+    ("d128_rmsnorm_to_projection_bridge_route_promoted", "backend_routes"),
+    ("partial_d128_rmsnorm_to_projection_bridge_proof_removed", "proof_status"),
+    ("partial_d128_rmsnorm_to_projection_bridge_verifier_removed", "proof_status"),
+    ("partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_removed", "proof_status"),
+    ("partial_d128_rmsnorm_to_projection_bridge_checked_in_artifact_smuggled", "proof_status"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
@@ -273,6 +289,10 @@ VECTOR_RESIDUAL_GATE = _load_module(
 D128_RMSNORM_GATE = _load_module(
     D128_RMSNORM_GATE_PATH,
     "zkai_d128_rmsnorm_public_row_for_backend_spike",
+)
+D128_BRIDGE_GATE = _load_module(
+    D128_BRIDGE_GATE_PATH,
+    "zkai_d128_rmsnorm_to_projection_bridge_for_backend_spike",
 )
 
 
@@ -474,6 +494,46 @@ def build_source_probe() -> dict[str, Any]:
     }.items():
         expect_equal(d128_rmsnorm_evidence.get(field), expected, f"d128 RMSNorm public-row {field}")
 
+    d128_bridge_module_path = "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs"
+    d128_bridge_module = read_repo_file(d128_bridge_module_path)
+    if "mod d128_native_rmsnorm_to_projection_bridge_proof;" not in mod_rs:
+        raise D128BackendSpikeError("d128 RMSNorm-to-projection bridge module missing from mod.rs")
+    missing_d128_bridge_symbols = []
+    for symbol in D128_BRIDGE_SYMBOLS:
+        if not rust_declares_symbol(
+            d128_bridge_module, symbol
+        ) or not rust_reexports_symbol(mod_rs, "d128_native_rmsnorm_to_projection_bridge_proof", symbol):
+            missing_d128_bridge_symbols.append(symbol)
+    if missing_d128_bridge_symbols:
+        raise D128BackendSpikeError(
+            "d128 RMSNorm-to-projection bridge route disappeared; refresh this partial-go gate"
+        )
+
+    d128_bridge_evidence = load_json(D128_BRIDGE_EVIDENCE)
+    try:
+        D128_BRIDGE_GATE.validate_payload(d128_bridge_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("d128 RMSNorm-to-projection bridge evidence failed validation") from err
+    for field, expected in {
+        "schema": "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1",
+        "decision": "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+        "operation": "rmsnorm_to_projection_bridge",
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "width": TARGET_WIDTH,
+        "row_count": TARGET_WIDTH,
+    }.items():
+        expect_equal(
+            d128_bridge_evidence.get(field),
+            expected,
+            f"d128 RMSNorm-to-projection bridge {field}",
+        )
+    expect_equal(
+        d128_bridge_evidence.get("source_rmsnorm_output_row_commitment"),
+        d128_rmsnorm_evidence.get("rmsnorm_output_row_commitment"),
+        "d128 bridge source RMSNorm output row commitment",
+    )
+
     missing_d128_modules = []
     for path in EXPECTED_D128_MODULES:
         full = ROOT / path
@@ -559,6 +619,21 @@ def build_source_probe() -> dict[str, Any]:
             "row_count": d128_rmsnorm_evidence["row_count"],
             "rms_q8": d128_rmsnorm_evidence["rms_q8"],
         },
+        "d128_rmsnorm_to_projection_bridge": {
+            "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "module": repo_file_descriptor(d128_bridge_module_path),
+            "evidence": source_descriptor(D128_BRIDGE_EVIDENCE, d128_bridge_evidence),
+            "present_symbols": list(D128_BRIDGE_SYMBOLS),
+            "operation": d128_bridge_evidence["operation"],
+            "target_width": d128_bridge_evidence["width"],
+            "row_count": d128_bridge_evidence["row_count"],
+            "source_rmsnorm_output_row_commitment": d128_bridge_evidence["source_rmsnorm_output_row_commitment"],
+            "projection_input_row_commitment": d128_bridge_evidence["projection_input_row_commitment"],
+            "projection_input_relabels_full_output": (
+                d128_bridge_evidence["projection_input_row_commitment"]
+                == d128_bridge_evidence["forbidden_output_activation_commitment"]
+            ),
+        },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
             "module": repo_file_descriptor(residual_module_path),
@@ -596,7 +671,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "verifier_handle_exists": False,
             "proof_size_bytes": None,
             "verifier_time_ms": None,
-            "blocker": "d128 RMSNorm public-row native proof exists, but the remaining native d128 slices and full block verifier do not",
+            "blocker": "d128 RMSNorm public-row and RMSNorm-to-projection bridge native proofs exist, but the remaining native d128 slices and full block verifier do not",
             "missing_modules": source_probe["missing_d128_modules"],
             "missing_export_symbols": source_probe["missing_d128_export_symbols"],
         },
@@ -614,6 +689,27 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "blocker": "RMSNorm public-row slice only; not projection, activation, down-projection, residual, bridge, or full block",
             "evidence": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
             "present_symbols": source_probe["d128_rmsnorm_public_row"]["present_symbols"],
+        },
+        {
+            "route": "direct_d128_rmsnorm_to_projection_bridge_air",
+            "status": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": None,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "local_roundtrip_proof_constructed": True,
+            "checked_in_proof_artifact_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "RMSNorm-to-projection bridge slice only; not gate/value projection, activation, down-projection, residual, or full block",
+            "evidence": "docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json",
+            "present_symbols": source_probe["d128_rmsnorm_to_projection_bridge"]["present_symbols"],
+            "source_rmsnorm_output_row_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
+                "source_rmsnorm_output_row_commitment"
+            ],
+            "projection_input_row_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
+                "projection_input_row_commitment"
+            ],
         },
         {
             "route": "lift_existing_d64_modules_by_metadata",
@@ -690,6 +786,7 @@ def build_payload() -> dict[str, Any]:
         "d64_anchor_route": "GO_ANCHOR_ONLY",
         "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
         "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
+        "d128_rmsnorm_to_projection_bridge_route": "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
@@ -702,6 +799,10 @@ def build_payload() -> dict[str, Any]:
         "partial_d128_rmsnorm_public_row_verifier_exists": True,
         "partial_d128_rmsnorm_public_row_local_roundtrip_proof_constructed": True,
         "partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists": False,
+        "partial_d128_rmsnorm_to_projection_bridge_proof_exists": True,
+        "partial_d128_rmsnorm_to_projection_bridge_verifier_exists": True,
+        "partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_proof_constructed": True,
+        "partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists": False,
         "partial_parameterized_residual_add_proof_exists": True,
         "partial_parameterized_residual_add_verifier_exists": True,
         "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
@@ -816,6 +917,54 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
 
+    def promote_d128_bridge_route(p: dict[str, Any]) -> None:
+        p["summary"]["d128_rmsnorm_to_projection_bridge_route"] = "GO_D128_FULL_BRIDGE_BLOCK"
+        route = next(
+            row
+            for row in p["backend_routes"]
+            if row["route"] == "direct_d128_rmsnorm_to_projection_bridge_air"
+        )
+        route["status"] = "GO_D128_FULL_BRIDGE_BLOCK"
+        route["proof_size_bytes"] = 4096
+
+    add(
+        "d128_rmsnorm_to_projection_bridge_route_promoted",
+        "backend_routes",
+        promote_d128_bridge_route,
+    )
+    add(
+        "partial_d128_rmsnorm_to_projection_bridge_proof_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_to_projection_bridge_proof_exists",
+            False,
+        ),
+    )
+    add(
+        "partial_d128_rmsnorm_to_projection_bridge_verifier_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_to_projection_bridge_verifier_exists",
+            False,
+        ),
+    )
+    add(
+        "partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_proof_constructed",
+            False,
+        ),
+    )
+    add(
+        "partial_d128_rmsnorm_to_projection_bridge_checked_in_artifact_smuggled",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists",
+            True,
+        ),
+    )
+
     def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
         route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
         route["status"] = "GO"
@@ -915,6 +1064,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "summary d128 RMSNorm public-row route",
     )
     expect_equal(
+        summary.get("d128_rmsnorm_to_projection_bridge_route"),
+        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "summary d128 RMSNorm-to-projection bridge route",
+    )
+    expect_equal(
         summary.get("parameterized_residual_add_route"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "summary parameterized residual-add route",
@@ -964,6 +1118,25 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         list(D128_RMSNORM_SYMBOLS),
         "present d128 RMSNorm public-row symbol inventory",
     )
+    bridge_probe = require_object(
+        source_probe.get("d128_rmsnorm_to_projection_bridge"),
+        "d128 RMSNorm-to-projection bridge probe",
+    )
+    expect_equal(
+        bridge_probe.get("status"),
+        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "d128 RMSNorm-to-projection bridge status",
+    )
+    expect_equal(
+        bridge_probe.get("present_symbols"),
+        list(D128_BRIDGE_SYMBOLS),
+        "present d128 RMSNorm-to-projection bridge symbol inventory",
+    )
+    expect_equal(
+        bridge_probe.get("projection_input_relabels_full_output"),
+        False,
+        "d128 RMSNorm-to-projection bridge relabel guard",
+    )
     residual_probe = require_object(
         source_probe.get("parameterized_residual_add"),
         "parameterized residual-add probe",
@@ -998,6 +1171,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "existing_d64_slice_chain",
         "direct_d128_native_modules",
         "direct_d128_rmsnorm_public_row_air",
+        "direct_d128_rmsnorm_to_projection_bridge_air",
         "lift_existing_d64_modules_by_metadata",
         "parameterized_vector_residual_add_air",
         "parameterized_transformer_block_air",
@@ -1017,6 +1191,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "direct d128 RMSNorm public-row route status",
     )
     expect_equal(
+        route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get("status"),
+        "GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "direct d128 RMSNorm-to-projection bridge route status",
+    )
+    expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized residual-add route status",
@@ -1032,6 +1211,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             continue
         if route_obj["route"] in {
             "direct_d128_rmsnorm_public_row_air",
+            "direct_d128_rmsnorm_to_projection_bridge_air",
             "parameterized_vector_residual_add_air",
         }:
             expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
@@ -1078,6 +1258,26 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         proof_status.get("partial_d128_rmsnorm_public_row_checked_in_proof_artifact_exists"),
         False,
         "partial d128 RMSNorm public-row checked-in proof artifact",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_to_projection_bridge_proof_exists"),
+        True,
+        "partial d128 RMSNorm-to-projection bridge proof exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_to_projection_bridge_verifier_exists"),
+        True,
+        "partial d128 RMSNorm-to-projection bridge verifier exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_proof_constructed"),
+        True,
+        "partial d128 RMSNorm-to-projection bridge local roundtrip proof",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists"),
+        False,
+        "partial d128 RMSNorm-to-projection bridge checked-in proof artifact",
     )
     expect_equal(
         proof_status.get("partial_parameterized_residual_add_proof_exists"),
