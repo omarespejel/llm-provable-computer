@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import copy
 import csv
+import functools
 import hashlib
 import importlib.util
 import io
@@ -350,11 +351,12 @@ def _tokens_present(path: pathlib.Path, tokens: list[str]) -> bool:
     return all(token in text for token in tokens)
 
 
+@functools.lru_cache(maxsize=1)
 def candidate_inventory() -> list[dict[str, Any]]:
     inventory: list[dict[str, Any]] = []
     for spec in CANDIDATE_SPECS:
         path = ROOT / spec["path"]
-        exists = path.exists()
+        exists = path.is_file()
         tokens = list(spec.get("required_tokens", []))
         tokens_present = _tokens_present(path, tokens) if tokens else exists
         present_for_status = exists and tokens_present
@@ -432,7 +434,7 @@ def build_payload() -> dict[str, Any]:
             "blocked_before_metrics": True,
             "candidate_count": len(inventory),
             "required_go_artifacts_missing": sum(
-                1 for item in inventory if item["required_for_go"] and not item["exists"]
+                1 for item in inventory if item["required_for_go"] and not item["accepted_as_outer_backend"]
             ),
             "first_blocker": FIRST_BLOCKER,
         },
@@ -497,7 +499,9 @@ def _expected_summary(source: dict[str, Any]) -> dict[str, Any]:
         "verifier_handle_exists": False,
         "blocked_before_metrics": True,
         "candidate_count": len(inventory),
-        "required_go_artifacts_missing": sum(1 for item in inventory if item["required_for_go"] and not item["exists"]),
+        "required_go_artifacts_missing": sum(
+            1 for item in inventory if item["required_for_go"] and not item["accepted_as_outer_backend"]
+        ),
         "first_blocker": FIRST_BLOCKER,
     }
 
@@ -702,12 +706,15 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    validate_payload(payload)
+    json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n" if json_path is not None else None
+    tsv_text = to_tsv(payload) if tsv_path is not None else None
     if json_path is not None:
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        json_path.write_text(json_text, encoding="utf-8")
     if tsv_path is not None:
         tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        tsv_path.write_text(to_tsv(payload), encoding="utf-8")
+        tsv_path.write_text(tsv_text, encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
