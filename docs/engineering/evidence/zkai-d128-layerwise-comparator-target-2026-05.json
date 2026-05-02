@@ -1,0 +1,494 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 16,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "matched source evidence mismatch",
+      "mutated_accepted": false,
+      "mutation": "matched_source_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "external source evidence mismatch",
+      "mutated_accepted": false,
+      "mutation": "external_source_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_width_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_binding_removed",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_linear_mul_estimate_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "local proof result mismatch",
+      "mutated_accepted": false,
+      "mutation": "local_proof_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "local_proof_status",
+      "surface": "local_proof_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "local d128 proof-size metric supplied before proof exists",
+      "mutated_accepted": false,
+      "mutation": "local_proof_size_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "local_proof_status",
+      "surface": "local_proof_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "local d128 verifier-time metric supplied before proof exists",
+      "mutated_accepted": false,
+      "mutation": "local_verify_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "local_proof_status",
+      "surface": "local_proof_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source-backed context mismatch",
+      "mutated_accepted": false,
+      "mutation": "nanozk_source_row_verify_seconds_drift",
+      "rejected": true,
+      "rejection_layer": "source_context",
+      "surface": "source_context"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source-backed context mismatch",
+      "mutated_accepted": false,
+      "mutation": "nanozk_source_context_promoted_to_matched",
+      "rejected": true,
+      "rejection_layer": "source_context",
+      "surface": "source_context"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "external adapter status mismatch",
+      "mutated_accepted": false,
+      "mutation": "external_adapter_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "external_adapter_status",
+      "surface": "external_adapter_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "external adapter status mismatch",
+      "mutated_accepted": false,
+      "mutation": "deepprove_public_artifact_overclaim",
+      "rejected": true,
+      "rejection_layer": "external_adapter_status",
+      "surface": "external_adapter_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "external adapter status mismatch",
+      "mutated_accepted": false,
+      "mutation": "nanozk_public_verifier_overclaim",
+      "rejected": true,
+      "rejection_layer": "external_adapter_status",
+      "surface": "external_adapter_status"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "non-claims mismatch",
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "claim_boundary",
+      "surface": "claim_boundary"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "decision": "NO_GO_D128_LAYERWISE_PROOF_ARTIFACT_MISSING",
+  "external_adapter_result": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
+  "external_adapter_status": {
+    "paper_usage": "source_backed_context_only_not_empirical_adapter_row",
+    "result": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
+    "systems": {
+      "DeepProve-1": {
+        "adapter_gate": "NO_GO_PUBLIC_GPT2_ARTIFACT_NOT_REPRODUCIBLE",
+        "baseline_verification_reproducible": false,
+        "claim_scope": "reported full GPT-2 inference proof and transformer graph/layer support",
+        "next_action": "Revisit if Lagrange publishes a DeepProve-1 proof package with proof bytes, verifier inputs, model/input/output commitments, and a runnable verifier command.",
+        "primary_blocker": "The public deep-prove repository exposes research code and MLP/CNN benchmark paths, but this probe did not find a public DeepProve-1 GPT-2 proof artifact plus verifier test vector matching the blog claim.",
+        "public_proof_artifact_available": false,
+        "public_verifier_available": false,
+        "relabeling_benchmark_run": false,
+        "source_inspection": {
+          "checked_commit": "7d21c35e5e1cb006e413f4a9676333e9e1506a87",
+          "clone_command": "git clone --depth 1 https://github.com/Lagrange-Labs/deep-prove.git",
+          "deep_prove_1_gpt2_artifacts_found": [],
+          "nearby_llm_file": "zkml/assets/scripts/llms/gpt2_internal.py",
+          "public_repo_readme_scope": "MLP/CNN public benchmark path; zkml README says supported layers are dense, ReLU, maxpool, and convolution",
+          "why_nearby_file_is_insufficient": "The script dumps GPT-2 internals, but it is not a public proof artifact, verification key, or reproducible DeepProve-1 proof verifier input."
+        },
+        "sources": [
+          {
+            "label": "DeepProve-1 blog",
+            "url": "https://lagrange.dev/blog/deepprove-1",
+            "used_for": "claim scope and transformer-feature context"
+          },
+          {
+            "checked_commit": "7d21c35e5e1cb006e413f4a9676333e9e1506a87",
+            "label": "deep-prove public repository",
+            "url": "https://github.com/Lagrange-Labs/deep-prove",
+            "used_for": "public artifact and verifier-surface inspection"
+          }
+        ],
+        "system": "DeepProve-1"
+      },
+      "NANOZK": {
+        "adapter_gate": "NO_GO_NO_PUBLIC_VERIFIER_OR_PROOF_ARTIFACT",
+        "baseline_verification_reproducible": false,
+        "claim_scope": "reported layerwise constant-size transformer proofs up to d=128",
+        "next_action": "Revisit if a NANOZK repository, artifact bundle, or verifier command is published; until then use NANOZK only as source-backed field context.",
+        "primary_blocker": "The arXiv paper/source exposes the method, theorem framing, and reported numbers, but this probe did not find a public verifier implementation or proof artifact for baseline acceptance and relabeling mutations.",
+        "public_proof_artifact_available": false,
+        "public_verifier_available": false,
+        "relabeling_benchmark_run": false,
+        "source_inspection": {
+          "direct_code_links_found": [
+            "https://github.com/zkonduit/ezkl",
+            "https://github.com/zcash/halo2"
+          ],
+          "download_command": "curl -fsSL https://arxiv.org/e-print/2603.18046 -o nanozk-src.tar",
+          "source_files": [
+            "00README.json",
+            "fancyhdr.sty",
+            "iclr2026_conference.bst",
+            "iclr2026_conference.sty",
+            "main.bbl",
+            "main.tex",
+            "natbib.sty",
+            "references.bib"
+          ],
+          "source_sha256": "c505715f18d2bbb8dc01852a764b171984eb51f54a74d03790e29294e78ef2b4",
+          "why_direct_code_links_are_insufficient": "The source links dependency projects, not a NANOZK proof artifact, verifier command, or benchmark reproduction package."
+        },
+        "sources": [
+          {
+            "label": "NANOZK arXiv page",
+            "url": "https://arxiv.org/abs/2603.18046",
+            "used_for": "claim scope, reported d=128 proof size, and verification time"
+          },
+          {
+            "label": "NANOZK arXiv source",
+            "sha256": "c505715f18d2bbb8dc01852a764b171984eb51f54a74d03790e29294e78ef2b4",
+            "url": "https://arxiv.org/e-print/2603.18046",
+            "used_for": "artifact-link inspection"
+          }
+        ],
+        "system": "NANOZK"
+      }
+    }
+  },
+  "local_proof_result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
+  "local_proof_status": {
+    "blocked_before_metrics": true,
+    "first_blocker": "current checked Stwo proof surface is width-4, fixture-gated, and not a d128 RMSNorm-SwiGLU proof",
+    "inherited_feasibility_row": {
+      "blockers": [
+        {
+          "current": 36,
+          "id": "proof_claim_d_model_mismatch",
+          "required": 128,
+          "why_it_matters": "the checked proof public claim is not a d64/d128 transformer block claim"
+        },
+        {
+          "current": 4,
+          "id": "statement_profile_width_mismatch",
+          "required": 128,
+          "why_it_matters": "the statement receipt binds a width-4 profile, not a matched public benchmark width"
+        },
+        {
+          "current_mul_memory_ops": 7,
+          "estimated_required_linear_muls": 196608,
+          "id": "instruction_surface_too_small_for_swiglu",
+          "why_it_matters": "a matched SwiGLU block needs gate, value, and down projections over d x ff_dim matrices"
+        },
+        {
+          "id": "proof_generator_fixture_allowlist",
+          "pinned_fixture_version": "stwo-phase10-linear-block-v4-with-lookup",
+          "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
+          "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
+        }
+      ],
+      "current_d_model": 36,
+      "current_logical_width": 4,
+      "current_mul_memory_ops": 7,
+      "mul_gap_factor": 28086.85714285714,
+      "reason": "current checked Stwo proof surface is a bounded statement-binding fixture, not a matched d64/d128 RMSNorm-SwiGLU proof",
+      "status": "NO_GO_CURRENT_SURFACE",
+      "target_activation_rows": 512,
+      "target_estimated_linear_muls": 196608,
+      "target_ff_dim": 512,
+      "target_id": "rmsnorm-swiglu-residual-d128-v1",
+      "target_norm_rows": 1,
+      "target_width": 128
+    },
+    "proof_artifact_exists": false,
+    "proof_size_bytes": null,
+    "result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
+    "statement_relabeling_suite_exists": false,
+    "verifier_handle_exists": false,
+    "verifier_time_ms": null
+  },
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "matched_source_file_hash_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "index": 1,
+      "mutation": "external_source_payload_hash_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "index": 2,
+      "mutation": "target_width_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 3,
+      "mutation": "target_binding_removed",
+      "surface": "target_spec"
+    },
+    {
+      "index": 4,
+      "mutation": "target_linear_mul_estimate_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 5,
+      "mutation": "target_commitment_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 6,
+      "mutation": "local_proof_result_changed_to_go",
+      "surface": "local_proof_status"
+    },
+    {
+      "index": 7,
+      "mutation": "local_proof_size_metric_smuggled",
+      "surface": "local_proof_status"
+    },
+    {
+      "index": 8,
+      "mutation": "local_verify_time_metric_smuggled",
+      "surface": "local_proof_status"
+    },
+    {
+      "index": 9,
+      "mutation": "nanozk_source_row_verify_seconds_drift",
+      "surface": "source_context"
+    },
+    {
+      "index": 10,
+      "mutation": "nanozk_source_context_promoted_to_matched",
+      "surface": "source_context"
+    },
+    {
+      "index": 11,
+      "mutation": "external_adapter_result_changed_to_go",
+      "surface": "external_adapter_status"
+    },
+    {
+      "index": 12,
+      "mutation": "deepprove_public_artifact_overclaim",
+      "surface": "external_adapter_status"
+    },
+    {
+      "index": 13,
+      "mutation": "nanozk_public_verifier_overclaim",
+      "surface": "external_adapter_status"
+    },
+    {
+      "index": 14,
+      "mutation": "non_claim_removed",
+      "surface": "claim_boundary"
+    },
+    {
+      "index": 15,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not a local d128 proof result",
+    "not a matched NANOZK benchmark",
+    "not a DeepProve-1 adapter benchmark",
+    "not evidence that NANOZK or DeepProve-1 are insecure",
+    "not full transformer inference",
+    "not proof-size or verifier-time evidence for this repository"
+  ],
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d128-layerwise-comparator-target-v1",
+  "source_backed_context": {
+    "NANOZK": {
+      "backend_family": "Halo2 IPA SNARK + lookups",
+      "claim_boundary": "source-backed compact/layerwise context only; not a matched local benchmark",
+      "model_or_dims": "Transformer models up to d=128",
+      "notes": "Abstract reports constant-size layer proofs of 5.5KB with 24ms verification time; use only against the repo's compact-handoff row as narrow compact-object calibration, explicitly not as a matched workload benchmark.",
+      "proof_size_reported": "5.5 KB",
+      "source_kind": "arxiv",
+      "source_locator": "Abstract",
+      "source_url": "https://arxiv.org/abs/2603.18046",
+      "system": "NANOZK",
+      "verify_seconds": "0.024",
+      "workload_label": "Layer proof",
+      "workload_scope": "Per-layer compact verifier object"
+    }
+  },
+  "source_context_result": "GO_SOURCE_BACKED_PUBLIC_LAYERWISE_CONTEXT",
+  "source_evidence": {
+    "external_adapter_feasibility": {
+      "decision": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
+      "file_sha256": "4b20943c9bf09722744a11d2d18b05e6da1d30ea2d205d864bae2dc864c0dee3",
+      "path": "docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.json",
+      "payload_sha256": "23a9602af324c34513b76e9c12d1ddef438523ab00496ee2a0e26ec34022bf4b",
+      "schema": "zkai-deepprove-nanozk-adapter-feasibility-v1"
+    },
+    "matched_feasibility": {
+      "decision": "NO_GO_CURRENT_STWO_PROOF_SURFACE",
+      "file_sha256": "2005f04ce1ba4d51c5cf7122be624116c850fcd10b9c4a010955d137733dc42c",
+      "path": "docs/engineering/evidence/zkai-matched-rmsnorm-swiglu-block-feasibility-2026-05.json",
+      "payload_sha256": "d3eed2829e423372df0f8dd01e488402a20cc7c5e28ab03573d70a9074724034",
+      "schema": "zkai-matched-rmsnorm-swiglu-block-feasibility-v1"
+    },
+    "published_zkml_numbers": {
+      "file_sha256": "aa16aa98493ecf9f984d238875890c81b4525ebde21463b76010c92f6767390b",
+      "path": "docs/paper/evidence/published-zkml-numbers-2026-04.tsv"
+    }
+  },
+  "summary": {
+    "decision": "NO_GO_D128_LAYERWISE_PROOF_ARTIFACT_MISSING",
+    "external_adapter_result": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
+    "first_blocker": "the d128 RMSNorm-SwiGLU-residual receipt target is pinned, but the repository does not contain a local d128 proof artifact, verifier handle, or relabeling suite",
+    "local_proof_result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
+    "mutation_cases": 16,
+    "mutations_rejected": 16,
+    "result": "BOUNDED_NO_GO",
+    "source_context_result": "GO_SOURCE_BACKED_PUBLIC_LAYERWISE_CONTEXT",
+    "target_commitment": "blake2b-256:f2660bd0371cd242472a5b9fb6939067f21ca0af48cbfb2ce6ac78b8f5ee8206",
+    "target_estimated_linear_muls": 196608,
+    "target_ff_dim": 512,
+    "target_result": "GO_D128_LAYERWISE_COMPARATOR_TARGET_SPEC",
+    "target_width": 128
+  },
+  "target_result": "GO_D128_LAYERWISE_COMPARATOR_TARGET_SPEC",
+  "target_spec": {
+    "activation": "SwiGLU",
+    "comparator_target_kind": "d128-layerwise-rmsnorm-swiglu-residual-receipt",
+    "estimated_activation_rows": 512,
+    "estimated_linear_muls": 196608,
+    "estimated_norm_rows": 1,
+    "ff_dim": 512,
+    "local_feasibility_blockers": [
+      {
+        "current": 36,
+        "id": "proof_claim_d_model_mismatch",
+        "required": 128,
+        "why_it_matters": "the checked proof public claim is not a d64/d128 transformer block claim"
+      },
+      {
+        "current": 4,
+        "id": "statement_profile_width_mismatch",
+        "required": 128,
+        "why_it_matters": "the statement receipt binds a width-4 profile, not a matched public benchmark width"
+      },
+      {
+        "current_mul_memory_ops": 7,
+        "estimated_required_linear_muls": 196608,
+        "id": "instruction_surface_too_small_for_swiglu",
+        "why_it_matters": "a matched SwiGLU block needs gate, value, and down projections over d x ff_dim matrices"
+      },
+      {
+        "id": "proof_generator_fixture_allowlist",
+        "pinned_fixture_version": "stwo-phase10-linear-block-v4-with-lookup",
+        "proof_backend_version": "stwo-phase10-linear-block-v4-with-lookup",
+        "why_it_matters": "the current Stwo generator is scoped to shipped fixtures/decoding families, not arbitrary matched MLP programs"
+      }
+    ],
+    "local_feasibility_status": "NO_GO_CURRENT_SURFACE",
+    "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d128-v1",
+    "normalization": "RMSNorm",
+    "required_proof_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+    "required_statement_bindings": [
+      "model_artifact_commitment",
+      "model_config_commitment",
+      "weight_commitment",
+      "input_activation_commitment",
+      "output_activation_commitment",
+      "normalization_config_commitment",
+      "activation_lookup_commitment",
+      "public_instance_commitment",
+      "proof_commitment",
+      "verifying_key_commitment",
+      "setup_commitment",
+      "verifier_domain",
+      "proof_system_version"
+    ],
+    "residual": true,
+    "statement_kind": "transformer-block",
+    "target_commitment": "blake2b-256:f2660bd0371cd242472a5b9fb6939067f21ca0af48cbfb2ce6ac78b8f5ee8206",
+    "target_id": "rmsnorm-swiglu-residual-d128-v1",
+    "width": 128
+  },
+  "validation_commands": [
+    "just gate-fast",
+    "python3 scripts/zkai_d128_layerwise_comparator_target_gate.py --write-json docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_layerwise_comparator_target_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate"
+  ]
+}

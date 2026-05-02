@@ -1,0 +1,5 @@
+surface	status	width	source	prove_seconds	verify_seconds	proof_size_reported	claim_boundary	blocker
+local_d128_target_spec	GO_D128_LAYERWISE_COMPARATOR_TARGET_SPEC	128	local target gate	NA	NA	NA	statement target only	NA
+local_d128_proof_artifact	NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING	128	local Stwo surface	NA	NA	NA	no local d128 proof metrics before artifact exists	current checked Stwo proof surface is width-4, fixture-gated, and not a d128 RMSNorm-SwiGLU proof
+nanozk_d128_source_context	GO_SOURCE_BACKED_PUBLIC_LAYERWISE_CONTEXT	128	https://arxiv.org/abs/2603.18046	NA	0.024	5.5 KB	source-backed compact/layerwise context only; not a matched local benchmark	not locally reproduced
+deepprove_nanozk_adapter_context	NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK	128	source_backed_context_only_not_empirical_adapter_row	NA	NA	NA	source-backed context only, not empirical adapter row	public proof artifact plus verifier inputs unavailable for this adapter benchmark
