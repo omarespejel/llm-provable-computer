@@ -1,0 +1,474 @@
+{
+  "all_mutations_rejected": true,
+  "backend_attempt": {
+    "backend_result": "NO_GO_EXECUTABLE_OUTER_BACKEND_ARTIFACT_MISSING",
+    "blocked_before_metrics": true,
+    "candidate_inventory": [
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "checked_two_slice_nested_verifier_contract",
+        "exists": true,
+        "kind": "checked_contract_evidence",
+        "path": "docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json",
+        "reason": "defines what an outer backend must bind, but is not itself an outer proof or accumulator",
+        "required_for_go": false,
+        "required_tokens_present": true,
+        "status": "CONTRACT_ONLY_NOT_OUTER_PROOF"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "d64_recursive_pcd_aggregation_feasibility_gate",
+        "exists": true,
+        "kind": "checked_aggregation_target_evidence",
+        "path": "docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json",
+        "reason": "shows the receipt can be an aggregation target, not that nested verifier execution is proven",
+        "required_for_go": false,
+        "required_tokens_present": true,
+        "status": "AGGREGATION_TARGET_ONLY_NOT_OUTER_PROOF"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "phase36_recursive_verifier_harness_receipt",
+        "exists": true,
+        "kind": "rust_harness_surface",
+        "path": "src/stwo_backend/recursion.rs",
+        "reason": "a harness receipt rejects recursive claims; it does not execute d64 slice verifiers inside an outer proof",
+        "required_for_go": false,
+        "required_tokens_present": true,
+        "status": "HARNESS_RECEIPT_NOT_NESTED_PROOF"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "decoding_accumulator_demos",
+        "exists": true,
+        "kind": "pre_recursive_accumulator_demo",
+        "path": "src/stwo_backend/decoding.rs",
+        "reason": "older accumulator demos are not nested verifier proofs for the d64 RMSNorm/bridge checks",
+        "required_for_go": false,
+        "required_tokens_present": true,
+        "status": "PRE_RECURSIVE_ACCUMULATOR_DEMO_NOT_D64_SLICE_VERIFIER_PROOF"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "archived_stwo_accumulation_bundle",
+        "exists": true,
+        "kind": "archived_artifact_bundle",
+        "path": "docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/APPENDIX_ARTIFACT_INDEX.md",
+        "reason": "archived decoding artifacts are useful provenance but cannot satisfy the current d64 nested-verifier GO criterion",
+        "required_for_go": false,
+        "required_tokens_present": true,
+        "status": "ARCHIVED_DECODING_ARTIFACT_NOT_CURRENT_D64_BACKEND"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "required_two_slice_outer_proof_artifact",
+        "exists": false,
+        "kind": "required_go_artifact",
+        "path": "docs/engineering/evidence/zkai-d64-two-slice-nested-verifier-proof-2026-05.json",
+        "reason": "this is the first artifact that would need to exist before a recursive/PCD GO can be considered",
+        "required_for_go": true,
+        "required_tokens_present": false,
+        "status": "MISSING_REQUIRED_GO_ARTIFACT"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "required_two_slice_outer_verifier_handle",
+        "exists": false,
+        "kind": "required_go_artifact",
+        "path": "docs/engineering/evidence/zkai-d64-two-slice-nested-verifier-handle-2026-05.json",
+        "reason": "a proof object without a checked verifier handle is not verifier-facing evidence",
+        "required_for_go": true,
+        "required_tokens_present": false,
+        "status": "MISSING_REQUIRED_GO_ARTIFACT"
+      },
+      {
+        "accepted_as_outer_backend": false,
+        "candidate_id": "required_two_slice_outer_mutation_tests",
+        "exists": false,
+        "kind": "required_go_test_surface",
+        "path": "scripts/tests/test_zkai_d64_two_slice_nested_verifier_backend.py",
+        "reason": "the outer backend must reject relabeling of bound public inputs before metrics are meaningful",
+        "required_for_go": true,
+        "required_tokens_present": false,
+        "status": "MISSING_REQUIRED_GO_ARTIFACT"
+      }
+    ],
+    "first_blocker": "no executable outer proof/PCD backend artifact in the current repository can prove the selected two d64 slice-verifier checks and bind nested_verifier_contract_commitment as a public input",
+    "go_criterion": "a checked outer proof or PCD accumulator exists, verifies the selected d64 slice-verifier checks, and binds nested_verifier_contract_commitment as a public input",
+    "missing_backend_features": [
+      "nested verifier program/AIR/circuit for rmsnorm_public_rows",
+      "nested verifier program/AIR/circuit for rmsnorm_projection_bridge",
+      "outer proof or PCD accumulator object over those selected verifier checks",
+      "outer verifier handle for that proof or accumulator object",
+      "public-input binding inside the outer backend for nested_verifier_contract_commitment",
+      "mutation tests against relabeling of the outer proof public inputs"
+    ],
+    "nested_verifier_contract_commitment_bound_in_outer_backend": false,
+    "pivot_options_if_no_go": [
+      {
+        "claim_boundary": "compression only, not recursive verification",
+        "description": "compress the two-slice receipt into a proof-native object without calling it recursion",
+        "track": "proof_native_two_slice_compression"
+      },
+      {
+        "claim_boundary": "accumulator integrity only unless backed by an outer proof",
+        "description": "build a verifier-facing accumulator over the two selected checks and keep proof semantics explicit",
+        "track": "simpler_non_recursive_accumulator"
+      },
+      {
+        "claim_boundary": "adapter result until Stwo-native recursion exists",
+        "description": "try an external recursion-capable backend for the two-slice statement envelope",
+        "track": "different_backend_route"
+      }
+    ],
+    "proof_object_exists": false,
+    "proof_size_bytes": null,
+    "verifier_handle_exists": false,
+    "verifier_time_ms": null
+  },
+  "backend_result": "NO_GO_EXECUTABLE_OUTER_BACKEND_ARTIFACT_MISSING",
+  "case_count": 20,
+  "cases": [
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "safe checkpoint mismatch",
+      "mutated_accepted": false,
+      "mutation": "safe_checkpoint_commit_drift",
+      "rejected": true,
+      "rejection_layer": "safe_checkpoint",
+      "surface": "safe_checkpoint"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "source contract evidence path mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_contract_path_drift",
+      "rejected": true,
+      "rejection_layer": "source_contract_evidence",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "source contract evidence mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_contract_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_contract_evidence",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "source contract evidence mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_contract_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_contract_evidence",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "source contract evidence mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_contract_result_drift",
+      "rejected": true,
+      "rejection_layer": "source_contract_evidence",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "nested verifier contract commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_contract_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "selected slice ids mismatch",
+      "mutated_accepted": false,
+      "mutation": "selected_slice_id_drift",
+      "rejected": true,
+      "rejection_layer": "nested_verifier_contract",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "candidate inventory mismatch",
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_status_relabel",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "candidate inventory mismatch",
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "candidate inventory mismatch",
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_missing_required_path_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "proof object claimed without a checked outer backend artifact",
+      "mutated_accepted": false,
+      "mutation": "proof_object_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "verifier handle claimed without a checked outer backend artifact",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "proof-size metric supplied before a proof object exists",
+      "mutated_accepted": false,
+      "mutation": "proof_size_metric_smuggled_before_proof",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "verifier-time metric supplied before a proof object exists",
+      "mutated_accepted": false,
+      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "blocked-before-metrics flag must stay true until a proof object exists",
+      "mutated_accepted": false,
+      "mutation": "blocked_before_metrics_disabled",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "missing backend features mismatch",
+      "mutated_accepted": false,
+      "mutation": "missing_backend_feature_removed",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "first backend blocker mismatch",
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "backend result mismatch",
+      "mutated_accepted": false,
+      "mutation": "backend_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "backend_attempt",
+      "surface": "backend_attempt"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "decision mismatch",
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "HARD_NO_GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "decision": "NO_GO_D64_TWO_SLICE_NESTED_VERIFIER_BACKEND_ARTIFACT_MISSING",
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "safe_checkpoint_commit_drift",
+      "surface": "safe_checkpoint"
+    },
+    {
+      "index": 1,
+      "mutation": "source_contract_path_drift",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "index": 2,
+      "mutation": "source_contract_file_hash_drift",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "index": 3,
+      "mutation": "source_contract_payload_hash_drift",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "index": 4,
+      "mutation": "source_contract_result_drift",
+      "surface": "source_contract_evidence"
+    },
+    {
+      "index": 5,
+      "mutation": "nested_verifier_contract_commitment_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 6,
+      "mutation": "selected_slice_id_drift",
+      "surface": "nested_verifier_contract"
+    },
+    {
+      "index": 7,
+      "mutation": "candidate_inventory_status_relabel",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 8,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 9,
+      "mutation": "candidate_inventory_missing_required_path_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 10,
+      "mutation": "proof_object_claimed_without_artifact",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 11,
+      "mutation": "verifier_handle_claimed_without_artifact",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 12,
+      "mutation": "proof_size_metric_smuggled_before_proof",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 13,
+      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 14,
+      "mutation": "blocked_before_metrics_disabled",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 15,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 16,
+      "mutation": "first_blocker_removed",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 17,
+      "mutation": "backend_result_changed_to_go",
+      "surface": "backend_attempt"
+    },
+    {
+      "index": 18,
+      "mutation": "decision_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 19,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+  "non_claims": [
+    "not a recursive proof object",
+    "not a PCD accumulator",
+    "not a benchmark",
+    "not proof-size evidence",
+    "not verifier-time evidence",
+    "not six-slice d64 aggregation",
+    "not d128 evidence",
+    "not onchain deployment evidence"
+  ],
+  "result": "HARD_NO_GO",
+  "safe_checkpoint": {
+    "label": "main-after-pr-381",
+    "main_commit": "6fae0d115f6554258782d00612c2cecdc376af38",
+    "purpose": "safe rollback checkpoint before the executable nested-verifier backend spike",
+    "recorded_after_pr": 381
+  },
+  "schema": "zkai-d64-nested-verifier-backend-spike-v1",
+  "selected_slice_ids": [
+    "rmsnorm_public_rows",
+    "rmsnorm_projection_bridge"
+  ],
+  "source_contract_evidence": {
+    "backend_proof_result": "NO_GO_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
+    "contract_result": "GO_D64_NESTED_VERIFIER_BACKEND_CONTRACT",
+    "decision": "NO_GO_D64_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
+    "file_sha256": "0aad7ef6e5bbc558c65597f9092421d2b2dc96b26089609d267574f598094310",
+    "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "path": "docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json",
+    "payload_sha256": "a386b78ade01b5e02fe7d6494d025346dc2cc0b379268b89e2a948467f8f6aea",
+    "schema": "zkai-d64-nested-verifier-backend-contract-v1"
+  },
+  "summary": {
+    "backend_result": "NO_GO_EXECUTABLE_OUTER_BACKEND_ARTIFACT_MISSING",
+    "blocked_before_metrics": true,
+    "candidate_count": 8,
+    "decision": "NO_GO_D64_TWO_SLICE_NESTED_VERIFIER_BACKEND_ARTIFACT_MISSING",
+    "first_blocker": "no executable outer proof/PCD backend artifact in the current repository can prove the selected two d64 slice-verifier checks and bind nested_verifier_contract_commitment as a public input",
+    "mutation_cases": 20,
+    "mutations_rejected": 20,
+    "proof_object_exists": false,
+    "required_go_artifacts_missing": 3,
+    "result": "HARD_NO_GO",
+    "safe_main_commit": "6fae0d115f6554258782d00612c2cecdc376af38",
+    "selected_slice_count": 2,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "source_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "verifier_handle_exists": false
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_spike_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root ."
+  ]
+}

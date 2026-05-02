@@ -896,6 +896,22 @@ mutations. It is anchored to
 `docs/engineering/zkai-d64-nested-verifier-backend-contract-2026-05-02.md` and
 `docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json`.
 
+A hard backend spike then audits the repository surfaces against that two-slice
+contract. It records `main` at
+`6fae0d115f6554258782d00612c2cecdc376af38` as the safe checkpoint after PR
+`#381`, inventories the checked contract, aggregation-target gate, harness
+receipt, decoding accumulator demos, archived accumulation bundle, and the
+three required GO artifacts, and returns
+`NO_GO_D64_TWO_SLICE_NESTED_VERIFIER_BACKEND_ARTIFACT_MISSING`. The gate rejects
+`20 / 20` mutations that try to drift the checkpoint, source contract evidence,
+selected slices, candidate inventory, or metric fields. It also refuses
+proof-size and verifier-time metrics because no outer proof object or verifier
+handle exists yet. This is the current strongest anti-overclaim guard for the
+recursive/PCD track: useful contract, no executable nested-verifier backend yet.
+It is anchored to
+`docs/engineering/zkai-d64-nested-verifier-backend-spike-2026-05-02.md` and
+`docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model
