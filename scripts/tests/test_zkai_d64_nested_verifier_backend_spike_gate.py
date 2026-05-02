@@ -185,6 +185,24 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "duplicate mutation case"):
             GATE.validate_payload(payload)
 
+    def test_mutation_generation_errors_are_recorded_as_rejections(self) -> None:
+        payload = GATE.build_payload()
+        original_candidate_row = GATE._candidate_row
+
+        def missing_candidate_row(_payload: dict, candidate_id: str) -> dict:
+            raise GATE.D64NestedVerifierBackendSpikeError(f"candidate inventory row missing: {candidate_id}")
+
+        try:
+            GATE._candidate_row = missing_candidate_row
+            cases = GATE.mutation_cases(payload)
+        finally:
+            GATE._candidate_row = original_candidate_row
+
+        harness_case = next(case for case in cases if case["mutation"] == "candidate_inventory_status_relabel")
+        self.assertTrue(harness_case["rejected"])
+        self.assertEqual(harness_case["rejection_layer"], "candidate_inventory")
+        self.assertIn("candidate inventory row missing", harness_case["error"])
+
     def test_rejects_rejected_mutation_case_without_error_message(self) -> None:
         payload = self.fresh_payload()
         payload["cases"][0]["error"] = ""
@@ -249,6 +267,19 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             tsv_path = tmp / "backend-spike.tsv"
             with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "parent is not a directory"):
                 GATE.write_outputs(payload, json_path, tsv_path)
+            self.assertFalse(tsv_path.exists())
+
+    def test_write_outputs_rejects_symlink_outputs(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real_json = tmp / "real.json"
+            json_link = tmp / "linked.json"
+            tsv_path = tmp / "backend-spike.tsv"
+            real_json.write_text("old-json\n", encoding="utf-8")
+            json_link.symlink_to(real_json)
+            with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "must not be a symlink"):
+                GATE.write_outputs(payload, json_link, tsv_path)
             self.assertFalse(tsv_path.exists())
 
     def test_write_outputs_does_not_replace_first_output_when_second_stage_fails(self) -> None:

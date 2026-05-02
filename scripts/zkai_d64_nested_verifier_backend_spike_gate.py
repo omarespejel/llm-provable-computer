@@ -638,13 +638,17 @@ def _candidate_row(payload: dict[str, Any], candidate_id: str) -> dict[str, Any]
     raise D64NestedVerifierBackendSpikeError(f"candidate inventory row missing: {candidate_id}")
 
 
-def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
-    cases: list[tuple[str, str, dict[str, Any]]] = []
+def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any], Exception | None]]:
+    cases: list[tuple[str, str, dict[str, Any], Exception | None]] = []
 
     def add(name: str, surface: str, mutator: Callable[[dict[str, Any]], None]) -> None:
         mutated = copy.deepcopy(baseline)
-        mutator(mutated)
-        cases.append((name, surface, mutated))
+        generation_error = None
+        try:
+            mutator(mutated)
+        except Exception as err:  # noqa: BLE001 - mutation failures are recorded as rejected cases.
+            generation_error = err
+        cases.append((name, surface, mutated, generation_error))
 
     add("safe_checkpoint_commit_drift", "safe_checkpoint", lambda p: p["safe_checkpoint"].__setitem__("main_commit", "0" * 40))
     add("source_contract_path_drift", "source_contract_evidence", lambda p: p["source_contract_evidence"].__setitem__("path", "docs/engineering/evidence/../evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json"))
@@ -673,16 +677,21 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
     baseline = copy.deepcopy(baseline or build_payload())
     _validate_draft_payload(baseline)
     cases = []
-    for mutation, surface, mutated in _mutated_cases(baseline):
-        try:
-            _validate_draft_payload(mutated)
-            accepted = True
-            error = ""
-            layer = "accepted"
-        except D64NestedVerifierBackendSpikeError as err:
+    for mutation, surface, mutated, generation_error in _mutated_cases(baseline):
+        if generation_error is not None:
             accepted = False
-            error = str(err)
-            layer = classify_error(err)
+            error = str(generation_error)
+            layer = classify_error(generation_error)
+        else:
+            try:
+                _validate_draft_payload(mutated)
+                accepted = True
+                error = ""
+                layer = "accepted"
+            except D64NestedVerifierBackendSpikeError as err:
+                accepted = False
+                error = str(err)
+                layer = classify_error(err)
         cases.append(
             {
                 "mutation": mutation,
@@ -722,6 +731,8 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
+    if path.is_symlink():
+        raise D64NestedVerifierBackendSpikeError(f"output path must not be a symlink: {path}")
     resolved = path.resolve()
     root = ROOT.resolve()
     if resolved != root and root not in resolved.parents:
