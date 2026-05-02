@@ -417,6 +417,16 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU source gate/value statement"):
             GATE.validate_payload(payload)
 
+    def test_rejects_activation_source_output_binding_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d128_activation_swiglu"][
+            "source_gate_value_projection_output_commitment"
+        ] = "blake2b-256:" + "88" * 32
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["source_gate_value_projection_output_commitment"] = "blake2b-256:" + "88" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU source gate/value output"):
+            GATE.validate_payload(payload)
+
     def test_rejects_activation_route_commitment_drift(self) -> None:
         payload = self.fresh_payload()
         route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
@@ -470,6 +480,14 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_activation_swiglu_statement_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_source_output_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_hidden_relabels_full_output"]["rejection_layer"],
             "source_probe",
         )
         self.assertEqual(

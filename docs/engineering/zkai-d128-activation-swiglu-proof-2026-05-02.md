@@ -90,7 +90,9 @@ This result does **not** claim:
 
 The d128 route now has five statement-bound proof handles:
 RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
-activation/SwiGLU, and residual add. The new activation/SwiGLU handle consumes
+activation/SwiGLU, and a parameterized vector residual-add slice. The fifth
+handle is not a native residual proof or a composed full-block receipt. The new
+activation/SwiGLU handle consumes
 the corrected raw gate/value output and proves the first non-linear
 transformer seam at the d128 target shape.
 

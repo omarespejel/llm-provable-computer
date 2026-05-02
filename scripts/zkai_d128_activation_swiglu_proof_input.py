@@ -169,9 +169,16 @@ def require_signed_m31(value: Any, label: str) -> None:
 
 def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
     try:
-        if not path.is_file():
+        if path.is_symlink():
+            raise ActivationSwiGluInputError(f"source gate/value evidence must not be a symlink: {path}")
+        resolved = path.resolve(strict=False)
+        try:
+            resolved.relative_to(ROOT.resolve())
+        except ValueError as err:
+            raise ActivationSwiGluInputError(f"source gate/value evidence escapes repository: {path}") from err
+        if not resolved.is_file():
             raise ActivationSwiGluInputError(f"source gate/value evidence is not a regular file: {path}")
-        with path.open("rb") as source_file:
+        with resolved.open("rb") as source_file:
             source_bytes = source_file.read(MAX_SOURCE_JSON_BYTES + 1)
         if len(source_bytes) > MAX_SOURCE_JSON_BYTES:
             raise ActivationSwiGluInputError(
