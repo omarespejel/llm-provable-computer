@@ -378,6 +378,7 @@ def _validate_source_descriptor(payload: dict[str, Any]) -> dict[str, Any]:
     path_value = descriptor.get("path")
     if not isinstance(path_value, str):
         raise D64RecursivePCDFeasibilityError("source block receipt evidence path must be a string")
+    expect_equal(path_value, relative_path(BLOCK_RECEIPT_EVIDENCE), "source block receipt evidence path")
     path = (ROOT / path_value).resolve()
     if path != BLOCK_RECEIPT_EVIDENCE.resolve():
         raise D64RecursivePCDFeasibilityError("source block receipt evidence path mismatch")
@@ -512,6 +513,7 @@ def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, An
         "aggregation_target_version": TARGET_VERSION,
     }
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non-claims")
+    expect_equal(payload.get("validation_commands"), VALIDATION_COMMANDS, "validation commands")
     return source, expected_summary
 
 

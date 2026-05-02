@@ -100,6 +100,20 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "recursive proof artifact"):
             GATE.validate_payload(payload)
 
+    def test_rejects_noncanonical_source_evidence_path(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_block_receipt_evidence"]["path"] = (
+            "docs/engineering/evidence/../evidence/zkai-d64-block-receipt-composition-gate-2026-05.json"
+        )
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "source block receipt evidence path"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_validation_command_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["validation_commands"][0] = "python3 scripts/tampered.py"
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "validation commands"):
+            GATE.validate_payload(payload)
+
     def test_rejects_inconsistent_mutation_case_count(self) -> None:
         payload = self.fresh_payload()
         payload["case_count"] = payload["case_count"] + 1
