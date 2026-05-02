@@ -55,19 +55,19 @@ pub const ZKAI_D128_GATE_MATRIX_ROOT: &str =
 pub const ZKAI_D128_VALUE_MATRIX_ROOT: &str =
     "blake2b-256:ef43adb2d5ab19880576bd0a46692f9c7daf4f0548dc7c6bd2785d9f5b8c0bdd";
 pub const ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT: &str =
-    "blake2b-256:05538b00310048936de9a458484a51f94b691d74e110d2fbb82c947c81356f61";
+    "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7";
 pub const ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT: &str =
-    "blake2b-256:11aedf9cd6138c1d0702ea1987df3c63f6b83e98c1b239cbd33e778c1da3f204";
+    "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT: &str =
-    "blake2b-256:dd3fdabfdb0ae86a007a9e67f0a1b3c975ab987abc20900e984ceae40c56e7eb";
+    "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT: &str =
     "blake2b-256:1dfcd5a2a972dfcf55ecf41a57f82f3225923a2157bd4dc61bb11d4448e74a4a";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_NATIVE_PARAMETER_COMMITMENT: &str =
     "blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
-    "blake2b-256:2275b0cf96085c326da243f42ad45fd2cd63555673dc2a5b8d512528bb2be556";
+    "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT: &str =
-    "blake2b-256:0263956e33bd4d828284965902d57a1a4a07a05098c2dc5829199ddb7c4e865d";
+    "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf";
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const ZKAI_D128_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
@@ -527,8 +527,10 @@ fn validate_gate_value_input(
         &input.source_projection_input_row_commitment,
         "projection input recomputed commitment",
     )?;
-    let recomputed_gate = divide_accumulators(&gate_accumulators)?;
-    let recomputed_value = divide_accumulators(&value_accumulators)?;
+    let recomputed_gate =
+        projection_outputs_from_accumulators(&gate_accumulators, "gate projection output")?;
+    let recomputed_value =
+        projection_outputs_from_accumulators(&value_accumulators, "value projection output")?;
     if recomputed_gate != input.gate_projection_q8 {
         return Err(gate_value_error("gate projection output drift"));
     }
@@ -628,10 +630,11 @@ fn validate_gate_value_row(
     Ok(())
 }
 
-fn divide_accumulators(accumulators: &[i64]) -> Result<Vec<i64>> {
+fn projection_outputs_from_accumulators(accumulators: &[i64], label: &str) -> Result<Vec<i64>> {
     let mut out = Vec::with_capacity(accumulators.len());
-    for value in accumulators {
-        out.push(value.div_euclid(ZKAI_D128_WIDTH as i64));
+    for (index, value) in accumulators.iter().enumerate() {
+        expect_signed_m31(*value, &format!("{label} {index}"))?;
+        out.push(*value);
     }
     Ok(out)
 }
@@ -1192,6 +1195,16 @@ mod tests {
         assert_eq!(rows[0].projection_input_q8, -387);
         assert_eq!(rows[0].weight_q8, 0);
         assert_eq!(rows[0].product_q8, 0);
+        let raw_gate_0: i64 = rows
+            .iter()
+            .filter(|row| row.matrix == "gate" && row.output_index == 0)
+            .map(|row| row.product_q8)
+            .sum();
+        assert_eq!(input.gate_projection_q8[0], raw_gate_0);
+        assert_ne!(
+            input.gate_projection_q8[0],
+            raw_gate_0.div_euclid(ZKAI_D128_WIDTH as i64)
+        );
         assert_eq!(
             input.source_projection_input_row_commitment,
             ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT

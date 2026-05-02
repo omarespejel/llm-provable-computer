@@ -46,14 +46,14 @@ PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:d128-proof-native-parameter-commitmen
 PUBLIC_INSTANCE_DOMAIN = "ptvm:zkai:d128-public-instance:v1"
 WEIGHT_GENERATOR_SEED = "zkai-d128-gate-value-projection-synthetic-parameters-2026-05-v1"
 PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17"
-PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:2275b0cf96085c326da243f42ad45fd2cd63555673dc2a5b8d512528bb2be556"
-STATEMENT_COMMITMENT = "blake2b-256:0263956e33bd4d828284965902d57a1a4a07a05098c2dc5829199ddb7c4e865d"
+PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c"
+STATEMENT_COMMITMENT = "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf"
 OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:7e6ae6d301fc60ac2232d807d155785eabe653cf4e91971adda470a04246a572"
 GATE_MATRIX_ROOT = "blake2b-256:101e9f5ad1079bc7ed0e10df96bf30091dcf82d7a3010c5bf7ced764fe15f08e"
 VALUE_MATRIX_ROOT = "blake2b-256:ef43adb2d5ab19880576bd0a46692f9c7daf4f0548dc7c6bd2785d9f5b8c0bdd"
-GATE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:05538b00310048936de9a458484a51f94b691d74e110d2fbb82c947c81356f61"
-VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:11aedf9cd6138c1d0702ea1987df3c63f6b83e98c1b239cbd33e778c1da3f204"
-GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:dd3fdabfdb0ae86a007a9e67f0a1b3c975ab987abc20900e984ceae40c56e7eb"
+GATE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7"
+VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf"
+GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3"
 GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT = "blake2b-256:1dfcd5a2a972dfcf55ecf41a57f82f3225923a2157bd4dc61bb11d4448e74a4a"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d128-projection-input-row:v1"
 GATE_PROJECTION_OUTPUT_DOMAIN = "ptvm:zkai:d128-gate-projection-output:v1"
@@ -408,7 +408,8 @@ def build_rows(inputs: list[int]) -> tuple[list[dict[str, Any]], list[int], list
                 )
                 acc += product_q8
                 row_index += 1
-            outputs[matrix].append(acc // WIDTH)
+            require_signed_m31(acc, f"{matrix} projection output {output_index}")
+            outputs[matrix].append(acc)
     return rows, outputs["gate"], outputs["value"]
 
 

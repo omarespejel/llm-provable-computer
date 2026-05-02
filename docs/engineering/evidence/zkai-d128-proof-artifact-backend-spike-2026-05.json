@@ -92,9 +92,9 @@
       "checked_in_proof_artifact_exists": false,
       "evidence": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json",
       "gate_matrix_root": "blake2b-256:101e9f5ad1079bc7ed0e10df96bf30091dcf82d7a3010c5bf7ced764fe15f08e",
-      "gate_projection_output_commitment": "blake2b-256:05538b00310048936de9a458484a51f94b691d74e110d2fbb82c947c81356f61",
+      "gate_projection_output_commitment": "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7",
       "gate_value_projection_mul_row_commitment": "blake2b-256:1dfcd5a2a972dfcf55ecf41a57f82f3225923a2157bd4dc61bb11d4448e74a4a",
-      "gate_value_projection_output_commitment": "blake2b-256:dd3fdabfdb0ae86a007a9e67f0a1b3c975ab987abc20900e984ceae40c56e7eb",
+      "gate_value_projection_output_commitment": "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3",
       "local_roundtrip_proof_constructed": true,
       "present_symbols": [
         "D128GateValueProjectionMulRow",
@@ -107,15 +107,15 @@
       "proof_artifact_exists": true,
       "proof_native_parameter_commitment": "blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17",
       "proof_size_bytes": null,
-      "public_instance_commitment": "blake2b-256:2275b0cf96085c326da243f42ad45fd2cd63555673dc2a5b8d512528bb2be556",
+      "public_instance_commitment": "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c",
       "route": "direct_d128_gate_value_projection_air",
       "source_projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
-      "statement_commitment": "blake2b-256:0263956e33bd4d828284965902d57a1a4a07a05098c2dc5829199ddb7c4e865d",
+      "statement_commitment": "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf",
       "status": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
       "target_ff_dim": 512,
       "target_width": 128,
       "value_matrix_root": "blake2b-256:ef43adb2d5ab19880576bd0a46692f9c7daf4f0548dc7c6bd2785d9f5b8c0bdd",
-      "value_projection_output_commitment": "blake2b-256:11aedf9cd6138c1d0702ea1987df3c63f6b83e98c1b239cbd33e778c1da3f204",
+      "value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf",
       "verifier_handle_exists": true,
       "verifier_time_ms": null
     },
@@ -689,7 +689,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:0ead69d85be1cfa490a3a4bd1fa41dc8e548896f78bd4f5d19efbd7ca3c4b994",
+  "gate_commitment": "blake2b-256:32eafe7f51a8e0b930ebb8a6474fce4f694ccdc5681baaf8591f2decfd4a26a4",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -915,19 +915,19 @@
     "d128_gate_value_projection": {
       "evidence": {
         "decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
-        "file_sha256": "397702f68689ced990cf6caa2d4153f2269ed38b236ca16ebe4019ba9b285bee",
+        "file_sha256": "e3da3297947d4dcdf836cadce83df46a70e5abc2c11b40100d75c7a4f1534d15",
         "path": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json",
-        "payload_sha256": "104d9988493904f320936f882a549d14f247acfefce04ee9a2ed8b5a55f1a374",
+        "payload_sha256": "c4c453829fc3c4543d759d0e6a4e662ccad994ac183e30bf13f63b00c78e3d9f",
         "result": null,
         "schema": "zkai-d128-gate-value-projection-air-proof-input-v1"
       },
       "gate_matrix_root": "blake2b-256:101e9f5ad1079bc7ed0e10df96bf30091dcf82d7a3010c5bf7ced764fe15f08e",
-      "gate_projection_output_commitment": "blake2b-256:05538b00310048936de9a458484a51f94b691d74e110d2fbb82c947c81356f61",
+      "gate_projection_output_commitment": "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7",
       "gate_value_projection_mul_row_commitment": "blake2b-256:1dfcd5a2a972dfcf55ecf41a57f82f3225923a2157bd4dc61bb11d4448e74a4a",
-      "gate_value_projection_output_commitment": "blake2b-256:dd3fdabfdb0ae86a007a9e67f0a1b3c975ab987abc20900e984ceae40c56e7eb",
+      "gate_value_projection_output_commitment": "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3",
       "module": {
         "exists": true,
-        "file_sha256": "d31c6df701253e24847c6cfbdbb28c99dffbb022acc7892bc7ae432f352058cd",
+        "file_sha256": "8484c7069fbeaa3e3e233e150935fc13c9ae92f6110321fac7ad31a88fed34ae",
         "path": "src/stwo_backend/d128_native_gate_value_projection_proof.rs"
       },
       "present_symbols": [
@@ -940,15 +940,15 @@
       ],
       "projection_output_relabels_full_output": false,
       "proof_native_parameter_commitment": "blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17",
-      "public_instance_commitment": "blake2b-256:2275b0cf96085c326da243f42ad45fd2cd63555673dc2a5b8d512528bb2be556",
+      "public_instance_commitment": "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c",
       "row_count": 131072,
       "source_projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
-      "statement_commitment": "blake2b-256:0263956e33bd4d828284965902d57a1a4a07a05098c2dc5829199ddb7c4e865d",
+      "statement_commitment": "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf",
       "status": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
       "target_ff_dim": 512,
       "target_width": 128,
       "value_matrix_root": "blake2b-256:ef43adb2d5ab19880576bd0a46692f9c7daf4f0548dc7c6bd2785d9f5b8c0bdd",
-      "value_projection_output_commitment": "blake2b-256:11aedf9cd6138c1d0702ea1987df3c63f6b83e98c1b239cbd33e778c1da3f204"
+      "value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf"
     },
     "d128_rmsnorm_public_row": {
       "evidence": {
