@@ -427,6 +427,26 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU source gate/value output"):
             GATE.validate_payload(payload)
 
+    def test_rejects_activation_source_projection_commitment_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d128_activation_swiglu"][
+            "source_gate_projection_output_commitment"
+        ] = "blake2b-256:" + "89" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "source_gate_projection_output_commitment"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_activation_row_metadata_drift(self) -> None:
+        for field, pattern in [
+            ("row_count", "row count"),
+            ("activation_lookup_rows", "activation lookup rows"),
+            ("swiglu_mix_rows", "swiglu mix rows"),
+        ]:
+            payload = self.fresh_payload()
+            payload["source_probe"]["d128_activation_swiglu"][field] = 1
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(GATE.D128BackendSpikeError, pattern):
+                    GATE.validate_payload(payload)
+
     def test_rejects_activation_route_commitment_drift(self) -> None:
         payload = self.fresh_payload()
         route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
@@ -484,6 +504,14 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_activation_swiglu_source_output_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_source_gate_projection_output_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_source_value_projection_output_commitment_drift"]["rejection_layer"],
             "source_probe",
         )
         self.assertEqual(

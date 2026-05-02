@@ -132,6 +132,14 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "commitment-vector length check before commitment indexing",
 ];
 
+const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --write-json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+];
+
 #[derive(Debug, Clone)]
 struct D128ActivationSwiGluEval {
     log_size: u32,
@@ -465,6 +473,11 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
         &input.next_backend_step,
         ZKAI_D128_ACTIVATION_SWIGLU_NEXT_BACKEND_STEP,
         "next backend step",
+    )?;
+    expect_str_set_eq(
+        input.validation_commands.iter().map(String::as_str),
+        EXPECTED_VALIDATION_COMMANDS,
+        "validation commands",
     )?;
     if input.gate_projection_q8.len() != ZKAI_D128_FF_DIM {
         return Err(activation_swiglu_error(
@@ -1223,6 +1236,17 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("activation lookup commitment"));
+    }
+
+    #[test]
+    fn activation_swiglu_rejects_validation_commands_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["validation_commands"] = Value::Array(vec![Value::String("cargo test".to_owned())]);
+        let error = zkai_d128_activation_swiglu_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("validation commands"));
     }
 
     #[test]
