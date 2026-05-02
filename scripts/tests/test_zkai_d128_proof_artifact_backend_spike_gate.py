@@ -81,12 +81,36 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(probe["d128_rmsnorm_public_row"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(
+            probe["d128_rmsnorm_public_row"]["statement_commitment"],
+            GATE.D128_BRIDGE_GATE.SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        )
+        self.assertEqual(
+            probe["d128_rmsnorm_public_row"]["public_instance_commitment"],
+            GATE.D128_BRIDGE_GATE.SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        )
+        self.assertEqual(
+            probe["d128_rmsnorm_public_row"]["rmsnorm_output_row_commitment"],
+            GATE.D128_BRIDGE_GATE.SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+        )
+        self.assertEqual(
             probe["d128_rmsnorm_to_projection_bridge"]["status"],
             "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
         self.assertEqual(
             probe["d128_rmsnorm_to_projection_bridge"]["present_symbols"],
             list(GATE.D128_BRIDGE_SYMBOLS),
+        )
+        self.assertEqual(
+            probe["d128_rmsnorm_to_projection_bridge"]["source_rmsnorm_statement_commitment"],
+            probe["d128_rmsnorm_public_row"]["statement_commitment"],
+        )
+        self.assertEqual(
+            probe["d128_rmsnorm_to_projection_bridge"]["source_rmsnorm_public_instance_commitment"],
+            probe["d128_rmsnorm_public_row"]["public_instance_commitment"],
+        )
+        self.assertEqual(
+            probe["d128_rmsnorm_to_projection_bridge"]["source_rmsnorm_output_row_commitment"],
+            probe["d128_rmsnorm_public_row"]["rmsnorm_output_row_commitment"],
         )
         self.assertFalse(probe["d128_rmsnorm_to_projection_bridge"]["projection_input_relabels_full_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
@@ -219,6 +243,21 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         payload["proof_status"]["verifier_time_ms"] = 1.0
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "verifier time"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_bridge_source_statement_binding_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d128_rmsnorm_to_projection_bridge"][
+            "source_rmsnorm_statement_commitment"
+        ] = "blake2b-256:" + "11" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "bridge source RMSNorm statement"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_bridge_route_source_binding_drift(self) -> None:
+        payload = self.fresh_payload()
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_rmsnorm_to_projection_bridge_air")
+        route["source_rmsnorm_public_instance_commitment"] = "blake2b-256:" + "22" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "route source public-instance"):
             GATE.validate_payload(payload)
 
     def test_rejects_route_promotion(self) -> None:

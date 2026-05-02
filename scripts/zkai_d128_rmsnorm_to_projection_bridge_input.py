@@ -203,6 +203,13 @@ def load_json(path: pathlib.Path, max_bytes: int, label: str) -> dict[str, Any]:
 
 def load_target(path: pathlib.Path = TARGET_JSON) -> dict[str, Any]:
     target = load_json(path, MAX_TARGET_JSON_BYTES, "d128 target evidence")
+    validate_target(target)
+    return target
+
+
+def validate_target(target: Any) -> str:
+    if not isinstance(target, dict):
+        raise D128BridgeInputError("target evidence must be an object")
     summary = target.get("summary")
     if not isinstance(summary, dict):
         raise D128BridgeInputError("target summary missing")
@@ -220,7 +227,7 @@ def load_target(path: pathlib.Path = TARGET_JSON) -> dict[str, Any]:
         raise D128BridgeInputError("target spec commitment drift")
     if spec.get("required_proof_backend_version") != REQUIRED_BACKEND_VERSION:
         raise D128BridgeInputError("target backend version drift")
-    return target
+    return target_commitment
 
 
 def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
@@ -275,7 +282,7 @@ def build_payload(source: dict[str, Any] | None = None, target: dict[str, Any] |
     source = load_source() if source is None else source
     validate_source(source)
     target = load_target() if target is None else target
-    target_commitment = target["summary"]["target_commitment"]
+    target_commitment = validate_target(target)
     rows = [
         {
             "index": row["index"],
@@ -405,7 +412,7 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
     if sequence_commitment(projection_values, PROJECTION_INPUT_ROW_DOMAIN) != payload["projection_input_row_commitment"]:
         raise D128BridgeInputError("projection input commitment recomputation drift")
     target = load_target() if target is None else target
-    target_commitment = target["summary"]["target_commitment"]
+    target_commitment = validate_target(target)
     statement = statement_commitment(payload, target_commitment)
     if payload["statement_commitment"] != statement:
         raise D128BridgeInputError("statement commitment drift")

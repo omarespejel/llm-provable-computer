@@ -101,6 +101,19 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
             with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "target commitment drift"):
                 BRIDGE.load_target(path)
 
+    def test_build_payload_rejects_caller_supplied_target_drift(self) -> None:
+        target = copy.deepcopy(BRIDGE.load_target())
+        target["target_spec"]["required_proof_backend_version"] = "stwo-rmsnorm-swiglu-residual-d128-v0"
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "target backend version drift"):
+            BRIDGE.build_payload(target=target)
+
+    def test_validate_payload_rejects_caller_supplied_target_drift(self) -> None:
+        payload = self.fresh_payload()
+        target = copy.deepcopy(BRIDGE.load_target())
+        target["target_spec"]["target_commitment"] = "blake2b-256:" + "dd" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "target spec commitment drift"):
+            BRIDGE.validate_payload(payload, target=target)
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:

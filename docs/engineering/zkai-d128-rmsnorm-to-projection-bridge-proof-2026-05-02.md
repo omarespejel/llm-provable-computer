@@ -57,6 +57,7 @@ binds:
 - source RMSNorm public-row proof version;
 - source and destination row domains;
 - target commitment;
+- required backend version;
 - verifier domain;
 - public-instance commitment;
 - proof-native parameter commitment.
