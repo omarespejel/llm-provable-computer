@@ -348,6 +348,12 @@ def require_list(value: Any, field: str) -> list[Any]:
     return value
 
 
+def require_commitment(value: Any, field: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"blake2b-256:[0-9a-f]{64}", value) is None:
+        raise D128BackendSpikeError(f"{field} must be a blake2b-256 commitment")
+    return value
+
+
 def expect_equal(actual: Any, expected: Any, field: str) -> None:
     if actual != expected:
         raise D128BackendSpikeError(f"{field} mismatch")
@@ -1178,6 +1184,10 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         False,
         "d128 RMSNorm-to-projection bridge relabel guard",
     )
+    bridge_projection_input_commitment = require_commitment(
+        bridge_probe.get("projection_input_row_commitment"),
+        "d128 RMSNorm-to-projection bridge projection-input commitment",
+    )
     expect_equal(
         bridge_probe.get("source_rmsnorm_statement_commitment"),
         rmsnorm_statement_commitment,
@@ -1268,12 +1278,15 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         rmsnorm_output_row_commitment,
         "direct d128 RMSNorm-to-projection bridge route source output-row commitment",
     )
-    route_projection_input_commitment = route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get(
-        "projection_input_row_commitment"
+    route_projection_input_commitment = require_commitment(
+        route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get(
+            "projection_input_row_commitment"
+        ),
+        "direct d128 RMSNorm-to-projection bridge route projection-input commitment",
     )
     expect_equal(
         route_projection_input_commitment,
-        bridge_probe.get("projection_input_row_commitment"),
+        bridge_projection_input_commitment,
         "direct d128 RMSNorm-to-projection bridge route projection-input commitment",
     )
     if route_projection_input_commitment == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT:
