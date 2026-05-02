@@ -41,6 +41,7 @@ SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:2dfa2ceffd67f95059b3d6c
 SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT = "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
 SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d128-rmsnorm-output-row:v1"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d128-projection-input-row:v1"
+PROJECTION_INPUT_ROW_COMMITMENT = "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17"
 PROOF_NATIVE_PARAMETER_KIND = "d128-rmsnorm-to-projection-bridge-synthetic-parameters-v1"
 PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:d128-proof-native-parameter-commitment:v1"
 PUBLIC_INSTANCE_DOMAIN = "ptvm:zkai:d128-public-instance:v1"
@@ -411,6 +412,8 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
         raise D128BridgeInputError("source RMSNorm output commitment recomputation drift")
     if sequence_commitment(projection_values, PROJECTION_INPUT_ROW_DOMAIN) != payload["projection_input_row_commitment"]:
         raise D128BridgeInputError("projection input commitment recomputation drift")
+    if payload["projection_input_row_commitment"] != PROJECTION_INPUT_ROW_COMMITMENT:
+        raise D128BridgeInputError("projection input commitment drift")
     target = load_target() if target is None else target
     target_commitment = validate_target(target)
     statement = statement_commitment(payload, target_commitment)

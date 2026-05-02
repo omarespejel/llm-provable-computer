@@ -299,7 +299,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "projection_input_row_commitment"
         ] = GATE.D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT
         route["projection_input_row_commitment"] = GATE.D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT
-        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "relabeled as full output"):
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "authoritative projection-input commitment"):
             GATE.validate_payload(payload)
 
     def test_rejects_malformed_equal_bridge_projection_commitments(self) -> None:
@@ -312,6 +312,20 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         ] = "not-a-commitment"
         route["projection_input_row_commitment"] = "not-a-commitment"
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "projection-input commitment"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_equal_but_unpinned_bridge_projection_commitments(self) -> None:
+        payload = self.fresh_payload()
+        route = next(
+            row for row in payload["backend_routes"] if row["route"] == "direct_d128_rmsnorm_to_projection_bridge_air"
+        )
+        alternate = "blake2b-256:" + "55" * 32
+        payload["source_probe"]["d128_rmsnorm_to_projection_bridge"][
+            "projection_input_row_commitment"
+        ] = alternate
+        route["projection_input_row_commitment"] = alternate
+        GATE.set_gate_commitment(payload)
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "authoritative projection-input commitment"):
             GATE.validate_payload(payload)
 
     def test_rejects_route_promotion(self) -> None:
