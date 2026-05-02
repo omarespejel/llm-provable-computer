@@ -91,15 +91,21 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
                         "reason": "directories must not count as proof artifacts",
                     }
                 ]
-                GATE.candidate_inventory.cache_clear()
+                GATE._candidate_inventory_cached.cache_clear()
 
                 inventory = GATE.candidate_inventory()
         finally:
             GATE.CANDIDATE_SPECS = original_specs
-            GATE.candidate_inventory.cache_clear()
+            GATE._candidate_inventory_cached.cache_clear()
 
         self.assertEqual(inventory[0]["status"], "MISSING_REQUIRED_GO_ARTIFACT")
         self.assertFalse(inventory[0]["exists"])
+
+    def test_candidate_inventory_returns_mutation_safe_copy(self) -> None:
+        first = GATE.candidate_inventory()
+        first[0]["status"] = "CORRUPTED"
+        second = GATE.candidate_inventory()
+        self.assertNotEqual(second[0]["status"], "CORRUPTED")
 
     def test_summary_counts_required_missing_artifacts(self) -> None:
         payload = self.fresh_payload()
@@ -173,6 +179,12 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "duplicate mutation case"):
             GATE.validate_payload(payload)
 
+    def test_rejects_rejected_mutation_case_without_error_message(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["error"] = ""
+        with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "error must be non-empty"):
+            GATE.validate_payload(payload)
+
     def test_rejects_missing_mutation_metadata_on_serialized_result(self) -> None:
         payload = self.fresh_payload()
         del payload["mutation_inventory"]
@@ -190,7 +202,7 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
 
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
-        with tempfile.TemporaryDirectory() as raw_tmp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             json_path = tmp / "backend-spike.json"
             tsv_path = tmp / "backend-spike.tsv"
@@ -198,6 +210,17 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, payload)
             self.assertIn("proof_size_metric_smuggled_before_proof", tsv_path.read_text(encoding="utf-8"))
+
+    def test_write_outputs_rejects_paths_outside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "backend-spike.json"
+            tsv_path = tmp / "backend-spike.tsv"
+            with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "output path escapes repository"):
+                GATE.write_outputs(payload, json_path, tsv_path)
+            self.assertFalse(json_path.exists())
+            self.assertFalse(tsv_path.exists())
 
 
 if __name__ == "__main__":

@@ -352,7 +352,7 @@ def _tokens_present(path: pathlib.Path, tokens: list[str]) -> bool:
 
 
 @functools.lru_cache(maxsize=1)
-def candidate_inventory() -> list[dict[str, Any]]:
+def _candidate_inventory_cached() -> tuple[tuple[tuple[str, Any], ...], ...]:
     inventory: list[dict[str, Any]] = []
     for spec in CANDIDATE_SPECS:
         path = ROOT / spec["path"]
@@ -380,7 +380,11 @@ def candidate_inventory() -> list[dict[str, Any]]:
                 "reason": spec["reason"],
             }
         )
-    return inventory
+    return tuple(tuple(item.items()) for item in inventory)
+
+
+def candidate_inventory() -> list[dict[str, Any]]:
+    return [dict(item) for item in _candidate_inventory_cached()]
 
 
 def backend_attempt(inventory: list[dict[str, Any]]) -> dict[str, Any]:
@@ -582,6 +586,8 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
             raise D64NestedVerifierBackendSpikeError(f"mutation case {index} rejection_layer must be a non-empty string")
         if not isinstance(case["error"], str):
             raise D64NestedVerifierBackendSpikeError(f"mutation case {index} error must be a string")
+        if case["rejected"] and not case["error"]:
+            raise D64NestedVerifierBackendSpikeError(f"mutation case {index} rejected case error must be non-empty")
         if case["rejected"]:
             computed_rejected += 1
     computed_case_count = len(cases)
@@ -705,16 +711,26 @@ def to_tsv(payload: dict[str, Any]) -> str:
     return buffer.getvalue()
 
 
+def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
+    resolved = path.resolve()
+    root = ROOT.resolve()
+    if resolved != root and root not in resolved.parents:
+        raise D64NestedVerifierBackendSpikeError(f"output path escapes repository: {path}")
+    return resolved
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
+    json_output = _validated_output_path(json_path) if json_path is not None else None
+    tsv_output = _validated_output_path(tsv_path) if tsv_path is not None else None
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n" if json_path is not None else None
     tsv_text = to_tsv(payload) if tsv_path is not None else None
-    if json_path is not None:
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_path.write_text(json_text, encoding="utf-8")
-    if tsv_path is not None:
-        tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        tsv_path.write_text(tsv_text, encoding="utf-8")
+    if json_output is not None:
+        json_output.parent.mkdir(parents=True, exist_ok=True)
+        json_output.write_text(json_text, encoding="utf-8")
+    if tsv_output is not None:
+        tsv_output.parent.mkdir(parents=True, exist_ok=True)
+        tsv_output.write_text(tsv_text, encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
