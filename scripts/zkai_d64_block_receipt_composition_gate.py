@@ -636,6 +636,8 @@ def _manifest_by_slice(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     if not isinstance(manifest, list):
         raise D64BlockReceiptError("source evidence manifest must be a list")
     by_slice: dict[str, dict[str, Any]] = {}
+    expected_ids = [spec.slice_id for spec in SLICE_SPECS]
+    actual_ids: list[str] = []
     for expected_index, item in enumerate(manifest):
         if not isinstance(item, dict):
             raise D64BlockReceiptError("source evidence manifest item must be an object")
@@ -646,7 +648,10 @@ def _manifest_by_slice(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
             raise D64BlockReceiptError("source evidence manifest slice_id must be a string")
         if slice_id in by_slice:
             raise D64BlockReceiptError("duplicate source evidence manifest slice")
+        actual_ids.append(slice_id)
         by_slice[slice_id] = item
+    if actual_ids != expected_ids:
+        raise D64BlockReceiptError("source evidence manifest order or membership mismatch")
     return by_slice
 
 
@@ -891,6 +896,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "backend_version_drift",
         "block_receipt",
         lambda p: p["block_receipt"].__setitem__("required_backend_version", "stwo-rmsnorm-swiglu-residual-d64-v3"),
+    )
+    add(
+        "verifier_domain_drift",
+        "block_receipt",
+        lambda p: p["block_receipt"].__setitem__("verifier_domain", "ptvm:tampered-verifier-domain:v0"),
     )
     add(
         "slice_version_drift",
