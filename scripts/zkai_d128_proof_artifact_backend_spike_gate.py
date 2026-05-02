@@ -1,0 +1,882 @@
+#!/usr/bin/env python3
+"""Gate the current backend route for a real d128 transformer-block proof.
+
+This is intentionally narrower than the d128 comparator target gate.  It does
+not ask whether the d128 shape is useful; that was already checked.  It asks
+whether today's repository can actually produce a local d128 proof artifact
+with a verifier handle and relabeling tests.
+"""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import csv
+import hashlib
+import importlib.util
+import json
+import os
+import pathlib
+import sys
+import tempfile
+from typing import Any
+
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
+TARGET_GATE_PATH = ROOT / "scripts" / "zkai_d128_layerwise_comparator_target_gate.py"
+D64_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d64_block_receipt_composition_gate.py"
+TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
+D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
+JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
+TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
+
+SCHEMA = "zkai-d128-proof-artifact-backend-spike-v1"
+DECISION = "NO_GO_D128_PROOF_ARTIFACT_PARAMETERIZED_AIR_MISSING"
+RESULT = "BOUNDED_NO_GO"
+ISSUE = 387
+TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
+TARGET_WIDTH = 128
+TARGET_FF_DIM = 512
+REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
+REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
+FIRST_BLOCKER = (
+    "no parameterized d128 vector-block AIR/prover/verifier handle; current "
+    "native proof modules are d64 target/domain/width hard-coded and no d128 "
+    "native module exports exist"
+)
+
+D64_PROOF_SLICES = (
+    {
+        "slice": "rmsnorm_public_rows",
+        "module": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_public_row_envelope",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_public_row_envelope",
+        "proof_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+    },
+    {
+        "slice": "rmsnorm_projection_bridge",
+        "module": "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_rmsnorm_to_projection_bridge_envelope",
+        "verify_symbol": "verify_zkai_d64_rmsnorm_to_projection_bridge_envelope",
+        "proof_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+    },
+    {
+        "slice": "gate_value_projection",
+        "module": "src/stwo_backend/d64_native_gate_value_projection_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_gate_value_projection_envelope",
+        "verify_symbol": "verify_zkai_d64_gate_value_projection_envelope",
+        "proof_version": "stwo-d64-gate-value-projection-air-proof-v1",
+    },
+    {
+        "slice": "activation_swiglu",
+        "module": "src/stwo_backend/d64_native_activation_swiglu_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_activation_swiglu_envelope",
+        "verify_symbol": "verify_zkai_d64_activation_swiglu_envelope",
+        "proof_version": "stwo-d64-activation-swiglu-air-proof-v1",
+    },
+    {
+        "slice": "down_projection",
+        "module": "src/stwo_backend/d64_native_down_projection_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_down_projection_envelope",
+        "verify_symbol": "verify_zkai_d64_down_projection_envelope",
+        "proof_version": "stwo-d64-down-projection-air-proof-v1",
+    },
+    {
+        "slice": "residual_add",
+        "module": "src/stwo_backend/d64_native_residual_add_proof.rs",
+        "evidence": "docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json",
+        "prove_symbol": "prove_zkai_d64_residual_add_envelope",
+        "verify_symbol": "verify_zkai_d64_residual_add_envelope",
+        "proof_version": "stwo-d64-residual-add-air-proof-v1",
+    },
+)
+
+EXPECTED_D128_MODULES = (
+    "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
+    "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
+    "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
+    "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
+    "src/stwo_backend/d128_native_down_projection_proof.rs",
+    "src/stwo_backend/d128_native_residual_add_proof.rs",
+    "src/stwo_backend/d128_native_transformer_block_proof.rs",
+)
+
+EXPECTED_D128_EXPORT_SYMBOLS = (
+    "prove_zkai_d128_rmsnorm_public_row_envelope",
+    "verify_zkai_d128_rmsnorm_public_row_envelope",
+    "prove_zkai_d128_gate_value_projection_envelope",
+    "verify_zkai_d128_gate_value_projection_envelope",
+    "prove_zkai_d128_activation_swiglu_envelope",
+    "verify_zkai_d128_activation_swiglu_envelope",
+    "prove_zkai_d128_down_projection_envelope",
+    "verify_zkai_d128_down_projection_envelope",
+    "prove_zkai_d128_residual_add_envelope",
+    "verify_zkai_d128_residual_add_envelope",
+    "prove_zkai_d128_transformer_block_envelope",
+    "verify_zkai_d128_transformer_block_envelope",
+)
+
+PARAMETERIZED_SYMBOLS = (
+    "ZkAiVectorBlockProofInput",
+    "ZkAiParameterizedTransformerBlockProof",
+    "prove_zkai_vector_block_envelope",
+    "verify_zkai_vector_block_envelope",
+    "parameterized_vector_block_air",
+)
+
+D64_HARDCODE_MARKERS = {
+    "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION",
+        "ZKAI_D64_TARGET_ID",
+    ),
+    "src/stwo_backend/d64_native_gate_value_projection_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+        "D64_GATE_VALUE_LOG_SIZE",
+    ),
+    "src/stwo_backend/d64_native_activation_swiglu_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+        "D64_ACTIVATION_SWIGLU_LOG_SIZE",
+    ),
+    "src/stwo_backend/d64_native_down_projection_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "expect_usize(input.ff_dim, ZKAI_D64_FF_DIM",
+        "D64_DOWN_PROJECTION_LOG_SIZE",
+    ),
+    "src/stwo_backend/d64_native_residual_add_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "ZKAI_D64_RESIDUAL_ADD_PROOF_VERSION",
+        "D64_RESIDUAL_ADD_LOG_SIZE",
+    ),
+}
+
+NON_CLAIMS = [
+    "not a local d128 proof artifact",
+    "not verifier-time evidence for d128",
+    "not proof-size evidence for d128",
+    "not recursive aggregation",
+    "not backend independence evidence",
+    "not a matched NANOZK or DeepProve benchmark",
+    "not a claim that d128 is impossible",
+]
+
+VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
+    "cargo +nightly-2025-07-14 test --lib d64 --features stwo-backend -- --nocapture",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+]
+
+TSV_COLUMNS = (
+    "route",
+    "status",
+    "target_width",
+    "target_ff_dim",
+    "proof_artifact_exists",
+    "verifier_handle_exists",
+    "proof_size_bytes",
+    "verifier_time_ms",
+    "blocker",
+)
+
+MUTATION_TSV_COLUMNS = (
+    "mutation",
+    "surface",
+    "mutated_accepted",
+    "rejected",
+    "rejection_layer",
+    "error",
+)
+
+EXPECTED_MUTATION_INVENTORY = (
+    ("decision_promoted_to_go", "top_level"),
+    ("target_width_drift", "target_spec"),
+    ("target_backend_version_drift", "target_spec"),
+    ("local_proof_artifact_smuggled", "proof_status"),
+    ("local_verifier_handle_smuggled", "proof_status"),
+    ("proof_size_metric_smuggled", "metrics"),
+    ("verifier_time_metric_smuggled", "metrics"),
+    ("direct_d128_route_promoted", "backend_routes"),
+    ("parameterized_route_promoted", "backend_routes"),
+    ("d64_anchor_removed", "d64_anchor"),
+    ("missing_module_removed", "source_probe"),
+    ("d64_hardcoded_marker_removed", "source_probe"),
+    ("non_claim_removed", "claim_boundary"),
+    ("mutation_case_accepted", "mutation_harness"),
+)
+
+
+class D128BackendSpikeError(ValueError):
+    pass
+
+
+def _load_module(path: pathlib.Path, module_name: str) -> Any:
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise D128BackendSpikeError(f"failed to load {module_name} from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+TARGET_GATE = _load_module(TARGET_GATE_PATH, "zkai_d128_target_for_backend_spike")
+D64_BLOCK_GATE = _load_module(D64_BLOCK_GATE_PATH, "zkai_d64_block_for_d128_backend_spike")
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def sha256_hex_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_hex_json(value: Any) -> str:
+    return sha256_hex_bytes(canonical_json_bytes(value))
+
+
+def blake2b_commitment(value: Any, domain: str) -> str:
+    digest = hashlib.blake2b(digest_size=32)
+    digest.update(domain.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(canonical_json_bytes(value))
+    return f"blake2b-256:{digest.hexdigest()}"
+
+
+def file_sha256(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def relative_path(path: pathlib.Path) -> str:
+    return str(path.resolve().relative_to(ROOT.resolve()))
+
+
+def require_object(value: Any, field: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise D128BackendSpikeError(f"{field} must be an object")
+    return value
+
+
+def require_list(value: Any, field: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise D128BackendSpikeError(f"{field} must be a list")
+    return value
+
+
+def expect_equal(actual: Any, expected: Any, field: str) -> None:
+    if actual != expected:
+        raise D128BackendSpikeError(f"{field} mismatch")
+
+
+def load_json(path: pathlib.Path) -> dict[str, Any]:
+    resolved = path.resolve()
+    if not resolved.is_file():
+        raise D128BackendSpikeError(f"JSON source is not a regular file: {path}")
+    if ROOT.resolve() not in resolved.parents:
+        raise D128BackendSpikeError(f"JSON source escapes repository: {path}")
+    try:
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise D128BackendSpikeError(f"failed to load JSON source {path}: {err}") from err
+    if not isinstance(payload, dict):
+        raise D128BackendSpikeError(f"JSON source must be an object: {path}")
+    return payload
+
+
+def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "path": relative_path(path),
+        "file_sha256": file_sha256(path),
+        "payload_sha256": sha256_hex_json(payload),
+        "schema": payload.get("schema"),
+        "decision": payload.get("decision"),
+        "result": payload.get("result"),
+    }
+
+
+def load_checked_target() -> dict[str, Any]:
+    payload = load_json(TARGET_EVIDENCE)
+    try:
+        TARGET_GATE.validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
+        raise D128BackendSpikeError(f"d128 comparator target validation failed: {err}") from err
+    if payload.get("target_result") != TARGET_GATE.TARGET_RESULT:
+        raise D128BackendSpikeError("d128 target spec is not a GO target")
+    if payload.get("local_proof_result") != TARGET_GATE.LOCAL_PROOF_RESULT:
+        raise D128BackendSpikeError("d128 target evidence no longer records missing local proof")
+    return payload
+
+
+def load_checked_d64_block() -> dict[str, Any]:
+    payload = load_json(D64_BLOCK_EVIDENCE)
+    try:
+        D64_BLOCK_GATE.validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
+        raise D128BackendSpikeError(f"d64 block composition validation failed: {err}") from err
+    if payload.get("decision") != D64_BLOCK_GATE.DECISION:
+        raise D128BackendSpikeError("d64 block composition is not a GO anchor")
+    return payload
+
+
+def read_repo_file(path: str) -> str:
+    full = ROOT / path
+    if not full.is_file():
+        raise D128BackendSpikeError(f"required source file missing: {path}")
+    return full.read_text(encoding="utf-8")
+
+
+def repo_file_descriptor(path: str) -> dict[str, Any]:
+    full = ROOT / path
+    return {
+        "path": path,
+        "exists": full.is_file(),
+        "file_sha256": file_sha256(full) if full.is_file() else None,
+    }
+
+
+def build_source_probe() -> dict[str, Any]:
+    mod_rs = read_repo_file("src/stwo_backend/mod.rs")
+    d64_slices = []
+    for spec in D64_PROOF_SLICES:
+        module_text = read_repo_file(spec["module"])
+        evidence = load_json(ROOT / spec["evidence"])
+        for symbol in (spec["prove_symbol"], spec["verify_symbol"]):
+            if symbol not in mod_rs:
+                raise D128BackendSpikeError(f"d64 exported symbol missing from mod.rs: {symbol}")
+            if symbol not in module_text:
+                raise D128BackendSpikeError(f"d64 module symbol missing from source: {symbol}")
+        expect_equal(evidence.get("target_id"), "rmsnorm-swiglu-residual-d64-v2", f"{spec['slice']} target id")
+        expect_equal(evidence.get("width"), 64, f"{spec['slice']} width")
+        d64_slices.append(
+            {
+                "slice": spec["slice"],
+                "module": repo_file_descriptor(spec["module"]),
+                "evidence": source_descriptor(ROOT / spec["evidence"], evidence),
+                "prove_symbol": spec["prove_symbol"],
+                "verify_symbol": spec["verify_symbol"],
+                "proof_version": spec["proof_version"],
+            }
+        )
+
+    missing_d128_modules = []
+    present_d128_modules = []
+    for path in EXPECTED_D128_MODULES:
+        full = ROOT / path
+        if full.exists():
+            present_d128_modules.append(path)
+        else:
+            missing_d128_modules.append(path)
+    if present_d128_modules:
+        raise D128BackendSpikeError(
+            "d128 module route may now exist; refresh this no-go gate before relying on it"
+        )
+
+    present_d128_symbols = [symbol for symbol in EXPECTED_D128_EXPORT_SYMBOLS if symbol in mod_rs]
+    if present_d128_symbols:
+        raise D128BackendSpikeError(
+            "d128 export route may now exist; refresh this no-go gate before relying on it"
+        )
+    missing_d128_symbols = list(EXPECTED_D128_EXPORT_SYMBOLS)
+
+    repo_text = "\n".join(
+        (ROOT / path).read_text(encoding="utf-8")
+        for path in ["src/stwo_backend/mod.rs", *[spec["module"] for spec in D64_PROOF_SLICES]]
+    )
+    present_parameterized_symbols = [
+        symbol for symbol in PARAMETERIZED_SYMBOLS if symbol in repo_text
+    ]
+    if present_parameterized_symbols:
+        raise D128BackendSpikeError(
+            "parameterized vector-block route may now exist; refresh this no-go gate before relying on it"
+        )
+
+    hardcoded_markers = []
+    for path, markers in D64_HARDCODE_MARKERS.items():
+        text = read_repo_file(path)
+        missing = [marker for marker in markers if marker not in text]
+        if missing:
+            raise D128BackendSpikeError(f"d64 hard-code marker missing unexpectedly in {path}: {missing}")
+        hardcoded_markers.append({"path": path, "markers": list(markers)})
+
+    return {
+        "d64_slices": d64_slices,
+        "missing_d128_modules": missing_d128_modules,
+        "missing_d128_export_symbols": missing_d128_symbols,
+        "missing_parameterized_symbols": list(PARAMETERIZED_SYMBOLS),
+        "d64_hardcoded_markers": hardcoded_markers,
+    }
+
+
+def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "route": "existing_d64_slice_chain",
+            "status": "GO_ANCHOR_ONLY",
+            "target_width": 64,
+            "target_ff_dim": 256,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "d64 slice proofs exist, but this is not the d128 target",
+            "evidence": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+        },
+        {
+            "route": "direct_d128_native_modules",
+            "status": "NO_GO",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": False,
+            "verifier_handle_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "no d128 native proof modules or exported prove/verify handles exist",
+            "missing_modules": source_probe["missing_d128_modules"],
+            "missing_export_symbols": source_probe["missing_d128_export_symbols"],
+        },
+        {
+            "route": "lift_existing_d64_modules_by_metadata",
+            "status": "NO_GO",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": False,
+            "verifier_handle_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "d64 modules validate hard-coded width, target id, domains, and log sizes",
+            "hardcoded_markers": source_probe["d64_hardcoded_markers"],
+        },
+        {
+            "route": "parameterized_vector_block_air",
+            "status": "NO_GO_FIRST_BLOCKER",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": False,
+            "verifier_handle_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": FIRST_BLOCKER,
+            "missing_symbols": source_probe["missing_parameterized_symbols"],
+        },
+        {
+            "route": "d128_metrics_and_relabeling_suite",
+            "status": "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": False,
+            "verifier_handle_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist",
+        },
+    ]
+
+
+def expected_mutation_inventory() -> list[dict[str, Any]]:
+    return [
+        {"index": index, "mutation": mutation, "surface": surface}
+        for index, (mutation, surface) in enumerate(EXPECTED_MUTATION_INVENTORY)
+    ]
+
+
+def build_payload() -> dict[str, Any]:
+    target_payload = load_checked_target()
+    d64_block_payload = load_checked_d64_block()
+    source_probe = build_source_probe()
+    routes = build_backend_routes(source_probe)
+    target_spec = require_object(target_payload.get("target_spec"), "target spec")
+    summary = {
+        "issue": ISSUE,
+        "target_id": TARGET_ID,
+        "target_width": TARGET_WIDTH,
+        "target_ff_dim": TARGET_FF_DIM,
+        "first_blocker": FIRST_BLOCKER,
+        "d64_anchor_route": "GO_ANCHOR_ONLY",
+        "direct_d128_route": "NO_GO",
+        "parameterized_route": "NO_GO_FIRST_BLOCKER",
+        "blocked_before_metrics": True,
+        "mutation_cases": len(EXPECTED_MUTATION_INVENTORY),
+    }
+    proof_status = {
+        "proof_artifact_exists": False,
+        "verifier_handle_exists": False,
+        "statement_relabeling_suite_exists": False,
+        "proof_size_bytes": None,
+        "verifier_time_ms": None,
+        "blocked_before_metrics": True,
+        "first_blocker": FIRST_BLOCKER,
+        "required_toolchain": REQUIRED_TOOLCHAIN,
+        "stable_toolchain_status": "not_supported_by_upstream_stwo_feature_gates",
+    }
+    d64_summary = require_object(d64_block_payload.get("summary"), "d64 block summary")
+    d64_anchor = {
+        "status": "GO_ANCHOR_ONLY",
+        "claim_boundary": "working d64 slice proof chain, not a d128 proof route",
+        "slice_count": d64_summary.get("slice_count"),
+        "total_checked_rows": d64_summary.get("total_checked_rows"),
+        "decision": d64_block_payload.get("decision"),
+        "source": source_descriptor(D64_BLOCK_EVIDENCE, d64_block_payload),
+        "slices": source_probe["d64_slices"],
+    }
+    payload = {
+        "schema": SCHEMA,
+        "decision": DECISION,
+        "result": RESULT,
+        "issue": ISSUE,
+        "summary": summary,
+        "target": {
+            "target_id": TARGET_ID,
+            "statement_kind": target_spec.get("statement_kind"),
+            "width": target_spec.get("width"),
+            "ff_dim": target_spec.get("ff_dim"),
+            "required_backend_version": REQUIRED_BACKEND_VERSION,
+            "target_commitment": target_spec.get("target_commitment"),
+            "source": source_descriptor(TARGET_EVIDENCE, target_payload),
+        },
+        "d64_anchor": d64_anchor,
+        "source_probe": source_probe,
+        "backend_routes": routes,
+        "proof_status": proof_status,
+        "non_claims": list(NON_CLAIMS),
+        "validation_commands": list(VALIDATION_COMMANDS),
+    }
+    payload["gate_commitment"] = blake2b_commitment(
+        {
+            "schema": payload["schema"],
+            "decision": payload["decision"],
+            "target": payload["target"],
+            "backend_routes": payload["backend_routes"],
+            "proof_status": payload["proof_status"],
+            "non_claims": payload["non_claims"],
+        },
+        "ptvm:zkai:d128-proof-artifact-backend-spike:v1",
+    )
+    return payload
+
+
+def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
+    cases: list[tuple[str, str, dict[str, Any]]] = []
+
+    def add(name: str, surface: str, mutator: Any) -> None:
+        mutated = copy.deepcopy(payload)
+        mutator(mutated)
+        cases.append((name, surface, mutated))
+
+    add("decision_promoted_to_go", "top_level", lambda p: p.__setitem__("decision", "GO_D128_PROOF_ARTIFACT"))
+    add("target_width_drift", "target_spec", lambda p: p["target"].__setitem__("width", 64))
+    add(
+        "target_backend_version_drift",
+        "target_spec",
+        lambda p: p["target"].__setitem__("required_backend_version", "stwo-rmsnorm-swiglu-residual-d64-v2"),
+    )
+    add("local_proof_artifact_smuggled", "proof_status", lambda p: p["proof_status"].__setitem__("proof_artifact_exists", True))
+    add("local_verifier_handle_smuggled", "proof_status", lambda p: p["proof_status"].__setitem__("verifier_handle_exists", True))
+    add("proof_size_metric_smuggled", "metrics", lambda p: p["proof_status"].__setitem__("proof_size_bytes", 1_234_567))
+    add("verifier_time_metric_smuggled", "metrics", lambda p: p["proof_status"].__setitem__("verifier_time_ms", 42.0))
+
+    def promote_direct_route(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_native_modules")
+        route["status"] = "GO"
+        route["proof_artifact_exists"] = True
+        route["verifier_handle_exists"] = True
+
+    add("direct_d128_route_promoted", "backend_routes", promote_direct_route)
+
+    def promote_parameterized_route(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_vector_block_air")
+        route["status"] = "GO"
+        route["missing_symbols"] = []
+
+    add("parameterized_route_promoted", "backend_routes", promote_parameterized_route)
+    add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
+
+    def remove_missing_module(p: dict[str, Any]) -> None:
+        p["source_probe"]["missing_d128_modules"] = p["source_probe"]["missing_d128_modules"][1:]
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_native_modules")
+        route["missing_modules"] = route["missing_modules"][1:]
+
+    add("missing_module_removed", "source_probe", remove_missing_module)
+
+    def remove_hardcoded_marker(p: dict[str, Any]) -> None:
+        p["source_probe"]["d64_hardcoded_markers"][0]["markers"] = []
+        route = next(row for row in p["backend_routes"] if row["route"] == "lift_existing_d64_modules_by_metadata")
+        route["hardcoded_markers"][0]["markers"] = []
+
+    add("d64_hardcoded_marker_removed", "source_probe", remove_hardcoded_marker)
+    add("non_claim_removed", "claim_boundary", lambda p: p["non_claims"].remove("not a local d128 proof artifact"))
+    add("mutation_case_accepted", "mutation_harness", lambda p: p["summary"].__setitem__("mutation_cases", 0))
+    return cases
+
+
+def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for index, (mutation, surface, mutated) in enumerate(_mutated_cases(payload)):
+        try:
+            validate_payload(mutated, require_mutations=False)
+        except Exception as err:  # noqa: BLE001 - record rejection diagnostics.
+            error = str(err) or f"{err.__class__.__name__} with empty message"
+            results.append(
+                {
+                    "index": index,
+                    "mutation": mutation,
+                    "surface": surface,
+                    "mutated_accepted": False,
+                    "rejected": True,
+                    "rejection_layer": surface,
+                    "error": error,
+                }
+            )
+        else:
+            results.append(
+                {
+                    "index": index,
+                    "mutation": mutation,
+                    "surface": surface,
+                    "mutated_accepted": True,
+                    "rejected": False,
+                    "rejection_layer": surface,
+                    "error": "mutation was accepted",
+                }
+            )
+    return results
+
+
+def build_gate_result() -> dict[str, Any]:
+    payload = build_payload()
+    cases = mutation_cases(payload)
+    payload["mutation_inventory"] = expected_mutation_inventory()
+    payload["cases"] = cases
+    payload["case_count"] = len(cases)
+    payload["all_mutations_rejected"] = all(case["rejected"] for case in cases)
+    payload["summary"]["mutations_rejected"] = sum(1 for case in cases if case["rejected"])
+    validate_payload(payload)
+    return payload
+
+
+def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
+    data = require_object(payload, "payload")
+    expect_equal(data.get("schema"), SCHEMA, "schema")
+    expect_equal(data.get("decision"), DECISION, "decision")
+    expect_equal(data.get("result"), RESULT, "result")
+    expect_equal(data.get("issue"), ISSUE, "issue")
+    summary = require_object(data.get("summary"), "summary")
+    expect_equal(summary.get("target_width"), TARGET_WIDTH, "summary target width")
+    expect_equal(summary.get("target_ff_dim"), TARGET_FF_DIM, "summary target ff_dim")
+    expect_equal(summary.get("first_blocker"), FIRST_BLOCKER, "summary first blocker")
+    expect_equal(summary.get("direct_d128_route"), "NO_GO", "summary direct d128 route")
+    expect_equal(summary.get("parameterized_route"), "NO_GO_FIRST_BLOCKER", "summary parameterized route")
+    expect_equal(summary.get("blocked_before_metrics"), True, "summary blocked-before-metrics")
+    expect_equal(summary.get("mutation_cases"), len(EXPECTED_MUTATION_INVENTORY), "summary mutation count")
+
+    target = require_object(data.get("target"), "target")
+    expect_equal(target.get("target_id"), TARGET_ID, "target id")
+    expect_equal(target.get("width"), TARGET_WIDTH, "target width")
+    expect_equal(target.get("ff_dim"), TARGET_FF_DIM, "target ff_dim")
+    expect_equal(target.get("required_backend_version"), REQUIRED_BACKEND_VERSION, "target backend version")
+
+    d64_anchor = require_object(data.get("d64_anchor"), "d64 anchor")
+    expect_equal(d64_anchor.get("status"), "GO_ANCHOR_ONLY", "d64 anchor status")
+    expect_equal(d64_anchor.get("slice_count"), 6, "d64 anchor slice count")
+    slices = require_list(d64_anchor.get("slices"), "d64 anchor slices")
+    expect_equal(len(slices), len(D64_PROOF_SLICES), "d64 anchor slice list length")
+
+    source_probe = require_object(data.get("source_probe"), "source probe")
+    expect_equal(
+        source_probe.get("missing_d128_modules"),
+        list(EXPECTED_D128_MODULES),
+        "missing d128 module inventory",
+    )
+    expect_equal(
+        source_probe.get("missing_d128_export_symbols"),
+        list(EXPECTED_D128_EXPORT_SYMBOLS),
+        "missing d128 export inventory",
+    )
+    expect_equal(
+        source_probe.get("missing_parameterized_symbols"),
+        list(PARAMETERIZED_SYMBOLS),
+        "missing parameterized symbol inventory",
+    )
+    hardcoded = require_list(source_probe.get("d64_hardcoded_markers"), "d64 hardcoded markers")
+    expect_equal(len(hardcoded), len(D64_HARDCODE_MARKERS), "hardcoded marker file count")
+    for record in hardcoded:
+        record = require_object(record, "hardcoded marker")
+        path = record.get("path")
+        if path not in D64_HARDCODE_MARKERS:
+            raise D128BackendSpikeError(f"unexpected hardcoded marker path: {path}")
+        expect_equal(record.get("markers"), list(D64_HARDCODE_MARKERS[path]), f"{path} hardcoded markers")
+
+    routes = require_list(data.get("backend_routes"), "backend routes")
+    route_by_name = {require_object(route, "backend route").get("route"): route for route in routes}
+    expected_routes = {
+        "existing_d64_slice_chain",
+        "direct_d128_native_modules",
+        "lift_existing_d64_modules_by_metadata",
+        "parameterized_vector_block_air",
+        "d128_metrics_and_relabeling_suite",
+    }
+    if set(route_by_name) != expected_routes:
+        raise D128BackendSpikeError("backend route inventory mismatch")
+    expect_equal(route_by_name["existing_d64_slice_chain"].get("status"), "GO_ANCHOR_ONLY", "d64 anchor route status")
+    expect_equal(route_by_name["direct_d128_native_modules"].get("status"), "NO_GO", "direct d128 route status")
+    expect_equal(
+        route_by_name["parameterized_vector_block_air"].get("status"),
+        "NO_GO_FIRST_BLOCKER",
+        "parameterized route status",
+    )
+    for route in routes:
+        route = require_object(route, "backend route")
+        if route["route"] != "existing_d64_slice_chain":
+            expect_equal(route.get("target_width"), TARGET_WIDTH, f"{route['route']} target width")
+            expect_equal(route.get("proof_artifact_exists"), False, f"{route['route']} proof artifact")
+            expect_equal(route.get("verifier_handle_exists"), False, f"{route['route']} verifier handle")
+        if route.get("proof_size_bytes") is not None:
+            raise D128BackendSpikeError("proof-size metric must remain absent before d128 proof exists")
+        if route.get("verifier_time_ms") is not None:
+            raise D128BackendSpikeError("verifier-time metric must remain absent before d128 proof exists")
+
+    proof_status = require_object(data.get("proof_status"), "proof status")
+    expect_equal(proof_status.get("proof_artifact_exists"), False, "proof artifact exists")
+    expect_equal(proof_status.get("verifier_handle_exists"), False, "verifier handle exists")
+    expect_equal(proof_status.get("statement_relabeling_suite_exists"), False, "relabeling suite exists")
+    expect_equal(proof_status.get("proof_size_bytes"), None, "proof size")
+    expect_equal(proof_status.get("verifier_time_ms"), None, "verifier time")
+    expect_equal(proof_status.get("blocked_before_metrics"), True, "blocked before metrics")
+    expect_equal(proof_status.get("required_toolchain"), REQUIRED_TOOLCHAIN, "required toolchain")
+
+    if set(data.get("non_claims", [])) != set(NON_CLAIMS):
+        raise D128BackendSpikeError("non-claims inventory mismatch")
+    if data.get("validation_commands") != VALIDATION_COMMANDS:
+        raise D128BackendSpikeError("validation command inventory mismatch")
+
+    if require_mutations:
+        if data.get("mutation_inventory") != expected_mutation_inventory():
+            raise D128BackendSpikeError("mutation inventory mismatch")
+        cases = require_list(data.get("cases"), "mutation cases")
+        expect_equal(data.get("case_count"), len(EXPECTED_MUTATION_INVENTORY), "case count")
+        expect_equal(len(cases), len(EXPECTED_MUTATION_INVENTORY), "mutation case length")
+        expect_equal(data.get("all_mutations_rejected"), True, "all mutations rejected")
+        seen = set()
+        for case in cases:
+            case = require_object(case, "mutation case")
+            mutation = case.get("mutation")
+            if mutation in seen:
+                raise D128BackendSpikeError("duplicate mutation case")
+            seen.add(mutation)
+            if not case.get("rejected"):
+                raise D128BackendSpikeError(f"mutation was accepted: {mutation}")
+            if not case.get("error"):
+                raise D128BackendSpikeError(f"mutation case error must be non-empty: {mutation}")
+        expect_equal(seen, {name for name, _surface in EXPECTED_MUTATION_INVENTORY}, "mutation case set")
+
+
+def rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    for route in payload["backend_routes"]:
+        rows.append({column: route.get(column) for column in TSV_COLUMNS})
+    return rows
+
+
+def mutation_rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    return [{column: case.get(column) for column in MUTATION_TSV_COLUMNS} for case in payload["cases"]]
+
+
+def _assert_repo_output_path(path: pathlib.Path) -> pathlib.Path:
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise D128BackendSpikeError(f"output path escapes repository: {path}") from err
+    if resolved.exists() and resolved.is_dir():
+        raise D128BackendSpikeError(f"output path must not be a directory: {path}")
+    parent = resolved.parent
+    if parent.exists() and not parent.is_dir():
+        raise D128BackendSpikeError(f"output parent is not a directory: {parent}")
+    parent.mkdir(parents=True, exist_ok=True)
+    if resolved.is_symlink():
+        raise D128BackendSpikeError(f"output path must not be a symlink: {path}")
+    return resolved
+
+
+def _fsync_parent_directories(paths: list[pathlib.Path]) -> None:
+    seen: set[pathlib.Path] = set()
+    for path in paths:
+        parent = path.resolve().parent
+        if parent in seen:
+            continue
+        seen.add(parent)
+        flags = getattr(os, "O_DIRECTORY", 0) | os.O_RDONLY
+        try:
+            fd = os.open(parent, flags)
+        except OSError:
+            continue
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
+def _atomic_write_text(path: pathlib.Path, text: str) -> None:
+    resolved = _assert_repo_output_path(path)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=resolved.parent, delete=False) as handle:
+        tmp = pathlib.Path(handle.name)
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, resolved)
+
+
+def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    validate_payload(payload)
+    written: list[pathlib.Path] = []
+    if json_path is not None:
+        text = json.dumps(payload, sort_keys=True, indent=2) + "\n"
+        _atomic_write_text(json_path, text)
+        written.append(json_path.resolve())
+    if tsv_path is not None:
+        from io import StringIO
+
+        buffer = StringIO()
+        writer = csv.DictWriter(buffer, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows_for_tsv(payload))
+        buffer.write("\n")
+        mutation_writer = csv.DictWriter(
+            buffer,
+            fieldnames=MUTATION_TSV_COLUMNS,
+            delimiter="\t",
+            lineterminator="\n",
+        )
+        mutation_writer.writeheader()
+        mutation_writer.writerows(mutation_rows_for_tsv(payload))
+        _atomic_write_text(tsv_path, buffer.getvalue())
+        written.append(tsv_path.resolve())
+    _fsync_parent_directories(written)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--write-json", type=pathlib.Path, default=None)
+    parser.add_argument("--write-tsv", type=pathlib.Path, default=None)
+    args = parser.parse_args(argv)
+    payload = build_gate_result()
+    write_outputs(payload, args.write_json, args.write_tsv)
+    if args.write_json is None and args.write_tsv is None:
+        print(json.dumps(payload, sort_keys=True, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
