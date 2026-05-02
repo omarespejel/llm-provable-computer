@@ -1,0 +1,355 @@
+{
+  "aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+  "aggregation_target_manifest": {
+    "composition_evidence": {
+      "all_mutations_rejected": true,
+      "case_count": 14,
+      "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
+      "mutations_rejected": 14,
+      "schema": "zkai-d64-block-receipt-composition-gate-v1"
+    },
+    "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+    "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+    "input_block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "model_config": {
+      "activation_clamp_q8": 1024,
+      "ff_dim": 256,
+      "fixture_schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
+      "scale_q8": 256,
+      "statement_kind": "d64-rmsnorm-swiglu-residual-block",
+      "target_id": "rmsnorm-swiglu-residual-d64-v2",
+      "width": 64
+    },
+    "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+    "required_nested_verifier_checks": [
+      {
+        "index": 0,
+        "proof_backend_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+        "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2",
+        "slice_id": "rmsnorm_public_rows",
+        "source_file_sha256": "24083515ddc3ce7a690ac33698157956f6c35427dad8a41c033012616160db1d",
+        "source_path": "docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json",
+        "source_payload_sha256": "1d1f5ec67a770e8c98088e3924b53bf24e91462946b84a2a8cba3d4387f43c75"
+      },
+      {
+        "index": 1,
+        "proof_backend_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+        "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1",
+        "slice_id": "rmsnorm_projection_bridge",
+        "source_file_sha256": "84b7998b53679c6dd2f221392ee688c499bfdbc6bca0a737e9df40d720a8fccc",
+        "source_path": "docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json",
+        "source_payload_sha256": "2680f43d467a2da07ef8441e4b8051afef2d381a6cf2569130f322c5ddbe81cd"
+      },
+      {
+        "index": 2,
+        "proof_backend_version": "stwo-d64-gate-value-projection-air-proof-v1",
+        "schema": "zkai-d64-gate-value-projection-air-proof-input-v1",
+        "slice_id": "gate_value_projection",
+        "source_file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+        "source_path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
+        "source_payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7"
+      },
+      {
+        "index": 3,
+        "proof_backend_version": "stwo-d64-activation-swiglu-air-proof-v1",
+        "schema": "zkai-d64-activation-swiglu-air-proof-input-v1",
+        "slice_id": "activation_swiglu",
+        "source_file_sha256": "3cb30766f1665398fc54ea98a686e258eb7f247f0599ffae8d0f28a13c5f313d",
+        "source_path": "docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json",
+        "source_payload_sha256": "d810411fadb50a8f830c099550942475640708bc7631a47b687640061ab3ced6"
+      },
+      {
+        "index": 4,
+        "proof_backend_version": "stwo-d64-down-projection-air-proof-v1",
+        "schema": "zkai-d64-down-projection-air-proof-input-v1",
+        "slice_id": "down_projection",
+        "source_file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+        "source_path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
+        "source_payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc"
+      },
+      {
+        "index": 5,
+        "proof_backend_version": "stwo-d64-residual-add-air-proof-v1",
+        "schema": "zkai-d64-residual-add-air-proof-input-v1",
+        "slice_id": "residual_add",
+        "source_file_sha256": "088a14a2ba54b993798e32b8a39e2a0ecffd3d49d335a4f07c2b9f5ee249c2c3",
+        "source_path": "docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json",
+        "source_payload_sha256": "90ea0939379010467d56116df9e82355a12dcba05526925cfa53b19c184fa8ba"
+      }
+    ],
+    "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+    "target_kind": "d64-block-receipt-recursive-pcd-target",
+    "target_version": "zkai-d64-recursive-pcd-aggregation-target-v1",
+    "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
+  },
+  "aggregation_target_result": "GO_D64_BLOCK_RECEIPT_AGGREGATION_TARGET",
+  "all_mutations_rejected": true,
+  "block_receipt_projection": {
+    "block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+    "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
+    "model_config": {
+      "activation_clamp_q8": 1024,
+      "ff_dim": 256,
+      "fixture_schema": "zkai-d64-rmsnorm-swiglu-statement-fixture-v2",
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d64-v1",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
+      "scale_q8": 256,
+      "statement_kind": "d64-rmsnorm-swiglu-residual-block",
+      "target_id": "rmsnorm-swiglu-residual-d64-v2",
+      "width": 64
+    },
+    "output_activation_commitment": "blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f",
+    "proof_native_parameter_commitment": "blake2b-256:861784bd57c039f7fd661810eac42f2aa1893a315ba8e14b441c32717e65efbc",
+    "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
+    "receipt_version": "zkai-d64-block-receipt-v1",
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
+    "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+    "slice_versions": [
+      {
+        "proof_backend_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
+        "schema": "zkai-d64-native-rmsnorm-public-row-air-proof-input-v2",
+        "slice_id": "rmsnorm_public_rows"
+      },
+      {
+        "proof_backend_version": "stwo-d64-rmsnorm-to-projection-bridge-air-proof-v1",
+        "schema": "zkai-d64-rmsnorm-to-projection-bridge-air-proof-input-v1",
+        "slice_id": "rmsnorm_projection_bridge"
+      },
+      {
+        "proof_backend_version": "stwo-d64-gate-value-projection-air-proof-v1",
+        "schema": "zkai-d64-gate-value-projection-air-proof-input-v1",
+        "slice_id": "gate_value_projection"
+      },
+      {
+        "proof_backend_version": "stwo-d64-activation-swiglu-air-proof-v1",
+        "schema": "zkai-d64-activation-swiglu-air-proof-input-v1",
+        "slice_id": "activation_swiglu"
+      },
+      {
+        "proof_backend_version": "stwo-d64-down-projection-air-proof-v1",
+        "schema": "zkai-d64-down-projection-air-proof-input-v1",
+        "slice_id": "down_projection"
+      },
+      {
+        "proof_backend_version": "stwo-d64-residual-add-air-proof-v1",
+        "schema": "zkai-d64-residual-add-air-proof-input-v1",
+        "slice_id": "residual_add"
+      }
+    ],
+    "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
+    "statement_kind": "d64-rmsnorm-swiglu-residual-block",
+    "target_id": "rmsnorm-swiglu-residual-d64-v2",
+    "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
+  },
+  "case_count": 16,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "aggregation_target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_commitment",
+      "surface": "aggregation_target_commitment"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source block receipt file_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_block_receipt_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt_evidence",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source block receipt payload_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_block_receipt_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt_evidence",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt projection mismatch",
+      "mutated_accepted": false,
+      "mutation": "block_receipt_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "block_receipt_projection",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt projection mismatch",
+      "mutated_accepted": false,
+      "mutation": "proof_native_parameter_commitment_removed",
+      "rejected": true,
+      "rejection_layer": "block_receipt_projection",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt projection mismatch",
+      "mutated_accepted": false,
+      "mutation": "public_instance_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "block_receipt_projection",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt projection mismatch",
+      "mutated_accepted": false,
+      "mutation": "statement_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "block_receipt_projection",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt projection mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_drift",
+      "rejected": true,
+      "rejection_layer": "block_receipt_projection",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_manifest_slice_version_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_manifest_source_hash_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "composition_mutation_count_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "recursive aggregation claimed without a checked recursive proof artifact",
+      "mutated_accepted": false,
+      "mutation": "recursive_claim_true_without_proof",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "PCD accumulator claimed without a checked PCD proof artifact",
+      "mutated_accepted": false,
+      "mutation": "pcd_claim_true_without_proof",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "recursive proof artifact supplied to no-go feasibility gate",
+      "mutated_accepted": false,
+      "mutation": "invented_recursive_proof_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "first recursive blocker mismatch",
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "decision": "NO_GO_D64_RECURSIVE_PCD_AGGREGATION_PROVER_UNAVAILABLE",
+  "non_claims": [
+    "not recursive aggregation of the six d64 slice proofs",
+    "not proof-carrying-data accumulation",
+    "not one compressed verifier object",
+    "not a verifier-time benchmark",
+    "not onchain deployment evidence",
+    "not private parameter-opening proof",
+    "not full transformer inference"
+  ],
+  "recursive_or_pcd_attempt": {
+    "blocked_before_metrics": [
+      "proof_size",
+      "recursive_verifier_time",
+      "onchain_cost"
+    ],
+    "first_blocker": "missing recursive verifier or PCD backend artifact that proves the six d64 slice verifier checks inside one verifier-facing proof or accumulator",
+    "go_criterion": "one recursive/PCD proof object verifies at least two d64 slice-verifier checks and binds the aggregation_target_commitment as public input",
+    "missing_artifacts": [
+      "recursive verifier program/AIR/circuit for each d64 slice verifier",
+      "adapter that binds the d64 aggregation target commitment into recursive public inputs",
+      "recursive or PCD proof object over the nested slice-verifier checks",
+      "verifier handle for the resulting recursive or PCD proof object"
+    ],
+    "pcd_accumulator_claimed": false,
+    "recursive_aggregation_claimed": false,
+    "recursive_proof_artifacts": []
+  },
+  "recursive_or_pcd_proof_result": "NO_GO_RECURSIVE_OR_PCD_PROOF_ARTIFACT_UNAVAILABLE",
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d64-recursive-pcd-aggregation-feasibility-v1",
+  "source_block_receipt_evidence": {
+    "block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
+    "file_sha256": "8e924e15535a4f5a57660fed6ea3a11cf8b1ae123f6d05723230416100659206",
+    "path": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+    "payload_sha256": "ec98a1fd52bf344b35d586c47608ab80a0b8a771e8c5d7b3a017cc5e564dc599",
+    "schema": "zkai-d64-block-receipt-composition-gate-v1"
+  },
+  "summary": {
+    "aggregation_target_kind": "d64-block-receipt-recursive-pcd-target",
+    "aggregation_target_version": "zkai-d64-recursive-pcd-aggregation-target-v1",
+    "block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "composition_mutation_cases": 14,
+    "composition_mutations_rejected": 14,
+    "first_blocker": "missing recursive verifier or PCD backend artifact that proves the six d64 slice verifier checks inside one verifier-facing proof or accumulator",
+    "mutation_cases": 16,
+    "mutations_rejected": 16,
+    "recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_PROOF_ARTIFACT_UNAVAILABLE",
+    "slice_count": 6,
+    "target_status": "GO_D64_BLOCK_RECEIPT_AGGREGATION_TARGET",
+    "total_checked_rows": 49600
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d64_recursive_pcd_aggregation_feasibility_gate.py --write-json docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d64_recursive_pcd_aggregation_feasibility_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root ."
+  ]
+}
