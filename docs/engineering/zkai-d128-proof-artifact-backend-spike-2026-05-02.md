@@ -49,7 +49,7 @@ or relabeling suite.
 | Residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `14 / 14` rejected |
+| Mutation checks | `19 / 19` rejected |
 
 ## Backend-route classification
 
@@ -183,6 +183,14 @@ cargo +nightly-2025-07-14 test \
   zkai_vector_block_residual_add_proof \
   --lib \
   --features stwo-backend
+
+cargo +nightly-2025-07-14 test \
+  --lib \
+  stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go \
+  --features stwo-backend \
+  -- \
+  --nocapture \
+  --exact
 
 just gate-fast
 python3 scripts/paper/paper_preflight.py --repo-root .

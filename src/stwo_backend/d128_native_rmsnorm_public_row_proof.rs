@@ -1298,6 +1298,10 @@ mod tests {
         assert_eq!(input.rows[0].input_q8, -89);
         assert_eq!(input.rows[0].normed_q8, -387);
         assert_eq!(input.statement_commitment, statement_commitment(&input));
+        assert_eq!(
+            input.statement_commitment,
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT
+        );
         assert_ne!(
             input.statement_commitment,
             ZKAI_D128_RMSNORM_PUBLIC_ROW_TARGET_COMMITMENT

@@ -206,6 +206,12 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "non-claims"):
             GATE.validate_payload(payload)
 
+    def test_gate_commitment_rejects_saved_artifact_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d64_slices"][0]["evidence"]["payload_sha256"] = "0" * 64
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "gate commitment"):
+            GATE.validate_payload(payload)
+
     def test_mutation_layers_cover_routes_sources_and_metrics(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
         self.assertEqual(cases["decision_promoted_to_go"]["rejection_layer"], "top_level")
