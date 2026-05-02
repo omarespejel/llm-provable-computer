@@ -64,7 +64,7 @@ verifier time, or relabeling suite.
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `52 / 52` rejected |
+| Mutation checks | `53 / 53` rejected |
 
 ## Backend-route classification
 

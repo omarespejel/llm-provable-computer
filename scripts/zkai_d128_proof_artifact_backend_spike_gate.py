@@ -18,6 +18,7 @@ import json
 import os
 import pathlib
 import re
+import stat as stat_module
 import sys
 import tempfile
 from typing import Any
@@ -327,6 +328,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_activation_swiglu_local_roundtrip_removed", "proof_status"),
     ("partial_d128_activation_swiglu_checked_in_artifact_smuggled", "proof_status"),
     ("d128_activation_swiglu_source_statement_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_source_proof_version_drift", "source_probe"),
     ("d128_activation_swiglu_source_gate_projection_output_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_source_value_projection_output_commitment_drift", "source_probe"),
     ("d128_activation_swiglu_source_output_commitment_drift", "source_probe"),
@@ -350,13 +352,47 @@ class D128BackendSpikeError(ValueError):
     pass
 
 
+def _read_repo_regular_file_bytes(path: pathlib.Path | str) -> tuple[bytes, pathlib.Path]:
+    candidate = pathlib.Path(path)
+    if not candidate.is_absolute():
+        candidate = ROOT / candidate
+    try:
+        if candidate.is_symlink():
+            raise D128BackendSpikeError(f"source file must not be a symlink: {path}")
+        resolved = candidate.resolve(strict=False)
+        try:
+            resolved.relative_to(ROOT.resolve())
+        except ValueError as err:
+            raise D128BackendSpikeError(f"source file escapes repository: {path}") from err
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise D128BackendSpikeError(f"source file is not a regular file: {path}")
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise D128BackendSpikeError(f"source file is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise D128BackendSpikeError(f"source file changed while reading: {path}")
+            with os.fdopen(fd, "rb") as handle:
+                fd = None
+                return handle.read(), resolved
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise D128BackendSpikeError(f"failed to read source file {path}: {err}") from err
+
+
 def _load_module(path: pathlib.Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
+    source, resolved = _read_repo_regular_file_bytes(path)
+    spec = importlib.util.spec_from_loader(module_name, loader=None, origin=str(resolved))
+    if spec is None:
         raise D128BackendSpikeError(f"failed to load {module_name} from {path}")
     module = importlib.util.module_from_spec(spec)
+    module.__file__ = str(resolved)
     sys.modules[module_name] = module
-    spec.loader.exec_module(module)
+    exec(compile(source, str(resolved), "exec"), module.__dict__)
     return module
 
 
@@ -413,11 +449,8 @@ def set_gate_commitment(payload: dict[str, Any]) -> None:
 
 
 def file_sha256(path: pathlib.Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    data, _ = _read_repo_regular_file_bytes(path)
+    return hashlib.sha256(data).hexdigest()
 
 
 def relative_path(path: pathlib.Path) -> str:
@@ -448,13 +481,9 @@ def expect_equal(actual: Any, expected: Any, field: str) -> None:
 
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
-    resolved = path.resolve()
-    if not resolved.is_file():
-        raise D128BackendSpikeError(f"JSON source is not a regular file: {path}")
-    if ROOT.resolve() not in resolved.parents:
-        raise D128BackendSpikeError(f"JSON source escapes repository: {path}")
+    source_bytes, _resolved = _read_repo_regular_file_bytes(path)
     try:
-        payload = json.loads(resolved.read_text(encoding="utf-8"))
+        payload = json.loads(source_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise D128BackendSpikeError(f"failed to load JSON source {path}: {err}") from err
     if not isinstance(payload, dict):
@@ -498,10 +527,11 @@ def load_checked_d64_block() -> dict[str, Any]:
 
 
 def read_repo_file(path: str) -> str:
-    full = ROOT / path
-    if not full.is_file():
-        raise D128BackendSpikeError(f"required source file missing: {path}")
-    return full.read_text(encoding="utf-8")
+    source_bytes, _resolved = _read_repo_regular_file_bytes(path)
+    try:
+        return source_bytes.decode("utf-8")
+    except UnicodeDecodeError as err:
+        raise D128BackendSpikeError(f"required source file is not valid UTF-8: {path}") from err
 
 
 def repo_file_descriptor(path: str) -> dict[str, Any]:
@@ -880,6 +910,11 @@ def build_source_probe() -> dict[str, Any]:
             "row_count": d128_activation_evidence["row_count"],
             "activation_lookup_rows": d128_activation_evidence["activation_lookup_rows"],
             "swiglu_mix_rows": d128_activation_evidence["swiglu_mix_rows"],
+            "source_gate_value_projection_proof_version": d128_activation_evidence[
+                "source_gate_value_projection_proof_version"
+            ],
+            "scale_q8": d128_activation_evidence["scale_q8"],
+            "activation_clamp_q8": d128_activation_evidence["activation_clamp_q8"],
             "source_gate_value_projection_statement_commitment": d128_activation_evidence[
                 "source_gate_value_projection_statement_commitment"
             ],
@@ -1473,6 +1508,13 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
     add(
+        "d128_activation_swiglu_source_proof_version_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "source_gate_value_projection_proof_version", "stwo-d128-gate-value-projection-air-proof-v0"
+        ),
+    )
+    add(
         "d128_activation_swiglu_source_gate_projection_output_commitment_drift",
         "source_probe",
         lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
@@ -1850,6 +1892,21 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         activation_probe.get("swiglu_mix_rows"),
         TARGET_FF_DIM,
         "d128 activation/SwiGLU swiglu mix rows",
+    )
+    expect_equal(
+        activation_probe.get("source_gate_value_projection_proof_version"),
+        D128_ACTIVATION_GATE.SOURCE_GATE_VALUE_PROOF_VERSION,
+        "d128 activation/SwiGLU source gate/value proof version",
+    )
+    expect_equal(
+        activation_probe.get("scale_q8"),
+        D128_ACTIVATION_GATE.SCALE_Q8,
+        "d128 activation/SwiGLU scale_q8",
+    )
+    expect_equal(
+        activation_probe.get("activation_clamp_q8"),
+        D128_ACTIVATION_GATE.ACTIVATION_CLAMP_Q8,
+        "d128 activation/SwiGLU activation clamp q8",
     )
     expect_equal(
         activation_probe.get("hidden_relabels_full_output"),

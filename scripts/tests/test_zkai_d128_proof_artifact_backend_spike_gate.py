@@ -447,6 +447,18 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(GATE.D128BackendSpikeError, pattern):
                     GATE.validate_payload(payload)
 
+    def test_rejects_activation_compatibility_metadata_drift(self) -> None:
+        for field, pattern in [
+            ("source_gate_value_projection_proof_version", "proof version"),
+            ("scale_q8", "scale_q8"),
+            ("activation_clamp_q8", "activation clamp"),
+        ]:
+            payload = self.fresh_payload()
+            payload["source_probe"]["d128_activation_swiglu"][field] = "drift" if field.endswith("version") else 1
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(GATE.D128BackendSpikeError, pattern):
+                    GATE.validate_payload(payload)
+
     def test_rejects_activation_route_commitment_drift(self) -> None:
         payload = self.fresh_payload()
         route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
@@ -477,6 +489,24 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "non-claims"):
             GATE.validate_payload(payload)
 
+    def test_rejects_symlinked_json_source(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            real = pathlib.Path(tmp) / "source.json"
+            real.write_text("{}", encoding="utf-8")
+            symlink = pathlib.Path(tmp) / "source-link.json"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "symlink"):
+                GATE.load_json(symlink)
+
+    def test_rejects_symlinked_repo_source_file(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            real = pathlib.Path(tmp) / "source.rs"
+            real.write_text("pub fn marker() {}\n", encoding="utf-8")
+            symlink = pathlib.Path(tmp) / "source-link.rs"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "symlink"):
+                GATE.read_repo_file(str(symlink.relative_to(ROOT)))
+
     def test_gate_commitment_rejects_saved_artifact_drift(self) -> None:
         payload = self.fresh_payload()
         payload["source_probe"]["d64_slices"][0]["evidence"]["payload_sha256"] = "0" * 64
@@ -504,6 +534,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_activation_swiglu_source_output_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_source_proof_version_drift"]["rejection_layer"],
             "source_probe",
         )
         self.assertEqual(
