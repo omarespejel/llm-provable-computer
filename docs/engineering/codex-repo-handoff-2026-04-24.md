@@ -137,14 +137,20 @@ Tablero boundary.
   activation/SwiGLU, down projection, and residual add.
 - Recursive/PCD compression remains a bounded no-go until a real outer proof or
   accumulator backend exists.
-- The `d=128` route now has four partial proof handles: RMSNorm public rows,
-  RMSNorm-to-projection bridge, gate/value projection, and residual add.
+- The `d=128` route now has five partial proof handles: RMSNorm public rows,
+  RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and
+  residual add.
 - The d128 gate/value projection handle proves `131,072` public multiplication
   rows (`65,536` gate and `65,536` value rows), consumes the bridge's
   `projection_input_row_commitment`, recomputes deterministic gate/value matrix
   roots, and emits `gate_value_projection_output_commitment`.
-- This is a partial GO only: d128 activation/SwiGLU, down projection, native
-  residual, full composition, recursion, and full-block metrics remain blocked.
+- The d128 activation/SwiGLU handle consumes
+  `gate_value_projection_output_commitment`, checks `512` activation/SwiGLU rows
+  plus a `2049`-row bounded activation lookup table, rejects relabeling
+  `hidden_activation_commitment` as the full output, and emits
+  `hidden_activation_commitment`.
+- This is a partial GO only: down projection, native residual, full
+  composition, recursion, and full-block metrics remain blocked.
 - Do not compare d128 against public zkML systems until the full statement
   receipt or a deliberately scoped slice comparator exists.
 
@@ -198,10 +204,10 @@ Tablero boundary.
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-10. Continue the verifiable-AI d128 lane by building the activation/SwiGLU proof
-    handle that consumes `gate_value_projection_output_commitment`; do not jump
-    to full-block metrics until activation, down-projection, native residual,
-    and composition exist or are explicitly classified as no-go.
+10. Continue the verifiable-AI d128 lane by building the down-projection proof
+    handle that consumes `hidden_activation_commitment`; do not jump to
+    full-block metrics until down-projection, native residual, and composition
+    exist or are explicitly classified as no-go.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
