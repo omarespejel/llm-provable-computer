@@ -728,6 +728,8 @@ def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
         raise D64NestedVerifierBackendSpikeError(f"output path escapes repository: {path}")
     if resolved.exists() and resolved.is_dir():
         raise D64NestedVerifierBackendSpikeError(f"output path must be a file, not a directory: {path}")
+    if resolved.parent.exists() and not resolved.parent.is_dir():
+        raise D64NestedVerifierBackendSpikeError(f"output path parent is not a directory: {path}")
     return resolved
 
 
@@ -756,7 +758,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             previous = output_path.read_bytes() if existed else None
             tmp_path.replace(output_path)
             committed.append((output_path, existed, previous))
-    except Exception:
+    except Exception as err:
         for tmp_path, _ in staged:
             tmp_path.unlink(missing_ok=True)
         for output_path, existed, previous in reversed(committed):
@@ -764,6 +766,8 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
                 output_path.write_bytes(previous)
             else:
                 output_path.unlink(missing_ok=True)
+        if isinstance(err, OSError):
+            raise D64NestedVerifierBackendSpikeError(f"failed to write outputs: {err}") from err
         raise
 
 

@@ -127,7 +127,11 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
 
     def test_rejects_self_consistent_attempt_to_call_harness_a_backend(self) -> None:
         payload = self.fresh_payload()
-        candidate = payload["backend_attempt"]["candidate_inventory"][2]
+        candidate = next(
+            item
+            for item in payload["backend_attempt"]["candidate_inventory"]
+            if item["candidate_id"] == "phase36_recursive_verifier_harness_receipt"
+        )
         candidate["status"] = "OUTER_PROOF_VERIFIED"
         candidate["accepted_as_outer_backend"] = True
         with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "candidate inventory"):
@@ -233,6 +237,18 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             json_dir.mkdir()
             with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "not a directory"):
                 GATE.write_outputs(payload, json_dir, tsv_path)
+            self.assertFalse(tsv_path.exists())
+
+    def test_write_outputs_rejects_parent_paths_that_are_files(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            parent_file = tmp / "not-a-directory"
+            parent_file.write_text("not a directory\n", encoding="utf-8")
+            json_path = parent_file / "backend-spike.json"
+            tsv_path = tmp / "backend-spike.tsv"
+            with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "parent is not a directory"):
+                GATE.write_outputs(payload, json_path, tsv_path)
             self.assertFalse(tsv_path.exists())
 
     def test_write_outputs_does_not_replace_first_output_when_second_stage_fails(self) -> None:
