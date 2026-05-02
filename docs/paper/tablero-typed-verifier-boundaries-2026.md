@@ -836,12 +836,15 @@ slice, a gate/value proof consumes that bridge and proves the `32,768`
 projection multiplication rows, an activation/SwiGLU proof consumes the
 gate/value output and proves `256` activation and gated-mixing rows, and a
 down-projection proof consumes the hidden activation commitment and proves the
-`16,384` down-projection multiplication rows. Each slice emits a
-domain-separated intermediate commitment and rejects attempts to relabel that
-intermediate as the final `output_activation_commitment`. These proof slices are
-useful because they make the transformer-block route incremental and
-statement-bound, but they remain non-claims for private parameter openings,
-residual rows, and full-block output binding. The checked handles are
+`16,384` down-projection multiplication rows. A residual-add proof then consumes
+the resulting `residual_delta_commitment` plus the canonical
+`input_activation_commitment`, proves `64` residual-add rows, and recomputes the
+final `output_activation_commitment`. Each intermediate slice emits a
+domain-separated commitment and rejects attempts to relabel that intermediate as
+the final output. These proof slices are useful because they make the
+transformer-block route incremental and statement-bound. They still remain
+non-claims for private parameter openings, recursive aggregation, and model-scale
+inference. The checked handles are
 `docs/engineering/zkai-d64-native-rmsnorm-public-row-proof-2026-05-01.md`,
 `docs/engineering/evidence/zkai-d64-native-rmsnorm-public-row-proof-2026-05.json`,
 `docs/engineering/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05-01.md`,
@@ -852,7 +855,9 @@ and
 `docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`, and
 `docs/engineering/evidence/zkai-d64-activation-swiglu-proof-2026-05.json`,
 `docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`, and
-`docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json`.
+`docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json`,
+`docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`, and
+`docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json`.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed

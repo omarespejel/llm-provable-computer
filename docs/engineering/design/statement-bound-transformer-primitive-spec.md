@@ -330,13 +330,25 @@ The down-projection slice consuming that hidden activation is also checked in:
 It proves `16,384` public down-projection multiplication rows in native Stwo
 AIR, recomputes the source hidden activation commitment, recomputes the down
 matrix root from checked weights, and emits a domain-separated
-`residual_delta_commitment`. It is still not a full d64 block proof: residual
-addition and the final `output_activation_commitment` remain explicit open proof
-seams.
+`residual_delta_commitment`.
 The verifier rejects attempts to relabel `residual_delta_commitment` as the
 final `output_activation_commitment`; the fail-closed checker recomputes the
 source hidden activation commitment and down matrix root before accepting the
 down-projection proof.
+
+The residual-add slice consuming that residual delta is also checked in:
+
+- `docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_residual_add_proof.rs`
+
+It proves `64` public residual-add rows in native Stwo AIR, consumes the
+canonical `input_activation_commitment` and the down-projection
+`residual_delta_commitment`, and recomputes the final
+`output_activation_commitment`. This closes the d64 final-output seam for the
+slice chain. It is still not recursive composition of all d64 proof slices and
+not a private parameter-opening proof.
 
 The first attention/KV receipt contract is also checked in:
 

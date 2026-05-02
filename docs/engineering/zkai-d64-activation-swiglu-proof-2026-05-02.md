@@ -99,9 +99,9 @@ non-file source paths, invalid UTF-8 source JSON, and JSON/TSV round-trip issues
 This closes the immediate #368 seam: the native path now advances from RMSNorm
 public rows, through a projection-input bridge, through gate/value projection
 rows, and into a proved activation/SwiGLU row slice. The remaining d64
-full-block gap is now narrower and explicit after the follow-up down-projection
-slice: residual rows must still be proven or otherwise source-bound before the
-final output commitment can be claimed.
+full-block gap is now closed by the follow-up down-projection and residual-add
+slices: the route reaches a domain-separated residual delta, then proves the
+residual-add rows that emit the final `output_activation_commitment`.
 
 The interesting research point is the shape, not the scale: the result shows the
 statement-bound transformer path can keep moving across real transformer seams

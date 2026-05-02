@@ -81,7 +81,9 @@ full block output. The follow-up gate/value projection proof now consumes
 then consumes that output and emits a domain-separated
 `hidden_activation_commitment`; the follow-up down-projection proof then consumes
 that hidden activation and emits a domain-separated
-`residual_delta_commitment`. The remaining full-block seam is residual closure.
+`residual_delta_commitment`; the follow-up residual-add proof then consumes that
+delta plus the canonical input activation and emits the final
+`output_activation_commitment`.
 
 ## Reproduce
 
@@ -99,6 +101,6 @@ cargo +nightly-2025-07-14 test d64_native_rmsnorm_to_projection_bridge_proof --l
 The activation/SwiGLU slice is now recorded in
 `docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`, and the
 down-projection slice is recorded in
-`docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`. Do not claim
-the full d64 output until residual rows are also proven or explicitly
-source-bound.
+`docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`. The
+residual-add slice is recorded in
+`docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`.

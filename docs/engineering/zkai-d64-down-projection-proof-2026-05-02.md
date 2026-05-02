@@ -33,8 +33,9 @@ Before accepting the proof, the verifier recomputes the source hidden activation
 commitment, the down matrix root from deterministic checked row weights, the
 multiplication-row commitment, and the residual-delta commitment.
 
-This deliberately does not prove residual addition or bind the final d64
-`output_activation_commitment`.
+This deliberately stops at the residual-delta surface. The follow-up
+residual-add slice records the final-output binding in
+`docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`.
 
 ## Checked commitments
 
@@ -88,8 +89,8 @@ JSON/TSV round-trip issues.
 ## Non-claims
 
 - This is not a full d64 block proof.
-- This is not a residual proof.
-- This does not bind the full d64 `output_activation_commitment`.
+- This is not a residual proof; the residual-add proof is a separate slice.
+- This does not by itself bind the full d64 `output_activation_commitment`.
 - This is not a private down-weight opening proof; down-projection rows are
   verifier-recomputed from checked public rows before proof verification.
 - This is not model-scale transformer inference.
@@ -100,9 +101,9 @@ JSON/TSV round-trip issues.
 
 This closes the #371 seam: the native path now advances from RMSNorm public rows,
 through a projection bridge, gate/value projection rows, activation/SwiGLU rows,
-and into a proved down-projection row slice. The remaining d64 full-block gap is
-now narrow and explicit: residual addition must still be proven or explicitly
-source-bound before the final output commitment can be claimed.
+and into a proved down-projection row slice. The follow-up #372 residual-add
+slice now consumes this residual-delta commitment and reaches the final
+`output_activation_commitment`.
 
 The result is useful because it removes one more opportunity to confuse an
 intermediate transformer value with the statement output. The proof validates a
@@ -120,9 +121,7 @@ python3 -m unittest scripts.tests.test_zkai_d64_down_projection_proof_input
 cargo +nightly-2025-07-14 test d64_native_down_projection_proof --lib --features stwo-backend
 ```
 
-## Next step
+## Follow-up
 
-Issue #372 tracks the residual-add slice that consumes
-`residual_delta_commitment` and the original input activation commitment, proves
-`64` residual rows, and only then emits or accepts the final
-`output_activation_commitment`.
+The residual-add slice is recorded in
+`docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`.
