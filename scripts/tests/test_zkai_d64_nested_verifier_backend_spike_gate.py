@@ -38,6 +38,8 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["safe_checkpoint"]["recorded_after_pr"], 381)
         self.assertEqual(payload["case_count"], 20)
         self.assertTrue(payload["all_mutations_rejected"])
+        self.assertEqual(payload["validation_commands"][0], "just gate-fast")
+        self.assertEqual(payload["validation_commands"][-1], "just gate")
 
     def test_consumes_checked_two_slice_contract(self) -> None:
         payload = self.fresh_payload()
@@ -232,6 +234,34 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "not a directory"):
                 GATE.write_outputs(payload, json_dir, tsv_path)
             self.assertFalse(tsv_path.exists())
+
+    def test_write_outputs_does_not_replace_first_output_when_second_stage_fails(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "backend-spike.json"
+            tsv_path = tmp / "backend-spike.tsv"
+            json_path.write_text("old-json\n", encoding="utf-8")
+            tsv_path.write_text("old-tsv\n", encoding="utf-8")
+            original_stage_text = GATE._stage_text
+            call_count = 0
+
+            def flaky_stage_text(path: pathlib.Path, text: str) -> pathlib.Path:
+                nonlocal call_count
+                call_count += 1
+                if call_count == 2:
+                    raise GATE.D64NestedVerifierBackendSpikeError("forced second output stage failure")
+                return original_stage_text(path, text)
+
+            try:
+                GATE._stage_text = flaky_stage_text
+                with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "forced second output stage failure"):
+                    GATE.write_outputs(payload, json_path, tsv_path)
+            finally:
+                GATE._stage_text = original_stage_text
+
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
 
 
 if __name__ == "__main__":

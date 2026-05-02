@@ -467,8 +467,10 @@
     "verifier_handle_exists": false
   },
   "validation_commands": [
+    "just gate-fast",
     "python3 scripts/zkai_d64_nested_verifier_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d64_nested_verifier_backend_spike_gate",
-    "python3 scripts/paper/paper_preflight.py --repo-root ."
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate"
   ]
 }
