@@ -238,6 +238,16 @@ proof or accumulator. The gate rejects `16 / 16` checked relabeling and
 claim-drift mutations, including attempts to smuggle in an invented recursive
 proof artifact or relabel the bounded no-go as a go result.
 
+The next checked contract narrows that blocker to a first backend target:
+verify the `rmsnorm_public_rows` and `rmsnorm_projection_bridge` slice-verifier
+checks inside one outer proof or PCD accumulator, and bind
+`nested_verifier_contract_commitment` as public input. The checked evidence is
+still a bounded no-go for the missing backend artifact, but it is a go for the
+public-input contract. Its mutation suite rejects `20 / 20` source-hash,
+statement-binding, selected-slice, contract-commitment, and fake-backend-claim
+mutations. Evidence:
+`docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json`.
+
 These counts are adapter-scoped calibration suites, not full
 `zkAIStatementReceiptV1` conformance claims. The broader minimum mutation suite
 for a production receipt remains the relabeling threat model above.

@@ -885,6 +885,17 @@ backend, not another receipt wrapper. It is anchored to
 and
 `docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json`.
 
+The next checked gate narrows the missing backend to a concrete first target:
+an outer proof or PCD accumulator should verify the `rmsnorm_public_rows` and
+`rmsnorm_projection_bridge` slice-verifier checks and bind
+`nested_verifier_contract_commitment` as public input. This is a go for the
+public-input contract and still a bounded no-go for the missing executable
+backend artifact. Its mutation suite rejects `20 / 20` source-hash,
+statement-binding, selected-slice, contract-commitment, and fake-backend-claim
+mutations. It is anchored to
+`docs/engineering/zkai-d64-nested-verifier-backend-contract-2026-05-02.md` and
+`docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model
@@ -962,9 +973,10 @@ replacement of verifier-side replay. The paper therefore does not claim:
 - full end-to-end transformer inference proving,
 - onchain deployment of the typed boundary path itself.
 
-The d64 recursive/PCD feasibility gate strengthens this non-claim rather than
-weakening it: it says the receipt is the right aggregation input, and that the
-missing work is a real nested-verifier backend.
+The d64 recursive/PCD feasibility and nested-verifier contract gates strengthen
+this non-claim rather than weakening it: they say the receipt is the right
+aggregation input and define the first public-input contract, while still
+recording that the missing work is a real executable nested-verifier backend.
 
 ### 8.4 No universal speedup claim
 
