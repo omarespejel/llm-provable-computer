@@ -17,10 +17,12 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import sys
 import tempfile
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -43,6 +45,7 @@ SOURCE_CONTEXT_RESULT = "GO_SOURCE_BACKED_PUBLIC_LAYERWISE_CONTEXT"
 EXTERNAL_ADAPTER_RESULT = "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK"
 TARGET_WIDTH = 128
 TARGET_DOMAIN = "ptvm:zkai:d128-layerwise-comparator-target:v1"
+D128_SCALE_DECISION = "NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY"
 FIRST_BLOCKER = (
     "the d128 RMSNorm-SwiGLU-residual receipt target is pinned, but the repository "
     "does not contain a local d128 proof artifact, verifier handle, or relabeling suite"
@@ -93,6 +96,9 @@ EXPECTED_MUTATION_INVENTORY = (
     ("target_width_drift", "target_spec"),
     ("target_binding_removed", "target_spec"),
     ("target_linear_mul_estimate_drift", "target_spec"),
+    ("target_residual_row_count_drift", "target_spec"),
+    ("target_scale_decision_promoted_to_go", "target_spec"),
+    ("target_d64_slice_generalization_overclaim", "target_spec"),
     ("target_commitment_drift", "target_spec"),
     ("local_proof_result_changed_to_go", "local_proof_status"),
     ("local_proof_size_metric_smuggled", "local_proof_status"),
@@ -290,9 +296,62 @@ def nanozk_layerwise_context(rows: list[dict[str, str]]) -> dict[str, Any]:
 def target_spec(matched_payload: dict[str, Any]) -> dict[str, Any]:
     target = copy.deepcopy(MATCHED.matched_target(TARGET_WIDTH))
     row = next(row for row in matched_payload["rows"] if row["target_width"] == TARGET_WIDTH)
+    residual_rows = TARGET_WIDTH
     target["local_feasibility_status"] = row["status"]
     target["local_feasibility_blockers"] = copy.deepcopy(row["blockers"])
     target["comparator_target_kind"] = "d128-layerwise-rmsnorm-swiglu-residual-receipt"
+    target["estimated_residual_rows"] = residual_rows
+    target["row_operator_pressure"] = {
+        "rmsnorm_rows": target["estimated_norm_rows"],
+        "swiglu_activation_rows": target["estimated_activation_rows"],
+        "residual_add_rows": residual_rows,
+        "linear_projection_multiplications": target["estimated_linear_muls"],
+    }
+    target["d64_to_d128_scale_decision"] = D128_SCALE_DECISION
+    target["d64_slice_generalization"] = [
+        {
+            "slice": "rmsnorm_public_rows",
+            "decision": "GENERALIZES_STRUCTURALLY_WITH_WIDTH_PARAMETER",
+            "d64_rows": 64,
+            "d128_rows": 128,
+            "blocked_on": "no local d128 RMSNorm proof artifact or verifier handle",
+        },
+        {
+            "slice": "rmsnorm_projection_bridge",
+            "decision": "GENERALIZES_STRUCTURALLY_AS_COMMITMENT_BRIDGE",
+            "d64_rows": 1,
+            "d128_rows": 1,
+            "blocked_on": "needs a d128 RMSNorm output commitment to bridge",
+        },
+        {
+            "slice": "gate_value_projection",
+            "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_NOT_CURRENT_PROOF_SURFACE",
+            "d64_linear_muls": 32768,
+            "d128_linear_muls": 131072,
+            "blocked_on": "current proof generator is fixture-gated and not a parameterized vector-block AIR",
+        },
+        {
+            "slice": "activation_swiglu",
+            "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_REQUIRES_D128_RANGE_LOOKUP_SURFACE",
+            "d64_rows": 256,
+            "d128_rows": 512,
+            "blocked_on": "no d128 activation/range proof artifact or relabeling suite",
+        },
+        {
+            "slice": "down_projection",
+            "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_NOT_CURRENT_PROOF_SURFACE",
+            "d64_linear_muls": 16384,
+            "d128_linear_muls": 65536,
+            "blocked_on": "current proof generator is fixture-gated and not a parameterized vector-block AIR",
+        },
+        {
+            "slice": "residual_add",
+            "decision": "GENERALIZES_STRUCTURALLY_WITH_WIDTH_PARAMETER",
+            "d64_rows": 64,
+            "d128_rows": 128,
+            "blocked_on": "no local d128 residual-add proof artifact or verifier handle",
+        },
+    ]
     target["target_commitment"] = blake2b_commitment(target, TARGET_DOMAIN)
     return target
 
@@ -308,6 +367,12 @@ def local_proof_status(matched_payload: dict[str, Any]) -> dict[str, Any]:
         "verifier_time_ms": None,
         "blocked_before_metrics": True,
         "first_blocker": "current checked Stwo proof surface is width-4, fixture-gated, and not a d128 RMSNorm-SwiGLU proof",
+        "d64_to_d128_scale_decision": D128_SCALE_DECISION,
+        "scale_decision_rationale": (
+            "the d64 slice interfaces generalize structurally, but the current Stwo-native proof "
+            "surface does not scale to a d128 proof because it is fixture-gated and lacks a "
+            "parameterized vector-block AIR/verifier handle"
+        ),
         "inherited_feasibility_row": copy.deepcopy(row),
     }
 
@@ -354,6 +419,8 @@ def build_payload() -> dict[str, Any]:
             "target_width": TARGET_WIDTH,
             "target_ff_dim": target["ff_dim"],
             "target_estimated_linear_muls": target["estimated_linear_muls"],
+            "target_estimated_residual_rows": target["estimated_residual_rows"],
+            "d64_to_d128_scale_decision": D128_SCALE_DECISION,
             "target_commitment": target["target_commitment"],
             "local_proof_result": LOCAL_PROOF_RESULT,
             "source_context_result": SOURCE_CONTEXT_RESULT,
@@ -432,6 +499,8 @@ def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, An
         "target_width": TARGET_WIDTH,
         "target_ff_dim": target["ff_dim"],
         "target_estimated_linear_muls": target["estimated_linear_muls"],
+        "target_estimated_residual_rows": target["estimated_residual_rows"],
+        "d64_to_d128_scale_decision": D128_SCALE_DECISION,
         "target_commitment": target["target_commitment"],
         "local_proof_result": LOCAL_PROOF_RESULT,
         "source_context_result": SOURCE_CONTEXT_RESULT,
@@ -538,6 +607,9 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("target_width_drift", "target_spec", lambda p: p["target_spec"].__setitem__("width", 64))
     add("target_binding_removed", "target_spec", lambda p: p["target_spec"]["required_statement_bindings"].pop())
     add("target_linear_mul_estimate_drift", "target_spec", lambda p: p["target_spec"].__setitem__("estimated_linear_muls", 1))
+    add("target_residual_row_count_drift", "target_spec", lambda p: p["target_spec"].__setitem__("estimated_residual_rows", 0))
+    add("target_scale_decision_promoted_to_go", "target_spec", lambda p: p["target_spec"].__setitem__("d64_to_d128_scale_decision", "GO_CURRENT_STWO_SURFACE_SCALES_TO_D128"))
+    add("target_d64_slice_generalization_overclaim", "target_spec", lambda p: p["target_spec"]["d64_slice_generalization"][2].__setitem__("decision", "GENERALIZES_DIRECTLY_TO_CURRENT_PROOF_SURFACE"))
     add("target_commitment_drift", "target_spec", lambda p: p["target_spec"].__setitem__("target_commitment", "blake2b-256:" + "33" * 32))
     add("local_proof_result_changed_to_go", "local_proof_status", lambda p: p["local_proof_status"].__setitem__("result", "GO_LOCAL_D128_PROOF"))
     add("local_proof_size_metric_smuggled", "local_proof_status", lambda p: p["local_proof_status"].__setitem__("proof_size_bytes", 5500))
@@ -688,6 +760,8 @@ def _stage_text(path: pathlib.Path, text: str) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
         return pathlib.Path(handle.name)
 
 
@@ -695,6 +769,8 @@ def _stage_bytes(path: pathlib.Path, data: bytes) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
         handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
         return pathlib.Path(handle.name)
 
 

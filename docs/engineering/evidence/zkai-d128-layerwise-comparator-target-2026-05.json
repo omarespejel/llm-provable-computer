@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 16,
+  "case_count": 19,
   "cases": [
     {
       "baseline_result": "BOUNDED_NO_GO",
@@ -43,6 +43,33 @@
       "error": "target spec mismatch",
       "mutated_accepted": false,
       "mutation": "target_linear_mul_estimate_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_residual_row_count_drift",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_scale_decision_promoted_to_go",
+      "rejected": true,
+      "rejection_layer": "target_spec",
+      "surface": "target_spec"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "target spec mismatch",
+      "mutated_accepted": false,
+      "mutation": "target_d64_slice_generalization_overclaim",
       "rejected": true,
       "rejection_layer": "target_spec",
       "surface": "target_spec"
@@ -233,6 +260,7 @@
   "local_proof_result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
   "local_proof_status": {
     "blocked_before_metrics": true,
+    "d64_to_d128_scale_decision": "NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY",
     "first_blocker": "current checked Stwo proof surface is width-4, fixture-gated, and not a d128 RMSNorm-SwiGLU proof",
     "inherited_feasibility_row": {
       "blockers": [
@@ -277,6 +305,7 @@
     "proof_artifact_exists": false,
     "proof_size_bytes": null,
     "result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
+    "scale_decision_rationale": "the d64 slice interfaces generalize structurally, but the current Stwo-native proof surface does not scale to a d128 proof because it is fixture-gated and lacks a parameterized vector-block AIR/verifier handle",
     "statement_relabeling_suite_exists": false,
     "verifier_handle_exists": false,
     "verifier_time_ms": null
@@ -309,56 +338,71 @@
     },
     {
       "index": 5,
-      "mutation": "target_commitment_drift",
+      "mutation": "target_residual_row_count_drift",
       "surface": "target_spec"
     },
     {
       "index": 6,
+      "mutation": "target_scale_decision_promoted_to_go",
+      "surface": "target_spec"
+    },
+    {
+      "index": 7,
+      "mutation": "target_d64_slice_generalization_overclaim",
+      "surface": "target_spec"
+    },
+    {
+      "index": 8,
+      "mutation": "target_commitment_drift",
+      "surface": "target_spec"
+    },
+    {
+      "index": 9,
       "mutation": "local_proof_result_changed_to_go",
       "surface": "local_proof_status"
     },
     {
-      "index": 7,
+      "index": 10,
       "mutation": "local_proof_size_metric_smuggled",
       "surface": "local_proof_status"
     },
     {
-      "index": 8,
+      "index": 11,
       "mutation": "local_verify_time_metric_smuggled",
       "surface": "local_proof_status"
     },
     {
-      "index": 9,
+      "index": 12,
       "mutation": "nanozk_source_row_verify_seconds_drift",
       "surface": "source_context"
     },
     {
-      "index": 10,
+      "index": 13,
       "mutation": "nanozk_source_context_promoted_to_matched",
       "surface": "source_context"
     },
     {
-      "index": 11,
+      "index": 14,
       "mutation": "external_adapter_result_changed_to_go",
       "surface": "external_adapter_status"
     },
     {
-      "index": 12,
+      "index": 15,
       "mutation": "deepprove_public_artifact_overclaim",
       "surface": "external_adapter_status"
     },
     {
-      "index": 13,
+      "index": 16,
       "mutation": "nanozk_public_verifier_overclaim",
       "surface": "external_adapter_status"
     },
     {
-      "index": 14,
+      "index": 17,
       "mutation": "non_claim_removed",
       "surface": "claim_boundary"
     },
     {
-      "index": 15,
+      "index": 18,
       "mutation": "result_changed_to_go",
       "surface": "parser_or_schema"
     }
@@ -411,16 +455,18 @@
     }
   },
   "summary": {
+    "d64_to_d128_scale_decision": "NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY",
     "decision": "NO_GO_D128_LAYERWISE_PROOF_ARTIFACT_MISSING",
     "external_adapter_result": "NO_GO_PUBLIC_RELABELING_ADAPTER_BENCHMARK",
     "first_blocker": "the d128 RMSNorm-SwiGLU-residual receipt target is pinned, but the repository does not contain a local d128 proof artifact, verifier handle, or relabeling suite",
     "local_proof_result": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
-    "mutation_cases": 16,
-    "mutations_rejected": 16,
+    "mutation_cases": 19,
+    "mutations_rejected": 19,
     "result": "BOUNDED_NO_GO",
     "source_context_result": "GO_SOURCE_BACKED_PUBLIC_LAYERWISE_CONTEXT",
-    "target_commitment": "blake2b-256:f2660bd0371cd242472a5b9fb6939067f21ca0af48cbfb2ce6ac78b8f5ee8206",
+    "target_commitment": "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18",
     "target_estimated_linear_muls": 196608,
+    "target_estimated_residual_rows": 128,
     "target_ff_dim": 512,
     "target_result": "GO_D128_LAYERWISE_COMPARATOR_TARGET_SPEC",
     "target_width": 128
@@ -429,9 +475,55 @@
   "target_spec": {
     "activation": "SwiGLU",
     "comparator_target_kind": "d128-layerwise-rmsnorm-swiglu-residual-receipt",
+    "d64_slice_generalization": [
+      {
+        "blocked_on": "no local d128 RMSNorm proof artifact or verifier handle",
+        "d128_rows": 128,
+        "d64_rows": 64,
+        "decision": "GENERALIZES_STRUCTURALLY_WITH_WIDTH_PARAMETER",
+        "slice": "rmsnorm_public_rows"
+      },
+      {
+        "blocked_on": "needs a d128 RMSNorm output commitment to bridge",
+        "d128_rows": 1,
+        "d64_rows": 1,
+        "decision": "GENERALIZES_STRUCTURALLY_AS_COMMITMENT_BRIDGE",
+        "slice": "rmsnorm_projection_bridge"
+      },
+      {
+        "blocked_on": "current proof generator is fixture-gated and not a parameterized vector-block AIR",
+        "d128_linear_muls": 131072,
+        "d64_linear_muls": 32768,
+        "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_NOT_CURRENT_PROOF_SURFACE",
+        "slice": "gate_value_projection"
+      },
+      {
+        "blocked_on": "no d128 activation/range proof artifact or relabeling suite",
+        "d128_rows": 512,
+        "d64_rows": 256,
+        "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_REQUIRES_D128_RANGE_LOOKUP_SURFACE",
+        "slice": "activation_swiglu"
+      },
+      {
+        "blocked_on": "current proof generator is fixture-gated and not a parameterized vector-block AIR",
+        "d128_linear_muls": 65536,
+        "d64_linear_muls": 16384,
+        "decision": "GENERALIZES_OPERATOR_FAMILY_BUT_NOT_CURRENT_PROOF_SURFACE",
+        "slice": "down_projection"
+      },
+      {
+        "blocked_on": "no local d128 residual-add proof artifact or verifier handle",
+        "d128_rows": 128,
+        "d64_rows": 64,
+        "decision": "GENERALIZES_STRUCTURALLY_WITH_WIDTH_PARAMETER",
+        "slice": "residual_add"
+      }
+    ],
+    "d64_to_d128_scale_decision": "NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY",
     "estimated_activation_rows": 512,
     "estimated_linear_muls": 196608,
     "estimated_norm_rows": 1,
+    "estimated_residual_rows": 128,
     "ff_dim": 512,
     "local_feasibility_blockers": [
       {
@@ -479,8 +571,14 @@
       "proof_system_version"
     ],
     "residual": true,
+    "row_operator_pressure": {
+      "linear_projection_multiplications": 196608,
+      "residual_add_rows": 128,
+      "rmsnorm_rows": 1,
+      "swiglu_activation_rows": 512
+    },
     "statement_kind": "transformer-block",
-    "target_commitment": "blake2b-256:f2660bd0371cd242472a5b9fb6939067f21ca0af48cbfb2ce6ac78b8f5ee8206",
+    "target_commitment": "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18",
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "width": 128
   },
