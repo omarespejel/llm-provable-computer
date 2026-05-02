@@ -99,9 +99,9 @@ non-file source paths, invalid UTF-8 source JSON, and JSON/TSV round-trip issues
 This closes the immediate #368 seam: the native path now advances from RMSNorm
 public rows, through a projection-input bridge, through gate/value projection
 rows, and into a proved activation/SwiGLU row slice. The remaining d64
-full-block gap is now narrower and explicit: down projection and residual rows
-must still be proven or otherwise source-bound before the final output commitment
-can be claimed.
+full-block gap is now narrower and explicit after the follow-up down-projection
+slice: residual rows must still be proven or otherwise source-bound before the
+final output commitment can be claimed.
 
 The interesting research point is the shape, not the scale: the result shows the
 statement-bound transformer path can keep moving across real transformer seams
@@ -120,6 +120,12 @@ cargo +nightly-2025-07-14 test d64_native_activation_swiglu_proof --lib --featur
 
 ## Next step
 
-Implement the down-projection slice that consumes `hidden_activation_commitment`
-and produces a domain-separated residual-delta commitment. Do not claim the full
-d64 output until residual addition is also proven or explicitly source-bound.
+The down-projection slice now consumes `hidden_activation_commitment` and
+produces a domain-separated residual-delta commitment:
+
+- `docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json`
+- `src/stwo_backend/d64_native_down_projection_proof.rs`
+
+Do not claim the full d64 output until residual addition is also proven or
+explicitly source-bound.

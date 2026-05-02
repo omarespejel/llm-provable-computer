@@ -319,8 +319,20 @@ The activation/SwiGLU slice consuming that gate/value output is also checked in:
 It proves `256` public activation/SwiGLU rows in native Stwo AIR, recomputes the
 source gate/value output commitment, checks the bounded integer SiLU lookup
 table commitment, and emits a domain-separated `hidden_activation_commitment`.
-It is still not a full d64 block proof: down projection, residual addition, and
-the final `output_activation_commitment` remain explicit open proof seams.
+
+The down-projection slice consuming that hidden activation is also checked in:
+
+- `docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_down_projection_proof.rs`
+
+It proves `16,384` public down-projection multiplication rows in native Stwo
+AIR, recomputes the source hidden activation commitment, recomputes the down
+matrix root from checked weights, and emits a domain-separated
+`residual_delta_commitment`. It is still not a full d64 block proof: residual
+addition and the final `output_activation_commitment` remain explicit open proof
+seams.
 
 The first attention/KV receipt contract is also checked in:
 

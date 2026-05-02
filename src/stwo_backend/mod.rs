@@ -5,6 +5,8 @@ mod arithmetic_component;
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_activation_swiglu_proof;
+#[cfg(feature = "stwo-backend")]
+mod d64_native_down_projection_proof;
 mod d64_native_export_contract;
 #[cfg(feature = "stwo-backend")]
 mod d64_native_gate_value_projection_proof;
@@ -90,6 +92,17 @@ pub use d64_native_activation_swiglu_proof::{
     ZKAI_D64_ACTIVATION_SWIGLU_PROOF_VERSION, ZKAI_D64_ACTIVATION_SWIGLU_ROW_COMMITMENT,
     ZKAI_D64_ACTIVATION_SWIGLU_SEMANTIC_SCOPE, ZKAI_D64_ACTIVATION_SWIGLU_STATEMENT_VERSION,
     ZKAI_D64_HIDDEN_ACTIVATION_COMMITMENT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d64_native_down_projection_proof::{
+    prove_zkai_d64_down_projection_envelope, verify_zkai_d64_down_projection_envelope,
+    zkai_d64_down_projection_input_from_json_str, D64DownProjectionMulRow,
+    ZkAiD64DownProjectionEnvelope, ZkAiD64DownProjectionProofInput, ZKAI_D64_DOWN_MATRIX_ROOT,
+    ZKAI_D64_DOWN_PROJECTION_DECISION, ZKAI_D64_DOWN_PROJECTION_INPUT_DECISION,
+    ZKAI_D64_DOWN_PROJECTION_INPUT_SCHEMA, ZKAI_D64_DOWN_PROJECTION_MAX_JSON_BYTES,
+    ZKAI_D64_DOWN_PROJECTION_MUL_ROW_COMMITMENT, ZKAI_D64_DOWN_PROJECTION_NEXT_BACKEND_STEP,
+    ZKAI_D64_DOWN_PROJECTION_PROOF_VERSION, ZKAI_D64_DOWN_PROJECTION_SEMANTIC_SCOPE,
+    ZKAI_D64_DOWN_PROJECTION_STATEMENT_VERSION, ZKAI_D64_RESIDUAL_DELTA_COMMITMENT,
 };
 pub use d64_native_export_contract::{
     zkai_d64_native_export_contract_from_oracle_json_str,

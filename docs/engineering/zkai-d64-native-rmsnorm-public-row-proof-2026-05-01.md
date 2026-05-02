@@ -130,6 +130,7 @@ domain-separated `projection_input_row_commitment`:
 - `docs/engineering/evidence/zkai-d64-rmsnorm-to-projection-bridge-proof-2026-05.json`
 - `src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs`
 
-The follow-up gate/value and activation/SwiGLU proofs now extend this path to a
-domain-separated `hidden_activation_commitment`. The next native-proof lane is
-down projection before any full d64 `output_activation_commitment` is claimed.
+The follow-up gate/value, activation/SwiGLU, and down-projection proofs now
+extend this path to a domain-separated `residual_delta_commitment`. The next
+native-proof lane is residual addition before any full d64
+`output_activation_commitment` is claimed.
