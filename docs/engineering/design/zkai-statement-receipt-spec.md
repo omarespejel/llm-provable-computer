@@ -267,8 +267,10 @@ Evidence handles:
 - `docs/engineering/evidence/zkai-stwo-statement-bound-transformer-block-benchmark-2026-05.tsv`
 - `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
 - `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.tsv`
 - `docs/engineering/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05-02.md`
 - `docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.tsv`
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.json`
 - `docs/engineering/evidence/agent-step-zkai-stwo-transformer-block-composition-2026-05.tsv`
 

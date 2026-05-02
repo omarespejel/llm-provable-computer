@@ -75,6 +75,25 @@ TSV_COLUMNS = (
     "error",
 )
 
+EXPECTED_MUTATION_INVENTORY = (
+    ("aggregation_target_commitment_drift", "aggregation_target_commitment"),
+    ("source_block_receipt_file_hash_drift", "source_block_receipt_evidence"),
+    ("source_block_receipt_payload_hash_drift", "source_block_receipt_evidence"),
+    ("block_receipt_commitment_drift", "block_receipt_projection"),
+    ("proof_native_parameter_commitment_removed", "block_receipt_projection"),
+    ("public_instance_commitment_drift", "block_receipt_projection"),
+    ("statement_commitment_drift", "block_receipt_projection"),
+    ("verifier_domain_drift", "block_receipt_projection"),
+    ("target_manifest_slice_version_drift", "aggregation_target_manifest"),
+    ("target_manifest_source_hash_drift", "aggregation_target_manifest"),
+    ("composition_mutation_count_drift", "aggregation_target_manifest"),
+    ("recursive_claim_true_without_proof", "recursive_or_pcd_attempt"),
+    ("pcd_claim_true_without_proof", "recursive_or_pcd_attempt"),
+    ("invented_recursive_proof_artifact", "recursive_or_pcd_attempt"),
+    ("first_blocker_removed", "recursive_or_pcd_attempt"),
+    ("result_changed_to_go", "parser_or_schema"),
+)
+
 
 class D64RecursivePCDFeasibilityError(ValueError):
     pass
@@ -151,6 +170,13 @@ def require_commitment(value: Any, field: str) -> str:
     if len(raw) != 64 or any(char not in "0123456789abcdef" for char in raw):
         raise D64RecursivePCDFeasibilityError(f"{field} must be a 32-byte lowercase hex digest")
     return value
+
+
+def expected_mutation_inventory() -> list[dict[str, Any]]:
+    return [
+        {"index": index, "mutation": mutation, "surface": surface}
+        for index, (mutation, surface) in enumerate(EXPECTED_MUTATION_INVENTORY)
+    ]
 
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
@@ -395,15 +421,22 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
     has_cases = "cases" in payload
     has_case_count = "case_count" in payload
     has_all_mutations_rejected = "all_mutations_rejected" in payload
-    if not (has_cases or has_case_count or has_all_mutations_rejected):
+    has_mutation_inventory = "mutation_inventory" in payload
+    if not (has_cases or has_case_count or has_all_mutations_rejected or has_mutation_inventory):
         raise D64RecursivePCDFeasibilityError(
-            "mutation metadata must include cases, case_count, and all_mutations_rejected"
+            "mutation metadata must include mutation_inventory, cases, case_count, and all_mutations_rejected"
         )
-    if not (has_cases and has_case_count and has_all_mutations_rejected):
-        raise D64RecursivePCDFeasibilityError("mutation metadata must include cases, case_count, and all_mutations_rejected together")
+    if not (has_mutation_inventory and has_cases and has_case_count and has_all_mutations_rejected):
+        raise D64RecursivePCDFeasibilityError(
+            "mutation metadata must include mutation_inventory, cases, case_count, and all_mutations_rejected together"
+        )
 
+    inventory = require_list(payload.get("mutation_inventory"), "mutation inventory")
+    expect_equal(inventory, expected_mutation_inventory(), "mutation inventory")
     cases = require_list(payload.get("cases"), "mutation cases")
     computed_rejected = 0
+    case_pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
     for index, raw_case in enumerate(cases):
         case = require_object(raw_case, f"mutation case {index}")
         for column in TSV_COLUMNS:
@@ -413,6 +446,11 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
             raise D64RecursivePCDFeasibilityError(f"mutation case {index} mutation must be a non-empty string")
         if not isinstance(case["surface"], str) or not case["surface"]:
             raise D64RecursivePCDFeasibilityError(f"mutation case {index} surface must be a non-empty string")
+        pair = (case["mutation"], case["surface"])
+        if pair in seen_pairs:
+            raise D64RecursivePCDFeasibilityError(f"duplicate mutation case {index}")
+        seen_pairs.add(pair)
+        case_pairs.append(pair)
         if case["baseline_result"] != RESULT:
             raise D64RecursivePCDFeasibilityError(f"mutation case {index} baseline_result mismatch")
         if not isinstance(case["mutated_accepted"], bool):
@@ -429,6 +467,7 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
             computed_rejected += 1
 
     computed_case_count = len(cases)
+    expect_equal(tuple(case_pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
     expect_equal(payload.get("case_count"), computed_case_count, "mutation case_count")
     expect_equal(
         payload.get("all_mutations_rejected"),
@@ -478,7 +517,12 @@ def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, An
 
 def _validate_draft_payload(payload: Any) -> None:
     _, expected_summary = _validate_common_payload(payload)
-    if "cases" in payload or "case_count" in payload or "all_mutations_rejected" in payload:
+    if (
+        "mutation_inventory" in payload
+        or "cases" in payload
+        or "case_count" in payload
+        or "all_mutations_rejected" in payload
+    ):
         raise D64RecursivePCDFeasibilityError("draft payload must not include mutation metadata")
     summary = require_object(payload.get("summary"), "summary")
     expect_equal(summary, expected_summary, "summary")
@@ -644,6 +688,7 @@ def build_gate_result() -> dict[str, Any]:
     payload = build_payload()
     cases = mutation_cases(payload)
     result = copy.deepcopy(payload)
+    result["mutation_inventory"] = expected_mutation_inventory()
     result["case_count"] = len(cases)
     result["all_mutations_rejected"] = all(case["rejected"] for case in cases)
     result["cases"] = cases

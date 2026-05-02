@@ -295,6 +295,88 @@
     }
   ],
   "decision": "NO_GO_D64_RECURSIVE_PCD_AGGREGATION_PROVER_UNAVAILABLE",
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "aggregation_target_commitment_drift",
+      "surface": "aggregation_target_commitment"
+    },
+    {
+      "index": 1,
+      "mutation": "source_block_receipt_file_hash_drift",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "index": 2,
+      "mutation": "source_block_receipt_payload_hash_drift",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "index": 3,
+      "mutation": "block_receipt_commitment_drift",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "index": 4,
+      "mutation": "proof_native_parameter_commitment_removed",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "index": 5,
+      "mutation": "public_instance_commitment_drift",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "index": 6,
+      "mutation": "statement_commitment_drift",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "index": 7,
+      "mutation": "verifier_domain_drift",
+      "surface": "block_receipt_projection"
+    },
+    {
+      "index": 8,
+      "mutation": "target_manifest_slice_version_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 9,
+      "mutation": "target_manifest_source_hash_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 10,
+      "mutation": "composition_mutation_count_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 11,
+      "mutation": "recursive_claim_true_without_proof",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 12,
+      "mutation": "pcd_claim_true_without_proof",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 13,
+      "mutation": "invented_recursive_proof_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 14,
+      "mutation": "first_blocker_removed",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 15,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    }
+  ],
   "non_claims": [
     "not recursive aggregation of the six d64 slice proofs",
     "not proof-carrying-data accumulation",
