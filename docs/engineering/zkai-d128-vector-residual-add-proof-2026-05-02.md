@@ -79,11 +79,14 @@ blocked on the other parameterized slices and composition.
 This is progress because the next backend task is no longer generic. The next
 slice to parameterize should be one of:
 
-- RMSNorm public rows, if the goal is a normalization-first d128 receipt;
 - gate/value projection rows, if the goal is to attack the largest arithmetic
   surface first;
 - down projection, if the goal is to connect residual-add to a preceding proof
   source.
+
+The RMSNorm public-row option has since landed as
+`docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`; this
+residual-add note remains the source of truth for the residual slice only.
 
 ## Reproduce
 

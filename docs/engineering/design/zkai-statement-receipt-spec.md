@@ -506,6 +506,26 @@ row commitment, and recomputes the final `output_activation_commitment`. This
 closes the native d64 final-output seam for the slice chain. It is still not a
 recursive aggregate proof and not a private parameter-opening proof.
 
+The d128 route now has two partial proof handles:
+
+- `docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs`
+- `docs/engineering/zkai-d128-vector-residual-add-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv`
+- `src/stwo_backend/zkai_vector_block_residual_add_proof.rs`
+
+Decision: partial GO only. The d128 RMSNorm public-row proof checks `128`
+normalization rows and recomputes the input, scale, config, scale-tree,
+RMSNorm-output, public-instance, proof-native parameter, and statement
+commitments. The d128 residual-add proof checks `128` residual-add rows and
+recomputes its input, residual-delta, output, row, public-instance,
+proof-native parameter, and statement commitments. This is not a full d128
+block receipt: bridge, projection, activation, down-projection, composition,
+and full-block relabeling tests are still missing.
+
 The d64 block receipt composition gate consumes the checked slice handles:
 
 - `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
