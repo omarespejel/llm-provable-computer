@@ -338,7 +338,7 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "validation_commands": VALIDATION_COMMANDS,
     }
     refresh_commitments(payload)
-    validate_payload(payload)
+    validate_payload(payload, require_cases=False)
     return payload
 
 
@@ -386,11 +386,15 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
     )
 
 
-def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int] | None:
+def _validate_case_metadata(payload: dict[str, Any], *, required: bool) -> tuple[int, int] | None:
     has_cases = "cases" in payload
     has_case_count = "case_count" in payload
     has_all_mutations_rejected = "all_mutations_rejected" in payload
     if not (has_cases or has_case_count or has_all_mutations_rejected):
+        if required:
+            raise D64RecursivePCDFeasibilityError(
+                "mutation metadata must include cases, case_count, and all_mutations_rejected"
+            )
         return None
     if not (has_cases and has_case_count and has_all_mutations_rejected):
         raise D64RecursivePCDFeasibilityError("mutation metadata must include cases, case_count, and all_mutations_rejected together")
@@ -431,7 +435,7 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int] | None:
     return computed_case_count, computed_rejected
 
 
-def validate_payload(payload: Any) -> None:
+def validate_payload(payload: Any, *, require_cases: bool = True) -> None:
     payload = require_object(payload, "recursive/PCD feasibility payload")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
     expect_equal(payload.get("decision"), DECISION, "decision")
@@ -439,7 +443,7 @@ def validate_payload(payload: Any) -> None:
     expect_equal(payload.get("aggregation_target_result"), TARGET_RESULT, "aggregation target result")
     expect_equal(payload.get("recursive_or_pcd_proof_result"), RECURSIVE_OR_PCD_RESULT, "recursive or PCD proof result")
     source = _validate_source_descriptor(payload)
-    case_metadata = _validate_case_metadata(payload)
+    case_metadata = _validate_case_metadata(payload, required=require_cases)
     expect_equal(
         payload.get("block_receipt_projection"),
         block_receipt_projection(source),
@@ -596,11 +600,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
 
 def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     baseline = copy.deepcopy(baseline or build_payload())
-    validate_payload(baseline)
+    validate_payload(baseline, require_cases=False)
     cases = []
     for mutation, surface, mutated in _mutated_cases(baseline):
         try:
-            validate_payload(mutated)
+            validate_payload(mutated, require_cases=False)
             accepted = True
             error = ""
             layer = "accepted"
