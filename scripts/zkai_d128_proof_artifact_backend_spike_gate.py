@@ -725,6 +725,16 @@ def build_source_probe() -> dict[str, Any]:
         d128_gate_value_evidence.get("public_instance_commitment"),
         "d128 activation source gate/value public-instance commitment",
     )
+    expect_equal(
+        d128_activation_evidence.get("source_gate_projection_output_commitment"),
+        d128_gate_value_evidence.get("gate_projection_output_commitment"),
+        "d128 activation source gate projection output commitment",
+    )
+    expect_equal(
+        d128_activation_evidence.get("source_value_projection_output_commitment"),
+        d128_gate_value_evidence.get("value_projection_output_commitment"),
+        "d128 activation source value projection output commitment",
+    )
     if d128_activation_evidence.get("hidden_activation_commitment") == D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT:
         raise D128BackendSpikeError("d128 activation hidden commitment relabeled as full output")
 
