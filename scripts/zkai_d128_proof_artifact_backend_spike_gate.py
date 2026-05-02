@@ -30,11 +30,13 @@ D64_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d64_block_receipt_composition_gat
 VECTOR_RESIDUAL_GATE_PATH = ROOT / "scripts" / "zkai_d128_vector_residual_add_proof_input.py"
 D128_RMSNORM_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_public_row_proof_input.py"
 D128_BRIDGE_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_to_projection_bridge_input.py"
+D128_GATE_VALUE_GATE_PATH = ROOT / "scripts" / "zkai_d128_gate_value_projection_proof_input.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
 D128_RMSNORM_EVIDENCE = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
 D128_BRIDGE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json"
+D128_GATE_VALUE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-gate-value-projection-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
@@ -49,8 +51,8 @@ REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
 FIRST_BLOCKER = (
-    "d128 RMSNorm public-row, RMSNorm-to-projection bridge, and residual-add proof "
-    "handles exist, but gate/value projection, activation, down-projection, native "
+    "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, "
+    "and residual-add proof handles exist, but activation, down-projection, native "
     "residual, and full transformer-block composition handles are still missing"
 )
 
@@ -106,7 +108,6 @@ D64_PROOF_SLICES = (
 )
 
 EXPECTED_D128_MODULES = (
-    "src/stwo_backend/d128_native_gate_value_projection_proof.rs",
     "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
     "src/stwo_backend/d128_native_down_projection_proof.rs",
     "src/stwo_backend/d128_native_residual_add_proof.rs",
@@ -114,8 +115,6 @@ EXPECTED_D128_MODULES = (
 )
 
 EXPECTED_D128_EXPORT_SYMBOLS = (
-    "prove_zkai_d128_gate_value_projection_envelope",
-    "verify_zkai_d128_gate_value_projection_envelope",
     "prove_zkai_d128_activation_swiglu_envelope",
     "verify_zkai_d128_activation_swiglu_envelope",
     "prove_zkai_d128_down_projection_envelope",
@@ -141,6 +140,28 @@ D128_BRIDGE_SYMBOLS = (
     "zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str",
     "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
     "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+)
+
+D128_GATE_VALUE_SYMBOLS = (
+    "D128GateValueProjectionMulRow",
+    "ZkAiD128GateValueProjectionProofInput",
+    "ZkAiD128GateValueProjectionEnvelope",
+    "zkai_d128_gate_value_projection_input_from_json_str",
+    "prove_zkai_d128_gate_value_projection_envelope",
+    "verify_zkai_d128_gate_value_projection_envelope",
+)
+
+D128_GATE_VALUE_COMMITMENT_FIELDS = (
+    "source_projection_input_row_commitment",
+    "gate_matrix_root",
+    "value_matrix_root",
+    "gate_projection_output_commitment",
+    "value_projection_output_commitment",
+    "gate_value_projection_output_commitment",
+    "gate_value_projection_mul_row_commitment",
+    "proof_native_parameter_commitment",
+    "statement_commitment",
+    "public_instance_commitment",
 )
 
 PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
@@ -203,12 +224,15 @@ NON_CLAIMS = [
 
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
+    "python3 scripts/zkai_d128_gate_value_projection_proof_input.py --write-json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_projection_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 test d128_native_gate_value_projection_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_public_row_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
@@ -257,6 +281,18 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_rmsnorm_to_projection_bridge_verifier_removed", "proof_status"),
     ("partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_removed", "proof_status"),
     ("partial_d128_rmsnorm_to_projection_bridge_checked_in_artifact_smuggled", "proof_status"),
+    ("d128_gate_value_projection_route_promoted", "backend_routes"),
+    ("partial_d128_gate_value_projection_proof_removed", "proof_status"),
+    ("partial_d128_gate_value_projection_verifier_removed", "proof_status"),
+    ("partial_d128_gate_value_projection_local_roundtrip_removed", "proof_status"),
+    ("partial_d128_gate_value_projection_checked_in_artifact_smuggled", "proof_status"),
+    ("d128_gate_value_projection_gate_matrix_root_drift", "source_probe"),
+    ("d128_gate_value_projection_value_matrix_root_drift", "source_probe"),
+    ("d128_gate_value_projection_mul_row_commitment_drift", "source_probe"),
+    ("d128_gate_value_projection_proof_native_parameter_commitment_drift", "source_probe"),
+    ("d128_gate_value_projection_statement_commitment_drift", "source_probe"),
+    ("d128_gate_value_projection_public_instance_commitment_drift", "source_probe"),
+    ("d128_gate_value_projection_route_statement_commitment_drift", "backend_routes"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
@@ -293,6 +329,10 @@ D128_RMSNORM_GATE = _load_module(
 D128_BRIDGE_GATE = _load_module(
     D128_BRIDGE_GATE_PATH,
     "zkai_d128_rmsnorm_to_projection_bridge_for_backend_spike",
+)
+D128_GATE_VALUE_GATE = _load_module(
+    D128_GATE_VALUE_GATE_PATH,
+    "zkai_d128_gate_value_projection_for_backend_spike",
 )
 
 
@@ -550,6 +590,46 @@ def build_source_probe() -> dict[str, Any]:
         "d128 bridge source RMSNorm public-instance commitment",
     )
 
+    d128_gate_value_module_path = "src/stwo_backend/d128_native_gate_value_projection_proof.rs"
+    d128_gate_value_module = read_repo_file(d128_gate_value_module_path)
+    if "mod d128_native_gate_value_projection_proof;" not in mod_rs:
+        raise D128BackendSpikeError("d128 gate/value projection module missing from mod.rs")
+    missing_d128_gate_value_symbols = []
+    for symbol in D128_GATE_VALUE_SYMBOLS:
+        if not rust_declares_symbol(
+            d128_gate_value_module, symbol
+        ) or not rust_reexports_symbol(mod_rs, "d128_native_gate_value_projection_proof", symbol):
+            missing_d128_gate_value_symbols.append(symbol)
+    if missing_d128_gate_value_symbols:
+        raise D128BackendSpikeError(
+            "d128 gate/value projection route disappeared; refresh this partial-go gate"
+        )
+
+    d128_gate_value_evidence = load_json(D128_GATE_VALUE_EVIDENCE)
+    try:
+        D128_GATE_VALUE_GATE.validate_payload(d128_gate_value_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("d128 gate/value projection evidence failed validation") from err
+    for field, expected in {
+        "schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
+        "decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "width": TARGET_WIDTH,
+        "ff_dim": TARGET_FF_DIM,
+        "row_count": 2 * TARGET_FF_DIM * TARGET_WIDTH,
+        "gate_projection_mul_rows": TARGET_FF_DIM * TARGET_WIDTH,
+        "value_projection_mul_rows": TARGET_FF_DIM * TARGET_WIDTH,
+    }.items():
+        expect_equal(d128_gate_value_evidence.get(field), expected, f"d128 gate/value projection {field}")
+    expect_equal(
+        d128_gate_value_evidence.get("source_projection_input_row_commitment"),
+        d128_bridge_evidence.get("projection_input_row_commitment"),
+        "d128 gate/value source projection-input commitment",
+    )
+    if d128_gate_value_evidence.get("gate_value_projection_output_commitment") == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT:
+        raise D128BackendSpikeError("d128 gate/value output commitment relabeled as full output")
+
     missing_d128_modules = []
     for path in EXPECTED_D128_MODULES:
         full = ROOT / path
@@ -657,6 +737,31 @@ def build_source_probe() -> dict[str, Any]:
                 == d128_bridge_evidence["forbidden_output_activation_commitment"]
             ),
         },
+        "d128_gate_value_projection": {
+            "status": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+            "module": repo_file_descriptor(d128_gate_value_module_path),
+            "evidence": source_descriptor(D128_GATE_VALUE_EVIDENCE, d128_gate_value_evidence),
+            "present_symbols": list(D128_GATE_VALUE_SYMBOLS),
+            "target_width": d128_gate_value_evidence["width"],
+            "target_ff_dim": d128_gate_value_evidence["ff_dim"],
+            "row_count": d128_gate_value_evidence["row_count"],
+            "source_projection_input_row_commitment": d128_gate_value_evidence["source_projection_input_row_commitment"],
+            "gate_matrix_root": d128_gate_value_evidence["gate_matrix_root"],
+            "value_matrix_root": d128_gate_value_evidence["value_matrix_root"],
+            "gate_projection_output_commitment": d128_gate_value_evidence["gate_projection_output_commitment"],
+            "value_projection_output_commitment": d128_gate_value_evidence["value_projection_output_commitment"],
+            "gate_value_projection_output_commitment": d128_gate_value_evidence["gate_value_projection_output_commitment"],
+            "gate_value_projection_mul_row_commitment": d128_gate_value_evidence[
+                "gate_value_projection_mul_row_commitment"
+            ],
+            "proof_native_parameter_commitment": d128_gate_value_evidence["proof_native_parameter_commitment"],
+            "statement_commitment": d128_gate_value_evidence["statement_commitment"],
+            "public_instance_commitment": d128_gate_value_evidence["public_instance_commitment"],
+            "projection_output_relabels_full_output": (
+                d128_gate_value_evidence["gate_value_projection_output_commitment"]
+                == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT
+            ),
+        },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
             "module": repo_file_descriptor(residual_module_path),
@@ -694,7 +799,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "verifier_handle_exists": False,
             "proof_size_bytes": None,
             "verifier_time_ms": None,
-            "blocker": "d128 RMSNorm public-row and RMSNorm-to-projection bridge native proofs exist, but the remaining native d128 slices and full block verifier do not",
+            "blocker": "d128 RMSNorm public-row, bridge, and gate/value native proofs exist, but activation, down-projection, residual, and full block verifier do not",
             "missing_modules": source_probe["missing_d128_modules"],
             "missing_export_symbols": source_probe["missing_d128_export_symbols"],
         },
@@ -738,6 +843,45 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             ],
             "projection_input_row_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
                 "projection_input_row_commitment"
+            ],
+        },
+        {
+            "route": "direct_d128_gate_value_projection_air",
+            "status": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "local_roundtrip_proof_constructed": True,
+            "checked_in_proof_artifact_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "gate/value projection slice only; not activation, down-projection, residual, composition, or full block",
+            "evidence": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json",
+            "present_symbols": source_probe["d128_gate_value_projection"]["present_symbols"],
+            "source_projection_input_row_commitment": source_probe["d128_gate_value_projection"][
+                "source_projection_input_row_commitment"
+            ],
+            "gate_matrix_root": source_probe["d128_gate_value_projection"]["gate_matrix_root"],
+            "value_matrix_root": source_probe["d128_gate_value_projection"]["value_matrix_root"],
+            "gate_projection_output_commitment": source_probe["d128_gate_value_projection"][
+                "gate_projection_output_commitment"
+            ],
+            "value_projection_output_commitment": source_probe["d128_gate_value_projection"][
+                "value_projection_output_commitment"
+            ],
+            "gate_value_projection_output_commitment": source_probe["d128_gate_value_projection"][
+                "gate_value_projection_output_commitment"
+            ],
+            "gate_value_projection_mul_row_commitment": source_probe["d128_gate_value_projection"][
+                "gate_value_projection_mul_row_commitment"
+            ],
+            "proof_native_parameter_commitment": source_probe["d128_gate_value_projection"][
+                "proof_native_parameter_commitment"
+            ],
+            "statement_commitment": source_probe["d128_gate_value_projection"]["statement_commitment"],
+            "public_instance_commitment": source_probe["d128_gate_value_projection"][
+                "public_instance_commitment"
             ],
         },
         {
@@ -816,6 +960,7 @@ def build_payload() -> dict[str, Any]:
         "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
         "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
         "d128_rmsnorm_to_projection_bridge_route": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
+        "d128_gate_value_projection_route": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
@@ -832,6 +977,10 @@ def build_payload() -> dict[str, Any]:
         "partial_d128_rmsnorm_to_projection_bridge_verifier_exists": True,
         "partial_d128_rmsnorm_to_projection_bridge_local_roundtrip_proof_constructed": True,
         "partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists": False,
+        "partial_d128_gate_value_projection_proof_exists": True,
+        "partial_d128_gate_value_projection_verifier_exists": True,
+        "partial_d128_gate_value_projection_local_roundtrip_proof_constructed": True,
+        "partial_d128_gate_value_projection_checked_in_proof_artifact_exists": False,
         "partial_parameterized_residual_add_proof_exists": True,
         "partial_parameterized_residual_add_verifier_exists": True,
         "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
@@ -994,6 +1143,94 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
 
+    def promote_d128_gate_value_projection_route(p: dict[str, Any]) -> None:
+        p["summary"]["d128_gate_value_projection_route"] = "GO_D128_FULL_GATE_VALUE_BLOCK"
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_gate_value_projection_air")
+        route["status"] = "GO_D128_FULL_GATE_VALUE_BLOCK"
+        route["proof_size_bytes"] = 4096
+
+    add(
+        "d128_gate_value_projection_route_promoted",
+        "backend_routes",
+        promote_d128_gate_value_projection_route,
+    )
+    add(
+        "partial_d128_gate_value_projection_proof_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_gate_value_projection_proof_exists", False),
+    )
+    add(
+        "partial_d128_gate_value_projection_verifier_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_gate_value_projection_verifier_exists", False),
+    )
+    add(
+        "partial_d128_gate_value_projection_local_roundtrip_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_gate_value_projection_local_roundtrip_proof_constructed", False
+        ),
+    )
+    add(
+        "partial_d128_gate_value_projection_checked_in_artifact_smuggled",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_gate_value_projection_checked_in_proof_artifact_exists", True
+        ),
+    )
+    add(
+        "d128_gate_value_projection_gate_matrix_root_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "gate_matrix_root", "blake2b-256:" + "41" * 32
+        ),
+    )
+    add(
+        "d128_gate_value_projection_value_matrix_root_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "value_matrix_root", "blake2b-256:" + "42" * 32
+        ),
+    )
+    add(
+        "d128_gate_value_projection_mul_row_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "gate_value_projection_mul_row_commitment", "blake2b-256:" + "43" * 32
+        ),
+    )
+    add(
+        "d128_gate_value_projection_proof_native_parameter_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "proof_native_parameter_commitment", "blake2b-256:" + "44" * 32
+        ),
+    )
+    add(
+        "d128_gate_value_projection_statement_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "statement_commitment", "blake2b-256:" + "45" * 32
+        ),
+    )
+    add(
+        "d128_gate_value_projection_public_instance_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_gate_value_projection"].__setitem__(
+            "public_instance_commitment", "blake2b-256:" + "46" * 32
+        ),
+    )
+
+    def drift_d128_gate_value_projection_route_statement(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_gate_value_projection_air")
+        route["statement_commitment"] = "blake2b-256:" + "47" * 32
+
+    add(
+        "d128_gate_value_projection_route_statement_commitment_drift",
+        "backend_routes",
+        drift_d128_gate_value_projection_route_statement,
+    )
+
     def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
         route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
         route["status"] = "GO"
@@ -1096,6 +1333,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         summary.get("d128_rmsnorm_to_projection_bridge_route"),
         "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "summary d128 RMSNorm-to-projection bridge route",
+    )
+    expect_equal(
+        summary.get("d128_gate_value_projection_route"),
+        "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+        "summary d128 gate/value projection route",
     )
     expect_equal(
         summary.get("parameterized_residual_add_route"),
@@ -1208,6 +1450,52 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         rmsnorm_output_row_commitment,
         "bridge source RMSNorm output row commitment",
     )
+    gate_value_probe = require_object(
+        source_probe.get("d128_gate_value_projection"),
+        "d128 gate/value projection probe",
+    )
+    expect_equal(
+        gate_value_probe.get("status"),
+        "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+        "d128 gate/value projection status",
+    )
+    expect_equal(
+        gate_value_probe.get("present_symbols"),
+        list(D128_GATE_VALUE_SYMBOLS),
+        "present d128 gate/value projection symbol inventory",
+    )
+    gate_value_source_projection_input = require_commitment(
+        gate_value_probe.get("source_projection_input_row_commitment"),
+        "d128 gate/value source projection-input commitment",
+    )
+    expect_equal(
+        gate_value_source_projection_input,
+        bridge_projection_input_commitment,
+        "d128 gate/value source projection-input commitment",
+    )
+    expect_equal(
+        gate_value_probe.get("projection_output_relabels_full_output"),
+        False,
+        "d128 gate/value output relabel guard",
+    )
+    expected_gate_value_commitments = {
+        "source_projection_input_row_commitment": bridge_projection_input_commitment,
+        "gate_matrix_root": D128_GATE_VALUE_GATE.GATE_MATRIX_ROOT,
+        "value_matrix_root": D128_GATE_VALUE_GATE.VALUE_MATRIX_ROOT,
+        "gate_projection_output_commitment": D128_GATE_VALUE_GATE.GATE_PROJECTION_OUTPUT_COMMITMENT,
+        "value_projection_output_commitment": D128_GATE_VALUE_GATE.VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "gate_value_projection_output_commitment": D128_GATE_VALUE_GATE.GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "gate_value_projection_mul_row_commitment": D128_GATE_VALUE_GATE.GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT,
+        "proof_native_parameter_commitment": D128_GATE_VALUE_GATE.PROOF_NATIVE_PARAMETER_COMMITMENT,
+        "statement_commitment": D128_GATE_VALUE_GATE.STATEMENT_COMMITMENT,
+        "public_instance_commitment": D128_GATE_VALUE_GATE.PUBLIC_INSTANCE_COMMITMENT,
+    }
+    for field, expected in expected_gate_value_commitments.items():
+        actual = require_commitment(
+            gate_value_probe.get(field),
+            f"d128 gate/value projection {field}",
+        )
+        expect_equal(actual, expected, f"d128 gate/value projection {field}")
     residual_probe = require_object(
         source_probe.get("parameterized_residual_add"),
         "parameterized residual-add probe",
@@ -1243,6 +1531,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "direct_d128_native_modules",
         "direct_d128_rmsnorm_public_row_air",
         "direct_d128_rmsnorm_to_projection_bridge_air",
+        "direct_d128_gate_value_projection_air",
         "lift_existing_d64_modules_by_metadata",
         "parameterized_vector_residual_add_air",
         "parameterized_transformer_block_air",
@@ -1299,6 +1588,22 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             "direct d128 RMSNorm-to-projection bridge route projection-input commitment relabeled as full output"
         )
     expect_equal(
+        route_by_name["direct_d128_gate_value_projection_air"].get("status"),
+        "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+        "direct d128 gate/value projection route status",
+    )
+    expect_equal(
+        route_by_name["direct_d128_gate_value_projection_air"].get("source_projection_input_row_commitment"),
+        bridge_projection_input_commitment,
+        "direct d128 gate/value projection route source projection-input commitment",
+    )
+    for field, expected in expected_gate_value_commitments.items():
+        actual = require_commitment(
+            route_by_name["direct_d128_gate_value_projection_air"].get(field),
+            f"direct d128 gate/value projection route {field}",
+        )
+        expect_equal(actual, expected, f"direct d128 gate/value projection route {field}")
+    expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized residual-add route status",
@@ -1315,6 +1620,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         if route_obj["route"] in {
             "direct_d128_rmsnorm_public_row_air",
             "direct_d128_rmsnorm_to_projection_bridge_air",
+            "direct_d128_gate_value_projection_air",
             "parameterized_vector_residual_add_air",
         }:
             expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
@@ -1381,6 +1687,26 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         proof_status.get("partial_d128_rmsnorm_to_projection_bridge_checked_in_proof_artifact_exists"),
         False,
         "partial d128 RMSNorm-to-projection bridge checked-in proof artifact",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_gate_value_projection_proof_exists"),
+        True,
+        "partial d128 gate/value projection proof exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_gate_value_projection_verifier_exists"),
+        True,
+        "partial d128 gate/value projection verifier exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_gate_value_projection_local_roundtrip_proof_constructed"),
+        True,
+        "partial d128 gate/value projection local roundtrip proof",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_gate_value_projection_checked_in_proof_artifact_exists"),
+        False,
+        "partial d128 gate/value projection checked-in proof artifact",
     )
     expect_equal(
         proof_status.get("partial_parameterized_residual_add_proof_exists"),

@@ -506,7 +506,7 @@ row commitment, and recomputes the final `output_activation_commitment`. This
 closes the native d64 final-output seam for the slice chain. It is still not a
 recursive aggregate proof and not a private parameter-opening proof.
 
-The d128 route now has three partial proof handles:
+The d128 route now has four partial proof handles:
 
 - `docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`
 - `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
@@ -516,6 +516,10 @@ The d128 route now has three partial proof handles:
 - `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
 - `src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs`
+- `docs/engineering/zkai-d128-gate-value-projection-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_gate_value_projection_proof.rs`
 - `docs/engineering/zkai-d128-vector-residual-add-proof-2026-05-02.md`
 - `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv`
@@ -529,11 +533,14 @@ commitments and domains, and its quotient remainders are bit-constrained in
 AIR. The d128 bridge proof consumes that RMSNorm-local output, re-emits it under
 the projection-input domain, recomputes source/destination row commitments, and
 rejects attempts to relabel the bridge output as the full block output. The d128
-residual-add proof checks `128` residual-add rows and recomputes its input,
-residual-delta, output, row, public-instance, proof-native parameter, and
-statement commitments. This is not a full d128 block receipt: gate/value
-projection, activation, down-projection, native residual, composition, and
-full-block relabeling tests are still missing.
+gate/value projection proof consumes that projection-input commitment, checks
+`131,072` public gate/value multiplication rows in native Stwo AIR, recomputes
+gate/value matrix roots from checked row weights, and emits
+`gate_value_projection_output_commitment`. The d128 residual-add proof checks
+`128` residual-add rows and recomputes its input, residual-delta, output, row,
+public-instance, proof-native parameter, and statement commitments. This is not
+a full d128 block receipt: activation, down-projection, native residual,
+composition, and full-block relabeling tests are still missing.
 
 The d64 block receipt composition gate consumes the checked slice handles:
 

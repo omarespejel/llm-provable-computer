@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_gate_value_projection_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_to_projection_bridge_proof;
@@ -88,6 +90,27 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_gate_value_projection_proof::{
+    prove_zkai_d128_gate_value_projection_envelope,
+    verify_zkai_d128_gate_value_projection_envelope,
+    zkai_d128_gate_value_projection_input_from_json_str, D128GateValueProjectionMulRow,
+    ZkAiD128GateValueProjectionEnvelope, ZkAiD128GateValueProjectionProofInput,
+    ZKAI_D128_GATE_MATRIX_ROOT, ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_DECISION, ZKAI_D128_GATE_VALUE_PROJECTION_INPUT_DECISION,
+    ZKAI_D128_GATE_VALUE_PROJECTION_INPUT_SCHEMA, ZKAI_D128_GATE_VALUE_PROJECTION_MAX_JSON_BYTES,
+    ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES,
+    ZKAI_D128_GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_NEXT_BACKEND_STEP,
+    ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_NATIVE_PARAMETER_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION,
+    ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_SEMANTIC_SCOPE,
+    ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+    ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_VERSION, ZKAI_D128_VALUE_MATRIX_ROOT,
+    ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_rmsnorm_public_row_proof::{

@@ -79,16 +79,18 @@ blocked on the other parameterized slices and composition.
 The d128 RMSNorm-to-projection bridge has since landed as
 `docs/engineering/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05-02.md`,
 so the remaining upstream blocker is no longer the first handoff after RMSNorm.
-It is the gate/value projection slice that consumes the bridge's
-`projection_input_row_commitment`.
+The d128 gate/value projection proof has also landed as
+`docs/engineering/zkai-d128-gate-value-projection-proof-2026-05-02.md`, so the
+remaining upstream blocker is no longer the first large matrix-style projection
+surface either.
 
 This is progress because the next backend task is no longer generic. The next
 slice to parameterize should be one of:
 
-- gate/value projection rows, if the goal is to attack the largest arithmetic
-  surface first;
-- down projection, if the goal is to connect residual-add to a preceding proof
-  source.
+- activation/SwiGLU rows, if the goal is to continue the ordered d128 chain
+  from the gate/value output;
+- down projection, if the goal is to connect the hidden activation seam to the
+  residual-add source.
 
 The RMSNorm public-row option has since landed as
 `docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`; this

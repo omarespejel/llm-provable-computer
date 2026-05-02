@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-04-26
+Last refreshed: 2026-05-02
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `d0dcd7dde82259f708e77efeb2f47eac77ec1373`
+Mainline reference at refresh: `a0b77e535bda08bc893252ac2d195695d9e7349c`
 
 ## Immediate orientation
 
@@ -11,6 +11,7 @@ The active split is now:
 
 1. publication/default lane
 2. experimental carry-aware core-proving lane
+3. verifiable-AI statement-bound transformer lane
 
 ### Publication/default lane
 
@@ -95,6 +96,24 @@ Do not quote it as a faster FRI or cryptographic-verifier result.
 The family result is a cross-family transferability result, not a second
 Tablero boundary.
 
+### Verifiable-AI statement-bound transformer lane
+
+- The `d=64` native route has a six-slice proof-backed receipt chain:
+  RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
+  activation/SwiGLU, down projection, and residual add.
+- Recursive/PCD compression remains a bounded no-go until a real outer proof or
+  accumulator backend exists.
+- The `d=128` route now has four partial proof handles: RMSNorm public rows,
+  RMSNorm-to-projection bridge, gate/value projection, and residual add.
+- The new d128 gate/value projection handle proves `131,072` public
+  multiplication rows (`65,536` gate and `65,536` value rows), consumes the
+  bridge's `projection_input_row_commitment`, recomputes deterministic
+  gate/value matrix roots, and emits `gate_value_projection_output_commitment`.
+- This is a partial GO only: d128 activation/SwiGLU, down projection, native
+  residual, full composition, recursion, and full-block metrics remain blocked.
+- Do not compare d128 against public zkML systems until the full statement
+  receipt or a deliberately scoped slice comparator exists.
+
 ## Source-of-truth documents
 
 Use these in order of authority for current state:
@@ -173,9 +192,13 @@ Use these in order of authority for current state:
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
-10. Only after those steps decide whether any part of the experimental lane
+10. Continue the verifiable-AI d128 lane by building the activation/SwiGLU proof
+    handle that consumes `gate_value_projection_output_commitment`; do not jump
+    to full-block metrics until activation, down-projection, native residual,
+    and composition exist or are explicitly classified as no-go.
+11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
-11. Do not spend more time pushing the current publication/default Phase71
+12. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
