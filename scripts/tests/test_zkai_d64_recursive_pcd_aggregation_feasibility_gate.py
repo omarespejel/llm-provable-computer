@@ -115,6 +115,16 @@ class ZkAiD64RecursivePCDAggregationFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "rejected/accepted"):
             GATE.validate_payload(payload)
 
+    def test_rejects_missing_mutation_metadata_on_serialized_gate_result(self) -> None:
+        payload = self.fresh_payload()
+        del payload["cases"]
+        del payload["case_count"]
+        del payload["all_mutations_rejected"]
+        payload["summary"].pop("mutation_cases")
+        payload["summary"].pop("mutations_rejected")
+        with self.assertRaisesRegex(GATE.D64RecursivePCDFeasibilityError, "mutation metadata"):
+            GATE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)
