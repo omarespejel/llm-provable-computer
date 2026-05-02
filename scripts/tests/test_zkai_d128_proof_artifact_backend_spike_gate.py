@@ -70,8 +70,18 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         probe = self.fresh_payload()["source_probe"]
         self.assertEqual(probe["missing_d128_modules"], list(GATE.EXPECTED_D128_MODULES))
         self.assertEqual(probe["missing_d128_export_symbols"], list(GATE.EXPECTED_D128_EXPORT_SYMBOLS))
+        self.assertIn(
+            "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+            probe["missing_d128_export_symbols"],
+        )
         self.assertEqual(probe["missing_parameterized_symbols"], list(GATE.PARAMETERIZED_SYMBOLS))
         self.assertEqual(len(probe["d64_hardcoded_markers"]), len(GATE.D64_HARDCODE_MARKERS))
+        markers = {row["path"]: row["markers"] for row in probe["d64_hardcoded_markers"]}
+        self.assertIn("src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs", markers)
+        self.assertIn(
+            "ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION",
+            markers["src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"],
+        )
 
     def test_backend_routes_block_metrics_until_proof_exists(self) -> None:
         routes = {row["route"]: row for row in self.fresh_payload()["backend_routes"]}
@@ -132,6 +142,20 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             self.assertFalse(case["mutated_accepted"])
             self.assertTrue(case["error"])
 
+    def test_mutation_harness_raises_on_unexpected_validator_bug(self) -> None:
+        payload = self.fresh_payload()
+        original_validate_payload = GATE.validate_payload
+
+        def bugged_validate_payload(_payload: dict, *, require_mutations: bool = True) -> None:
+            raise KeyError("unexpected-validator-bug")
+
+        try:
+            GATE.validate_payload = bugged_validate_payload
+            with self.assertRaisesRegex(RuntimeError, "mutation harness failed"):
+                GATE.mutation_cases(payload)
+        finally:
+            GATE.validate_payload = original_validate_payload
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
@@ -155,6 +179,37 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 GATE.write_outputs(payload, json_path, tsv_path)
             self.assertFalse(json_path.exists())
             self.assertFalse(tsv_path.exists())
+
+    def test_write_outputs_rejects_symlink_outputs_inside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            target = tmp / "target.json"
+            target.write_text("existing\n", encoding="utf-8")
+            symlink = tmp / "linked.json"
+            symlink.symlink_to(target)
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "symlink"):
+                GATE.write_outputs(payload, symlink, None)
+            self.assertEqual(target.read_text(encoding="utf-8"), "existing\n")
+
+    def test_atomic_write_cleans_temp_file_when_replace_fails(self) -> None:
+        original_replace = GATE.os.replace
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            out = tmp / "out.json"
+
+            def fail_replace(_src: pathlib.Path, _dst: pathlib.Path) -> None:
+                raise OSError("simulated replace failure")
+
+            try:
+                GATE.os.replace = fail_replace
+                with self.assertRaisesRegex(OSError, "simulated replace failure"):
+                    GATE._atomic_write_text(out, "payload\n")
+                leftovers = [path for path in tmp.iterdir() if path.name != "out.json"]
+                self.assertEqual(leftovers, [])
+                self.assertFalse(out.exists())
+            finally:
+                GATE.os.replace = original_replace
 
     def test_write_outputs_fsyncs_parent_directory_after_replace(self) -> None:
         payload = self.fresh_payload()

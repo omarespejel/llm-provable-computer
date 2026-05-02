@@ -18,6 +18,8 @@
       "missing_export_symbols": [
         "prove_zkai_d128_rmsnorm_public_row_envelope",
         "verify_zkai_d128_rmsnorm_public_row_envelope",
+        "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+        "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
         "prove_zkai_d128_gate_value_projection_envelope",
         "verify_zkai_d128_gate_value_projection_envelope",
         "prove_zkai_d128_activation_swiglu_envelope",
@@ -57,6 +59,14 @@
             "ZKAI_D64_TARGET_ID"
           ],
           "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+        },
+        {
+          "markers": [
+            "expect_usize(input.width, ZKAI_D64_WIDTH",
+            "ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION",
+            "D64_BRIDGE_LOG_SIZE"
+          ],
+          "path": "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"
         },
         {
           "markers": [
@@ -391,7 +401,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_PROOF_ARTIFACT_PARAMETERIZED_AIR_MISSING",
-  "gate_commitment": "blake2b-256:a87a7e47f496a354a4ebca8b76c057d49bf2ace8e7ff0974b2e96b7b6755bb5d",
+  "gate_commitment": "blake2b-256:b8b1f02d211e8541e0f8c44a64e94a9041661680c4051dbc33d720c685241163",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -496,6 +506,14 @@
           "ZKAI_D64_TARGET_ID"
         ],
         "path": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs"
+      },
+      {
+        "markers": [
+          "expect_usize(input.width, ZKAI_D64_WIDTH",
+          "ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION",
+          "D64_BRIDGE_LOG_SIZE"
+        ],
+        "path": "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs"
       },
       {
         "markers": [
@@ -649,6 +667,8 @@
     "missing_d128_export_symbols": [
       "prove_zkai_d128_rmsnorm_public_row_envelope",
       "verify_zkai_d128_rmsnorm_public_row_envelope",
+      "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+      "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
       "prove_zkai_d128_gate_value_projection_envelope",
       "verify_zkai_d128_gate_value_projection_envelope",
       "prove_zkai_d128_activation_swiglu_envelope",

@@ -110,6 +110,8 @@ EXPECTED_D128_MODULES = (
 EXPECTED_D128_EXPORT_SYMBOLS = (
     "prove_zkai_d128_rmsnorm_public_row_envelope",
     "verify_zkai_d128_rmsnorm_public_row_envelope",
+    "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+    "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
     "prove_zkai_d128_gate_value_projection_envelope",
     "verify_zkai_d128_gate_value_projection_envelope",
     "prove_zkai_d128_activation_swiglu_envelope",
@@ -135,6 +137,11 @@ D64_HARDCODE_MARKERS = {
         "expect_usize(input.width, ZKAI_D64_WIDTH",
         "ZKAI_D64_RMSNORM_PUBLIC_ROW_PROOF_VERSION",
         "ZKAI_D64_TARGET_ID",
+    ),
+    "src/stwo_backend/d64_native_rmsnorm_to_projection_bridge_proof.rs": (
+        "expect_usize(input.width, ZKAI_D64_WIDTH",
+        "ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION",
+        "D64_BRIDGE_LOG_SIZE",
     ),
     "src/stwo_backend/d64_native_gate_value_projection_proof.rs": (
         "expect_usize(input.width, ZKAI_D64_WIDTH",
@@ -347,6 +354,13 @@ def repo_file_descriptor(path: str) -> dict[str, Any]:
     }
 
 
+def rust_source_corpus() -> str:
+    chunks = []
+    for path in sorted((ROOT / "src").rglob("*.rs")):
+        chunks.append(path.read_text(encoding="utf-8"))
+    return "\n".join(chunks)
+
+
 def build_source_probe() -> dict[str, Any]:
     mod_rs = read_repo_file("src/stwo_backend/mod.rs")
     d64_slices = []
@@ -391,10 +405,7 @@ def build_source_probe() -> dict[str, Any]:
         )
     missing_d128_symbols = list(EXPECTED_D128_EXPORT_SYMBOLS)
 
-    repo_text = "\n".join(
-        (ROOT / path).read_text(encoding="utf-8")
-        for path in ["src/stwo_backend/mod.rs", *[spec["module"] for spec in D64_PROOF_SLICES]]
-    )
+    repo_text = rust_source_corpus()
     present_parameterized_symbols = [
         symbol for symbol in PARAMETERIZED_SYMBOLS if symbol in repo_text
     ]
@@ -626,7 +637,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
     for index, (mutation, surface, mutated) in enumerate(_mutated_cases(payload)):
         try:
             validate_payload(mutated, require_mutations=False)
-        except Exception as err:  # noqa: BLE001 - record rejection diagnostics.
+        except D128BackendSpikeError as err:
             error = str(err) or f"{err.__class__.__name__} with empty message"
             results.append(
                 {
@@ -639,6 +650,10 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
                     "error": error,
                 }
             )
+        except Exception as err:  # noqa: BLE001 - harness bugs must fail the gate.
+            raise RuntimeError(
+                f"mutation harness failed for {mutation}: {err.__class__.__name__}: {err}"
+            ) from err
         else:
             results.append(
                 {
@@ -794,6 +809,8 @@ def mutation_rows_for_tsv(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _assert_repo_output_path(path: pathlib.Path) -> pathlib.Path:
+    if path.is_symlink():
+        raise D128BackendSpikeError(f"output path must not be a symlink: {path}")
     resolved = path.resolve()
     try:
         resolved.relative_to(ROOT.resolve())
@@ -805,8 +822,6 @@ def _assert_repo_output_path(path: pathlib.Path) -> pathlib.Path:
     if parent.exists() and not parent.is_dir():
         raise D128BackendSpikeError(f"output parent is not a directory: {parent}")
     parent.mkdir(parents=True, exist_ok=True)
-    if resolved.is_symlink():
-        raise D128BackendSpikeError(f"output path must not be a symlink: {path}")
     return resolved
 
 
@@ -835,7 +850,11 @@ def _atomic_write_text(path: pathlib.Path, text: str) -> None:
         handle.write(text)
         handle.flush()
         os.fsync(handle.fileno())
-    os.replace(tmp, resolved)
+    try:
+        os.replace(tmp, resolved)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
