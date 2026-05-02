@@ -31,12 +31,14 @@ VECTOR_RESIDUAL_GATE_PATH = ROOT / "scripts" / "zkai_d128_vector_residual_add_pr
 D128_RMSNORM_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_public_row_proof_input.py"
 D128_BRIDGE_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_to_projection_bridge_input.py"
 D128_GATE_VALUE_GATE_PATH = ROOT / "scripts" / "zkai_d128_gate_value_projection_proof_input.py"
+D128_ACTIVATION_GATE_PATH = ROOT / "scripts" / "zkai_d128_activation_swiglu_proof_input.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
 D128_RMSNORM_EVIDENCE = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
 D128_BRIDGE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json"
 D128_GATE_VALUE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-gate-value-projection-proof-2026-05.json"
+D128_ACTIVATION_EVIDENCE = EVIDENCE_DIR / "zkai-d128-activation-swiglu-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
@@ -52,8 +54,8 @@ REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
 FIRST_BLOCKER = (
     "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, "
-    "and residual-add proof handles exist, but activation, down-projection, native "
-    "residual, and full transformer-block composition handles are still missing"
+    "activation/SwiGLU, and residual-add proof handles exist, but down-projection, "
+    "native residual, and full transformer-block composition handles are still missing"
 )
 
 D64_PROOF_SLICES = (
@@ -108,15 +110,12 @@ D64_PROOF_SLICES = (
 )
 
 EXPECTED_D128_MODULES = (
-    "src/stwo_backend/d128_native_activation_swiglu_proof.rs",
     "src/stwo_backend/d128_native_down_projection_proof.rs",
     "src/stwo_backend/d128_native_residual_add_proof.rs",
     "src/stwo_backend/d128_native_transformer_block_proof.rs",
 )
 
 EXPECTED_D128_EXPORT_SYMBOLS = (
-    "prove_zkai_d128_activation_swiglu_envelope",
-    "verify_zkai_d128_activation_swiglu_envelope",
     "prove_zkai_d128_down_projection_envelope",
     "verify_zkai_d128_down_projection_envelope",
     "prove_zkai_d128_residual_add_envelope",
@@ -151,6 +150,15 @@ D128_GATE_VALUE_SYMBOLS = (
     "verify_zkai_d128_gate_value_projection_envelope",
 )
 
+D128_ACTIVATION_SYMBOLS = (
+    "D128ActivationSwiGluRow",
+    "ZkAiD128ActivationSwiGluProofInput",
+    "ZkAiD128ActivationSwiGluEnvelope",
+    "zkai_d128_activation_swiglu_input_from_json_str",
+    "prove_zkai_d128_activation_swiglu_envelope",
+    "verify_zkai_d128_activation_swiglu_envelope",
+)
+
 D128_GATE_VALUE_COMMITMENT_FIELDS = (
     "source_projection_input_row_commitment",
     "gate_matrix_root",
@@ -160,6 +168,21 @@ D128_GATE_VALUE_COMMITMENT_FIELDS = (
     "gate_value_projection_output_commitment",
     "gate_value_projection_mul_row_commitment",
     "proof_native_parameter_commitment",
+    "statement_commitment",
+    "public_instance_commitment",
+)
+
+D128_ACTIVATION_COMMITMENT_FIELDS = (
+    "source_gate_value_projection_statement_commitment",
+    "source_gate_value_projection_public_instance_commitment",
+    "source_gate_projection_output_commitment",
+    "source_value_projection_output_commitment",
+    "source_gate_value_projection_output_commitment",
+    "activation_lookup_commitment",
+    "proof_native_parameter_commitment",
+    "activation_output_commitment",
+    "hidden_activation_commitment",
+    "activation_swiglu_row_commitment",
     "statement_commitment",
     "public_instance_commitment",
 )
@@ -225,14 +248,17 @@ NON_CLAIMS = [
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_gate_value_projection_proof_input.py --write-json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.tsv",
+    "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --write-json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_projection_proof_input",
+    "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_gate_value_projection_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_public_row_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test zkai_vector_block_residual_add_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test --lib stwo_backend::d64_native_rmsnorm_air_feasibility::tests::d64_rmsnorm_air_feasibility_records_existing_component_no_go --features stwo-backend -- --nocapture --exact",
@@ -293,6 +319,18 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_gate_value_projection_statement_commitment_drift", "source_probe"),
     ("d128_gate_value_projection_public_instance_commitment_drift", "source_probe"),
     ("d128_gate_value_projection_route_statement_commitment_drift", "backend_routes"),
+    ("d128_activation_swiglu_route_promoted", "backend_routes"),
+    ("partial_d128_activation_swiglu_proof_removed", "proof_status"),
+    ("partial_d128_activation_swiglu_verifier_removed", "proof_status"),
+    ("partial_d128_activation_swiglu_local_roundtrip_removed", "proof_status"),
+    ("partial_d128_activation_swiglu_checked_in_artifact_smuggled", "proof_status"),
+    ("d128_activation_swiglu_source_statement_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_activation_lookup_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_hidden_activation_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_row_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_statement_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_public_instance_commitment_drift", "source_probe"),
+    ("d128_activation_swiglu_route_statement_commitment_drift", "backend_routes"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
@@ -333,6 +371,10 @@ D128_BRIDGE_GATE = _load_module(
 D128_GATE_VALUE_GATE = _load_module(
     D128_GATE_VALUE_GATE_PATH,
     "zkai_d128_gate_value_projection_for_backend_spike",
+)
+D128_ACTIVATION_GATE = _load_module(
+    D128_ACTIVATION_GATE_PATH,
+    "zkai_d128_activation_swiglu_for_backend_spike",
 )
 
 
@@ -630,6 +672,56 @@ def build_source_probe() -> dict[str, Any]:
     if d128_gate_value_evidence.get("gate_value_projection_output_commitment") == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT:
         raise D128BackendSpikeError("d128 gate/value output commitment relabeled as full output")
 
+    d128_activation_module_path = "src/stwo_backend/d128_native_activation_swiglu_proof.rs"
+    d128_activation_module = read_repo_file(d128_activation_module_path)
+    if "mod d128_native_activation_swiglu_proof;" not in mod_rs:
+        raise D128BackendSpikeError("d128 activation/SwiGLU module missing from mod.rs")
+    missing_d128_activation_symbols = []
+    for symbol in D128_ACTIVATION_SYMBOLS:
+        if not rust_declares_symbol(
+            d128_activation_module, symbol
+        ) or not rust_reexports_symbol(mod_rs, "d128_native_activation_swiglu_proof", symbol):
+            missing_d128_activation_symbols.append(symbol)
+    if missing_d128_activation_symbols:
+        raise D128BackendSpikeError(
+            "d128 activation/SwiGLU route disappeared; refresh this partial-go gate"
+        )
+
+    d128_activation_evidence = load_json(D128_ACTIVATION_EVIDENCE)
+    try:
+        D128_ACTIVATION_GATE.validate_payload(d128_activation_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("d128 activation/SwiGLU evidence failed validation") from err
+    for field, expected in {
+        "schema": "zkai-d128-activation-swiglu-air-proof-input-v1",
+        "decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "width": TARGET_WIDTH,
+        "ff_dim": TARGET_FF_DIM,
+        "row_count": TARGET_FF_DIM,
+        "activation_lookup_rows": D128_ACTIVATION_GATE.ACTIVATION_TABLE_ROWS,
+        "swiglu_mix_rows": TARGET_FF_DIM,
+    }.items():
+        expect_equal(d128_activation_evidence.get(field), expected, f"d128 activation/SwiGLU {field}")
+    expect_equal(
+        d128_activation_evidence.get("source_gate_value_projection_output_commitment"),
+        d128_gate_value_evidence.get("gate_value_projection_output_commitment"),
+        "d128 activation source gate/value output commitment",
+    )
+    expect_equal(
+        d128_activation_evidence.get("source_gate_value_projection_statement_commitment"),
+        d128_gate_value_evidence.get("statement_commitment"),
+        "d128 activation source gate/value statement commitment",
+    )
+    expect_equal(
+        d128_activation_evidence.get("source_gate_value_projection_public_instance_commitment"),
+        d128_gate_value_evidence.get("public_instance_commitment"),
+        "d128 activation source gate/value public-instance commitment",
+    )
+    if d128_activation_evidence.get("hidden_activation_commitment") == D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT:
+        raise D128BackendSpikeError("d128 activation hidden commitment relabeled as full output")
+
     missing_d128_modules = []
     for path in EXPECTED_D128_MODULES:
         full = ROOT / path
@@ -762,6 +854,42 @@ def build_source_probe() -> dict[str, Any]:
                 == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT
             ),
         },
+        "d128_activation_swiglu": {
+            "status": "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+            "module": repo_file_descriptor(d128_activation_module_path),
+            "evidence": source_descriptor(D128_ACTIVATION_EVIDENCE, d128_activation_evidence),
+            "present_symbols": list(D128_ACTIVATION_SYMBOLS),
+            "target_width": d128_activation_evidence["width"],
+            "target_ff_dim": d128_activation_evidence["ff_dim"],
+            "row_count": d128_activation_evidence["row_count"],
+            "activation_lookup_rows": d128_activation_evidence["activation_lookup_rows"],
+            "source_gate_value_projection_statement_commitment": d128_activation_evidence[
+                "source_gate_value_projection_statement_commitment"
+            ],
+            "source_gate_value_projection_public_instance_commitment": d128_activation_evidence[
+                "source_gate_value_projection_public_instance_commitment"
+            ],
+            "source_gate_projection_output_commitment": d128_activation_evidence[
+                "source_gate_projection_output_commitment"
+            ],
+            "source_value_projection_output_commitment": d128_activation_evidence[
+                "source_value_projection_output_commitment"
+            ],
+            "source_gate_value_projection_output_commitment": d128_activation_evidence[
+                "source_gate_value_projection_output_commitment"
+            ],
+            "activation_lookup_commitment": d128_activation_evidence["activation_lookup_commitment"],
+            "proof_native_parameter_commitment": d128_activation_evidence["proof_native_parameter_commitment"],
+            "activation_output_commitment": d128_activation_evidence["activation_output_commitment"],
+            "hidden_activation_commitment": d128_activation_evidence["hidden_activation_commitment"],
+            "activation_swiglu_row_commitment": d128_activation_evidence["activation_swiglu_row_commitment"],
+            "statement_commitment": d128_activation_evidence["statement_commitment"],
+            "public_instance_commitment": d128_activation_evidence["public_instance_commitment"],
+            "hidden_relabels_full_output": (
+                d128_activation_evidence["hidden_activation_commitment"]
+                == D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT
+            ),
+        },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
             "module": repo_file_descriptor(residual_module_path),
@@ -799,7 +927,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "verifier_handle_exists": False,
             "proof_size_bytes": None,
             "verifier_time_ms": None,
-            "blocker": "d128 RMSNorm public-row, bridge, and gate/value native proofs exist, but activation, down-projection, residual, and full block verifier do not",
+            "blocker": "d128 RMSNorm public-row, bridge, gate/value, and activation native proofs exist, but down-projection, native residual, composition, and full block verifier do not",
             "missing_modules": source_probe["missing_d128_modules"],
             "missing_export_symbols": source_probe["missing_d128_export_symbols"],
         },
@@ -885,6 +1013,55 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             ],
         },
         {
+            "route": "direct_d128_activation_swiglu_air",
+            "status": "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": True,
+            "verifier_handle_exists": True,
+            "local_roundtrip_proof_constructed": True,
+            "checked_in_proof_artifact_exists": False,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "activation/SwiGLU slice only; not down-projection, residual, composition, or full block",
+            "evidence": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json",
+            "present_symbols": source_probe["d128_activation_swiglu"]["present_symbols"],
+            "source_gate_value_projection_statement_commitment": source_probe["d128_activation_swiglu"][
+                "source_gate_value_projection_statement_commitment"
+            ],
+            "source_gate_value_projection_public_instance_commitment": source_probe["d128_activation_swiglu"][
+                "source_gate_value_projection_public_instance_commitment"
+            ],
+            "source_gate_projection_output_commitment": source_probe["d128_activation_swiglu"][
+                "source_gate_projection_output_commitment"
+            ],
+            "source_value_projection_output_commitment": source_probe["d128_activation_swiglu"][
+                "source_value_projection_output_commitment"
+            ],
+            "source_gate_value_projection_output_commitment": source_probe["d128_activation_swiglu"][
+                "source_gate_value_projection_output_commitment"
+            ],
+            "activation_output_commitment": source_probe["d128_activation_swiglu"][
+                "activation_output_commitment"
+            ],
+            "activation_lookup_commitment": source_probe["d128_activation_swiglu"][
+                "activation_lookup_commitment"
+            ],
+            "hidden_activation_commitment": source_probe["d128_activation_swiglu"][
+                "hidden_activation_commitment"
+            ],
+            "activation_swiglu_row_commitment": source_probe["d128_activation_swiglu"][
+                "activation_swiglu_row_commitment"
+            ],
+            "proof_native_parameter_commitment": source_probe["d128_activation_swiglu"][
+                "proof_native_parameter_commitment"
+            ],
+            "statement_commitment": source_probe["d128_activation_swiglu"]["statement_commitment"],
+            "public_instance_commitment": source_probe["d128_activation_swiglu"][
+                "public_instance_commitment"
+            ],
+        },
+        {
             "route": "lift_existing_d64_modules_by_metadata",
             "status": "NO_GO",
             "target_width": TARGET_WIDTH,
@@ -961,6 +1138,7 @@ def build_payload() -> dict[str, Any]:
         "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
         "d128_rmsnorm_to_projection_bridge_route": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "d128_gate_value_projection_route": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
+        "d128_activation_swiglu_route": "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
         "blocked_before_metrics": True,
@@ -981,6 +1159,10 @@ def build_payload() -> dict[str, Any]:
         "partial_d128_gate_value_projection_verifier_exists": True,
         "partial_d128_gate_value_projection_local_roundtrip_proof_constructed": True,
         "partial_d128_gate_value_projection_checked_in_proof_artifact_exists": False,
+        "partial_d128_activation_swiglu_proof_exists": True,
+        "partial_d128_activation_swiglu_verifier_exists": True,
+        "partial_d128_activation_swiglu_local_roundtrip_proof_constructed": True,
+        "partial_d128_activation_swiglu_checked_in_proof_artifact_exists": False,
         "partial_parameterized_residual_add_proof_exists": True,
         "partial_parameterized_residual_add_verifier_exists": True,
         "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
@@ -1231,6 +1413,94 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         drift_d128_gate_value_projection_route_statement,
     )
 
+    def promote_d128_activation_swiglu_route(p: dict[str, Any]) -> None:
+        p["summary"]["d128_activation_swiglu_route"] = "GO_D128_FULL_ACTIVATION_BLOCK"
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["status"] = "GO_D128_FULL_ACTIVATION_BLOCK"
+        route["proof_size_bytes"] = 4096
+
+    add(
+        "d128_activation_swiglu_route_promoted",
+        "backend_routes",
+        promote_d128_activation_swiglu_route,
+    )
+    add(
+        "partial_d128_activation_swiglu_proof_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_activation_swiglu_proof_exists", False),
+    )
+    add(
+        "partial_d128_activation_swiglu_verifier_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__("partial_d128_activation_swiglu_verifier_exists", False),
+    )
+    add(
+        "partial_d128_activation_swiglu_local_roundtrip_removed",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_activation_swiglu_local_roundtrip_proof_constructed", False
+        ),
+    )
+    add(
+        "partial_d128_activation_swiglu_checked_in_artifact_smuggled",
+        "proof_status",
+        lambda p: p["proof_status"].__setitem__(
+            "partial_d128_activation_swiglu_checked_in_proof_artifact_exists", True
+        ),
+    )
+    add(
+        "d128_activation_swiglu_source_statement_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "source_gate_value_projection_statement_commitment", "blake2b-256:" + "51" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_activation_lookup_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "activation_lookup_commitment", "blake2b-256:" + "52" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_hidden_activation_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "hidden_activation_commitment", "blake2b-256:" + "53" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_row_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "activation_swiglu_row_commitment", "blake2b-256:" + "54" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_statement_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "statement_commitment", "blake2b-256:" + "55" * 32
+        ),
+    )
+    add(
+        "d128_activation_swiglu_public_instance_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_activation_swiglu"].__setitem__(
+            "public_instance_commitment", "blake2b-256:" + "56" * 32
+        ),
+    )
+
+    def drift_d128_activation_swiglu_route_statement(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["statement_commitment"] = "blake2b-256:" + "57" * 32
+
+    add(
+        "d128_activation_swiglu_route_statement_commitment_drift",
+        "backend_routes",
+        drift_d128_activation_swiglu_route_statement,
+    )
+
     def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
         route = next(row for row in p["backend_routes"] if row["route"] == "parameterized_transformer_block_air")
         route["status"] = "GO"
@@ -1338,6 +1608,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         summary.get("d128_gate_value_projection_route"),
         "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
         "summary d128 gate/value projection route",
+    )
+    expect_equal(
+        summary.get("d128_activation_swiglu_route"),
+        "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+        "summary d128 activation/SwiGLU route",
     )
     expect_equal(
         summary.get("parameterized_residual_add_route"),
@@ -1496,6 +1771,60 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             f"d128 gate/value projection {field}",
         )
         expect_equal(actual, expected, f"d128 gate/value projection {field}")
+    activation_probe = require_object(
+        source_probe.get("d128_activation_swiglu"),
+        "d128 activation/SwiGLU probe",
+    )
+    expect_equal(
+        activation_probe.get("status"),
+        "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+        "d128 activation/SwiGLU status",
+    )
+    expect_equal(
+        activation_probe.get("present_symbols"),
+        list(D128_ACTIVATION_SYMBOLS),
+        "present d128 activation/SwiGLU symbol inventory",
+    )
+    expect_equal(
+        activation_probe.get("hidden_relabels_full_output"),
+        False,
+        "d128 activation/SwiGLU hidden relabel guard",
+    )
+    expect_equal(
+        activation_probe.get("source_gate_value_projection_output_commitment"),
+        gate_value_probe.get("gate_value_projection_output_commitment"),
+        "d128 activation/SwiGLU source gate/value output commitment",
+    )
+    expect_equal(
+        activation_probe.get("source_gate_value_projection_statement_commitment"),
+        gate_value_probe.get("statement_commitment"),
+        "d128 activation/SwiGLU source gate/value statement commitment",
+    )
+    expect_equal(
+        activation_probe.get("source_gate_value_projection_public_instance_commitment"),
+        gate_value_probe.get("public_instance_commitment"),
+        "d128 activation/SwiGLU source gate/value public-instance commitment",
+    )
+    expected_activation_commitments = {
+        "source_gate_value_projection_statement_commitment": gate_value_probe.get("statement_commitment"),
+        "source_gate_value_projection_public_instance_commitment": gate_value_probe.get("public_instance_commitment"),
+        "source_gate_projection_output_commitment": D128_GATE_VALUE_GATE.GATE_PROJECTION_OUTPUT_COMMITMENT,
+        "source_value_projection_output_commitment": D128_GATE_VALUE_GATE.VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "source_gate_value_projection_output_commitment": D128_GATE_VALUE_GATE.GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "activation_lookup_commitment": D128_ACTIVATION_GATE.ACTIVATION_LOOKUP_COMMITMENT,
+        "proof_native_parameter_commitment": D128_ACTIVATION_GATE.PROOF_NATIVE_PARAMETER_COMMITMENT,
+        "activation_output_commitment": D128_ACTIVATION_GATE.ACTIVATION_OUTPUT_COMMITMENT,
+        "hidden_activation_commitment": D128_ACTIVATION_GATE.HIDDEN_ACTIVATION_COMMITMENT,
+        "activation_swiglu_row_commitment": D128_ACTIVATION_GATE.ACTIVATION_SWIGLU_ROW_COMMITMENT,
+        "statement_commitment": D128_ACTIVATION_GATE.STATEMENT_COMMITMENT,
+        "public_instance_commitment": D128_ACTIVATION_GATE.PUBLIC_INSTANCE_COMMITMENT,
+    }
+    for field, expected in expected_activation_commitments.items():
+        actual = require_commitment(
+            activation_probe.get(field),
+            f"d128 activation/SwiGLU {field}",
+        )
+        expect_equal(actual, expected, f"d128 activation/SwiGLU {field}")
     residual_probe = require_object(
         source_probe.get("parameterized_residual_add"),
         "parameterized residual-add probe",
@@ -1532,6 +1861,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "direct_d128_rmsnorm_public_row_air",
         "direct_d128_rmsnorm_to_projection_bridge_air",
         "direct_d128_gate_value_projection_air",
+        "direct_d128_activation_swiglu_air",
         "lift_existing_d64_modules_by_metadata",
         "parameterized_vector_residual_add_air",
         "parameterized_transformer_block_air",
@@ -1604,6 +1934,22 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         )
         expect_equal(actual, expected, f"direct d128 gate/value projection route {field}")
     expect_equal(
+        route_by_name["direct_d128_activation_swiglu_air"].get("status"),
+        "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+        "direct d128 activation/SwiGLU route status",
+    )
+    expect_equal(
+        route_by_name["direct_d128_activation_swiglu_air"].get("source_gate_value_projection_output_commitment"),
+        gate_value_probe.get("gate_value_projection_output_commitment"),
+        "direct d128 activation/SwiGLU route source gate/value output commitment",
+    )
+    for field, expected in expected_activation_commitments.items():
+        actual = require_commitment(
+            route_by_name["direct_d128_activation_swiglu_air"].get(field),
+            f"direct d128 activation/SwiGLU route {field}",
+        )
+        expect_equal(actual, expected, f"direct d128 activation/SwiGLU route {field}")
+    expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
         "parameterized residual-add route status",
@@ -1621,6 +1967,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             "direct_d128_rmsnorm_public_row_air",
             "direct_d128_rmsnorm_to_projection_bridge_air",
             "direct_d128_gate_value_projection_air",
+            "direct_d128_activation_swiglu_air",
             "parameterized_vector_residual_add_air",
         }:
             expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
@@ -1707,6 +2054,26 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         proof_status.get("partial_d128_gate_value_projection_checked_in_proof_artifact_exists"),
         False,
         "partial d128 gate/value projection checked-in proof artifact",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_activation_swiglu_proof_exists"),
+        True,
+        "partial d128 activation/SwiGLU proof exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_activation_swiglu_verifier_exists"),
+        True,
+        "partial d128 activation/SwiGLU verifier exists",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_activation_swiglu_local_roundtrip_proof_constructed"),
+        True,
+        "partial d128 activation/SwiGLU local roundtrip proof",
+    )
+    expect_equal(
+        proof_status.get("partial_d128_activation_swiglu_checked_in_proof_artifact_exists"),
+        False,
+        "partial d128 activation/SwiGLU checked-in proof artifact",
     )
     expect_equal(
         proof_status.get("partial_parameterized_residual_add_proof_exists"),

@@ -42,6 +42,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         )
         self.assertEqual(payload["summary"]["d128_gate_value_projection_route"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
+        self.assertEqual(payload["summary"]["d128_activation_swiglu_route"], "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
@@ -79,8 +80,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(probe["missing_d128_export_symbols"], list(GATE.EXPECTED_D128_EXPORT_SYMBOLS))
         self.assertNotIn("src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("src/stwo_backend/d128_native_gate_value_projection_proof.rs", probe["missing_d128_modules"])
+        self.assertNotIn("src/stwo_backend/d128_native_activation_swiglu_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("prove_zkai_d128_rmsnorm_to_projection_bridge_envelope", probe["missing_d128_export_symbols"])
         self.assertNotIn("prove_zkai_d128_gate_value_projection_envelope", probe["missing_d128_export_symbols"])
+        self.assertNotIn("prove_zkai_d128_activation_swiglu_envelope", probe["missing_d128_export_symbols"])
         self.assertEqual(probe["d128_rmsnorm_public_row"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(
@@ -130,6 +133,20 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 gate_value_evidence[field],
             )
         self.assertFalse(probe["d128_gate_value_projection"]["projection_output_relabels_full_output"])
+        self.assertEqual(probe["d128_activation_swiglu"]["status"], "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY")
+        self.assertEqual(probe["d128_activation_swiglu"]["present_symbols"], list(GATE.D128_ACTIVATION_SYMBOLS))
+        activation_evidence = GATE.load_json(GATE.D128_ACTIVATION_EVIDENCE)
+        for field in GATE.D128_ACTIVATION_COMMITMENT_FIELDS:
+            self.assertIn(field, probe["d128_activation_swiglu"])
+            self.assertEqual(
+                probe["d128_activation_swiglu"][field],
+                activation_evidence[field],
+            )
+        self.assertEqual(
+            probe["d128_activation_swiglu"]["source_gate_value_projection_output_commitment"],
+            probe["d128_gate_value_projection"]["gate_value_projection_output_commitment"],
+        )
+        self.assertFalse(probe["d128_activation_swiglu"]["hidden_relabels_full_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
@@ -179,6 +196,19 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 GATE.build_source_probe()
         finally:
             GATE.D128_GATE_VALUE_GATE.validate_payload = original
+
+    def test_source_probe_runs_full_activation_swiglu_evidence_validator(self) -> None:
+        original = GATE.D128_ACTIVATION_GATE.validate_payload
+
+        def reject(_payload: dict) -> None:
+            raise GATE.D128_ACTIVATION_GATE.ActivationSwiGluInputError("simulated activation evidence drift")
+
+        try:
+            GATE.D128_ACTIVATION_GATE.validate_payload = reject
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU evidence"):
+                GATE.build_source_probe()
+        finally:
+            GATE.D128_ACTIVATION_GATE.validate_payload = original
 
     def test_source_probe_runs_full_bridge_evidence_validator(self) -> None:
         original = GATE.D128_BRIDGE_GATE.validate_payload
@@ -260,6 +290,9 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(routes["direct_d128_gate_value_projection_air"]["status"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
         self.assertTrue(routes["direct_d128_gate_value_projection_air"]["local_roundtrip_proof_constructed"])
         self.assertFalse(routes["direct_d128_gate_value_projection_air"]["checked_in_proof_artifact_exists"])
+        self.assertEqual(routes["direct_d128_activation_swiglu_air"]["status"], "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY")
+        self.assertTrue(routes["direct_d128_activation_swiglu_air"]["local_roundtrip_proof_constructed"])
+        self.assertFalse(routes["direct_d128_activation_swiglu_air"]["checked_in_proof_artifact_exists"])
         self.assertEqual(routes["lift_existing_d64_modules_by_metadata"]["status"], "NO_GO")
         self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
@@ -286,6 +319,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_gate_value_projection_verifier_exists"])
         self.assertTrue(status["partial_d128_gate_value_projection_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_gate_value_projection_checked_in_proof_artifact_exists"])
+        self.assertTrue(status["partial_d128_activation_swiglu_proof_exists"])
+        self.assertTrue(status["partial_d128_activation_swiglu_verifier_exists"])
+        self.assertTrue(status["partial_d128_activation_swiglu_local_roundtrip_proof_constructed"])
+        self.assertFalse(status["partial_d128_activation_swiglu_checked_in_proof_artifact_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
@@ -372,6 +409,32 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "parameterized full-block route status"):
             GATE.validate_payload(payload)
 
+    def test_rejects_activation_source_binding_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d128_activation_swiglu"][
+            "source_gate_value_projection_statement_commitment"
+        ] = "blake2b-256:" + "66" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU source gate/value statement"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_activation_route_commitment_drift(self) -> None:
+        payload = self.fresh_payload()
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["hidden_activation_commitment"] = "blake2b-256:" + "77" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "activation/SwiGLU route hidden"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_activation_hidden_full_output_relabeling(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_probe"]["d128_activation_swiglu"][
+            "hidden_activation_commitment"
+        ] = GATE.D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT
+        payload["source_probe"]["d128_activation_swiglu"]["hidden_relabels_full_output"] = True
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_activation_swiglu_air")
+        route["hidden_activation_commitment"] = GATE.D128_ACTIVATION_GATE.OUTPUT_ACTIVATION_COMMITMENT
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "hidden relabel guard"):
+            GATE.validate_payload(payload)
+
     def test_rejects_removed_missing_module(self) -> None:
         payload = self.fresh_payload()
         payload["source_probe"]["missing_d128_modules"] = payload["source_probe"]["missing_d128_modules"][1:]
@@ -396,12 +459,21 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(cases["direct_d128_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(cases["d128_rmsnorm_to_projection_bridge_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(cases["d128_gate_value_projection_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(cases["d128_activation_swiglu_route_promoted"]["rejection_layer"], "backend_routes")
         self.assertEqual(
             cases["d128_gate_value_projection_statement_commitment_drift"]["rejection_layer"],
             "source_probe",
         )
         self.assertEqual(
             cases["d128_gate_value_projection_route_statement_commitment_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_statement_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_activation_swiglu_route_statement_commitment_drift"]["rejection_layer"],
             "backend_routes",
         )
         self.assertEqual(cases["full_block_parameterized_route_promoted"]["rejection_layer"], "backend_routes")

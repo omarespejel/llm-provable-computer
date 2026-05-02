@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_activation_swiglu_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_gate_value_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
@@ -90,6 +92,22 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_activation_swiglu_proof::{
+    prove_zkai_d128_activation_swiglu_envelope, verify_zkai_d128_activation_swiglu_envelope,
+    zkai_d128_activation_swiglu_input_from_json_str, D128ActivationSwiGluRow,
+    ZkAiD128ActivationSwiGluEnvelope, ZkAiD128ActivationSwiGluProofInput,
+    ZKAI_D128_ACTIVATION_LOOKUP_COMMITMENT, ZKAI_D128_ACTIVATION_OUTPUT_COMMITMENT,
+    ZKAI_D128_ACTIVATION_SWIGLU_DECISION, ZKAI_D128_ACTIVATION_SWIGLU_INPUT_DECISION,
+    ZKAI_D128_ACTIVATION_SWIGLU_INPUT_SCHEMA, ZKAI_D128_ACTIVATION_SWIGLU_MAX_JSON_BYTES,
+    ZKAI_D128_ACTIVATION_SWIGLU_MAX_PROOF_BYTES, ZKAI_D128_ACTIVATION_SWIGLU_NEXT_BACKEND_STEP,
+    ZKAI_D128_ACTIVATION_SWIGLU_PROOF_NATIVE_PARAMETER_COMMITMENT,
+    ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
+    ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ACTIVATION_SWIGLU_ROW_COMMITMENT, ZKAI_D128_ACTIVATION_SWIGLU_SEMANTIC_SCOPE,
+    ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+    ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_VERSION, ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_gate_value_projection_proof::{
