@@ -200,6 +200,25 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
             self.assertEqual(tsv[0].split("\t"), list(GATE.TSV_COLUMNS))
             self.assertIn("nanozk_d128_source_context", tsv[3])
 
+    def test_write_outputs_fsyncs_parent_directory_after_replace(self) -> None:
+        payload = self.fresh_payload()
+        original_fsync_parent_directories = GATE._fsync_parent_directories
+        synced_paths: list[pathlib.Path] = []
+
+        def record_fsync_parent_directories(paths: list[pathlib.Path]) -> None:
+            synced_paths.extend(paths)
+
+        try:
+            GATE._fsync_parent_directories = record_fsync_parent_directories
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+                tmp = pathlib.Path(raw_tmp)
+                json_path = tmp / "d128-target.json"
+                tsv_path = tmp / "d128-target.tsv"
+                GATE.write_outputs(payload, json_path, tsv_path)
+                self.assertEqual(synced_paths, [json_path.resolve(), tsv_path.resolve()])
+        finally:
+            GATE._fsync_parent_directories = original_fsync_parent_directories
+
     def test_write_outputs_rejects_paths_outside_repo(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory() as raw_tmp:

@@ -774,6 +774,30 @@ def _stage_bytes(path: pathlib.Path, data: bytes) -> pathlib.Path:
         return pathlib.Path(handle.name)
 
 
+def _fsync_parent_directory(path: pathlib.Path) -> None:
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    if directory_flag is None:
+        return
+    try:
+        fd = os.open(str(path.parent), os.O_RDONLY | directory_flag)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _fsync_parent_directories(paths: list[pathlib.Path]) -> None:
+    seen: set[pathlib.Path] = set()
+    for path in paths:
+        parent = path.parent
+        if parent in seen:
+            continue
+        seen.add(parent)
+        _fsync_parent_directory(path)
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
     json_output = _validated_output_path(json_path) if json_path is not None else None
@@ -793,6 +817,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             previous = output_path.read_bytes() if existed else None
             tmp_path.replace(output_path)
             committed.append((output_path, existed, previous))
+        _fsync_parent_directories([output_path for _, output_path in staged])
     except Exception as err:
         cleanup_errors: list[str] = []
         for tmp_path, _ in staged:
@@ -806,10 +831,12 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
                     rollback_tmp = _stage_bytes(output_path, previous)
                     try:
                         rollback_tmp.replace(output_path)
+                        _fsync_parent_directory(output_path)
                     finally:
                         rollback_tmp.unlink(missing_ok=True)
                 else:
                     output_path.unlink(missing_ok=True)
+                    _fsync_parent_directory(output_path)
             except OSError as rollback_err:
                 cleanup_errors.append(f"rollback failed for {output_path}: {rollback_err}")
         if isinstance(err, OSError):
