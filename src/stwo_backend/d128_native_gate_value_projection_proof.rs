@@ -1306,6 +1306,43 @@ mod tests {
     }
 
     #[test]
+    fn gate_value_rejects_proof_native_parameter_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["proof_native_parameter_commitment"] =
+            Value::String(format!("blake2b-256:{}", "99".repeat(32)));
+        let error = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("proof-native parameter commitment"));
+    }
+
+    #[test]
+    fn gate_value_rejects_statement_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["statement_commitment"] = Value::String(format!("blake2b-256:{}", "aa".repeat(32)));
+        let error = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("statement commitment"));
+    }
+
+    #[test]
+    fn gate_value_rejects_public_instance_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["public_instance_commitment"] =
+            Value::String(format!("blake2b-256:{}", "bb".repeat(32)));
+        let error = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("public instance commitment"));
+    }
+
+    #[test]
     fn gate_value_rejects_oversized_input_json() {
         let oversized = " ".repeat(ZKAI_D128_GATE_VALUE_PROJECTION_MAX_JSON_BYTES + 1);
         let error = zkai_d128_gate_value_projection_input_from_json_str(&oversized).unwrap_err();

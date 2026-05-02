@@ -58,7 +58,7 @@ time, or relabeling suite.
 | Residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `29 / 29` rejected |
+| Mutation checks | `36 / 36` rejected |
 
 ## Backend-route classification
 
