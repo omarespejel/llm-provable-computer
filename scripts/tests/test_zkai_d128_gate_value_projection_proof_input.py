@@ -33,6 +33,14 @@ class ZkAiD128GateValueProjectionProofInputTests(unittest.TestCase):
         self.assertEqual(payload["gate_matrix_root"], GATE_VALUE.GATE_MATRIX_ROOT)
         self.assertEqual(payload["value_matrix_root"], GATE_VALUE.VALUE_MATRIX_ROOT)
         self.assertNotEqual(payload["gate_value_projection_output_commitment"], GATE_VALUE.OUTPUT_ACTIVATION_COMMITMENT)
+        rows, _gate, _value = GATE_VALUE.build_rows(payload["projection_input_q8"])
+        raw_gate_0 = sum(
+            row["product_q8"]
+            for row in rows
+            if row["matrix"] == "gate" and row["output_index"] == 0
+        )
+        self.assertEqual(payload["gate_projection_q8"][0], raw_gate_0)
+        self.assertNotEqual(payload["gate_projection_q8"][0], raw_gate_0 // GATE_VALUE.WIDTH)
 
     def test_payload_rejects_projection_output_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()

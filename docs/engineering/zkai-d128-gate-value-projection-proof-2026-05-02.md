@@ -36,12 +36,12 @@ full-block metrics seams.
 | Gate matrix root | `blake2b-256:101e9f5ad1079bc7ed0e10df96bf30091dcf82d7a3010c5bf7ced764fe15f08e` |
 | Value matrix root | `blake2b-256:ef43adb2d5ab19880576bd0a46692f9c7daf4f0548dc7c6bd2785d9f5b8c0bdd` |
 | Proof-native parameter commitment | `blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17` |
-| Gate output commitment | `blake2b-256:05538b00310048936de9a458484a51f94b691d74e110d2fbb82c947c81356f61` |
-| Value output commitment | `blake2b-256:11aedf9cd6138c1d0702ea1987df3c63f6b83e98c1b239cbd33e778c1da3f204` |
-| Gate/value output commitment | `blake2b-256:dd3fdabfdb0ae86a007a9e67f0a1b3c975ab987abc20900e984ceae40c56e7eb` |
+| Gate output commitment | `blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7` |
+| Value output commitment | `blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf` |
+| Gate/value output commitment | `blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3` |
 | Multiplication-row commitment | `blake2b-256:1dfcd5a2a972dfcf55ecf41a57f82f3225923a2157bd4dc61bb11d4448e74a4a` |
-| Statement commitment | `blake2b-256:0263956e33bd4d828284965902d57a1a4a07a05098c2dc5829199ddb7c4e865d` |
-| Public-instance commitment | `blake2b-256:2275b0cf96085c326da243f42ad45fd2cd63555673dc2a5b8d512528bb2be556` |
+| Statement commitment | `blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf` |
+| Public-instance commitment | `blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c` |
 
 ## What is proved
 
@@ -50,6 +50,10 @@ The native AIR checks every public multiplication row:
 ```text
 projection_input_q8 * weight_q8 = product_q8
 ```
+
+The public gate/value vectors are the raw projection sums
+`sum_i(product_q8_i)` for each output lane. They are not divided by `width` and
+are not averaged.
 
 The verifier additionally recomputes:
 
