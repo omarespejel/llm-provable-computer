@@ -128,9 +128,16 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
     def test_rejects_self_consistent_attempt_to_call_harness_a_backend(self) -> None:
         payload = self.fresh_payload()
         candidate = next(
+            (
             item
             for item in payload["backend_attempt"]["candidate_inventory"]
             if item["candidate_id"] == "phase36_recursive_verifier_harness_receipt"
+            ),
+            None,
+        )
+        self.assertIsNotNone(
+            candidate,
+            "missing phase36_recursive_verifier_harness_receipt candidate in backend inventory",
         )
         candidate["status"] = "OUTER_PROOF_VERIFIED"
         candidate["accepted_as_outer_backend"] = True
@@ -309,6 +316,38 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
 
             self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
             self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
+    def test_write_outputs_preserves_stage_error_when_cleanup_fails(self) -> None:
+        payload = self.fresh_payload()
+        original_stage_text = GATE._stage_text
+
+        class UnlinkFailingTmp:
+            def __str__(self) -> str:
+                return "unlink-failing.tmp"
+
+            def unlink(self, missing_ok: bool = False) -> None:
+                raise OSError("cleanup denied")
+
+        call_count = 0
+
+        def stage_then_fail(_path: pathlib.Path, _text: str) -> UnlinkFailingTmp:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return UnlinkFailingTmp()
+            raise OSError("stage failed")
+
+        try:
+            GATE._stage_text = stage_then_fail
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+                tmp = pathlib.Path(raw_tmp)
+                with self.assertRaisesRegex(
+                    GATE.D64NestedVerifierBackendSpikeError,
+                    "stage failed.*cleanup failed.*cleanup denied",
+                ):
+                    GATE.write_outputs(payload, tmp / "backend-spike.json", tmp / "backend-spike.tsv")
+        finally:
+            GATE._stage_text = original_stage_text
 
 
 if __name__ == "__main__":

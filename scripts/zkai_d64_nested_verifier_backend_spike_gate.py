@@ -770,15 +770,25 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             tmp_path.replace(output_path)
             committed.append((output_path, existed, previous))
     except Exception as err:
+        cleanup_errors: list[str] = []
         for tmp_path, _ in staged:
-            tmp_path.unlink(missing_ok=True)
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError as cleanup_err:
+                cleanup_errors.append(f"cleanup failed for {tmp_path}: {cleanup_err}")
         for output_path, existed, previous in reversed(committed):
-            if existed and previous is not None:
-                output_path.write_bytes(previous)
-            else:
-                output_path.unlink(missing_ok=True)
+            try:
+                if existed and previous is not None:
+                    output_path.write_bytes(previous)
+                else:
+                    output_path.unlink(missing_ok=True)
+            except OSError as rollback_err:
+                cleanup_errors.append(f"rollback failed for {output_path}: {rollback_err}")
         if isinstance(err, OSError):
-            raise D64NestedVerifierBackendSpikeError(f"failed to write outputs: {err}") from err
+            detail = f"failed to write outputs: {err}"
+            if cleanup_errors:
+                detail += "; " + "; ".join(cleanup_errors)
+            raise D64NestedVerifierBackendSpikeError(detail) from err
         raise
 
 
