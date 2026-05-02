@@ -533,6 +533,16 @@ def build_source_probe() -> dict[str, Any]:
         d128_rmsnorm_evidence.get("rmsnorm_output_row_commitment"),
         "d128 bridge source RMSNorm output row commitment",
     )
+    expect_equal(
+        d128_bridge_evidence.get("source_rmsnorm_statement_commitment"),
+        d128_rmsnorm_evidence.get("statement_commitment"),
+        "d128 bridge source RMSNorm statement commitment",
+    )
+    expect_equal(
+        d128_bridge_evidence.get("source_rmsnorm_public_instance_commitment"),
+        d128_rmsnorm_evidence.get("public_instance_commitment"),
+        "d128 bridge source RMSNorm public-instance commitment",
+    )
 
     missing_d128_modules = []
     for path in EXPECTED_D128_MODULES:
@@ -617,6 +627,9 @@ def build_source_probe() -> dict[str, Any]:
             "operation": d128_rmsnorm_evidence["operation"],
             "target_width": d128_rmsnorm_evidence["width"],
             "row_count": d128_rmsnorm_evidence["row_count"],
+            "statement_commitment": d128_rmsnorm_evidence["statement_commitment"],
+            "public_instance_commitment": d128_rmsnorm_evidence["public_instance_commitment"],
+            "rmsnorm_output_row_commitment": d128_rmsnorm_evidence["rmsnorm_output_row_commitment"],
             "rms_q8": d128_rmsnorm_evidence["rms_q8"],
         },
         "d128_rmsnorm_to_projection_bridge": {
@@ -627,6 +640,10 @@ def build_source_probe() -> dict[str, Any]:
             "operation": d128_bridge_evidence["operation"],
             "target_width": d128_bridge_evidence["width"],
             "row_count": d128_bridge_evidence["row_count"],
+            "source_rmsnorm_statement_commitment": d128_bridge_evidence["source_rmsnorm_statement_commitment"],
+            "source_rmsnorm_public_instance_commitment": d128_bridge_evidence[
+                "source_rmsnorm_public_instance_commitment"
+            ],
             "source_rmsnorm_output_row_commitment": d128_bridge_evidence["source_rmsnorm_output_row_commitment"],
             "projection_input_row_commitment": d128_bridge_evidence["projection_input_row_commitment"],
             "projection_input_relabels_full_output": (
@@ -704,6 +721,12 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "blocker": "RMSNorm-to-projection bridge slice only; not gate/value projection, activation, down-projection, residual, or full block",
             "evidence": "docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json",
             "present_symbols": source_probe["d128_rmsnorm_to_projection_bridge"]["present_symbols"],
+            "source_rmsnorm_statement_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
+                "source_rmsnorm_statement_commitment"
+            ],
+            "source_rmsnorm_public_instance_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
+                "source_rmsnorm_public_instance_commitment"
+            ],
             "source_rmsnorm_output_row_commitment": source_probe["d128_rmsnorm_to_projection_bridge"][
                 "source_rmsnorm_output_row_commitment"
             ],
@@ -1118,6 +1141,24 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         list(D128_RMSNORM_SYMBOLS),
         "present d128 RMSNorm public-row symbol inventory",
     )
+    rmsnorm_statement_commitment = rmsnorm_probe.get("statement_commitment")
+    rmsnorm_public_instance_commitment = rmsnorm_probe.get("public_instance_commitment")
+    rmsnorm_output_row_commitment = rmsnorm_probe.get("rmsnorm_output_row_commitment")
+    expect_equal(
+        rmsnorm_statement_commitment,
+        D128_BRIDGE_GATE.SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        "d128 RMSNorm public-row statement commitment",
+    )
+    expect_equal(
+        rmsnorm_public_instance_commitment,
+        D128_BRIDGE_GATE.SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        "d128 RMSNorm public-row public-instance commitment",
+    )
+    expect_equal(
+        rmsnorm_output_row_commitment,
+        D128_BRIDGE_GATE.SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+        "d128 RMSNorm public-row output-row commitment",
+    )
     bridge_probe = require_object(
         source_probe.get("d128_rmsnorm_to_projection_bridge"),
         "d128 RMSNorm-to-projection bridge probe",
@@ -1136,6 +1177,21 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         bridge_probe.get("projection_input_relabels_full_output"),
         False,
         "d128 RMSNorm-to-projection bridge relabel guard",
+    )
+    expect_equal(
+        bridge_probe.get("source_rmsnorm_statement_commitment"),
+        rmsnorm_statement_commitment,
+        "bridge source RMSNorm statement commitment",
+    )
+    expect_equal(
+        bridge_probe.get("source_rmsnorm_public_instance_commitment"),
+        rmsnorm_public_instance_commitment,
+        "bridge source RMSNorm public-instance commitment",
+    )
+    expect_equal(
+        bridge_probe.get("source_rmsnorm_output_row_commitment"),
+        rmsnorm_output_row_commitment,
+        "bridge source RMSNorm output row commitment",
     )
     residual_probe = require_object(
         source_probe.get("parameterized_residual_add"),
@@ -1194,6 +1250,23 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get("status"),
         "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
         "direct d128 RMSNorm-to-projection bridge route status",
+    )
+    expect_equal(
+        route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get("source_rmsnorm_statement_commitment"),
+        rmsnorm_statement_commitment,
+        "direct d128 RMSNorm-to-projection bridge route source statement commitment",
+    )
+    expect_equal(
+        route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get(
+            "source_rmsnorm_public_instance_commitment"
+        ),
+        rmsnorm_public_instance_commitment,
+        "direct d128 RMSNorm-to-projection bridge route source public-instance commitment",
+    )
+    expect_equal(
+        route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get("source_rmsnorm_output_row_commitment"),
+        rmsnorm_output_row_commitment,
+        "direct d128 RMSNorm-to-projection bridge route source output-row commitment",
     )
     expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),

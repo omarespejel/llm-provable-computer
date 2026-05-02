@@ -82,6 +82,8 @@
       "proof_size_bytes": null,
       "route": "direct_d128_rmsnorm_to_projection_bridge_air",
       "source_rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
+      "source_rmsnorm_public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+      "source_rmsnorm_statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
       "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
       "target_ff_dim": null,
       "target_width": 128,
@@ -550,7 +552,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:424fda7fcb6ff1614ebda62afe29fd1a7922f9470150c6c84b497501fd460b31",
+  "gate_commitment": "blake2b-256:cad92cd2ef76ea2008aeafbb784f83eb6d4ffaf52f1ff60736a8840d8c74aafa",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -731,8 +733,11 @@
         "prove_zkai_d128_rmsnorm_public_row_envelope",
         "verify_zkai_d128_rmsnorm_public_row_envelope"
       ],
+      "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
       "rms_q8": 55,
+      "rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
       "row_count": 128,
+      "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
       "status": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
       "target_width": 128
     },
@@ -763,6 +768,8 @@
       "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
       "row_count": 128,
       "source_rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
+      "source_rmsnorm_public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+      "source_rmsnorm_statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
       "status": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
       "target_width": 128
     },
