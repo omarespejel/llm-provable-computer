@@ -507,6 +507,16 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.D128BackendSpikeError, "symlink"):
                 GATE.read_repo_file(str(symlink.relative_to(ROOT)))
 
+    def test_load_module_cleans_sys_modules_after_failure(self) -> None:
+        module_name = "zkai_d128_backend_spike_bad_module_for_test"
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            bad_module = pathlib.Path(tmp) / "bad_module.py"
+            bad_module.write_text("def broken(:\n", encoding="utf-8")
+            sys.modules.pop(module_name, None)
+            with self.assertRaises(SyntaxError):
+                GATE._load_module(bad_module, module_name)
+            self.assertNotIn(module_name, sys.modules)
+
     def test_gate_commitment_rejects_saved_artifact_drift(self) -> None:
         payload = self.fresh_payload()
         payload["source_probe"]["d64_slices"][0]["evidence"]["payload_sha256"] = "0" * 64
