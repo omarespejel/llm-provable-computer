@@ -514,13 +514,24 @@ def classify_error(error: Exception) -> str:
     return "parser_or_schema"
 
 
-def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
-    cases: list[tuple[str, str, dict[str, Any]]] = []
+def exception_message(error: Exception) -> str:
+    text = str(error)
+    if text:
+        return text
+    return f"{type(error).__name__} with empty message"
+
+
+def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any], Exception | None]]:
+    cases: list[tuple[str, str, dict[str, Any], Exception | None]] = []
 
     def add(name: str, surface: str, mutator: Callable[[dict[str, Any]], None]) -> None:
         mutated = copy.deepcopy(baseline)
-        mutator(mutated)
-        cases.append((name, surface, mutated))
+        generation_error = None
+        try:
+            mutator(mutated)
+        except Exception as err:  # noqa: BLE001 - mutation failures are recorded as rejected cases.
+            generation_error = err
+        cases.append((name, surface, mutated, generation_error))
 
     add("matched_source_file_hash_drift", "source_evidence", lambda p: p["source_evidence"]["matched_feasibility"].__setitem__("file_sha256", "11" * 32))
     add("external_source_payload_hash_drift", "source_evidence", lambda p: p["source_evidence"]["external_adapter_feasibility"].__setitem__("payload_sha256", "22" * 32))
@@ -545,16 +556,21 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
     baseline = copy.deepcopy(baseline or build_payload())
     _validate_draft_payload(baseline)
     cases = []
-    for mutation, surface, mutated in _mutated_cases(baseline):
-        try:
-            _validate_draft_payload(mutated)
-            accepted = True
-            error = ""
-            layer = "accepted"
-        except D128ComparatorTargetError as err:
+    for mutation, surface, mutated, generation_error in _mutated_cases(baseline):
+        if generation_error is not None:
             accepted = False
-            error = str(err)
-            layer = classify_error(err)
+            error = exception_message(generation_error)
+            layer = classify_error(generation_error)
+        else:
+            try:
+                _validate_draft_payload(mutated)
+                accepted = True
+                error = ""
+                layer = "accepted"
+            except D128ComparatorTargetError as err:
+                accepted = False
+                error = str(err)
+                layer = classify_error(err)
         cases.append(
             {
                 "mutation": mutation,
@@ -655,6 +671,8 @@ def to_mutation_tsv(payload: dict[str, Any]) -> str:
 
 
 def _validated_output_path(path: pathlib.Path) -> pathlib.Path:
+    if path.is_symlink():
+        raise D128ComparatorTargetError(f"output path must not be a symlink: {path}")
     resolved = path.resolve()
     root = ROOT.resolve()
     if resolved != root and root not in resolved.parents:
@@ -670,6 +688,13 @@ def _stage_text(path: pathlib.Path, text: str) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         handle.write(text)
+        return pathlib.Path(handle.name)
+
+
+def _stage_bytes(path: pathlib.Path, data: bytes) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
+        handle.write(data)
         return pathlib.Path(handle.name)
 
 
@@ -693,15 +718,29 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             tmp_path.replace(output_path)
             committed.append((output_path, existed, previous))
     except Exception as err:
+        cleanup_errors: list[str] = []
         for tmp_path, _ in staged:
-            tmp_path.unlink(missing_ok=True)
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError as cleanup_err:
+                cleanup_errors.append(f"cleanup failed for {tmp_path}: {cleanup_err}")
         for output_path, existed, previous in reversed(committed):
-            if existed and previous is not None:
-                output_path.write_bytes(previous)
-            else:
-                output_path.unlink(missing_ok=True)
+            try:
+                if existed and previous is not None:
+                    rollback_tmp = _stage_bytes(output_path, previous)
+                    try:
+                        rollback_tmp.replace(output_path)
+                    finally:
+                        rollback_tmp.unlink(missing_ok=True)
+                else:
+                    output_path.unlink(missing_ok=True)
+            except OSError as rollback_err:
+                cleanup_errors.append(f"rollback failed for {output_path}: {rollback_err}")
         if isinstance(err, OSError):
-            raise D128ComparatorTargetError(f"failed to write outputs: {err}") from err
+            detail = f"failed to write outputs: {err}"
+            if cleanup_errors:
+                detail += "; " + "; ".join(cleanup_errors)
+            raise D128ComparatorTargetError(detail) from err
         raise
 
 

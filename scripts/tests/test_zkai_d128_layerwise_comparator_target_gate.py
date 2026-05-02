@@ -129,6 +129,22 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128ComparatorTargetError, "duplicate mutation case"):
             GATE.validate_payload(payload)
 
+    def test_empty_mutation_generation_errors_get_non_empty_diagnostics(self) -> None:
+        payload = GATE.build_payload()
+        original_mutated_cases = GATE._mutated_cases
+
+        def empty_generation_error(_payload: dict) -> list[tuple[str, str, dict, Exception]]:
+            return [("matched_source_file_hash_drift", "source_evidence", copy.deepcopy(payload), RuntimeError())]
+
+        try:
+            GATE._mutated_cases = empty_generation_error
+            cases = GATE.mutation_cases(payload)
+        finally:
+            GATE._mutated_cases = original_mutated_cases
+
+        self.assertEqual(cases[0]["error"], "RuntimeError with empty message")
+        self.assertTrue(cases[0]["rejected"])
+
     def test_rejects_rejected_mutation_case_without_error_message(self) -> None:
         payload = self.fresh_payload()
         payload["cases"][0]["error"] = ""
@@ -206,6 +222,19 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
                 GATE.write_outputs(payload, json_path, tsv_path)
             self.assertFalse(tsv_path.exists())
 
+    def test_write_outputs_rejects_symlink_outputs(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real_json = tmp / "real.json"
+            json_link = tmp / "linked.json"
+            tsv_path = tmp / "d128-target.tsv"
+            real_json.write_text("old-json\n", encoding="utf-8")
+            json_link.symlink_to(real_json)
+            with self.assertRaisesRegex(GATE.D128ComparatorTargetError, "must not be a symlink"):
+                GATE.write_outputs(payload, json_link, tsv_path)
+            self.assertFalse(tsv_path.exists())
+
     def test_write_outputs_does_not_replace_first_output_when_second_stage_fails(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
@@ -233,6 +262,72 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
 
             self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
             self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
+    def test_write_outputs_rolls_back_with_atomic_replace_not_write_bytes(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "d128-target.json"
+            tsv_path = tmp / "d128-target.tsv"
+            json_path.write_text("old-json\n", encoding="utf-8")
+            tsv_path.write_text("old-tsv\n", encoding="utf-8")
+            original_replace = pathlib.Path.replace
+            original_write_bytes = pathlib.Path.write_bytes
+            replace_count = 0
+
+            def fail_second_replace(self: pathlib.Path, target: pathlib.Path) -> pathlib.Path:
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("forced second replace failure")
+                return original_replace(self, target)
+
+            def forbid_write_bytes(self: pathlib.Path, data: bytes) -> int:
+                raise AssertionError(f"rollback used in-place write_bytes on {self}")
+
+            try:
+                pathlib.Path.replace = fail_second_replace
+                pathlib.Path.write_bytes = forbid_write_bytes
+                with self.assertRaisesRegex(GATE.D128ComparatorTargetError, "forced second replace failure"):
+                    GATE.write_outputs(payload, json_path, tsv_path)
+            finally:
+                pathlib.Path.replace = original_replace
+                pathlib.Path.write_bytes = original_write_bytes
+
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
+    def test_write_outputs_preserves_stage_error_when_cleanup_fails(self) -> None:
+        payload = self.fresh_payload()
+        original_stage_text = GATE._stage_text
+
+        class UnlinkFailingTmp:
+            def __str__(self) -> str:
+                return "unlink-failing.tmp"
+
+            def unlink(self, missing_ok: bool = False) -> None:
+                raise OSError("cleanup denied")
+
+        call_count = 0
+
+        def stage_then_fail(_path: pathlib.Path, _text: str) -> UnlinkFailingTmp:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return UnlinkFailingTmp()
+            raise OSError("stage failed")
+
+        try:
+            GATE._stage_text = stage_then_fail
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+                tmp = pathlib.Path(raw_tmp)
+                with self.assertRaisesRegex(
+                    GATE.D128ComparatorTargetError,
+                    "stage failed.*cleanup failed.*cleanup denied",
+                ):
+                    GATE.write_outputs(payload, tmp / "d128-target.json", tmp / "d128-target.tsv")
+        finally:
+            GATE._stage_text = original_stage_text
 
     def test_write_outputs_rejects_before_writing_partial_artifacts(self) -> None:
         payload = self.fresh_payload()
