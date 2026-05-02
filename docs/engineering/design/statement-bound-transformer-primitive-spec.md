@@ -378,9 +378,22 @@ statement commitment recomputed from the checked slice commitments and domains.
 This is the first normalization-specific d128 proof slice: it checks square,
 scale-division, normalized-output, bit-constrained remainder, scale-tree, and
 scalar square-root constraints.
-Together with the d128 residual-add proof, it shows the d128 backend route is no
-longer residual-only. It is still not a full d128 block proof and still reports
-no full-block proof size or verifier time.
+The first d128 RMSNorm-to-projection bridge is now checked in:
+
+- `docs/engineering/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs`
+
+It proves the domain-separated handoff from checked RMSNorm-local `normed_q8`
+rows to projection-input rows, recomputes source and destination row
+commitments, recomputes statement/public-instance/proof-native parameter
+commitments, and rejects attempts to relabel the bridge output as the full block
+output commitment. Together with the d128 residual-add proof, this shows the
+d128 backend route is no longer residual-only and now has three proof-backed
+slice surfaces. It is still not a full d128 block proof and still reports no
+full-block proof size or verifier time. The next blocker is the gate/value
+projection slice that consumes `projection_input_row_commitment`.
 
 The first attention/KV receipt contract is also checked in:
 

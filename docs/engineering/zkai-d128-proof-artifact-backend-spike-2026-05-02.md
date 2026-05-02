@@ -11,23 +11,25 @@ This gate separates:
 - the pinned `d=128` target shape;
 - the working `d=64` native slice proof chain;
 - the partial `d=128` RMSNorm public-row proof handle;
+- the partial `d=128` RMSNorm-to-projection bridge proof handle;
 - the partial `d=128` residual-add proof handle;
 - the still-missing full `d=128` transformer-block proof object.
 
 ## Decision
 
 **Bounded NO-GO for a full d128 transformer-block proof artifact on the current
-backend route. Partial GO for d128 RMSNorm public rows and d128 residual add.**
+backend route. Partial GO for d128 RMSNorm public rows, the
+RMSNorm-to-projection bridge, and d128 residual add.**
 
 The current first full-block blocker is:
 
-> d128 RMSNorm public-row and residual-add proof handles exist, but projection,
-> activation, down-projection, bridge, and full transformer-block composition
-> handles are still missing
+> d128 RMSNorm public-row, RMSNorm-to-projection bridge, and residual-add proof
+> handles exist, but gate/value projection, activation, down-projection, native
+> residual, and full transformer-block composition handles are still missing
 
-This supersedes the earlier residual-only state. The repository can now prove two
-d128 slices. It still cannot report a full d128 block proof size, verifier time,
-or relabeling suite.
+This supersedes the earlier residual-only and RMSNorm-plus-residual states. The
+repository can now prove three d128 slice surfaces. It still cannot report a full
+d128 block proof size, verifier time, or relabeling suite.
 
 ## Result
 
@@ -43,24 +45,27 @@ or relabeling suite.
 | d64 anchor | `GO_ANCHOR_ONLY` |
 | Direct d128 native chain route | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` |
 | d128 RMSNorm public-row route | `GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY` |
+| d128 RMSNorm-to-projection bridge route | `GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` |
 | d128 residual-add route | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` |
 | Parameterized full-block route | `NO_GO_FULL_BLOCK_SLICES_MISSING` |
 | RMSNorm proof roundtrip | locally constructed and verified by Rust tests |
+| Bridge proof roundtrip | locally constructed and verified by Rust tests |
 | Residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `19 / 19` rejected |
+| Mutation checks | `24 / 24` rejected |
 
 ## Backend-route classification
 
 | Route | Status | Interpretation |
 | --- | --- | --- |
 | `existing_d64_slice_chain` | `GO_ANCHOR_ONLY` | The six-slice `d=64` proof chain exists and remains the working local anchor. It is not a `d=128` proof. |
-| `direct_d128_native_modules` | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` | A d128 RMSNorm native module exists, but the rest of the native d128 slice chain and full-block verifier are missing. |
+| `direct_d128_native_modules` | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` | d128 RMSNorm public-row and bridge native modules exist, but the rest of the native d128 slice chain and full-block verifier are missing. |
 | `direct_d128_rmsnorm_public_row_air` | `GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY` | A real Stwo proof handle exists for the d128 RMSNorm public-row slice. |
+| `direct_d128_rmsnorm_to_projection_bridge_air` | `GO_PARTIAL_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` | A real Stwo proof handle exists for the d128 handoff from RMSNorm-local rows to projection-input rows. |
 | `lift_existing_d64_modules_by_metadata` | `NO_GO` | The d64 modules validate d64 width, target id, domains, proof versions, and log sizes. A metadata relabel cannot make them d128. |
 | `parameterized_vector_residual_add_air` | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` | A real parameterized Stwo proof handle exists for the d128 residual-add vector slice. |
-| `parameterized_transformer_block_air` | `NO_GO_FULL_BLOCK_SLICES_MISSING` | Projection, activation, down-projection, bridge, and full block composition do not exist yet. |
+| `parameterized_transformer_block_air` | `NO_GO_FULL_BLOCK_SLICES_MISSING` | Gate/value projection, activation, down-projection, native residual, and full block composition do not exist yet. |
 | `d128_metrics_and_relabeling_suite` | `NO_GO_BLOCKED_BEFORE_PROOF_OBJECT` | Full-block proof size, verifier time, and relabeling resistance remain unreported until a full d128 proof object exists. |
 
 ## Working anchors
@@ -71,12 +76,13 @@ The current local anchors are:
   `rmsnorm_projection_bridge`, `gate_value_projection`, `activation_swiglu`,
   `down_projection`, and `residual_add`;
 - the checked `d=128` RMSNorm public-row proof surface;
+- the checked `d=128` RMSNorm-to-projection bridge proof surface;
 - the checked `d=128` residual-add vector proof surface.
 
 The d64 anchor proves the receipt discipline and slice interfaces are not
-fiction. The d128 RMSNorm and residual-add anchors prove the backend can now
-clear two statement-bound d128 proof slices. They do not form a full d128
-transformer-block proof.
+fiction. The d128 RMSNorm, bridge, and residual-add anchors prove the backend
+can now clear three statement-bound d128 proof slices. They do not form a full
+d128 transformer-block proof.
 
 ## Why this closes a fooling-ourselves gap
 
@@ -87,6 +93,11 @@ The gate now validates:
 - the d128 RMSNorm public-row evidence before starting, including statement,
   public-instance, proof-native parameter, normalization-config, input,
   scale-tree, and output-row commitment recomputation;
+- the d128 RMSNorm-to-projection bridge evidence before starting, including
+  source statement binding, source RMSNorm output commitment recomputation,
+  projection-input commitment recomputation, public-instance recomputation,
+  proof-native parameter recomputation, and relabel rejection against the full
+  output-activation commitment;
 - the d128 residual-add vector evidence before starting, including statement,
   public-instance, proof-native parameter, input, residual-delta, output, and row
   commitment recomputation;
@@ -117,6 +128,10 @@ relabeling-resistance metric is reported here. Those numbers are blocked until:
   public-instance, proof, verifying-key, setup, evidence-manifest, and
   verifier-domain fields.
 
+The next concrete backend follow-up is Issue `#394`: build or falsify the d128
+gate/value projection proof handle that consumes the bridge's
+`projection_input_row_commitment`.
+
 ## Non-claims
 
 This result does **not** claim:
@@ -139,6 +154,10 @@ This result does **not** claim:
   `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
 - d128 RMSNorm public-row input TSV:
   `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv`
+- d128 RMSNorm-to-projection bridge input JSON:
+  `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json`
+- d128 RMSNorm-to-projection bridge input TSV:
+  `docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
 - d128 residual-add vector input JSON:
   `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json`
 - d128 residual-add vector input TSV:
@@ -147,11 +166,14 @@ This result does **not** claim:
   `scripts/zkai_d128_proof_artifact_backend_spike_gate.py`
 - RMSNorm public-row input script:
   `scripts/zkai_d128_rmsnorm_public_row_proof_input.py`
+- RMSNorm-to-projection bridge input script:
+  `scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py`
 - Residual-add input script:
   `scripts/zkai_d128_vector_residual_add_proof_input.py`
 - Tests:
   `scripts/tests/test_zkai_d128_proof_artifact_backend_spike_gate.py`
   `scripts/tests/test_zkai_d128_rmsnorm_public_row_proof_input.py`
+  `scripts/tests/test_zkai_d128_rmsnorm_to_projection_bridge_input.py`
   `scripts/tests/test_zkai_d128_vector_residual_add_proof_input.py`
 
 ## Reproduce
@@ -160,6 +182,10 @@ This result does **not** claim:
 python3 scripts/zkai_d128_rmsnorm_public_row_proof_input.py \
   --write-json docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv
+
+python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py \
+  --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv
 
 python3 scripts/zkai_d128_vector_residual_add_proof_input.py \
   --write-json docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json \
@@ -171,11 +197,17 @@ python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py \
 
 python3 -m unittest \
   scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input \
+  scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input \
   scripts.tests.test_zkai_d128_vector_residual_add_proof_input \
   scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate
 
 cargo +nightly-2025-07-14 test \
   d128_native_rmsnorm_public_row_proof \
+  --lib \
+  --features stwo-backend
+
+cargo +nightly-2025-07-14 test \
+  d128_native_rmsnorm_to_projection_bridge_proof \
   --lib \
   --features stwo-backend
 
