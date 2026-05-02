@@ -10,6 +10,10 @@ commitment without relabeling it as the full d64 block output?
 
 GO for a bounded down-projection AIR proof slice.
 
+Backend version: `stwo-rmsnorm-swiglu-residual-d64-v2`.
+Timing mode: `not timed` (proof/verify correctness gate).
+Checked step count: `16,384` down-projection multiplication rows (`ff_dim = 256`).
+
 This slice consumes the activation/SwiGLU hidden activation commitment:
 `hidden_activation_commitment`. It proves `16,384` public down-projection
 multiplication rows in native Stwo AIR:

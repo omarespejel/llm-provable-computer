@@ -333,6 +333,10 @@ matrix root from checked weights, and emits a domain-separated
 `residual_delta_commitment`. It is still not a full d64 block proof: residual
 addition and the final `output_activation_commitment` remain explicit open proof
 seams.
+The verifier rejects attempts to relabel `residual_delta_commitment` as the
+final `output_activation_commitment`; the fail-closed checker recomputes the
+source hidden activation commitment and down matrix root before accepting the
+down-projection proof.
 
 The first attention/KV receipt contract is also checked in:
 
