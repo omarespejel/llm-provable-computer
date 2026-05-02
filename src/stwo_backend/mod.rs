@@ -6,6 +6,8 @@ mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_activation_swiglu_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_down_projection_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_gate_value_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
@@ -108,6 +110,20 @@ pub use d128_native_activation_swiglu_proof::{
     ZKAI_D128_ACTIVATION_SWIGLU_ROW_COMMITMENT, ZKAI_D128_ACTIVATION_SWIGLU_SEMANTIC_SCOPE,
     ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
     ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_VERSION, ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_down_projection_proof::{
+    prove_zkai_d128_down_projection_envelope, verify_zkai_d128_down_projection_envelope,
+    zkai_d128_down_projection_input_from_json_str, D128DownProjectionMulRow,
+    ZkAiD128DownProjectionEnvelope, ZkAiD128DownProjectionProofInput, ZKAI_D128_DOWN_MATRIX_ROOT,
+    ZKAI_D128_DOWN_PROJECTION_DECISION, ZKAI_D128_DOWN_PROJECTION_INPUT_DECISION,
+    ZKAI_D128_DOWN_PROJECTION_INPUT_SCHEMA, ZKAI_D128_DOWN_PROJECTION_MAX_JSON_BYTES,
+    ZKAI_D128_DOWN_PROJECTION_MAX_PROOF_BYTES, ZKAI_D128_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_NEXT_BACKEND_STEP,
+    ZKAI_D128_DOWN_PROJECTION_PROOF_NATIVE_PARAMETER_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION, ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_SEMANTIC_SCOPE, ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_STATEMENT_VERSION, ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_gate_value_projection_proof::{

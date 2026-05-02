@@ -1,13 +1,14 @@
 route	status	target_width	target_ff_dim	proof_artifact_exists	verifier_handle_exists	proof_size_bytes	verifier_time_ms	blocker
 existing_d64_slice_chain	GO_ANCHOR_ONLY	64	256	True	True			d64 slice proofs exist, but this is not the d128 target
-direct_d128_native_modules	NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, bridge, gate/value, and activation native proofs exist, but down-projection, native residual, composition, and full block verifier do not
+direct_d128_native_modules	NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, bridge, gate/value, activation, and down-projection native proofs exist, but native residual, composition, and full block verifier do not
 direct_d128_rmsnorm_public_row_air	GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY	128		True	True			RMSNorm public-row slice only; not projection, activation, down-projection, residual, bridge, or full block
 direct_d128_rmsnorm_to_projection_bridge_air	GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY	128		True	True			RMSNorm-to-projection bridge slice only; not gate/value projection, activation, down-projection, residual, or full block
 direct_d128_gate_value_projection_air	GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY	128	512	True	True			gate/value projection slice only; not activation, down-projection, residual, composition, or full block
 direct_d128_activation_swiglu_air	GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY	128	512	True	True			activation/SwiGLU slice only; not down-projection, residual, composition, or full block
+direct_d128_down_projection_air	GO_PARTIAL_D128_DOWN_PROJECTION_ONLY	128	512	True	True			down-projection slice only; not native residual, composition, or full block
 lift_existing_d64_modules_by_metadata	NO_GO	128	512	False	False			d64 modules validate hard-coded width, target id, domains, and log sizes
 parameterized_vector_residual_add_air	GO_PARTIAL_D128_RESIDUAL_ADD_ONLY	128		True	True			residual-add vector slice only; not a full d128 transformer-block proof
-parameterized_transformer_block_air	NO_GO_FULL_BLOCK_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and residual-add proof handles exist, but down-projection, native residual, and full transformer-block composition handles are still missing
+parameterized_transformer_block_air	NO_GO_FULL_BLOCK_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and residual-add proof handles exist, but native residual and full transformer-block composition handles are still missing
 d128_metrics_and_relabeling_suite	NO_GO_BLOCKED_BEFORE_PROOF_OBJECT	128	512	False	False			do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist
 
 mutation	surface	mutated_accepted	rejected	rejection_layer	error
@@ -58,6 +59,20 @@ d128_activation_swiglu_row_commitment_drift	source_probe	False	True	source_probe
 d128_activation_swiglu_statement_commitment_drift	source_probe	False	True	source_probe	d128 activation/SwiGLU statement_commitment mismatch
 d128_activation_swiglu_public_instance_commitment_drift	source_probe	False	True	source_probe	d128 activation/SwiGLU public_instance_commitment mismatch
 d128_activation_swiglu_route_statement_commitment_drift	backend_routes	False	True	backend_routes	direct d128 activation/SwiGLU route statement_commitment mismatch
+d128_down_projection_route_promoted	backend_routes	False	True	backend_routes	summary d128 down-projection route mismatch
+partial_d128_down_projection_proof_removed	proof_status	False	True	proof_status	partial d128 down-projection proof exists mismatch
+partial_d128_down_projection_verifier_removed	proof_status	False	True	proof_status	partial d128 down-projection verifier exists mismatch
+partial_d128_down_projection_local_roundtrip_removed	proof_status	False	True	proof_status	partial d128 down-projection local roundtrip proof mismatch
+partial_d128_down_projection_checked_in_artifact_smuggled	proof_status	False	True	proof_status	partial d128 down-projection checked-in proof artifact mismatch
+d128_down_projection_source_hidden_commitment_drift	source_probe	False	True	source_probe	d128 down-projection source hidden activation commitment mismatch
+d128_down_projection_source_statement_commitment_drift	source_probe	False	True	source_probe	d128 down-projection source activation statement commitment mismatch
+d128_down_projection_down_matrix_root_drift	source_probe	False	True	source_probe	d128 down-projection down_matrix_root mismatch
+d128_down_projection_residual_delta_commitment_drift	source_probe	False	True	source_probe	d128 down-projection residual_delta_commitment mismatch
+d128_down_projection_residual_delta_relabels_full_output	source_probe	False	True	source_probe	d128 down-projection residual relabel guard mismatch
+d128_down_projection_row_commitment_drift	source_probe	False	True	source_probe	d128 down-projection down_projection_mul_row_commitment mismatch
+d128_down_projection_statement_commitment_drift	source_probe	False	True	source_probe	d128 down-projection statement_commitment mismatch
+d128_down_projection_public_instance_commitment_drift	source_probe	False	True	source_probe	d128 down-projection public_instance_commitment mismatch
+d128_down_projection_route_statement_commitment_drift	backend_routes	False	True	backend_routes	direct d128 down-projection route statement_commitment mismatch
 full_block_parameterized_route_promoted	backend_routes	False	True	backend_routes	parameterized full-block route status mismatch
 d64_anchor_removed	d64_anchor	False	True	d64_anchor	d64 anchor status mismatch
 missing_module_removed	source_probe	False	True	source_probe	missing d128 module inventory mismatch
