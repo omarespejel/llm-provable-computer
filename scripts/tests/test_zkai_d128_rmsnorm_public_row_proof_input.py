@@ -35,6 +35,8 @@ class ZkAiD128RmsnormPublicRowProofInputTests(unittest.TestCase):
         self.assertEqual(payload["rms_q8"], 55)
         self.assertEqual(payload["average_square_floor"], 3056)
         self.assertNotEqual(payload["rmsnorm_output_row_commitment"], payload["statement_commitment"])
+        self.assertNotEqual(payload["statement_commitment"], D128_RMSNORM.TARGET_COMMITMENT)
+        self.assertEqual(payload["statement_commitment"], D128_RMSNORM.statement_commitment(payload))
 
     def test_payload_rejects_target_summary_drift(self) -> None:
         target = D128_RMSNORM.load_target()

@@ -519,8 +519,10 @@ The d128 route now has two partial proof handles:
 
 Decision: partial GO only. The d128 RMSNorm public-row proof checks `128`
 normalization rows and recomputes the input, scale, config, scale-tree,
-RMSNorm-output, public-instance, proof-native parameter, and statement
-commitments. The d128 residual-add proof checks `128` residual-add rows and
+RMSNorm-output, statement, public-instance, and proof-native parameter
+commitments. Its statement commitment is derived from the checked slice
+commitments and domains, and its quotient remainders are bit-constrained in
+AIR. The d128 residual-add proof checks `128` residual-add rows and
 recomputes its input, residual-delta, output, row, public-instance,
 proof-native parameter, and statement commitments. This is not a full d128
 block receipt: bridge, projection, activation, down-projection, composition,

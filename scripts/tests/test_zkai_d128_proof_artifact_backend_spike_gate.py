@@ -39,7 +39,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["d128_rmsnorm_public_row_route"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
-        self.assertEqual(payload["case_count"], 14)
+        self.assertEqual(payload["case_count"], 19)
         self.assertTrue(payload["all_mutations_rejected"])
 
     def test_target_matches_pinned_d128_comparator_shape(self) -> None:

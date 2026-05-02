@@ -27,13 +27,13 @@ use crate::error::{Result, VmError};
 use crate::proof::StarkProofBackend;
 
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_INPUT_SCHEMA: &str =
-    "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2";
+    "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_INPUT_DECISION: &str =
     "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION: &str =
-    "stwo-d128-rmsnorm-public-row-air-proof-v2";
+    "stwo-d128-rmsnorm-public-row-air-proof-v3";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_VERSION: &str =
-    "zkai-d128-rmsnorm-public-row-statement-v1";
+    "zkai-d128-rmsnorm-public-row-statement-v2";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_SEMANTIC_SCOPE: &str =
     "d128_rmsnorm_public_rows_bound_to_statement_receipt";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_DECISION: &str = "GO_PUBLIC_ROW_D128_RMSNORM_AIR_PROOF";
@@ -49,13 +49,17 @@ pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_VERIFIER_DOMAIN: &str =
     "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1";
 pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_SOURCE_PROOF_BACKEND_VERSION: &str =
     "synthetic-d128-rmsnorm-source-v1";
-pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT: &str =
+const ZKAI_D128_RMSNORM_PUBLIC_ROW_TARGET_COMMITMENT: &str =
     "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18";
+pub const ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8";
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const ZKAI_D128_RMSNORM_PUBLIC_ROW_WIDTH: usize = 128;
 const D128_RMSNORM_LOG_SIZE: u32 = 7;
 const D128_Q8_SCALE: i64 = 256;
+const D128_Q8_REMAINDER_BITS: usize = 8;
+const D128_RMSNORM_NORM_REMAINDER_GAP_BITS: usize = 31;
 const D128_RMSNORM_SCALAR_RANGE_BITS: usize = 17;
 const ZKAI_D128_RMSNORM_PUBLIC_ROW_EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const ZKAI_D128_RMSNORM_PUBLIC_ROW_EXPECTED_PROOF_COMMITMENTS: usize = 3;
@@ -99,6 +103,7 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
+    "AIR-native remainder range constraints via bit-decomposed quotient remainders",
     "exact integer isqrt recomputation without floating-point sqrt",
     "AIR-native bounded sqrt inequality via 17-bit nonnegative gap decompositions",
     "canonical d128 RMSNorm commitment domains checked before proof verification",
@@ -191,13 +196,46 @@ impl FrameworkEval for D128RmsnormPublicRowEval {
             eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
             high_gap_bits = high_gap_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
         }
+        let mut scale_remainder_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..D128_Q8_REMAINDER_BITS {
+            let bit = eval.next_trace_mask();
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(
+                &remainder_bit_column_id("scale", bit_index),
+            ));
+            eval.add_constraint(bit.clone() - public_value);
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            scale_remainder_bits =
+                scale_remainder_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
+        let mut norm_remainder_gap_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..D128_RMSNORM_NORM_REMAINDER_GAP_BITS {
+            let bit = eval.next_trace_mask();
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(
+                &remainder_bit_column_id("norm_gap", bit_index),
+            ));
+            eval.add_constraint(bit.clone() - public_value);
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            let bit_weight = 1u32
+                .checked_shl(bit_index as u32)
+                .expect("norm remainder gap bit weight");
+            norm_remainder_gap_bits =
+                norm_remainder_gap_bits + bit * E::F::from(BaseField::from(bit_weight));
+        }
 
         let q8_scale = E::F::from(BaseField::from(D128_Q8_SCALE as u32));
         eval.add_constraint(input_q8.clone() * input_q8.clone() - input_square);
         eval.add_constraint(
-            input_q8 * rms_scale_q8 - scaled_floor.clone() * q8_scale.clone() - scale_remainder,
+            input_q8 * rms_scale_q8
+                - scaled_floor.clone() * q8_scale.clone()
+                - scale_remainder.clone(),
         );
-        eval.add_constraint(scaled_floor * q8_scale - normed_q8 * rms_q8.clone() - norm_remainder);
+        eval.add_constraint(scale_remainder - scale_remainder_bits);
+        eval.add_constraint(
+            scaled_floor * q8_scale - normed_q8 * rms_q8.clone() - norm_remainder.clone(),
+        );
+        eval.add_constraint(
+            norm_remainder + norm_remainder_gap_bits + one.clone() - rms_q8.clone(),
+        );
         eval.add_constraint(sqrt_low_delta.clone() - low_delta_bits);
         eval.add_constraint(sqrt_high_gap.clone() - high_gap_bits);
         eval.add_constraint(
@@ -464,21 +502,6 @@ fn validate_public_row_input(input: &ZkAiD128RmsnormPublicRowProofInput) -> Resu
     )?;
     require_commitment(&input.statement_commitment, "statement commitment")?;
     require_commitment(&input.rms_scale_tree_root, "RMS scale tree root")?;
-    expect_eq(
-        &input.proof_native_parameter_commitment,
-        &proof_native_parameter_commitment(&input.statement_commitment),
-        "proof-native parameter commitment",
-    )?;
-    expect_eq(
-        &input.public_instance_commitment,
-        &public_instance_commitment(&input.statement_commitment, input.width),
-        "public instance commitment",
-    )?;
-    expect_eq(
-        &input.statement_commitment,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
-        "statement commitment",
-    )?;
     expect_str_set_eq(
         input.non_claims.iter().map(String::as_str),
         EXPECTED_NON_CLAIMS,
@@ -532,39 +555,60 @@ fn validate_public_row_input(input: &ZkAiD128RmsnormPublicRowProofInput) -> Resu
     }
     expect_i64(input.rms_q8, integer_sqrt(average_square_floor), "rms q8")?;
     scalar_sqrt_witness(input)?;
+    let recomputed_input_activation_commitment =
+        sequence_commitment(&input_values, &input.input_activation_domain, input.width);
     expect_eq(
-        &sequence_commitment(&input_values, &input.input_activation_domain, input.width),
+        &recomputed_input_activation_commitment,
         &input.input_activation_commitment,
         "input activation recomputed commitment",
     )?;
+    let recomputed_output_row_commitment = sequence_commitment(
+        &normed_values,
+        &input.rmsnorm_output_row_domain,
+        input.width,
+    );
     expect_eq(
-        &sequence_commitment(
-            &normed_values,
-            &input.rmsnorm_output_row_domain,
-            input.width,
-        ),
+        &recomputed_output_row_commitment,
         &input.rmsnorm_output_row_commitment,
         "RMSNorm output row recomputed commitment",
     )?;
     let scale_commitment = sequence_commitment(&scale_values, &input.rms_scale_domain, input.width);
+    let recomputed_normalization_config_commitment = normalization_config_commitment(
+        input.rms_q8,
+        &scale_commitment,
+        &input.normalization_config_domain,
+        input.width,
+    );
     expect_eq(
-        &normalization_config_commitment(
-            input.rms_q8,
-            &scale_commitment,
-            &input.normalization_config_domain,
-            input.width,
-        ),
+        &recomputed_normalization_config_commitment,
         &input.normalization_config_commitment,
         "normalization config recomputed commitment",
     )?;
+    let recomputed_rms_scale_tree_root = rms_scale_tree_root(
+        &scale_values,
+        &input.rms_scale_leaf_domain,
+        &input.rms_scale_tree_domain,
+    )?;
     expect_eq(
-        &rms_scale_tree_root(
-            &scale_values,
-            &input.rms_scale_leaf_domain,
-            &input.rms_scale_tree_domain,
-        )?,
+        &recomputed_rms_scale_tree_root,
         &input.rms_scale_tree_root,
         "rms scale tree recomputed root",
+    )?;
+    let recomputed_statement_commitment = statement_commitment(input);
+    expect_eq(
+        &input.statement_commitment,
+        &recomputed_statement_commitment,
+        "statement commitment",
+    )?;
+    expect_eq(
+        &input.proof_native_parameter_commitment,
+        &proof_native_parameter_commitment(&recomputed_statement_commitment),
+        "proof-native parameter commitment",
+    )?;
+    expect_eq(
+        &input.public_instance_commitment,
+        &public_instance_commitment(&recomputed_statement_commitment, input.width),
+        "public instance commitment",
     )?;
     Ok(())
 }
@@ -621,6 +665,12 @@ struct ScalarSqrtWitness {
     sqrt_high_gap_bits: [u8; D128_RMSNORM_SCALAR_RANGE_BITS],
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RowRemainderWitness {
+    scale_remainder_bits: [u8; D128_Q8_REMAINDER_BITS],
+    norm_remainder_gap_bits: [u8; D128_RMSNORM_NORM_REMAINDER_GAP_BITS],
+}
+
 fn scalar_sqrt_witness(input: &ZkAiD128RmsnormPublicRowProofInput) -> Result<ScalarSqrtWitness> {
     if input.rms_q8 <= 0 {
         return Err(public_row_error(
@@ -647,20 +697,48 @@ fn scalar_sqrt_witness(input: &ZkAiD128RmsnormPublicRowProofInput) -> Result<Sca
 }
 
 fn decompose_scalar_gap(value: i64, label: &str) -> Result<[u8; D128_RMSNORM_SCALAR_RANGE_BITS]> {
+    decompose_fixed_bits(value, D128_RMSNORM_SCALAR_RANGE_BITS, label)
+}
+
+fn row_remainder_witness(row: &D128RmsnormPublicRow) -> Result<RowRemainderWitness> {
+    let norm_remainder_gap = row
+        .rms_q8
+        .checked_sub(row.norm_remainder)
+        .and_then(|value| value.checked_sub(1))
+        .ok_or_else(|| public_row_error("norm remainder gap underflow"))?;
+    Ok(RowRemainderWitness {
+        scale_remainder_bits: decompose_fixed_bits(
+            row.scale_remainder,
+            D128_Q8_REMAINDER_BITS,
+            "scale remainder",
+        )?,
+        norm_remainder_gap_bits: decompose_fixed_bits(
+            norm_remainder_gap,
+            D128_RMSNORM_NORM_REMAINDER_GAP_BITS,
+            "norm remainder gap",
+        )?,
+    })
+}
+
+fn decompose_fixed_bits<const N: usize>(value: i64, bits: usize, label: &str) -> Result<[u8; N]> {
     if value < 0 {
         return Err(public_row_error(format!("{label} must be non-negative")));
     }
-    if value >= (1i64 << D128_RMSNORM_SCALAR_RANGE_BITS) {
+    if bits == 0 || bits > 62 || bits != N {
         return Err(public_row_error(format!(
-            "{label} exceeds {}-bit scalar range",
-            D128_RMSNORM_SCALAR_RANGE_BITS
+            "{label} invalid fixed-bit decomposition width"
         )));
     }
-    let mut bits = [0u8; D128_RMSNORM_SCALAR_RANGE_BITS];
-    for (index, bit) in bits.iter_mut().enumerate() {
+    if value >= (1i64 << bits) {
+        return Err(public_row_error(format!(
+            "{label} exceeds {bits}-bit range",
+        )));
+    }
+    let mut out = [0u8; N];
+    for (index, bit) in out.iter_mut().enumerate() {
         *bit = ((value >> index) & 1) as u8;
     }
-    Ok(bits)
+    Ok(out)
 }
 
 fn prove_public_rows(input: &ZkAiD128RmsnormPublicRowProofInput) -> Result<Vec<u8>> {
@@ -798,6 +876,11 @@ fn public_row_trace(
     let rows = &input.rows;
     let scalar_witness =
         scalar_sqrt_witness(input).expect("validated d128 RMSNorm scalar sqrt witness");
+    let remainder_witnesses: Vec<RowRemainderWitness> = rows
+        .iter()
+        .map(row_remainder_witness)
+        .collect::<Result<Vec<_>>>()
+        .expect("validated d128 RMSNorm remainder witnesses");
     let mut columns: Vec<Vec<BaseField>> = vec![
         rows.iter().map(|row| field_usize(row.index)).collect(),
         rows.iter().map(|row| field_i64(row.input_q8)).collect(),
@@ -837,6 +920,22 @@ fn public_row_trace(
             ZKAI_D128_RMSNORM_PUBLIC_ROW_WIDTH
         ]);
     }
+    for bit_index in 0..D128_Q8_REMAINDER_BITS {
+        columns.push(
+            remainder_witnesses
+                .iter()
+                .map(|witness| field_i64(i64::from(witness.scale_remainder_bits[bit_index])))
+                .collect(),
+        );
+    }
+    for bit_index in 0..D128_RMSNORM_NORM_REMAINDER_GAP_BITS {
+        columns.push(
+            remainder_witnesses
+                .iter()
+                .map(|witness| field_i64(i64::from(witness.norm_remainder_gap_bits[bit_index])))
+                .collect(),
+        );
+    }
     columns
         .into_iter()
         .map(|column| {
@@ -865,6 +964,16 @@ fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
             "high", bit_index,
         )));
     }
+    for bit_index in 0..D128_Q8_REMAINDER_BITS {
+        ids.push(preprocessed_column_id(&remainder_bit_column_id(
+            "scale", bit_index,
+        )));
+    }
+    for bit_index in 0..D128_RMSNORM_NORM_REMAINDER_GAP_BITS {
+        ids.push(preprocessed_column_id(&remainder_bit_column_id(
+            "norm_gap", bit_index,
+        )));
+    }
     ids
 }
 
@@ -874,6 +983,10 @@ fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
 
 fn scalar_bit_column_id(kind: &str, bit_index: usize) -> String {
     format!("zkai/d128/rmsnorm/scalar/sqrt_{kind}_bit_{bit_index:02}")
+}
+
+fn remainder_bit_column_id(kind: &str, bit_index: usize) -> String {
+    format!("zkai/d128/rmsnorm/remainder/{kind}_bit_{bit_index:02}")
 }
 
 fn field_usize(value: usize) -> BaseField {
@@ -964,6 +1077,37 @@ fn public_instance_commitment(statement_commitment: &str, width: usize) -> Strin
     blake2b_commitment_bytes(
         payload.as_bytes(),
         ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_DOMAIN,
+    )
+}
+
+fn statement_commitment(input: &ZkAiD128RmsnormPublicRowProofInput) -> String {
+    let payload = format!(
+        "{{\"average_square_floor\":{},\"input_activation_commitment\":\"{}\",\"input_activation_domain\":\"{}\",\"normalization_config_commitment\":\"{}\",\"normalization_config_domain\":\"{}\",\"operation\":\"{}\",\"required_backend_version\":\"{}\",\"rms_q8\":{},\"rms_scale_domain\":\"{}\",\"rms_scale_leaf_domain\":\"{}\",\"rms_scale_tree_domain\":\"{}\",\"rms_scale_tree_root\":\"{}\",\"rmsnorm_output_row_commitment\":\"{}\",\"rmsnorm_output_row_domain\":\"{}\",\"row_count\":{},\"scale_q8\":{},\"source_proof_backend_version\":\"{}\",\"target_commitment\":\"{}\",\"target_id\":\"{}\",\"verifier_domain\":\"{}\",\"width\":{}}}",
+        input.average_square_floor,
+        input.input_activation_commitment,
+        input.input_activation_domain,
+        input.normalization_config_commitment,
+        input.normalization_config_domain,
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_OPERATION,
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_REQUIRED_BACKEND_VERSION,
+        input.rms_q8,
+        input.rms_scale_domain,
+        input.rms_scale_leaf_domain,
+        input.rms_scale_tree_domain,
+        input.rms_scale_tree_root,
+        input.rmsnorm_output_row_commitment,
+        input.rmsnorm_output_row_domain,
+        input.row_count,
+        input.scale_q8,
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_SOURCE_PROOF_BACKEND_VERSION,
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_TARGET_COMMITMENT,
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_TARGET_ID,
+        input.verifier_domain,
+        input.width,
+    );
+    blake2b_commitment_bytes(
+        payload.as_bytes(),
+        ZKAI_D128_RMSNORM_PUBLIC_ROW_VERIFIER_DOMAIN,
     )
 }
 
@@ -1153,6 +1297,11 @@ mod tests {
         assert_eq!(input.average_square_floor, 3_056);
         assert_eq!(input.rows[0].input_q8, -89);
         assert_eq!(input.rows[0].normed_q8, -387);
+        assert_eq!(input.statement_commitment, statement_commitment(&input));
+        assert_ne!(
+            input.statement_commitment,
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_TARGET_COMMITMENT
+        );
     }
 
     #[test]
@@ -1221,6 +1370,47 @@ mod tests {
         assert_eq!(witness.sqrt_high_gap_bits[0], 1);
         assert_eq!(witness.sqrt_high_gap_bits[2], 1);
         assert_eq!(witness.sqrt_high_gap_bits[6], 1);
+    }
+
+    #[test]
+    fn row_remainder_witness_decomposes_air_native_bounds() {
+        let input = input();
+        let witness = row_remainder_witness(&input.rows[0]).expect("remainder witness");
+        let scale_remainder = witness
+            .scale_remainder_bits
+            .iter()
+            .enumerate()
+            .fold(0i64, |acc, (index, bit)| {
+                acc + i64::from(*bit) * (1i64 << index)
+            });
+        let norm_gap = witness
+            .norm_remainder_gap_bits
+            .iter()
+            .enumerate()
+            .fold(0i64, |acc, (index, bit)| {
+                acc + i64::from(*bit) * (1i64 << index)
+            });
+
+        assert_eq!(scale_remainder, input.rows[0].scale_remainder);
+        assert_eq!(
+            input.rows[0].norm_remainder + norm_gap + 1,
+            input.rows[0].rms_q8
+        );
+    }
+
+    #[test]
+    fn row_remainder_witness_rejects_out_of_bound_air_surface() {
+        let mut row = input().rows[0].clone();
+        row.scale_remainder = D128_Q8_SCALE;
+        let error = row_remainder_witness(&row).unwrap_err();
+        assert!(error.to_string().contains("scale remainder exceeds 8-bit"));
+
+        let mut row = input().rows[0].clone();
+        row.norm_remainder = row.rms_q8;
+        let error = row_remainder_witness(&row).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("norm remainder gap must be non-negative"));
     }
 
     #[test]

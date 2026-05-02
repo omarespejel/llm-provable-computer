@@ -110,10 +110,12 @@ relabeling-resistance metric is reported here. Those numbers are blocked until:
 - all required d128 slices exist;
 - a full d128 proof artifact or composed receipt exists;
 - a d128 verifier handle exists for the full statement;
-- the statement envelope binds model/config/input/output/parameter/proof/verifier
-  domain commitments;
-- relabeling tests reject drift in model, config, weights, input, output, proof,
-  verifying key, setup, and verifier-domain fields.
+- the statement envelope binds model/config/input/output/public-instance/
+  proof-native-parameter/proof/verifying-key/setup/evidence-manifest/domain
+  commitments, or explicit null-domain rules where a field is not applicable;
+- relabeling tests reject drift in model, config, weights, input, output,
+  public-instance, proof, verifying-key, setup, evidence-manifest, and
+  verifier-domain fields.
 
 ## Non-claims
 

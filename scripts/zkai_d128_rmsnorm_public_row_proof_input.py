@@ -25,7 +25,7 @@ JSON_OUT = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.jso
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.tsv"
 TARGET_JSON = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 
-SCHEMA = "zkai-d128-native-rmsnorm-public-row-air-proof-input-v2"
+SCHEMA = "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3"
 DECISION = "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF"
 OPERATION = "rmsnorm_public_rows"
 TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
@@ -64,6 +64,7 @@ NON_CLAIMS = [
 
 PROOF_VERIFIER_HARDENING = [
     "signed M31 bounds and checked i64 arithmetic for public-row relations",
+    "AIR-native remainder range constraints via bit-decomposed quotient remainders",
     "exact integer isqrt recomputation without floating-point sqrt",
     "AIR-native bounded sqrt inequality via 17-bit nonnegative gap decompositions",
     "canonical d128 RMSNorm commitment domains checked before proof verification",
@@ -157,6 +158,35 @@ def public_instance_commitment(target_commitment: str = TARGET_COMMITMENT, width
     return blake2b_commitment(
         {"operation": OPERATION, "target_commitment": target_commitment, "width": width},
         PUBLIC_INSTANCE_DOMAIN,
+    )
+
+
+def statement_commitment(payload: dict[str, Any], target_commitment: str = TARGET_COMMITMENT) -> str:
+    return blake2b_commitment(
+        {
+            "average_square_floor": payload["average_square_floor"],
+            "input_activation_commitment": payload["input_activation_commitment"],
+            "input_activation_domain": payload["input_activation_domain"],
+            "normalization_config_commitment": payload["normalization_config_commitment"],
+            "normalization_config_domain": payload["normalization_config_domain"],
+            "operation": OPERATION,
+            "required_backend_version": REQUIRED_BACKEND_VERSION,
+            "rms_q8": payload["rms_q8"],
+            "rms_scale_domain": payload["rms_scale_domain"],
+            "rms_scale_leaf_domain": payload["rms_scale_leaf_domain"],
+            "rms_scale_tree_domain": payload["rms_scale_tree_domain"],
+            "rms_scale_tree_root": payload["rms_scale_tree_root"],
+            "rmsnorm_output_row_commitment": payload["rmsnorm_output_row_commitment"],
+            "rmsnorm_output_row_domain": payload["rmsnorm_output_row_domain"],
+            "row_count": payload["row_count"],
+            "scale_q8": payload["scale_q8"],
+            "source_proof_backend_version": SOURCE_PROOF_BACKEND_VERSION,
+            "target_commitment": target_commitment,
+            "target_id": TARGET_ID,
+            "verifier_domain": VERIFIER_DOMAIN,
+            "width": payload["width"],
+        },
+        VERIFIER_DOMAIN,
     )
 
 
@@ -294,6 +324,10 @@ def build_payload(target: dict[str, Any] | None = None) -> dict[str, Any]:
     rows, sum_squares, average_square_floor, rms_q8 = build_rows(input_q8, rms_scale_q8)
     normed_q8 = [row["normed_q8"] for row in rows]
     scale_commitment = sequence_commitment(rms_scale_q8, RMS_SCALE_DOMAIN)
+    input_activation = sequence_commitment(input_q8, INPUT_ACTIVATION_DOMAIN)
+    rmsnorm_output = sequence_commitment(normed_q8, RMSNORM_OUTPUT_ROW_DOMAIN)
+    normalization_config = normalization_config_commitment(rms_q8, scale_commitment)
+    scale_tree_root = rms_scale_tree_root(rms_scale_q8)
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -314,19 +348,23 @@ def build_payload(target: dict[str, Any] | None = None) -> dict[str, Any]:
         "rms_q8": rms_q8,
         "sum_squares": sum_squares,
         "average_square_floor": average_square_floor,
-        "proof_native_parameter_commitment": proof_native_parameter_commitment(target_commitment),
-        "normalization_config_commitment": normalization_config_commitment(rms_q8, scale_commitment),
-        "input_activation_commitment": sequence_commitment(input_q8, INPUT_ACTIVATION_DOMAIN),
-        "rmsnorm_output_row_commitment": sequence_commitment(normed_q8, RMSNORM_OUTPUT_ROW_DOMAIN),
-        "public_instance_commitment": public_instance_commitment(target_commitment, WIDTH),
-        "statement_commitment": target_commitment,
-        "rms_scale_tree_root": rms_scale_tree_root(rms_scale_q8),
+        "proof_native_parameter_commitment": "",
+        "normalization_config_commitment": normalization_config,
+        "input_activation_commitment": input_activation,
+        "rmsnorm_output_row_commitment": rmsnorm_output,
+        "public_instance_commitment": "",
+        "statement_commitment": "",
+        "rms_scale_tree_root": scale_tree_root,
         "rows": rows,
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
         "validation_commands": list(VALIDATION_COMMANDS),
     }
+    target_statement_commitment = statement_commitment(payload, target_commitment)
+    payload["statement_commitment"] = target_statement_commitment
+    payload["proof_native_parameter_commitment"] = proof_native_parameter_commitment(target_statement_commitment)
+    payload["public_instance_commitment"] = public_instance_commitment(target_statement_commitment, WIDTH)
     validate_payload(payload)
     return payload
 
@@ -442,12 +480,6 @@ def validate_payload(payload: Any) -> None:
         "rms_scale_tree_root",
     ):
         require_commitment(payload[field], field)
-    if payload["statement_commitment"] != TARGET_COMMITMENT:
-        raise D128RmsnormPublicRowInputError("statement commitment drift")
-    if payload["public_instance_commitment"] != public_instance_commitment(TARGET_COMMITMENT, WIDTH):
-        raise D128RmsnormPublicRowInputError("public instance commitment drift")
-    if payload["proof_native_parameter_commitment"] != proof_native_parameter_commitment(TARGET_COMMITMENT):
-        raise D128RmsnormPublicRowInputError("proof-native parameter commitment drift")
     rows = payload["rows"]
     if not isinstance(rows, list) or len(rows) != WIDTH:
         raise D128RmsnormPublicRowInputError("row vector mismatch")
@@ -475,6 +507,13 @@ def validate_payload(payload: Any) -> None:
         raise D128RmsnormPublicRowInputError("normalization config commitment drift")
     if rms_scale_tree_root(scale_values) != payload["rms_scale_tree_root"]:
         raise D128RmsnormPublicRowInputError("RMS scale tree root drift")
+    recomputed_statement_commitment = statement_commitment(payload)
+    if payload["statement_commitment"] != recomputed_statement_commitment:
+        raise D128RmsnormPublicRowInputError("statement commitment drift")
+    if payload["public_instance_commitment"] != public_instance_commitment(recomputed_statement_commitment, WIDTH):
+        raise D128RmsnormPublicRowInputError("public instance commitment drift")
+    if payload["proof_native_parameter_commitment"] != proof_native_parameter_commitment(recomputed_statement_commitment):
+        raise D128RmsnormPublicRowInputError("proof-native parameter commitment drift")
 
 
 def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[dict[str, Any]]:
