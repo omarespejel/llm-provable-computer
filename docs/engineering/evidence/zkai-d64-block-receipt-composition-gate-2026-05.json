@@ -147,7 +147,7 @@
       "mutated_accepted": false,
       "mutation": "input_commitment_drift",
       "rejected": true,
-      "rejection_layer": "commitment_chain",
+      "rejection_layer": "block_receipt",
       "surface": "block_receipt"
     },
     {
@@ -156,7 +156,7 @@
       "mutated_accepted": false,
       "mutation": "output_commitment_drift",
       "rejected": true,
-      "rejection_layer": "commitment_chain",
+      "rejection_layer": "block_receipt",
       "surface": "block_receipt"
     },
     {

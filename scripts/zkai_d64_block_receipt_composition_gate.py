@@ -641,6 +641,9 @@ def _chain_by_slice(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
         expect_equal(item.get("schema"), spec.schema, f"{spec.slice_id} schema")
         expect_equal(item.get("decision"), spec.decision, f"{spec.slice_id} decision")
         expect_equal(item.get("proof_backend_version"), spec.proof_version, f"{spec.slice_id} proof version")
+        row_count = require_int(item.get("row_count"), f"{spec.slice_id} row_count")
+        if row_count <= 0:
+            raise D64BlockReceiptError(f"{spec.slice_id} row_count must be positive")
         if not isinstance(item.get("source_commitments"), dict):
             raise D64BlockReceiptError(f"{spec.slice_id} source commitments must be an object")
         if not isinstance(item.get("target_commitments"), dict):
@@ -788,7 +791,11 @@ def validate_payload(payload: Any) -> None:
     if not isinstance(summary, dict):
         raise D64BlockReceiptError("summary must be an object")
     expect_equal(summary.get("slice_count"), len(SLICE_SPECS), "summary slice count")
-    expect_equal(summary.get("total_checked_rows"), sum(item["row_count"] for item in payload["slice_chain"]), "summary row count")
+    total_checked_rows = sum(
+        require_int(item.get("row_count"), f"{item.get('slice_id', 'unknown')} row_count")
+        for item in chain.values()
+    )
+    expect_equal(summary.get("total_checked_rows"), total_checked_rows, "summary row count")
     expect_equal(summary.get("input_activation_commitment"), INPUT_ACTIVATION_COMMITMENT, "summary input commitment")
     expect_equal(summary.get("output_activation_commitment"), OUTPUT_ACTIVATION_COMMITMENT, "summary output commitment")
 
@@ -799,10 +806,10 @@ def classify_error(error: Exception) -> str:
         return "source_evidence_manifest"
     if "order" in text or "duplicate" in text or "missing" in text or "membership" in text or "index" in text:
         return "slice_chain_shape"
+    if text.startswith("block receipt") or " receipt " in f" {text} ":
+        return "block_receipt"
     if "edge" in text or "relabel" in text or "commitment" in text:
         return "commitment_chain"
-    if "receipt" in text:
-        return "block_receipt"
     return "parser_or_schema"
 
 

@@ -90,6 +90,25 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.D64BlockReceiptError, "output_activation_commitment"):
             COMPOSITION.validate_payload(payload)
 
+    def test_rejects_malformed_slice_row_count_without_raw_exception(self) -> None:
+        for value in (None, "64", 0, -1, True):
+            with self.subTest(row_count=value):
+                payload = self.fresh_payload()
+                if value is None:
+                    del payload["slice_chain"][0]["row_count"]
+                else:
+                    payload["slice_chain"][0]["row_count"] = value
+                COMPOSITION.refresh_commitments(payload)
+                with self.assertRaisesRegex(COMPOSITION.D64BlockReceiptError, "row_count"):
+                    COMPOSITION.validate_payload(payload)
+
+    def test_receipt_commitment_mutations_report_block_receipt_layer(self) -> None:
+        cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
+        self.assertEqual(cases["input_commitment_drift"]["rejection_layer"], "block_receipt")
+        self.assertIn("block receipt input_activation_commitment", cases["input_commitment_drift"]["error"])
+        self.assertEqual(cases["output_commitment_drift"]["rejection_layer"], "block_receipt")
+        self.assertIn("block receipt output_activation_commitment", cases["output_commitment_drift"]["error"])
+
     def test_rejects_public_rmsnorm_row_relation_drift(self) -> None:
         source = COMPOSITION.source_payloads()
         source["rmsnorm_public_rows"]["rows"][0]["normed_q8"] += 1

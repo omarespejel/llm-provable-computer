@@ -8,6 +8,6 @@ residual_delta_relabels_output	commitment_chain	True	False	True	commitment_chain
 backend_version_drift	block_receipt	True	False	True	block_receipt	block receipt required_backend_version mismatch
 slice_version_drift	block_receipt	True	False	True	block_receipt	block receipt slice proof version mismatch
 model_config_drift	block_receipt	True	False	True	block_receipt	block receipt model_config mismatch
-input_commitment_drift	block_receipt	True	False	True	commitment_chain	block receipt input_activation_commitment mismatch
-output_commitment_drift	block_receipt	True	False	True	commitment_chain	block receipt output_activation_commitment mismatch
+input_commitment_drift	block_receipt	True	False	True	block_receipt	block receipt input_activation_commitment mismatch
+output_commitment_drift	block_receipt	True	False	True	block_receipt	block receipt output_activation_commitment mismatch
 source_file_hash_drift	source_evidence_manifest	True	False	True	source_evidence_manifest	rmsnorm_public_rows source file hash mismatch
