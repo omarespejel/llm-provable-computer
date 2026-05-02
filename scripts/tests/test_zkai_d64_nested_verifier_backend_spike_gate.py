@@ -334,6 +334,40 @@ class ZkAiD64NestedVerifierBackendSpikeGateTests(unittest.TestCase):
             self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
             self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
 
+    def test_write_outputs_rolls_back_with_atomic_replace_not_write_bytes(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = tmp / "backend-spike.json"
+            tsv_path = tmp / "backend-spike.tsv"
+            json_path.write_text("old-json\n", encoding="utf-8")
+            tsv_path.write_text("old-tsv\n", encoding="utf-8")
+            original_replace = pathlib.Path.replace
+            original_write_bytes = pathlib.Path.write_bytes
+            replace_count = 0
+
+            def fail_second_replace(self: pathlib.Path, target: pathlib.Path) -> pathlib.Path:
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("forced second replace failure")
+                return original_replace(self, target)
+
+            def forbid_write_bytes(self: pathlib.Path, data: bytes) -> int:
+                raise AssertionError(f"rollback used in-place write_bytes on {self}")
+
+            try:
+                pathlib.Path.replace = fail_second_replace
+                pathlib.Path.write_bytes = forbid_write_bytes
+                with self.assertRaisesRegex(GATE.D64NestedVerifierBackendSpikeError, "forced second replace failure"):
+                    GATE.write_outputs(payload, json_path, tsv_path)
+            finally:
+                pathlib.Path.replace = original_replace
+                pathlib.Path.write_bytes = original_write_bytes
+
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old-json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old-tsv\n")
+
     def test_write_outputs_preserves_stage_error_when_cleanup_fails(self) -> None:
         payload = self.fresh_payload()
         original_stage_text = GATE._stage_text

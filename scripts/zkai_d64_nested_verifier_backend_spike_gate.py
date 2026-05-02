@@ -758,6 +758,13 @@ def _stage_text(path: pathlib.Path, text: str) -> pathlib.Path:
         return pathlib.Path(handle.name)
 
 
+def _stage_bytes(path: pathlib.Path, data: bytes) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
+        handle.write(data)
+        return pathlib.Path(handle.name)
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
     json_output = _validated_output_path(json_path) if json_path is not None else None
@@ -786,7 +793,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         for output_path, existed, previous in reversed(committed):
             try:
                 if existed and previous is not None:
-                    output_path.write_bytes(previous)
+                    rollback_tmp = _stage_bytes(output_path, previous)
+                    try:
+                        rollback_tmp.replace(output_path)
+                    finally:
+                        rollback_tmp.unlink(missing_ok=True)
                 else:
                     output_path.unlink(missing_ok=True)
             except OSError as rollback_err:
