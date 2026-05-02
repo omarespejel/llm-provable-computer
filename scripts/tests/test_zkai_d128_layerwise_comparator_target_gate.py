@@ -37,7 +37,7 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
         self.assertEqual(payload["local_proof_result"], GATE.LOCAL_PROOF_RESULT)
         self.assertEqual(payload["source_context_result"], GATE.SOURCE_CONTEXT_RESULT)
         self.assertEqual(payload["external_adapter_result"], GATE.EXTERNAL_ADAPTER_RESULT)
-        self.assertEqual(payload["case_count"], 16)
+        self.assertEqual(payload["case_count"], 19)
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertEqual(payload["validation_commands"][0], "just gate-fast")
         self.assertEqual(payload["validation_commands"][-1], "just gate")
@@ -48,9 +48,18 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
         self.assertEqual(target["ff_dim"], 512)
         self.assertEqual(target["estimated_linear_muls"], 196_608)
         self.assertEqual(target["estimated_activation_rows"], 512)
+        self.assertEqual(target["estimated_residual_rows"], 128)
+        self.assertEqual(target["row_operator_pressure"]["rmsnorm_rows"], 1)
+        self.assertEqual(target["row_operator_pressure"]["swiglu_activation_rows"], 512)
+        self.assertEqual(target["row_operator_pressure"]["residual_add_rows"], 128)
+        self.assertEqual(target["d64_to_d128_scale_decision"], GATE.D128_SCALE_DECISION)
         self.assertEqual(target["required_proof_backend_version"], "stwo-rmsnorm-swiglu-residual-d128-v1")
         self.assertEqual(target["local_feasibility_status"], "NO_GO_CURRENT_SURFACE")
         self.assertTrue(target["target_commitment"].startswith("blake2b-256:"))
+        generalization = {row["slice"]: row for row in target["d64_slice_generalization"]}
+        self.assertEqual(generalization["rmsnorm_public_rows"]["d128_rows"], 128)
+        self.assertIn("NOT_CURRENT_PROOF_SURFACE", generalization["gate_value_projection"]["decision"])
+        self.assertEqual(generalization["residual_add"]["d128_rows"], 128)
         for required in (
             "model_artifact_commitment",
             "input_activation_commitment",
@@ -94,6 +103,9 @@ class ZkAiD128LayerwiseComparatorTargetGateTests(unittest.TestCase):
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
         self.assertEqual(cases["matched_source_file_hash_drift"]["rejection_layer"], "source_evidence")
         self.assertEqual(cases["target_width_drift"]["rejection_layer"], "target_spec")
+        self.assertEqual(cases["target_residual_row_count_drift"]["rejection_layer"], "target_spec")
+        self.assertEqual(cases["target_scale_decision_promoted_to_go"]["rejection_layer"], "target_spec")
+        self.assertEqual(cases["target_d64_slice_generalization_overclaim"]["rejection_layer"], "target_spec")
         self.assertEqual(cases["local_proof_size_metric_smuggled"]["rejection_layer"], "local_proof_status")
         self.assertEqual(cases["nanozk_source_context_promoted_to_matched"]["rejection_layer"], "source_context")
         self.assertEqual(cases["deepprove_public_artifact_overclaim"]["rejection_layer"], "external_adapter_status")

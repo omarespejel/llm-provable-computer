@@ -917,11 +917,13 @@ competitor-facing transformer-block shape without pretending a local proof
 exists. The target is a `d=128`, `ff_dim=512` RMSNorm-SwiGLU-residual receipt
 with explicit statement bindings for model/config/weights, input and output
 activations, lookup/public-instance material, proof, verifying key, setup,
-verifier domain, and proof-system version. The gate is a GO for that target
-specification and source-backed NANOZK context, but a bounded NO-GO for local
+verifier domain, and proof-system version. It also records the target pressure
+explicitly: `1` RMSNorm row, `512` SwiGLU activation rows, `128` residual-add
+rows, and `196608` linear projection multiplications. The gate is a GO for that
+target specification and source-backed NANOZK context, but a bounded NO-GO for local
 proof size, verifier time, proof-generation time, or relabeling-resistance
 metrics because the repository still lacks a local `d=128` proof artifact,
-verifier handle, and mutation suite. It rejects `16 / 16` checked mutations and
+verifier handle, and mutation suite. It rejects `19 / 19` checked mutations and
 is anchored to
 `docs/engineering/zkai-d128-layerwise-comparator-target-2026-05-02.md` and
 `docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json`.

@@ -12,6 +12,19 @@ The gate separates three claims:
 - local proof artifact availability;
 - source-backed public context.
 
+Starting anchors:
+
+- `docs/engineering/zkai-matched-rmsnorm-swiglu-block-feasibility-gate-2026-05-01.md`
+  for the d64/d128 target-shape and local-surface feasibility probe;
+- `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
+  for the checked d64 slice-chain receipt surface;
+- `docs/engineering/zkai-d64-nested-verifier-backend-spike-2026-05-02.md`
+  for the current recursive/PCD backend NO-GO boundary;
+- `docs/engineering/zkai-deepprove-nanozk-adapter-feasibility-2026-05-01.md`
+  for the public-artifact adapter feasibility result;
+- `docs/paper/evidence/published-zkml-numbers-2026-04.tsv` for source-backed
+  NANOZK context.
+
 ## Decision
 
 **GO for the comparator target spec. Bounded NO-GO for local `d=128` proof
@@ -21,6 +34,11 @@ This is not a benchmark. It is a checked target definition and an anti-overclaim
 gate: the repository can now name the `d=128` RMSNorm-SwiGLU-residual receipt it
 would need to prove, but it cannot report local proof size, verifier time, or
 relabeling resistance for that target until a proof artifact exists.
+
+Scale decision: `NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY`.
+The existing d64 slice interfaces generalize structurally, but the current
+Stwo-native proof surface does not scale to a d128 proof because it remains
+fixture-gated and lacks a parameterized vector-block AIR plus verifier handle.
 
 ## Result
 
@@ -35,8 +53,10 @@ relabeling resistance for that target until a proof artifact exists.
 | Target width | `128` |
 | Target FF dimension | `512` |
 | Estimated linear multiplications | `196608` |
-| Target commitment | `blake2b-256:f2660bd0371cd242472a5b9fb6939067f21ca0af48cbfb2ce6ac78b8f5ee8206` |
-| Mutation checks | `16 / 16` rejected |
+| Estimated residual rows | `128` |
+| d64 to d128 scale decision | `NO_GO_CURRENT_STWO_SURFACE_FOR_D128_PROOF_GO_TARGET_SPEC_ONLY` |
+| Target commitment | `blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18` |
+| Mutation checks | `19 / 19` rejected |
 
 ## Target shape
 
@@ -48,6 +68,8 @@ The target is a `d=128` RMSNorm-SwiGLU-residual receipt:
 - residual: `true`;
 - hidden width: `128`;
 - FF dimension: `512`;
+- row/operator pressure: `1` RMSNorm row, `512` SwiGLU activation rows, `128`
+  residual-add rows, and `196608` linear projection multiplications;
 - required backend version:
   `stwo-rmsnorm-swiglu-residual-d128-v1`.
 
@@ -71,6 +93,22 @@ The inherited local-surface blockers are:
   `d x ff_dim` matrices;
 - the current Stwo generator is fixture-gated and not an arbitrary matched MLP
   proof generator.
+
+## d64 slice generalization
+
+The d64 receipt chain gives useful interfaces, but not a direct d128 proof.
+
+| d64 slice | d128 decision |
+| --- | --- |
+| `rmsnorm_public_rows` | Generalizes structurally with width parameter (`64` rows to `128` rows), but needs a d128 RMSNorm proof artifact and verifier handle. |
+| `rmsnorm_projection_bridge` | Generalizes structurally as a commitment bridge, but needs a d128 RMSNorm output commitment. |
+| `gate_value_projection` | Same operator family, but not the current proof surface; linear multiplications grow from `32768` to `131072`, and the current generator is fixture-gated. |
+| `activation_swiglu` | Same operator family, but needs a d128 range/lookup proof surface; activation rows grow from `256` to `512`. |
+| `down_projection` | Same operator family, but not the current proof surface; linear multiplications grow from `16384` to `65536`. |
+| `residual_add` | Generalizes structurally with width parameter (`64` rows to `128` rows), but needs a d128 residual-add proof artifact and verifier handle. |
+
+This is why the gate records a target-spec GO and a local-proof NO-GO instead
+of a scale-up benchmark.
 
 ## Source-backed context
 
