@@ -1268,6 +1268,18 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         rmsnorm_output_row_commitment,
         "direct d128 RMSNorm-to-projection bridge route source output-row commitment",
     )
+    route_projection_input_commitment = route_by_name["direct_d128_rmsnorm_to_projection_bridge_air"].get(
+        "projection_input_row_commitment"
+    )
+    expect_equal(
+        route_projection_input_commitment,
+        bridge_probe.get("projection_input_row_commitment"),
+        "direct d128 RMSNorm-to-projection bridge route projection-input commitment",
+    )
+    if route_projection_input_commitment == D128_BRIDGE_GATE.FORBIDDEN_OUTPUT_ACTIVATION_COMMITMENT:
+        raise D128BackendSpikeError(
+            "direct d128 RMSNorm-to-projection bridge route projection-input commitment relabeled as full output"
+        )
     expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
