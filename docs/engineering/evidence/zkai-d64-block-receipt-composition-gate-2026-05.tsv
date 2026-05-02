@@ -6,6 +6,7 @@ stale_hidden_activation_edge	commitment_chain	True	False	True	commitment_chain	a
 stale_residual_delta_edge	commitment_chain	True	False	True	commitment_chain	down-to-residual commitment edge mismatch
 residual_delta_relabels_output	commitment_chain	True	False	True	commitment_chain	down-to-residual commitment edge mismatch
 backend_version_drift	block_receipt	True	False	True	block_receipt	block receipt required_backend_version mismatch
+verifier_domain_drift	block_receipt	True	False	True	block_receipt	block receipt verifier_domain mismatch
 slice_version_drift	block_receipt	True	False	True	block_receipt	block receipt slice proof version mismatch
 model_config_drift	block_receipt	True	False	True	block_receipt	block receipt model_config mismatch
 input_commitment_drift	block_receipt	True	False	True	block_receipt	block receipt input_activation_commitment mismatch

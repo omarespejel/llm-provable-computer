@@ -35,9 +35,9 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(payload["result"], "GO")
         self.assertEqual(payload["summary"]["slice_count"], 6)
         self.assertEqual(payload["summary"]["total_checked_rows"], 49600)
-        self.assertEqual(payload["case_count"], 13)
+        self.assertEqual(payload["case_count"], 14)
         self.assertTrue(payload["all_mutations_rejected"])
-        self.assertEqual(payload["summary"]["mutations_rejected"], 13)
+        self.assertEqual(payload["summary"]["mutations_rejected"], 14)
         self.assertEqual(
             payload["block_receipt"]["output_activation_commitment"],
             COMPOSITION.OUTPUT_ACTIVATION_COMMITMENT,
@@ -79,6 +79,16 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(cases["source_payload_hash_drift"]["rejection_layer"], "source_evidence_manifest")
         self.assertIn("source payload hash", cases["source_payload_hash_drift"]["error"])
 
+    def test_rejects_extra_source_manifest_entry(self) -> None:
+        payload = self.fresh_payload()
+        extra = copy.deepcopy(payload["source_evidence_manifest"][0])
+        extra["index"] = len(payload["source_evidence_manifest"])
+        extra["slice_id"] = "unexpected_extra_slice"
+        payload["source_evidence_manifest"].append(extra)
+        COMPOSITION.refresh_commitments(payload)
+        with self.assertRaisesRegex(COMPOSITION.D64BlockReceiptError, "source evidence manifest order"):
+            COMPOSITION.validate_payload(payload)
+
     def test_rejects_self_consistent_wrong_model_config(self) -> None:
         payload = self.fresh_payload()
         payload["block_receipt"]["model_config"]["width"] = 128
@@ -114,6 +124,8 @@ class ZkAiD64BlockReceiptCompositionGateTests(unittest.TestCase):
 
     def test_receipt_commitment_mutations_report_block_receipt_layer(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
+        self.assertEqual(cases["verifier_domain_drift"]["rejection_layer"], "block_receipt")
+        self.assertIn("block receipt verifier_domain", cases["verifier_domain_drift"]["error"])
         self.assertEqual(cases["input_commitment_drift"]["rejection_layer"], "block_receipt")
         self.assertIn("block receipt input_activation_commitment", cases["input_commitment_drift"]["error"])
         self.assertEqual(cases["output_commitment_drift"]["rejection_layer"], "block_receipt")

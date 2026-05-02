@@ -30,7 +30,7 @@ exposes one domain-separated `block_receipt_commitment`.
 | Decision | `GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE` |
 | Slice count | `6` |
 | Total checked slice rows | `49,600` |
-| Mutation cases | `13 / 13` rejected |
+| Mutation cases | `14 / 14` rejected |
 | Block receipt commitment | `blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42` |
 | Slice-chain commitment | `blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e` |
 | Evidence-manifest commitment | `blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c` |
@@ -88,10 +88,12 @@ The mutation suite rejects:
 - stale residual-delta edge;
 - residual-delta commitment relabeled as final output;
 - backend-version drift;
+- verifier-domain drift;
 - slice proof-version drift;
 - model-config drift;
 - input-commitment drift;
 - output-commitment drift;
+- source evidence payload-hash drift after outer recommit;
 - source evidence file-hash drift after outer recommit.
 
 The tests also check direct RMSNorm row-relation drift and down-projection

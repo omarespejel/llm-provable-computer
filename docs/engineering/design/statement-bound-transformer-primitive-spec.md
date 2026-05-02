@@ -361,9 +361,9 @@ It consumes the six checked d64 slice evidence handles, verifies their ordered
 source/target commitment chain, and exposes one
 `zkai-d64-block-receipt-v1` commitment bound to model config,
 `input_activation_commitment`, `output_activation_commitment`, backend version,
-verifier domain, slice versions, and source evidence hashes. It rejects `13 / 13`
-checked missing/reordered/duplicated/stale/relabeling/source-hash mutations.
-This is the first single receipt for the d64 native route. It is still not recursive
+verifier domain, slice versions, and source evidence hashes. It rejects `14 / 14`
+checked missing/reordered/duplicated/stale/relabeling/verifier-domain/source-hash
+mutations. This is the first single receipt for the d64 native route. It is still not recursive
 aggregation or a private parameter-opening proof.
 
 The first attention/KV receipt contract is also checked in:
