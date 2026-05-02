@@ -352,7 +352,7 @@ class D128BackendSpikeError(ValueError):
     pass
 
 
-def _read_repo_regular_file_bytes(path: pathlib.Path | str) -> tuple[bytes, pathlib.Path]:
+def _open_repo_regular_file(path: pathlib.Path | str) -> tuple[int, pathlib.Path]:
     candidate = pathlib.Path(path)
     if not candidate.is_absolute():
         candidate = ROOT / candidate
@@ -367,21 +367,27 @@ def _read_repo_regular_file_bytes(path: pathlib.Path | str) -> tuple[bytes, path
         pre_stat = resolved.lstat()
         if not stat_module.S_ISREG(pre_stat.st_mode):
             raise D128BackendSpikeError(f"source file is not a regular file: {path}")
-        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        fd = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         try:
             post_stat = os.fstat(fd)
             if not stat_module.S_ISREG(post_stat.st_mode):
                 raise D128BackendSpikeError(f"source file is not a regular file: {path}")
             if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
                 raise D128BackendSpikeError(f"source file changed while reading: {path}")
-            with os.fdopen(fd, "rb") as handle:
-                fd = None
-                return handle.read(), resolved
+            opened_fd = fd
+            fd = None
+            return opened_fd, resolved
         finally:
             if fd is not None:
                 os.close(fd)
     except OSError as err:
         raise D128BackendSpikeError(f"failed to read source file {path}: {err}") from err
+
+
+def _read_repo_regular_file_bytes(path: pathlib.Path | str) -> tuple[bytes, pathlib.Path]:
+    fd, resolved = _open_repo_regular_file(path)
+    with os.fdopen(fd, "rb") as handle:
+        return handle.read(), resolved
 
 
 def _load_module(path: pathlib.Path, module_name: str) -> Any:
@@ -392,7 +398,11 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
     module = importlib.util.module_from_spec(spec)
     module.__file__ = str(resolved)
     sys.modules[module_name] = module
-    exec(compile(source, str(resolved), "exec"), module.__dict__)
+    try:
+        exec(compile(source, str(resolved), "exec"), module.__dict__)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
     return module
 
 
@@ -449,8 +459,12 @@ def set_gate_commitment(payload: dict[str, Any]) -> None:
 
 
 def file_sha256(path: pathlib.Path) -> str:
-    data, _ = _read_repo_regular_file_bytes(path)
-    return hashlib.sha256(data).hexdigest()
+    fd, _resolved = _open_repo_regular_file(path)
+    digest = hashlib.sha256()
+    with os.fdopen(fd, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def relative_path(path: pathlib.Path) -> str:
