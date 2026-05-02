@@ -305,8 +305,9 @@ def refresh_commitments(payload: dict[str, Any]) -> None:
     payload["aggregation_target_commitment"] = blake2b_commitment(manifest, TARGET_DOMAIN)
 
 
-def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
-    source = copy.deepcopy(source or load_checked_block_receipt())
+def _build_payload_from_canonical_source(source: dict[str, Any]) -> dict[str, Any]:
+    """Build the draft payload from the already-loaded canonical receipt evidence."""
+    source = copy.deepcopy(source)
     COMPOSITION.validate_payload(source)
     projection = block_receipt_projection(source)
     target = aggregation_target_manifest(source)
@@ -338,8 +339,12 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "validation_commands": VALIDATION_COMMANDS,
     }
     refresh_commitments(payload)
-    validate_payload(payload, require_cases=False)
+    _validate_draft_payload(payload)
     return payload
+
+
+def build_payload() -> dict[str, Any]:
+    return _build_payload_from_canonical_source(load_checked_block_receipt())
 
 
 def _validate_source_descriptor(payload: dict[str, Any]) -> dict[str, Any]:
@@ -386,16 +391,14 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
     )
 
 
-def _validate_case_metadata(payload: dict[str, Any], *, required: bool) -> tuple[int, int] | None:
+def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
     has_cases = "cases" in payload
     has_case_count = "case_count" in payload
     has_all_mutations_rejected = "all_mutations_rejected" in payload
     if not (has_cases or has_case_count or has_all_mutations_rejected):
-        if required:
-            raise D64RecursivePCDFeasibilityError(
-                "mutation metadata must include cases, case_count, and all_mutations_rejected"
-            )
-        return None
+        raise D64RecursivePCDFeasibilityError(
+            "mutation metadata must include cases, case_count, and all_mutations_rejected"
+        )
     if not (has_cases and has_case_count and has_all_mutations_rejected):
         raise D64RecursivePCDFeasibilityError("mutation metadata must include cases, case_count, and all_mutations_rejected together")
 
@@ -435,7 +438,7 @@ def _validate_case_metadata(payload: dict[str, Any], *, required: bool) -> tuple
     return computed_case_count, computed_rejected
 
 
-def validate_payload(payload: Any, *, require_cases: bool = True) -> None:
+def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     payload = require_object(payload, "recursive/PCD feasibility payload")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
     expect_equal(payload.get("decision"), DECISION, "decision")
@@ -443,7 +446,6 @@ def validate_payload(payload: Any, *, require_cases: bool = True) -> None:
     expect_equal(payload.get("aggregation_target_result"), TARGET_RESULT, "aggregation target result")
     expect_equal(payload.get("recursive_or_pcd_proof_result"), RECURSIVE_OR_PCD_RESULT, "recursive or PCD proof result")
     source = _validate_source_descriptor(payload)
-    case_metadata = _validate_case_metadata(payload, required=require_cases)
     expect_equal(
         payload.get("block_receipt_projection"),
         block_receipt_projection(source),
@@ -457,7 +459,6 @@ def validate_payload(payload: Any, *, require_cases: bool = True) -> None:
         "aggregation target commitment",
     )
     _validate_attempt(payload)
-    summary = require_object(payload.get("summary"), "summary")
     source_summary = require_object(source.get("summary"), "source block receipt summary")
     expected_summary = {
         "target_status": TARGET_RESULT,
@@ -471,12 +472,25 @@ def validate_payload(payload: Any, *, require_cases: bool = True) -> None:
         "aggregation_target_kind": TARGET_KIND,
         "aggregation_target_version": TARGET_VERSION,
     }
-    if case_metadata is not None:
-        computed_case_count, computed_rejected = case_metadata
-        expected_summary["mutation_cases"] = computed_case_count
-        expected_summary["mutations_rejected"] = computed_rejected
-    expect_equal(summary, expected_summary, "summary")
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non-claims")
+    return source, expected_summary
+
+
+def _validate_draft_payload(payload: Any) -> None:
+    _, expected_summary = _validate_common_payload(payload)
+    if "cases" in payload or "case_count" in payload or "all_mutations_rejected" in payload:
+        raise D64RecursivePCDFeasibilityError("draft payload must not include mutation metadata")
+    summary = require_object(payload.get("summary"), "summary")
+    expect_equal(summary, expected_summary, "summary")
+
+
+def validate_payload(payload: Any) -> None:
+    _, expected_summary = _validate_common_payload(payload)
+    computed_case_count, computed_rejected = _validate_case_metadata(require_object(payload, "recursive/PCD feasibility payload"))
+    expected_summary["mutation_cases"] = computed_case_count
+    expected_summary["mutations_rejected"] = computed_rejected
+    summary = require_object(payload.get("summary"), "summary")
+    expect_equal(summary, expected_summary, "summary")
 
 
 def classify_error(error: Exception) -> str:
@@ -600,11 +614,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
 
 def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     baseline = copy.deepcopy(baseline or build_payload())
-    validate_payload(baseline, require_cases=False)
+    _validate_draft_payload(baseline)
     cases = []
     for mutation, surface, mutated in _mutated_cases(baseline):
         try:
-            validate_payload(mutated, require_cases=False)
+            _validate_draft_payload(mutated)
             accepted = True
             error = ""
             layer = "accepted"
