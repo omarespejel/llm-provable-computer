@@ -464,8 +464,21 @@ Decision: `GO_D64_DOWN_PROJECTION_AIR_PROOF`. The proof consumes
 rows in native Stwo AIR, recomputes the down matrix root from checked row
 weights, and emits a domain-separated `residual_delta_commitment`. The verifier
 rejects attempts to relabel that residual delta as the full d64
-`output_activation_commitment`. The remaining native-proof seam is now residual
-closure before claiming full-block output binding.
+`output_activation_commitment`.
+
+The d64 residual-add proof consumes that residual-delta surface:
+
+- `docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d64-residual-add-proof-2026-05.tsv`
+- `src/stwo_backend/d64_native_residual_add_proof.rs`
+
+Decision: `GO_D64_RESIDUAL_ADD_AIR_PROOF`. The proof consumes
+`residual_delta_commitment` and the canonical `input_activation_commitment`,
+checks `64` residual-add rows in native Stwo AIR, recomputes the residual-add
+row commitment, and recomputes the final `output_activation_commitment`. This
+closes the native d64 final-output seam for the slice chain. It is still not a
+recursive aggregate proof and not a private parameter-opening proof.
 
 The attention/KV transition receipt adds the first stateful receipt seam:
 

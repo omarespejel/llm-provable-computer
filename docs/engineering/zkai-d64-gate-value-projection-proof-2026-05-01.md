@@ -98,9 +98,8 @@ on output-vector equality.
 This closes the immediate #367 proof-native seam: the native path now advances
 from RMSNorm-local rows through a domain-separated projection-input handoff and
 into a proved gate/value projection row slice. The remaining d64 full-block gap
-is now narrower and explicit: activation/SwiGLU, down projection, and residual
-rows must still be proven or otherwise source-bound before the final output
-commitment can be claimed.
+is now closed by the follow-up activation/SwiGLU, down-projection, and
+residual-add slices, which reach the final `output_activation_commitment`.
 
 ## Reproduce
 
@@ -118,6 +117,6 @@ cargo +nightly-2025-07-14 test d64_native_gate_value_projection_proof --lib --fe
 The activation/SwiGLU slice is now recorded in
 `docs/engineering/zkai-d64-activation-swiglu-proof-2026-05-02.md`, and the
 down-projection slice is recorded in
-`docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`. Do not claim
-the full d64 output until residual rows are also proven or explicitly
-source-bound.
+`docs/engineering/zkai-d64-down-projection-proof-2026-05-02.md`. The
+residual-add slice is recorded in
+`docs/engineering/zkai-d64-residual-add-proof-2026-05-02.md`.
