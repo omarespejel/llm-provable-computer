@@ -712,11 +712,11 @@ fn prove_gate_value_rows(rows: &[D128GateValueProjectionMulRow]) -> Result<Vec<u
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(rows));
+    tree_builder.extend_evals(gate_value_trace(rows)?);
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(rows));
+    tree_builder.extend_evals(gate_value_trace(rows)?);
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -751,7 +751,7 @@ fn verify_gate_value_rows(proof: &[u8], rows: &[D128GateValueProjectionMulRow]) 
             ZKAI_D128_GATE_VALUE_EXPECTED_PROOF_COMMITMENTS
         )));
     }
-    let expected_roots = gate_value_commitment_roots(rows, config);
+    let expected_roots = gate_value_commitment_roots(rows, config)?;
     if stark_proof.commitments[0] != expected_roots[0] {
         return Err(gate_value_error(
             "preprocessed row commitment does not match checked gate/value rows",
@@ -787,8 +787,10 @@ fn gate_value_pcs_config() -> PcsConfig {
 fn gate_value_commitment_roots(
     rows: &[D128GateValueProjectionMulRow],
     config: PcsConfig,
-) -> stwo::core::pcs::TreeVec<
-    <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+) -> Result<
+    stwo::core::pcs::TreeVec<
+        <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+    >,
 > {
     let component = gate_value_component();
     let twiddles = SimdBackend::precompute_twiddles(
@@ -804,14 +806,14 @@ fn gate_value_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(rows));
+    tree_builder.extend_evals(gate_value_trace(rows)?);
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(gate_value_trace(rows));
+    tree_builder.extend_evals(gate_value_trace(rows)?);
     tree_builder.commit(channel);
 
-    commitment_scheme.roots()
+    Ok(commitment_scheme.roots())
 }
 
 fn gate_value_component() -> FrameworkComponent<D128GateValueProjectionEval> {
@@ -826,26 +828,28 @@ fn gate_value_component() -> FrameworkComponent<D128GateValueProjectionEval> {
 
 fn gate_value_trace(
     rows: &[D128GateValueProjectionMulRow],
-) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(D128_GATE_VALUE_LOG_SIZE).circle_domain();
     let columns: Vec<Vec<BaseField>> = vec![
-        rows.iter().map(|row| field_usize(row.row_index)).collect(),
+        rows.iter()
+            .map(|row| field_usize(row.row_index))
+            .collect::<Result<Vec<_>>>()?,
         rows.iter()
             .map(|row| field_usize(row.matrix_selector))
-            .collect(),
+            .collect::<Result<Vec<_>>>()?,
         rows.iter()
             .map(|row| field_usize(row.output_index))
-            .collect(),
+            .collect::<Result<Vec<_>>>()?,
         rows.iter()
             .map(|row| field_usize(row.input_index))
-            .collect(),
+            .collect::<Result<Vec<_>>>()?,
         rows.iter()
             .map(|row| field_i64(row.projection_input_q8))
             .collect(),
         rows.iter().map(|row| field_i64(row.weight_q8)).collect(),
         rows.iter().map(|row| field_i64(row.product_q8)).collect(),
     ];
-    columns
+    Ok(columns
         .into_iter()
         .map(|column| {
             CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
@@ -854,7 +858,7 @@ fn gate_value_trace(
             )
             .bit_reverse()
         })
-        .collect()
+        .collect())
 }
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
@@ -865,8 +869,10 @@ fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
     PreProcessedColumnId { id: id.to_string() }
 }
 
-fn field_usize(value: usize) -> BaseField {
-    BaseField::from(u32::try_from(value).expect("field_usize: value out of u32 range"))
+fn field_usize(value: usize) -> Result<BaseField> {
+    let field_value = u32::try_from(value)
+        .map_err(|_| gate_value_error(format!("usize field exceeds u32 bound: {value}")))?;
+    Ok(BaseField::from(field_value))
 }
 
 fn field_i64(value: i64) -> BaseField {
@@ -894,8 +900,7 @@ fn gate_value_output_commitment(gate: &[i64], value: &[i64]) -> String {
 }
 
 fn rows_commitment(rows: &[D128GateValueProjectionMulRow]) -> String {
-    let rows_json = canonical_row_material(rows);
-    let rows_sha256 = sha256_hex(rows_json.as_bytes());
+    let rows_sha256 = canonical_rows_sha256_hex(rows);
     let payload = format!(
         "{{\"encoding\":\"d128_gate_value_projection_mul_rows_v1\",\"rows_sha256\":\"{}\",\"shape\":[{},7]}}",
         rows_sha256,
@@ -1017,13 +1022,14 @@ fn canonical_i64_array(values: &[i64]) -> String {
     out
 }
 
-fn canonical_row_material(rows: &[D128GateValueProjectionMulRow]) -> String {
-    let mut out = String::from("[");
+fn canonical_rows_sha256_hex(rows: &[D128GateValueProjectionMulRow]) -> String {
+    let mut hasher = Sha256::new();
+    ShaDigest::update(&mut hasher, b"[");
     for (index, row) in rows.iter().enumerate() {
         if index > 0 {
-            out.push(',');
+            ShaDigest::update(&mut hasher, b",");
         }
-        out.push('[');
+        ShaDigest::update(&mut hasher, b"[");
         for (field_index, value) in [
             row.row_index as i64,
             row.matrix_selector as i64,
@@ -1037,14 +1043,15 @@ fn canonical_row_material(rows: &[D128GateValueProjectionMulRow]) -> String {
         .enumerate()
         {
             if field_index > 0 {
-                out.push(',');
+                ShaDigest::update(&mut hasher, b",");
             }
-            out.push_str(&value.to_string());
+            ShaDigest::update(&mut hasher, value.to_string().as_bytes());
         }
-        out.push(']');
+        ShaDigest::update(&mut hasher, b"]");
     }
-    out.push(']');
-    out
+    ShaDigest::update(&mut hasher, b"]");
+    let digest = hasher.finalize();
+    lower_hex(&digest)
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
