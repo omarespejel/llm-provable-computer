@@ -1113,16 +1113,32 @@ into a `256`-row outer-proof target and binds that target with
 blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`.
 The gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations, but
-it still records a bounded NO-GO for executable proof-object existence because
-no outer proof/accumulator backend or verifier handle exists for even the
-two-slice target. A future GO on this target must bind the target commitment,
-selected slice statements, and selected source evidence hashes as public inputs.
-This is useful negative evidence: the current blocker is not
-merely six-slice scale; it is the missing outer proof-object backend surface.
+it still records a bounded NO-GO for executable recursive/PCD proof-object
+existence because no recursive outer proof backend exists for even the
+two-slice target. A future recursive GO on this target must bind the target
+commitment, selected slice statements, and selected source evidence hashes as
+public inputs. This is useful negative evidence: the current recursive blocker
+is not merely six-slice scale; it is the missing recursive outer proof-object
+backend surface.
 Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
 and
 `docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`.
+
+The next issue `#409` follow-up then lands the non-recursive branch for that
+same target. It builds a verifier-facing accumulator with accumulator
+commitment
+`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+and verifier-handle commitment
+`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+The accumulator validates the two selected source slice evidence files with
+their slice-local validators and binds the target commitment, selected
+statement commitments, and selected source evidence hashes. It rejects `36 / 36`
+binding, relabeling, verifier-handle, recursive-claim, and recursive
+metric-smuggling mutations. This is an honest GO for accumulator integrity, not
+a recursive proof-compression result. Evidence is recorded in
+`docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`.
 
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope

@@ -946,15 +946,32 @@ checks form a valid `256`-row target with
 blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
 and the gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations. It
-still records a bounded NO-GO for proof-object existence: no executable outer
-proof/accumulator backend or verifier handle exists for even the two-slice
-target. A future GO on this target must bind the target commitment, selected
-slice statements, and selected source evidence hashes as public inputs. This
-narrows the research blocker from "six slices may be too large" to
-"the outer proof-object backend surface is missing." It is anchored to
+records a bounded NO-GO for recursive/PCD proof-object existence: no executable
+recursive outer proof backend exists for even the two-slice target. A future
+recursive GO on this target must bind the target commitment, selected slice
+statements, and selected source evidence hashes as public inputs. This narrows
+the research blocker from "six slices may be too large" to "the recursive
+outer proof-object backend surface is missing." It is anchored to
 `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
 and
 `docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`.
+
+The next issue `#409` follow-up fills the non-recursive accumulator branch for
+that same two-slice target. It builds a verifier-facing accumulator with
+accumulator commitment
+`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+and verifier-handle commitment
+`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+The accumulator validates the source two-slice target evidence, validates both
+selected source slice evidence files with their slice-local validators, and
+binds `two_slice_target_commitment`, the selected slice statement commitments,
+and the selected source evidence hashes. The gate rejects `36 / 36` binding,
+relabeling, verifier-handle, recursive-claim, and recursive-metric-smuggling
+mutations. Its claim boundary is explicit:
+`NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF`; this is accumulator integrity, not
+recursive proof compression. It is anchored to
+`docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
@@ -1037,6 +1054,10 @@ The d64 recursive/PCD feasibility and nested-verifier contract gates strengthen
 this non-claim rather than weakening it: they say the receipt is the right
 aggregation input and define the first public-input contract, while still
 recording that the missing work is a real executable nested-verifier backend.
+The d128 two-slice accumulator gate similarly strengthens the boundary: it
+provides a real verifier-facing accumulator for the first two checked slice
+statements, but keeps recursive proof compression and recursive metrics in the
+NO-GO bucket.
 
 ### 8.4 No universal speedup claim
 

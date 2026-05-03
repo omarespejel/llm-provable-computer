@@ -106,8 +106,10 @@ Tablero boundary.
   adds divisor/remainder evidence and verifier drift checks for that statement
   surface; see
   `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
-- Recursive/PCD compression remains a bounded no-go until a real outer proof or
-  accumulator backend exists.
+- Recursive/PCD compression remains a bounded no-go until a real recursive or
+  PCD outer proof backend exists. The d128 two-slice lane now has a
+  non-recursive verifier-facing accumulator, but that is not recursive proof
+  compression.
 - The `d=128` route now has six partial proof handles: RMSNorm public rows,
   RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
   down-projection, and a source-bound native residual-add slice. The residual
@@ -138,11 +140,21 @@ Tablero boundary.
   `rmsnorm_public_rows` plus `rmsnorm_projection_bridge`: those two checked
   slices form a valid `256`-row outer-proof target with commitment
   `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
-  but no executable outer proof/accumulator backend or verifier handle exists
-  for even that target; see
+  while recording that no executable recursive/PCD proof backend exists for
+  even that target; see
   `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`.
-- This is a receipt-composition GO only: recursion, one compressed verifier
-  object, and full-block proof-size/verifier-time/proof-generation-time metrics remain blocked.
+- The d128 two-slice accumulator backend gate now builds a real
+  verifier-facing non-recursive accumulator for that target, with accumulator
+  commitment
+  `blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+  and verifier-handle commitment
+  `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`;
+  it rejects `36 / 36` binding, relabeling, verifier-handle, and
+  recursive-claim mutations. This is accumulator integrity only, not recursion;
+  see `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
+- This is now receipt-composition plus two-slice accumulator GO only: recursion,
+  one compressed cryptographic verifier object, and full-block
+  proof-size/verifier-time/proof-generation-time metrics remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
@@ -225,12 +237,13 @@ Use these in order of authority for current state:
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
-10. Treat the first d128 aggregation attempt (`#405`) and the two-slice
-    follow-up (`#408`) as checked bounded no-gos for proof-object existence.
-    The two-slice target exists and is bound, but the missing piece is still a
-    real outer proof/accumulator backend and verifier handle. Do not report
-    full-block proof-size/verifier-time/proof-generation-time metrics until a
-    real aggregated proof object exists.
+10. Treat the first d128 aggregation attempt (`#405`) and the two-slice target
+    spike (`#408`) as checked bounded no-gos for recursive proof-object
+    existence, but treat the issue `#409` accumulator gate as the current
+    positive handoff object: a real non-recursive two-slice accumulator and
+    verifier handle now exist. Do not report recursive/full-block
+    proof-size/verifier-time/proof-generation-time metrics until a real
+    recursive or PCD proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

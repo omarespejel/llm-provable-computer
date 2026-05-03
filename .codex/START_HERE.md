@@ -70,11 +70,20 @@ This repository currently has three live lanes.
      `rmsnorm_projection_bridge` form a valid `256`-row two-slice target with
      commitment
      `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
-     but no executable outer proof/accumulator backend or verifier handle
-     exists for even that target; see
+     while recording that no executable recursive/PCD proof backend exists for
+     even that target; see
      `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`.
-   - This is still a receipt-composition GO only: recursion, one compressed
-     verifier object, and full-block proof-size/verifier-time/proof-generation-time metrics remain
+   - The d128 two-slice accumulator backend gate now turns that target into a
+     real verifier-facing non-recursive accumulator with accumulator commitment
+     `blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+     and verifier-handle commitment
+     `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`;
+     it rejects `36 / 36` binding/relabeling/recursive-claim mutations. This
+     is an accumulator-integrity GO, not recursive/PCD proof compression; see
+     `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
+   - The d128 lane now has receipt-composition and two-slice accumulator GO
+     results, but recursion, one compressed cryptographic verifier object, and
+     full-block proof-size/verifier-time/proof-generation-time metrics remain
      blocked.
 
 Do not collapse these lanes into one claim.
@@ -146,12 +155,13 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
-10. Treat the first d128 aggregation attempt (`#405`) and the two-slice
-    follow-up (`#408`) as checked bounded no-gos for proof-object existence.
-    The two-slice target exists and is bound, but the missing piece is still a
-    real outer proof/accumulator backend and verifier handle. Do not report
-    full-block proof-size/verifier-time/proof-generation-time metrics until a
-    real aggregated proof object exists.
+10. Treat the first d128 aggregation attempt (`#405`) and two-slice target
+    spike (`#408`) as checked bounded no-gos for recursive proof-object
+    existence, but treat the issue `#409` accumulator gate as the current
+    positive handoff object: a real non-recursive two-slice accumulator and
+    verifier handle now exist. Do not report recursive/full-block
+    proof-size/verifier-time/proof-generation-time metrics until a real
+    recursive or PCD proof object exists.
 
 ## What not to do
 
