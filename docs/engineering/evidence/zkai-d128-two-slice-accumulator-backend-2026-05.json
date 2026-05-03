@@ -230,7 +230,7 @@
       "baseline_result": "GO",
       "error": "accumulator artifact mismatch",
       "mutated_accepted": false,
-      "mutation": "accumulator_target_commitment_drift",
+      "mutation": "source_full_aggregation_target_commitment_drift",
       "rejected": true,
       "rejection_layer": "accumulator_artifact",
       "surface": "accumulator_artifact"
@@ -542,7 +542,7 @@
     },
     {
       "index": 6,
-      "mutation": "accumulator_target_commitment_drift",
+      "mutation": "source_full_aggregation_target_commitment_drift",
       "surface": "accumulator_artifact"
     },
     {
