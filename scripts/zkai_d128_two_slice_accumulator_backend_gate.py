@@ -362,8 +362,11 @@ def _verify_check_against_source(check: dict[str, Any], source: dict[str, Any], 
     expect_equal(source_payload_hash, check.get("source_payload_sha256"), f"{slice_id} source payload hash")
     for field, expected in require_object(check.get("source_commitments"), f"{slice_id} source commitments").items():
         actual = source.get(field)
-        if actual != expected and source.get(f"source_{field}") == expected:
-            actual = expected
+        alias = source.get(f"source_{field}")
+        if actual is None:
+            actual = alias
+        elif alias is not None and alias != actual:
+            raise D128TwoSliceAccumulatorBackendError(f"{slice_id} source commitment {field} alias mismatch")
         expect_equal(actual, expected, f"{slice_id} source commitment {field}")
     for field, expected in require_object(check.get("target_commitments"), f"{slice_id} target commitments").items():
         expect_equal(source.get(field), expected, f"{slice_id} target commitment {field}")
@@ -605,21 +608,7 @@ def verify_verifier_handle(handle: Any, artifact: dict[str, Any]) -> None:
 
 def _validate_recursive_status(payload: dict[str, Any]) -> None:
     status = require_object(payload.get("recursive_or_pcd_status"), "recursive or PCD status")
-    expect_equal(status.get("result"), RECURSIVE_OR_PCD_RESULT, "recursive or PCD result")
-    if status.get("recursive_outer_proof_claimed") is not False:
-        raise D128TwoSliceAccumulatorBackendError("recursive outer proof claimed without backend")
-    if status.get("pcd_outer_proof_claimed") is not False:
-        raise D128TwoSliceAccumulatorBackendError("PCD outer proof claimed without backend")
-    expect_equal(status.get("outer_proof_artifacts"), [], "recursive outer proof artifacts")
-    metrics = require_object(status.get("proof_metrics"), "recursive proof metrics")
-    for field in (
-        "recursive_proof_size_bytes",
-        "recursive_verifier_time_ms",
-        "recursive_proof_generation_time_ms",
-    ):
-        if metrics.get(field) is not None:
-            raise D128TwoSliceAccumulatorBackendError("recursive proof metric supplied before proof backend exists")
-    expect_equal(status.get("first_blocker"), RECURSIVE_BLOCKER, "recursive blocker")
+    expect_equal(status, recursive_or_pcd_status(), "recursive or PCD status")
 
 
 def _expected_summary(source: dict[str, Any], artifact: dict[str, Any], handle: dict[str, Any]) -> dict[str, Any]:
@@ -884,6 +873,9 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         outputs.append((_safe_output_path(json_path), json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"))
     if tsv_path is not None:
         outputs.append((_safe_output_path(tsv_path), to_tsv(payload).encode("utf-8")))
+    resolved_outputs = [path.resolve(strict=False) for path, _data in outputs]
+    if len(resolved_outputs) != len(set(resolved_outputs)):
+        raise D128TwoSliceAccumulatorBackendError("write-json and write-tsv output paths must be distinct")
     for path, data in outputs:
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("wb", delete=False, dir=path.parent) as handle:

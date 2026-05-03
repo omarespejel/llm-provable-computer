@@ -142,6 +142,21 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "outer public input contract"):
             GATE.accumulator_preimage({"two_slice_target_commitment": "blake2b-256:" + "11" * 32}, [])
 
+    def test_rejects_conflicting_source_commitment_alias(self) -> None:
+        source = GATE.load_checked_two_slice_target()
+        check = copy.deepcopy(source["two_slice_target_manifest"]["selected_slice_checks"][0])
+        path = GATE._source_path(check)
+        selected_source = GATE.load_json(path)
+        selected_source["source_input_activation_commitment"] = "blake2b-256:" + "33" * 32
+        check["source_payload_sha256"] = GATE.sha256_hex_json(selected_source)
+        original_validator = GATE._validate_slice_source
+        try:
+            GATE._validate_slice_source = lambda _slice_id, _source: None
+            with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "alias mismatch"):
+                GATE._verify_check_against_source(check, selected_source, path)
+        finally:
+            GATE._validate_slice_source = original_validator
+
     def test_rejects_recursive_claim_without_backend(self) -> None:
         payload = self.fresh_payload()
         payload["recursive_or_pcd_status"]["recursive_outer_proof_claimed"] = True
@@ -151,7 +166,13 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
     def test_rejects_metric_smuggling_before_recursive_backend_exists(self) -> None:
         payload = self.fresh_payload()
         payload["recursive_or_pcd_status"]["proof_metrics"]["recursive_verifier_time_ms"] = 1.0
-        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "metric"):
+        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "recursive or PCD status"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_recursive_status_extra_keys(self) -> None:
+        payload = self.fresh_payload()
+        payload["recursive_or_pcd_status"]["unexpected_recursive_claim"] = True
+        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "recursive or PCD status"):
             GATE.validate_payload(payload)
 
     def test_rejects_partial_mutation_metadata(self) -> None:
@@ -198,6 +219,13 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
                 GATE.write_outputs(payload, pathlib.Path(raw_tmp) / "accumulator.json", None)
         with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "without traversal"):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/../accumulator.json"), None)
+
+    def test_write_outputs_rejects_colliding_paths(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            path = (pathlib.Path(raw_tmp) / "accumulator.out").relative_to(ROOT)
+            with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "distinct"):
+                GATE.write_outputs(payload, path, path)
 
 
 if __name__ == "__main__":
