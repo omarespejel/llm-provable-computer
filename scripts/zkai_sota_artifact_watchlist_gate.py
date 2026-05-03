@@ -507,6 +507,8 @@ def validate_payload(payload: dict[str, Any], *, require_mutations: bool = True)
         raise SotaWatchlistError("decision drift")
     if payload["question"] != QUESTION:
         raise SotaWatchlistError("question drift")
+    validate_generated_at(payload["generated_at"])
+    validate_git_commit(payload["git_commit"])
     if payload["checked_at"] != CHECKED_AT:
         raise SotaWatchlistError("checked_at drift")
     if payload["issue"] != ISSUE:
@@ -529,6 +531,24 @@ def require_list(value: Any, field: str) -> list[Any]:
     if not isinstance(value, list):
         raise SotaWatchlistError(f"{field} must be a list")
     return value
+
+
+def validate_generated_at(raw: Any) -> None:
+    if not isinstance(raw, str) or not raw.endswith("Z"):
+        raise SotaWatchlistError("generated_at malformed")
+    try:
+        parsed = dt.datetime.fromisoformat(raw.removesuffix("Z") + "+00:00")
+    except ValueError as err:
+        raise SotaWatchlistError("generated_at malformed") from err
+    if parsed.tzinfo is None:
+        raise SotaWatchlistError("generated_at malformed")
+
+
+def validate_git_commit(raw: Any) -> None:
+    if raw == "unavailable":
+        return
+    if not isinstance(raw, str) or re.fullmatch(r"[0-9a-f]{7,40}", raw) is None:
+        raise SotaWatchlistError("git_commit malformed")
 
 
 def validate_systems(systems: list[dict[str, Any]]) -> None:
@@ -775,7 +795,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         error = ""
         try:
             validate_payload(mutated, require_mutations=False)
-        except Exception as err:  # noqa: BLE001 - normalize gate diagnostics.
+        except SotaWatchlistError as err:
             rejected = True
             error = str(err) or f"{type(err).__name__} with empty message"
         cases.append(
