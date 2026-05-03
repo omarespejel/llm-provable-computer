@@ -37,7 +37,7 @@ The paper does **not** claim the following.
 | Implementation-invariant baseline | No claim that every manifest implementation in every system would pay the same replay cost as this codebase. |
 | Full zkML frontier result | No claim of full end-to-end transformer inference proving or a matched full-model benchmark against public competitors. |
 | d64 native proof closure | No claim that the d64 native proof path is a recursive aggregate proof, a private parameter-opening proof, or a full transformer-inference proof; the current closure is a chain of bounded native proof slices ending at the final d64 `output_activation_commitment`, plus a non-recursive receipt that composes their checked evidence handles. |
-| d128 native proof closure | No claim that the d128 block receipt is a recursive aggregate proof, one compressed verifier object, a private parameter-opening proof, or proof-size/verifier-time benchmark evidence against public systems. |
+| d128 native proof closure | No claim that the d128 block receipt is a recursive aggregate proof, one compressed verifier object, a private parameter-opening proof, or proof-size/verifier-time/proof-generation-time benchmark evidence against public systems. |
 | Numeric-range universality | No claim that a range-disciplined activation receipt solves ReLU, GELU, Softmax, or activation proving at model scale. |
 | Attention proving | No claim that the attention/KV receipt is a Stwo proof, a Softmax proof, or an autoregressive inference proof. |
 | Onchain deployment | No claim that the typed-boundary path itself has already been deployed onchain. |

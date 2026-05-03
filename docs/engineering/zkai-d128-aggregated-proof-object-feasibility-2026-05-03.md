@@ -8,7 +8,7 @@ Can the checked d128 block receipt be promoted into one verifier-facing proof ob
 
 ## Decision
 
-`NO_GO_D128_AGGREGATED_PROOF_OBJECT_MISSING`
+`NO_GO_AGGREGATED_PROOF_OBJECT_MISSING`
 
 The existing d128 block receipt is a valid aggregation target, but the repository does not currently contain the outer proof or accumulator backend needed to claim one aggregated proof object.
 
@@ -31,7 +31,7 @@ This is a bounded no-go, not a failure of the d128 receipt. The gate records exa
 | Slice count | 6 |
 | Total checked rows | 197,504 |
 | Source receipt mutations | `20 / 20` rejected |
-| Feasibility mutations | `34 / 34` rejected |
+| Feasibility mutations | `37 / 37` rejected |
 | Block receipt commitment | `blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a` |
 | Statement commitment | `blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60` |
 
@@ -110,6 +110,8 @@ This gate does not claim:
 python3 scripts/zkai_d128_aggregated_proof_object_feasibility_gate.py --write-json docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_d128_aggregated_proof_object_feasibility_gate
 python3 scripts/paper/paper_preflight.py --repo-root .
+just gate-fast
+just gate
 ```
 
 ## Next Step

@@ -31,7 +31,7 @@ JSON_OUT = EVIDENCE_DIR / "zkai-d128-aggregated-proof-object-feasibility-2026-05
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv"
 
 SCHEMA = "zkai-d128-aggregated-proof-object-feasibility-v1"
-DECISION = "NO_GO_D128_AGGREGATED_PROOF_OBJECT_MISSING"
+DECISION = "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING"
 RESULT = "BOUNDED_NO_GO"
 TARGET_RESULT = "GO_D128_AGGREGATION_TARGET_ONLY"
 AGGREGATED_PROOF_RESULT = "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING"
@@ -127,16 +127,19 @@ EXPECTED_MUTATION_INVENTORY = (
     ("required_backend_version_drift", "aggregation_target_manifest"),
     ("composition_mutation_count_drift", "aggregation_target_manifest"),
     ("candidate_inventory_acceptance_relabel", "candidate_inventory"),
+    ("candidate_inventory_file_sha256_tampered", "candidate_inventory"),
     ("candidate_inventory_required_artifact_removed", "candidate_inventory"),
     ("aggregated_proof_claimed_without_artifact", "proof_object_attempt"),
     ("recursive_claimed_without_artifact", "proof_object_attempt"),
     ("pcd_claimed_without_artifact", "proof_object_attempt"),
     ("verifier_handle_claimed_without_artifact", "proof_object_attempt"),
+    ("aggregation_target_public_input_claimed_without_proof", "proof_object_attempt"),
     ("block_receipt_public_input_claimed_without_proof", "proof_object_attempt"),
     ("statement_public_input_claimed_without_proof", "proof_object_attempt"),
     ("invented_aggregated_proof_artifact", "proof_object_attempt"),
     ("proof_size_metric_smuggled_before_proof", "proof_object_attempt"),
     ("verifier_time_metric_smuggled_before_proof", "proof_object_attempt"),
+    ("proof_generation_time_metric_smuggled_before_proof", "proof_object_attempt"),
     ("first_blocker_removed", "proof_object_attempt"),
     ("missing_backend_feature_removed", "proof_object_attempt"),
     ("decision_changed_to_go", "parser_or_schema"),
@@ -151,6 +154,7 @@ CANDIDATE_SURFACES = (
         "kind": "statement_bound_receipt",
         "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
         "expected_exists": True,
+        "expected_file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
         "classification": "GO_AGGREGATION_TARGET_ONLY",
         "reason": "binds the six d128 slice handles into one statement-bound receipt, but is not an outer proof object",
     },
@@ -159,6 +163,7 @@ CANDIDATE_SURFACES = (
         "kind": "backend_route_classification",
         "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
         "expected_exists": True,
+        "expected_file_sha256": "fcc0134ffafe6ca6ee9c70f53cad578f433e9617c2969be0b536b2fe0d8f105f",
         "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "reason": "records the current full-block blocker; it does not provide a verifier-facing proof object",
     },
@@ -167,6 +172,7 @@ CANDIDATE_SURFACES = (
         "kind": "smaller_width_no_go_reference",
         "path": "docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json",
         "expected_exists": True,
+        "expected_file_sha256": "2c2949da569f8019f89b2867b3150093290ace4168c7fe3e67762b5ed999079e",
         "classification": "REFERENCE_ONLY_NOT_D128",
         "reason": "d64 feasibility evidence is useful prior art, but cannot be relabeled as a d128 proof object",
     },
@@ -175,6 +181,7 @@ CANDIDATE_SURFACES = (
         "kind": "required_outer_module",
         "path": "src/stwo_backend/d128_native_transformer_block_proof.rs",
         "expected_exists": False,
+        "expected_file_sha256": None,
         "classification": "MISSING_REQUIRED_ARTIFACT",
         "reason": "no direct native full-block d128 proof/verifier module is present",
     },
@@ -183,6 +190,7 @@ CANDIDATE_SURFACES = (
         "kind": "required_outer_module",
         "path": "src/stwo_backend/d128_nested_verifier_aggregation_proof.rs",
         "expected_exists": False,
+        "expected_file_sha256": None,
         "classification": "MISSING_REQUIRED_ARTIFACT",
         "reason": "no nested verifier aggregation module exists for the six d128 slice verifiers",
     },
@@ -191,6 +199,7 @@ CANDIDATE_SURFACES = (
         "kind": "required_proof_artifact",
         "path": "docs/engineering/evidence/zkai-d128-aggregated-proof-object-2026-05.json",
         "expected_exists": False,
+        "expected_file_sha256": None,
         "classification": "MISSING_REQUIRED_ARTIFACT",
         "reason": "no checked aggregated proof object artifact exists",
     },
@@ -199,6 +208,7 @@ CANDIDATE_SURFACES = (
         "kind": "required_verifier_handle",
         "path": "docs/engineering/evidence/zkai-d128-aggregated-proof-object-verifier-2026-05.json",
         "expected_exists": False,
+        "expected_file_sha256": None,
         "classification": "MISSING_REQUIRED_ARTIFACT",
         "reason": "no verifier handle exists for an aggregated d128 proof object",
     },
@@ -611,6 +621,20 @@ def candidate_inventory() -> list[dict[str, Any]]:
     for spec in CANDIDATE_SURFACES:
         path = ROOT / spec["path"]
         exists = path.exists()
+        actual_sha256 = _candidate_file_sha256(path)
+        expected_sha256 = spec["expected_file_sha256"]
+        if spec["expected_exists"] is True and exists is not True:
+            raise D128AggregatedProofObjectFeasibilityError(
+                f"expected candidate artifact is missing: {spec['path']}"
+            )
+        if spec["expected_exists"] is False and exists is not False:
+            raise D128AggregatedProofObjectFeasibilityError(
+                f"required aggregated proof artifact now exists; rerun GO/NO-GO: {spec['path']}"
+            )
+        if expected_sha256 is not None and actual_sha256 != expected_sha256:
+            raise D128AggregatedProofObjectFeasibilityError(
+                f"candidate inventory file_sha256 drift for {spec['path']}"
+            )
         inventory.append(
             {
                 "name": spec["name"],
@@ -618,7 +642,7 @@ def candidate_inventory() -> list[dict[str, Any]]:
                 "path": spec["path"],
                 "exists": exists,
                 "expected_exists": spec["expected_exists"],
-                "file_sha256": _candidate_file_sha256(path),
+                "file_sha256": actual_sha256,
                 "classification": spec["classification"],
                 "accepted_as_aggregated_proof_object": False,
                 "reason": spec["reason"],
@@ -641,7 +665,7 @@ def proof_object_attempt() -> dict[str, Any]:
         "verifier_handles": [],
         "proof_metrics": {
             "proof_size_bytes": None,
-            "prove_time_ms": None,
+            "proof_generation_time_ms": None,
             "verifier_time_ms": None,
             "compressed_proof_size_bytes": None,
         },
@@ -844,7 +868,7 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
     metrics = require_object(attempt.get("proof_metrics"), "proof metrics")
     expect_key_set(
         metrics,
-        {"proof_size_bytes", "prove_time_ms", "verifier_time_ms", "compressed_proof_size_bytes"},
+        {"proof_size_bytes", "proof_generation_time_ms", "verifier_time_ms", "compressed_proof_size_bytes"},
         "proof metrics",
     )
     for field, value in metrics.items():
@@ -1105,6 +1129,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         lambda p: p["candidate_inventory"][0].__setitem__("accepted_as_aggregated_proof_object", True),
     )
     add(
+        "candidate_inventory_file_sha256_tampered",
+        "candidate_inventory",
+        lambda p: p["candidate_inventory"][0].__setitem__("file_sha256", "00" * 32),
+    )
+    add(
         "candidate_inventory_required_artifact_removed",
         "candidate_inventory",
         lambda p: p["candidate_inventory"].pop(),
@@ -1128,6 +1157,14 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "verifier_handle_claimed_without_artifact",
         "proof_object_attempt",
         lambda p: p["proof_object_attempt"].__setitem__("verifier_handle_claimed", True),
+    )
+    add(
+        "aggregation_target_public_input_claimed_without_proof",
+        "proof_object_attempt",
+        lambda p: p["proof_object_attempt"].__setitem__(
+            "aggregation_target_commitment_bound_as_public_input",
+            True,
+        ),
     )
     add(
         "block_receipt_public_input_claimed_without_proof",
@@ -1155,6 +1192,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "verifier_time_metric_smuggled_before_proof",
         "proof_object_attempt",
         lambda p: p["proof_object_attempt"]["proof_metrics"].__setitem__("verifier_time_ms", 1.23),
+    )
+    add(
+        "proof_generation_time_metric_smuggled_before_proof",
+        "proof_object_attempt",
+        lambda p: p["proof_object_attempt"]["proof_metrics"].__setitem__("proof_generation_time_ms", 4.56),
     )
     add(
         "first_blocker_removed",

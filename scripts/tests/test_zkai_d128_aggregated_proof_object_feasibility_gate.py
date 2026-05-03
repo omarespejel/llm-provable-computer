@@ -118,9 +118,12 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
             "statement_commitment_drift": "aggregation_target_manifest",
             "nested_verifier_check_removed": "aggregation_target_manifest",
             "candidate_inventory_acceptance_relabel": "candidate_inventory",
+            "candidate_inventory_file_sha256_tampered": "candidate_inventory",
             "aggregated_proof_claimed_without_artifact": "proof_object_attempt",
+            "aggregation_target_public_input_claimed_without_proof": "proof_object_attempt",
             "block_receipt_public_input_claimed_without_proof": "proof_object_attempt",
             "proof_size_metric_smuggled_before_proof": "proof_object_attempt",
+            "proof_generation_time_metric_smuggled_before_proof": "proof_object_attempt",
             "decision_changed_to_go": "parser_or_schema",
         }
         for mutation, layer in expected_layers.items():
