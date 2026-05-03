@@ -1,11 +1,31 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 22,
+  "case_count": 24,
   "cases": [
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
-      "error": "two_slice_accumulator result mismatch",
+      "error": "two_slice_accumulator descriptor mismatch",
       "index": 0,
+      "mutated_accepted": false,
+      "mutation": "source_two_slice_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "recursive_pcd_audit descriptor mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "source_recursive_path_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "two_slice_accumulator descriptor mismatch",
+      "index": 2,
       "mutated_accepted": false,
       "mutation": "source_two_slice_result_drift",
       "rejected": true,
@@ -14,8 +34,8 @@
     },
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
-      "error": "two_slice_accumulator claim boundary mismatch",
-      "index": 1,
+      "error": "two_slice_accumulator descriptor mismatch",
+      "index": 3,
       "mutated_accepted": false,
       "mutation": "source_two_slice_claim_boundary_drift",
       "rejected": true,
@@ -24,8 +44,8 @@
     },
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
-      "error": "full_block_accumulator result mismatch",
-      "index": 2,
+      "error": "full_block_accumulator descriptor mismatch",
+      "index": 4,
       "mutated_accepted": false,
       "mutation": "source_full_block_result_drift",
       "rejected": true,
@@ -34,8 +54,8 @@
     },
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
-      "error": "recursive result mismatch",
-      "index": 3,
+      "error": "recursive_pcd_audit descriptor mismatch",
+      "index": 5,
       "mutated_accepted": false,
       "mutation": "source_recursive_no_go_result_changed_to_go",
       "rejected": true,
@@ -44,8 +64,8 @@
     },
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
-      "error": "recursive result mismatch",
-      "index": 4,
+      "error": "recursive_pcd_audit descriptor mismatch",
+      "index": 6,
       "mutated_accepted": false,
       "mutation": "source_recursive_blocker_removed",
       "rejected": true,
@@ -55,7 +75,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "local nested verifier status mismatch",
-      "index": 5,
+      "index": 7,
       "mutated_accepted": false,
       "mutation": "route_local_stwo_nested_verifier_relabel_to_go",
       "rejected": true,
@@ -65,7 +85,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "local PCD status mismatch",
-      "index": 6,
+      "index": 8,
       "mutated_accepted": false,
       "mutation": "route_local_pcd_relabel_to_go",
       "rejected": true,
@@ -75,7 +95,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "external_zkvm_statement_receipt_adapter status mismatch",
-      "index": 7,
+      "index": 9,
       "mutated_accepted": false,
       "mutation": "route_external_adapter_relabel_to_go",
       "rejected": true,
@@ -85,7 +105,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "route ids mismatch",
-      "index": 8,
+      "index": 10,
       "mutated_accepted": false,
       "mutation": "route_removed",
       "rejected": true,
@@ -95,7 +115,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "local_stwo_nested_verifier_air.blocking_missing_object must be a non-empty string",
-      "index": 9,
+      "index": 11,
       "mutated_accepted": false,
       "mutation": "blocking_missing_object_removed",
       "rejected": true,
@@ -105,7 +125,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "next route mismatch",
-      "index": 10,
+      "index": 12,
       "mutated_accepted": false,
       "mutation": "next_route_changed_to_local_recursive",
       "rejected": true,
@@ -115,7 +135,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "primary blocker mismatch",
-      "index": 11,
+      "index": 13,
       "mutated_accepted": false,
       "mutation": "primary_blocker_removed",
       "rejected": true,
@@ -125,7 +145,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "metrics enabled mismatch",
-      "index": 12,
+      "index": 14,
       "mutated_accepted": false,
       "mutation": "proof_size_metric_smuggled",
       "rejected": true,
@@ -135,7 +155,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "metrics enabled mismatch",
-      "index": 13,
+      "index": 15,
       "mutated_accepted": false,
       "mutation": "verifier_time_metric_smuggled",
       "rejected": true,
@@ -145,7 +165,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "metrics enabled mismatch",
-      "index": 14,
+      "index": 16,
       "mutated_accepted": false,
       "mutation": "proof_generation_time_metric_smuggled",
       "rejected": true,
@@ -155,7 +175,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "decision mismatch",
-      "index": 15,
+      "index": 17,
       "mutated_accepted": false,
       "mutation": "decision_changed_to_go",
       "rejected": true,
@@ -165,7 +185,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "result mismatch",
-      "index": 16,
+      "index": 18,
       "mutated_accepted": false,
       "mutation": "result_changed_to_go",
       "rejected": true,
@@ -175,7 +195,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "issue mismatch",
-      "index": 17,
+      "index": 19,
       "mutated_accepted": false,
       "mutation": "issue_changed",
       "rejected": true,
@@ -185,7 +205,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "go criterion mismatch",
-      "index": 18,
+      "index": 20,
       "mutated_accepted": false,
       "mutation": "go_criterion_weakened",
       "rejected": true,
@@ -195,7 +215,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "non_claims mismatch",
-      "index": 19,
+      "index": 21,
       "mutated_accepted": false,
       "mutation": "non_claims_removed",
       "rejected": true,
@@ -205,7 +225,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "validation_commands mismatch",
-      "index": 20,
+      "index": 22,
       "mutated_accepted": false,
       "mutation": "validation_command_drift",
       "rejected": true,
@@ -215,7 +235,7 @@
     {
       "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
       "error": "core payload keys mismatch",
-      "index": 21,
+      "index": 23,
       "mutated_accepted": false,
       "mutation": "unknown_top_level_field_added",
       "rejected": true,
@@ -238,6 +258,14 @@
     "stwo_dependency_declared": true
   },
   "mutation_inventory": [
+    {
+      "mutation": "source_two_slice_file_hash_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "source_recursive_path_drift",
+      "surface": "source_evidence"
+    },
     {
       "mutation": "source_two_slice_result_drift",
       "surface": "source_evidence"

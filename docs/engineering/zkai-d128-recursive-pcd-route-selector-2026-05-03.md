@@ -75,7 +75,7 @@ Sources checked for route context:
 
 ## Mutation Coverage
 
-The gate rejects `22 / 22` mutation cases across:
+The gate rejects `24 / 24` mutation cases across:
 
 - source two-slice and full-block accumulator result or claim-boundary drift;
 - recursive/PCD no-go result drift;

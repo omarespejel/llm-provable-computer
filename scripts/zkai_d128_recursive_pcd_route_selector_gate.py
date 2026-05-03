@@ -16,9 +16,9 @@ import hashlib
 import io
 import json
 import pathlib
-import re
 import sys
 import tempfile
+import tomllib
 from typing import Any, Callable
 
 
@@ -45,14 +45,19 @@ PRIMARY_BLOCKER = "NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARG
 NEXT_ROUTE = "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_OR_PROOF_NATIVE_COMPRESSION_SPIKE"
 
 EXPECTED_TWO_SLICE_ACCUMULATOR_SCHEMA = "zkai-d128-two-slice-accumulator-backend-v1"
+EXPECTED_TWO_SLICE_ACCUMULATOR_DECISION = "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND"
 EXPECTED_TWO_SLICE_ACCUMULATOR_RESULT = "GO"
 EXPECTED_TWO_SLICE_ACCUMULATOR_CLAIM_BOUNDARY = "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF"
 EXPECTED_FULL_BLOCK_ACCUMULATOR_SCHEMA = "zkai-d128-full-block-accumulator-backend-v1"
+EXPECTED_FULL_BLOCK_ACCUMULATOR_DECISION = "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_BACKEND"
 EXPECTED_FULL_BLOCK_ACCUMULATOR_RESULT = "GO"
 EXPECTED_FULL_BLOCK_ACCUMULATOR_CLAIM_BOUNDARY = "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF"
 EXPECTED_RECURSIVE_PCD_SCHEMA = "zkai-d128-two-slice-recursive-pcd-backend-gate-v1"
+EXPECTED_RECURSIVE_PCD_DECISION = "NO_GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND_UNAVAILABLE"
 EXPECTED_RECURSIVE_PCD_RESULT = "BOUNDED_NO_GO"
+EXPECTED_RECURSIVE_PCD_CLAIM_BOUNDARY = "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING"
 EXPECTED_RECURSIVE_OR_PCD_RESULT = "NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING"
+EXPECTED_STWO_VERSION = "2.2.0"
 EXPECTED_SELECTED_SLICE_IDS = ("rmsnorm_public_rows", "rmsnorm_projection_bridge")
 EXPECTED_SELECTED_ROWS = 256
 EXPECTED_FULL_BLOCK_ROWS = 197_504
@@ -109,6 +114,8 @@ ROUTE_IDS = (
 )
 
 EXPECTED_MUTATION_INVENTORY = (
+    ("source_two_slice_file_hash_drift", "source_evidence"),
+    ("source_recursive_path_drift", "source_evidence"),
     ("source_two_slice_result_drift", "source_evidence"),
     ("source_two_slice_claim_boundary_drift", "source_evidence"),
     ("source_full_block_result_drift", "source_evidence"),
@@ -214,6 +221,13 @@ def require_commitment(value: Any, field: str, *, layer: str = "parser_or_schema
     return value
 
 
+def require_sha256_hex(value: Any, field: str, *, layer: str = "parser_or_schema") -> str:
+    value = require_str(value, field, layer=layer)
+    if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+        raise D128RecursivePCDRouteSelectorError(f"{field} must be a 32-byte lowercase hex digest", layer=layer)
+    return value
+
+
 def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "path": path.relative_to(ROOT).as_posix(),
@@ -226,16 +240,42 @@ def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, 
     }
 
 
+def cargo_dependency_version(cargo_toml: dict[str, Any], name: str) -> str | None:
+    deps = cargo_toml.get("dependencies")
+    if not isinstance(deps, dict):
+        return None
+    value = deps.get(name)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        version = value.get("version")
+        return version if isinstance(version, str) else None
+    return None
+
+
+def cargo_lock_package_version(cargo_lock: dict[str, Any], name: str) -> str | None:
+    packages = cargo_lock.get("package")
+    if not isinstance(packages, list):
+        return None
+    for package in packages:
+        if isinstance(package, dict) and package.get("name") == name:
+            version = package.get("version")
+            return version if isinstance(version, str) else None
+    return None
+
+
 def local_repo_probe() -> dict[str, Any]:
-    cargo_toml = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    cargo_lock = (ROOT / "Cargo.lock").read_text(encoding="utf-8")
-    stwo_crate_match = re.search(r'name = "stwo"\nversion = "([^"]+)"', cargo_lock)
+    cargo_toml = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
+    cargo_lock = tomllib.loads((ROOT / "Cargo.lock").read_text(encoding="utf-8"))
+    dependency_names = set(cargo_toml.get("dependencies", {}))
     return {
         "cargo_toml_sha256": file_sha256(ROOT / "Cargo.toml"),
         "cargo_lock_sha256": file_sha256(ROOT / "Cargo.lock"),
-        "stwo_dependency_declared": 'stwo = { version = "2.2.0"' in cargo_toml,
-        "stwo_constraint_framework_declared": 'stwo-constraint-framework = { version = "2.2.0"' in cargo_toml,
-        "local_stwo_version": stwo_crate_match.group(1) if stwo_crate_match else None,
+        "stwo_dependency_declared": cargo_dependency_version(cargo_toml, "stwo") == EXPECTED_STWO_VERSION,
+        "stwo_constraint_framework_declared": (
+            cargo_dependency_version(cargo_toml, "stwo-constraint-framework") == EXPECTED_STWO_VERSION
+        ),
+        "local_stwo_version": cargo_lock_package_version(cargo_lock, "stwo"),
         "local_d128_recursive_backend_module_exists": (
             ROOT / "src" / "stwo_backend" / "d128_two_slice_recursive_pcd_backend.rs"
         ).exists(),
@@ -245,11 +285,9 @@ def local_repo_probe() -> dict[str, Any]:
         "local_d128_recursive_verifier_handle_exists": (
             EVIDENCE_DIR / "zkai-d128-two-slice-recursive-pcd-verifier-2026-05.json"
         ).exists(),
-        "external_zkvm_dependencies_declared": any(
-            token in cargo_toml.lower() for token in ("risc0", "sp1", "nexus", "jolt")
-        ),
-        "external_snark_ivc_dependencies_declared": any(
-            token in cargo_toml.lower() for token in ("halo2", "nova", "groth16", "plonk", "snark")
+        "external_zkvm_dependencies_declared": bool({"risc0", "sp1", "nexus", "jolt"} & dependency_names),
+        "external_snark_ivc_dependencies_declared": bool(
+            {"halo2", "nova", "groth16", "plonk", "snark"} & dependency_names
         ),
     }
 
@@ -451,6 +489,39 @@ def build_route_decision(routes: list[dict[str, Any]], source_evidence: dict[str
     }
 
 
+def validate_source_descriptor(
+    descriptor: dict[str, Any],
+    *,
+    expected_path: pathlib.Path,
+    expected_schema: str,
+    expected_decision: str,
+    expected_result: str,
+    expected_boundary: str,
+    field: str,
+) -> None:
+    expect_equal(
+        set(descriptor),
+        {"path", "file_sha256", "payload_sha256", "schema", "decision", "result", "claim_boundary"},
+        f"{field} descriptor keys",
+        layer="source_evidence",
+    )
+    require_sha256_hex(descriptor.get("file_sha256"), f"{field}.file_sha256", layer="source_evidence")
+    require_sha256_hex(descriptor.get("payload_sha256"), f"{field}.payload_sha256", layer="source_evidence")
+    source_payload = require_object(read_json_file(expected_path), f"{field} payload", layer="source_evidence")
+    expected_descriptor = source_descriptor(expected_path, source_payload)
+    expect_equal(descriptor, expected_descriptor, f"{field} descriptor", layer="source_evidence")
+    expect_equal(descriptor.get("path"), expected_path.relative_to(ROOT).as_posix(), f"{field} path", layer="source_evidence")
+    expect_equal(descriptor.get("schema"), expected_schema, f"{field} schema", layer="source_evidence")
+    expect_equal(descriptor.get("decision"), expected_decision, f"{field} decision", layer="source_evidence")
+    expect_equal(descriptor.get("result"), expected_result, f"{field} result", layer="source_evidence")
+    expect_equal(
+        descriptor.get("claim_boundary"),
+        expected_boundary,
+        f"{field} claim boundary",
+        layer="source_evidence",
+    )
+
+
 def build_core_payload() -> dict[str, Any]:
     source_evidence = build_source_evidence()
     repo_probe = local_repo_probe()
@@ -483,27 +554,57 @@ def validate_source_evidence(value: Any) -> dict[str, Any]:
         "selected_checked_rows",
         "full_block_checked_rows",
     }, "source_evidence keys", layer="source_evidence")
-    for key, expected_schema, expected_result, expected_boundary in (
+    for key, expected_path, expected_schema, expected_decision, expected_result, expected_boundary in (
         (
             "two_slice_accumulator",
+            TWO_SLICE_ACCUMULATOR_EVIDENCE,
             EXPECTED_TWO_SLICE_ACCUMULATOR_SCHEMA,
+            EXPECTED_TWO_SLICE_ACCUMULATOR_DECISION,
             EXPECTED_TWO_SLICE_ACCUMULATOR_RESULT,
             EXPECTED_TWO_SLICE_ACCUMULATOR_CLAIM_BOUNDARY,
         ),
         (
             "full_block_accumulator",
+            FULL_BLOCK_ACCUMULATOR_EVIDENCE,
             EXPECTED_FULL_BLOCK_ACCUMULATOR_SCHEMA,
+            EXPECTED_FULL_BLOCK_ACCUMULATOR_DECISION,
             EXPECTED_FULL_BLOCK_ACCUMULATOR_RESULT,
             EXPECTED_FULL_BLOCK_ACCUMULATOR_CLAIM_BOUNDARY,
         ),
     ):
         descriptor = require_object(source[key], key, layer="source_evidence")
+        validate_source_descriptor(
+            descriptor,
+            expected_path=expected_path,
+            expected_schema=expected_schema,
+            expected_decision=expected_decision,
+            expected_result=expected_result,
+            expected_boundary=expected_boundary,
+            field=key,
+        )
         expect_equal(descriptor.get("schema"), expected_schema, f"{key} schema", layer="source_evidence")
+        expect_equal(descriptor.get("decision"), expected_decision, f"{key} decision", layer="source_evidence")
         expect_equal(descriptor.get("result"), expected_result, f"{key} result", layer="source_evidence")
         expect_equal(descriptor.get("claim_boundary"), expected_boundary, f"{key} claim boundary", layer="source_evidence")
     recursive = require_object(source["recursive_pcd_audit"], "recursive_pcd_audit", layer="source_evidence")
+    validate_source_descriptor(
+        recursive,
+        expected_path=RECURSIVE_PCD_AUDIT_EVIDENCE,
+        expected_schema=EXPECTED_RECURSIVE_PCD_SCHEMA,
+        expected_decision=EXPECTED_RECURSIVE_PCD_DECISION,
+        expected_result=EXPECTED_RECURSIVE_PCD_RESULT,
+        expected_boundary=EXPECTED_RECURSIVE_PCD_CLAIM_BOUNDARY,
+        field="recursive_pcd_audit",
+    )
     expect_equal(recursive.get("schema"), EXPECTED_RECURSIVE_PCD_SCHEMA, "recursive schema", layer="source_evidence")
+    expect_equal(recursive.get("decision"), EXPECTED_RECURSIVE_PCD_DECISION, "recursive decision", layer="source_evidence")
     expect_equal(recursive.get("result"), EXPECTED_RECURSIVE_PCD_RESULT, "recursive result", layer="source_evidence")
+    expect_equal(
+        recursive.get("claim_boundary"),
+        EXPECTED_RECURSIVE_PCD_CLAIM_BOUNDARY,
+        "recursive claim boundary",
+        layer="source_evidence",
+    )
     expect_equal(source.get("selected_slice_ids"), list(EXPECTED_SELECTED_SLICE_IDS), "selected slice ids", layer="source_evidence")
     expect_equal(source.get("selected_checked_rows"), EXPECTED_SELECTED_ROWS, "selected rows", layer="source_evidence")
     expect_equal(source.get("full_block_checked_rows"), EXPECTED_FULL_BLOCK_ROWS, "full block rows", layer="source_evidence")
@@ -690,7 +791,11 @@ def mutate_payload(payload: dict[str, Any], mutation: str) -> dict[str, Any]:
                 return route
         raise AssertionError(route_id)
 
-    if mutation == "source_two_slice_result_drift":
+    if mutation == "source_two_slice_file_hash_drift":
+        mutated["source_evidence"]["two_slice_accumulator"]["file_sha256"] = "0" * 64
+    elif mutation == "source_recursive_path_drift":
+        mutated["source_evidence"]["recursive_pcd_audit"]["path"] = "docs/engineering/evidence/other.json"
+    elif mutation == "source_two_slice_result_drift":
         mutated["source_evidence"]["two_slice_accumulator"]["result"] = "NO_GO"
     elif mutation == "source_two_slice_claim_boundary_drift":
         mutated["source_evidence"]["two_slice_accumulator"]["claim_boundary"] = "RECURSIVE_OUTER_PROOF"
