@@ -973,6 +973,21 @@ recursive proof compression. It is anchored to
 `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`.
 
+The issue `#411` backend audit then checks the tempting next overclaim directly:
+can the two-slice accumulator be replaced by a real recursive or PCD outer proof
+today? The checked answer is no. The gate records
+`NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: the missing object
+is a nested-verifier AIR/circuit or PCD backend that proves the two selected
+d128 slice verifiers inside one cryptographic outer object. It rejects
+`31 / 31` source-accumulator, candidate-inventory, fake-backend,
+fake-public-input-binding, metric-smuggling, blocker-removal, and parser/schema
+mutations. This is useful negative evidence because it prevents the
+non-recursive accumulator from being relabeled as recursion, and it narrows the
+next implementation target to a real nested-verifier backend surface. It is
+anchored to
+`docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json`.
+
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all
 six checked slice handles and `197,504` checked rows. The accumulator commitment
