@@ -160,15 +160,17 @@ def sha256_hex_json(value: Any) -> str:
 
 
 def read_json_file(path: pathlib.Path) -> Any:
-    if not path.exists():
-        raise D128RecursivePCDRouteSelectorError(f"missing source evidence: {path}", layer="source_evidence")
-    if path.stat().st_size > MAX_SOURCE_JSON_BYTES:
-        raise D128RecursivePCDRouteSelectorError(f"source evidence too large: {path}", layer="source_evidence")
     try:
+        if not path.exists():
+            raise D128RecursivePCDRouteSelectorError(f"missing source evidence: {path}", layer="source_evidence")
+        if path.stat().st_size > MAX_SOURCE_JSON_BYTES:
+            raise D128RecursivePCDRouteSelectorError(f"source evidence too large: {path}", layer="source_evidence")
         return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as err:
+    except D128RecursivePCDRouteSelectorError:
+        raise
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as err:
         raise D128RecursivePCDRouteSelectorError(
-            f"malformed source evidence {path}: {err}",
+            f"unreadable or malformed source evidence {path}: {err}",
             layer="source_evidence",
         ) from err
 
