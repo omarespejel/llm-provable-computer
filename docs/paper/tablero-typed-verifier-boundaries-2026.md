@@ -920,16 +920,23 @@ and proof-system version. The route now has six local proof-backed slice
 handles: RMSNorm public rows, the RMSNorm-to-projection bridge, gate/value
 projection, activation/SwiGLU, down-projection, and source-bound residual-add.
 A composition gate binds those six slice artifacts into one d128 block receipt
-over `197504` checked rows and rejects `20 / 20` receipt mutations. This is a
-GO for a statement-bound block receipt and still a bounded NO-GO for aggregated
-proof size, verifier time, and proof-generation time, because recursive
-aggregation or a single compressed verifier object does not exist yet. The
-receipt result is anchored to
+over `197504` checked rows and rejects `20 / 20` receipt mutations. A follow-up
+aggregated-proof-object feasibility gate classifies that receipt as a valid
+aggregation target, binds the block receipt commitment and statement commitment
+as the required future public-input contract, and rejects `34 / 34` promotion,
+relabeling, and fake-metric mutations. This is a GO for a statement-bound block
+receipt and aggregation target, and still a bounded NO-GO for aggregated proof
+size, verifier time, and proof-generation time, because the outer
+proof/accumulator backend and verifier handle do not exist yet. The receipt
+result is anchored to
 `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`;
-the backend-spike anti-overclaim guard is anchored to
+the backend-spike and aggregation-target anti-overclaim guards are anchored to
 `docs/engineering/zkai-d128-proof-artifact-backend-spike-2026-05-02.md` and
-`docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json`.
+`docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json`,
+plus `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`
+and
+`docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed

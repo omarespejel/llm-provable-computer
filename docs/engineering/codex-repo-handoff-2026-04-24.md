@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `a0b77e535bda08bc893252ac2d195695d9e7349c` (matches
+**Mainline tip at last refresh:** `a135145f1ea0a4117e9ed34e4c0e100bc184c472` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -164,8 +164,13 @@ Tablero boundary.
 - The d128 block receipt composition gate now binds the six checked slice
   handles into one statement-bound receipt over `197,504` checked rows; see
   `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.
-- This is a receipt-composition GO only: recursion, one compressed verifier
-  object, and full-block proof-size/verifier-time metrics remain blocked.
+- The d128 aggregated proof-object feasibility gate now records a bounded no-go
+  for the next step: the block receipt is a valid aggregation target, but the
+  outer proof/accumulator backend and verifier handle do not yet exist; see
+  `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
+- This is still a receipt-composition GO only: recursion, one compressed
+  verifier object, and full-block proof-size/verifier-time metrics remain
+  blocked.
 - Do not compare d128 proof-size/verifier-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
@@ -220,10 +225,12 @@ Tablero boundary.
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-10. Continue the verifiable-AI d128 lane by attempting recursive or
-    proof-carrying aggregation of the checked d128 block receipt (`#405`); do
-    not jump to full-block proof-size/verifier-time metrics until an aggregated
-    proof object exists or is explicitly classified as no-go.
+10. Treat the first d128 aggregation attempt (`#405`) as a checked bounded
+    no-go until an outer proof/accumulator backend and verifier handle exist.
+    The next d128 research step should be a smaller proof-object spike, such as
+    a two-slice d128 outer-proof target, before attempting all six slices. Do
+    not report full-block proof-size/verifier-time metrics until a real
+    aggregated proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
