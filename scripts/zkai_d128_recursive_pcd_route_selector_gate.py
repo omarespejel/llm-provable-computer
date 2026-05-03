@@ -164,7 +164,13 @@ def read_json_file(path: pathlib.Path) -> Any:
         raise D128RecursivePCDRouteSelectorError(f"missing source evidence: {path}", layer="source_evidence")
     if path.stat().st_size > MAX_SOURCE_JSON_BYTES:
         raise D128RecursivePCDRouteSelectorError(f"source evidence too large: {path}", layer="source_evidence")
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as err:
+        raise D128RecursivePCDRouteSelectorError(
+            f"malformed source evidence {path}: {err}",
+            layer="source_evidence",
+        ) from err
 
 
 def file_sha256(path: pathlib.Path) -> str:
@@ -960,6 +966,8 @@ def _ensure_repo_relative(path: pathlib.Path | None, *, field: str) -> pathlib.P
     normalized = pathlib.Path(path.as_posix())
     if any(part == ".." for part in normalized.parts):
         raise D128RecursivePCDRouteSelectorError(f"{field} must be repo-relative without traversal")
+    if normalized.parts[:3] != ("docs", "engineering", "evidence"):
+        raise D128RecursivePCDRouteSelectorError(f"{field} must be under docs/engineering/evidence")
     return normalized
 
 
