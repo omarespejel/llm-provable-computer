@@ -570,7 +570,7 @@ aggregation target, but records a bounded no-go for claiming recursive
 aggregation, PCD, or one compressed proof today: the outer proof/accumulator
 backend and verifier handle do not yet exist. The future outer artifact must
 bind `block_receipt_commitment`, `statement_commitment`, and
-`range_policy_commitment` as public inputs. That follow-up rejects `39 / 39`
+`range_policy_commitment` as public inputs. That follow-up rejects `40 / 40`
 promotion, relabeling, public-input, and fake-metric mutations.
 
 A narrower d128 two-slice outer proof-object spike projects only

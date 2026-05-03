@@ -1095,7 +1095,7 @@ honestly: the receipt is a valid aggregation target, but the outer
 proof/accumulator backend and verifier handle that would bind
 `block_receipt_commitment`, `statement_commitment`, and
 `range_policy_commitment` as public inputs do not yet exist. The feasibility
-gate rejects `39 / 39` commitment-drift, public-input-drift,
+gate rejects `40 / 40` commitment-drift, public-input-drift,
 fake-proof-artifact, fake-public-input-binding, and metric-smuggling mutations.
 That is a GO for the local statement-bound receipt and a bounded NO-GO for
 local full-block proof size, verifier time, or proof-generation time.

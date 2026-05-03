@@ -6,9 +6,9 @@ The d128 block does not: projection outputs, SwiGLU hidden activations,
 residual deltas, and final outputs exceed +/-1024 while still satisfying the
 signed-M31 statement domain used by the slice verifiers.
 
-This gate turns that observation into checked evidence. It does not change the
-existing d128 receipt commitment; it proves the claim boundary that range policy
-must be bound per tensor identity rather than applied as one global q8 rule.
+This gate turns that observation into checked evidence. The d128 receipt
+composition gate consumes the resulting commitment as statement data, so range
+policy is bound per tensor identity rather than applied as one global q8 rule.
 """
 
 from __future__ import annotations

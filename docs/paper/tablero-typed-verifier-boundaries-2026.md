@@ -937,7 +937,7 @@ over `197504` checked rows, binds the per-tensor `range_policy_commitment`, and
 rejects `21 / 21` receipt mutations. A follow-up aggregated-proof-object
 feasibility gate classifies that receipt as a valid aggregation target, binds
 the block receipt commitment, statement commitment, and range-policy commitment
-as the required future public-input contract, and rejects `39 / 39` promotion,
+as the required future public-input contract, and rejects `40 / 40` promotion,
 relabeling, public-input, and fake-metric mutations. This is a GO for a
 statement-bound block receipt and aggregation target, and still a bounded NO-GO for aggregated proof
 size, verifier time, and proof-generation time, because the outer

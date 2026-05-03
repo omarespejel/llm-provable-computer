@@ -220,7 +220,7 @@
       "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "f670fea5f90af8c8e8d49776b2f4ba3588bfd16aa9aaeb7e899b87c6910586fe",
+      "file_sha256": "ba544c66f1edf57795932cda58c7749f5bf5a8f73752eaf00afb45946674bbc4",
       "kind": "backend_route_classification",
       "name": "d128_backend_spike_gate",
       "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
@@ -282,7 +282,7 @@
       "reason": "no verifier handle exists for an aggregated d128 proof object"
     }
   ],
-  "case_count": 39,
+  "case_count": 40,
   "cases": [
     {
       "baseline_result": "BOUNDED_NO_GO",
@@ -364,6 +364,15 @@
       "rejected": true,
       "rejection_layer": "aggregation_target_manifest",
       "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block receipt public inputs mismatch",
+      "mutated_accepted": false,
+      "mutation": "range_policy_public_input_drift",
+      "rejected": true,
+      "rejection_layer": "block_receipt_public_inputs",
+      "surface": "block_receipt_public_inputs"
     },
     {
       "baseline_result": "BOUNDED_NO_GO",
@@ -686,151 +695,156 @@
     },
     {
       "index": 9,
+      "mutation": "range_policy_public_input_drift",
+      "surface": "block_receipt_public_inputs"
+    },
+    {
+      "index": 10,
       "mutation": "slice_chain_commitment_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 10,
+      "index": 11,
       "mutation": "evidence_manifest_commitment_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 11,
+      "index": 12,
       "mutation": "nested_verifier_check_removed",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 12,
+      "index": 13,
       "mutation": "nested_verifier_check_reordered",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 13,
+      "index": 14,
       "mutation": "nested_verifier_source_hash_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 14,
+      "index": 15,
       "mutation": "nested_verifier_statement_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 15,
+      "index": 16,
       "mutation": "verifier_domain_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 16,
+      "index": 17,
       "mutation": "required_backend_version_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 17,
+      "index": 18,
       "mutation": "composition_mutation_count_drift",
       "surface": "aggregation_target_manifest"
     },
     {
-      "index": 18,
+      "index": 19,
       "mutation": "candidate_inventory_acceptance_relabel",
       "surface": "candidate_inventory"
     },
     {
-      "index": 19,
+      "index": 20,
       "mutation": "candidate_inventory_file_sha256_tampered",
       "surface": "candidate_inventory"
     },
     {
-      "index": 20,
+      "index": 21,
       "mutation": "candidate_inventory_required_artifact_removed",
       "surface": "candidate_inventory"
     },
     {
-      "index": 21,
+      "index": 22,
       "mutation": "aggregated_proof_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 22,
+      "index": 23,
       "mutation": "recursive_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 23,
+      "index": 24,
       "mutation": "pcd_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 24,
+      "index": 25,
       "mutation": "verifier_handle_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 25,
+      "index": 26,
       "mutation": "aggregation_target_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 26,
+      "index": 27,
       "mutation": "block_receipt_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 27,
+      "index": 28,
       "mutation": "statement_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 28,
+      "index": 29,
       "mutation": "range_policy_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 29,
+      "index": 30,
       "mutation": "invented_aggregated_proof_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 30,
+      "index": 31,
       "mutation": "proof_size_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 31,
+      "index": 32,
       "mutation": "verifier_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 32,
+      "index": 33,
       "mutation": "proof_generation_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 33,
+      "index": 34,
       "mutation": "first_blocker_removed",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 34,
+      "index": 35,
       "mutation": "missing_backend_feature_removed",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 35,
+      "index": 36,
       "mutation": "decision_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 36,
+      "index": 37,
       "mutation": "result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 37,
+      "index": 38,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 38,
+      "index": 39,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     }
@@ -896,8 +910,8 @@
     "composition_mutation_cases": 21,
     "composition_mutations_rejected": 21,
     "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt, statement, and range-policy commitments as public inputs",
-    "mutation_cases": 39,
-    "mutations_rejected": 39,
+    "mutation_cases": 40,
+    "mutations_rejected": 40,
     "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "slice_count": 6,
     "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",

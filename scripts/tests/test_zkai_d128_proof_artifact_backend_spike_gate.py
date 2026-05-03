@@ -786,6 +786,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "backend_routes",
         )
         self.assertEqual(
+            cases["d128_block_receipt_composition_route_range_policy_commitment_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(
             cases["d128_block_receipt_composition_route_receipt_flag_drift"]["rejection_layer"],
             "backend_routes",
         )
@@ -795,6 +799,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_block_receipt_composition_mutations_rejected_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_block_receipt_composition_range_policy_commitment_drift"]["rejection_layer"],
             "source_probe",
         )
         self.assertEqual(

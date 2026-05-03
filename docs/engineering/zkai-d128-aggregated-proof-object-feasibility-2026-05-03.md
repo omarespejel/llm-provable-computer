@@ -31,7 +31,7 @@ This is a bounded no-go, not a failure of the d128 receipt. The gate records exa
 | Slice count | 6 |
 | Total checked rows | 197,504 |
 | Source receipt mutations | `21 / 21` rejected |
-| Feasibility mutations | `39 / 39` rejected |
+| Feasibility mutations | `40 / 40` rejected |
 | Block receipt commitment | `blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea` |
 | Statement commitment | `blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c` |
 | Range-policy commitment | `blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985` |
@@ -122,4 +122,9 @@ just gate
 
 The next research step is not another timing run. It is a smaller proof-object spike that tries to build the missing outer proof surface for a subset of the receipt, then scales only after the artifact exists.
 
-A good follow-up target is a two-slice d128 outer-proof prototype that binds the same `block_receipt_commitment` / `statement_commitment` / `range_policy_commitment` contract shape before attempting all six slices, when the selected statement actually consumes the full-block range policy.
+As a conditional future extension, a two-slice d128 outer-proof prototype could
+be expanded to bind the full-block `block_receipt_commitment` /
+`statement_commitment` / `range_policy_commitment` tuple before attempting all
+six slices. The current two-slice spike is narrower: it binds only its
+`two_slice_target_commitment`, selected slice statements, and selected source
+evidence hashes.

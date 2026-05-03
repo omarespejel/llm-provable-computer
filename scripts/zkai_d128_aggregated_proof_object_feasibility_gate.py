@@ -120,6 +120,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("input_commitment_drift", "aggregation_target_manifest"),
     ("output_commitment_drift", "aggregation_target_manifest"),
     ("range_policy_commitment_drift", "aggregation_target_manifest"),
+    ("range_policy_public_input_drift", "block_receipt_public_inputs"),
     ("slice_chain_commitment_drift", "aggregation_target_manifest"),
     ("evidence_manifest_commitment_drift", "aggregation_target_manifest"),
     ("nested_verifier_check_removed", "aggregation_target_manifest"),
@@ -167,7 +168,7 @@ CANDIDATE_SURFACES = (
         "kind": "backend_route_classification",
         "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
         "expected_exists": True,
-        "expected_file_sha256": "f670fea5f90af8c8e8d49776b2f4ba3588bfd16aa9aaeb7e899b87c6910586fe",
+        "expected_file_sha256": "ba544c66f1edf57795932cda58c7749f5bf5a8f73752eaf00afb45946674bbc4",
         "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "reason": "records the current full-block blocker; it does not provide a verifier-facing proof object",
     },
@@ -1052,6 +1053,8 @@ def classify_error(error: Exception) -> str:
     text = str(error).lower()
     if "source block receipt" in text or "file_sha" in text or "payload_sha" in text:
         return "source_block_receipt_evidence"
+    if "block receipt public input" in text:
+        return "block_receipt_public_inputs"
     if "aggregation target commitment" in text:
         return "aggregation_target_commitment"
     if "candidate inventory" in text or "required aggregated proof artifact" in text:
@@ -1118,6 +1121,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "range_policy_commitment_drift",
         "aggregation_target_manifest",
         lambda p: p["aggregation_target_manifest"].__setitem__("range_policy_commitment", "blake2b-256:" + "67" * 32),
+    )
+    add(
+        "range_policy_public_input_drift",
+        "block_receipt_public_inputs",
+        lambda p: p["block_receipt_public_inputs"].__setitem__("range_policy_commitment", "blake2b-256:" + "68" * 32),
     )
     add(
         "slice_chain_commitment_drift",
