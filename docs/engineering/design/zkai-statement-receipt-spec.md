@@ -538,6 +538,11 @@ The d128 route now has six proof-backed slice handles plus a composition gate:
 - `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`
 - `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv`
+- `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
+- `docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`
+- `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`
+- `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.tsv`
 
 Decision: partial GO only. The d128 RMSNorm public-row proof checks `128`
 normalization rows and recomputes the input, scale, config, scale-tree,
@@ -571,15 +576,29 @@ A narrower d128 two-slice outer proof-object spike projects only
 target. Those two slices form a valid `256`-row target with
 `two_slice_target_commitment =
 blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
-but the same backend blocker remains: no executable outer proof/accumulator
-backend and verifier handle exist yet. That spike rejects `40 / 40`
+but the same recursive/PCD backend blocker remains: no executable recursive
+outer proof backend exists yet. That spike rejects `40 / 40`
 target-drift, source-hash, selected-slice removal, selected-slice duplication,
 selected-slice reordering, selected-slice row-count drift, fake-artifact,
 fake-public-input-binding, contract-weakening, and metric-smuggling mutations.
-The future outer artifact for this smaller route must bind
+The future recursive outer artifact for this smaller route must bind
 `two_slice_target_commitment`, the selected slice statements, and the selected
 source evidence hashes as public inputs before any proof-size or verifier-time
 metric is meaningful.
+
+The issue `#409` follow-up now fills the non-recursive accumulator branch for
+that same two-slice target. It builds a verifier-facing accumulator with
+accumulator commitment
+`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+and verifier-handle commitment
+`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+The accumulator validates the source two-slice target evidence, validates both
+selected source slice evidence files with their slice-local validators, and
+binds the target commitment, selected statement commitments, and selected
+source evidence hashes. It rejects `36 / 36` binding, relabeling,
+verifier-handle, recursive-claim, and recursive-metric-smuggling mutations. The
+claim boundary is explicit:
+`NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF`.
 
 The d64 block receipt composition gate consumes the checked slice handles:
 
