@@ -106,7 +106,7 @@ This repository currently has three live lanes.
      the two-slice and full-block non-recursive accumulator routes are usable
      today; proof-native two-slice compression, external zkVM statement
      receipts, and external SNARK/IVC adapters are research candidates, not
-     successes. It rejects `22 / 22` source-drift, route-relabeling,
+     successes. It rejects `24 / 24` source-drift, route-relabeling,
      blocker-removal, metric-smuggling, weakened-GO, and parser/schema
      mutations; see
      `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.

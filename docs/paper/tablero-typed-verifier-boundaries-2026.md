@@ -1047,7 +1047,7 @@ is blocked before metrics by
 `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`; proof-native
 two-slice compression without recursion, external zkVM statement receipts, and
 external SNARK/IVC adapters remain research candidates, not successes. The gate
-rejects `22 / 22` source-drift, route-relabeling, blocker-removal,
+rejects `24 / 24` source-drift, route-relabeling, blocker-removal,
 metric-smuggling, weakened-GO, and parser/schema mutations. This turns the next
 research step into an executable decision: test a real external statement
 receipt or a proof-native non-recursive compression object, but do not report
