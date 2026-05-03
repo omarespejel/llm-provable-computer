@@ -124,9 +124,22 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)
 
+    def test_malformed_source_evidence_uses_source_evidence_layer(self) -> None:
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp:
+            malformed = pathlib.Path(raw_tmp) / "malformed-route-selector-source.json"
+            malformed.write_text("{not valid json", encoding="utf-8")
+            with self.assertRaisesRegex(
+                GATE.D128RecursivePCDRouteSelectorError,
+                "malformed source evidence",
+            ) as context:
+                GATE.read_json_file(malformed)
+            self.assertEqual(context.exception.layer, "source_evidence")
+
     def test_write_outputs_round_trips_and_rejects_collisions(self) -> None:
         payload = self.fresh_payload()
-        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             json_path = (tmp / "route.json").relative_to(ROOT)
             tsv_path = (tmp / "route.tsv").relative_to(ROOT)
@@ -144,10 +157,13 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
                 GATE.write_outputs(payload, pathlib.Path(raw_tmp) / "route.json", None)
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "without traversal"):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/../route.json"), None)
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "docs/engineering/evidence"):
+            GATE.write_outputs(payload, pathlib.Path("docs/engineering/route.json"), None)
 
     def test_write_outputs_cleans_temp_file_when_replace_fails(self) -> None:
         payload = self.fresh_payload()
-        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             json_path = (tmp / "route.json").relative_to(ROOT)
             with mock.patch.object(pathlib.Path, "replace", side_effect=OSError("forced replace failure")):
