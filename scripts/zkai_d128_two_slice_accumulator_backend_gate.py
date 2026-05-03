@@ -777,7 +777,7 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("source_two_slice_target_commitment_drift", "source_two_slice_target", lambda p: p["source_two_slice_target"].__setitem__("two_slice_target_commitment", "blake2b-256:" + "22" * 32))
     add("accumulator_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"].__setitem__("accumulator_commitment", "blake2b-256:" + "33" * 32))
     add("accumulator_claim_boundary_changed_to_recursive", "accumulator_artifact", lambda p: p["accumulator_artifact"].__setitem__("claim_boundary", "RECURSIVE_OUTER_PROOF"))
-    add("accumulator_target_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("two_slice_target_commitment", "blake2b-256:" + "44" * 32))
+    add("accumulator_target_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["two_slice_target_manifest"].__setitem__("source_full_aggregation_target_commitment", "blake2b-256:" + "44" * 32))
     add("public_input_target_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("two_slice_target_commitment", "blake2b-256:" + "55" * 32))
     add("public_input_selected_statement_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"]["selected_slice_statement_commitments"][0].__setitem__("statement_commitment", "blake2b-256:" + "66" * 32))
     add("public_input_selected_source_hash_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"]["selected_source_evidence_hashes"][0].__setitem__("source_payload_sha256", "77" * 32))
