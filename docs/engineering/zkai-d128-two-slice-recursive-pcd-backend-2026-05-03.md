@@ -69,9 +69,9 @@ The gate rejects `31 / 31` mutation cases across:
   binding claims without an executable backend;
 - proof-size, verifier-time, and proof-generation-time metric smuggling before
   a proof object exists;
-- first-blocker removal, missing-backend-feature removal, weakened GO
-  criterion, recursive-result relabeling, top-level claim drift, non-claim
-  removal, and validation-command drift.
+- first-blocker removal, missing-backend-feature removal, weakened-GO drift,
+  recursive-result relabeling, top-level claim drift, non-claim removal, and
+  validation-command drift.
 
 ## Non-Claims
 
@@ -95,7 +95,10 @@ python3 scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py \
   --write-tsv docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.tsv
 
 python3 -m unittest scripts.tests.test_zkai_d128_two_slice_recursive_pcd_backend_gate
+python3 -m py_compile scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py \
+  scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend_gate.py
 python3 scripts/paper/paper_preflight.py --repo-root .
+git diff --check
 just gate-fast
 just gate
 ```
