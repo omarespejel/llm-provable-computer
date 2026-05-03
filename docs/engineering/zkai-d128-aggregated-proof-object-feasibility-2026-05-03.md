@@ -87,7 +87,7 @@ The feasibility gate rejects drift across:
 - candidate-inventory relabeling;
 - claiming aggregation, recursion, PCD, verifier handles, or public-input binding without an artifact;
 - invented proof artifacts;
-- proof-size and verifier-time metric smuggling before a proof exists;
+- proof-size, verifier-time, and proof-generation-time metric smuggling before a proof exists;
 - decision/result promotion to GO;
 - non-claim and validation-command drift.
 
@@ -100,6 +100,7 @@ This gate does not claim:
 - proof-carrying-data accumulation;
 - verifier-time benchmark evidence for an aggregated d128 proof;
 - proof-size benchmark evidence for an aggregated d128 proof;
+- proof-generation-time benchmark evidence for an aggregated d128 proof;
 - matched NANOZK, DeepProve, EZKL, or snarkjs comparison evidence;
 - onchain deployment evidence;
 - that d128 aggregation is impossible.

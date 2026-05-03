@@ -905,8 +905,8 @@ three required GO artifacts, and returns
 `NO_GO_D64_TWO_SLICE_NESTED_VERIFIER_BACKEND_ARTIFACT_MISSING`. The gate rejects
 `20 / 20` mutations that try to drift the checkpoint, source contract evidence,
 selected slices, candidate inventory, or metric fields. It also refuses
-proof-size and verifier-time metrics because no outer proof object or verifier
-handle exists yet. This is the current strongest anti-overclaim guard for the
+proof-size, verifier-time, and proof-generation-time metrics because no outer
+proof object or verifier handle exists yet. This is the current strongest anti-overclaim guard for the
 recursive/PCD track: useful contract, no executable nested-verifier backend yet.
 It is anchored to
 `docs/engineering/zkai-d64-nested-verifier-backend-spike-2026-05-02.md` and
