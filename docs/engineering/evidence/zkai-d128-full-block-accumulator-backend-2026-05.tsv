@@ -43,7 +43,7 @@ recursive_proof_metric_smuggled	recursive_or_pcd_status	GO	False	True	recursive_
 recursive_blocker_removed	recursive_or_pcd_status	GO	False	True	recursive_or_pcd_status	recursive or PCD status mismatch
 decision_changed_to_no_go	parser_or_schema	GO	False	True	parser_or_schema	decision mismatch
 result_changed_to_no_go	parser_or_schema	GO	False	True	parser_or_schema	result mismatch
-accumulator_result_changed_to_no_go	parser_or_schema	GO	False	True	accumulator_artifact	accumulator result mismatch
+accumulator_result_changed_to_no_go	parser_or_schema	GO	False	True	parser_or_schema	accumulator result mismatch
 recursive_result_changed_to_go	parser_or_schema	GO	False	True	recursive_or_pcd_status	recursive or PCD result mismatch
 non_claims_removed	parser_or_schema	GO	False	True	parser_or_schema	non-claims mismatch
 validation_command_drift	parser_or_schema	GO	False	True	parser_or_schema	validation commands mismatch
