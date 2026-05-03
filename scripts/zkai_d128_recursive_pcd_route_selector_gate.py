@@ -634,6 +634,10 @@ def validate_local_repo_probe(value: Any) -> dict[str, Any]:
         "external_zkvm_dependencies_declared",
         "external_snark_ivc_dependencies_declared",
     }, "local_repo_probe keys")
+    require_sha256_hex(probe.get("cargo_toml_sha256"), "cargo_toml_sha256")
+    require_sha256_hex(probe.get("cargo_lock_sha256"), "cargo_lock_sha256")
+    expect_equal(probe.get("cargo_toml_sha256"), file_sha256(ROOT / "Cargo.toml"), "Cargo.toml sha256")
+    expect_equal(probe.get("cargo_lock_sha256"), file_sha256(ROOT / "Cargo.lock"), "Cargo.lock sha256")
     expect_equal(probe.get("stwo_dependency_declared"), True, "Stwo dependency declared")
     expect_equal(probe.get("stwo_constraint_framework_declared"), True, "Stwo constraint framework declared")
     expect_equal(probe.get("local_stwo_version"), "2.2.0", "local Stwo version")
@@ -645,10 +649,13 @@ def validate_local_repo_probe(value: Any) -> dict[str, Any]:
 
 def validate_route_table(value: Any) -> list[dict[str, Any]]:
     routes = require_list(value, "route_table", layer="route_table")
-    expect_equal([route.get("route_id") for route in routes], list(ROUTE_IDS), "route ids", layer="route_table")
+    route_objects = [
+        require_object(route, f"route_table[{index}]", layer="route_table")
+        for index, route in enumerate(routes)
+    ]
+    expect_equal([route.get("route_id") for route in route_objects], list(ROUTE_IDS), "route ids", layer="route_table")
     by_id: dict[str, dict[str, Any]] = {}
-    for route in routes:
-        route = require_object(route, "route", layer="route_table")
+    for route in route_objects:
         expect_equal(set(route), {
             "route_id",
             "route_kind",
@@ -704,7 +711,7 @@ def validate_route_table(value: Any) -> list[dict[str, Any]]:
         "settlement route status",
         layer="route_table",
     )
-    return routes
+    return route_objects
 
 
 def validate_route_decision(value: Any, source: dict[str, Any], routes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -921,11 +928,17 @@ def validate_payload(payload: Any) -> dict[str, Any]:
     core = {key: payload[key] for key in BASE_TOP_LEVEL_KEYS}
     validate_core_payload(core)
     inventory = require_list(payload.get("mutation_inventory"), "mutation_inventory")
+    inventory_objects = [
+        require_object(item, f"mutation_inventory[{index}]")
+        for index, item in enumerate(inventory)
+    ]
     expect_equal(
-        [(item.get("mutation"), item.get("surface")) for item in inventory],
+        [(item.get("mutation"), item.get("surface")) for item in inventory_objects],
         list(EXPECTED_MUTATION_INVENTORY),
         "mutation_inventory",
     )
+    for index, item in enumerate(inventory_objects):
+        expect_equal(set(item), {"mutation", "surface"}, f"mutation_inventory[{index}] keys")
     cases = require_list(payload.get("cases"), "cases")
     expect_equal(payload.get("case_count"), len(EXPECTED_MUTATION_INVENTORY), "case_count")
     expect_equal(len(cases), len(EXPECTED_MUTATION_INVENTORY), "case count")
@@ -966,8 +979,22 @@ def _ensure_repo_relative(path: pathlib.Path | None, *, field: str) -> pathlib.P
     normalized = pathlib.Path(path.as_posix())
     if any(part == ".." for part in normalized.parts):
         raise D128RecursivePCDRouteSelectorError(f"{field} must be repo-relative without traversal")
-    if normalized.parts[:3] != ("docs", "engineering", "evidence"):
-        raise D128RecursivePCDRouteSelectorError(f"{field} must be under docs/engineering/evidence")
+    return normalized
+
+
+def _ensure_evidence_output(path: pathlib.Path | None, *, field: str, suffix: str) -> pathlib.Path | None:
+    normalized = _ensure_repo_relative(path, field=field)
+    if normalized is None:
+        return None
+    if normalized.suffix != suffix:
+        raise D128RecursivePCDRouteSelectorError(f"{field} must end with {suffix}")
+    full_path = (ROOT / normalized).resolve()
+    try:
+        full_path.relative_to(EVIDENCE_DIR.resolve())
+    except ValueError as err:
+        raise D128RecursivePCDRouteSelectorError(
+            f"{field} must stay under {EVIDENCE_DIR.relative_to(ROOT).as_posix()}",
+        ) from err
     return normalized
 
 
@@ -989,8 +1016,8 @@ def _atomic_write(path: pathlib.Path, data: str) -> None:
 
 
 def write_outputs(payload: dict[str, Any], json_out: pathlib.Path | None, tsv_out: pathlib.Path | None) -> None:
-    json_out = _ensure_repo_relative(json_out, field="json output path")
-    tsv_out = _ensure_repo_relative(tsv_out, field="tsv output path")
+    json_out = _ensure_evidence_output(json_out, field="json output path", suffix=".json")
+    tsv_out = _ensure_evidence_output(tsv_out, field="tsv output path", suffix=".tsv")
     if json_out is not None and tsv_out is not None and json_out == tsv_out:
         raise D128RecursivePCDRouteSelectorError("json and tsv output paths must be distinct")
     if json_out is not None:
