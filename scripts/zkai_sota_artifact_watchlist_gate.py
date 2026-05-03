@@ -545,8 +545,6 @@ def validate_generated_at(raw: Any) -> None:
 
 
 def validate_git_commit(raw: Any) -> None:
-    if raw == "unavailable":
-        return
     if not isinstance(raw, str) or re.fullmatch(r"[0-9a-f]{7,40}", raw) is None:
         raise SotaWatchlistError("git_commit malformed")
 
@@ -587,6 +585,8 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
             raise SotaWatchlistError(f"checked_at drift for {system}")
         if not _is_https_url(row["primary_source"]):
             raise SotaWatchlistError(f"primary source must be https URL for {system}")
+        if not isinstance(row["local_evidence"], str):
+            raise SotaWatchlistError(f"local evidence must be a string for {system}")
         if row["local_evidence"]:
             _resolve_repo_relative_existing_file(row["local_evidence"], f"local evidence for {system}")
         for flag in (
