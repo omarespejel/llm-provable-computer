@@ -43,6 +43,17 @@ RESULT = "ROUTE_SELECTED_BOUNDED_NO_GO"
 ISSUE = 420
 PRIMARY_BLOCKER = "NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET"
 NEXT_ROUTE = "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_OR_PROOF_NATIVE_COMPRESSION_SPIKE"
+WHY_NOT_LOCAL_STWO_NEXT = (
+    "the local Stwo route is blocked before metrics because no nested verifier "
+    "AIR/circuit or PCD verifier handle exists for the selected d128 slice verifiers"
+)
+WHY_EXTERNAL_OR_PROOF_NATIVE_NEXT = (
+    "the statement contract and non-recursive accumulators are already bound; the "
+    "next useful experiment is to test a real proof object outside the missing local "
+    "nested-verifier surface, or to compress the two-slice transcript without calling it recursion"
+)
+EXTERNAL_ZKVM_DEPENDENCIES = frozenset({"risc0", "sp1", "nexus", "jolt"})
+EXTERNAL_SNARK_IVC_DEPENDENCIES = frozenset({"halo2", "nova", "groth16", "plonk", "snark"})
 
 EXPECTED_TWO_SLICE_ACCUMULATOR_SCHEMA = "zkai-d128-two-slice-accumulator-backend-v1"
 EXPECTED_TWO_SLICE_ACCUMULATOR_DECISION = "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND"
@@ -290,10 +301,24 @@ def cargo_lock_package_version(cargo_lock: dict[str, Any], name: str) -> str | N
     return None
 
 
+def cargo_dependency_names(cargo_toml: dict[str, Any]) -> set[str]:
+    deps = cargo_toml.get("dependencies")
+    if not isinstance(deps, dict):
+        return set()
+    return {name for name in deps if isinstance(name, str)}
+
+
+def external_zkvm_dependencies_declared(cargo_toml: dict[str, Any]) -> bool:
+    return bool(EXTERNAL_ZKVM_DEPENDENCIES & cargo_dependency_names(cargo_toml))
+
+
+def external_snark_ivc_dependencies_declared(cargo_toml: dict[str, Any]) -> bool:
+    return bool(EXTERNAL_SNARK_IVC_DEPENDENCIES & cargo_dependency_names(cargo_toml))
+
+
 def local_repo_probe() -> dict[str, Any]:
     cargo_toml = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
     cargo_lock = tomllib.loads((ROOT / "Cargo.lock").read_text(encoding="utf-8"))
-    dependency_names = set(cargo_toml.get("dependencies", {}))
     return {
         "cargo_toml_sha256": file_sha256(ROOT / "Cargo.toml"),
         "cargo_lock_sha256": file_sha256(ROOT / "Cargo.lock"),
@@ -311,10 +336,8 @@ def local_repo_probe() -> dict[str, Any]:
         "local_d128_recursive_verifier_handle_exists": (
             EVIDENCE_DIR / "zkai-d128-two-slice-recursive-pcd-verifier-2026-05.json"
         ).exists(),
-        "external_zkvm_dependencies_declared": bool({"risc0", "sp1", "nexus", "jolt"} & dependency_names),
-        "external_snark_ivc_dependencies_declared": bool(
-            {"halo2", "nova", "groth16", "plonk", "snark"} & dependency_names
-        ),
+        "external_zkvm_dependencies_declared": external_zkvm_dependencies_declared(cargo_toml),
+        "external_snark_ivc_dependencies_declared": external_snark_ivc_dependencies_declared(cargo_toml),
     }
 
 
@@ -485,15 +508,8 @@ def build_route_decision(routes: list[dict[str, Any]], source_evidence: dict[str
         "primary_blocker": PRIMARY_BLOCKER,
         "go_criterion": GO_CRITERION,
         "next_route": NEXT_ROUTE,
-        "why_not_local_stwo_next": (
-            "the local Stwo route is blocked before metrics because no nested verifier "
-            "AIR/circuit or PCD verifier handle exists for the selected d128 slice verifiers"
-        ),
-        "why_external_or_proof_native_next": (
-            "the statement contract and non-recursive accumulators are already bound; the "
-            "next useful experiment is to test a real proof object outside the missing local "
-            "nested-verifier surface, or to compress the two-slice transcript without calling it recursion"
-        ),
+        "why_not_local_stwo_next": WHY_NOT_LOCAL_STWO_NEXT,
+        "why_external_or_proof_native_next": WHY_EXTERNAL_OR_PROOF_NATIVE_NEXT,
         "selected_target": {
             "slice_ids": source_evidence["selected_slice_ids"],
             "checked_rows": source_evidence["selected_checked_rows"],
@@ -751,14 +767,41 @@ def validate_local_repo_probe(value: Any) -> dict[str, Any]:
     }, "local_repo_probe keys")
     require_sha256_hex(probe.get("cargo_toml_sha256"), "cargo_toml_sha256")
     require_sha256_hex(probe.get("cargo_lock_sha256"), "cargo_lock_sha256")
+    cargo_toml = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
     expect_equal(probe.get("cargo_toml_sha256"), file_sha256(ROOT / "Cargo.toml"), "Cargo.toml sha256")
     expect_equal(probe.get("cargo_lock_sha256"), file_sha256(ROOT / "Cargo.lock"), "Cargo.lock sha256")
-    expect_equal(probe.get("stwo_dependency_declared"), True, "Stwo dependency declared")
-    expect_equal(probe.get("stwo_constraint_framework_declared"), True, "Stwo constraint framework declared")
+    expect_equal(require_bool(probe.get("stwo_dependency_declared"), "stwo_dependency_declared"), True, "Stwo dependency declared")
+    expect_equal(
+        require_bool(probe.get("stwo_constraint_framework_declared"), "stwo_constraint_framework_declared"),
+        True,
+        "Stwo constraint framework declared",
+    )
     expect_equal(probe.get("local_stwo_version"), "2.2.0", "local Stwo version")
-    expect_equal(probe.get("local_d128_recursive_backend_module_exists"), False, "local recursive backend module exists")
-    expect_equal(probe.get("local_d128_recursive_proof_artifact_exists"), False, "local recursive proof artifact exists")
-    expect_equal(probe.get("local_d128_recursive_verifier_handle_exists"), False, "local recursive verifier handle exists")
+    expect_equal(
+        require_bool(probe.get("local_d128_recursive_backend_module_exists"), "local_d128_recursive_backend_module_exists"),
+        False,
+        "local recursive backend module exists",
+    )
+    expect_equal(
+        require_bool(probe.get("local_d128_recursive_proof_artifact_exists"), "local_d128_recursive_proof_artifact_exists"),
+        False,
+        "local recursive proof artifact exists",
+    )
+    expect_equal(
+        require_bool(probe.get("local_d128_recursive_verifier_handle_exists"), "local_d128_recursive_verifier_handle_exists"),
+        False,
+        "local recursive verifier handle exists",
+    )
+    expect_equal(
+        require_bool(probe.get("external_zkvm_dependencies_declared"), "external_zkvm_dependencies_declared"),
+        external_zkvm_dependencies_declared(cargo_toml),
+        "external zkVM dependencies declared",
+    )
+    expect_equal(
+        require_bool(probe.get("external_snark_ivc_dependencies_declared"), "external_snark_ivc_dependencies_declared"),
+        external_snark_ivc_dependencies_declared(cargo_toml),
+        "external SNARK/IVC dependencies declared",
+    )
     return probe
 
 
@@ -888,10 +931,33 @@ def validate_route_decision(value: Any, source: dict[str, Any], routes: list[dic
     expect_equal(decision.get("primary_blocker"), PRIMARY_BLOCKER, "primary blocker", layer="route_decision")
     expect_equal(decision.get("go_criterion"), GO_CRITERION, "go criterion", layer="route_decision")
     expect_equal(decision.get("next_route"), NEXT_ROUTE, "next route", layer="route_decision")
+    expect_equal(
+        decision.get("why_not_local_stwo_next"),
+        WHY_NOT_LOCAL_STWO_NEXT,
+        "why_not_local_stwo_next",
+        layer="route_decision",
+    )
+    expect_equal(
+        decision.get("why_external_or_proof_native_next"),
+        WHY_EXTERNAL_OR_PROOF_NATIVE_NEXT,
+        "why_external_or_proof_native_next",
+        layer="route_decision",
+    )
 
     selected_target = require_object(decision.get("selected_target"), "selected_target", layer="route_decision")
+    expect_equal(
+        set(selected_target),
+        {"slice_ids", "checked_rows", "two_slice_target_commitment"},
+        "selected_target keys",
+        layer="route_decision",
+    )
     expect_equal(selected_target.get("slice_ids"), source["selected_slice_ids"], "selected target slice ids", layer="route_decision")
-    expect_equal(selected_target.get("checked_rows"), source["selected_checked_rows"], "selected target rows", layer="route_decision")
+    expect_equal(
+        require_int(selected_target.get("checked_rows"), "selected_target.checked_rows", layer="route_decision"),
+        source["selected_checked_rows"],
+        "selected target rows",
+        layer="route_decision",
+    )
     expect_equal(
         selected_target.get("two_slice_target_commitment"),
         source["two_slice_target_commitment"],
@@ -899,8 +965,20 @@ def validate_route_decision(value: Any, source: dict[str, Any], routes: list[dic
         layer="route_decision",
     )
     metrics = require_object(decision.get("proof_metrics"), "proof_metrics", layer="route_decision")
-    expect_equal(metrics.get("metrics_enabled"), False, "metrics enabled", layer="route_decision")
-    expect_equal(metrics.get("blocked_before_metrics"), True, "blocked before metrics", layer="route_decision")
+    expect_equal(
+        set(metrics),
+        {
+            "recursive_proof_size_bytes",
+            "recursive_verifier_time_ms",
+            "recursive_proof_generation_time_ms",
+            "metrics_enabled",
+            "blocked_before_metrics",
+        },
+        "proof_metrics keys",
+        layer="route_decision",
+    )
+    expect_equal(require_bool(metrics.get("metrics_enabled"), "metrics_enabled", layer="route_decision"), False, "metrics enabled", layer="route_decision")
+    expect_equal(require_bool(metrics.get("blocked_before_metrics"), "blocked_before_metrics", layer="route_decision"), True, "blocked before metrics", layer="route_decision")
     for key in ("recursive_proof_size_bytes", "recursive_verifier_time_ms", "recursive_proof_generation_time_ms"):
         expect_equal(metrics.get(key), None, key, layer="route_decision")
 
