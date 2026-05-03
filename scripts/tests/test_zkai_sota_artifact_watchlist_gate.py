@@ -36,6 +36,8 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["system_count"], 12)
         self.assertEqual(payload["summary"]["empirical_adapter_rows"], ["EZKL", "snarkjs", "JSTprove/Remainder"])
         self.assertEqual(payload["summary"]["deployment_calibration_rows"], ["Obelyzk"])
+        self.assertEqual(payload["validation_commands"][0], "just gate-fast")
+        self.assertEqual(payload["validation_commands"][-1], "just gate")
         self.assertIn("not a leaderboard", payload["non_claims"])
         self.assertIn("#420", payload["summary"]["current_best_next_research_step"])
 
@@ -154,6 +156,39 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
 
         with self.assertRaisesRegex(GATE.SotaWatchlistError, "systems commitment mismatch"):
             GATE.validate_payload(payload)
+
+    def test_rejects_summary_source_context_or_watchlist_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["summary"]["source_context_only_rows"] = ["DeepProve-1"]
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "source-context summary drift"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["summary"]["watchlist_rows"] = ["RISC Zero"]
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "watchlist summary drift"):
+            GATE.validate_payload(payload)
+
+    def test_empirical_local_evidence_must_be_repo_relative_and_existing(self) -> None:
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "EZKL")
+        row["local_evidence"] = "docs/engineering/evidence/missing-watchlist-fixture.json"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "does not exist"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "EZKL")
+        row["local_evidence"] = "../outside.json"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "repo-relative"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        GATE.validate_payload(payload)
 
     def test_tsv_rows_are_stable_and_make_boolean_status_explicit(self) -> None:
         rows = GATE.rows_for_tsv(self.fresh_payload())

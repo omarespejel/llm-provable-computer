@@ -95,9 +95,11 @@ TSV_COLUMNS = (
 )
 
 VALIDATION_COMMANDS = [
+    "just gate-fast",
     "python3 scripts/zkai_sota_artifact_watchlist_gate.py --write-json docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json --write-tsv docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_sota_artifact_watchlist_gate",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate",
 ]
 
 NON_CLAIMS = [
@@ -573,6 +575,7 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
                 raise SotaWatchlistError(f"empirical adapter row lacks reproducible artifacts for {system}")
             if not row["local_evidence"]:
                 raise SotaWatchlistError(f"empirical adapter row missing local evidence for {system}")
+            _resolve_repo_relative_existing_file(row["local_evidence"], f"local evidence for {system}")
         if system in SOURCE_CONTEXT_ONLY_SYSTEMS:
             if status == STATUS_EMPIRICAL:
                 raise SotaWatchlistError(f"source-backed system promoted to empirical adapter: {system}")
@@ -613,6 +616,20 @@ def validate_summary(summary: Any, systems: list[dict[str, Any]]) -> None:
         raise SotaWatchlistError("empirical adapter summary drift")
     if summary["deployment_calibration_rows"] != ["Obelyzk"]:
         raise SotaWatchlistError("deployment summary drift")
+    expected_source_context = [
+        row["system"]
+        for row in systems
+        if row["status"] in {STATUS_SOURCE_CONTEXT, STATUS_COMPACT_CONTEXT, STATUS_MODEL_SCALE_CONTEXT}
+    ]
+    if summary["source_context_only_rows"] != expected_source_context:
+        raise SotaWatchlistError("source-context summary drift")
+    expected_watchlist = [
+        row["system"]
+        for row in systems
+        if row["status"] in {STATUS_ZKVM_WATCHLIST, STATUS_SETTLEMENT_WATCHLIST}
+    ]
+    if summary["watchlist_rows"] != expected_watchlist:
+        raise SotaWatchlistError("watchlist summary drift")
     if "#420" not in summary["current_best_next_research_step"]:
         raise SotaWatchlistError("best-next-step drift")
 
@@ -627,6 +644,20 @@ def _source_context_matched_overclaim(recommended_use: str) -> bool:
         "not as a matched",
     )
     return not any(phrase in normalized for phrase in allowed_negations)
+
+
+def _resolve_repo_relative_existing_file(path_text: str, field: str) -> pathlib.Path:
+    raw_path = pathlib.PurePosixPath(path_text)
+    if raw_path.is_absolute() or ".." in raw_path.parts:
+        raise SotaWatchlistError(f"{field} must be a repo-relative path")
+    resolved = (ROOT / pathlib.Path(*raw_path.parts)).resolve()
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise SotaWatchlistError(f"{field} escapes repository") from err
+    if not resolved.is_file():
+        raise SotaWatchlistError(f"{field} does not exist: {path_text}")
+    return resolved
 
 
 def mutation_inventory() -> list[dict[str, str]]:
