@@ -403,10 +403,12 @@ Stwo AIR (`65,536` gate rows and `65,536` value rows), recomputes the bridge's
 projection-input commitment, recomputes deterministic gate/value matrix roots
 from checked row weights, and emits a domain-separated
 `gate_value_projection_output_commitment`. Together with the d128 RMSNorm,
-bridge, and residual-add proofs, this shows the d128 backend route now has four
-proof-backed slice surfaces. It is still not a full d128 block proof and still
-reports no full-block proof size or verifier time. The next blocker is the
-activation/SwiGLU slice that consumes `gate_value_projection_output_commitment`.
+bridge, activation/SwiGLU, down-projection, and residual-add proofs, the d128
+backend route now has six proof-backed slice surfaces plus a statement-bound
+block receipt over `197,504` checked rows. It is still not an aggregated d128
+block proof and still reports no full-block proof size, verifier time, or
+proof-generation time. The next blocker is the missing outer proof/accumulator
+backend and verifier handle.
 
 The first attention/KV receipt contract is also checked in:
 

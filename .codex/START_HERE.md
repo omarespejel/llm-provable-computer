@@ -66,7 +66,7 @@ This repository currently has three live lanes.
      exist; see
      `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
    - This is still a receipt-composition GO only: recursion, one compressed
-     verifier object, and full-block proof-size/verifier-time metrics remain
+     verifier object, and full-block proof-size/verifier-time/proof-generation-time metrics remain
      blocked.
 
 Do not collapse these lanes into one claim.
@@ -142,7 +142,7 @@ The repo now also has one explicit answer on the second-backend question:
     no-go until an outer proof/accumulator backend and verifier handle exist.
     The next d128 research step should be a smaller proof-object spike, such as
     a two-slice d128 outer-proof target, before attempting all six slices.
-    Do not report full-block proof-size/verifier-time metrics until a real
+    Do not report full-block proof-size/verifier-time/proof-generation-time metrics until a real
     aggregated proof object exists.
 
 ## What not to do

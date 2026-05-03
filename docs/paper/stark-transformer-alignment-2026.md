@@ -1094,7 +1094,7 @@ separate aggregated-proof-object feasibility gate then records the next boundary
 honestly: the receipt is a valid aggregation target, but the outer
 proof/accumulator backend and verifier handle do not yet exist. That is a GO
 for the local statement-bound receipt and a bounded NO-GO for local full-block
-proof size or verifier time. This is the correct shape of the next comparison:
+proof size, verifier time, or proof-generation time. This is the correct shape of the next comparison:
 define and bind the layerwise object first, then measure only after the proof
 object exists.
 

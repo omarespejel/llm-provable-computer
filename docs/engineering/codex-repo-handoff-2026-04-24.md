@@ -169,9 +169,9 @@ Tablero boundary.
   outer proof/accumulator backend and verifier handle do not yet exist; see
   `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
 - This is still a receipt-composition GO only: recursion, one compressed
-  verifier object, and full-block proof-size/verifier-time metrics remain
+  verifier object, and full-block proof-size/verifier-time/proof-generation-time metrics remain
   blocked.
-- Do not compare d128 proof-size/verifier-time against public zkML systems until
+- Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
 
@@ -229,7 +229,7 @@ Tablero boundary.
     no-go until an outer proof/accumulator backend and verifier handle exist.
     The next d128 research step should be a smaller proof-object spike, such as
     a two-slice d128 outer-proof target, before attempting all six slices. Do
-    not report full-block proof-size/verifier-time metrics until a real
+    not report full-block proof-size/verifier-time/proof-generation-time metrics until a real
     aggregated proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.

@@ -923,7 +923,7 @@ A composition gate binds those six slice artifacts into one d128 block receipt
 over `197504` checked rows and rejects `20 / 20` receipt mutations. A follow-up
 aggregated-proof-object feasibility gate classifies that receipt as a valid
 aggregation target, binds the block receipt commitment and statement commitment
-as the required future public-input contract, and rejects `34 / 34` promotion,
+as the required future public-input contract, and rejects `37 / 37` promotion,
 relabeling, and fake-metric mutations. This is a GO for a statement-bound block
 receipt and aggregation target, and still a bounded NO-GO for aggregated proof
 size, verifier time, and proof-generation time, because the outer

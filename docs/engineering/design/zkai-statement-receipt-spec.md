@@ -561,7 +561,7 @@ rows and rejects `20 / 20` receipt mutations. A follow-up aggregated
 proof-object feasibility gate then classifies that receipt as a valid
 aggregation target, but records a bounded no-go for claiming recursive
 aggregation, PCD, or one compressed proof today: the outer proof/accumulator
-backend and verifier handle do not yet exist. That follow-up rejects `34 / 34`
+backend and verifier handle do not yet exist. That follow-up rejects `37 / 37`
 promotion, relabeling, and fake-metric mutations.
 
 The d64 block receipt composition gate consumes the checked slice handles:
