@@ -566,6 +566,18 @@ bind `block_receipt_commitment` and `statement_commitment` as public inputs.
 That follow-up rejects `37 / 37` promotion, relabeling, and fake-metric
 mutations.
 
+A narrower d128 two-slice outer proof-object spike projects only
+`rmsnorm_public_rows` and `rmsnorm_projection_bridge` from the checked full
+target. Those two slices form a valid `256`-row target with
+`two_slice_target_commitment =
+blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+but the same backend blocker remains: no executable outer proof/accumulator
+backend and verifier handle exist yet. That spike rejects `39 / 39`
+target-drift, source-hash, fake-artifact, fake-public-input-binding, and
+metric-smuggling mutations. The future outer artifact for this smaller route
+must bind `two_slice_target_commitment` as public input before any proof-size or
+verifier-time metric is meaningful.
+
 The d64 block receipt composition gate consumes the checked slice handles:
 
 - `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
