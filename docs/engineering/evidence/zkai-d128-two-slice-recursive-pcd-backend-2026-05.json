@@ -1,0 +1,756 @@
+{
+  "accumulator_baseline_result": "GO_D128_TWO_SLICE_NON_RECURSIVE_ACCUMULATOR_BASELINE",
+  "all_mutations_rejected": true,
+  "backend_probe": {
+    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "attempt": {
+      "blocked_before_metrics": true,
+      "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+      "local_verifier_handle_exists": false,
+      "missing_backend_features": [
+        "nested verifier AIR/circuit for d128 rmsnorm_public_rows verifier",
+        "nested verifier AIR/circuit for d128 rmsnorm_projection_bridge verifier",
+        "recursive or PCD outer proof generator over the selected verifier checks",
+        "recursive or PCD artifact schema that carries two_slice_target_commitment as a public input",
+        "local verifier handle for the recursive or PCD artifact",
+        "fail-closed mutation tests for recursive public-input relabeling"
+      ],
+      "pcd_artifact_exists": false,
+      "proof_metrics_enabled": false,
+      "recursive_artifact_exists": false,
+      "selected_source_hash_binding_executable": false,
+      "selected_statement_binding_executable": false,
+      "target_public_input_binding_executable": false
+    },
+    "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
+    "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+    "go_criterion": "one executable recursive or PCD outer proof artifact exists for the two selected d128 slice-verifier checks; a local verifier handle accepts it; and the artifact binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes as public inputs",
+    "recursive_or_pcd_result": "NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "required_public_inputs_for_future_go": [
+      "two_slice_target_commitment",
+      "selected slice statement commitments",
+      "selected source evidence hashes"
+    ],
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "selected_slices": [
+      {
+        "role": "first selected inner STARK verifier",
+        "slice_id": "rmsnorm_public_rows"
+      },
+      {
+        "role": "second selected inner STARK verifier",
+        "slice_id": "rmsnorm_projection_bridge"
+      }
+    ],
+    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
+    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+  },
+  "candidate_inventory": [
+    {
+      "classification": "GO_NON_RECURSIVE_ACCUMULATOR_ONLY",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "c7ffed0d09edbdca75a93a060242ffd9836487b465f9abab47cc5f7df9f18a16",
+      "kind": "non_recursive_accumulator",
+      "missing_required_tokens": null,
+      "name": "d128_two_slice_accumulator_backend",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+      "reason": "binds the selected target and source evidence, but does not prove the selected verifiers inside an outer cryptographic proof",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null
+    },
+    {
+      "classification": "GO_TARGET_ONLY_NOT_RECURSIVE_BACKEND",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "8ea47c5f1c30b5735954774946afe28633272fcf6dfaf0a3ec8d750bb6972645",
+      "kind": "target_definition",
+      "missing_required_tokens": null,
+      "name": "d128_two_slice_outer_target_spike",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json",
+      "reason": "defines the smallest useful recursive target, but records missing outer proof-object backend",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null
+    },
+    {
+      "classification": "INNER_STARK_VERIFIER_NOT_NESTED_VERIFIER_CIRCUIT",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "a482ae102a403565509d87a2053e85ddcaa0beb6ee6d466ddf9e389906b92bb1",
+      "kind": "inner_slice_stark_module",
+      "missing_required_tokens": [],
+      "name": "d128_rmsnorm_public_row_inner_stark",
+      "path": "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
+      "reason": "proves and verifies the inner RMSNorm public-row slice; it is not an AIR/circuit for proving that verifier inside another proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "prove_zkai_d128_rmsnorm_public_row_envelope",
+        "verify_zkai_d128_rmsnorm_public_row_envelope"
+      ],
+      "required_tokens_present": true
+    },
+    {
+      "classification": "INNER_STARK_VERIFIER_NOT_NESTED_VERIFIER_CIRCUIT",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "29877fb750019a9c4635d00f7aad4351328d09d89832e60b7fa45107dca9d58a",
+      "kind": "inner_slice_stark_module",
+      "missing_required_tokens": [],
+      "name": "d128_rmsnorm_projection_bridge_inner_stark",
+      "path": "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
+      "reason": "proves and verifies the inner bridge slice; it is not an AIR/circuit for proving that verifier inside another proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+        "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope"
+      ],
+      "required_tokens_present": true
+    },
+    {
+      "classification": "HARNESS_SURFACE_NOT_D128_RECURSIVE_PCD_BACKEND",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "ace744fc7a11c49bb4399b0ed107637ae6cce5e6dd8872b4f76558d48ab06d60",
+      "kind": "historical_harness",
+      "missing_required_tokens": [],
+      "name": "phase36_recursive_harness_surface",
+      "path": "src/stwo_backend/recursion.rs",
+      "reason": "records recursive claim boundaries and source checks; it does not execute the selected d128 slice verifiers inside an outer proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "phase36_prepare_recursive_verifier_harness_receipt",
+        "verify_phase36_recursive_verifier_harness_receipt"
+      ],
+      "required_tokens_present": true
+    },
+    {
+      "classification": "NO_LOCAL_RECURSIVE_PCD_INTEGRATION_EXPOSED",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "9ca9a9f3e1be5352d38e237a8d54fdc895a91705a55982ea1f27459b01281d74",
+      "kind": "dependency_surface",
+      "missing_required_tokens": [],
+      "name": "cargo_stwo_backend_features",
+      "path": "Cargo.toml",
+      "reason": "the local dependency surface exposes Stwo proving/verifying support, but this repository has no recursive/PCD backend module wired to d128 verifier checks",
+      "required_for_go": false,
+      "required_tokens": [
+        "stwo = { version = \"2.2.0\"",
+        "stwo-backend = [\"dep:stwo\""
+      ],
+      "required_tokens_present": true
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_backend_module",
+      "missing_required_tokens": null,
+      "name": "required_d128_two_slice_recursive_pcd_backend_module",
+      "path": "src/stwo_backend/d128_two_slice_recursive_pcd_backend.rs",
+      "reason": "no executable nested-verifier or PCD backend module exists for the selected d128 verifier checks",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_recursive_or_pcd_artifact",
+      "missing_required_tokens": null,
+      "name": "required_d128_two_slice_recursive_pcd_proof_artifact",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-proof-2026-05.json",
+      "reason": "no checked recursive or PCD proof artifact exists for the two-slice target",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_verifier_handle",
+      "missing_required_tokens": null,
+      "name": "required_d128_two_slice_recursive_pcd_verifier_handle",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-verifier-2026-05.json",
+      "reason": "no local verifier handle exists for a recursive or PCD two-slice artifact",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_test_surface",
+      "missing_required_tokens": null,
+      "name": "required_d128_two_slice_recursive_pcd_mutation_tests",
+      "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend.py",
+      "reason": "a future recursive GO must include fail-closed public-input relabeling tests",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null
+    }
+  ],
+  "case_count": 31,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source accumulator descriptor mismatch",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source accumulator descriptor mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source accumulator descriptor mismatch",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_result_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source accumulator descriptor mismatch",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_claim_boundary_changed_to_recursive",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "two_slice_target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "backend_probe"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "accumulator_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "backend_probe"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "backend_probe"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_required_artifact_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_file_sha256_tampered",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_required_token_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "recursive_artifact_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "pcd_artifact_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 13,
+      "mutated_accepted": false,
+      "mutation": "local_verifier_handle_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 14,
+      "mutated_accepted": false,
+      "mutation": "target_public_input_binding_claimed_without_backend",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 15,
+      "mutated_accepted": false,
+      "mutation": "selected_statement_binding_claimed_without_backend",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 16,
+      "mutated_accepted": false,
+      "mutation": "selected_source_hash_binding_claimed_without_backend",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 17,
+      "mutated_accepted": false,
+      "mutation": "proof_size_metric_smuggled_before_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 18,
+      "mutated_accepted": false,
+      "mutation": "verifier_time_metric_smuggled_before_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 19,
+      "mutated_accepted": false,
+      "mutation": "proof_generation_time_metric_smuggled_before_artifact",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 20,
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 21,
+      "mutated_accepted": false,
+      "mutation": "missing_backend_feature_removed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "backend probe mismatch",
+      "index": 22,
+      "mutated_accepted": false,
+      "mutation": "go_criterion_weakened",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "recursive_or_pcd_result mismatch",
+      "index": 23,
+      "mutated_accepted": false,
+      "mutation": "recursive_or_pcd_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_attempt",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "decision mismatch",
+      "index": 24,
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "index": 25,
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "issue mismatch",
+      "index": 26,
+      "mutated_accepted": false,
+      "mutation": "issue_changed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "claim boundary mismatch",
+      "index": 27,
+      "mutated_accepted": false,
+      "mutation": "claim_boundary_changed_to_recursive",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "non_claims mismatch",
+      "index": 28,
+      "mutated_accepted": false,
+      "mutation": "non_claims_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "validation_commands mismatch",
+      "index": 29,
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "top-level payload key set mismatch: missing=[] extra=['invented_recursive_metric']",
+      "index": 30,
+      "mutated_accepted": false,
+      "mutation": "unknown_top_level_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
+  "decision": "NO_GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND_UNAVAILABLE",
+  "issue": 411,
+  "missing_backend_features": [
+    "nested verifier AIR/circuit for d128 rmsnorm_public_rows verifier",
+    "nested verifier AIR/circuit for d128 rmsnorm_projection_bridge verifier",
+    "recursive or PCD outer proof generator over the selected verifier checks",
+    "recursive or PCD artifact schema that carries two_slice_target_commitment as a public input",
+    "local verifier handle for the recursive or PCD artifact",
+    "fail-closed mutation tests for recursive public-input relabeling"
+  ],
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "source_accumulator_file_hash_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 1,
+      "mutation": "source_accumulator_payload_hash_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 2,
+      "mutation": "source_accumulator_result_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 3,
+      "mutation": "source_accumulator_claim_boundary_changed_to_recursive",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 4,
+      "mutation": "two_slice_target_commitment_drift",
+      "surface": "backend_probe"
+    },
+    {
+      "index": 5,
+      "mutation": "accumulator_commitment_drift",
+      "surface": "backend_probe"
+    },
+    {
+      "index": 6,
+      "mutation": "verifier_handle_commitment_drift",
+      "surface": "backend_probe"
+    },
+    {
+      "index": 7,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 8,
+      "mutation": "candidate_inventory_required_artifact_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 9,
+      "mutation": "candidate_inventory_file_sha256_tampered",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 10,
+      "mutation": "candidate_inventory_required_token_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 11,
+      "mutation": "recursive_artifact_claimed_without_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 12,
+      "mutation": "pcd_artifact_claimed_without_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 13,
+      "mutation": "local_verifier_handle_claimed_without_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 14,
+      "mutation": "target_public_input_binding_claimed_without_backend",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 15,
+      "mutation": "selected_statement_binding_claimed_without_backend",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 16,
+      "mutation": "selected_source_hash_binding_claimed_without_backend",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 17,
+      "mutation": "proof_size_metric_smuggled_before_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 18,
+      "mutation": "verifier_time_metric_smuggled_before_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 19,
+      "mutation": "proof_generation_time_metric_smuggled_before_artifact",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 20,
+      "mutation": "first_blocker_removed",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 21,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 22,
+      "mutation": "go_criterion_weakened",
+      "surface": "recursive_or_pcd_attempt"
+    },
+    {
+      "index": 23,
+      "mutation": "recursive_or_pcd_result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 24,
+      "mutation": "decision_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 25,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 26,
+      "mutation": "issue_changed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 27,
+      "mutation": "claim_boundary_changed_to_recursive",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 28,
+      "mutation": "non_claims_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 29,
+      "mutation": "validation_command_drift",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 30,
+      "mutation": "unknown_top_level_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive aggregation of the selected d128 slice proofs",
+    "not proof-carrying-data accumulation",
+    "not a STARK-in-STARK verifier proof",
+    "not one compressed cryptographic verifier object",
+    "not proof-size evidence for a recursive or PCD outer proof",
+    "not verifier-time evidence for a recursive or PCD outer proof",
+    "not proof-generation-time evidence for a recursive or PCD outer proof",
+    "not aggregation of all six d128 slice proofs",
+    "not a matched public-system benchmark",
+    "not onchain deployment evidence"
+  ],
+  "recursive_or_pcd_result": "NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING",
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d128-two-slice-recursive-pcd-backend-gate-v1",
+  "source_accumulator": {
+    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_result": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
+    "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+    "decision": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND",
+    "file_sha256": "c7ffed0d09edbdca75a93a060242ffd9836487b465f9abab47cc5f7df9f18a16",
+    "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+    "payload_sha256": "1526b71d8f3f2784636bed49a240662a595c2052e298549dcba878144a047b8e",
+    "recursive_or_pcd_result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "result": "GO",
+    "schema": "zkai-d128-two-slice-accumulator-backend-v1",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
+    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+  },
+  "summary": {
+    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
+    "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+    "go_criterion": "one executable recursive or PCD outer proof artifact exists for the two selected d128 slice-verifier checks; a local verifier handle accepts it; and the artifact binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes as public inputs",
+    "issue": 411,
+    "missing_backend_feature_count": 6,
+    "non_recursive_surfaces_available": [
+      "d128_two_slice_accumulator_backend",
+      "d128_two_slice_outer_target_spike"
+    ],
+    "proof_metrics_enabled": false,
+    "recursive_or_pcd_result": "NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "required_go_artifacts_missing": [
+      "required_d128_two_slice_recursive_pcd_backend_module",
+      "required_d128_two_slice_recursive_pcd_proof_artifact",
+      "required_d128_two_slice_recursive_pcd_verifier_handle",
+      "required_d128_two_slice_recursive_pcd_mutation_tests"
+    ],
+    "result": "BOUNDED_NO_GO",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
+    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_two_slice_recursive_pcd_backend_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate"
+  ]
+}

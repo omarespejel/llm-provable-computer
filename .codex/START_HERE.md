@@ -81,6 +81,15 @@ This repository currently has three live lanes.
      it rejects `37 / 37` binding/relabeling/recursive-claim mutations. This
      is an accumulator-integrity GO, not recursive/PCD proof compression; see
      `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
+   - The d128 two-slice recursive/PCD backend gate now audits the issue `#411`
+     route directly and records a hard bounded no-go:
+     `NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`. The
+     blocker is the missing nested-verifier AIR/circuit or PCD backend that
+     proves the two selected d128 slice verifiers inside one cryptographic
+     outer object. It rejects `31 / 31` relabeling, fake-artifact,
+     fake-public-input-binding, metric-smuggling, and blocker-removal
+     mutations; see
+     `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
    - The d128 full-block accumulator backend gate now turns the six-slice
      block receipt into a real verifier-facing non-recursive accumulator over
      `197,504` checked rows, with accumulator commitment
@@ -94,9 +103,9 @@ This repository currently has three live lanes.
      This is accumulator-integrity GO only; see
      `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
    - The d128 lane now has receipt-composition, two-slice accumulator, and
-     full-block accumulator GO results, but recursion, one compressed
-     cryptographic verifier object, and proof-size/verifier-time/
-     proof-generation-time metrics remain blocked.
+     full-block accumulator GO results, plus a checked issue `#411` recursive
+     backend no-go. Recursion, one compressed cryptographic verifier object,
+     and proof-size/verifier-time/proof-generation-time metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -167,13 +176,13 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
-10. Treat the first d128 aggregation attempt (`#405`) and two-slice target
-    spike (`#408`) as checked bounded no-gos for recursive proof-object
-    existence, but treat issues `#409` and `#413` as the current positive
-    handoff objects: real non-recursive two-slice and full-block accumulators
-    and verifier handles now exist. Do not report recursive proof-size,
-    verifier-time, or proof-generation-time metrics until a real recursive or
-    PCD proof object exists.
+10. Treat the first d128 aggregation attempt (`#405`), two-slice target spike
+    (`#408`), and issue `#411` recursive/PCD backend audit as checked bounded
+    no-gos for recursive proof-object existence. Treat issues `#409` and `#413`
+    as the current positive handoff objects: real non-recursive two-slice and
+    full-block accumulators and verifier handles now exist. Do not report
+    recursive proof-size, verifier-time, or proof-generation-time metrics until
+    a real recursive or PCD proof object exists.
 
 ## What not to do
 

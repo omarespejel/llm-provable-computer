@@ -152,6 +152,14 @@ Tablero boundary.
   it rejects `37 / 37` binding, relabeling, verifier-handle, and
   recursive-claim mutations. This is accumulator integrity only, not recursion;
   see `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
+- The d128 two-slice recursive/PCD backend gate now audits issue `#411`
+  directly and records
+  `NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: the missing
+  piece is still a nested-verifier AIR/circuit or PCD backend that proves the
+  two selected d128 slice verifiers inside one cryptographic outer object. It
+  rejects `31 / 31` source-accumulator, candidate-inventory, fake-backend,
+  public-input-binding, metric-smuggling, and parser/schema mutations; see
+  `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice
   handles over `197,504` checked rows, with accumulator commitment
@@ -164,9 +172,10 @@ Tablero boundary.
   validation-command-drift, and non-claim-removal mutations. This is accumulator
   integrity only, not recursion; see
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
-- This is now receipt-composition plus two-slice and full-block accumulator GO:
-  recursion, one compressed cryptographic verifier object, and recursive
-  proof-size/verifier-time/proof-generation-time metrics remain blocked.
+- This is now receipt-composition plus two-slice and full-block accumulator GO,
+  plus a checked issue `#411` recursive-backend NO-GO: recursion, one compressed
+  cryptographic verifier object, and recursive proof-size/verifier-time/
+  proof-generation-time metrics remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
@@ -249,13 +258,13 @@ Use these in order of authority for current state:
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
-10. Treat the first d128 aggregation attempt (`#405`) and the two-slice target
-    spike (`#408`) as checked bounded no-gos for recursive proof-object
-    existence, but treat issues `#409` and `#413` as the current positive
-    handoff objects: real non-recursive two-slice and full-block accumulators
-    and verifier handles now exist. Do not report recursive proof-size,
-    verifier-time, or proof-generation-time metrics until a real recursive or
-    PCD proof object exists.
+10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
+    spike (`#408`), and issue `#411` recursive/PCD backend audit as checked
+    bounded no-gos for recursive proof-object existence. Treat issues `#409`
+    and `#413` as the current positive handoff objects: real non-recursive
+    two-slice and full-block accumulators and verifier handles now exist. Do
+    not report recursive proof-size, verifier-time, or proof-generation-time
+    metrics until a real recursive or PCD proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
