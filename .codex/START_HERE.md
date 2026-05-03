@@ -89,8 +89,9 @@ This repository currently has three live lanes.
      `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`;
      it rejects `48 / 48` source, public-input, accumulator-artifact,
      source-manifest, slice-transcript, verifier-transcript, verifier-handle,
-     recursive-claim, parser/schema, validation-command-drift, and
-     non-claim-removal mutations. This is accumulator-integrity GO only; see
+     verifier-domain, recursive-claim, recursive-metric-smuggling,
+     parser/schema, validation-command-drift, and non-claim-removal mutations.
+     This is accumulator-integrity GO only; see
      `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
    - The d128 lane now has receipt-composition, two-slice accumulator, and
      full-block accumulator GO results, but recursion, one compressed
