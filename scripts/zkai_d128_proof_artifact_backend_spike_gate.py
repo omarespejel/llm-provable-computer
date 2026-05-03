@@ -57,6 +57,8 @@ TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
 TARGET_WIDTH = 128
 TARGET_FF_DIM = 512
 D128_BLOCK_RECEIPT_MUTATION_CASES = 20
+D128_BLOCK_STATEMENT_COMMITMENT = "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+D128_BLOCK_RECEIPT_COMMITMENT = "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a"
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
@@ -438,6 +440,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
     ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
+    ("d128_block_receipt_composition_synchronized_commitment_drift", "source_probe"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
     ("d64_hardcoded_marker_removed", "source_probe"),
@@ -578,7 +581,7 @@ def file_sha256(path: pathlib.Path) -> str:
 
 
 def relative_path(path: pathlib.Path) -> str:
-    return str(path.resolve().relative_to(ROOT.resolve()))
+    return path.resolve().relative_to(ROOT.resolve()).as_posix()
 
 
 def require_object(value: Any, field: str) -> dict[str, Any]:
@@ -2408,6 +2411,20 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "source_probe",
         drift_d128_block_receipt_mutation_count,
     )
+
+    def drift_d128_block_receipt_synchronized_commitments(p: dict[str, Any]) -> None:
+        probe = p["source_probe"]["d128_block_receipt_composition"]
+        fake = "blake2b-256:" + "8b" * 32
+        probe["statement_commitment"] = "blake2b-256:" + "8c" * 32
+        probe["block_receipt_commitment"] = fake
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["block_receipt_commitment"] = fake
+
+    add(
+        "d128_block_receipt_composition_synchronized_commitment_drift",
+        "source_probe",
+        drift_d128_block_receipt_synchronized_commitments,
+    )
     add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
 
     def remove_missing_module(p: dict[str, Any]) -> None:
@@ -2982,12 +2999,22 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         D128_BLOCK_RECEIPT_MUTATION_CASES,
         "d128 block receipt mutations rejected",
     )
-    require_commitment(
+    statement_commitment = require_commitment(
         block_receipt_probe.get("statement_commitment"),
         "d128 block receipt statement commitment",
     )
-    require_commitment(
+    expect_equal(
+        statement_commitment,
+        D128_BLOCK_STATEMENT_COMMITMENT,
+        "d128 block receipt statement commitment",
+    )
+    block_receipt_commitment = require_commitment(
         block_receipt_probe.get("block_receipt_commitment"),
+        "d128 block receipt commitment",
+    )
+    expect_equal(
+        block_receipt_commitment,
+        D128_BLOCK_RECEIPT_COMMITMENT,
         "d128 block receipt commitment",
     )
     expect_equal(

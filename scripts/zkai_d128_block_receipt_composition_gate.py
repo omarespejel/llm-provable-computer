@@ -193,9 +193,21 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     return f"blake2b-256:{digest.hexdigest()}"
 
 
+def _assert_repo_source_path(path: pathlib.Path) -> pathlib.Path:
+    if path.is_symlink():
+        raise D128BlockReceiptError(f"source evidence must not be a symlink: {path}")
+    resolved = path.resolve()
+    root = ROOT.resolve()
+    if not resolved.is_file():
+        raise D128BlockReceiptError(f"source evidence is not a regular file: {path}")
+    if resolved != root and root not in resolved.parents:
+        raise D128BlockReceiptError(f"source evidence path escapes repository: {path}")
+    return resolved
+
+
 def file_sha256(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
+    with _assert_repo_source_path(path).open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -298,12 +310,7 @@ SLICE_SPECS = [
 
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
-    resolved = path.resolve()
-    root = ROOT.resolve()
-    if not resolved.is_file():
-        raise D128BlockReceiptError(f"source evidence is not a regular file: {path}")
-    if resolved != root and root not in resolved.parents:
-        raise D128BlockReceiptError(f"source evidence path escapes repository: {path}")
+    resolved = _assert_repo_source_path(path)
     raw = resolved.read_bytes()
     if len(raw) > MAX_SOURCE_JSON_BYTES:
         raise D128BlockReceiptError(f"source evidence exceeds max size: {path}")
@@ -931,7 +938,8 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
                 if not case.get("error"):
                     raise D128BlockReceiptError(f"mutation case {index} error must be non-empty")
         expect_equal(summary.get("mutations_rejected"), rejected_count, "summary mutations rejected")
-        expect_equal(payload.get("all_mutations_rejected"), all(case["rejected"] for case in cases), "all mutations rejected")
+        expect_equal(rejected_count, len(cases), "all mutation cases rejected")
+        expect_equal(payload.get("all_mutations_rejected"), True, "all mutations rejected")
 
 
 def classify_error(error: Exception) -> str:
