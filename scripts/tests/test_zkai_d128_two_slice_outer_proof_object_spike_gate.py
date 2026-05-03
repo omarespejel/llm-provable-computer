@@ -47,7 +47,16 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
         expected = GATE.blake2b_commitment(payload["two_slice_target_manifest"], GATE.TARGET_DOMAIN)
         self.assertEqual(payload["two_slice_target_commitment"], expected)
         self.assertEqual(payload["outer_public_input_contract"]["two_slice_target_commitment"], expected)
-        self.assertEqual(payload["outer_public_input_contract"]["required_public_inputs"], ["two_slice_target_commitment"])
+        self.assertEqual(
+            payload["outer_public_input_contract"]["required_public_inputs"],
+            [
+                "two_slice_target_commitment",
+                "selected_slice_statement_commitments",
+                "selected_source_evidence_hashes",
+            ],
+        )
+        self.assertEqual(len(payload["outer_public_input_contract"]["selected_slice_statement_commitments"]), 2)
+        self.assertEqual(len(payload["outer_public_input_contract"]["selected_source_evidence_hashes"]), 2)
 
     def test_selected_slice_inventory_is_minimal_and_ordered(self) -> None:
         target = self.fresh_payload()["two_slice_target_manifest"]
@@ -209,12 +218,24 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
-            json_path = tmp / "two-slice-spike.json"
-            tsv_path = tmp / "two-slice-spike.tsv"
+            json_path = (tmp / "two-slice-spike.json").relative_to(ROOT)
+            tsv_path = (tmp / "two-slice-spike.tsv").relative_to(ROOT)
             GATE.write_outputs(payload, json_path, tsv_path)
-            loaded = json.loads(json_path.read_text(encoding="utf-8"))
+            loaded = json.loads((ROOT / json_path).read_text(encoding="utf-8"))
             self.assertEqual(loaded, payload)
-            self.assertIn("outer_proof_claimed_without_artifact", tsv_path.read_text(encoding="utf-8"))
+            self.assertIn("outer_proof_claimed_without_artifact", (ROOT / tsv_path).read_text(encoding="utf-8"))
+
+    def test_write_outputs_rejects_absolute_paths(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            absolute_path = pathlib.Path(raw_tmp) / "two-slice-spike.json"
+            with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "repo-relative"):
+                GATE.write_outputs(payload, absolute_path, None)
+
+    def test_write_outputs_rejects_traversal_paths(self) -> None:
+        payload = self.fresh_payload()
+        with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "without traversal"):
+            GATE.write_outputs(payload, pathlib.Path("docs/engineering/../two-slice-spike.json"), None)
 
 
 if __name__ == "__main__":

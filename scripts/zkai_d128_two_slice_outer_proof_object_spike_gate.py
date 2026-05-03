@@ -48,12 +48,14 @@ EXPECTED_SELECTED_ROWS = 256
 
 GO_CRITERION = (
     "one outer proof, accumulator, or proof-carrying artifact verifies the two selected "
-    "d128 slice-verifier checks and binds two_slice_target_commitment as a public input"
+    "d128 slice-verifier checks, binds two_slice_target_commitment as a public input, "
+    "binds the selected slice statements, and binds the selected source evidence hashes"
 )
 FIRST_BLOCKER = (
     "no executable outer proof/accumulator backend artifact in the current repository can "
-    "prove the selected two d128 slice-verifier checks and bind two_slice_target_commitment "
-    "as a public input"
+    "prove the selected two d128 slice-verifier checks, bind two_slice_target_commitment "
+    "as a public input, bind the selected slice statements, and bind the selected source "
+    "evidence hashes"
 )
 
 MISSING_BACKEND_FEATURES = [
@@ -61,7 +63,7 @@ MISSING_BACKEND_FEATURES = [
     "nested verifier program/AIR/circuit for d128 rmsnorm_projection_bridge",
     "outer proof or PCD accumulator object over the selected d128 verifier checks",
     "outer verifier handle for that proof or accumulator object",
-    "public-input binding inside the outer backend for two_slice_target_commitment",
+    "public-input binding inside the outer backend for two_slice_target_commitment, selected slice statements, and selected source evidence hashes",
     "mutation tests against relabeling of the selected outer proof public inputs",
 ]
 
@@ -523,14 +525,36 @@ def proof_object_attempt() -> dict[str, Any]:
 
 def refresh_commitments(payload: dict[str, Any]) -> None:
     target = require_object(payload.get("two_slice_target_manifest"), "two-slice target manifest")
+    selected_checks = require_list(target.get("selected_slice_checks"), "selected slice checks")
+    selected_statement_commitments = [
+        {
+            "slice_id": require_str(check.get("slice_id"), "selected slice id"),
+            "statement_commitment": require_commitment(check.get("statement_commitment"), "selected statement commitment"),
+        }
+        for check in (require_object(raw_check, "selected slice check") for raw_check in selected_checks)
+    ]
+    selected_source_evidence_hashes = [
+        {
+            "slice_id": require_str(check.get("slice_id"), "selected slice id"),
+            "source_file_sha256": require_sha256_hex(check.get("source_file_sha256"), "selected source file sha256"),
+            "source_payload_sha256": require_sha256_hex(check.get("source_payload_sha256"), "selected source payload sha256"),
+        }
+        for check in (require_object(raw_check, "selected slice check") for raw_check in selected_checks)
+    ]
     payload["two_slice_target_commitment"] = blake2b_commitment(target, TARGET_DOMAIN)
     payload["outer_public_input_contract"] = {
-        "required_public_inputs": ["two_slice_target_commitment"],
+        "required_public_inputs": [
+            "two_slice_target_commitment",
+            "selected_slice_statement_commitments",
+            "selected_source_evidence_hashes",
+        ],
         "two_slice_target_commitment": payload["two_slice_target_commitment"],
         "source_full_aggregation_target_commitment": target["source_full_aggregation_target_commitment"],
         "block_receipt_commitment": target["block_receipt_commitment"],
         "statement_commitment": target["statement_commitment"],
         "selected_slice_chain_commitment": target["selected_slice_chain_commitment"],
+        "selected_slice_statement_commitments": selected_statement_commitments,
+        "selected_source_evidence_hashes": selected_source_evidence_hashes,
     }
 
 
@@ -598,12 +622,31 @@ def _validate_target(payload: dict[str, Any], source: dict[str, Any]) -> None:
     expect_equal(
         public_input_contract,
         {
-            "required_public_inputs": ["two_slice_target_commitment"],
+            "required_public_inputs": [
+                "two_slice_target_commitment",
+                "selected_slice_statement_commitments",
+                "selected_source_evidence_hashes",
+            ],
             "two_slice_target_commitment": payload["two_slice_target_commitment"],
             "source_full_aggregation_target_commitment": target["source_full_aggregation_target_commitment"],
             "block_receipt_commitment": target["block_receipt_commitment"],
             "statement_commitment": target["statement_commitment"],
             "selected_slice_chain_commitment": target["selected_slice_chain_commitment"],
+            "selected_slice_statement_commitments": [
+                {
+                    "slice_id": check["slice_id"],
+                    "statement_commitment": check["statement_commitment"],
+                }
+                for check in target["selected_slice_checks"]
+            ],
+            "selected_source_evidence_hashes": [
+                {
+                    "slice_id": check["slice_id"],
+                    "source_file_sha256": check["source_file_sha256"],
+                    "source_payload_sha256": check["source_payload_sha256"],
+                }
+                for check in target["selected_slice_checks"]
+            ],
         },
         "outer public input contract",
     )
@@ -899,8 +942,28 @@ def to_tsv(payload: dict[str, Any]) -> str:
     return buffer.getvalue()
 
 
+def _safe_output_path(path: pathlib.Path, field: str) -> pathlib.Path:
+    raw_path = path.as_posix()
+    pure_path = pathlib.PurePosixPath(raw_path)
+    if (
+        path.is_absolute()
+        or not pure_path.parts
+        or raw_path != pure_path.as_posix()
+        or any(part in ("", ".", "..") for part in pure_path.parts)
+    ):
+        raise D128TwoSliceOuterProofObjectSpikeError(f"{field} must be a repo-relative path without traversal: {path}")
+    resolved_root = ROOT.resolve()
+    resolved_path = ROOT.joinpath(*pure_path.parts).resolve(strict=False)
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as err:
+        raise D128TwoSliceOuterProofObjectSpikeError(f"{field} must stay under repository root: {path}") from err
+    return resolved_path
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     if json_path is not None:
+        json_path = _safe_output_path(json_path, "--write-json")
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=json_path.parent, delete=False) as handle:
             tmp = pathlib.Path(handle.name)
@@ -908,6 +971,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             handle.write("\n")
         tmp.replace(json_path)
     if tsv_path is not None:
+        tsv_path = _safe_output_path(tsv_path, "--write-tsv")
         tsv_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=tsv_path.parent, delete=False) as handle:
             tmp = pathlib.Path(handle.name)

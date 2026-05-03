@@ -575,7 +575,8 @@ but the same backend blocker remains: no executable outer proof/accumulator
 backend and verifier handle exist yet. That spike rejects `39 / 39`
 target-drift, source-hash, fake-artifact, fake-public-input-binding, and
 metric-smuggling mutations. The future outer artifact for this smaller route
-must bind `two_slice_target_commitment` as public input before any proof-size or
+must bind `two_slice_target_commitment`, the selected slice statements, and the
+selected source evidence hashes as public inputs before any proof-size or
 verifier-time metric is meaningful.
 
 The d64 block receipt composition gate consumes the checked slice handles:

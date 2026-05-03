@@ -1115,7 +1115,9 @@ The gate rejects `39 / 39` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations, but
 it still records a bounded NO-GO for executable proof-object existence because
 no outer proof/accumulator backend or verifier handle exists for even the
-two-slice target. This is useful negative evidence: the current blocker is not
+two-slice target. A future GO on this target must bind the target commitment,
+selected slice statements, and selected source evidence hashes as public inputs.
+This is useful negative evidence: the current blocker is not
 merely six-slice scale; it is the missing outer proof-object backend surface.
 Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`

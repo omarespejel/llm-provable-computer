@@ -948,7 +948,9 @@ and the gate rejects `39 / 39` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations. It
 still records a bounded NO-GO for proof-object existence: no executable outer
 proof/accumulator backend or verifier handle exists for even the two-slice
-target. This narrows the research blocker from "six slices may be too large" to
+target. A future GO on this target must bind the target commitment, selected
+slice statements, and selected source evidence hashes as public inputs. This
+narrows the research blocker from "six slices may be too large" to
 "the outer proof-object backend surface is missing." It is anchored to
 `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
 and
