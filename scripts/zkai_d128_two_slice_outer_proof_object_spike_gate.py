@@ -6,7 +6,9 @@ does not try to aggregate all six d128 slices. It projects the first two checked
 slice-verifier inputs into a smaller target and then asks whether the repository
 contains a real outer proof, accumulator, or verifier-facing object for that
 target. The result is GO only if that object exists and binds the target
-commitment as a public input. Otherwise the gate records a bounded NO-GO.
+commitment, the selected slice statements, and the selected source evidence
+hashes as public inputs. If any of those bindings or the executable proof object
+is missing, the gate records a bounded NO-GO.
 """
 
 from __future__ import annotations
