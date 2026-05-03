@@ -611,8 +611,16 @@ def aggregation_target_manifest(source: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _candidate_path_present(path: pathlib.Path) -> bool:
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
 def _candidate_file_sha256(path: pathlib.Path) -> str | None:
-    if not path.exists():
+    if not _candidate_path_present(path):
         return None
     return file_sha256(path)
 
@@ -621,8 +629,7 @@ def candidate_inventory() -> list[dict[str, Any]]:
     inventory = []
     for spec in CANDIDATE_SURFACES:
         path = ROOT / spec["path"]
-        exists = path.exists()
-        actual_sha256 = _candidate_file_sha256(path)
+        exists = _candidate_path_present(path)
         expected_sha256 = spec["expected_file_sha256"]
         if spec["expected_exists"] is True and exists is not True:
             raise D128AggregatedProofObjectFeasibilityError(
@@ -632,6 +639,7 @@ def candidate_inventory() -> list[dict[str, Any]]:
             raise D128AggregatedProofObjectFeasibilityError(
                 f"required aggregated proof artifact now exists; rerun GO/NO-GO: {spec['path']}"
             )
+        actual_sha256 = _candidate_file_sha256(path)
         if expected_sha256 is not None and actual_sha256 != expected_sha256:
             raise D128AggregatedProofObjectFeasibilityError(
                 f"candidate inventory file_sha256 drift for {spec['path']}"
