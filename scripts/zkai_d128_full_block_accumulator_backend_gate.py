@@ -27,7 +27,9 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import pathlib
+import stat as stat_module
 import sys
 import tempfile
 from functools import lru_cache
@@ -40,6 +42,7 @@ BLOCK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_block_receipt_composition_g
 BLOCK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-block-receipt-composition-gate-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-full-block-accumulator-backend-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-full-block-accumulator-backend-2026-05.tsv"
+MAX_SOURCE_JSON_BYTES = 16 * 1024 * 1024
 
 SCHEMA = "zkai-d128-full-block-accumulator-backend-v1"
 DECISION = "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_BACKEND"
@@ -246,8 +249,13 @@ def require_commitment(value: Any, field: str) -> str:
 @lru_cache(maxsize=None)
 def file_sha256(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
+    fd, _resolved = _open_repo_regular_file(path)
+    total = 0
+    with os.fdopen(fd, "rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            total += len(chunk)
+            if total > MAX_SOURCE_JSON_BYTES:
+                raise D128FullBlockAccumulatorBackendError(f"source evidence exceeds max size: {path}")
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -258,8 +266,12 @@ def relative_path(path: pathlib.Path) -> str:
 
 @lru_cache(maxsize=None)
 def _load_json_cached(path: pathlib.Path) -> str:
-    with path.open("rb") as handle:
-        payload = json.loads(handle.read().decode("utf-8"))
+    fd, _resolved = _open_repo_regular_file(path)
+    with os.fdopen(fd, "rb") as handle:
+        raw = handle.read(MAX_SOURCE_JSON_BYTES + 1)
+    if len(raw) > MAX_SOURCE_JSON_BYTES:
+        raise D128FullBlockAccumulatorBackendError(f"source evidence exceeds max size: {path}")
+    payload = json.loads(raw.decode("utf-8"))
     if not isinstance(payload, dict):
         raise D128FullBlockAccumulatorBackendError(f"JSON evidence must be an object: {path}")
     return canonical_json_bytes(payload).decode("utf-8")
@@ -267,6 +279,55 @@ def _load_json_cached(path: pathlib.Path) -> str:
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     return json.loads(_load_json_cached(path.resolve()))
+
+
+def _safe_repo_relative_path(value: Any, field: str, *, evidence_only: bool = True) -> pathlib.Path:
+    if not isinstance(value, str):
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a string")
+    pure = pathlib.PurePosixPath(value)
+    if pure.is_absolute() or any(part in ("", ".", "..") for part in pure.parts):
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be repo-relative without traversal")
+    candidate = ROOT.joinpath(*pure.parts)
+    resolved = candidate.resolve(strict=False)
+    anchor = EVIDENCE_DIR.resolve() if evidence_only else ROOT.resolve()
+    try:
+        resolved.relative_to(anchor)
+    except ValueError as err:
+        scope = "evidence directory" if evidence_only else "repository"
+        raise D128FullBlockAccumulatorBackendError(f"{field} escapes {scope}") from err
+    return candidate
+
+
+def _open_repo_regular_file(path: pathlib.Path | str) -> tuple[int, pathlib.Path]:
+    candidate = pathlib.Path(path)
+    if not candidate.is_absolute():
+        candidate = ROOT / candidate
+    try:
+        if candidate.is_symlink():
+            raise D128FullBlockAccumulatorBackendError(f"source evidence must not be a symlink: {path}")
+        resolved = candidate.resolve(strict=False)
+        try:
+            resolved.relative_to(ROOT.resolve())
+        except ValueError as err:
+            raise D128FullBlockAccumulatorBackendError(f"source evidence path escapes repository: {path}") from err
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise D128FullBlockAccumulatorBackendError(f"source evidence is not a regular file: {path}")
+        fd = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise D128FullBlockAccumulatorBackendError(f"source evidence is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise D128FullBlockAccumulatorBackendError(f"source evidence changed while reading: {path}")
+            opened_fd = fd
+            fd = None
+            return opened_fd, resolved
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise D128FullBlockAccumulatorBackendError(f"failed to read source evidence {path}: {err}") from err
 
 
 def expected_mutation_inventory() -> list[dict[str, Any]]:
@@ -335,7 +396,7 @@ def _validate_source_files_against_manifest(source: dict[str, Any]) -> None:
     manifest = require_list(source.get("source_evidence_manifest"), "source evidence manifest")
     for item in manifest:
         entry = require_object(item, "source evidence manifest item")
-        source_path = ROOT / require_str(entry.get("path"), "source evidence path")
+        source_path = _safe_repo_relative_path(entry.get("path"), "source evidence path")
         actual = load_json(source_path)
         expect_equal(file_sha256(source_path), entry.get("file_sha256"), f"{entry.get('slice_id')} file hash")
         expect_equal(sha256_hex_json(actual), entry.get("payload_sha256"), f"{entry.get('slice_id')} payload hash")
@@ -534,8 +595,9 @@ def build_payload() -> dict[str, Any]:
 
 def _validate_source_descriptor(payload: dict[str, Any]) -> dict[str, Any]:
     descriptor = require_object(payload.get("source_block_receipt"), "source block receipt")
-    expect_equal(descriptor.get("path"), relative_path(BLOCK_RECEIPT_EVIDENCE), "source block receipt path")
-    source = load_checked_block_receipt(ROOT / descriptor["path"])
+    source_path = _safe_repo_relative_path(descriptor.get("path"), "source block receipt path")
+    expect_equal(relative_path(source_path), relative_path(BLOCK_RECEIPT_EVIDENCE), "source block receipt path")
+    source = load_checked_block_receipt(source_path)
     expected = block_receipt_source_descriptor(source)
     expect_equal(descriptor, expected, "source block receipt descriptor")
     return source
