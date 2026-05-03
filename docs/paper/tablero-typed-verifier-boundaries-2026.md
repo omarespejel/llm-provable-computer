@@ -1037,6 +1037,25 @@ anchored to
 `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json`.
 
+The issue `#420` route-selector gate then asks what to do next rather than
+adding another wrapper and hoping the language will hold. It consumes the
+two-slice accumulator, full-block accumulator, and recursive/PCD audit evidence
+and records
+`NO_GO_LOCAL_D128_RECURSIVE_PCD_BACKEND_TODAY`. Only the two non-recursive
+accumulator routes are usable today. The local Stwo-native nested-verifier route
+is blocked before metrics by
+`NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`; proof-native
+two-slice compression without recursion, external zkVM statement receipts, and
+external SNARK/IVC adapters remain research candidates, not successes. The gate
+rejects `22 / 22` source-drift, route-relabeling, blocker-removal,
+metric-smuggling, weakened-GO, and parser/schema mutations. This turns the next
+research step into an executable decision: test a real external statement
+receipt or a proof-native non-recursive compression object, but do not report
+recursive proof size, verifier time, or proof-generation time from the current
+accumulators. It is anchored to
+`docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json`.
+
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all
 six checked slice handles and `197,504` checked rows. The accumulator commitment
@@ -1140,7 +1159,11 @@ recording that the missing work is a real executable nested-verifier backend.
 The d128 two-slice accumulator gate similarly strengthens the boundary: it
 provides a real verifier-facing accumulator for the first two checked slice
 statements, but keeps recursive proof compression and recursive metrics in the
-NO-GO bucket.
+NO-GO bucket. The follow-up d128 route selector keeps the same discipline at the
+research-planning layer: local Stwo-native recursion is not benchmarkable until
+a nested-verifier backend exists, and external adapter or proof-native
+compression candidates are not successes until they produce checked proof
+objects for the same public-input contract.
 
 ### 8.4 No universal speedup claim
 

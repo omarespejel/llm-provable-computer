@@ -38,7 +38,11 @@ interpreted under the wrong statement.
 
 The current d128 full-block accumulator is also useful, but it is not recursive
 proof compression. It is a verifier-facing accumulator object that keeps the
-claim boundary honest until a real outer proof backend exists.
+claim boundary honest until a real outer proof backend exists. The issue `#420`
+route selector now makes the next-step decision explicit: local Stwo-native
+recursion is blocked before metrics by the missing nested-verifier backend for
+the two-slice d128 target, while external zkVM/SNARK statement-receipt adapters
+and proof-native non-recursive compression remain research candidates.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -62,9 +66,11 @@ GO means:
   proof object exists.
 
 NO-GO is still useful if it records the exact missing backend feature. The
-current checked no-go already says the blocker is not "six slices are too big";
-it is that no nested verifier program/AIR/circuit exists for even the two-slice
-contract.
+current checked route selector says the blocker is not "six slices are too
+big"; it is that no nested verifier program/AIR/circuit exists for even the
+two-slice contract. It also records that no recursive proof-size, verifier-time,
+or proof-generation-time metrics may be reported from the non-recursive
+accumulators.
 
 ## What Not To Do
 
@@ -78,8 +84,17 @@ contract.
 
 ## Next Tracks
 
-1. **Recursive/PCD backend track.** Build or cleanly no-go the executable
-   two-slice d128 outer proof backend. Tracked in issue `#420`.
+1. **Recursive/PCD backend track.** Treat the local Stwo-native route as a
+   checked bounded no-go until a nested-verifier backend exists. The issue
+   `#420` route selector lives at
+   `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
+   with JSON/TSV evidence at
+   `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json`
+   and
+   `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
+   The best next experiments are issue `#422` external zkVM/SNARK statement
+   receipt adapters and issue `#424` proof-native two-slice compression that
+   does not claim recursion.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification
