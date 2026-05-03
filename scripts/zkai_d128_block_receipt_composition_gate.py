@@ -311,7 +311,8 @@ SLICE_SPECS = [
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     resolved = _assert_repo_source_path(path)
-    raw = resolved.read_bytes()
+    with resolved.open("rb") as handle:
+        raw = handle.read(MAX_SOURCE_JSON_BYTES + 1)
     if len(raw) > MAX_SOURCE_JSON_BYTES:
         raise D128BlockReceiptError(f"source evidence exceeds max size: {path}")
     try:
@@ -642,6 +643,7 @@ def _validate_source_hashes(payload: dict[str, Any]) -> None:
         path_value = item.get("path")
         if not isinstance(path_value, str):
             raise D128BlockReceiptError(f"{spec.slice_id} manifest path must be a string")
+        expect_equal(path_value, relative_path(spec.evidence_path), f"{spec.slice_id} manifest canonical path")
         path = (ROOT / path_value).resolve()
         if path != spec.evidence_path.resolve():
             raise D128BlockReceiptError(f"{spec.slice_id} manifest path mismatch")
