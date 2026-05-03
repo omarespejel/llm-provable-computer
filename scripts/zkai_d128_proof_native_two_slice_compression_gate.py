@@ -19,8 +19,8 @@ import io
 import json
 import os
 import pathlib
+import secrets
 import sys
-import tempfile
 from typing import Any, Callable
 
 
@@ -1044,6 +1044,31 @@ def _resolved_output_target(path: pathlib.Path) -> tuple[pathlib.Path, pathlib.P
     return final_path, resolved_final
 
 
+def _write_bytes_via_dirfd(final_path: pathlib.Path, data: bytes) -> None:
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    dir_fd = os.open(final_path.parent, flags)
+    tmp_name = f".{final_path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
+    tmp_fd: int | None = None
+    tmp_created = False
+    try:
+        tmp_fd = os.open(tmp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
+        tmp_created = True
+        with os.fdopen(tmp_fd, "wb", closefd=True) as handle:
+            tmp_fd = None
+            handle.write(data)
+        os.replace(tmp_name, final_path.name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        tmp_created = False
+    finally:
+        if tmp_fd is not None:
+            os.close(tmp_fd)
+        if tmp_created:
+            try:
+                os.unlink(tmp_name, dir_fd=dir_fd)
+            except FileNotFoundError:
+                pass
+        os.close(dir_fd)
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
     outputs: list[tuple[pathlib.Path, bytes]] = []
@@ -1056,15 +1081,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
     if len(resolved_outputs) != len(set(resolved_outputs)):
         raise D128ProofNativeTwoSliceCompressionError("write-json and write-tsv output paths must be distinct")
     for _path, data, final_path, _resolved_final in resolved_targets:
-        tmp: pathlib.Path | None = None
-        try:
-            with tempfile.NamedTemporaryFile("wb", delete=False, dir=str(final_path.parent)) as handle:
-                tmp = pathlib.Path(handle.name)
-                handle.write(data)
-            os.replace(tmp, final_path)
-        finally:
-            if tmp is not None and tmp.exists():
-                tmp.unlink()
+        _write_bytes_via_dirfd(final_path, data)
 
 
 def main(argv: list[str] | None = None) -> int:
