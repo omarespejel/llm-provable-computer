@@ -1147,11 +1147,13 @@ all six d128 slices. It accumulates the checked d128 block receipt over
 `197,504` rows, binding `block_receipt_commitment`, `statement_commitment`,
 `slice_chain_commitment`, `evidence_manifest_commitment`, every slice statement
 commitment, and every source evidence hash. It rejects `48 / 48` source,
-public-input, slice-transcript, verifier-domain, verifier-handle,
-recursive-claim, and recursive-metric-smuggling mutations. This is useful
-systems evidence for statement-preserving packaging, but it remains explicitly
-pre-recursive: no compressed proof-size, verifier-time, or proof-generation-time
-metric is claimed. Evidence is recorded in
+public-input, accumulator-artifact, source-manifest, slice-transcript,
+verifier-transcript, verifier-domain, verifier-handle, recursive-claim,
+recursive-metric-smuggling, parser/schema, validation-command-drift, and
+non-claim-removal mutations. This is useful systems evidence for
+statement-preserving packaging, but it remains explicitly pre-recursive: no
+compressed proof-size, verifier-time, or proof-generation-time metric is
+claimed. Evidence is recorded in
 `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json`.
 

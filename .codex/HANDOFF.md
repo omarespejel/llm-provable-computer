@@ -158,9 +158,11 @@ Tablero boundary.
   `blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
   and verifier-handle commitment
   `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`;
-  it rejects `48 / 48` source, public-input, slice-transcript,
-  verifier-domain, verifier-handle, recursive-claim, and parser/schema
-  mutations. This is accumulator integrity only, not recursion; see
+  it rejects `48 / 48` source, public-input, accumulator-artifact,
+  source-manifest, slice-transcript, verifier-transcript, verifier-domain,
+  verifier-handle, recursive-claim, recursive-metric-smuggling, parser/schema,
+  validation-command-drift, and non-claim-removal mutations. This is accumulator
+  integrity only, not recursion; see
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus two-slice and full-block accumulator GO:
   recursion, one compressed cryptographic verifier object, and recursive

@@ -611,9 +611,11 @@ and verifier-handle commitment
 The accumulator binds `block_receipt_commitment`, `statement_commitment`,
 `slice_chain_commitment`, `evidence_manifest_commitment`, every slice statement
 commitment, and every source evidence hash. It rejects `48 / 48` source,
-public-input, slice-transcript, verifier-domain, verifier-handle,
-recursive-claim, and recursive-metric-smuggling mutations. This is still
-accumulator integrity only, not recursive proof compression.
+public-input, accumulator-artifact, source-manifest, slice-transcript,
+verifier-transcript, verifier-domain, verifier-handle, recursive-claim,
+recursive-metric-smuggling, parser/schema, validation-command-drift, and
+non-claim-removal mutations. This is still accumulator integrity only, not
+recursive proof compression.
 
 The d64 block receipt composition gate consumes the checked slice handles:
 

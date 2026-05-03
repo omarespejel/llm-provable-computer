@@ -162,6 +162,25 @@ EXPECTED_MUTATION_INVENTORY = (
     ("validation_command_drift", "parser_or_schema"),
 )
 
+BASE_TOP_LEVEL_KEYS = {
+    "schema",
+    "decision",
+    "result",
+    "issue",
+    "accumulator_result",
+    "recursive_or_pcd_result",
+    "claim_boundary",
+    "source_block_receipt",
+    "accumulator_artifact",
+    "verifier_handle",
+    "recursive_or_pcd_status",
+    "summary",
+    "non_claims",
+    "validation_commands",
+}
+MUTATION_TOP_LEVEL_KEYS = {"mutation_inventory", "cases", "case_count", "all_mutations_rejected"}
+FINAL_TOP_LEVEL_KEYS = BASE_TOP_LEVEL_KEYS | MUTATION_TOP_LEVEL_KEYS
+
 
 class D128FullBlockAccumulatorBackendError(ValueError):
     pass
@@ -203,6 +222,14 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 def expect_equal(actual: Any, expected: Any, field: str) -> None:
     if actual != expected:
         raise D128FullBlockAccumulatorBackendError(f"{field} mismatch")
+
+
+def expect_key_set(value: dict[str, Any], expected: set[str], field: str) -> None:
+    actual = set(value)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise D128FullBlockAccumulatorBackendError(f"{field} key set mismatch: missing={missing} extra={extra}")
 
 
 def require_object(value: Any, field: str) -> dict[str, Any]:
@@ -680,6 +707,8 @@ def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, An
 
 
 def _validate_draft_payload(payload: Any) -> None:
+    payload = require_object(payload, "full-block accumulator backend draft payload")
+    expect_key_set(payload, BASE_TOP_LEVEL_KEYS, "draft payload")
     _source, _artifact, _handle, expected_summary = _validate_common_payload(payload)
     if (
         "mutation_inventory" in payload
@@ -720,6 +749,7 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
     rejected = 0
     for index, raw_case in enumerate(cases):
         case = require_object(raw_case, f"mutation case {index}")
+        expect_key_set(case, set(TSV_COLUMNS), f"mutation case {index}")
         for column in TSV_COLUMNS:
             if column not in case:
                 raise D128FullBlockAccumulatorBackendError(f"mutation case {index} missing {column}")
@@ -760,6 +790,9 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
 
 def validate_payload(payload: Any) -> None:
     payload = require_object(payload, "full-block accumulator backend payload")
+    extra_keys = sorted(set(payload) - FINAL_TOP_LEVEL_KEYS)
+    if extra_keys:
+        raise D128FullBlockAccumulatorBackendError(f"payload unexpected keys: {extra_keys}")
     _source, _artifact, _handle, expected_summary = _validate_common_payload(payload)
     case_count, rejected = _validate_case_metadata(payload)
     if rejected != case_count:
