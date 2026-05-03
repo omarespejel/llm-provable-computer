@@ -1265,6 +1265,16 @@ on which object exists. A d128 receipt should be compared as a receipt. A d128 o
 proof should be compared as a proof object. A Starknet verifier should be compared only
 against another deployment or settlement path.
 
+That artifact watchlist is now checked rather than prose-only. It records EZKL,
+snarkjs, and JSTprove/Remainder as empirical statement-envelope adapter rows; the local
+Stwo d128 surface as receipt/accumulator evidence; DeepProve-1, NANOZK, Jolt Atlas, and
+Giza/LuminAIR as source-backed context; Obelyzk as deployment calibration; and RISC
+Zero, SP1, and SNIP-36 as receipt or settlement watchlist rows. The gate rejects
+promotion of source-backed systems into matched benchmarks unless proof bytes, verifier
+inputs, public statement fields, and mutation tests are reproducible. Evidence is
+recorded in `docs/engineering/zkai-sota-artifact-watchlist-2026-05-03.md` and
+`docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json`.
+
 The third priority is to make state and numeric policy first-class. The d128 result
 shows that a global q8 rule that happens to hold for a d64 fixture is not a safe
 statement rule at larger width; tensor identity and range policy must be bound together.
