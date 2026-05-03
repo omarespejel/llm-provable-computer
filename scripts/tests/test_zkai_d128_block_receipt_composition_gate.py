@@ -18,6 +18,10 @@ COMPOSITION = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = COMPOSITION
 SPEC.loader.exec_module(COMPOSITION)
 
+EXPECTED_OUTPUT_ACTIVATION_COMMITMENT = (
+    "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1"
+)
+
 
 class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
     @classmethod
@@ -40,7 +44,7 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["mutations_rejected"], 20)
         self.assertEqual(
             payload["block_receipt"]["output_activation_commitment"],
-            COMPOSITION.OUTPUT_ACTIVATION_COMMITMENT,
+            EXPECTED_OUTPUT_ACTIVATION_COMMITMENT,
         )
 
     def test_receipt_and_statement_commitments_round_trip(self) -> None:
