@@ -268,6 +268,19 @@ def require_int(value: Any, field: str) -> int:
     return value
 
 
+def require_str(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise D128AggregatedProofObjectFeasibilityError(f"{field} must be a non-empty string")
+    return value
+
+
+def require_sha256_hex(value: Any, field: str) -> str:
+    value = require_str(value, field)
+    if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+        raise D128AggregatedProofObjectFeasibilityError(f"{field} must be a 32-byte lowercase hex digest")
+    return value
+
+
 def require_commitment(value: Any, field: str) -> str:
     if not isinstance(value, str):
         raise D128AggregatedProofObjectFeasibilityError(f"{field} must be a commitment string")
@@ -395,10 +408,53 @@ def _validate_checked_block_receipt_payload(payload: Any) -> dict[str, Any]:
     for index, slice_id in enumerate(EXPECTED_SLICE_IDS):
         chain_item = require_object(chain[index], f"d128 slice chain item {index}")
         manifest_item = require_object(manifest[index], f"d128 source manifest item {index}")
+        expect_key_set(
+            chain_item,
+            {
+                "index",
+                "slice_id",
+                "schema",
+                "decision",
+                "proof_backend_version",
+                "proof_native_parameter_commitment",
+                "public_instance_commitment",
+                "statement_commitment",
+                "source_commitments",
+                "target_commitments",
+                "row_count",
+            },
+            f"d128 slice chain item {index}",
+        )
+        expect_key_set(
+            manifest_item,
+            {
+                "index",
+                "slice_id",
+                "path",
+                "file_sha256",
+                "payload_sha256",
+                "schema",
+                "decision",
+                "proof_backend_version",
+            },
+            f"d128 source manifest item {index}",
+        )
         expect_equal(chain_item.get("index"), index, f"d128 slice chain item {index} index")
         expect_equal(chain_item.get("slice_id"), slice_id, f"d128 slice chain item {index} slice_id")
         expect_equal(manifest_item.get("index"), index, f"d128 source manifest item {index} index")
         expect_equal(manifest_item.get("slice_id"), slice_id, f"d128 source manifest item {index} slice_id")
+        require_str(chain_item.get("schema"), f"d128 slice {slice_id} schema")
+        require_str(chain_item.get("decision"), f"d128 slice {slice_id} decision")
+        require_str(chain_item.get("proof_backend_version"), f"d128 slice {slice_id} proof version")
+        require_str(manifest_item.get("path"), f"d128 source manifest {slice_id} path")
+        require_sha256_hex(manifest_item.get("file_sha256"), f"d128 source manifest {slice_id} file_sha256")
+        require_sha256_hex(manifest_item.get("payload_sha256"), f"d128 source manifest {slice_id} payload_sha256")
+        require_str(manifest_item.get("schema"), f"d128 source manifest {slice_id} schema")
+        require_str(manifest_item.get("decision"), f"d128 source manifest {slice_id} decision")
+        require_str(
+            manifest_item.get("proof_backend_version"),
+            f"d128 source manifest {slice_id} proof version",
+        )
         expect_equal(
             chain_item.get("proof_backend_version"),
             manifest_item.get("proof_backend_version"),
@@ -407,6 +463,16 @@ def _validate_checked_block_receipt_payload(payload: Any) -> dict[str, Any]:
         expect_equal(chain_item.get("schema"), manifest_item.get("schema"), f"d128 slice {slice_id} schema")
         for field in ("proof_native_parameter_commitment", "public_instance_commitment", "statement_commitment"):
             require_commitment(chain_item.get(field), f"d128 slice {slice_id} {field}")
+        source_commitments = require_object(
+            chain_item.get("source_commitments"),
+            f"d128 slice {slice_id} source commitments",
+        )
+        target_commitments = require_object(
+            chain_item.get("target_commitments"),
+            f"d128 slice {slice_id} target commitments",
+        )
+        for field, commitment in [*source_commitments.items(), *target_commitments.items()]:
+            require_commitment(commitment, f"d128 slice {slice_id} {field}")
         row_count = require_int(chain_item.get("row_count"), f"d128 slice {slice_id} row_count")
         if row_count <= 0:
             raise D128AggregatedProofObjectFeasibilityError(f"d128 slice {slice_id} row_count must be positive")

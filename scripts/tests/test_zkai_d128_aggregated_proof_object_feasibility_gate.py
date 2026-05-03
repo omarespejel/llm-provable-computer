@@ -168,6 +168,13 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "candidate inventory"):
             GATE.validate_payload(payload)
 
+    def test_rejects_missing_slice_and_manifest_keys_without_raw_keyerror(self) -> None:
+        source = GATE.load_json(GATE.BLOCK_RECEIPT_EVIDENCE)
+        del source["slice_chain"][0]["schema"]
+        del source["source_evidence_manifest"][0]["schema"]
+        with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "key set"):
+            GATE._build_payload_from_canonical_source(source)
+
     def test_rejects_validation_command_drift(self) -> None:
         payload = self.fresh_payload()
         payload["validation_commands"][0] = "python3 scripts/tampered.py"
