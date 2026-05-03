@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -246,6 +247,16 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
             path = (pathlib.Path(raw_tmp) / "accumulator.out").relative_to(ROOT)
             with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "distinct"):
                 GATE.write_outputs(payload, path, path)
+
+    def test_write_outputs_cleans_temp_file_when_replace_fails(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = (tmp / "accumulator.json").relative_to(ROOT)
+            with mock.patch.object(pathlib.Path, "replace", side_effect=OSError("forced replace failure")):
+                with self.assertRaisesRegex(OSError, "forced replace failure"):
+                    GATE.write_outputs(payload, json_path, None)
+            self.assertEqual(list(tmp.iterdir()), [])
 
 
 if __name__ == "__main__":
