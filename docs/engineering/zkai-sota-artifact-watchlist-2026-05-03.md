@@ -49,6 +49,7 @@ The JSON records:
 
 - 12 systems across SNARK, GKR/sum-check, STARK, zkVM, and settlement axes;
 - 3 empirical statement-envelope adapter rows;
+- 1 local statement-receipt row;
 - 4 source-backed context rows;
 - 1 deployment-calibration row;
 - 3 watchlist rows;
