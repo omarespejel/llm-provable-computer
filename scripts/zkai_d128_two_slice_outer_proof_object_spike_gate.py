@@ -750,11 +750,19 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int] | None:
             raise D128TwoSliceOuterProofObjectSpikeError(
                 f"mutation case {index} rejected/accepted fields are inconsistent"
             )
-        require_str(case.get("rejection_layer"), f"mutation case {index} rejection_layer")
-        if not isinstance(case.get("error"), str):
+        rejection_layer = require_str(case.get("rejection_layer"), f"mutation case {index} rejection_layer")
+        error = case.get("error")
+        if not isinstance(error, str):
             raise D128TwoSliceOuterProofObjectSpikeError(f"mutation case {index} error must be a string")
         if case["rejected"]:
+            if rejection_layer == "accepted" or not error:
+                raise D128TwoSliceOuterProofObjectSpikeError(
+                    f"mutation case {index} rejected case must include a rejection layer and error"
+                )
             rejected_count += 1
+        else:
+            expect_equal(rejection_layer, "accepted", f"mutation case {index} accepted rejection_layer")
+            expect_equal(error, "", f"mutation case {index} accepted error")
     expect_equal(tuple(case_pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
     expect_equal(payload.get("case_count"), len(cases), "mutation case_count")
     expect_equal(payload.get("all_mutations_rejected"), all(case["rejected"] for case in cases), "all mutations rejected")
@@ -797,14 +805,16 @@ MutationFn = Callable[[dict[str, Any]], None]
 
 def classify_error(error: Exception) -> str:
     text = str(error).lower()
-    if "schema" in text or "decision" in text or "result" in text or "non-claims" in text or "validation commands" in text:
-        return "parser_or_schema"
     if "source aggregation" in text or "file_sha" in text or "payload_sha" in text:
         return "source_aggregation_evidence"
     if "two-slice target commitment" in text:
         return "two_slice_target_commitment"
     if "candidate inventory" in text or "candidate artifact" in text or "required two-slice outer proof artifact" in text:
         return "candidate_inventory"
+    if "missing backend feature" in text:
+        return "proof_object_attempt"
+    if "schema" in text or "decision" in text or "result" in text or "non-claims" in text or "validation commands" in text:
+        return "parser_or_schema"
     if "proof" in text or "pcd" in text or "verifier handle" in text or "metric" in text or "blocker" in text:
         return "proof_object_attempt"
     if "outer public input" in text:
@@ -839,7 +849,7 @@ def _case(
             "baseline_result": baseline["result"],
             "mutated_accepted": True,
             "rejected": False,
-            "rejection_layer": "",
+            "rejection_layer": "accepted",
             "error": "",
         }
     except Exception as err:  # noqa: BLE001 - mutations intentionally collect rejection diagnostics.
