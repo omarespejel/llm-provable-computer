@@ -90,6 +90,15 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(cases["source_payload_hash_drift"]["rejection_layer"], "source_evidence_manifest")
         self.assertIn("source payload hash", cases["source_payload_hash_drift"]["error"])
 
+    def test_rejects_noncanonical_source_manifest_path(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_evidence_manifest"][0]["path"] = str(
+            (ROOT / payload["source_evidence_manifest"][0]["path"]).resolve()
+        )
+        COMPOSITION.refresh_commitments(payload)
+        with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "canonical path"):
+            COMPOSITION.validate_payload(payload)
+
     def test_rejects_extra_source_manifest_entry(self) -> None:
         payload = self.fresh_payload()
         extra = copy.deepcopy(payload["source_evidence_manifest"][0])
@@ -220,6 +229,14 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
             with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "escapes repository"):
                 COMPOSITION.write_outputs(payload, out, None)
 
+    def test_write_outputs_rejects_tsv_paths_outside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_repo_tmp, tempfile.TemporaryDirectory() as raw_tmp:
+            safe_json = pathlib.Path(raw_repo_tmp) / "safe.json"
+            out = pathlib.Path(raw_tmp) / "outside.tsv"
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "escapes repository"):
+                COMPOSITION.write_outputs(payload, safe_json, out)
+
     def test_write_outputs_rejects_symlink_outputs_inside_repo(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
@@ -230,6 +247,18 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
             symlink.symlink_to(real)
             with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "symlink"):
                 COMPOSITION.write_outputs(payload, symlink, None)
+
+    def test_write_outputs_rejects_symlink_tsv_outputs_inside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            safe_json = tmp / "safe.json"
+            real = tmp / "real.tsv"
+            real.write_text("x\n", encoding="utf-8")
+            symlink = tmp / "link.tsv"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "symlink"):
+                COMPOSITION.write_outputs(payload, safe_json, symlink)
 
     def test_load_json_rejects_oversized_repo_local_source(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:

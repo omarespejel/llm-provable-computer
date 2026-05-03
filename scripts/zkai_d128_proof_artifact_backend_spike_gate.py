@@ -441,6 +441,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
     ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
     ("d128_block_receipt_composition_synchronized_commitment_drift", "source_probe"),
+    ("d128_block_receipt_composition_evidence_descriptor_drift", "source_probe"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
     ("d64_hardcoded_marker_removed", "source_probe"),
@@ -541,6 +542,7 @@ D128_BLOCK_GATE = _load_module(
     D128_BLOCK_GATE_PATH,
     "zkai_d128_block_receipt_composition_for_backend_spike",
 )
+D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE: dict[str, Any] | None = None
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -627,6 +629,16 @@ def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, 
         "decision": payload.get("decision"),
         "result": payload.get("result"),
     }
+
+
+def authoritative_d128_block_evidence_descriptor() -> dict[str, Any]:
+    global D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE  # noqa: PLW0603 - process-local cache avoids repeated hashing.
+    if D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE is None:
+        D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE = source_descriptor(
+            D128_BLOCK_EVIDENCE,
+            load_json(D128_BLOCK_EVIDENCE),
+        )
+    return copy.deepcopy(D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE)
 
 
 def load_checked_target() -> dict[str, Any]:
@@ -2425,6 +2437,17 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "source_probe",
         drift_d128_block_receipt_synchronized_commitments,
     )
+
+    def drift_d128_block_receipt_evidence_descriptor(p: dict[str, Any]) -> None:
+        p["source_probe"]["d128_block_receipt_composition"]["evidence"]["path"] = (
+            "docs/engineering/evidence/tampered-d128-block-receipt.json"
+        )
+
+    add(
+        "d128_block_receipt_composition_evidence_descriptor_drift",
+        "source_probe",
+        drift_d128_block_receipt_evidence_descriptor,
+    )
     add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
 
     def remove_missing_module(p: dict[str, Any]) -> None:
@@ -2982,6 +3005,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         block_receipt_probe.get("status"),
         "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
         "d128 block receipt composition status",
+    )
+    expect_equal(
+        block_receipt_probe.get("evidence"),
+        authoritative_d128_block_evidence_descriptor(),
+        "d128 block receipt evidence descriptor",
     )
     expect_equal(block_receipt_probe.get("slice_count"), 6, "d128 block receipt slice count")
     expect_equal(
