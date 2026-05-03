@@ -67,7 +67,7 @@ verifier time, or relabeling suite.
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `69 / 69` rejected |
+| Mutation checks | `73 / 73` rejected |
 
 ## Backend-route classification
 
@@ -136,8 +136,9 @@ The gate now validates:
   activation statement/public-instance binding, source hidden-activation
   commitment recomputation, down-matrix-root recomputation,
   multiplication-row commitment recomputation, exact residual-delta
-  quotient/remainder/divisor commitment recomputation, statement/public-instance
-  recomputation, proof-native parameter recomputation, and relabel rejection against the full
+  quotient/remainder/divisor commitment recomputation, range-policy validation,
+  statement/public-instance recomputation, proof-native parameter recomputation,
+  and relabel rejection against the full
   output-activation commitment;
 - the d128 residual-add vector evidence before starting, including statement,
   public-instance, proof-native parameter, input, residual-delta, output, and row

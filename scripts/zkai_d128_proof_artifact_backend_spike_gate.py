@@ -208,6 +208,10 @@ D128_DOWN_COMMITMENT_FIELDS = (
     "statement_commitment",
     "public_instance_commitment",
 )
+D128_DOWN_RANGE_POLICY = (
+    "signed-M31 hidden activations and residual deltas; "
+    "exact residual delta quotient/remainder binding; q8 down weights"
+)
 
 PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
     "ZkAiVectorBlockProofInput",
@@ -374,11 +378,15 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_down_projection_down_matrix_root_drift", "source_probe"),
     ("d128_down_projection_residual_delta_commitment_drift", "source_probe"),
     ("d128_down_projection_residual_delta_scale_divisor_drift", "source_probe"),
+    ("d128_down_projection_residual_delta_remainder_sha256_drift", "source_probe"),
+    ("d128_down_projection_range_policy_drift", "source_probe"),
     ("d128_down_projection_residual_delta_relabels_full_output", "source_probe"),
     ("d128_down_projection_row_commitment_drift", "source_probe"),
     ("d128_down_projection_statement_commitment_drift", "source_probe"),
     ("d128_down_projection_public_instance_commitment_drift", "source_probe"),
     ("d128_down_projection_route_statement_commitment_drift", "backend_routes"),
+    ("d128_down_projection_route_remainder_sha256_drift", "backend_routes"),
+    ("d128_down_projection_route_range_policy_drift", "backend_routes"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
@@ -1082,7 +1090,7 @@ def build_source_probe() -> dict[str, Any]:
             "residual_delta_relabels_full_output": (
                 d128_down_evidence["residual_delta_commitment"] == D128_DOWN_GATE.OUTPUT_ACTIVATION_COMMITMENT
             ),
-            "range_policy": "signed-M31 hidden activations and residual deltas; exact residual delta quotient/remainder binding; q8 down weights",
+            "range_policy": D128_DOWN_RANGE_POLICY,
         },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
@@ -1285,6 +1293,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "residual_delta_commitment": source_probe["d128_down_projection"]["residual_delta_commitment"],
             "residual_delta_scale_divisor": source_probe["d128_down_projection"]["residual_delta_scale_divisor"],
             "residual_delta_remainder_sha256": source_probe["d128_down_projection"]["residual_delta_remainder_sha256"],
+            "range_policy": source_probe["d128_down_projection"]["range_policy"],
             "down_projection_mul_row_commitment": source_probe["d128_down_projection"][
                 "down_projection_mul_row_commitment"
             ],
@@ -1854,6 +1863,20 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
             "residual_delta_scale_divisor", TARGET_FF_DIM + 1
         ),
     )
+    add(
+        "d128_down_projection_residual_delta_remainder_sha256_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
+            "residual_delta_remainder_sha256", "00" * 32
+        ),
+    )
+    add(
+        "d128_down_projection_range_policy_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
+            "range_policy", "q8 hidden activations"
+        ),
+    )
 
     def relabel_d128_down_projection_residual_output(p: dict[str, Any]) -> None:
         down = p["source_probe"]["d128_down_projection"]
@@ -1897,6 +1920,26 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "d128_down_projection_route_statement_commitment_drift",
         "backend_routes",
         drift_d128_down_projection_route_statement,
+    )
+
+    def drift_d128_down_projection_route_remainder_hash(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_down_projection_air")
+        route["residual_delta_remainder_sha256"] = "11" * 32
+
+    add(
+        "d128_down_projection_route_remainder_sha256_drift",
+        "backend_routes",
+        drift_d128_down_projection_route_remainder_hash,
+    )
+
+    def drift_d128_down_projection_route_range_policy(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "direct_d128_down_projection_air")
+        route["range_policy"] = "q8 hidden activations"
+
+    add(
+        "d128_down_projection_route_range_policy_drift",
+        "backend_routes",
+        drift_d128_down_projection_route_range_policy,
     )
 
     def promote_full_block_parameterized_route(p: dict[str, Any]) -> None:
@@ -2293,6 +2336,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "d128 down-projection residual delta scale divisor",
     )
     expect_equal(
+        down_probe.get("residual_delta_remainder_sha256"),
+        D128_DOWN_GATE.RESIDUAL_DELTA_REMAINDER_SHA256,
+        "d128 down-projection residual delta remainder hash",
+    )
+    expect_equal(
+        down_probe.get("range_policy"),
+        D128_DOWN_RANGE_POLICY,
+        "d128 down-projection range policy",
+    )
+    expect_equal(
         down_probe.get("source_activation_swiglu_proof_version"),
         D128_DOWN_GATE.SOURCE_ACTIVATION_SWIGLU_PROOF_VERSION,
         "d128 down-projection source activation proof version",
@@ -2479,6 +2532,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         route_by_name["direct_d128_down_projection_air"].get("residual_delta_scale_divisor"),
         TARGET_FF_DIM,
         "direct d128 down-projection route residual delta scale divisor",
+    )
+    expect_equal(
+        route_by_name["direct_d128_down_projection_air"].get("residual_delta_remainder_sha256"),
+        D128_DOWN_GATE.RESIDUAL_DELTA_REMAINDER_SHA256,
+        "direct d128 down-projection route residual delta remainder hash",
+    )
+    expect_equal(
+        route_by_name["direct_d128_down_projection_air"].get("range_policy"),
+        D128_DOWN_RANGE_POLICY,
+        "direct d128 down-projection route range policy",
     )
     expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),

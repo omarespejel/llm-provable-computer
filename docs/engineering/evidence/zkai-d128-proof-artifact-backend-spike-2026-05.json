@@ -166,6 +166,7 @@
       "proof_native_parameter_commitment": "blake2b-256:ee69217168238b20e0b46a722554b42abe4fd5c599231f130d25ca7e4b432aef",
       "proof_size_bytes": null,
       "public_instance_commitment": "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1",
+      "range_policy": "signed-M31 hidden activations and residual deltas; exact residual delta quotient/remainder binding; q8 down weights",
       "residual_delta_commitment": "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2",
       "residual_delta_remainder_sha256": "a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d",
       "residual_delta_scale_divisor": 512,
@@ -291,7 +292,7 @@
       "verifier_time_ms": null
     }
   ],
-  "case_count": 69,
+  "case_count": 73,
   "cases": [
     {
       "error": "decision mismatch",
@@ -816,8 +817,26 @@
       "surface": "source_probe"
     },
     {
-      "error": "d128 down-projection residual relabel guard mismatch",
+      "error": "d128 down-projection residual delta remainder hash mismatch",
       "index": 58,
+      "mutated_accepted": false,
+      "mutation": "d128_down_projection_residual_delta_remainder_sha256_drift",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "d128 down-projection range policy mismatch",
+      "index": 59,
+      "mutated_accepted": false,
+      "mutation": "d128_down_projection_range_policy_drift",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "d128 down-projection residual relabel guard mismatch",
+      "index": 60,
       "mutated_accepted": false,
       "mutation": "d128_down_projection_residual_delta_relabels_full_output",
       "rejected": true,
@@ -826,7 +845,7 @@
     },
     {
       "error": "d128 down-projection down_projection_mul_row_commitment mismatch",
-      "index": 59,
+      "index": 61,
       "mutated_accepted": false,
       "mutation": "d128_down_projection_row_commitment_drift",
       "rejected": true,
@@ -835,7 +854,7 @@
     },
     {
       "error": "d128 down-projection statement_commitment mismatch",
-      "index": 60,
+      "index": 62,
       "mutated_accepted": false,
       "mutation": "d128_down_projection_statement_commitment_drift",
       "rejected": true,
@@ -844,7 +863,7 @@
     },
     {
       "error": "d128 down-projection public_instance_commitment mismatch",
-      "index": 61,
+      "index": 63,
       "mutated_accepted": false,
       "mutation": "d128_down_projection_public_instance_commitment_drift",
       "rejected": true,
@@ -853,7 +872,7 @@
     },
     {
       "error": "direct d128 down-projection route statement_commitment mismatch",
-      "index": 62,
+      "index": 64,
       "mutated_accepted": false,
       "mutation": "d128_down_projection_route_statement_commitment_drift",
       "rejected": true,
@@ -861,8 +880,26 @@
       "surface": "backend_routes"
     },
     {
+      "error": "direct d128 down-projection route residual delta remainder hash mismatch",
+      "index": 65,
+      "mutated_accepted": false,
+      "mutation": "d128_down_projection_route_remainder_sha256_drift",
+      "rejected": true,
+      "rejection_layer": "backend_routes",
+      "surface": "backend_routes"
+    },
+    {
+      "error": "direct d128 down-projection route range policy mismatch",
+      "index": 66,
+      "mutated_accepted": false,
+      "mutation": "d128_down_projection_route_range_policy_drift",
+      "rejected": true,
+      "rejection_layer": "backend_routes",
+      "surface": "backend_routes"
+    },
+    {
       "error": "parameterized full-block route status mismatch",
-      "index": 63,
+      "index": 67,
       "mutated_accepted": false,
       "mutation": "full_block_parameterized_route_promoted",
       "rejected": true,
@@ -871,7 +908,7 @@
     },
     {
       "error": "d64 anchor status mismatch",
-      "index": 64,
+      "index": 68,
       "mutated_accepted": false,
       "mutation": "d64_anchor_removed",
       "rejected": true,
@@ -880,7 +917,7 @@
     },
     {
       "error": "missing d128 module inventory mismatch",
-      "index": 65,
+      "index": 69,
       "mutated_accepted": false,
       "mutation": "missing_module_removed",
       "rejected": true,
@@ -889,7 +926,7 @@
     },
     {
       "error": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch",
-      "index": 66,
+      "index": 70,
       "mutated_accepted": false,
       "mutation": "d64_hardcoded_marker_removed",
       "rejected": true,
@@ -898,7 +935,7 @@
     },
     {
       "error": "non-claims inventory mismatch",
-      "index": 67,
+      "index": 71,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
       "rejected": true,
@@ -907,7 +944,7 @@
     },
     {
       "error": "summary mutation count mismatch",
-      "index": 68,
+      "index": 72,
       "mutated_accepted": false,
       "mutation": "mutation_case_accepted",
       "rejected": true,
@@ -1047,7 +1084,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:e42b0315aaf5abb40742ecae22f840ddb8e88714b97a9e44d7aaa3ea408cc1a5",
+  "gate_commitment": "blake2b-256:8e8635c27a7d470e69cf6710241e1a64bc46f698895745106c11bec51822e903",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1342,56 +1379,76 @@
     },
     {
       "index": 58,
-      "mutation": "d128_down_projection_residual_delta_relabels_full_output",
+      "mutation": "d128_down_projection_residual_delta_remainder_sha256_drift",
       "surface": "source_probe"
     },
     {
       "index": 59,
-      "mutation": "d128_down_projection_row_commitment_drift",
+      "mutation": "d128_down_projection_range_policy_drift",
       "surface": "source_probe"
     },
     {
       "index": 60,
-      "mutation": "d128_down_projection_statement_commitment_drift",
+      "mutation": "d128_down_projection_residual_delta_relabels_full_output",
       "surface": "source_probe"
     },
     {
       "index": 61,
-      "mutation": "d128_down_projection_public_instance_commitment_drift",
+      "mutation": "d128_down_projection_row_commitment_drift",
       "surface": "source_probe"
     },
     {
       "index": 62,
+      "mutation": "d128_down_projection_statement_commitment_drift",
+      "surface": "source_probe"
+    },
+    {
+      "index": 63,
+      "mutation": "d128_down_projection_public_instance_commitment_drift",
+      "surface": "source_probe"
+    },
+    {
+      "index": 64,
       "mutation": "d128_down_projection_route_statement_commitment_drift",
       "surface": "backend_routes"
     },
     {
-      "index": 63,
+      "index": 65,
+      "mutation": "d128_down_projection_route_remainder_sha256_drift",
+      "surface": "backend_routes"
+    },
+    {
+      "index": 66,
+      "mutation": "d128_down_projection_route_range_policy_drift",
+      "surface": "backend_routes"
+    },
+    {
+      "index": 67,
       "mutation": "full_block_parameterized_route_promoted",
       "surface": "backend_routes"
     },
     {
-      "index": 64,
+      "index": 68,
       "mutation": "d64_anchor_removed",
       "surface": "d64_anchor"
     },
     {
-      "index": 65,
+      "index": 69,
       "mutation": "missing_module_removed",
       "surface": "source_probe"
     },
     {
-      "index": 66,
+      "index": 70,
       "mutation": "d64_hardcoded_marker_removed",
       "surface": "source_probe"
     },
     {
-      "index": 67,
+      "index": 71,
       "mutation": "non_claim_removed",
       "surface": "claim_boundary"
     },
     {
-      "index": 68,
+      "index": 72,
       "mutation": "mutation_case_accepted",
       "surface": "mutation_harness"
     }
@@ -1502,7 +1559,7 @@
       },
       "module": {
         "exists": true,
-        "file_sha256": "595578ac0f10910552c31590d7aac17026151d0cd77891422f0622cff556f01d",
+        "file_sha256": "17f583b5e72f67488e3002da039dc5ebb255385fb914abfc2cfb1caf01e90ed4",
         "path": "src/stwo_backend/d128_native_down_projection_proof.rs"
       },
       "present_symbols": [
@@ -1851,8 +1908,8 @@
     "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
     "first_blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and residual-add proof handles exist, but native residual and full transformer-block composition handles are still missing",
     "issue": 387,
-    "mutation_cases": 69,
-    "mutations_rejected": 69,
+    "mutation_cases": 73,
+    "mutations_rejected": 73,
     "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
     "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,
