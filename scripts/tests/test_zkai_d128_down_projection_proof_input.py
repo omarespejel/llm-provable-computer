@@ -34,13 +34,23 @@ class ZkAiD128DownProjectionProofInputTests(unittest.TestCase):
         self.assertEqual(payload["row_count"], DOWN_PROJECTION.WIDTH * DOWN_PROJECTION.FF_DIM)
         self.assertEqual(payload["down_projection_mul_rows"], DOWN_PROJECTION.WIDTH * DOWN_PROJECTION.FF_DIM)
         self.assertEqual(payload["residual_delta_rows"], DOWN_PROJECTION.WIDTH)
+        self.assertEqual(payload["residual_delta_scale_divisor"], DOWN_PROJECTION.FF_DIM)
         self.assertEqual(len(payload["hidden_q8"]), DOWN_PROJECTION.FF_DIM)
         self.assertEqual(len(payload["residual_delta_q8"]), DOWN_PROJECTION.WIDTH)
+        self.assertEqual(len(payload["residual_delta_remainder_q8"]), DOWN_PROJECTION.WIDTH)
         self.assertEqual(payload["down_matrix_root"], DOWN_PROJECTION.DOWN_MATRIX_ROOT)
         self.assertEqual(payload["source_hidden_activation_commitment"], DOWN_PROJECTION.HIDDEN_ACTIVATION_COMMITMENT)
         self.assertEqual(payload["source_activation_swiglu_statement_commitment"], DOWN_PROJECTION.SOURCE_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT)
         self.assertEqual(payload["source_activation_swiglu_public_instance_commitment"], DOWN_PROJECTION.SOURCE_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT)
         self.assertNotEqual(payload["residual_delta_commitment"], DOWN_PROJECTION.OUTPUT_ACTIVATION_COMMITMENT)
+        rows, quotients, remainders = DOWN_PROJECTION.build_rows(payload["hidden_q8"])
+        self.assertEqual(quotients, payload["residual_delta_q8"])
+        self.assertEqual(remainders, payload["residual_delta_remainder_q8"])
+        first_acc = sum(row["product_q8"] for row in rows[: DOWN_PROJECTION.FF_DIM])
+        self.assertEqual(
+            payload["residual_delta_q8"][0] * DOWN_PROJECTION.FF_DIM + payload["residual_delta_remainder_q8"][0],
+            first_acc,
+        )
 
     def test_payload_rejects_residual_delta_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
@@ -60,6 +70,21 @@ class ZkAiD128DownProjectionProofInputTests(unittest.TestCase):
         with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "statement_commitment"):
             DOWN_PROJECTION.build_payload(source)
 
+    def test_payload_rejects_source_public_instance_commitment_drift(self) -> None:
+        source = copy.deepcopy(DOWN_PROJECTION.load_source())
+        source["public_instance_commitment"] = "blake2b-256:" + "68" * 32
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "public_instance_commitment"):
+            DOWN_PROJECTION.build_payload(source)
+
+    def test_statement_commitment_binds_source_public_instance_commitment(self) -> None:
+        payload = self.fresh_payload()
+        tampered = self.fresh_payload()
+        tampered["source_activation_swiglu_public_instance_commitment"] = "blake2b-256:" + "68" * 32
+        self.assertNotEqual(
+            DOWN_PROJECTION.statement_commitment(payload),
+            DOWN_PROJECTION.statement_commitment(tampered),
+        )
+
     def test_payload_rejects_hidden_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["hidden_q8"][0] += 1
@@ -76,6 +101,24 @@ class ZkAiD128DownProjectionProofInputTests(unittest.TestCase):
         payload = self.fresh_payload()
         payload["residual_delta_q8"][0] += 1
         with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "residual delta output drift"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_remainder_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_remainder_q8"][0] = (payload["residual_delta_remainder_q8"][0] + 1) % DOWN_PROJECTION.FF_DIM
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "residual delta remainder drift"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_remainder_bound_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_remainder_q8"][0] = DOWN_PROJECTION.FF_DIM
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "outside divisor range"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_scale_divisor_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_scale_divisor"] = DOWN_PROJECTION.FF_DIM + 1
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "residual_delta_scale_divisor"):
             DOWN_PROJECTION.validate_payload(payload)
 
     def test_payload_rejects_hidden_m31_bounds_drift(self) -> None:

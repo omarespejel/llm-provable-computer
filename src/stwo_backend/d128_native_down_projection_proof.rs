@@ -51,7 +51,7 @@ pub const ZKAI_D128_DOWN_PROJECTION_MAX_PROOF_BYTES: usize = 67_108_864;
 pub const ZKAI_D128_DOWN_MATRIX_ROOT: &str =
     "blake2b-256:0d6cd2bee99c821788d1faf5dd24e5e3e8ff4d4d4acd4d99c46a10ecc166c7ab";
 pub const ZKAI_D128_RESIDUAL_DELTA_COMMITMENT: &str =
-    "blake2b-256:537e11aeea97aa83cb510806cec96cd97ccd5673b8cc0dfdc3399fd90fc13ffe";
+    "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2";
 pub const ZKAI_D128_DOWN_PROJECTION_MUL_ROW_COMMITMENT: &str =
     "blake2b-256:76c1e5a35ffbc0c9b390f73d3491d973e85180421ac6168c0cb0e18a91a2ca68";
 
@@ -73,9 +73,9 @@ const PUBLIC_INSTANCE_DOMAIN: &str = "ptvm:zkai:d128-public-instance:v1";
 pub const ZKAI_D128_DOWN_PROJECTION_PROOF_NATIVE_PARAMETER_COMMITMENT: &str =
     "blake2b-256:ee69217168238b20e0b46a722554b42abe4fd5c599231f130d25ca7e4b432aef";
 pub const ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
-    "blake2b-256:26b01b31147ec5cf0b45d9736f56cf77309f98a6bba5f6d440ae1be0f03de63e";
+    "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1";
 pub const ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT: &str =
-    "blake2b-256:bf283328fcef05dfcae9fb0c3e90cbe53ebe1705ef78a73d63acd6b1b2891564";
+    "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599";
 const WEIGHT_GENERATOR_SEED: &str = "zkai-d128-down-projection-synthetic-parameters-2026-05-v1";
 const D128_DOWN_PROJECTION_LOG_SIZE: u32 = 16;
 const ZKAI_D128_DOWN_PROJECTION_EXPECTED_TRACE_COMMITMENTS: usize = 2;
@@ -114,7 +114,7 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "statement/public-instance/native-parameter commitments recomputed before proof verification",
     "AIR multiplication relation for every checked down-projection row",
     "down matrix root recomputed from checked row weights",
-    "signed-M31 bounds for hidden activations and residual deltas; fixed-point q8 semantic bounds for down weights",
+    "signed-M31 bounds for hidden activations and residual deltas; exact residual delta quotient/remainder binding; fixed-point q8 semantic bounds for down weights",
     "full output_activation_commitment relabeling rejection",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
@@ -198,11 +198,13 @@ pub struct ZkAiD128DownProjectionProofInput {
     pub down_matrix_root: String,
     pub proof_native_parameter_commitment: String,
     pub residual_delta_commitment: String,
+    pub residual_delta_scale_divisor: usize,
     pub down_projection_mul_row_commitment: String,
     pub public_instance_commitment: String,
     pub statement_commitment: String,
     pub hidden_q8: Vec<i64>,
     pub residual_delta_q8: Vec<i64>,
+    pub residual_delta_remainder_q8: Vec<i64>,
     pub non_claims: Vec<String>,
     pub proof_verifier_hardening: Vec<String>,
     pub next_backend_step: String,
@@ -347,6 +349,11 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
         ZKAI_D128_RESIDUAL_ROWS,
         "residual delta rows",
     )?;
+    expect_usize(
+        input.residual_delta_scale_divisor,
+        ZKAI_D128_FF_DIM,
+        "residual delta scale divisor",
+    )?;
     expect_eq(
         &input.source_activation_swiglu_proof_version,
         ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
@@ -438,12 +445,24 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
             "residual delta vector length mismatch",
         ));
     }
+    if input.residual_delta_remainder_q8.len() != ZKAI_D128_WIDTH {
+        return Err(down_projection_error(
+            "residual delta remainder vector length mismatch",
+        ));
+    }
     for (label, values) in [
         ("hidden activation", &input.hidden_q8),
         ("residual delta", &input.residual_delta_q8),
     ] {
         for (index, value) in values.iter().enumerate() {
             expect_signed_m31(*value, &format!("{label} {index}"))?;
+        }
+    }
+    for (index, value) in input.residual_delta_remainder_q8.iter().enumerate() {
+        if *value < 0 || *value >= ZKAI_D128_FF_DIM as i64 {
+            return Err(down_projection_error(format!(
+                "residual delta remainder {index} outside divisor range"
+            )));
         }
     }
     expect_eq(
@@ -469,14 +488,18 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
             "down projection accumulator",
         )?;
     }
-    let recomputed_delta = divide_accumulators(&accumulators)?;
+    let (recomputed_delta, recomputed_remainder) = divide_accumulators(&accumulators)?;
     if recomputed_delta != input.residual_delta_q8 {
         return Err(down_projection_error("residual delta output drift"));
     }
+    if recomputed_remainder != input.residual_delta_remainder_q8 {
+        return Err(down_projection_error("residual delta remainder drift"));
+    }
     expect_eq(
-        &sequence_commitment(
+        &residual_delta_commitment(
             &input.residual_delta_q8,
-            RESIDUAL_DELTA_DOMAIN,
+            &input.residual_delta_remainder_q8,
+            input.residual_delta_scale_divisor,
             ZKAI_D128_WIDTH,
         ),
         &input.residual_delta_commitment,
@@ -538,12 +561,15 @@ fn validate_down_projection_row(
     Ok(())
 }
 
-fn divide_accumulators(accumulators: &[i64]) -> Result<Vec<i64>> {
-    let mut out = Vec::with_capacity(accumulators.len());
+fn divide_accumulators(accumulators: &[i64]) -> Result<(Vec<i64>, Vec<i64>)> {
+    let mut quotients = Vec::with_capacity(accumulators.len());
+    let mut remainders = Vec::with_capacity(accumulators.len());
     for value in accumulators {
-        out.push(value.div_euclid(ZKAI_D128_FF_DIM as i64));
+        let divisor = ZKAI_D128_FF_DIM as i64;
+        quotients.push(value.div_euclid(divisor));
+        remainders.push(value.rem_euclid(divisor));
     }
-    Ok(out)
+    Ok((quotients, remainders))
 }
 
 fn build_rows(hidden: &[i64]) -> Result<Vec<D128DownProjectionMulRow>> {
@@ -789,6 +815,23 @@ fn sequence_commitment(values: &[i64], domain: &str, width: usize) -> String {
     blake2b_commitment_bytes(payload.as_bytes(), domain)
 }
 
+fn residual_delta_commitment(
+    quotients: &[i64],
+    remainders: &[i64],
+    divisor: usize,
+    width: usize,
+) -> String {
+    let quotient_json = canonical_i64_array(quotients);
+    let remainder_json = canonical_i64_array(remainders);
+    let quotient_sha256 = sha256_hex(quotient_json.as_bytes());
+    let remainder_sha256 = sha256_hex(remainder_json.as_bytes());
+    let payload = format!(
+        "{{\"divisor\":{},\"encoding\":\"signed_division_result_sequence_v1\",\"quotients_sha256\":\"{}\",\"remainders_sha256\":\"{}\",\"shape\":[{}]}}",
+        divisor, quotient_sha256, remainder_sha256, width
+    );
+    blake2b_commitment_bytes(payload.as_bytes(), RESIDUAL_DELTA_DOMAIN)
+}
+
 fn rows_commitment(rows: &[D128DownProjectionMulRow]) -> String {
     let rows_json = canonical_row_material(rows);
     let rows_sha256 = sha256_hex(rows_json.as_bytes());
@@ -815,15 +858,17 @@ fn proof_native_parameter_commitment(down_root: &str) -> String {
 
 fn statement_commitment(input: &ZkAiD128DownProjectionProofInput) -> String {
     let payload = format!(
-        "{{\"down_matrix_root\":\"{}\",\"down_projection_mul_row_commitment\":\"{}\",\"ff_dim\":{},\"operation\":\"down_projection\",\"proof_native_parameter_commitment\":\"{}\",\"required_backend_version\":\"{}\",\"residual_delta_commitment\":\"{}\",\"row_count\":{},\"source_activation_swiglu_proof_version\":\"{}\",\"source_activation_swiglu_statement_commitment\":\"{}\",\"source_hidden_activation_commitment\":\"{}\",\"target_commitment\":\"{}\",\"target_id\":\"{}\",\"verifier_domain\":\"{}\",\"width\":{}}}",
+        "{{\"down_matrix_root\":\"{}\",\"down_projection_mul_row_commitment\":\"{}\",\"ff_dim\":{},\"operation\":\"down_projection\",\"proof_native_parameter_commitment\":\"{}\",\"required_backend_version\":\"{}\",\"residual_delta_commitment\":\"{}\",\"residual_delta_scale_divisor\":{},\"row_count\":{},\"source_activation_swiglu_proof_version\":\"{}\",\"source_activation_swiglu_public_instance_commitment\":\"{}\",\"source_activation_swiglu_statement_commitment\":\"{}\",\"source_hidden_activation_commitment\":\"{}\",\"target_commitment\":\"{}\",\"target_id\":\"{}\",\"verifier_domain\":\"{}\",\"width\":{}}}",
         input.down_matrix_root,
         input.down_projection_mul_row_commitment,
         input.ff_dim,
         input.proof_native_parameter_commitment,
         ZKAI_D128_REQUIRED_BACKEND_VERSION,
         input.residual_delta_commitment,
+        input.residual_delta_scale_divisor,
         input.row_count,
         ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
+        input.source_activation_swiglu_public_instance_commitment,
         input.source_activation_swiglu_statement_commitment,
         input.source_hidden_activation_commitment,
         ZKAI_D128_TARGET_COMMITMENT,
@@ -1079,6 +1124,17 @@ mod tests {
         assert_eq!(rows[0].weight_q8, 6);
         assert_eq!(rows[0].product_q8, 15948);
         assert_eq!(input.residual_delta_q8[0], -2594);
+        let first_accumulator: i64 = rows
+            .iter()
+            .take(ZKAI_D128_FF_DIM)
+            .map(|row| row.product_q8)
+            .sum();
+        assert_eq!(
+            input.residual_delta_q8[0] * ZKAI_D128_FF_DIM as i64
+                + input.residual_delta_remainder_q8[0],
+            first_accumulator
+        );
+        assert_eq!(input.residual_delta_scale_divisor, ZKAI_D128_FF_DIM);
         assert_eq!(
             input.source_hidden_activation_commitment,
             ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT
@@ -1167,6 +1223,32 @@ mod tests {
     }
 
     #[test]
+    fn down_projection_rejects_source_public_instance_commitment_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["source_activation_swiglu_public_instance_commitment"] =
+            Value::String(format!("blake2b-256:{}", "68".repeat(32)));
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("source activation/SwiGLU public instance commitment"));
+    }
+
+    #[test]
+    fn down_projection_statement_binds_source_public_instance_commitment() {
+        let input = input();
+        let mut tampered = input.clone();
+        tampered.source_activation_swiglu_public_instance_commitment =
+            format!("blake2b-256:{}", "68".repeat(32));
+        assert_ne!(
+            statement_commitment(&input),
+            statement_commitment(&tampered)
+        );
+    }
+
+    #[test]
     fn down_projection_rejects_residual_delta_drift() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["residual_delta_q8"][0] = Value::from(17);
@@ -1175,6 +1257,43 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("residual delta output drift"));
+    }
+
+    #[test]
+    fn down_projection_rejects_residual_delta_remainder_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        let remainder = value["residual_delta_remainder_q8"][0]
+            .as_i64()
+            .expect("remainder");
+        value["residual_delta_remainder_q8"][0] =
+            Value::from((remainder + 1).rem_euclid(ZKAI_D128_FF_DIM as i64));
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("residual delta remainder drift"));
+    }
+
+    #[test]
+    fn down_projection_rejects_residual_delta_remainder_bounds_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["residual_delta_remainder_q8"][0] = Value::from(ZKAI_D128_FF_DIM as i64);
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("outside divisor range"));
+    }
+
+    #[test]
+    fn down_projection_rejects_residual_delta_scale_divisor_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["residual_delta_scale_divisor"] = Value::from(ZKAI_D128_FF_DIM + 1);
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("residual delta scale divisor"));
     }
 
     #[test]

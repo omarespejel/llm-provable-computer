@@ -203,6 +203,7 @@ D128_DOWN_COMMITMENT_FIELDS = (
     "down_matrix_root",
     "proof_native_parameter_commitment",
     "residual_delta_commitment",
+    "residual_delta_scale_divisor",
     "down_projection_mul_row_commitment",
     "statement_commitment",
     "public_instance_commitment",
@@ -369,8 +370,10 @@ EXPECTED_MUTATION_INVENTORY = (
     ("partial_d128_down_projection_checked_in_artifact_smuggled", "proof_status"),
     ("d128_down_projection_source_hidden_commitment_drift", "source_probe"),
     ("d128_down_projection_source_statement_commitment_drift", "source_probe"),
+    ("d128_down_projection_source_public_instance_commitment_drift", "source_probe"),
     ("d128_down_projection_down_matrix_root_drift", "source_probe"),
     ("d128_down_projection_residual_delta_commitment_drift", "source_probe"),
+    ("d128_down_projection_residual_delta_scale_divisor_drift", "source_probe"),
     ("d128_down_projection_residual_delta_relabels_full_output", "source_probe"),
     ("d128_down_projection_row_commitment_drift", "source_probe"),
     ("d128_down_projection_statement_commitment_drift", "source_probe"),
@@ -853,6 +856,7 @@ def build_source_probe() -> dict[str, Any]:
         "row_count": TARGET_WIDTH * TARGET_FF_DIM,
         "down_projection_mul_rows": TARGET_WIDTH * TARGET_FF_DIM,
         "residual_delta_rows": TARGET_WIDTH,
+        "residual_delta_scale_divisor": TARGET_FF_DIM,
     }.items():
         expect_equal(d128_down_evidence.get(field), expected, f"d128 down-projection {field}")
     expect_equal(
@@ -1057,6 +1061,8 @@ def build_source_probe() -> dict[str, Any]:
             "row_count": d128_down_evidence["row_count"],
             "down_projection_mul_rows": d128_down_evidence["down_projection_mul_rows"],
             "residual_delta_rows": d128_down_evidence["residual_delta_rows"],
+            "residual_delta_scale_divisor": d128_down_evidence["residual_delta_scale_divisor"],
+            "residual_delta_remainder_sha256": sha256_hex_json(d128_down_evidence["residual_delta_remainder_q8"]),
             "source_activation_swiglu_proof_version": d128_down_evidence[
                 "source_activation_swiglu_proof_version"
             ],
@@ -1076,7 +1082,7 @@ def build_source_probe() -> dict[str, Any]:
             "residual_delta_relabels_full_output": (
                 d128_down_evidence["residual_delta_commitment"] == D128_DOWN_GATE.OUTPUT_ACTIVATION_COMMITMENT
             ),
-            "range_policy": "signed-M31 hidden activations and residual deltas; q8 down weights",
+            "range_policy": "signed-M31 hidden activations and residual deltas; exact residual delta quotient/remainder binding; q8 down weights",
         },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
@@ -1277,6 +1283,8 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
                 "proof_native_parameter_commitment"
             ],
             "residual_delta_commitment": source_probe["d128_down_projection"]["residual_delta_commitment"],
+            "residual_delta_scale_divisor": source_probe["d128_down_projection"]["residual_delta_scale_divisor"],
+            "residual_delta_remainder_sha256": source_probe["d128_down_projection"]["residual_delta_remainder_sha256"],
             "down_projection_mul_row_commitment": source_probe["d128_down_projection"][
                 "down_projection_mul_row_commitment"
             ],
@@ -1819,6 +1827,13 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         ),
     )
     add(
+        "d128_down_projection_source_public_instance_commitment_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
+            "source_activation_swiglu_public_instance_commitment", "blake2b-256:" + "69" * 32
+        ),
+    )
+    add(
         "d128_down_projection_down_matrix_root_drift",
         "source_probe",
         lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
@@ -1830,6 +1845,13 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "source_probe",
         lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
             "residual_delta_commitment", "blake2b-256:" + "64" * 32
+        ),
+    )
+    add(
+        "d128_down_projection_residual_delta_scale_divisor_drift",
+        "source_probe",
+        lambda p: p["source_probe"]["d128_down_projection"].__setitem__(
+            "residual_delta_scale_divisor", TARGET_FF_DIM + 1
         ),
     )
 
@@ -2266,6 +2288,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "d128 down-projection residual delta rows",
     )
     expect_equal(
+        down_probe.get("residual_delta_scale_divisor"),
+        TARGET_FF_DIM,
+        "d128 down-projection residual delta scale divisor",
+    )
+    expect_equal(
         down_probe.get("source_activation_swiglu_proof_version"),
         D128_DOWN_GATE.SOURCE_ACTIVATION_SWIGLU_PROOF_VERSION,
         "d128 down-projection source activation proof version",
@@ -2448,6 +2475,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             f"direct d128 down-projection route {field}",
         )
         expect_equal(actual, expected, f"direct d128 down-projection route {field}")
+    expect_equal(
+        route_by_name["direct_d128_down_projection_air"].get("residual_delta_scale_divisor"),
+        TARGET_FF_DIM,
+        "direct d128 down-projection route residual delta scale divisor",
+    )
     expect_equal(
         route_by_name["parameterized_vector_residual_add_air"].get("status"),
         "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",

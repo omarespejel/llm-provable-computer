@@ -152,8 +152,8 @@ Tablero boundary.
   `hidden_activation_commitment`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
-  `residual_delta_commitment` as the full output, and emits
-  `residual_delta_commitment`.
+  `residual_delta_commitment` as the full output, and emits an exact
+  quotient/remainder-bound `residual_delta_commitment`.
 - This is a partial GO only: native residual, full composition, recursion, and
   full-block metrics remain blocked.
 - Do not compare d128 against public zkML systems until the full statement
@@ -210,7 +210,8 @@ Tablero boundary.
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
 10. Continue the verifiable-AI d128 lane by building the native
-    residual/composition handle that consumes `residual_delta_commitment`; do
+    residual/composition handle that consumes exact quotient/remainder-bound
+    `residual_delta_commitment`; do
     not jump to full-block metrics until native residual and composition exist
     or are explicitly classified as no-go.
 11. Only after those steps decide whether any part of the experimental lane

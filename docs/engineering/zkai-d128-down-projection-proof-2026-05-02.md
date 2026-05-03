@@ -28,11 +28,13 @@ multiplication rows, and emits `residual_delta_commitment`.
 | Residual-delta rows | `128` |
 | Source hidden commitment | `blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312` |
 | Down matrix root | `blake2b-256:0d6cd2bee99c821788d1faf5dd24e5e3e8ff4d4d4acd4d99c46a10ecc166c7ab` |
-| Residual-delta commitment | `blake2b-256:537e11aeea97aa83cb510806cec96cd97ccd5673b8cc0dfdc3399fd90fc13ffe` |
-| Statement commitment | `blake2b-256:bf283328fcef05dfcae9fb0c3e90cbe53ebe1705ef78a73d63acd6b1b2891564` |
-| Public-instance commitment | `blake2b-256:26b01b31147ec5cf0b45d9736f56cf77309f98a6bba5f6d440ae1be0f03de63e` |
-| Rust proof tests | `18` passed |
-| Python input tests | `22` passed |
+| Residual-delta commitment | `blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2` |
+| Residual-delta scale divisor | `512` |
+| Residual-delta remainder SHA-256 | `a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d` |
+| Statement commitment | `blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599` |
+| Public-instance commitment | `blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1` |
+| Rust proof tests | `23` passed |
+| Python input tests | `27` passed |
 
 ## Boundary
 
@@ -43,7 +45,7 @@ This slice binds:
 - the source hidden-activation commitment;
 - the deterministic down-matrix root;
 - every checked down-projection multiplication row;
-- the residual-delta commitment;
+- the residual-delta commitment, including quotient, remainder, and divisor;
 - the statement and public-instance commitments for this slice.
 
 The verifier rejects:
@@ -53,6 +55,8 @@ The verifier rejects:
 - down-matrix root drift;
 - row commitment drift;
 - residual-delta commitment drift;
+- residual-delta remainder drift;
+- residual-delta scale-divisor drift;
 - statement/public-instance drift;
 - proof byte tampering;
 - proof commitment-vector shape drift;
@@ -69,11 +73,25 @@ The d128 activation output is not a fixed-point q8 vector under the old
 - residual-delta minimum: `-15589`;
 - residual-delta maximum: `14697`.
 
-The down-projection verifier therefore treats hidden activations and residual
-deltas as signed-M31 bounded values, while keeping down weights under the q8
-semantic bound. This is intentional. Applying the old q8 activation bound here
-would reject the real d128 activation evidence rather than harden the proof.
-Follow-up issue: `#401`.
+For comparison, the checked d64 activation/down-projection evidence stays inside
+the old q8 range:
+
+- d64 hidden activation minimum/maximum: `-195` / `204`;
+- d64 hidden entries outside `+/-1024`: `0 / 256`;
+- d64 residual-delta minimum/maximum: `-19` / `34`;
+- d64 residual-delta entries outside `+/-1024`: `0 / 64`.
+
+Decision: the down-projection verifier treats d128 hidden activations and
+residual deltas as signed-M31 bounded values, while keeping down weights under
+the q8 semantic bound. This is intentional. Applying the old q8 activation
+bound here would reject the real d128 activation evidence rather than harden the
+proof.
+
+The emitted residual-delta boundary is exact, not rounded: it binds the quotient
+vector, the remainder vector, and the fixed divisor `512`. Follow-up issue
+`#401` is therefore a refinement track for a tighter semantic bound across d64
+and d128 activations, not a blocker for this slice's current arithmetic
+soundness.
 
 ## Non-claims
 
