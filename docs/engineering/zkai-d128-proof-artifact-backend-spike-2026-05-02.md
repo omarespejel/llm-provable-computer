@@ -73,7 +73,7 @@ or verifier time, because the recursive/single-proof object does not exist.
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block proof metrics | blocked before aggregated proof object |
-| Mutation checks | `100 / 100` rejected |
+| Mutation checks | `102 / 102` rejected |
 
 ## Backend-route classification
 

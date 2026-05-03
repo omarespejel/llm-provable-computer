@@ -197,6 +197,7 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         expected_layers = {
             "block_receipt_commitment_drift": "aggregation_target_manifest",
             "statement_commitment_drift": "aggregation_target_manifest",
+            "range_policy_public_input_drift": "block_receipt_public_inputs",
             "nested_verifier_check_removed": "aggregation_target_manifest",
             "candidate_inventory_acceptance_relabel": "candidate_inventory",
             "candidate_inventory_file_sha256_tampered": "candidate_inventory",

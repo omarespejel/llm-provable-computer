@@ -439,9 +439,11 @@ EXPECTED_MUTATION_INVENTORY = (
     ("full_block_parameterized_route_promoted", "backend_routes"),
     ("d128_block_receipt_composition_route_status_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
+    ("d128_block_receipt_composition_route_range_policy_commitment_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
     ("d128_block_receipt_composition_proof_artifact_exists_drift", "backend_routes"),
     ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
+    ("d128_block_receipt_composition_range_policy_commitment_drift", "source_probe"),
     ("d128_block_receipt_composition_synchronized_commitment_drift", "source_probe"),
     ("d128_block_receipt_composition_evidence_descriptor_drift", "source_probe"),
     ("d64_anchor_removed", "d64_anchor"),
@@ -2407,6 +2409,16 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         drift_d128_block_receipt_commitment,
     )
 
+    def drift_d128_block_receipt_route_range_policy_commitment(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["range_policy_commitment"] = "blake2b-256:" + "8d" * 32
+
+    add(
+        "d128_block_receipt_composition_route_range_policy_commitment_drift",
+        "backend_routes",
+        drift_d128_block_receipt_route_range_policy_commitment,
+    )
+
     def drift_d128_block_receipt_flag(p: dict[str, Any]) -> None:
         route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
         route["receipt_artifact_exists"] = False
@@ -2434,6 +2446,15 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "d128_block_receipt_composition_mutations_rejected_drift",
         "source_probe",
         drift_d128_block_receipt_mutation_count,
+    )
+
+    def drift_d128_block_receipt_range_policy_commitment(p: dict[str, Any]) -> None:
+        p["source_probe"]["d128_block_receipt_composition"]["range_policy_commitment"] = "blake2b-256:" + "8e" * 32
+
+    add(
+        "d128_block_receipt_composition_range_policy_commitment_drift",
+        "source_probe",
+        drift_d128_block_receipt_range_policy_commitment,
     )
 
     def drift_d128_block_receipt_synchronized_commitments(p: dict[str, Any]) -> None:

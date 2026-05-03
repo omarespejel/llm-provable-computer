@@ -725,10 +725,10 @@
   "schema": "zkai-d128-two-slice-accumulator-backend-v1",
   "source_two_slice_target": {
     "decision": "NO_GO_D128_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
-    "file_sha256": "57528ad1826195a350d594556e62a6462d493c5f8bd6709a677fca65fd1e0052",
+    "file_sha256": "59eb3fd4a9bc6c3e84a7b8a57156326c6442d974c4f336d23e1069ab31fdd834",
     "outer_proof_object_result": "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
     "path": "docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json",
-    "payload_sha256": "6b13508fe2eb07ed350b0eeff6bc2689fd3fa11eccbf6b06027979126d75005c",
+    "payload_sha256": "44e398e031da32049e5be145f1278d107f4482dae9537db9893528a831731bd8",
     "result": "BOUNDED_NO_GO",
     "schema": "zkai-d128-two-slice-outer-proof-object-spike-v1",
     "target_result": "GO_D128_TWO_SLICE_OUTER_PROOF_TARGET",
