@@ -18,6 +18,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import stat as stat_module
 import sys
 import tempfile
 from typing import Any, Callable
@@ -205,9 +206,42 @@ def _assert_repo_source_path(path: pathlib.Path) -> pathlib.Path:
     return resolved
 
 
+def _open_repo_regular_file(path: pathlib.Path | str) -> tuple[int, pathlib.Path]:
+    candidate = pathlib.Path(path)
+    if not candidate.is_absolute():
+        candidate = ROOT / candidate
+    try:
+        if candidate.is_symlink():
+            raise D128BlockReceiptError(f"source evidence must not be a symlink: {path}")
+        resolved = candidate.resolve(strict=False)
+        try:
+            resolved.relative_to(ROOT.resolve())
+        except ValueError as err:
+            raise D128BlockReceiptError(f"source evidence path escapes repository: {path}") from err
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise D128BlockReceiptError(f"source evidence is not a regular file: {path}")
+        fd = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise D128BlockReceiptError(f"source evidence is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise D128BlockReceiptError(f"source evidence changed while reading: {path}")
+            opened_fd = fd
+            fd = None
+            return opened_fd, resolved
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise D128BlockReceiptError(f"failed to read source evidence {path}: {err}") from err
+
+
 def file_sha256(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
-    with _assert_repo_source_path(path).open("rb") as handle:
+    fd, _resolved = _open_repo_regular_file(path)
+    with os.fdopen(fd, "rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -310,8 +344,8 @@ SLICE_SPECS = [
 
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
-    resolved = _assert_repo_source_path(path)
-    with resolved.open("rb") as handle:
+    fd, _resolved = _open_repo_regular_file(path)
+    with os.fdopen(fd, "rb") as handle:
         raw = handle.read(MAX_SOURCE_JSON_BYTES + 1)
     if len(raw) > MAX_SOURCE_JSON_BYTES:
         raise D128BlockReceiptError(f"source evidence exceeds max size: {path}")
