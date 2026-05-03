@@ -192,7 +192,13 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
     def test_rejects_partial_mutation_metadata_on_serialized_result(self) -> None:
         payload = self.fresh_payload()
         del payload["cases"]
-        with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "mutation cases"):
+        with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "mutation metadata"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_cases_without_mutation_inventory(self) -> None:
+        payload = self.fresh_payload()
+        del payload["mutation_inventory"]
+        with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "mutation metadata"):
             GATE.validate_payload(payload)
 
     def test_tsv_columns_are_stable(self) -> None:
