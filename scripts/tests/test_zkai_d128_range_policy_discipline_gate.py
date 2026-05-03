@@ -45,6 +45,13 @@ class D128RangePolicyDisciplineGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["mutations_rejected"], 10)
         self.assertTrue(payload["all_mutations_rejected"])
 
+    def test_checked_range_policy_commitment_uses_validated_core_payload(self) -> None:
+        payload = GATE.build_core_payload()
+        GATE.validate_payload(payload, require_mutations=False)
+
+        self.assertEqual(GATE.checked_range_policy_commitment(), payload["range_policy_commitment"])
+        self.assertNotIn("cases", payload)
+
     def test_d128_hidden_policy_accepts_signed_m31_not_q8(self) -> None:
         payload = GATE.build_gate_result()
         hidden = tensor(payload, "d128", "hidden_activation")

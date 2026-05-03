@@ -485,6 +485,15 @@ def build_core_payload() -> dict[str, Any]:
     }
 
 
+def checked_range_policy_commitment() -> str:
+    payload = build_core_payload()
+    validate_payload(payload, require_mutations=False)
+    commitment = payload["range_policy_commitment"]
+    if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+        raise D128RangePolicyError("range_policy_commitment must be a blake2b-256 commitment")
+    return commitment
+
+
 def _core_fields(payload: dict[str, Any]) -> dict[str, Any]:
     core = {
         key: copy.deepcopy(value)

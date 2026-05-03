@@ -522,9 +522,7 @@ def model_config() -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def checked_range_policy_commitment() -> str:
-    policy = RANGE_POLICY.build_gate_result()
-    RANGE_POLICY.validate_payload(policy)
-    return require_commitment(policy["range_policy_commitment"], "range_policy_commitment")
+    return require_commitment(RANGE_POLICY.checked_range_policy_commitment(), "range_policy_commitment")
 
 
 def _statement_payload_for_commitment(receipt: dict[str, Any]) -> dict[str, Any]:
