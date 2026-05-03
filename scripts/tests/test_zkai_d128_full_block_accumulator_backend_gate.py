@@ -143,6 +143,29 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "source evidence manifest"):
             GATE.validate_payload(payload)
 
+    def test_manifest_paths_must_be_safe_repo_relative_evidence_paths(self) -> None:
+        for unsafe_path in ("/etc/passwd", "../outside.json", "docs/engineering/../evidence/file.json"):
+            with self.subTest(path=unsafe_path):
+                source = GATE.load_checked_block_receipt()
+                source["source_evidence_manifest"][0]["path"] = unsafe_path
+                with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "source evidence path"):
+                    GATE.build_verifier_transcript(source)
+
+    def test_source_file_reads_reject_symlinks_and_huge_json(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            target = tmp / "target.json"
+            target.write_text("{}", encoding="utf-8")
+            symlink = tmp / "linked.json"
+            symlink.symlink_to(target)
+            with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "symlink"):
+                GATE.file_sha256(symlink)
+
+            huge = tmp / "huge.json"
+            huge.write_bytes(b"{" + b'"a":' + b'"' + (b"x" * GATE.MAX_SOURCE_JSON_BYTES) + b'"}')
+            with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "exceeds max size"):
+                GATE.load_json(huge)
+
     def test_rejects_recursive_claim_without_backend(self) -> None:
         payload = self.fresh_payload()
         payload["recursive_or_pcd_status"]["recursive_outer_proof_claimed"] = True
