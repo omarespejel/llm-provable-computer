@@ -132,6 +132,11 @@ class D128RangePolicyDisciplineGateTests(unittest.TestCase):
 
         self.assertEqual(GATE.classify_error(error), "parser_or_schema")
 
+    def test_error_classifier_keeps_summary_key_mismatch_at_summary_layer(self) -> None:
+        error = GATE.D128RangePolicyError("summary key mismatch: missing=['x'], extra=[]")
+
+        self.assertEqual(GATE.classify_error(error), "summary")
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = GATE.build_gate_result()
 
