@@ -1,0 +1,448 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 12,
+  "cases": [
+    {
+      "baseline_result": "accepted",
+      "error": "unapproved empirical adapter promotion for DeepProve-1",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "deep_prove_promoted_to_empirical",
+      "rejected": true,
+      "rejection_layer": "source_context",
+      "surface": "source_context"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "source-backed system overclaims reproducibility: NANOZK",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "nanozk_matched_benchmark_overclaim",
+      "rejected": true,
+      "rejection_layer": "source_context",
+      "surface": "source_context"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "source-backed system overclaims reproducibility: Jolt Atlas",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "jolt_baseline_verification_overclaim",
+      "rejected": true,
+      "rejection_layer": "source_context",
+      "surface": "source_context"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "Obelyzk local verifier-time overclaim",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "obelyzk_local_verifier_time_overclaim",
+      "rejected": true,
+      "rejection_layer": "deployment_context",
+      "surface": "deployment_context"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "unapproved empirical adapter promotion for RISC Zero",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "risc_zero_promoted_to_zkml_throughput",
+      "rejected": true,
+      "rejection_layer": "zkvm_watchlist",
+      "surface": "zkvm_watchlist"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "unapproved empirical adapter promotion for SNIP-36",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "snip36_promoted_to_local_deployment",
+      "rejected": true,
+      "rejection_layer": "settlement_watchlist",
+      "surface": "settlement_watchlist"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "empirical adapter row missing local evidence for EZKL",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "ezkl_artifact_removed",
+      "rejected": true,
+      "rejection_layer": "empirical_adapter",
+      "surface": "empirical_adapter"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "primary source must be https URL for NANOZK",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "primary_source_downgraded_to_http",
+      "rejected": true,
+      "rejection_layer": "source_integrity",
+      "surface": "source_integrity"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "checked_at drift for SP1",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "checked_at_stale",
+      "rejected": true,
+      "rejection_layer": "source_integrity",
+      "surface": "source_integrity"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "system inventory drift",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "system_inventory_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "required non-claim missing",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "claim_boundary",
+      "surface": "claim_boundary"
+    },
+    {
+      "baseline_result": "accepted",
+      "error": "systems commitment mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "systems_commitment_stale_after_edit",
+      "rejected": true,
+      "rejection_layer": "commitment",
+      "surface": "commitment"
+    }
+  ],
+  "checked_at": "2026-05-03",
+  "classification_rules": [
+    {
+      "description": "Requires baseline proof verification plus a metadata/statement mutation suite that can be run from checked commands.",
+      "rule": "empirical_adapter_row"
+    },
+    {
+      "description": "Paper, blog, source, or reported metrics without public proof bytes and verifier inputs must not be promoted to an empirical adapter or matched benchmark row.",
+      "rule": "source_backed_context_only"
+    },
+    {
+      "description": "A live contract or transaction can calibrate settlement posture, but it is not a local verifier-time comparator unless the same workload object can be replayed locally.",
+      "rule": "deployment_calibration_only"
+    },
+    {
+      "description": "zkVM receipts are relevant for statement/action receipts but are not zkML throughput rows until a matched model workload and public-value contract are pinned.",
+      "rule": "zkvm_receipt_watchlist"
+    }
+  ],
+  "decision": "GO_CHECKED_SOTA_ARTIFACT_WATCHLIST",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "87cd5827f3bc2c707f70a3712b3ada7bf18f0aa5",
+  "issue": "#419",
+  "mutation_inventory": [
+    {
+      "mutation": "deep_prove_promoted_to_empirical",
+      "surface": "source_context"
+    },
+    {
+      "mutation": "nanozk_matched_benchmark_overclaim",
+      "surface": "source_context"
+    },
+    {
+      "mutation": "jolt_baseline_verification_overclaim",
+      "surface": "source_context"
+    },
+    {
+      "mutation": "obelyzk_local_verifier_time_overclaim",
+      "surface": "deployment_context"
+    },
+    {
+      "mutation": "risc_zero_promoted_to_zkml_throughput",
+      "surface": "zkvm_watchlist"
+    },
+    {
+      "mutation": "snip36_promoted_to_local_deployment",
+      "surface": "settlement_watchlist"
+    },
+    {
+      "mutation": "ezkl_artifact_removed",
+      "surface": "empirical_adapter"
+    },
+    {
+      "mutation": "primary_source_downgraded_to_http",
+      "surface": "source_integrity"
+    },
+    {
+      "mutation": "checked_at_stale",
+      "surface": "source_integrity"
+    },
+    {
+      "mutation": "system_inventory_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claim_removed",
+      "surface": "claim_boundary"
+    },
+    {
+      "mutation": "systems_commitment_stale_after_edit",
+      "surface": "commitment"
+    }
+  ],
+  "non_claims": [
+    "not a leaderboard",
+    "not a matched performance benchmark",
+    "not evidence that source-context systems lack statement binding internally",
+    "not evidence that external proof systems are insecure",
+    "not a recursive-proof result",
+    "not a Starknet deployment claim for the local d128 receipt"
+  ],
+  "paper_actions": [
+    {
+      "action": "Use the watchlist to keep external adapters, deployment calibration, and source-backed zkML context in separate lanes.",
+      "paper": "Tablero"
+    },
+    {
+      "action": "Frame current SOTA as convergence around lookup-heavy transformer proving plus a missing public-artifact layer for matched comparison.",
+      "paper": "Transformer/STARK alignment"
+    },
+    {
+      "action": "Promote statement-binding receipts only when proof validity, public statement fields, and mutation rejection are checked together.",
+      "paper": "Verifiable AI / statement receipts"
+    }
+  ],
+  "question": "Which current zkML, zkAI, zkVM, and settlement systems have enough public artifacts to support a reproducible statement-binding adapter row or matched comparison, and which remain source-backed context only?",
+  "schema": "zkai-sota-artifact-watchlist-v1",
+  "summary": {
+    "current_best_next_research_step": "issue #420 executable two-slice recursive/PCD backend, not another context-only comparator row",
+    "deployment_calibration_rows": [
+      "Obelyzk"
+    ],
+    "empirical_adapter_rows": [
+      "EZKL",
+      "snarkjs",
+      "JSTprove/Remainder"
+    ],
+    "mutation_cases": 12,
+    "mutations_rejected": 12,
+    "source_context_only_rows": [
+      "DeepProve-1",
+      "NANOZK",
+      "Jolt Atlas",
+      "Giza/LuminAIR"
+    ],
+    "system_count": 12,
+    "watchlist_rows": [
+      "RISC Zero",
+      "SP1",
+      "SNIP-36"
+    ]
+  },
+  "systems": [
+    {
+      "baseline_verification_reproducible": true,
+      "blocked_metric": "matched transformer-block performance",
+      "checked_at": "2026-05-03",
+      "evidence_level": "local_empirical_adapter",
+      "local_evidence": "docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json",
+      "metadata_mutation_reproducible": true,
+      "next_action": "keep as adapter baseline; do not call proof-only relabeling an EZKL bug",
+      "primary_source": "https://docs.ezkl.xyz/",
+      "proof_system_axis": "SNARK/Halo2-KZG ONNX adapter",
+      "public_proof_artifact_available": true,
+      "public_verifier_input_available": true,
+      "recommended_use": "empirical statement-envelope adapter row; not a performance comparator",
+      "status": "EMPIRICAL_STATEMENT_ADAPTER_ROW",
+      "system": "EZKL"
+    },
+    {
+      "baseline_verification_reproducible": true,
+      "blocked_metric": "matched transformer-block performance",
+      "checked_at": "2026-05-03",
+      "evidence_level": "local_empirical_adapter",
+      "local_evidence": "docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json",
+      "metadata_mutation_reproducible": true,
+      "next_action": "keep as second external adapter for proof-system independence",
+      "primary_source": "https://github.com/iden3/snarkjs",
+      "proof_system_axis": "SNARK/Groth16 Circom adapter",
+      "public_proof_artifact_available": true,
+      "public_verifier_input_available": true,
+      "recommended_use": "empirical statement-envelope adapter row; proof-system-independent binding evidence",
+      "status": "EMPIRICAL_STATEMENT_ADAPTER_ROW",
+      "system": "snarkjs"
+    },
+    {
+      "baseline_verification_reproducible": true,
+      "blocked_metric": "matched transformer-block performance",
+      "checked_at": "2026-05-03",
+      "evidence_level": "local_empirical_adapter",
+      "local_evidence": "docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.json",
+      "metadata_mutation_reproducible": true,
+      "next_action": "extend only if a transformer-adjacent fixture clears the same adapter bar",
+      "primary_source": "https://github.com/remainder-org/JSTprove",
+      "proof_system_axis": "GKR/sum-check adapter",
+      "public_proof_artifact_available": true,
+      "public_verifier_input_available": true,
+      "recommended_use": "empirical statement-envelope adapter row for GKR/sum-check shaped proofs",
+      "status": "EMPIRICAL_STATEMENT_ADAPTER_ROW",
+      "system": "JSTprove/Remainder"
+    },
+    {
+      "baseline_verification_reproducible": true,
+      "blocked_metric": "recursive proof size, recursive verifier time, and proof-generation time",
+      "checked_at": "2026-05-03",
+      "evidence_level": "local_receipt_composition",
+      "local_evidence": "docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json",
+      "metadata_mutation_reproducible": true,
+      "next_action": "work issue #420 for executable two-slice recursive or PCD backend",
+      "primary_source": "https://github.com/starkware-libs/stwo",
+      "proof_system_axis": "Stwo-native statement-bound transformer receipt",
+      "public_proof_artifact_available": true,
+      "public_verifier_input_available": true,
+      "recommended_use": "local statement-bound receipt and accumulator evidence; not external SOTA row",
+      "status": "LOCAL_STATEMENT_RECEIPT_ONLY",
+      "system": "native Stwo d128 receipt"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "metadata relabeling result and matched verifier-time row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "source_backed_context",
+      "local_evidence": "docs/engineering/evidence/zkai-deepprove-nanozk-adapter-feasibility-2026-05.json",
+      "metadata_mutation_reproducible": false,
+      "next_action": "revisit when public proof bytes, verifier inputs, and model/input/output commitments are released",
+      "primary_source": "https://www.lagrange.dev/blog/deepprove-1",
+      "proof_system_axis": "SNARK-side model-scale LLM proving",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "source-backed model-scale context only; do not use as empirical adapter row",
+      "status": "SOURCE_BACKED_MODEL_SCALE_CONTEXT_ONLY",
+      "system": "DeepProve-1"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "adapter row and matched d128 proof benchmark",
+      "checked_at": "2026-05-03",
+      "evidence_level": "source_backed_context",
+      "local_evidence": "docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json",
+      "metadata_mutation_reproducible": false,
+      "next_action": "revisit if a public NANOZK verifier, proof bundle, and verifier inputs are published",
+      "primary_source": "https://arxiv.org/abs/2603.18046",
+      "proof_system_axis": "layerwise LLM proof / compact verifier-facing object",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "source-backed compact-object calibration only; not a matched local benchmark",
+      "status": "SOURCE_BACKED_COMPACT_CALIBRATION_ONLY",
+      "system": "NANOZK"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "matched ONNX/GPT adapter row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "source_backed_context",
+      "local_evidence": "",
+      "metadata_mutation_reproducible": false,
+      "next_action": "track whether public artifacts expose proof, public inputs, model identity, and verifier route",
+      "primary_source": "https://arxiv.org/abs/2602.17452",
+      "proof_system_axis": "lookup-centric SNARK / ONNX and transformer-shaped workloads",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "source-backed architecture context until proof/verifier bundles are reproducible",
+      "status": "SOURCE_BACKED_MODEL_SCALE_CONTEXT_ONLY",
+      "system": "Jolt Atlas"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "matched graph proof adapter row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "source_backed_context",
+      "local_evidence": "",
+      "metadata_mutation_reproducible": false,
+      "next_action": "revisit if public proof artifacts and verifier-input bundles become available",
+      "primary_source": "https://www.gizatech.xyz/",
+      "proof_system_axis": "STARK-native graph-to-AIR path",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "source-backed STARK-native architecture context",
+      "status": "SOURCE_BACKED_CONTEXT_ONLY",
+      "system": "Giza/LuminAIR"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "matched local verifier-time row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "source_backed_deployment_calibration",
+      "local_evidence": "docs/paper/evidence/obelyzk-sepolia-comparator-note-2026-04-25.md",
+      "metadata_mutation_reproducible": false,
+      "next_action": "keep pinned contract/tx context; only upgrade after live replay or local verifier route is reproducible",
+      "primary_source": "https://docs.rs/crate/obelyzk/0.3.0",
+      "proof_system_axis": "STARK-native recursive/onchain settlement calibration",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "deployment calibration only; not local verifier-time comparison",
+      "status": "DEPLOYMENT_CALIBRATION_ONLY",
+      "system": "Obelyzk"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "matched model/action receipt adapter row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "watchlist_context",
+      "local_evidence": "",
+      "metadata_mutation_reproducible": false,
+      "next_action": "track issue #422; open a fixture only if a matched public-values contract and model workload are pinned",
+      "primary_source": "https://dev.risczero.com/",
+      "proof_system_axis": "zkVM receipt and public journal model",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "watchlist for agent/action receipts and public-output binding, not zkML throughput row",
+      "status": "ZKVM_RECEIPT_WATCHLIST",
+      "system": "RISC Zero"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "matched model/action receipt adapter row",
+      "checked_at": "2026-05-03",
+      "evidence_level": "watchlist_context",
+      "local_evidence": "",
+      "metadata_mutation_reproducible": false,
+      "next_action": "track issue #422; test only after pinning public values, verifying key, proof, and model/action statement fields",
+      "primary_source": "https://docs.succinct.xyz/",
+      "proof_system_axis": "zkVM receipt and public-values model",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "watchlist for statement/action receipt binding, not zkML throughput row",
+      "status": "ZKVM_RECEIPT_WATCHLIST",
+      "system": "SP1"
+    },
+    {
+      "baseline_verification_reproducible": false,
+      "blocked_metric": "local Starknet transaction hash and onchain proof-facts acceptance",
+      "checked_at": "2026-05-03",
+      "evidence_level": "spec_context",
+      "local_evidence": "",
+      "metadata_mutation_reproducible": false,
+      "next_action": "defer until local proof objects can be expressed as protocol-native proof_facts",
+      "primary_source": "https://community.starknet.io/t/snip-36-in-protocol-proof-verification/116123",
+      "proof_system_axis": "Starknet protocol-native proof verification interface",
+      "public_proof_artifact_available": false,
+      "public_verifier_input_available": false,
+      "recommended_use": "settlement API watchlist; park until a local proof-facts adapter exists",
+      "status": "SETTLEMENT_API_WATCHLIST",
+      "system": "SNIP-36"
+    }
+  ],
+  "systems_commitment": "blake2b-256:64cf5d5db158e4295732467807abc4ea4915ece82c6005964bbf3341ca2a3ee1",
+  "validation_commands": [
+    "python3 scripts/zkai_sota_artifact_watchlist_gate.py --write-json docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json --write-tsv docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_sota_artifact_watchlist_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root ."
+  ]
+}

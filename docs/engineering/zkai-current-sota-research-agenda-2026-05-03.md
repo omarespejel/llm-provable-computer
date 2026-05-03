@@ -83,7 +83,11 @@ contract.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification
-   and metadata mutation are reproducible. Tracked in issue `#419`.
+   and metadata mutation are reproducible. Tracked in issue `#419`. The checked
+   artifact watchlist now lives at
+   `docs/engineering/zkai-sota-artifact-watchlist-2026-05-03.md` with JSON/TSV
+   evidence under
+   `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.*`.
 3. **Stateful transformer track.** Turn the source-backed attention/KV receipt
    into a proof-backed receipt so autoregressive state is bound, not narrated.
    Tracked in issue `#336`.
@@ -103,3 +107,10 @@ The paper-facing sentence should be:
 
 That sentence is deliberately narrower than "we beat zkML systems." It is also
 more durable.
+
+The SOTA watchlist makes the comparison boundary explicit: EZKL, snarkjs, and
+JSTprove/Remainder are empirical statement-envelope adapter rows; DeepProve-1,
+NANOZK, Jolt Atlas, Giza/LuminAIR, RISC Zero, SP1, Obelyzk, and SNIP-36 remain
+source-backed context, deployment calibration, or watchlist rows until public
+proof artifacts and verifier inputs make baseline verification and relabeling
+mutation reproducible.
