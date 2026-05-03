@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-03
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `f6a099ba48b5c5f9ce37264712f1b0b5a004e2f9`
+Mainline reference at refresh: `687aaa24b8cddc275d9677cb0085c0420bda6af9`
 
 ## Immediate orientation
 
@@ -169,6 +169,15 @@ Tablero boundary.
   metric-smuggling, blocker-removal, weakened-GO drift, unknown-field
   injection, and parser/schema mutations; see
   `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
+- The d128 recursive/PCD route selector now answers issue `#420` as a bounded
+  route decision: local Stwo-native recursion is blocked before metrics by
+  `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. Only the
+  two-slice and full-block non-recursive accumulator routes are usable today;
+  proof-native two-slice compression, external zkVM statement receipts, and
+  external SNARK/IVC adapters are research candidates, not successes. It
+  rejects `22 / 22` source-drift, route-relabeling, blocker-removal,
+  metric-smuggling, weakened-GO, and parser/schema mutations; see
+  `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice
   handles over `197,504` checked rows, with accumulator commitment
@@ -182,10 +191,10 @@ Tablero boundary.
   integrity only, not recursion; see
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus range-policy-bound full-block public
-  inputs, two-slice and full-block accumulator GO, plus a checked issue `#411`
-  recursive-backend NO-GO: recursion, one compressed cryptographic verifier
-  object, and recursive proof-size/verifier-time/proof-generation-time metrics
-  remain blocked.
+  inputs, two-slice and full-block accumulator GO, plus checked issue `#411`
+  and `#420` recursive-backend NO-GO/route-selector evidence: recursion, one
+  compressed cryptographic verifier object, and recursive
+  proof-size/verifier-time/proof-generation-time metrics remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
@@ -212,8 +221,9 @@ Use these in order of authority for current state:
 16. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
 17. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
 18. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-19. `docs/engineering/reproducibility.md`
-20. `git status --short --branch`
+19. `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
+20. `docs/engineering/reproducibility.md`
+21. `git status --short --branch`
 
 ## Merge culture
 
@@ -269,12 +279,15 @@ Use these in order of authority for current state:
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
 10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
-    spike (`#408`), and issue `#411` recursive/PCD backend audit as checked
-    bounded no-gos for recursive proof-object existence. Treat issues `#409`
-    and `#413` as the current positive handoff objects: real non-recursive
-    two-slice and full-block accumulators and verifier handles now exist. Do
-    not report recursive proof-size, verifier-time, or proof-generation-time
-    metrics until a real recursive or PCD proof object exists.
+    spike (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
+    route selector as checked bounded no-gos for local recursive proof-object
+    existence. Treat issues `#409` and `#413` as the current positive handoff
+    objects: real non-recursive two-slice and full-block accumulators and
+    verifier handles now exist. The next useful experiments are issue `#422`
+    external statement-receipt adapters and issue `#424` proof-native two-slice
+    compression that does not claim recursion. Do not report recursive
+    proof-size, verifier-time, or proof-generation-time metrics until a real
+    recursive or PCD proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

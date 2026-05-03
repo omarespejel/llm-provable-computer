@@ -1,0 +1,523 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 22,
+  "cases": [
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "two_slice_accumulator result mismatch",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "source_two_slice_result_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "two_slice_accumulator claim boundary mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "source_two_slice_claim_boundary_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "full_block_accumulator result mismatch",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "source_full_block_result_drift",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "recursive result mismatch",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "source_recursive_no_go_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "recursive result mismatch",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "source_recursive_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "source_evidence",
+      "surface": "source_evidence"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "local nested verifier status mismatch",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "route_local_stwo_nested_verifier_relabel_to_go",
+      "rejected": true,
+      "rejection_layer": "route_table",
+      "surface": "route_table"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "local PCD status mismatch",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "route_local_pcd_relabel_to_go",
+      "rejected": true,
+      "rejection_layer": "route_table",
+      "surface": "route_table"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "external_zkvm_statement_receipt_adapter status mismatch",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "route_external_adapter_relabel_to_go",
+      "rejected": true,
+      "rejection_layer": "route_table",
+      "surface": "route_table"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "route ids mismatch",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "route_removed",
+      "rejected": true,
+      "rejection_layer": "route_table",
+      "surface": "route_table"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "local_stwo_nested_verifier_air.blocking_missing_object must be a non-empty string",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "blocking_missing_object_removed",
+      "rejected": true,
+      "rejection_layer": "route_table",
+      "surface": "route_table"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "next route mismatch",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "next_route_changed_to_local_recursive",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "route_decision"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "primary blocker mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "primary_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "route_decision"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "metrics enabled mismatch",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "proof_size_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "route_decision"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "metrics enabled mismatch",
+      "index": 13,
+      "mutated_accepted": false,
+      "mutation": "verifier_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "route_decision"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "metrics enabled mismatch",
+      "index": 14,
+      "mutated_accepted": false,
+      "mutation": "proof_generation_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "route_decision"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "decision mismatch",
+      "index": 15,
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "index": 16,
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "issue mismatch",
+      "index": 17,
+      "mutated_accepted": false,
+      "mutation": "issue_changed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "go criterion mismatch",
+      "index": 18,
+      "mutated_accepted": false,
+      "mutation": "go_criterion_weakened",
+      "rejected": true,
+      "rejection_layer": "route_decision",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "non_claims mismatch",
+      "index": 19,
+      "mutated_accepted": false,
+      "mutation": "non_claims_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "validation_commands mismatch",
+      "index": 20,
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+      "error": "core payload keys mismatch",
+      "index": 21,
+      "mutated_accepted": false,
+      "mutation": "unknown_top_level_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "decision": "NO_GO_LOCAL_D128_RECURSIVE_PCD_BACKEND_TODAY",
+  "issue": 420,
+  "local_repo_probe": {
+    "cargo_lock_sha256": "da41355ce93176f7938280a8d9fbaf164effae91453455232912f0e46a0fcfb5",
+    "cargo_toml_sha256": "9ca9a9f3e1be5352d38e237a8d54fdc895a91705a55982ea1f27459b01281d74",
+    "external_snark_ivc_dependencies_declared": false,
+    "external_zkvm_dependencies_declared": false,
+    "local_d128_recursive_backend_module_exists": false,
+    "local_d128_recursive_proof_artifact_exists": false,
+    "local_d128_recursive_verifier_handle_exists": false,
+    "local_stwo_version": "2.2.0",
+    "stwo_constraint_framework_declared": true,
+    "stwo_dependency_declared": true
+  },
+  "mutation_inventory": [
+    {
+      "mutation": "source_two_slice_result_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "source_two_slice_claim_boundary_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "source_full_block_result_drift",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "source_recursive_no_go_result_changed_to_go",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "source_recursive_blocker_removed",
+      "surface": "source_evidence"
+    },
+    {
+      "mutation": "route_local_stwo_nested_verifier_relabel_to_go",
+      "surface": "route_table"
+    },
+    {
+      "mutation": "route_local_pcd_relabel_to_go",
+      "surface": "route_table"
+    },
+    {
+      "mutation": "route_external_adapter_relabel_to_go",
+      "surface": "route_table"
+    },
+    {
+      "mutation": "route_removed",
+      "surface": "route_table"
+    },
+    {
+      "mutation": "blocking_missing_object_removed",
+      "surface": "route_table"
+    },
+    {
+      "mutation": "next_route_changed_to_local_recursive",
+      "surface": "route_decision"
+    },
+    {
+      "mutation": "primary_blocker_removed",
+      "surface": "route_decision"
+    },
+    {
+      "mutation": "proof_size_metric_smuggled",
+      "surface": "route_decision"
+    },
+    {
+      "mutation": "verifier_time_metric_smuggled",
+      "surface": "route_decision"
+    },
+    {
+      "mutation": "proof_generation_time_metric_smuggled",
+      "surface": "route_decision"
+    },
+    {
+      "mutation": "decision_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "issue_changed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "go_criterion_weakened",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claims_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_drift",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_top_level_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive aggregation",
+    "not proof-carrying data",
+    "not one compressed cryptographic verifier object",
+    "not proof-size evidence for a recursive or PCD proof",
+    "not verifier-time evidence for a recursive or PCD proof",
+    "not proof-generation-time evidence for a recursive or PCD proof",
+    "not a public zkML benchmark row",
+    "not onchain deployment evidence",
+    "not a claim that external zkVM or SNARK routes already satisfy the d128 contract"
+  ],
+  "result": "ROUTE_SELECTED_BOUNDED_NO_GO",
+  "route_decision": {
+    "candidate_route_ids": [
+      "proof_native_two_slice_compression_without_recursion",
+      "external_zkvm_statement_receipt_adapter",
+      "external_snark_or_ivc_statement_adapter"
+    ],
+    "go_criterion": "an executable recursive or PCD proof object exists for the d128 two-slice target, a verifier handle accepts it, and the public inputs bind two_slice_target_commitment, selected slice statement commitments, selected source evidence hashes, and verifier domain/version",
+    "next_route": "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_OR_PROOF_NATIVE_COMPRESSION_SPIKE",
+    "primary_blocker": "NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET",
+    "proof_metrics": {
+      "blocked_before_metrics": true,
+      "metrics_enabled": false,
+      "recursive_proof_generation_time_ms": null,
+      "recursive_proof_size_bytes": null,
+      "recursive_verifier_time_ms": null
+    },
+    "selected_target": {
+      "checked_rows": 256,
+      "slice_ids": [
+        "rmsnorm_public_rows",
+        "rmsnorm_projection_bridge"
+      ],
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
+    },
+    "usable_today_route_ids": [
+      "local_two_slice_non_recursive_accumulator",
+      "local_full_block_non_recursive_accumulator"
+    ],
+    "why_external_or_proof_native_next": "the statement contract and non-recursive accumulators are already bound; the next useful experiment is to test a real proof object outside the missing local nested-verifier surface, or to compress the two-slice transcript without calling it recursion",
+    "why_not_local_stwo_next": "the local Stwo route is blocked before metrics because no nested verifier AIR/circuit or PCD verifier handle exists for the selected d128 slice verifiers"
+  },
+  "route_table": [
+    {
+      "blocking_missing_object": "src/stwo_backend/d128_two_slice_recursive_pcd_backend.rs",
+      "claim_boundary": "missing_executable_backend",
+      "evidence": {
+        "backend_module_exists": false,
+        "requires_new_trusted_core": true
+      },
+      "next_action": "design or import a verifier-in-AIR/circuit for the two selected d128 slice verifiers",
+      "route_id": "local_stwo_nested_verifier_air",
+      "route_kind": "local_stwo_native_recursion",
+      "status": "NO_GO_MISSING_NESTED_VERIFIER_AIR",
+      "usable_today": false
+    },
+    {
+      "blocking_missing_object": "recursive_or_pcd_outer_proof_generator_and_verifier_handle",
+      "claim_boundary": "missing_executable_backend",
+      "evidence": {
+        "recursive_proof_artifact_exists": false,
+        "recursive_verifier_handle_exists": false
+      },
+      "next_action": "add a PCD/IVC backend that proves the selected verifier checks and binds the same public inputs",
+      "route_id": "local_stwo_pcd_outer_proof",
+      "route_kind": "local_stwo_or_pcd_backend",
+      "status": "NO_GO_MISSING_OUTER_PCD_PROOF_SYSTEM",
+      "usable_today": false
+    },
+    {
+      "blocking_missing_object": "none_for_accumulator_integrity",
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "evidence": {
+        "source": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json"
+      },
+      "next_action": "keep as source-bound handoff object; do not report recursive metrics from it",
+      "route_id": "local_two_slice_non_recursive_accumulator",
+      "route_kind": "local_pre_recursive_accumulator",
+      "status": "GO_PRE_RECURSIVE_INTEGRITY_ONLY",
+      "usable_today": true
+    },
+    {
+      "blocking_missing_object": "none_for_accumulator_integrity",
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "evidence": {
+        "source": "docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json"
+      },
+      "next_action": "keep as the strongest local statement-bound d128 handoff object",
+      "route_id": "local_full_block_non_recursive_accumulator",
+      "route_kind": "local_pre_recursive_accumulator",
+      "status": "GO_PRE_RECURSIVE_INTEGRITY_ONLY",
+      "usable_today": true
+    },
+    {
+      "blocking_missing_object": "proof_native_two_slice_compression_artifact",
+      "claim_boundary": "future_proof_native_compression_not_recursion",
+      "evidence": {
+        "tracked_issue": 424,
+        "would_reuse": "two_slice_target_commitment"
+      },
+      "next_action": "try one proof-native object for the two-slice transcript, explicitly not recursive aggregation",
+      "route_id": "proof_native_two_slice_compression_without_recursion",
+      "route_kind": "local_non_recursive_compression_spike",
+      "status": "RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO",
+      "usable_today": false
+    },
+    {
+      "blocking_missing_object": "checked_external_zkvm_receipt_for_d128_two_slice_contract",
+      "claim_boundary": "external_adapter_result_until_local_stwo_recursion_exists",
+      "evidence": {
+        "local_dependencies_declared": false,
+        "tracked_issue": 422
+      },
+      "next_action": "map the exact two-slice statement into a zkVM receipt adapter and test relabeling",
+      "route_id": "external_zkvm_statement_receipt_adapter",
+      "route_kind": "external_recursion_capable_adapter",
+      "status": "RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO",
+      "usable_today": false
+    },
+    {
+      "blocking_missing_object": "checked_external_snark_or_ivc_receipt_for_d128_two_slice_contract",
+      "claim_boundary": "external_adapter_result_not_stwo_native",
+      "evidence": {
+        "local_dependencies_declared": false
+      },
+      "next_action": "test whether a SNARK/IVC receipt can bind the same d128 two-slice statement contract",
+      "route_id": "external_snark_or_ivc_statement_adapter",
+      "route_kind": "external_snark_or_ivc_adapter",
+      "status": "RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO",
+      "usable_today": false
+    },
+    {
+      "blocking_missing_object": "proof_object_suitable_for_settlement_facts",
+      "claim_boundary": "deployment_adapter_after_proof_object",
+      "evidence": {
+        "snip36_parked": true
+      },
+      "next_action": "do not prioritize until one proof object exists for the same public-input contract",
+      "route_id": "starknet_settlement_adapter",
+      "route_kind": "settlement_adapter",
+      "status": "DEFERRED_UNTIL_LOCAL_OR_EXTERNAL_PROOF_OBJECT_EXISTS",
+      "usable_today": false
+    }
+  ],
+  "schema": "zkai-d128-recursive-pcd-route-selector-v1",
+  "source_evidence": {
+    "full_block_accumulator": {
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "decision": "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_BACKEND",
+      "file_sha256": "18fdb95015a948cb57a78dcaf35ed6359d818cf2df7b1a47c4383b944720b848",
+      "path": "docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json",
+      "payload_sha256": "2724b3a673bec346f5df0abaeadb3b8d4301f5efe090288026d10cc31b7d2fd9",
+      "result": "GO",
+      "schema": "zkai-d128-full-block-accumulator-backend-v1"
+    },
+    "full_block_checked_rows": 197504,
+    "recursive_pcd_audit": {
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
+      "decision": "NO_GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND_UNAVAILABLE",
+      "file_sha256": "1fe4f21c7b4c92703ecd1e449bc518cdb4bf72d0a22724648896d056593a40c4",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json",
+      "payload_sha256": "483d391baf15011d27082a1b3ffbdc7210dbe515e91f00414fdae453e0528e7c",
+      "result": "BOUNDED_NO_GO",
+      "schema": "zkai-d128-two-slice-recursive-pcd-backend-gate-v1"
+    },
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "two_slice_accumulator": {
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "decision": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND",
+      "file_sha256": "abe085ac2ebe3c0f980a7d98e53815b7a286b52649e73427bf2f18d49cb2a34d",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+      "payload_sha256": "d671e708f5d8d00454d4a4fded860a225201b67dc1b591f8cd7ce05dc366e8b2",
+      "result": "GO",
+      "schema": "zkai-d128-two-slice-accumulator-backend-v1"
+    },
+    "two_slice_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "two_slice_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_recursive_pcd_route_selector_gate.py --write-json docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_recursive_pcd_route_selector_gate",
+    "python3 -m py_compile scripts/zkai_d128_recursive_pcd_route_selector_gate.py scripts/tests/test_zkai_d128_recursive_pcd_route_selector_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
