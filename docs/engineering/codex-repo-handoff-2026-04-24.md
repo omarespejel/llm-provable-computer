@@ -161,10 +161,14 @@ Tablero boundary.
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
   quotient/remainder-bound `residual_delta_commitment`.
-- This is a partial GO only: full composition, recursion, and full-block
-  metrics remain blocked.
-- Do not compare d128 against public zkML systems until the full statement
-  receipt or a deliberately scoped slice comparator exists.
+- The d128 block receipt composition gate now binds the six checked slice
+  handles into one statement-bound receipt over `197,504` checked rows; see
+  `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.
+- This is a receipt-composition GO only: recursion, one compressed verifier
+  object, and full-block proof-size/verifier-time metrics remain blocked.
+- Do not compare d128 proof-size/verifier-time against public zkML systems until
+  an aggregated proof object exists, or until the comparison is explicitly
+  scoped as receipt/composition-only.
 
 ## Merge and review culture
 
@@ -216,10 +220,10 @@ Tablero boundary.
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-10. Continue the verifiable-AI d128 lane by building full-block receipt
-    composition over the six checked d128 slice handles; do not jump to
-    full-block metrics until composition exists or is explicitly classified as
-    no-go.
+10. Continue the verifiable-AI d128 lane by attempting recursive or
+    proof-carrying aggregation of the checked d128 block receipt (`#405`); do
+    not jump to full-block proof-size/verifier-time metrics until an aggregated
+    proof object exists or is explicitly classified as no-go.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

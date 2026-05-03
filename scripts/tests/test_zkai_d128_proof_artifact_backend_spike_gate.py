@@ -46,7 +46,8 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["d128_down_projection_route"], "GO_PARTIAL_D128_DOWN_PROJECTION_ONLY")
         self.assertEqual(payload["summary"]["d128_residual_add_route"], "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
-        self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
+        self.assertEqual(payload["summary"]["d128_block_receipt_composition_route"], "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE")
+        self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING")
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
         self.assertTrue(payload["all_mutations_rejected"])
 
@@ -200,6 +201,17 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertFalse(probe["d128_residual_add"]["input_relabels_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
+        self.assertEqual(
+            probe["d128_block_receipt_composition"]["status"],
+            "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        )
+        self.assertEqual(probe["d128_block_receipt_composition"]["slice_count"], 6)
+        self.assertEqual(probe["d128_block_receipt_composition"]["total_checked_rows"], 197_504)
+        self.assertEqual(probe["d128_block_receipt_composition"]["mutation_cases"], 19)
+        self.assertEqual(
+            probe["d128_block_receipt_composition"]["output_activation_commitment"],
+            probe["d128_residual_add"]["output_activation_commitment"],
+        )
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
         self.assertEqual(len(probe["d64_hardcoded_markers"]), len(GATE.D64_HARDCODE_MARKERS))
         markers = {row["path"]: row["markers"] for row in probe["d64_hardcoded_markers"]}
@@ -384,7 +396,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
         self.assertFalse(routes["parameterized_vector_residual_add_air"]["checked_in_proof_artifact_exists"])
-        self.assertEqual(routes["parameterized_transformer_block_air"]["status"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
+        self.assertEqual(routes["parameterized_transformer_block_air"]["status"], "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING")
+        self.assertEqual(routes["d128_block_receipt_composition"]["status"], "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE")
+        self.assertTrue(routes["d128_block_receipt_composition"]["receipt_artifact_exists"])
+        self.assertFalse(routes["d128_block_receipt_composition"]["proof_artifact_exists"])
         self.assertEqual(routes["d128_metrics_and_relabeling_suite"]["status"], "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT")
         for name, row in routes.items():
             self.assertIsNone(row["proof_size_bytes"], name)
@@ -418,6 +433,8 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_residual_add_verifier_exists"])
         self.assertTrue(status["partial_d128_residual_add_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_residual_add_checked_in_proof_artifact_exists"])
+        self.assertTrue(status["d128_block_receipt_composition_exists"])
+        self.assertEqual(status["d128_block_receipt_composition_mutation_cases"], 19)
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])

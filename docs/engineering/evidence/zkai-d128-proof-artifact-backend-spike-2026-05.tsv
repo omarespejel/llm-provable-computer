@@ -9,7 +9,8 @@ direct_d128_down_projection_air	GO_PARTIAL_D128_DOWN_PROJECTION_ONLY	128	512	Tru
 direct_d128_residual_add_air	GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY	128		True	True			source-bound residual-add slice only; not composed with the previous d128 slices into a full block receipt
 lift_existing_d64_modules_by_metadata	NO_GO	128	512	False	False			d64 modules validate hard-coded width, target id, domains, and log sizes
 parameterized_vector_residual_add_air	GO_PARTIAL_D128_RESIDUAL_ADD_ONLY	128		True	True			residual-add vector slice only; not a full d128 transformer-block proof
-parameterized_transformer_block_air	NO_GO_FULL_BLOCK_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and source-bound residual-add proof handles exist, but full transformer-block composition is still missing
+parameterized_transformer_block_air	NO_GO_AGGREGATED_PROOF_OBJECT_MISSING	128	512	False	False			a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing
+d128_block_receipt_composition	GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE	128	512	False	True			receipt composition only; not recursive aggregation or one compressed verifier object
 d128_metrics_and_relabeling_suite	NO_GO_BLOCKED_BEFORE_PROOF_OBJECT	128	512	False	False			do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist
 
 mutation	surface	mutated_accepted	rejected	rejection_layer	error

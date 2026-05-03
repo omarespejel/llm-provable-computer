@@ -15,35 +15,37 @@ This gate separates:
 - the partial `d=128` gate/value projection proof handle;
 - the partial `d=128` activation/SwiGLU proof handle;
 - the partial `d=128` down-projection proof handle;
+- the source-bound `d=128` residual-add proof handle;
+- the statement-bound `d=128` block receipt composition gate;
 - the partial `d=128` parameterized vector residual-add slice handle;
-- the still-missing full `d=128` transformer-block proof object.
+- the still-missing recursive or single compressed `d=128` transformer-block
+  proof object.
 
 ## Decision
 
-**Bounded NO-GO for a full d128 transformer-block proof artifact on the current
-backend route. Partial GO for d128 RMSNorm public rows, the
-RMSNorm-to-projection bridge, d128 gate/value projection, d128 activation/SwiGLU,
-the d128 down-projection slice, and the parameterized d128 vector residual-add
-slice.**
+**Bounded NO-GO for an aggregated full d128 transformer-block proof artifact on
+the current backend route. GO for a statement-bound d128 block receipt composed
+from six proof-backed slices. Partial GO remains for the individual d128
+RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
+activation/SwiGLU, down-projection, source-bound residual-add, and
+parameterized vector residual-add slices.**
 
 The current first full-block blocker is:
 
-> d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection,
-> activation/SwiGLU, down-projection, and residual-add proof handles exist, but
-> native residual and full transformer-block composition handles are still
-> missing
+> a statement-bound d128 block receipt now composes six proof-backed slices, but
+> recursive aggregation or a single compressed verifier object is still missing
 
-This supersedes the earlier residual-only, RMSNorm-plus-residual, and
-RMSNorm-bridge-plus-residual states. The repository can now prove six d128
-slice surfaces. The residual-add slice is parameterized and not a native
-residual proof. The repository still cannot report a full d128 block proof size,
-verifier time, or relabeling suite.
+This supersedes the earlier residual-only, RMSNorm-plus-residual,
+RMSNorm-bridge-plus-residual, and six-slices-without-composition states. The
+repository can now prove six d128 slice surfaces and bind them into one block
+receipt. The repository still cannot report an aggregated d128 block proof size
+or verifier time, because the recursive/single-proof object does not exist.
 
 ## Result
 
 | Field | Value |
 | --- | --- |
-| Decision | `NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING` |
+| Decision | `NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING` |
 | Result | `BOUNDED_NO_GO` |
 | Issue | `#387` |
 | Target | `rmsnorm-swiglu-residual-d128-v1` |
@@ -57,33 +59,39 @@ verifier time, or relabeling suite.
 | d128 gate/value projection route | `GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY` |
 | d128 activation/SwiGLU route | `GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY` |
 | d128 down-projection route | `GO_PARTIAL_D128_DOWN_PROJECTION_ONLY` |
+| d128 source-bound residual-add route | `GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY` |
+| d128 block receipt composition route | `GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE` |
 | d128 parameterized residual-add route | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` |
-| Parameterized full-block route | `NO_GO_FULL_BLOCK_SLICES_MISSING` |
+| Parameterized full-block route | `NO_GO_AGGREGATED_PROOF_OBJECT_MISSING` |
 | RMSNorm proof roundtrip | locally constructed and verified by Rust tests |
 | Bridge proof roundtrip | locally constructed and verified by Rust tests |
 | Gate/value proof roundtrip | locally constructed and verified by Rust tests |
 | Activation/SwiGLU proof roundtrip | locally constructed and verified by Rust tests |
 | Down-projection proof roundtrip | locally constructed and verified by Rust tests over `65,536` checked multiplication rows |
+| Source-bound residual-add proof roundtrip | locally constructed and verified by Rust tests |
+| Block receipt composition | `197,504` checked rows, `19 / 19` receipt mutations rejected |
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
-| Full-block metrics | blocked before full proof object |
-| Mutation checks | `73 / 73` rejected |
+| Full-block proof metrics | blocked before aggregated proof object |
+| Mutation checks | `93 / 93` rejected |
 
 ## Backend-route classification
 
 | Route | Status | Interpretation |
 | --- | --- | --- |
 | `existing_d64_slice_chain` | `GO_ANCHOR_ONLY` | The six-slice `d=64` proof chain exists and remains the working local anchor. It is not a `d=128` proof. |
-| `direct_d128_native_modules` | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` | d128 RMSNorm public-row, bridge, gate/value, activation/SwiGLU, and down-projection native modules exist, but native residual, composition, and the full-block verifier are missing. |
+| `direct_d128_native_modules` | `NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING` | d128 RMSNorm public-row, bridge, gate/value, activation/SwiGLU, down-projection, and source-bound residual-add native modules exist, but a direct native full-block verifier is still missing. |
 | `direct_d128_rmsnorm_public_row_air` | `GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY` | A real Stwo proof handle exists for the d128 RMSNorm public-row slice. |
 | `direct_d128_rmsnorm_to_projection_bridge_air` | `GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` | A real Stwo proof handle exists for the d128 handoff from RMSNorm-local rows to projection-input rows. |
 | `direct_d128_gate_value_projection_air` | `GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY` | A real Stwo proof handle exists for the d128 gate/value projection multiplication rows that consume the bridge output. |
 | `direct_d128_activation_swiglu_air` | `GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY` | A real Stwo proof handle exists for the d128 activation/SwiGLU rows that consume the gate/value output and emit hidden activation. |
 | `direct_d128_down_projection_air` | `GO_PARTIAL_D128_DOWN_PROJECTION_ONLY` | A real Stwo proof handle exists for the d128 down-projection rows that consume hidden activation and emit an exact residual-delta quotient/remainder commitment. |
+| `direct_d128_residual_add_air` | `GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY` | A real Stwo proof handle exists for source-bound d128 residual addition, consuming the down-projection residual delta and emitting the final output activation commitment. |
 | `lift_existing_d64_modules_by_metadata` | `NO_GO` | The d64 modules validate d64 width, target id, domains, proof versions, and log sizes. A metadata relabel cannot make them d128. |
 | `parameterized_vector_residual_add_air` | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` | A real parameterized Stwo proof handle exists for the d128 residual-add vector slice. |
-| `parameterized_transformer_block_air` | `NO_GO_FULL_BLOCK_SLICES_MISSING` | Native residual and full block composition do not exist yet. |
-| `d128_metrics_and_relabeling_suite` | `NO_GO_BLOCKED_BEFORE_PROOF_OBJECT` | Full-block proof size, verifier time, and relabeling resistance remain unreported until a full d128 proof object exists. |
+| `parameterized_transformer_block_air` | `NO_GO_AGGREGATED_PROOF_OBJECT_MISSING` | A block receipt exists, but recursive aggregation or one compressed verifier object does not. |
+| `d128_block_receipt_composition` | `GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE` | The six checked d128 slice handles compose into one statement-bound receipt over `197,504` checked rows. |
+| `d128_metrics_and_relabeling_suite` | `NO_GO_BLOCKED_BEFORE_PROOF_OBJECT` | Full-block proof size and verifier time remain unreported until an aggregated d128 proof object exists. |
 
 ## Working anchors
 
@@ -97,13 +105,16 @@ The current local anchors are:
 - the checked `d=128` gate/value projection proof surface;
 - the checked `d=128` activation/SwiGLU proof surface;
 - the checked `d=128` down-projection proof surface;
+- the checked source-bound `d=128` residual-add proof surface;
+- the checked `d=128` block receipt composition gate;
 - the checked `d=128` residual-add vector proof surface.
 
 The d64 anchor proves the receipt discipline and slice interfaces are not
 fiction. The d128 RMSNorm, bridge, gate/value projection, activation/SwiGLU,
 down-projection, and residual-add anchors prove the backend can now clear six
-statement-bound d128 proof slices. They do not form a full d128
-transformer-block proof.
+statement-bound d128 proof slices. The block receipt gate proves those six
+slices compose into one statement-bound receipt. They do not form a recursive or
+single compressed d128 transformer-block proof.
 
 ## Why this closes a fooling-ourselves gap
 
@@ -143,6 +154,14 @@ The gate now validates:
 - the d128 residual-add vector evidence before starting, including statement,
   public-instance, proof-native parameter, input, residual-delta, output, and row
   commitment recomputation;
+- the d128 source-bound residual-add evidence before starting, including
+  RMSNorm source-statement binding, down-projection statement/public-instance
+  binding, exact residual-delta quotient/remainder binding, input/output
+  commitment recomputation, and relabel rejection;
+- the d128 block receipt composition evidence before starting, including source
+  file hashes, source payload hashes, six-slice ordering, inter-slice
+  commitment edges, block statement recomputation, block receipt recomputation,
+  and `19 / 19` receipt mutation rejection;
 - that the remaining expected d128 native modules and exports are still absent;
 - that the d64 modules remain hard-coded to d64 width/domain surfaces;
 - that the partial routes are GO without promoting them to a full-block proof;
@@ -157,12 +176,12 @@ not evidence about the d128 route.
 
 ## Metrics policy
 
-No full-block `d=128` proof size, verifier time, proof-generation time, or
-relabeling-resistance metric is reported here. Those numbers are blocked until:
+No aggregated full-block `d=128` proof size, verifier time, proof-generation
+time, or compressed-proof relabeling-resistance metric is reported here. Those
+numbers are blocked until:
 
-- all required d128 slices exist;
-- a full d128 proof artifact or composed receipt exists;
-- a d128 verifier handle exists for the full statement;
+- an aggregated d128 proof artifact exists;
+- a d128 verifier handle exists for the aggregated full statement;
 - the statement envelope binds model/config/input/output/public-instance/
   proof-native-parameter/proof/verifying-key/setup/evidence-manifest/domain
   commitments, or explicit null-domain rules where a field is not applicable;
@@ -170,18 +189,18 @@ relabeling-resistance metric is reported here. Those numbers are blocked until:
   public-instance, proof, verifying-key, setup, evidence-manifest, and
   verifier-domain fields.
 
-The next concrete backend follow-up is a native d128 residual/composition
-handle: consume `residual_delta_commitment` plus the block input commitment and
-emit the final output-activation commitment without reporting full-block
-metrics until the composed receipt exists.
+The next concrete backend follow-up is recursive or proof-carrying aggregation
+of the checked block receipt. Until that exists, report the d128 result as a
+statement-bound receipt over six proof-backed slices, not as one compressed
+proof.
 
 ## Non-claims
 
 This result does **not** claim:
 
-- a full local d128 transformer-block proof artifact;
-- verifier-time evidence for a full d128 transformer block;
-- proof-size evidence for a full d128 transformer block;
+- an aggregated local d128 transformer-block proof artifact;
+- verifier-time evidence for an aggregated d128 transformer block proof;
+- proof-size evidence for an aggregated d128 transformer block proof;
 - recursive aggregation;
 - backend independence evidence;
 - a matched NANOZK or DeepProve benchmark;
@@ -193,6 +212,10 @@ This result does **not** claim:
   `docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json`
 - Full-block backend spike TSV:
   `docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv`
+- d128 block receipt composition JSON:
+  `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`
+- d128 block receipt composition TSV:
+  `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv`
 - d128 RMSNorm public-row input JSON:
   `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
 - d128 RMSNorm public-row input TSV:
@@ -213,12 +236,18 @@ This result does **not** claim:
   `docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json`
 - d128 down-projection input TSV:
   `docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.tsv`
+- d128 source-bound residual-add input JSON:
+  `docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json`
+- d128 source-bound residual-add input TSV:
+  `docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv`
 - d128 residual-add vector input JSON:
   `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json`
 - d128 residual-add vector input TSV:
   `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv`
 - Backend spike script:
   `scripts/zkai_d128_proof_artifact_backend_spike_gate.py`
+- Block receipt composition script:
+  `scripts/zkai_d128_block_receipt_composition_gate.py`
 - RMSNorm public-row input script:
   `scripts/zkai_d128_rmsnorm_public_row_proof_input.py`
 - RMSNorm-to-projection bridge input script:
@@ -230,9 +259,12 @@ This result does **not** claim:
 - Down-projection input script:
   `scripts/zkai_d128_down_projection_proof_input.py`
 - Residual-add input script:
+  `scripts/zkai_d128_residual_add_proof_input.py`
+- Parameterized residual-add input script:
   `scripts/zkai_d128_vector_residual_add_proof_input.py`
 - Tests:
   `scripts/tests/test_zkai_d128_proof_artifact_backend_spike_gate.py`
+  `scripts/tests/test_zkai_d128_block_receipt_composition_gate.py`
   `scripts/tests/test_zkai_d128_rmsnorm_public_row_proof_input.py`
   `scripts/tests/test_zkai_d128_rmsnorm_to_projection_bridge_input.py`
   `scripts/tests/test_zkai_d128_gate_value_projection_proof_input.py`

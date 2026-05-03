@@ -35,6 +35,7 @@ D128_BRIDGE_GATE_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_to_projection_brid
 D128_GATE_VALUE_GATE_PATH = ROOT / "scripts" / "zkai_d128_gate_value_projection_proof_input.py"
 D128_ACTIVATION_GATE_PATH = ROOT / "scripts" / "zkai_d128_activation_swiglu_proof_input.py"
 D128_DOWN_GATE_PATH = ROOT / "scripts" / "zkai_d128_down_projection_proof_input.py"
+D128_BLOCK_GATE_PATH = ROOT / "scripts" / "zkai_d128_block_receipt_composition_gate.py"
 TARGET_EVIDENCE = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 D64_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 VECTOR_RESIDUAL_EVIDENCE = EVIDENCE_DIR / "zkai-d128-vector-residual-add-proof-2026-05.json"
@@ -44,11 +45,12 @@ D128_BRIDGE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-pr
 D128_GATE_VALUE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-gate-value-projection-proof-2026-05.json"
 D128_ACTIVATION_EVIDENCE = EVIDENCE_DIR / "zkai-d128-activation-swiglu-proof-2026-05.json"
 D128_DOWN_EVIDENCE = EVIDENCE_DIR / "zkai-d128-down-projection-proof-2026-05.json"
+D128_BLOCK_EVIDENCE = EVIDENCE_DIR / "zkai-d128-block-receipt-composition-gate-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-proof-artifact-backend-spike-2026-05.tsv"
 
 SCHEMA = "zkai-d128-proof-artifact-backend-spike-v1"
-DECISION = "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING"
+DECISION = "NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING"
 RESULT = "BOUNDED_NO_GO"
 ISSUE = 387
 TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
@@ -58,9 +60,8 @@ REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
 FIRST_BLOCKER = (
-    "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, "
-    "activation/SwiGLU, down-projection, and source-bound residual-add proof handles "
-    "exist, but full transformer-block composition is still missing"
+    "a statement-bound d128 block receipt now composes six proof-backed slices, "
+    "but recursive aggregation or a single compressed verifier object is still missing"
 )
 
 D64_PROOF_SLICES = (
@@ -297,6 +298,7 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_down_projection_proof_input.py --write-json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_vector_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv",
+    "python3 scripts/zkai_d128_block_receipt_composition_gate.py --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv",
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_projection_proof_input",
@@ -306,6 +308,7 @@ VALIDATION_COMMANDS = [
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "python3 -m unittest scripts.tests.test_zkai_d128_block_receipt_composition_gate",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_gate_value_projection_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
@@ -524,6 +527,10 @@ D128_ACTIVATION_GATE = _load_module(
 D128_DOWN_GATE = _load_module(
     D128_DOWN_GATE_PATH,
     "zkai_d128_down_projection_for_backend_spike",
+)
+D128_BLOCK_GATE = _load_module(
+    D128_BLOCK_GATE_PATH,
+    "zkai_d128_block_receipt_composition_for_backend_spike",
 )
 
 
@@ -1058,6 +1065,31 @@ def build_source_probe() -> dict[str, Any]:
     }.items():
         expect_equal(residual_evidence.get(field), expected, f"parameterized residual-add {field}")
 
+    block_receipt_evidence = load_json(D128_BLOCK_EVIDENCE)
+    try:
+        D128_BLOCK_GATE.validate_payload(block_receipt_evidence)
+    except Exception as err:
+        raise D128BackendSpikeError("d128 block receipt composition evidence failed validation") from err
+    expect_equal(
+        block_receipt_evidence.get("decision"),
+        D128_BLOCK_GATE.DECISION,
+        "d128 block receipt decision",
+    )
+    block_summary = require_object(block_receipt_evidence.get("summary"), "d128 block receipt summary")
+    expect_equal(block_summary.get("slice_count"), 6, "d128 block receipt slice count")
+    expect_equal(block_summary.get("total_checked_rows"), 197_504, "d128 block receipt checked rows")
+    expect_equal(
+        block_summary.get("output_activation_commitment"),
+        d128_residual_evidence["output_activation_commitment"],
+        "d128 block receipt output activation",
+    )
+    block_receipt = require_object(block_receipt_evidence.get("block_receipt"), "d128 block receipt")
+    expect_equal(
+        block_receipt.get("output_activation_commitment"),
+        d128_residual_evidence["output_activation_commitment"],
+        "d128 block receipt final output",
+    )
+
     hardcoded_markers = []
     for path, markers in D64_HARDCODE_MARKERS.items():
         text = read_repo_file(path)
@@ -1249,6 +1281,18 @@ def build_source_probe() -> dict[str, Any]:
             "operation": residual_evidence["operation"],
             "target_width": residual_evidence["width"],
             "row_count": residual_evidence["row_count"],
+        },
+        "d128_block_receipt_composition": {
+            "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+            "evidence": source_descriptor(D128_BLOCK_EVIDENCE, block_receipt_evidence),
+            "slice_count": block_summary["slice_count"],
+            "total_checked_rows": block_summary["total_checked_rows"],
+            "mutation_cases": block_receipt_evidence["case_count"],
+            "mutations_rejected": block_summary["mutations_rejected"],
+            "statement_commitment": block_receipt["statement_commitment"],
+            "block_receipt_commitment": block_receipt["block_receipt_commitment"],
+            "output_activation_commitment": block_receipt["output_activation_commitment"],
+            "non_claims": block_receipt_evidence["non_claims"],
         },
         "missing_parameterized_full_block_symbols": missing_parameterized_full_block_symbols,
         "d64_hardcoded_markers": hardcoded_markers,
@@ -1516,7 +1560,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "route": "parameterized_transformer_block_air",
-            "status": "NO_GO_FULL_BLOCK_SLICES_MISSING",
+            "status": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
             "target_width": TARGET_WIDTH,
             "target_ff_dim": TARGET_FF_DIM,
             "proof_artifact_exists": False,
@@ -1525,6 +1569,22 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "verifier_time_ms": None,
             "blocker": FIRST_BLOCKER,
             "missing_symbols": source_probe["missing_parameterized_full_block_symbols"],
+        },
+        {
+            "route": "d128_block_receipt_composition",
+            "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+            "target_width": TARGET_WIDTH,
+            "target_ff_dim": TARGET_FF_DIM,
+            "proof_artifact_exists": False,
+            "verifier_handle_exists": True,
+            "receipt_artifact_exists": True,
+            "proof_size_bytes": None,
+            "verifier_time_ms": None,
+            "blocker": "receipt composition only; not recursive aggregation or one compressed verifier object",
+            "evidence": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+            "block_receipt_commitment": source_probe["d128_block_receipt_composition"][
+                "block_receipt_commitment"
+            ],
         },
         {
             "route": "d128_metrics_and_relabeling_suite",
@@ -1568,7 +1628,8 @@ def build_payload() -> dict[str, Any]:
         "d128_down_projection_route": "GO_PARTIAL_D128_DOWN_PROJECTION_ONLY",
         "d128_residual_add_route": "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY",
         "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
-        "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
+        "d128_block_receipt_composition_route": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        "parameterized_full_block_route": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "blocked_before_metrics": True,
         "mutation_cases": len(EXPECTED_MUTATION_INVENTORY),
     }
@@ -1599,6 +1660,10 @@ def build_payload() -> dict[str, Any]:
         "partial_d128_residual_add_verifier_exists": True,
         "partial_d128_residual_add_local_roundtrip_proof_constructed": True,
         "partial_d128_residual_add_checked_in_proof_artifact_exists": False,
+        "d128_block_receipt_composition_exists": True,
+        "d128_block_receipt_composition_mutation_cases": source_probe["d128_block_receipt_composition"][
+            "mutation_cases"
+        ],
         "partial_parameterized_residual_add_proof_exists": True,
         "partial_parameterized_residual_add_verifier_exists": True,
         "partial_parameterized_residual_add_local_roundtrip_proof_constructed": True,
@@ -2416,8 +2481,13 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "summary parameterized residual-add route",
     )
     expect_equal(
+        summary.get("d128_block_receipt_composition_route"),
+        "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        "summary d128 block receipt composition route",
+    )
+    expect_equal(
         summary.get("parameterized_full_block_route"),
-        "NO_GO_FULL_BLOCK_SLICES_MISSING",
+        "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "summary parameterized full-block route",
     )
     expect_equal(summary.get("blocked_before_metrics"), True, "summary blocked-before-metrics")
@@ -2866,6 +2936,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "lift_existing_d64_modules_by_metadata",
         "parameterized_vector_residual_add_air",
         "parameterized_transformer_block_air",
+        "d128_block_receipt_composition",
         "d128_metrics_and_relabeling_suite",
     }
     if set(route_by_name) != expected_routes:
@@ -3029,8 +3100,18 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         route_by_name["parameterized_transformer_block_air"].get("status"),
-        "NO_GO_FULL_BLOCK_SLICES_MISSING",
+        "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "parameterized full-block route status",
+    )
+    expect_equal(
+        route_by_name["d128_block_receipt_composition"].get("status"),
+        "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        "d128 block receipt route status",
+    )
+    expect_equal(
+        route_by_name["d128_block_receipt_composition"].get("block_receipt_commitment"),
+        source_probe["d128_block_receipt_composition"]["block_receipt_commitment"],
+        "d128 block receipt route commitment",
     )
     for raw_route in routes:
         route_obj = require_object(raw_route, "backend route")
@@ -3058,6 +3139,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
                 False,
                 f"{route_obj['route']} checked-in proof artifact",
             )
+        elif route_obj["route"] == "d128_block_receipt_composition":
+            expect_equal(route_obj.get("target_width"), TARGET_WIDTH, "d128 receipt target width")
+            expect_equal(route_obj.get("proof_artifact_exists"), False, "d128 receipt proof artifact")
+            expect_equal(route_obj.get("verifier_handle_exists"), True, "d128 receipt verifier handle")
+            expect_equal(route_obj.get("receipt_artifact_exists"), True, "d128 receipt artifact")
         else:
             expect_equal(route_obj.get("target_width"), TARGET_WIDTH, f"{route_obj['route']} target width")
             expect_equal(route_obj.get("proof_artifact_exists"), False, f"{route_obj['route']} proof artifact")
@@ -3189,6 +3275,16 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         proof_status.get("partial_d128_residual_add_checked_in_proof_artifact_exists"),
         False,
         "partial d128 residual-add checked-in proof artifact",
+    )
+    expect_equal(
+        proof_status.get("d128_block_receipt_composition_exists"),
+        True,
+        "d128 block receipt composition exists",
+    )
+    expect_equal(
+        proof_status.get("d128_block_receipt_composition_mutation_cases"),
+        source_probe["d128_block_receipt_composition"]["mutation_cases"],
+        "d128 block receipt composition mutation cases",
     )
     expect_equal(
         proof_status.get("partial_parameterized_residual_add_proof_exists"),
