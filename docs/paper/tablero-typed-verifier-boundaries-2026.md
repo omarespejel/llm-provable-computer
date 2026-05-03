@@ -965,8 +965,8 @@ and verifier-handle commitment
 The accumulator validates the source two-slice target evidence, validates both
 selected source slice evidence files with their slice-local validators, and
 binds `two_slice_target_commitment`, the selected slice statement commitments,
-and the selected source evidence hashes. The gate rejects `36 / 36` binding,
-relabeling, verifier-handle, recursive-claim, and recursive-metric-smuggling
+and the selected source evidence hashes. The gate rejects `37 / 37` binding,
+relabeling, verifier-domain, verifier-handle, recursive-claim, and recursive-metric-smuggling
 mutations. Its claim boundary is explicit:
 `NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF`; this is accumulator integrity, not
 recursive proof compression. It is anchored to

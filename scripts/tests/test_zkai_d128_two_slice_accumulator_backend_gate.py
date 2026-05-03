@@ -114,6 +114,7 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
             "public_input_selected_statement_drift": "accumulator_artifact",
             "selected_slice_removed": "accumulator_artifact",
             "source_statement_commitment_drift": "accumulator_artifact",
+            "verifier_domain_drift": "accumulator_artifact",
             "validator_result_false": "accumulator_artifact",
             "verifier_handle_commitment_drift": "verifier_handle",
             "recursive_outer_proof_claimed": "recursive_or_pcd_status",
@@ -136,6 +137,10 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
         payload["accumulator_artifact"]["preimage"]["verifier_transcript"][0]["source_payload_sha256"] = "22" * 32
         with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "accumulator"):
             GATE.validate_payload(payload)
+
+    def test_accumulator_preimage_normalizes_missing_public_input_contract(self) -> None:
+        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "outer public input contract"):
+            GATE.accumulator_preimage({"two_slice_target_commitment": "blake2b-256:" + "11" * 32}, [])
 
     def test_rejects_recursive_claim_without_backend(self) -> None:
         payload = self.fresh_payload()
@@ -162,7 +167,13 @@ class ZkAiD128TwoSliceAccumulatorBackendGateTests(unittest.TestCase):
         payload["cases"][0]["rejection_layer"] = "accepted"
         payload["cases"][0]["error"] = ""
         payload["all_mutations_rejected"] = False
-        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "not all"):
+        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "mutation case 0 mutated_accepted"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_stored_mutation_case_tampering(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["error"] = "rewritten error"
+        with self.assertRaisesRegex(GATE.D128TwoSliceAccumulatorBackendError, "mutation case 0 error"):
             GATE.validate_payload(payload)
 
     def test_tsv_columns_are_stable(self) -> None:

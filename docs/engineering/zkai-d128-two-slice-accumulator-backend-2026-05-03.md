@@ -50,13 +50,13 @@ blocked until a real recursive/PCD backend artifact exists.
 
 ## Mutation Coverage
 
-The gate rejects `36 / 36` mutation cases, including:
+The gate rejects `37 / 37` mutation cases, including:
 
 - source two-slice evidence path, file-hash, payload-hash, result, and target-commitment drift;
 - accumulator commitment, claim-boundary, target-public-input, selected-statement, and selected-source-hash drift;
 - selected-slice removal, duplication, reordering, and row-count drift;
 - selected source evidence file-hash, payload-hash, statement, public-instance, and target-commitment drift;
-- verifier transcript and verifier-handle relabeling;
+- verifier-domain, verifier-transcript, and verifier-handle relabeling;
 - recursive/PCD claim relabeling and recursive metric smuggling;
 - parser-level attempts to relabel the result or remove non-claims.
 

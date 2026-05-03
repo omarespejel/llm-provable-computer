@@ -1133,8 +1133,8 @@ and verifier-handle commitment
 `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
 The accumulator validates the two selected source slice evidence files with
 their slice-local validators and binds the target commitment, selected
-statement commitments, and selected source evidence hashes. It rejects `36 / 36`
-binding, relabeling, verifier-handle, recursive-claim, and recursive
+statement commitments, and selected source evidence hashes. It rejects `37 / 37`
+binding, relabeling, verifier-domain, verifier-handle, recursive-claim, and recursive
 metric-smuggling mutations. This is an honest GO for accumulator integrity, not
 a recursive proof-compression result. Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md` and
