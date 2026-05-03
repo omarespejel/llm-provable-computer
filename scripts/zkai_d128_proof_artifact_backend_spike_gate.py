@@ -56,6 +56,7 @@ ISSUE = 387
 TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
 TARGET_WIDTH = 128
 TARGET_FF_DIM = 512
+D128_BLOCK_RECEIPT_MUTATION_CASES = 20
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
@@ -436,6 +437,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_block_receipt_composition_route_status_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
+    ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
     ("d64_hardcoded_marker_removed", "source_probe"),
@@ -2397,6 +2399,15 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "backend_routes",
         drift_d128_block_receipt_flag,
     )
+
+    def drift_d128_block_receipt_mutation_count(p: dict[str, Any]) -> None:
+        p["source_probe"]["d128_block_receipt_composition"]["mutations_rejected"] = 0
+
+    add(
+        "d128_block_receipt_composition_mutations_rejected_drift",
+        "source_probe",
+        drift_d128_block_receipt_mutation_count,
+    )
     add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
 
     def remove_missing_module(p: dict[str, Any]) -> None:
@@ -2945,6 +2956,49 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         residual_probe.get("present_symbols"),
         list(PARAMETERIZED_RESIDUAL_ADD_SYMBOLS),
         "present parameterized residual-add symbol inventory",
+    )
+    block_receipt_probe = require_object(
+        source_probe.get("d128_block_receipt_composition"),
+        "d128 block receipt composition probe",
+    )
+    expect_equal(
+        block_receipt_probe.get("status"),
+        "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        "d128 block receipt composition status",
+    )
+    expect_equal(block_receipt_probe.get("slice_count"), 6, "d128 block receipt slice count")
+    expect_equal(
+        block_receipt_probe.get("total_checked_rows"),
+        197_504,
+        "d128 block receipt checked rows",
+    )
+    expect_equal(
+        block_receipt_probe.get("mutation_cases"),
+        D128_BLOCK_RECEIPT_MUTATION_CASES,
+        "d128 block receipt mutation cases",
+    )
+    expect_equal(
+        block_receipt_probe.get("mutations_rejected"),
+        D128_BLOCK_RECEIPT_MUTATION_CASES,
+        "d128 block receipt mutations rejected",
+    )
+    require_commitment(
+        block_receipt_probe.get("statement_commitment"),
+        "d128 block receipt statement commitment",
+    )
+    require_commitment(
+        block_receipt_probe.get("block_receipt_commitment"),
+        "d128 block receipt commitment",
+    )
+    expect_equal(
+        block_receipt_probe.get("output_activation_commitment"),
+        residual_add_probe.get("output_activation_commitment"),
+        "d128 block receipt output activation",
+    )
+    expect_equal(
+        block_receipt_probe.get("non_claims"),
+        D128_BLOCK_GATE.NON_CLAIMS,
+        "d128 block receipt non-claims",
     )
     expect_equal(
         source_probe.get("missing_parameterized_full_block_symbols"),

@@ -68,6 +68,8 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_block_receipt_composition_gate.py --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_block_receipt_composition_gate",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate",
 ]
 
 TSV_COLUMNS = (
@@ -223,6 +225,14 @@ def require_int(value: Any, field: str) -> int:
 def expect_equal(actual: Any, expected: Any, field: str) -> None:
     if actual != expected:
         raise D128BlockReceiptError(f"{field} mismatch")
+
+
+def expect_key_set(value: dict[str, Any], expected: set[str], field: str) -> None:
+    actual = set(value)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise D128BlockReceiptError(f"{field} key set mismatch: missing={missing} extra={extra}")
 
 
 def wrap_validator(name: str, validator: Callable[[Any], None]) -> Callable[[Any], None]:
@@ -758,6 +768,25 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
     receipt = payload.get("block_receipt")
     if not isinstance(receipt, dict):
         raise D128BlockReceiptError("block receipt must be an object")
+    expect_key_set(
+        receipt,
+        {
+            "receipt_version",
+            "statement_kind",
+            "target_id",
+            "model_config",
+            "input_activation_commitment",
+            "output_activation_commitment",
+            "required_backend_version",
+            "verifier_domain",
+            "slice_versions",
+            "slice_chain_commitment",
+            "evidence_manifest_commitment",
+            "statement_commitment",
+            "block_receipt_commitment",
+        },
+        "block receipt",
+    )
     expected = {
         "receipt_version": RECEIPT_VERSION,
         "statement_kind": STATEMENT_KIND,
@@ -776,6 +805,9 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
     if not isinstance(slice_versions, list) or len(slice_versions) != len(SLICE_SPECS):
         raise D128BlockReceiptError("block receipt slice_versions mismatch")
     for version, spec in zip(slice_versions, SLICE_SPECS, strict=True):
+        if not isinstance(version, dict):
+            raise D128BlockReceiptError("block receipt slice version must be an object")
+        expect_key_set(version, {"slice_id", "proof_backend_version", "schema"}, "block receipt slice version")
         expect_equal(version.get("slice_id"), spec.slice_id, "block receipt slice version id")
         expect_equal(version.get("schema"), spec.schema, "block receipt slice version schema")
         expect_equal(version.get("proof_backend_version"), spec.proof_version, "block receipt slice proof version")
@@ -794,6 +826,22 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
 def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     if not isinstance(payload, dict):
         raise D128BlockReceiptError("block receipt composition payload must be an object")
+    expected_top_level = {
+        "schema",
+        "decision",
+        "result",
+        "block_receipt",
+        "slice_chain",
+        "source_evidence_manifest",
+        "slice_chain_commitment",
+        "evidence_manifest_commitment",
+        "summary",
+        "non_claims",
+        "validation_commands",
+    }
+    if require_mutations:
+        expected_top_level |= {"case_count", "all_mutations_rejected", "cases"}
+    expect_key_set(payload, expected_top_level, "block receipt composition payload")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
     expect_equal(payload.get("decision"), DECISION, "decision")
     expect_equal(payload.get("result"), "GO", "result")
@@ -814,6 +862,17 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     summary = payload.get("summary")
     if not isinstance(summary, dict):
         raise D128BlockReceiptError("summary must be an object")
+    expected_summary = {
+        "slice_count",
+        "total_checked_rows",
+        "input_activation_commitment",
+        "output_activation_commitment",
+        "non_claims",
+        "next_backend_step",
+    }
+    if require_mutations:
+        expected_summary |= {"mutation_cases", "mutations_rejected"}
+    expect_key_set(summary, expected_summary, "summary")
     expect_equal(summary.get("slice_count"), len(SLICE_SPECS), "summary slice count")
     total_checked_rows = sum(
         require_int(item.get("row_count"), f"{item.get('slice_id', 'unknown')} row_count")
@@ -837,6 +896,19 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         for index, (case, expected_case) in enumerate(zip(cases, expected, strict=True)):
             if not isinstance(case, dict):
                 raise D128BlockReceiptError("mutation case must be an object")
+            expect_key_set(
+                case,
+                {
+                    "mutation",
+                    "surface",
+                    "baseline_accepted",
+                    "mutated_accepted",
+                    "rejected",
+                    "rejection_layer",
+                    "error",
+                },
+                f"mutation case {index}",
+            )
             expect_equal(case.get("mutation"), expected_case["mutation"], f"mutation case {index} name")
             expect_equal(case.get("surface"), expected_case["surface"], f"mutation case {index} surface")
             expect_equal(case.get("baseline_accepted"), True, f"mutation case {index} baseline")
@@ -851,6 +923,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             )
             if case["rejected"]:
                 rejected_count += 1
+                expect_equal(
+                    case.get("rejection_layer"),
+                    expected_case["rejection_layer"],
+                    f"mutation case {index} rejection layer",
+                )
                 if not case.get("error"):
                     raise D128BlockReceiptError(f"mutation case {index} error must be non-empty")
         expect_equal(summary.get("mutations_rejected"), rejected_count, "summary mutations rejected")
@@ -989,7 +1066,7 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
 
 def expected_mutation_inventory() -> list[dict[str, str]]:
     return [
-        {"mutation": mutation, "surface": surface}
+        {"mutation": mutation, "surface": surface, "rejection_layer": surface}
         for mutation, surface, _mutated in _mutated_cases(build_payload())
     ]
 

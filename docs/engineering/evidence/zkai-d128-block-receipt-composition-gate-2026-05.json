@@ -455,6 +455,8 @@
   "validation_commands": [
     "python3 scripts/zkai_d128_block_receipt_composition_gate.py --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_block_receipt_composition_gate",
-    "python3 scripts/paper/paper_preflight.py --repo-root ."
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate"
   ]
 }

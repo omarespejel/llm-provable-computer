@@ -770,6 +770,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             cases["d128_block_receipt_composition_route_receipt_flag_drift"]["rejection_layer"],
             "backend_routes",
         )
+        self.assertEqual(
+            cases["d128_block_receipt_composition_mutations_rejected_drift"]["rejection_layer"],
+            "source_probe",
+        )
         self.assertEqual(cases["missing_module_removed"]["rejection_layer"], "source_probe")
         self.assertEqual(cases["proof_size_metric_smuggled"]["rejection_layer"], "metrics")
         for case in cases.values():

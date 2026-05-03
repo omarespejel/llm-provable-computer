@@ -159,6 +159,31 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "mutations rejected"):
             COMPOSITION.validate_payload(payload)
 
+        payload = self.fresh_payload()
+        payload["cases"][0]["rejection_layer"] = "accepted"
+        with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "rejection layer"):
+            COMPOSITION.validate_payload(payload)
+
+    def test_rejects_extra_claim_bearing_fields(self) -> None:
+        for target, field in (
+            ("payload", "proof_size_bytes"),
+            ("block_receipt", "aggregated_proof_object"),
+            ("summary", "verifier_time_ms"),
+            ("mutation_case", "unchecked_metric"),
+        ):
+            with self.subTest(target=target):
+                payload = self.fresh_payload()
+                if target == "payload":
+                    payload[field] = 1
+                elif target == "block_receipt":
+                    payload["block_receipt"][field] = "present"
+                elif target == "summary":
+                    payload["summary"][field] = 1.0
+                else:
+                    payload["cases"][0][field] = "present"
+                with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "key set"):
+                    COMPOSITION.validate_payload(payload)
+
     def test_rejects_down_projection_residual_delta_source_drift(self) -> None:
         source = COMPOSITION.source_payloads()
         source["down_projection"]["residual_delta_commitment"] = "blake2b-256:" + "66" * 32
