@@ -22,6 +22,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import stat as stat_module
 import tempfile
 from typing import Any
@@ -299,13 +300,16 @@ def parse_json_bytes(raw: bytes, path: pathlib.Path) -> dict[str, Any]:
 def validate_source_payload(source: dict[str, Any], spec: SourceSpec) -> None:
     expect_equal(source.get("schema"), spec.schema, f"{spec.source_id} schema")
     expect_equal(source.get("decision"), spec.decision, f"{spec.source_id} decision")
-    if str(source.get("target_id", "")).startswith("rmsnorm-swiglu-residual") is False:
+    if not str(source.get("target_id", "")).startswith("rmsnorm-swiglu-residual"):
         raise D128RangePolicyError(f"{spec.source_id} target_id drift")
     if spec.dimension == "d64":
         expect_equal(source.get("width"), 64, f"{spec.source_id} width")
     if spec.dimension == "d128":
         expect_equal(source.get("width"), 128, f"{spec.source_id} width")
-    if source.get("verifier_domain") and spec.dimension not in str(source["verifier_domain"]):
+    verifier_domain = source.get("verifier_domain")
+    if not isinstance(verifier_domain, str) or not verifier_domain:
+        raise D128RangePolicyError(f"{spec.source_id} verifier_domain missing")
+    if spec.dimension not in verifier_domain:
         raise D128RangePolicyError(f"{spec.source_id} verifier domain dimension drift")
 
 
@@ -462,25 +466,22 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_core_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
-    snapshots = None
-    if payloads is None:
-        snapshots = source_snapshots()
-        payloads = {spec.source_id: snapshots[spec.source_id]["payload"] for spec in SOURCE_SPECS}
+def build_core_payload() -> dict[str, Any]:
+    snapshots = source_snapshots()
+    payloads = {spec.source_id: snapshots[spec.source_id]["payload"] for spec in SOURCE_SPECS}
     rows = tensor_policy_rows(payloads)
     policy_commitment = blake2b_commitment(rows, RANGE_POLICY_DOMAIN)
-    payload = {
+    return {
         "schema": SCHEMA,
         "decision": DECISION,
         "question": "Does the d128 statement-bound transformer block require per-tensor range policy rather than one global q8 semantic bound?",
-        "source_evidence_manifest": source_manifest(snapshots or source_snapshots()),
+        "source_evidence_manifest": source_manifest(snapshots),
         "range_policy_commitment": policy_commitment,
         "tensor_policies": rows,
         "summary": build_summary(rows) | {"range_policy_commitment": policy_commitment},
         "non_claims": NON_CLAIMS,
         "validation_commands": VALIDATION_COMMANDS,
     }
-    return payload
 
 
 def _core_fields(payload: dict[str, Any]) -> dict[str, Any]:
@@ -588,20 +589,25 @@ def expected_mutation_inventory() -> list[dict[str, str]]:
     ]
 
 
+ERROR_LAYER_PATTERNS = (
+    (re.compile(r"\bsource_evidence_manifest\b"), "source_evidence_manifest"),
+    (re.compile(r"\bvalidation_commands\b|\bvalidation commands\b"), "validation_commands"),
+    (re.compile(r"\brange_policy_commitment\b"), "range_policy_commitment"),
+    (re.compile(r"\bkey mismatch\b|\bextra=\b"), "parser_or_schema"),
+    (re.compile(r"\btensor_policies\b"), "range_policy"),
+    (re.compile(r"\bsummary\b"), "summary"),
+    (re.compile(r"\brange\b|\bpolicy\b"), "range_policy"),
+)
+
+
 def classify_error(error: Exception) -> str:
+    code = getattr(error, "code", None)
+    if isinstance(code, str) and code:
+        return code
     text = str(error).lower()
-    if "source_evidence_manifest" in text or "source" in text or "manifest" in text:
-        return "source_evidence_manifest"
-    if "validation_commands" in text or "validation commands" in text:
-        return "validation_commands"
-    if "range_policy_commitment" in text:
-        return "range_policy_commitment"
-    if "key mismatch" in text or "extra=" in text:
-        return "parser_or_schema"
-    if "tensor_policies" in text or "range" in text or "policy" in text:
-        return "range_policy"
-    if "summary" in text:
-        return "summary"
+    for pattern, layer in ERROR_LAYER_PATTERNS:
+        if pattern.search(text):
+            return layer
     return "parser_or_schema"
 
 
