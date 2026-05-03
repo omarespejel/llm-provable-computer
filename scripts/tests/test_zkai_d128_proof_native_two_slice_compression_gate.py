@@ -264,6 +264,41 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "docs/engineering/evidence"):
                 GATE.write_outputs(payload, link.relative_to(GATE.ROOT), None)
 
+    def test_dirfd_write_survives_parent_path_swap(self) -> None:
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp, tempfile.TemporaryDirectory(dir=GATE.ROOT) as raw_outside:
+            tmp_root = pathlib.Path(raw_tmp)
+            stable_parent = tmp_root / "stable"
+            moved_parent = tmp_root / "moved"
+            outside = pathlib.Path(raw_outside)
+            stable_parent.mkdir()
+            probe = tmp_root / "probe-link"
+            try:
+                probe.symlink_to(outside, target_is_directory=True)
+                probe.unlink()
+            except OSError:
+                self.skipTest("symlink creation not supported in this environment")
+
+            original_replace = GATE.os.replace
+            swapped = False
+
+            def swapping_replace(src: str, dst: str, *args: object, **kwargs: object) -> None:
+                nonlocal swapped
+                if not swapped:
+                    swapped = True
+                    stable_parent.rename(moved_parent)
+                    stable_parent.symlink_to(outside, target_is_directory=True)
+                original_replace(src, dst, *args, **kwargs)
+
+            GATE.os.replace = swapping_replace
+            try:
+                GATE._write_bytes_via_dirfd(stable_parent / "compression.json", b"pinned-write")
+            finally:
+                GATE.os.replace = original_replace
+
+            self.assertTrue(swapped)
+            self.assertEqual((moved_parent / "compression.json").read_bytes(), b"pinned-write")
+            self.assertFalse((outside / "compression.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
