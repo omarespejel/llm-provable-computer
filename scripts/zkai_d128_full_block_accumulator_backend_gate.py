@@ -32,8 +32,9 @@ import pathlib
 import stat as stat_module
 import sys
 import tempfile
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Any, Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -436,9 +437,9 @@ def build_verifier_transcript(source: dict[str, Any]) -> list[dict[str, Any]]:
     if len(chain) != EXPECTED_SLICE_COUNT or len(manifest) != EXPECTED_SLICE_COUNT:
         raise D128FullBlockAccumulatorBackendError("full-block slice count mismatch")
     transcript: list[dict[str, Any]] = []
-    for expected_index, (slice_item, manifest_item) in enumerate(zip(chain, manifest, strict=True)):
-        slice_item = require_object(slice_item, f"slice chain item {expected_index}")
-        manifest_item = require_object(manifest_item, f"source evidence item {expected_index}")
+    for expected_index, (raw_slice_item, raw_manifest_item) in enumerate(zip(chain, manifest, strict=True)):
+        slice_item = require_object(raw_slice_item, f"slice chain item {expected_index}")
+        manifest_item = require_object(raw_manifest_item, f"source evidence item {expected_index}")
         slice_id = require_str(slice_item.get("slice_id"), f"slice {expected_index} id")
         expect_equal(manifest_item.get("slice_id"), slice_id, f"{slice_id} manifest id")
         expect_equal(slice_item.get("index"), expected_index, f"{slice_id} index")
