@@ -184,7 +184,9 @@ FINAL_TOP_LEVEL_KEYS = BASE_TOP_LEVEL_KEYS | MUTATION_TOP_LEVEL_KEYS
 
 
 class D128FullBlockAccumulatorBackendError(ValueError):
-    pass
+    def __init__(self, message: str, *, layer: str = "parser_or_schema") -> None:
+        super().__init__(message)
+        self.layer = layer
 
 
 def _load_module(path: pathlib.Path, module_name: str) -> Any:
@@ -220,57 +222,69 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     return f"blake2b-256:{digest.hexdigest()}"
 
 
-def expect_equal(actual: Any, expected: Any, field: str) -> None:
+def expect_equal(actual: Any, expected: Any, field: str, *, layer: str = "parser_or_schema") -> None:
     if actual != expected:
-        raise D128FullBlockAccumulatorBackendError(f"{field} mismatch")
+        raise D128FullBlockAccumulatorBackendError(f"{field} mismatch", layer=layer)
 
 
-def expect_key_set(value: dict[str, Any], expected: set[str], field: str) -> None:
+def expect_key_set(
+    value: dict[str, Any],
+    expected: set[str],
+    field: str,
+    *,
+    layer: str = "parser_or_schema",
+) -> None:
     actual = set(value)
     if actual != expected:
         missing = sorted(expected - actual)
         extra = sorted(actual - expected)
-        raise D128FullBlockAccumulatorBackendError(f"{field} key set mismatch: missing={missing} extra={extra}")
+        raise D128FullBlockAccumulatorBackendError(
+            f"{field} key set mismatch: missing={missing} extra={extra}",
+            layer=layer,
+        )
 
 
-def require_object(value: Any, field: str) -> dict[str, Any]:
+def require_object(value: Any, field: str, *, layer: str = "parser_or_schema") -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be an object")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be an object", layer=layer)
     return value
 
 
-def require_list(value: Any, field: str) -> list[Any]:
+def require_list(value: Any, field: str, *, layer: str = "parser_or_schema") -> list[Any]:
     if not isinstance(value, list):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a list")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a list", layer=layer)
     return value
 
 
-def require_str(value: Any, field: str) -> str:
+def require_str(value: Any, field: str, *, layer: str = "parser_or_schema") -> str:
     if not isinstance(value, str) or not value:
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a non-empty string")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a non-empty string", layer=layer)
     return value
 
 
-def require_int(value: Any, field: str) -> int:
+def require_int(value: Any, field: str, *, layer: str = "parser_or_schema") -> int:
     if not isinstance(value, int) or isinstance(value, bool):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be an integer")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be an integer", layer=layer)
     return value
 
 
-def require_bool(value: Any, field: str) -> bool:
+def require_bool(value: Any, field: str, *, layer: str = "parser_or_schema") -> bool:
     if not isinstance(value, bool):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a boolean")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a boolean", layer=layer)
     return value
 
 
-def require_commitment(value: Any, field: str) -> str:
+def require_commitment(value: Any, field: str, *, layer: str = "parser_or_schema") -> str:
     if not isinstance(value, str):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a commitment string")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a commitment string", layer=layer)
     if not value.startswith("blake2b-256:"):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be blake2b-256 domain-separated")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be blake2b-256 domain-separated", layer=layer)
     raw = value.removeprefix("blake2b-256:")
     if len(raw) != 64 or any(char not in "0123456789abcdef" for char in raw):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a 32-byte lowercase hex digest")
+        raise D128FullBlockAccumulatorBackendError(
+            f"{field} must be a 32-byte lowercase hex digest",
+            layer=layer,
+        )
     return value
 
 
@@ -309,12 +323,18 @@ def load_json(path: pathlib.Path) -> dict[str, Any]:
     return json.loads(_load_json_cached(path.resolve()))
 
 
-def _safe_repo_relative_path(value: Any, field: str, *, evidence_only: bool = True) -> pathlib.Path:
+def _safe_repo_relative_path(
+    value: Any,
+    field: str,
+    *,
+    evidence_only: bool = True,
+    layer: str = "source_evidence_manifest",
+) -> pathlib.Path:
     if not isinstance(value, str):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be a string")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be a string", layer=layer)
     pure = pathlib.PurePosixPath(value)
     if pure.is_absolute() or any(part in ("", ".", "..") for part in pure.parts):
-        raise D128FullBlockAccumulatorBackendError(f"{field} must be repo-relative without traversal")
+        raise D128FullBlockAccumulatorBackendError(f"{field} must be repo-relative without traversal", layer=layer)
     candidate = ROOT.joinpath(*pure.parts)
     resolved = candidate.resolve(strict=False)
     anchor = EVIDENCE_DIR.resolve() if evidence_only else ROOT.resolve()
@@ -322,7 +342,7 @@ def _safe_repo_relative_path(value: Any, field: str, *, evidence_only: bool = Tr
         resolved.relative_to(anchor)
     except ValueError as err:
         scope = "evidence directory" if evidence_only else "repository"
-        raise D128FullBlockAccumulatorBackendError(f"{field} escapes {scope}") from err
+        raise D128FullBlockAccumulatorBackendError(f"{field} escapes {scope}", layer=layer) from err
     return candidate
 
 
@@ -369,9 +389,15 @@ def _validate_block_receipt_source(payload: dict[str, Any]) -> None:
     try:
         BLOCK_RECEIPT.validate_payload(payload)
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
-        raise D128FullBlockAccumulatorBackendError(f"block receipt source validation failed: {err}") from err
+        raise D128FullBlockAccumulatorBackendError(
+            f"block receipt source validation failed: {err}",
+            layer="source_block_receipt",
+        ) from err
     if payload.get("all_mutations_rejected") is not True:
-        raise D128FullBlockAccumulatorBackendError("block receipt source did not reject all checked mutations")
+        raise D128FullBlockAccumulatorBackendError(
+            "block receipt source did not reject all checked mutations",
+            layer="source_block_receipt",
+        )
 
 
 @lru_cache(maxsize=None)
@@ -421,32 +447,66 @@ def _slice_statement_commitments(source: dict[str, Any]) -> list[dict[str, Any]]
 
 
 def _validate_source_files_against_manifest(source: dict[str, Any]) -> None:
-    manifest = require_list(source.get("source_evidence_manifest"), "source evidence manifest")
+    manifest = require_list(
+        source.get("source_evidence_manifest"),
+        "source evidence manifest",
+        layer="source_evidence_manifest",
+    )
     for item in manifest:
-        entry = require_object(item, "source evidence manifest item")
-        source_path = _safe_repo_relative_path(entry.get("path"), "source evidence path")
+        entry = require_object(item, "source evidence manifest item", layer="source_evidence_manifest")
+        source_path = _safe_repo_relative_path(
+            entry.get("path"),
+            "source evidence path",
+            layer="source_evidence_manifest",
+        )
         actual = load_json(source_path)
-        expect_equal(file_sha256(source_path), entry.get("file_sha256"), f"{entry.get('slice_id')} file hash")
-        expect_equal(sha256_hex_json(actual), entry.get("payload_sha256"), f"{entry.get('slice_id')} payload hash")
+        expect_equal(
+            file_sha256(source_path),
+            entry.get("file_sha256"),
+            f"{entry.get('slice_id')} file hash",
+            layer="source_evidence_manifest",
+        )
+        expect_equal(
+            sha256_hex_json(actual),
+            entry.get("payload_sha256"),
+            f"{entry.get('slice_id')} payload hash",
+            layer="source_evidence_manifest",
+        )
 
 
 def build_verifier_transcript(source: dict[str, Any]) -> list[dict[str, Any]]:
     _validate_source_files_against_manifest(source)
-    chain = require_list(source.get("slice_chain"), "slice chain")
-    manifest = require_list(source.get("source_evidence_manifest"), "source evidence manifest")
+    chain = require_list(source.get("slice_chain"), "slice chain", layer="verifier_transcript")
+    manifest = require_list(
+        source.get("source_evidence_manifest"),
+        "source evidence manifest",
+        layer="source_evidence_manifest",
+    )
     if len(chain) != EXPECTED_SLICE_COUNT or len(manifest) != EXPECTED_SLICE_COUNT:
-        raise D128FullBlockAccumulatorBackendError("full-block slice count mismatch")
+        raise D128FullBlockAccumulatorBackendError("full-block slice count mismatch", layer="verifier_transcript")
     transcript: list[dict[str, Any]] = []
     for expected_index, (raw_slice_item, raw_manifest_item) in enumerate(zip(chain, manifest, strict=True)):
-        slice_item = require_object(raw_slice_item, f"slice chain item {expected_index}")
-        manifest_item = require_object(raw_manifest_item, f"source evidence item {expected_index}")
-        slice_id = require_str(slice_item.get("slice_id"), f"slice {expected_index} id")
-        expect_equal(manifest_item.get("slice_id"), slice_id, f"{slice_id} manifest id")
-        expect_equal(slice_item.get("index"), expected_index, f"{slice_id} index")
-        expect_equal(manifest_item.get("index"), expected_index, f"{slice_id} manifest index")
-        row_count = require_int(slice_item.get("row_count"), f"{slice_id} row count")
+        slice_item = require_object(raw_slice_item, f"slice chain item {expected_index}", layer="verifier_transcript")
+        manifest_item = require_object(
+            raw_manifest_item,
+            f"source evidence item {expected_index}",
+            layer="source_evidence_manifest",
+        )
+        slice_id = require_str(slice_item.get("slice_id"), f"slice {expected_index} id", layer="verifier_transcript")
+        expect_equal(manifest_item.get("slice_id"), slice_id, f"{slice_id} manifest id", layer="source_evidence_manifest")
+        expect_equal(slice_item.get("index"), expected_index, f"{slice_id} index", layer="verifier_transcript")
+        expect_equal(
+            manifest_item.get("index"),
+            expected_index,
+            f"{slice_id} manifest index",
+            layer="source_evidence_manifest",
+        )
+        row_count = require_int(slice_item.get("row_count"), f"{slice_id} row count", layer="verifier_transcript")
         if row_count <= 0:
-            raise D128FullBlockAccumulatorBackendError(f"{slice_id} row count must be positive")
+            raise D128FullBlockAccumulatorBackendError(
+                f"{slice_id} row count must be positive",
+                layer="verifier_transcript",
+            )
         transcript.append(
             {
                 "index": expected_index,
@@ -469,7 +529,10 @@ def build_verifier_transcript(source: dict[str, Any]) -> list[dict[str, Any]]:
         )
     total_rows = sum(item["row_count"] for item in transcript)
     if total_rows != EXPECTED_CHECKED_ROWS:
-        raise D128FullBlockAccumulatorBackendError("full-block checked-row total mismatch")
+        raise D128FullBlockAccumulatorBackendError(
+            "full-block checked-row total mismatch",
+            layer="verifier_transcript",
+        )
     return transcript
 
 
@@ -622,52 +685,100 @@ def build_payload() -> dict[str, Any]:
 
 
 def _validate_source_descriptor(payload: dict[str, Any]) -> dict[str, Any]:
-    descriptor = require_object(payload.get("source_block_receipt"), "source block receipt")
-    source_path = _safe_repo_relative_path(descriptor.get("path"), "source block receipt path")
-    expect_equal(relative_path(source_path), relative_path(BLOCK_RECEIPT_EVIDENCE), "source block receipt path")
+    descriptor = require_object(payload.get("source_block_receipt"), "source block receipt", layer="source_block_receipt")
+    source_path = _safe_repo_relative_path(
+        descriptor.get("path"),
+        "source block receipt path",
+        layer="source_block_receipt",
+    )
+    expect_equal(
+        relative_path(source_path),
+        relative_path(BLOCK_RECEIPT_EVIDENCE),
+        "source block receipt path",
+        layer="source_block_receipt",
+    )
     source = load_checked_block_receipt(source_path)
     expected = block_receipt_source_descriptor(source)
-    expect_equal(descriptor, expected, "source block receipt descriptor")
+    expect_equal(descriptor, expected, "source block receipt descriptor", layer="source_block_receipt")
     return source
 
 
 def verify_accumulator_artifact(artifact: Any, source: dict[str, Any] | None = None) -> None:
-    artifact = require_object(artifact, "accumulator artifact")
-    expect_equal(artifact.get("schema"), ACCUMULATOR_SCHEMA, "accumulator schema")
-    expect_equal(artifact.get("accumulator_kind"), ACCUMULATOR_KIND, "accumulator kind")
-    expect_equal(artifact.get("claim_boundary"), CLAIM_BOUNDARY, "accumulator claim boundary")
-    expect_equal(artifact.get("issue"), ISSUE, "accumulator issue")
+    artifact = require_object(artifact, "accumulator artifact", layer="accumulator_artifact")
+    expect_equal(artifact.get("schema"), ACCUMULATOR_SCHEMA, "accumulator schema", layer="accumulator_artifact")
+    expect_equal(
+        artifact.get("accumulator_kind"),
+        ACCUMULATOR_KIND,
+        "accumulator kind",
+        layer="accumulator_artifact",
+    )
+    expect_equal(
+        artifact.get("claim_boundary"),
+        CLAIM_BOUNDARY,
+        "accumulator claim boundary",
+        layer="accumulator_artifact",
+    )
+    expect_equal(artifact.get("issue"), ISSUE, "accumulator issue", layer="accumulator_artifact")
     source = copy.deepcopy(source) if source is not None else load_checked_block_receipt()
     expected_artifact = accumulator_artifact(source)
-    preimage = require_object(artifact.get("preimage"), "accumulator preimage")
+    preimage = require_object(artifact.get("preimage"), "accumulator preimage", layer="accumulator_artifact")
     expected_preimage = expected_artifact["preimage"]
-    expect_equal(preimage.get("public_inputs"), expected_preimage["public_inputs"], "public inputs")
-    receipt = require_object(preimage.get("block_receipt"), "accumulator block receipt")
+    expect_equal(preimage.get("public_inputs"), expected_preimage["public_inputs"], "public inputs", layer="public_inputs")
+    receipt = require_object(
+        preimage.get("block_receipt"),
+        "accumulator block receipt",
+        layer="accumulator_artifact",
+    )
     expected_receipt = expected_preimage["block_receipt"]
-    expect_equal(receipt.get("verifier_domain"), expected_receipt["verifier_domain"], "verifier domain")
-    expect_equal(preimage.get("block_receipt"), expected_preimage["block_receipt"], "accumulator block receipt")
-    expect_equal(preimage.get("slice_chain"), expected_preimage["slice_chain"], "slice transcript")
+    expect_equal(
+        receipt.get("verifier_domain"),
+        expected_receipt["verifier_domain"],
+        "verifier domain",
+        layer="verifier_transcript",
+    )
+    expect_equal(
+        preimage.get("block_receipt"),
+        expected_preimage["block_receipt"],
+        "accumulator block receipt",
+        layer="accumulator_artifact",
+    )
+    expect_equal(preimage.get("slice_chain"), expected_preimage["slice_chain"], "slice transcript", layer="slice_transcript")
     expect_equal(
         preimage.get("source_evidence_manifest"),
         expected_preimage["source_evidence_manifest"],
         "source evidence manifest",
+        layer="source_evidence_manifest",
     )
-    expect_equal(preimage.get("verifier_transcript"), expected_preimage["verifier_transcript"], "verifier transcript")
-    expect_equal(artifact, expected_artifact, "accumulator artifact")
+    expect_equal(
+        preimage.get("verifier_transcript"),
+        expected_preimage["verifier_transcript"],
+        "verifier transcript",
+        layer="verifier_transcript",
+    )
+    expect_equal(artifact, expected_artifact, "accumulator artifact", layer="accumulator_artifact")
 
 
 def verify_verifier_handle(handle: Any, artifact: dict[str, Any]) -> None:
-    handle = require_object(handle, "verifier handle")
-    expect_equal(handle.get("schema"), VERIFIER_HANDLE_SCHEMA, "verifier handle schema")
-    expect_equal(handle.get("claim_boundary"), CLAIM_BOUNDARY, "verifier handle claim boundary")
-    expect_equal(handle.get("accepted"), True, "verifier handle accepted")
+    handle = require_object(handle, "verifier handle", layer="verifier_handle")
+    expect_equal(handle.get("schema"), VERIFIER_HANDLE_SCHEMA, "verifier handle schema", layer="verifier_handle")
+    expect_equal(
+        handle.get("claim_boundary"),
+        CLAIM_BOUNDARY,
+        "verifier handle claim boundary",
+        layer="verifier_handle",
+    )
+    expect_equal(handle.get("accepted"), True, "verifier handle accepted", layer="verifier_handle")
     expected = verifier_handle(artifact)
-    expect_equal(handle, expected, "verifier handle")
+    expect_equal(handle, expected, "verifier handle", layer="verifier_handle")
 
 
 def _validate_recursive_status(payload: dict[str, Any]) -> None:
-    status = require_object(payload.get("recursive_or_pcd_status"), "recursive or PCD status")
-    expect_equal(status, recursive_or_pcd_status(), "recursive or PCD status")
+    status = require_object(
+        payload.get("recursive_or_pcd_status"),
+        "recursive or PCD status",
+        layer="recursive_or_pcd_status",
+    )
+    expect_equal(status, recursive_or_pcd_status(), "recursive or PCD status", layer="recursive_or_pcd_status")
 
 
 def _expected_summary(source: dict[str, Any], artifact: dict[str, Any], handle: dict[str, Any]) -> dict[str, Any]:
@@ -694,12 +805,17 @@ def _validate_common_payload(payload: Any) -> tuple[dict[str, Any], dict[str, An
     expect_equal(payload.get("result"), RESULT, "result")
     expect_equal(payload.get("issue"), ISSUE, "issue")
     expect_equal(payload.get("accumulator_result"), ACCUMULATOR_RESULT, "accumulator result")
-    expect_equal(payload.get("recursive_or_pcd_result"), RECURSIVE_OR_PCD_RESULT, "recursive or PCD result")
+    expect_equal(
+        payload.get("recursive_or_pcd_result"),
+        RECURSIVE_OR_PCD_RESULT,
+        "recursive or PCD result",
+        layer="recursive_or_pcd_status",
+    )
     expect_equal(payload.get("claim_boundary"), CLAIM_BOUNDARY, "claim boundary")
     source = _validate_source_descriptor(payload)
-    artifact = require_object(payload.get("accumulator_artifact"), "accumulator artifact")
+    artifact = require_object(payload.get("accumulator_artifact"), "accumulator artifact", layer="accumulator_artifact")
     verify_accumulator_artifact(artifact, source)
-    handle = require_object(payload.get("verifier_handle"), "verifier handle")
+    handle = require_object(payload.get("verifier_handle"), "verifier handle", layer="verifier_handle")
     verify_verifier_handle(handle, artifact)
     _validate_recursive_status(payload)
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non-claims")
@@ -804,24 +920,10 @@ def validate_payload(payload: Any) -> None:
 
 
 def classify_error(error: Exception) -> str:
-    text = str(error).lower()
-    if "source block receipt" in text:
-        return "source_block_receipt"
-    if "verifier handle" in text:
-        return "verifier_handle"
-    if "recursive" in text or "pcd" in text or "metric" in text or "blocker" in text:
-        return "recursive_or_pcd_status"
-    if "public" in text:
-        return "public_inputs"
-    if "verifier transcript" in text or "verifier domain" in text or "validator" in text:
-        return "verifier_transcript"
-    if "source" in text or "payload" in text or "file" in text or "statement" in text:
-        return "source_evidence_manifest"
-    if "slice" in text or "row" in text:
-        return "slice_transcript"
-    if "accumulator artifact" in text or "accumulator" in text:
-        return "accumulator_artifact"
-    return "parser_or_schema"
+    layer = getattr(error, "layer", "parser_or_schema")
+    if not isinstance(layer, str) or not layer:
+        return "parser_or_schema"
+    return layer
 
 
 def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:

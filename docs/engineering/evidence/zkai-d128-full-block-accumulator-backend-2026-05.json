@@ -880,7 +880,7 @@
       "mutated_accepted": false,
       "mutation": "accumulator_result_changed_to_no_go",
       "rejected": true,
-      "rejection_layer": "accumulator_artifact",
+      "rejection_layer": "parser_or_schema",
       "surface": "parser_or_schema"
     },
     {
