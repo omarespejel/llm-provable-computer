@@ -463,6 +463,16 @@ def paper_actions() -> list[dict[str, str]]:
     ]
 
 
+def canonical_system_expectations() -> dict[str, dict[str, str]]:
+    return {
+        row["system"]: {
+            "status": row["status"],
+            "recommended_use": row["recommended_use"],
+        }
+        for row in system_rows()
+    }
+
+
 def _is_https_url(raw: str) -> bool:
     parsed = urlparse(raw)
     return parsed.scheme == "https" and bool(parsed.netloc)
@@ -548,10 +558,17 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
         status = row["status"]
         if status not in ALLOWED_STATUSES:
             raise SotaWatchlistError(f"unknown status for {system}")
+        canonical = canonical_system_expectations()[system]
+        if row["status"] != canonical["status"]:
+            raise SotaWatchlistError(f"canonical status drift for {system}")
+        if row["recommended_use"] != canonical["recommended_use"]:
+            raise SotaWatchlistError(f"canonical recommended_use drift for {system}")
         if row["checked_at"] != CHECKED_AT:
             raise SotaWatchlistError(f"checked_at drift for {system}")
         if not _is_https_url(row["primary_source"]):
             raise SotaWatchlistError(f"primary source must be https URL for {system}")
+        if row["local_evidence"]:
+            _resolve_repo_relative_existing_file(row["local_evidence"], f"local evidence for {system}")
         for flag in (
             "public_proof_artifact_available",
             "public_verifier_input_available",
@@ -575,7 +592,6 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
                 raise SotaWatchlistError(f"empirical adapter row lacks reproducible artifacts for {system}")
             if not row["local_evidence"]:
                 raise SotaWatchlistError(f"empirical adapter row missing local evidence for {system}")
-            _resolve_repo_relative_existing_file(row["local_evidence"], f"local evidence for {system}")
         if system in SOURCE_CONTEXT_ONLY_SYSTEMS:
             if status == STATUS_EMPIRICAL:
                 raise SotaWatchlistError(f"source-backed system promoted to empirical adapter: {system}")

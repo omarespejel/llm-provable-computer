@@ -102,7 +102,7 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         payload["summary"]["mutation_cases"] = payload["case_count"]
         payload["summary"]["mutations_rejected"] = payload["case_count"]
 
-        with self.assertRaisesRegex(GATE.SotaWatchlistError, "unapproved empirical adapter promotion"):
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "canonical status drift"):
             GATE.validate_payload(payload)
 
     def test_rejects_nanozk_matched_benchmark_language(self) -> None:
@@ -113,10 +113,12 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
             payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
         )
 
-        with self.assertRaisesRegex(GATE.SotaWatchlistError, "source-backed system promoted"):
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "canonical recommended_use drift"):
             GATE.validate_payload(payload)
 
     def test_rejects_matched_benchmark_language_with_unrelated_not(self) -> None:
+        self.assertTrue(GATE._source_context_matched_overclaim("not only matched local benchmark"))
+
         payload = self.fresh_payload()
         row = next(row for row in payload["systems"] if row["system"] == "NANOZK")
         row["recommended_use"] = "not only matched local benchmark"
@@ -124,7 +126,7 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
             payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
         )
 
-        with self.assertRaisesRegex(GATE.SotaWatchlistError, "source-backed system promoted"):
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "canonical recommended_use drift"):
             GATE.validate_payload(payload)
 
     def test_rejects_non_https_primary_source(self) -> None:
@@ -189,6 +191,25 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
 
         payload = self.fresh_payload()
         GATE.validate_payload(payload)
+
+    def test_non_empirical_local_evidence_must_be_repo_relative_and_existing(self) -> None:
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "native Stwo d128 receipt")
+        row["local_evidence"] = "docs/engineering/evidence/missing-native-receipt.json"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "does not exist"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "Obelyzk")
+        row["local_evidence"] = "/tmp/obelyzk.md"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "repo-relative"):
+            GATE.validate_payload(payload)
 
     def test_tsv_rows_are_stable_and_make_boolean_status_explicit(self) -> None:
         rows = GATE.rows_for_tsv(self.fresh_payload())

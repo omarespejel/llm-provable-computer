@@ -4,7 +4,7 @@
   "cases": [
     {
       "baseline_result": "accepted",
-      "error": "unapproved empirical adapter promotion for DeepProve-1",
+      "error": "canonical status drift for DeepProve-1",
       "index": 0,
       "mutated_accepted": false,
       "mutation": "deep_prove_promoted_to_empirical",
@@ -14,7 +14,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "source-backed system promoted to matched benchmark: NANOZK",
+      "error": "canonical recommended_use drift for NANOZK",
       "index": 1,
       "mutated_accepted": false,
       "mutation": "nanozk_matched_benchmark_overclaim",
@@ -34,7 +34,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "Obelyzk local verifier-time overclaim",
+      "error": "canonical recommended_use drift for Obelyzk",
       "index": 3,
       "mutated_accepted": false,
       "mutation": "obelyzk_local_verifier_time_overclaim",
@@ -44,7 +44,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "unapproved empirical adapter promotion for RISC Zero",
+      "error": "canonical status drift for RISC Zero",
       "index": 4,
       "mutated_accepted": false,
       "mutation": "risc_zero_promoted_to_zkml_throughput",
@@ -54,7 +54,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "unapproved empirical adapter promotion for SNIP-36",
+      "error": "canonical status drift for SNIP-36",
       "index": 5,
       "mutated_accepted": false,
       "mutation": "snip36_promoted_to_local_deployment",
@@ -144,7 +144,7 @@
   ],
   "decision": "GO_CHECKED_SOTA_ARTIFACT_WATCHLIST",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "4709f66147bbe63b5f6e19b5fdf88c2ed92b733d",
+  "git_commit": "9dad0e22d14d04ef669939202e370dd3a57e1d2c",
   "issue": "#419",
   "mutation_inventory": [
     {
