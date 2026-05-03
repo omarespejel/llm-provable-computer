@@ -28,6 +28,10 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
 
+    def fresh_core_payload(self) -> dict:
+        payload = self.fresh_payload()
+        return {key: payload[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+
     def test_records_bounded_no_go_and_selects_next_route(self) -> None:
         payload = self.fresh_payload()
         GATE.validate_payload(payload)
@@ -166,7 +170,7 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
             "decision_changed_to_go",
         ):
             with self.subTest(mutation=mutation):
-                mutated = GATE.mutate_payload(self.fresh_payload(), mutation)
+                mutated = GATE.mutate_payload(self.fresh_core_payload(), mutation)
                 with self.assertRaises(GATE.D128RecursivePCDRouteSelectorError):
                     GATE.validate_core_payload(mutated)
 
@@ -195,7 +199,7 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
             "source_recursive_blocker_removed",
         ):
             with self.subTest(mutation=mutation):
-                mutated = GATE.mutate_payload(self.fresh_payload(), mutation)
+                mutated = GATE.mutate_payload(self.fresh_core_payload(), mutation)
                 with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "mismatch"):
                     GATE.validate_core_payload(mutated)
 
