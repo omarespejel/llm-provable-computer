@@ -1106,6 +1106,20 @@ and
 This is the correct shape of the next comparison: define and bind the layerwise
 object first, then measure only after the proof object exists.
 
+The same d128 track also surfaces a range-policy lesson that is easy to miss in
+a smaller fixture. The d64 chain happens to keep all non-remainder tensors inside
+the old `+/-1024` q8 semantic range. The checked d128 block does not: projection
+outputs, post-SwiGLU hidden activations, residual deltas, and final outputs
+exceed that bound while remaining valid under their signed-M31 or
+quotient/remainder policies. The range-policy gate records this as a
+per-tensor statement requirement and rejects `10 / 10` policy-relabeling and
+source-drift mutations. The conclusion is narrow but important for zkML
+systems: the verifier must bind tensor identity and numeric range policy
+together; a global q8 assumption is not a safe statement rule at larger width.
+Evidence is recorded in
+`docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.json`.
+
 The next narrowing step has also landed as a two-slice spike. It projects only
 the d128 `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier checks
 into a `256`-row outer-proof target and binds that target with

@@ -795,6 +795,19 @@ anchored to
 `docs/engineering/zkai-range-disciplined-activation-receipt-2026-05-01.md` and
 `docs/engineering/evidence/zkai-range-disciplined-activation-receipt-2026-05.json`.
 
+A native d128 follow-up shows the same issue inside the transformer receipt
+itself. The d64 fixture happens to keep its non-remainder tensors inside the
+old `+/-1024` q8 semantic bound, but the checked d128 block does not:
+gate/value projection outputs, post-SwiGLU hidden activations, residual deltas,
+and final outputs exceed that bound while satisfying their signed-M31 or
+quotient/remainder policies. The gate records this as a checked per-tensor
+range-policy result, rejecting `10 / 10` policy-relabeling and source-drift
+mutations. This strengthens the statement-binding claim: numeric range
+assumptions are not global metadata; they are tensor-role-specific verifier
+inputs. It is anchored to
+`docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.json`.
+
 Second, the attention/KV transition receipt fixes the stateful surface that
 future autoregressive or agentic model receipts must bind. A tiny source-backed
 single-head integer-attention fixture binds prior KV state, input/query state,
@@ -937,6 +950,15 @@ the backend-spike and aggregation-target anti-overclaim guards are anchored to
 plus `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`
 and
 `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`.
+
+The d128 track also records a range-policy guardrail before any benchmark claim:
+a global `+/-1024` q8 rule would reject valid d128 projection, hidden,
+residual, and output tensors. The checked policy gate therefore treats q8 bounds
+as correct for weights and selected public rows, activation clamp bounds as
+correct for the lookup output, and signed-M31 or quotient/remainder policies as
+correct for wider intermediate tensors. That is receipt semantics, not
+performance evidence. It prevents the d64 fixture's accidental q8 fit from
+being promoted into a universal verifier rule.
 
 The smallest follow-up target is now checked separately. A two-slice outer
 proof-object spike projects only `rmsnorm_public_rows` and
