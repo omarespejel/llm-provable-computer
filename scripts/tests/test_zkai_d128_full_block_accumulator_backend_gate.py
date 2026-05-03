@@ -206,6 +206,17 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "mutation case 0 error"):
             GATE.validate_payload(payload)
 
+    def test_rejects_unknown_top_level_and_case_fields(self) -> None:
+        payload = self.fresh_payload()
+        payload["invented_recursive_metric"] = 1
+        with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "unexpected keys"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["invented_case_field"] = True
+        with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "mutation case 0"):
+            GATE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)

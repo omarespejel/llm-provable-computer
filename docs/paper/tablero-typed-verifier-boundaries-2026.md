@@ -983,10 +983,11 @@ and the verifier-handle commitment is
 It binds the block receipt commitment, statement commitment, slice-chain
 commitment, evidence-manifest commitment, every slice statement commitment, and
 every source evidence hash, rejecting `48 / 48` source, public-input,
-slice-transcript, verifier-domain, verifier-handle, recursive-claim, and
-recursive-metric-smuggling mutations. This strengthens the pre-recursive
-handoff object while preserving the same non-claim: it is not recursive proof
-compression. It is anchored to
+accumulator-artifact, source-manifest, slice-transcript, verifier-transcript,
+verifier-domain, verifier-handle, recursive-claim, recursive-metric-smuggling,
+parser/schema, validation-command-drift, and non-claim-removal mutations. This
+strengthens the pre-recursive handoff object while preserving the same
+non-claim: it is not recursive proof compression. It is anchored to
 `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json`.
 
