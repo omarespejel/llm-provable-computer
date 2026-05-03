@@ -52,7 +52,7 @@ objects.
 
 ## Mutation Coverage
 
-The gate rejects `39 / 39` mutation cases:
+The gate rejects `40 / 40` mutation cases:
 
 - source aggregation evidence path, file-hash, payload-hash, and result drift;
 - source full-target, block-receipt, statement, and selected-slice commitment drift;

@@ -98,7 +98,7 @@
       "required_for_go": true
     }
   ],
-  "case_count": 39,
+  "case_count": 40,
   "cases": [
     {
       "baseline_result": "BOUNDED_NO_GO",
@@ -321,6 +321,15 @@
       "error": "verifier_handle_claimed claimed without checked two-slice outer proof object",
       "mutated_accepted": false,
       "mutation": "verifier_handle_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "go criterion mismatch",
+      "mutated_accepted": false,
+      "mutation": "go_criterion_drift",
       "rejected": true,
       "rejection_layer": "proof_object_attempt",
       "surface": "proof_object_attempt"
@@ -582,71 +591,76 @@
     },
     {
       "index": 25,
-      "mutation": "target_public_input_claimed_without_proof",
+      "mutation": "go_criterion_drift",
       "surface": "proof_object_attempt"
     },
     {
       "index": 26,
-      "mutation": "selected_statements_claimed_without_proof",
+      "mutation": "target_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 27,
-      "mutation": "selected_source_hashes_claimed_without_proof",
+      "mutation": "selected_statements_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 28,
-      "mutation": "proof_size_metric_smuggled_before_proof",
+      "mutation": "selected_source_hashes_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 29,
-      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "mutation": "proof_size_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 30,
-      "mutation": "proof_generation_time_metric_smuggled_before_proof",
+      "mutation": "verifier_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 31,
-      "mutation": "blocked_before_metrics_disabled",
+      "mutation": "proof_generation_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 32,
-      "mutation": "first_blocker_removed",
+      "mutation": "blocked_before_metrics_disabled",
       "surface": "proof_object_attempt"
     },
     {
       "index": 33,
-      "mutation": "missing_backend_feature_removed",
+      "mutation": "first_blocker_removed",
       "surface": "proof_object_attempt"
     },
     {
       "index": 34,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 35,
       "mutation": "outer_proof_result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 35,
+      "index": 36,
       "mutation": "decision_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 36,
+      "index": 37,
       "mutation": "result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 37,
+      "index": 38,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 38,
+      "index": 39,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     }
@@ -759,8 +773,8 @@
     "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
     "blocked_before_metrics": true,
     "first_blocker": "no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks, bind two_slice_target_commitment as a public input, bind the selected slice statements, and bind the selected source evidence hashes",
-    "mutation_cases": 39,
-    "mutations_rejected": 39,
+    "mutation_cases": 40,
+    "mutations_rejected": 40,
     "outer_proof_object_status": "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
     "selected_checked_rows": 256,
     "selected_slice_count": 2,

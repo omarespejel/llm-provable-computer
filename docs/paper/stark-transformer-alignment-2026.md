@@ -1111,7 +1111,7 @@ the d128 `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier checks
 into a `256`-row outer-proof target and binds that target with
 `two_slice_target_commitment =
 blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`.
-The gate rejects `39 / 39` source-drift, target-drift, selected-slice,
+The gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations, but
 it still records a bounded NO-GO for executable proof-object existence because
 no outer proof/accumulator backend or verifier handle exists for even the

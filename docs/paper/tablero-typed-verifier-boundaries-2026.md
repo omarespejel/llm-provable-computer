@@ -944,7 +944,7 @@ proof-object spike projects only `rmsnorm_public_rows` and
 checks form a valid `256`-row target with
 `two_slice_target_commitment =
 blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
-and the gate rejects `39 / 39` source-drift, target-drift, selected-slice,
+and the gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations. It
 still records a bounded NO-GO for proof-object existence: no executable outer
 proof/accumulator backend or verifier handle exists for even the two-slice

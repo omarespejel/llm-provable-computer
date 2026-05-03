@@ -115,6 +115,7 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
             "selected_slice_removed": "two_slice_target",
             "candidate_inventory_acceptance_relabel": "candidate_inventory",
             "outer_proof_claimed_without_artifact": "proof_object_attempt",
+            "go_criterion_drift": "proof_object_attempt",
             "target_public_input_claimed_without_proof": "proof_object_attempt",
             "selected_statements_claimed_without_proof": "proof_object_attempt",
             "proof_size_metric_smuggled_before_proof": "proof_object_attempt",
@@ -183,6 +184,31 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
                     },
                 )
                 with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "now exists"):
+                    GATE.candidate_inventory()
+        finally:
+            GATE.CANDIDATE_SPECS = original_specs
+
+    def test_candidate_inventory_rejects_symlink_escape(self) -> None:
+        original_specs = GATE.CANDIDATE_SPECS
+        try:
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_repo_tmp, tempfile.TemporaryDirectory() as raw_external_tmp:
+                repo_tmp = pathlib.Path(raw_repo_tmp)
+                external_target = pathlib.Path(raw_external_tmp) / "external-two-slice-proof.json"
+                external_target.write_text("{}", encoding="utf-8")
+                link = repo_tmp / "escaping-two-slice-proof.json"
+                link.symlink_to(external_target)
+                GATE.CANDIDATE_SPECS = (
+                    {
+                        "name": "escaping_required_artifact",
+                        "kind": "required_outer_proof_artifact",
+                        "path": link.relative_to(ROOT).as_posix(),
+                        "expected_exists": False,
+                        "classification": "MISSING_REQUIRED_ARTIFACT",
+                        "required_for_go": True,
+                        "reason": "candidate symlinks must not escape the repository root",
+                    },
+                )
+                with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "repository root"):
                     GATE.candidate_inventory()
         finally:
             GATE.CANDIDATE_SPECS = original_specs
