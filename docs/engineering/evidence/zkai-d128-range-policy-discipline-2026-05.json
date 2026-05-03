@@ -27,7 +27,7 @@
       "mutation": "d128_gate_projection_outside_count_erased",
       "rejected": true,
       "rejection_layer": "range_policy",
-      "surface": "range_statistics"
+      "surface": "range_policy"
     },
     {
       "baseline_accepted": true,
@@ -36,7 +36,7 @@
       "mutation": "d128_output_signed_m31_violation_hidden",
       "rejected": true,
       "rejection_layer": "range_policy",
-      "surface": "range_statistics"
+      "surface": "range_policy"
     },
     {
       "baseline_accepted": true,
@@ -80,7 +80,7 @@
       "mutated_accepted": false,
       "mutation": "validation_command_drift",
       "rejected": true,
-      "rejection_layer": "range_policy",
+      "rejection_layer": "validation_commands",
       "surface": "validation_commands"
     },
     {
@@ -89,7 +89,7 @@
       "mutated_accepted": false,
       "mutation": "unknown_top_level_field",
       "rejected": true,
-      "rejection_layer": "range_policy",
+      "rejection_layer": "parser_or_schema",
       "surface": "parser_or_schema"
     }
   ],

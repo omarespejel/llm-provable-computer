@@ -168,7 +168,10 @@ Tablero boundary.
   residual, and output tensors exceed it; per-tensor range policy is now
   checked as statement data. It rejects `10 / 10` policy-relabeling and
   source-drift mutations; see
-  `docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md`.
+  `docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md` and
+  `docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.json`.
+  Regenerate with
+  `python3 scripts/zkai_d128_range_policy_discipline_gate.py --write-json docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.tsv`.
 - The d128 block receipt composition gate now binds the six checked slice
   handles into one statement-bound receipt over `197,504` checked rows; see
   `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.

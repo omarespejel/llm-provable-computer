@@ -278,7 +278,17 @@ def _read_repo_regular_file_bytes(path: pathlib.Path) -> bytes:
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     try:
-        payload = json.loads(_read_repo_regular_file_bytes(path).decode("utf-8"))
+        payload = parse_json_bytes(_read_repo_regular_file_bytes(path), path)
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise D128RangePolicyError(f"failed to parse source evidence {path}: {err}") from err
+    if not isinstance(payload, dict):
+        raise D128RangePolicyError(f"source evidence must be an object: {path}")
+    return payload
+
+
+def parse_json_bytes(raw: bytes, path: pathlib.Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise D128RangePolicyError(f"failed to parse source evidence {path}: {err}") from err
     if not isinstance(payload, dict):
@@ -299,20 +309,32 @@ def validate_source_payload(source: dict[str, Any], spec: SourceSpec) -> None:
         raise D128RangePolicyError(f"{spec.source_id} verifier domain dimension drift")
 
 
+def source_snapshots() -> dict[str, dict[str, Any]]:
+    snapshots: dict[str, dict[str, Any]] = {}
+    for spec in SOURCE_SPECS:
+        raw = _read_repo_regular_file_bytes(spec.path)
+        payload = parse_json_bytes(raw, spec.path)
+        validate_source_payload(payload, spec)
+        snapshots[spec.source_id] = {
+            "payload": payload,
+            "file_sha256": sha256_hex_bytes(raw),
+            "payload_sha256": sha256_hex_json(payload),
+        }
+    return snapshots
+
+
 def source_payloads() -> dict[str, dict[str, Any]]:
+    snapshots = source_snapshots()
     payloads: dict[str, dict[str, Any]] = {}
     for spec in SOURCE_SPECS:
-        payload = load_json(spec.path)
-        validate_source_payload(payload, spec)
-        payloads[spec.source_id] = payload
+        payloads[spec.source_id] = snapshots[spec.source_id]["payload"]
     return payloads
 
 
-def source_manifest(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def source_manifest(snapshots: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     manifest = []
     for index, spec in enumerate(SOURCE_SPECS):
-        payload = payloads[spec.source_id]
-        raw = _read_repo_regular_file_bytes(spec.path)
+        snapshot = snapshots[spec.source_id]
         manifest.append(
             {
                 "index": index,
@@ -322,8 +344,8 @@ def source_manifest(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                 "path": relative_path(spec.path),
                 "schema": spec.schema,
                 "decision": spec.decision,
-                "file_sha256": sha256_hex_bytes(raw),
-                "payload_sha256": sha256_hex_json(payload),
+                "file_sha256": snapshot["file_sha256"],
+                "payload_sha256": snapshot["payload_sha256"],
             }
         )
     return manifest
@@ -441,14 +463,17 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_core_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
-    payloads = payloads or source_payloads()
+    snapshots = None
+    if payloads is None:
+        snapshots = source_snapshots()
+        payloads = {spec.source_id: snapshots[spec.source_id]["payload"] for spec in SOURCE_SPECS}
     rows = tensor_policy_rows(payloads)
     policy_commitment = blake2b_commitment(rows, RANGE_POLICY_DOMAIN)
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,
         "question": "Does the d128 statement-bound transformer block require per-tensor range policy rather than one global q8 semantic bound?",
-        "source_evidence_manifest": source_manifest(payloads),
+        "source_evidence_manifest": source_manifest(snapshots or source_snapshots()),
         "range_policy_commitment": policy_commitment,
         "tensor_policies": rows,
         "summary": build_summary(rows) | {"range_policy_commitment": policy_commitment},
@@ -494,6 +519,12 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
                 return item
         raise AssertionError((dimension, tensor_id))
 
+    def manifest_entry(payload: dict[str, Any], source_id: str) -> dict[str, Any]:
+        for item in payload["source_evidence_manifest"]:
+            if item["source_id"] == source_id:
+                return item
+        raise AssertionError(source_id)
+
     add(
         "d128_hidden_reclassified_as_q8",
         "range_policy",
@@ -506,12 +537,12 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     )
     add(
         "d128_gate_projection_outside_count_erased",
-        "range_statistics",
+        "range_policy",
         lambda p: row("d128", "gate_projection_output", p).__setitem__("outside_q8_count", 0),
     )
     add(
         "d128_output_signed_m31_violation_hidden",
-        "range_statistics",
+        "range_policy",
         lambda p: row("d128", "final_output_activation", p).__setitem__("signed_m31_ok", False),
     )
     add(
@@ -532,7 +563,10 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add(
         "source_manifest_schema_drift",
         "source_evidence_manifest",
-        lambda p: p["source_evidence_manifest"][7].__setitem__("schema", "zkai-d128-activation-swiglu-air-proof-input-v2"),
+        lambda p: manifest_entry(p, "d128_activation").__setitem__(
+            "schema",
+            "zkai-d128-activation-swiglu-air-proof-input-v2",
+        ),
     )
     add(
         "validation_command_drift",
@@ -558,10 +592,12 @@ def classify_error(error: Exception) -> str:
     text = str(error).lower()
     if "source_evidence_manifest" in text or "source" in text or "manifest" in text:
         return "source_evidence_manifest"
-    if "validation_commands" in text:
+    if "validation_commands" in text or "validation commands" in text:
         return "validation_commands"
     if "range_policy_commitment" in text:
         return "range_policy_commitment"
+    if "key mismatch" in text or "extra=" in text:
+        return "parser_or_schema"
     if "tensor_policies" in text or "range" in text or "policy" in text:
         return "range_policy"
     if "summary" in text:
@@ -686,6 +722,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
             )
             expect_equal(case.get("mutation"), expected_case["mutation"], f"mutation case {index} name")
             expect_equal(case.get("surface"), expected_case["surface"], f"mutation case {index} surface")
+            expect_equal(
+                case.get("rejection_layer"),
+                expected_case["rejection_layer"],
+                f"mutation case {index} rejection_layer",
+            )
             expect_equal(case.get("baseline_accepted"), True, f"mutation case {index} baseline")
             if case["rejected"]:
                 rejected_count += 1
