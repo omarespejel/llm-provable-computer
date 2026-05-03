@@ -82,6 +82,24 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(by_route["proof_native_two_slice_compression_without_recursion"]["evidence"]["tracked_issue"], 424)
         self.assertEqual(by_route["external_zkvm_statement_receipt_adapter"]["evidence"]["tracked_issue"], 422)
 
+    def test_repo_probe_hash_drift_rejects(self) -> None:
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["local_repo_probe"]["cargo_toml_sha256"] = "0" * 64
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "Cargo.toml sha256"):
+            GATE.validate_core_payload(payload)
+
+    def test_route_table_scalar_entry_rejects_as_gate_error(self) -> None:
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_table"][0] = "not-a-route-object"
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "route_table\\[0\\] must be an object"):
+            GATE.validate_core_payload(payload)
+
+    def test_mutation_inventory_scalar_entry_rejects_as_gate_error(self) -> None:
+        payload = self.fresh_payload()
+        payload["mutation_inventory"][0] = "not-a-mutation-object"
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "mutation_inventory\\[0\\] must be an object"):
+            GATE.validate_payload(payload)
+
     def test_all_mutations_reject(self) -> None:
         payload = self.fresh_payload()
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
@@ -136,7 +154,7 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
                 GATE.read_json_file(malformed)
             self.assertEqual(context.exception.layer, "source_evidence")
 
-    def test_write_outputs_round_trips_and_rejects_collisions(self) -> None:
+    def test_write_outputs_round_trips_and_rejects_bad_tsv_suffix(self) -> None:
         payload = self.fresh_payload()
         evidence_dir = ROOT / "docs" / "engineering" / "evidence"
         with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp:
@@ -147,7 +165,7 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
             loaded = json.loads((ROOT / json_path).read_text(encoding="utf-8"))
             self.assertEqual(loaded, payload)
             self.assertIn("local_stwo_nested_verifier_air", (ROOT / tsv_path).read_text(encoding="utf-8"))
-            with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "distinct"):
+            with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "end with .tsv"):
                 GATE.write_outputs(payload, json_path, json_path)
 
     def test_write_outputs_rejects_absolute_and_traversal_paths(self) -> None:
@@ -159,6 +177,8 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/../route.json"), None)
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "docs/engineering/evidence"):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/route.json"), None)
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "end with .json"):
+            GATE.write_outputs(payload, pathlib.Path("docs/engineering/evidence/route.txt"), None)
 
     def test_write_outputs_cleans_temp_file_when_replace_fails(self) -> None:
         payload = self.fresh_payload()
