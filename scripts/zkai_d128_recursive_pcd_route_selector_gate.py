@@ -203,6 +203,12 @@ def require_bool(value: Any, field: str, *, layer: str = "parser_or_schema") -> 
     return value
 
 
+def require_int(value: Any, field: str, *, layer: str = "parser_or_schema") -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise D128RecursivePCDRouteSelectorError(f"{field} must be an integer", layer=layer)
+    return value
+
+
 def expect_equal(actual: Any, expected: Any, field: str, *, layer: str = "parser_or_schema") -> None:
     if actual != expected:
         raise D128RecursivePCDRouteSelectorError(f"{field} mismatch", layer=layer)
@@ -233,6 +239,18 @@ def require_sha256_hex(value: Any, field: str, *, layer: str = "parser_or_schema
     value = require_str(value, field, layer=layer)
     if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
         raise D128RecursivePCDRouteSelectorError(f"{field} must be a 32-byte lowercase hex digest", layer=layer)
+    return value
+
+
+def require_safe_evidence_path(value: Any, field: str, *, expected: str | None = None) -> str:
+    value = require_str(value, field, layer="route_table")
+    path = pathlib.Path(value)
+    if path.is_absolute() or any(part == ".." for part in path.parts):
+        raise D128RecursivePCDRouteSelectorError(f"{field} must be a safe repo-relative path", layer="route_table")
+    if path.parts[:3] != ("docs", "engineering", "evidence"):
+        raise D128RecursivePCDRouteSelectorError(f"{field} must be under docs/engineering/evidence", layer="route_table")
+    if expected is not None:
+        expect_equal(value, expected, field, layer="route_table")
     return value
 
 
@@ -611,14 +629,109 @@ def validate_source_evidence(value: Any) -> dict[str, Any]:
         recursive.get("claim_boundary"),
         EXPECTED_RECURSIVE_PCD_CLAIM_BOUNDARY,
         "recursive claim boundary",
-        layer="source_evidence",
-    )
+            layer="source_evidence",
+        )
     expect_equal(source.get("selected_slice_ids"), list(EXPECTED_SELECTED_SLICE_IDS), "selected slice ids", layer="source_evidence")
     expect_equal(source.get("selected_checked_rows"), EXPECTED_SELECTED_ROWS, "selected rows", layer="source_evidence")
     expect_equal(source.get("full_block_checked_rows"), EXPECTED_FULL_BLOCK_ROWS, "full block rows", layer="source_evidence")
-    require_commitment(source.get("two_slice_target_commitment"), "two_slice_target_commitment", layer="source_evidence")
-    require_commitment(source.get("two_slice_accumulator_commitment"), "two_slice_accumulator_commitment", layer="source_evidence")
-    require_commitment(source.get("two_slice_verifier_handle_commitment"), "two_slice_verifier_handle_commitment", layer="source_evidence")
+    recursive_payload = require_object(read_json_file(RECURSIVE_PCD_AUDIT_EVIDENCE), "recursive payload", layer="source_evidence")
+    recursive_source_accumulator = require_object(
+        recursive_payload.get("source_accumulator"),
+        "recursive source_accumulator",
+        layer="source_evidence",
+    )
+    recursive_backend_probe = require_object(
+        recursive_payload.get("backend_probe"),
+        "recursive backend_probe",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("path"),
+        source["two_slice_accumulator"]["path"],
+        "recursive source accumulator path",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("file_sha256"),
+        source["two_slice_accumulator"]["file_sha256"],
+        "recursive source accumulator file hash",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("payload_sha256"),
+        source["two_slice_accumulator"]["payload_sha256"],
+        "recursive source accumulator payload hash",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("decision"),
+        source["two_slice_accumulator"]["decision"],
+        "recursive source accumulator decision",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("result"),
+        source["two_slice_accumulator"]["result"],
+        "recursive source accumulator result",
+        layer="source_evidence",
+    )
+    expect_equal(
+        recursive_source_accumulator.get("claim_boundary"),
+        source["two_slice_accumulator"]["claim_boundary"],
+        "recursive source accumulator claim boundary",
+        layer="source_evidence",
+    )
+    source_target_commitment = require_commitment(
+        source.get("two_slice_target_commitment"),
+        "two_slice_target_commitment",
+        layer="source_evidence",
+    )
+    source_accumulator_commitment = require_commitment(
+        source.get("two_slice_accumulator_commitment"),
+        "two_slice_accumulator_commitment",
+        layer="source_evidence",
+    )
+    source_verifier_handle_commitment = require_commitment(
+        source.get("two_slice_verifier_handle_commitment"),
+        "two_slice_verifier_handle_commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_target_commitment,
+        recursive_backend_probe.get("two_slice_target_commitment"),
+        "recursive backend target commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_accumulator_commitment,
+        recursive_backend_probe.get("accumulator_commitment"),
+        "recursive backend accumulator commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_verifier_handle_commitment,
+        recursive_backend_probe.get("verifier_handle_commitment"),
+        "recursive backend verifier handle commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_target_commitment,
+        recursive_source_accumulator.get("two_slice_target_commitment"),
+        "recursive source target commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_accumulator_commitment,
+        recursive_source_accumulator.get("accumulator_commitment"),
+        "recursive source accumulator commitment",
+        layer="source_evidence",
+    )
+    expect_equal(
+        source_verifier_handle_commitment,
+        recursive_source_accumulator.get("verifier_handle_commitment"),
+        "recursive source verifier handle commitment",
+        layer="source_evidence",
+    )
     return source
 
 
@@ -649,6 +762,49 @@ def validate_local_repo_probe(value: Any) -> dict[str, Any]:
     return probe
 
 
+def validate_route_evidence(route_id: str, evidence: Any) -> dict[str, Any]:
+    evidence = require_object(evidence, f"{route_id}.evidence", layer="route_table")
+    if route_id == "local_stwo_nested_verifier_air":
+        expect_equal(set(evidence), {"backend_module_exists", "requires_new_trusted_core"}, f"{route_id}.evidence keys", layer="route_table")
+        expect_equal(require_bool(evidence.get("backend_module_exists"), f"{route_id}.backend_module_exists", layer="route_table"), False, f"{route_id}.backend_module_exists", layer="route_table")
+        expect_equal(require_bool(evidence.get("requires_new_trusted_core"), f"{route_id}.requires_new_trusted_core", layer="route_table"), True, f"{route_id}.requires_new_trusted_core", layer="route_table")
+    elif route_id == "local_stwo_pcd_outer_proof":
+        expect_equal(set(evidence), {"recursive_proof_artifact_exists", "recursive_verifier_handle_exists"}, f"{route_id}.evidence keys", layer="route_table")
+        expect_equal(require_bool(evidence.get("recursive_proof_artifact_exists"), f"{route_id}.recursive_proof_artifact_exists", layer="route_table"), False, f"{route_id}.recursive_proof_artifact_exists", layer="route_table")
+        expect_equal(require_bool(evidence.get("recursive_verifier_handle_exists"), f"{route_id}.recursive_verifier_handle_exists", layer="route_table"), False, f"{route_id}.recursive_verifier_handle_exists", layer="route_table")
+    elif route_id == "local_two_slice_non_recursive_accumulator":
+        expect_equal(set(evidence), {"source"}, f"{route_id}.evidence keys", layer="route_table")
+        require_safe_evidence_path(
+            evidence.get("source"),
+            f"{route_id}.source",
+            expected=TWO_SLICE_ACCUMULATOR_EVIDENCE.relative_to(ROOT).as_posix(),
+        )
+    elif route_id == "local_full_block_non_recursive_accumulator":
+        expect_equal(set(evidence), {"source"}, f"{route_id}.evidence keys", layer="route_table")
+        require_safe_evidence_path(
+            evidence.get("source"),
+            f"{route_id}.source",
+            expected=FULL_BLOCK_ACCUMULATOR_EVIDENCE.relative_to(ROOT).as_posix(),
+        )
+    elif route_id == "proof_native_two_slice_compression_without_recursion":
+        expect_equal(set(evidence), {"would_reuse", "tracked_issue"}, f"{route_id}.evidence keys", layer="route_table")
+        expect_equal(require_str(evidence.get("would_reuse"), f"{route_id}.would_reuse", layer="route_table"), "two_slice_target_commitment", f"{route_id}.would_reuse", layer="route_table")
+        expect_equal(require_int(evidence.get("tracked_issue"), f"{route_id}.tracked_issue", layer="route_table"), 424, f"{route_id}.tracked_issue", layer="route_table")
+    elif route_id == "external_zkvm_statement_receipt_adapter":
+        expect_equal(set(evidence), {"local_dependencies_declared", "tracked_issue"}, f"{route_id}.evidence keys", layer="route_table")
+        require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table")
+        expect_equal(require_int(evidence.get("tracked_issue"), f"{route_id}.tracked_issue", layer="route_table"), 422, f"{route_id}.tracked_issue", layer="route_table")
+    elif route_id == "external_snark_or_ivc_statement_adapter":
+        expect_equal(set(evidence), {"local_dependencies_declared"}, f"{route_id}.evidence keys", layer="route_table")
+        require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table")
+    elif route_id == "starknet_settlement_adapter":
+        expect_equal(set(evidence), {"snip36_parked"}, f"{route_id}.evidence keys", layer="route_table")
+        expect_equal(require_bool(evidence.get("snip36_parked"), f"{route_id}.snip36_parked", layer="route_table"), True, f"{route_id}.snip36_parked", layer="route_table")
+    else:
+        raise D128RecursivePCDRouteSelectorError(f"unknown route evidence id: {route_id}", layer="route_table")
+    return evidence
+
+
 def validate_route_table(value: Any) -> list[dict[str, Any]]:
     routes = require_list(value, "route_table", layer="route_table")
     route_objects = [
@@ -676,7 +832,7 @@ def validate_route_table(value: Any) -> list[dict[str, Any]]:
         require_str(route.get("claim_boundary"), f"{route_id}.claim_boundary", layer="route_table")
         require_str(route.get("next_action"), f"{route_id}.next_action", layer="route_table")
         require_str(route.get("blocking_missing_object"), f"{route_id}.blocking_missing_object", layer="route_table")
-        require_object(route.get("evidence"), f"{route_id}.evidence", layer="route_table")
+        validate_route_evidence(route_id, route.get("evidence"))
 
     expect_equal(
         by_id["local_stwo_nested_verifier_air"]["status"],
