@@ -119,6 +119,14 @@ class D128RangePolicyDisciplineGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128RangePolicyError, "verifier_domain"):
             GATE.validate_source_payload(source, spec)
 
+    def test_verifier_domain_dimension_token_must_match(self) -> None:
+        source = copy.deepcopy(GATE.source_payloads()["d128_activation"])
+        spec = next(spec for spec in GATE.SOURCE_SPECS if spec.source_id == "d128_activation")
+        source["verifier_domain"] = source["verifier_domain"].replace("d128-", "d1280-")
+
+        with self.assertRaisesRegex(GATE.D128RangePolicyError, "dimension drift"):
+            GATE.validate_source_payload(source, spec)
+
     def test_error_classifier_does_not_treat_source_text_as_manifest(self) -> None:
         error = GATE.D128RangePolicyError("failed to parse source evidence broken.json")
 

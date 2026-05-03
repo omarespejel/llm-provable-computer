@@ -309,7 +309,8 @@ def validate_source_payload(source: dict[str, Any], spec: SourceSpec) -> None:
     verifier_domain = source.get("verifier_domain")
     if not isinstance(verifier_domain, str) or not verifier_domain:
         raise D128RangePolicyError(f"{spec.source_id} verifier_domain missing")
-    if spec.dimension not in verifier_domain:
+    dimension_pattern = re.compile(rf"(^|:){re.escape(spec.dimension)}(-|:)")
+    if not dimension_pattern.search(verifier_domain):
         raise D128RangePolicyError(f"{spec.source_id} verifier domain dimension drift")
 
 
@@ -593,7 +594,7 @@ ERROR_LAYER_PATTERNS = (
     (re.compile(r"\bsource_evidence_manifest\b"), "source_evidence_manifest"),
     (re.compile(r"\bvalidation_commands\b|\bvalidation commands\b"), "validation_commands"),
     (re.compile(r"\brange_policy_commitment\b"), "range_policy_commitment"),
-    (re.compile(r"\bkey mismatch\b|\bextra=\b"), "parser_or_schema"),
+    (re.compile(r"\bkey mismatch\b|\bextra="), "parser_or_schema"),
     (re.compile(r"\btensor_policies\b"), "range_policy"),
     (re.compile(r"\bsummary\b"), "summary"),
     (re.compile(r"\brange\b|\bpolicy\b"), "range_policy"),
