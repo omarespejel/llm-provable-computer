@@ -46,7 +46,7 @@ object.
 | Local Stwo/PCD outer proof | `NO_GO_MISSING_OUTER_PCD_PROOF_SYSTEM` | no | Add a PCD/IVC backend that proves the selected verifier checks and binds the same public inputs. |
 | Two-slice non-recursive accumulator | `GO_PRE_RECURSIVE_INTEGRITY_ONLY` | yes | Keep as a source-bound handoff object; do not report recursive metrics from it. |
 | Full-block non-recursive accumulator | `GO_PRE_RECURSIVE_INTEGRITY_ONLY` | yes | Keep as the strongest local statement-bound d128 handoff object. |
-| Proof-native two-slice compression without recursion | `RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO` | no | Try one proof-native object for the two-slice transcript, explicitly not recursive aggregation. |
+| Proof-native two-slice compression without recursion | `GO_PROOF_NATIVE_TRANSCRIPT_COMPRESSION_ONLY` | yes | Use as a smaller verifier-facing transcript/public-input object; do not report recursive metrics from it. |
 | External zkVM statement-receipt adapter | `RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO` | no | Map the exact two-slice statement into a zkVM receipt adapter and test relabeling. |
 | External SNARK/IVC statement adapter | `RESEARCH_SPIKE_CANDIDATE_NOT_YET_GO` | no | Test whether a SNARK/IVC receipt can bind the same d128 two-slice statement contract. |
 | Starknet settlement adapter | `DEFERRED_UNTIL_LOCAL_OR_EXTERNAL_PROOF_OBJECT_EXISTS` | no | Wait until one proof object exists for the same public-input contract. |
@@ -98,11 +98,13 @@ The next two useful research moves are:
 
 1. external zkVM statement-receipt adapter for the exact d128 two-slice
    contract, tracked in issue `#422`;
-2. proof-native two-slice compression without claiming recursion, tracked in
-   issue `#424`.
+2. cryptographic backend work over the proof-native two-slice compression
+   contract, tracked in issue `#426`.
 
-The first tests proof-system independence. The second tests whether a useful
-compressed object exists locally even before nested-verifier recursion.
+The first tests proof-system independence. The second tests whether the now
+checked issue `#424` compressed object can be bound by an executable proof,
+receipt, PCD, or recursive-verifier backend without changing the statement
+boundary.
 
 ## Current-State Postscript After Issue `#424`
 
