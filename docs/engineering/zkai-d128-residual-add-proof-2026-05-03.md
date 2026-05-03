@@ -79,11 +79,11 @@ The focused residual-add tests reject:
 - source-commitment drift;
 - relabeling an intermediate residual delta as the full output.
 
-The backend spike gate now treats the d128 route as having six checked partial
-proof handles: RMSNorm public rows, RMSNorm-to-projection bridge, gate/value
-projection, activation/SwiGLU, down-projection, and source-bound residual-add.
-It still records a bounded NO-GO for full-block metrics because the composed
-full-block receipt does not exist yet.
+The backend spike gate now treats the d128 route as having six checked proof
+handles plus a statement-bound block receipt composition gate over those
+handles. It still records a bounded NO-GO for aggregated full-block proof
+metrics because recursive aggregation or a single compressed verifier object
+does not exist yet.
 
 ## Reproduce
 
@@ -95,6 +95,12 @@ python3 scripts/zkai_d128_residual_add_proof_input.py \
 python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input
 
 cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend
+
+python3 scripts/zkai_d128_block_receipt_composition_gate.py \
+  --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv
+
+python3 -m unittest scripts.tests.test_zkai_d128_block_receipt_composition_gate
 
 python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py \
   --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json \
@@ -111,7 +117,7 @@ just gate
 
 ## Next Step
 
-Build the full d128 block receipt composition over the six checked slice
-handles. Do not report full d128 proof size, verifier time, or external
-comparison metrics until that receipt exists or a checked composition no-go is
-recorded.
+Attempt recursive or proof-carrying aggregation of the checked d128 block
+receipt. Do not report aggregated d128 proof size, verifier time, or external
+comparison metrics until that proof object exists or a checked aggregation no-go
+is recorded.

@@ -536,11 +536,15 @@ rejects attempts to relabel the bridge output as the full block output. The d128
 gate/value projection proof consumes that projection-input commitment, checks
 `131,072` public gate/value multiplication rows in native Stwo AIR, recomputes
 gate/value matrix roots from checked row weights, and emits
-`gate_value_projection_output_commitment`. The d128 residual-add proof checks
-`128` residual-add rows and recomputes its input, residual-delta, output, row,
-public-instance, proof-native parameter, and statement commitments. This is not
-a full d128 block receipt: activation, down-projection, native residual,
-composition, and full-block relabeling tests are still missing.
+`gate_value_projection_output_commitment`. The d128 activation/SwiGLU proof
+checks `512` activation rows plus the bounded lookup surface, the d128
+down-projection proof checks `65,536` multiplication rows, and the d128
+source-bound residual-add proof checks `128` residual-add rows and recomputes
+its input, residual-delta, output, row, public-instance, proof-native parameter,
+and statement commitments. The d128 block receipt composition gate now binds
+the six slice handles into one statement-bound receipt over `197,504` checked
+rows and rejects `19 / 19` receipt mutations. This is still not recursive
+aggregation or one compressed proof.
 
 The d64 block receipt composition gate consumes the checked slice handles:
 

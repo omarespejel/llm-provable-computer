@@ -161,7 +161,9 @@ just gate
 
 ## Next step
 
-The next implementation step is native residual/composition: consume
-`residual_delta_commitment` plus the original block input commitment and emit a
-statement-bound final output-activation commitment. Full-block proof size and
-verifier time remain blocked until that composed receipt exists.
+The next implementation step has since landed: source-bound residual-add now
+consumes `residual_delta_commitment` plus the original block input commitment
+and emits a statement-bound final output-activation commitment, and the d128
+block receipt composition gate binds the six checked slice handles. Aggregated
+proof size and verifier time remain blocked until a recursive or single-proof
+aggregation object exists.

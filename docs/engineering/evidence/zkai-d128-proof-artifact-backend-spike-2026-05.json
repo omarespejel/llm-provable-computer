@@ -296,7 +296,7 @@
       "verifier_time_ms": null
     },
     {
-      "blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and source-bound residual-add proof handles exist, but full transformer-block composition is still missing",
+      "blocker": "a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing",
       "missing_symbols": [
         "ZkAiParameterizedTransformerBlockProof",
         "parameterized_transformer_block_air",
@@ -306,10 +306,24 @@
       "proof_artifact_exists": false,
       "proof_size_bytes": null,
       "route": "parameterized_transformer_block_air",
-      "status": "NO_GO_FULL_BLOCK_SLICES_MISSING",
+      "status": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
       "target_ff_dim": 512,
       "target_width": 128,
       "verifier_handle_exists": false,
+      "verifier_time_ms": null
+    },
+    {
+      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "blocker": "receipt composition only; not recursive aggregation or one compressed verifier object",
+      "evidence": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+      "proof_artifact_exists": false,
+      "proof_size_bytes": null,
+      "receipt_artifact_exists": true,
+      "route": "d128_block_receipt_composition",
+      "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+      "target_ff_dim": 512,
+      "target_width": 128,
+      "verifier_handle_exists": true,
       "verifier_time_ms": null
     },
     {
@@ -1295,8 +1309,8 @@
     "status": "GO_ANCHOR_ONLY",
     "total_checked_rows": 49600
   },
-  "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:afbb329382fbe43ee33d93784690c04c3c3dc04019c76017a2de4f54e24c3f60",
+  "decision": "NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING",
+  "gate_commitment": "blake2b-256:d2e83cc5dd5a3bbdedb725c6d1f2c9a2a55d5a6661c8dfdcb0f8069be406b787",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1776,7 +1790,9 @@
   ],
   "proof_status": {
     "blocked_before_metrics": true,
-    "first_blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and source-bound residual-add proof handles exist, but full transformer-block composition is still missing",
+    "d128_block_receipt_composition_exists": true,
+    "d128_block_receipt_composition_mutation_cases": 19,
+    "first_blocker": "a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing",
     "partial_d128_activation_swiglu_checked_in_proof_artifact_exists": false,
     "partial_d128_activation_swiglu_local_roundtrip_proof_constructed": true,
     "partial_d128_activation_swiglu_proof_exists": true,
@@ -1860,6 +1876,33 @@
       "swiglu_mix_rows": 512,
       "target_ff_dim": 512,
       "target_width": 128
+    },
+    "d128_block_receipt_composition": {
+      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "evidence": {
+        "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+        "file_sha256": "6f86268d9a0487b23fd02998ff8dbd4d6e58280b7c4be519168dea71cf2458d7",
+        "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+        "payload_sha256": "84e1a6b9febcab8c1dbe9fcf5a729f14dc3c5bc2d2877f3c82b968a8c8018f97",
+        "result": "GO",
+        "schema": "zkai-d128-block-receipt-composition-gate-v1"
+      },
+      "mutation_cases": 19,
+      "mutations_rejected": 19,
+      "non_claims": [
+        "not recursive aggregation of the six slice proofs",
+        "not one compressed verifier object",
+        "not private parameter-opening proof",
+        "not model-scale transformer inference",
+        "not verifier-time benchmark evidence",
+        "not proof-size benchmark evidence for a full block",
+        "not onchain deployment evidence"
+      ],
+      "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+      "slice_count": 6,
+      "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+      "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+      "total_checked_rows": 197504
     },
     "d128_down_projection": {
       "down_matrix_root": "blake2b-256:0d6cd2bee99c821788d1faf5dd24e5e3e8ff4d4d4acd4d99c46a10ecc166c7ab",
@@ -1955,7 +1998,7 @@
       "input_relabels_output": false,
       "module": {
         "exists": true,
-        "file_sha256": "ae2de20036985a3330819e795e32efc864a14e27b6c50281318ea318450de6ea",
+        "file_sha256": "413cd53e360a13094b62a66aa70fd0dd2ebacfd908546f9491ae1def03b3d473",
         "path": "src/stwo_backend/d128_native_residual_add_proof.rs"
       },
       "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
@@ -2256,6 +2299,7 @@
   "summary": {
     "blocked_before_metrics": true,
     "d128_activation_swiglu_route": "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY",
+    "d128_block_receipt_composition_route": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
     "d128_down_projection_route": "GO_PARTIAL_D128_DOWN_PROJECTION_ONLY",
     "d128_gate_value_projection_route": "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY",
     "d128_residual_add_route": "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY",
@@ -2263,11 +2307,11 @@
     "d128_rmsnorm_to_projection_bridge_route": "GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY",
     "d64_anchor_route": "GO_ANCHOR_ONLY",
     "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
-    "first_blocker": "d128 RMSNorm public-row, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, down-projection, and source-bound residual-add proof handles exist, but full transformer-block composition is still missing",
+    "first_blocker": "a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing",
     "issue": 387,
     "mutation_cases": 93,
     "mutations_rejected": 93,
-    "parameterized_full_block_route": "NO_GO_FULL_BLOCK_SLICES_MISSING",
+    "parameterized_full_block_route": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
     "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
@@ -2297,6 +2341,7 @@
     "python3 scripts/zkai_d128_down_projection_proof_input.py --write-json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv",
     "python3 scripts/zkai_d128_vector_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv",
+    "python3 scripts/zkai_d128_block_receipt_composition_gate.py --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv",
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_projection_proof_input",
@@ -2306,6 +2351,7 @@
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_public_row_proof_input",
     "python3 -m unittest scripts.tests.test_zkai_d128_vector_residual_add_proof_input",
+    "python3 -m unittest scripts.tests.test_zkai_d128_block_receipt_composition_gate",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_gate_value_projection_proof --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",

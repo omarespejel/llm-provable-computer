@@ -912,21 +912,24 @@ It is anchored to
 `docs/engineering/zkai-d64-nested-verifier-backend-spike-2026-05-02.md` and
 `docs/engineering/evidence/zkai-d64-nested-verifier-backend-spike-2026-05.json`.
 
-A separate `d=128` comparator-target gate now pins the next honest
-competitor-facing transformer-block shape without pretending a local proof
-exists. The target is a `d=128`, `ff_dim=512` RMSNorm-SwiGLU-residual receipt
-with explicit statement bindings for model/config/weights, input and output
-activations, lookup/public-instance material, proof, verifying key, setup,
-verifier domain, and proof-system version. It also records the target pressure
-explicitly: `1` RMSNorm row, `512` SwiGLU activation rows, `128` residual-add
-rows, and `196608` linear projection multiplications. The gate is a GO for that
-target specification and source-backed NANOZK context, but a bounded NO-GO for local
-proof size, verifier time, proof-generation time, or relabeling-resistance
-metrics because the repository still lacks a local `d=128` proof artifact,
-verifier handle, and mutation suite. It rejects `19 / 19` checked mutations and
-is anchored to
-`docs/engineering/zkai-d128-layerwise-comparator-target-2026-05-02.md` and
-`docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json`.
+A separate `d=128` track now moves beyond a target specification. The checked
+shape is a `d=128`, `ff_dim=512` RMSNorm-SwiGLU-residual receipt with explicit
+statement bindings for model/config/weights, input and output activations,
+lookup/public-instance material, proof, verifying key, setup, verifier domain,
+and proof-system version. The route now has six local proof-backed slice
+handles: RMSNorm public rows, the RMSNorm-to-projection bridge, gate/value
+projection, activation/SwiGLU, down-projection, and source-bound residual-add.
+A composition gate binds those six slice artifacts into one d128 block receipt
+over `197504` checked rows and rejects `19 / 19` receipt mutations. This is a
+GO for a statement-bound block receipt and still a bounded NO-GO for aggregated
+proof size, verifier time, and proof-generation time, because recursive
+aggregation or a single compressed verifier object does not exist yet. The
+receipt result is anchored to
+`docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`;
+the backend-spike anti-overclaim guard is anchored to
+`docs/engineering/zkai-d128-proof-artifact-backend-spike-2026-05-02.md` and
+`docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json`.
 
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed

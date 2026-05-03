@@ -57,8 +57,11 @@ This repository currently has three live lanes.
    - The d128 down-projection handle consumes `hidden_activation_commitment`,
      checks `65,536` multiplication rows, and emits an exact
      quotient/remainder-bound `residual_delta_commitment`.
-   - This is a partial GO only: full composition, recursion, and full-block
-     metrics remain blocked.
+   - The d128 block receipt composition gate now binds the six checked slice
+     handles into one statement-bound receipt over `197,504` checked rows; see
+     `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.
+   - This is a receipt-composition GO only: recursion, one compressed verifier
+     object, and full-block proof-size/verifier-time metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -129,9 +132,10 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
-10. Continue the verifiable-AI d128 lane with full-block receipt composition
-    over the six checked d128 slice handles; do not report full-block metrics
-    until the full d128 receipt or a checked no-go exists.
+10. Continue the verifiable-AI d128 lane with recursive or proof-carrying
+    aggregation of the checked d128 block receipt (`#405`); do not report
+    full-block proof-size/verifier-time metrics until a real aggregated proof
+    object or a checked no-go exists.
 
 ## What not to do
 

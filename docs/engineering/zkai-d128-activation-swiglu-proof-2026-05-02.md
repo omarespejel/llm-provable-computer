@@ -88,16 +88,11 @@ This result does **not** claim:
 
 ## Why this matters
 
-The d128 route now has five statement-bound proof handles:
-RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
-activation/SwiGLU, and a parameterized vector residual-add slice. The fifth
-handle is not a native residual proof or a composed full-block receipt. The new
-activation/SwiGLU handle consumes
-the corrected raw gate/value output and proves the first non-linear
-transformer seam at the d128 target shape.
-
-The remaining full-block blocker is now narrower: down projection, native
-residual wiring, and full composition are still missing.
+This note records the activation/SwiGLU slice at the time it landed. The route
+has since advanced: down-projection, source-bound residual-add, and d128 block
+receipt composition are now checked. The activation/SwiGLU handle remains the
+first non-linear transformer seam at the d128 target shape, but it is no longer
+the frontier blocker.
 
 ## Evidence
 

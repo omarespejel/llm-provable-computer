@@ -45,7 +45,7 @@ failing validation.
 | Residual-delta remainder SHA-256 | `33a0e907169d6459d309484a56f007e7b5dd372a2740c82e7cd16c2e4da1587e` |
 | d64 block receipt commitment after evidence refresh | `blake2b-256:37a10d2ace48e915157c96eef1abd159074dd8fb7653636d3992f1cd7f1122a6` |
 | d64 block mutation coverage after refresh | `14 / 14` rejected |
-| d128 backend-spike mutation coverage after refresh | `73 / 73` rejected |
+| d128 backend-spike mutation coverage after later d128 receipt refresh | `93 / 93` rejected |
 
 ## What changed
 
