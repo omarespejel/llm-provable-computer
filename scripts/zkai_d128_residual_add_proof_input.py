@@ -93,6 +93,8 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_residual_add_proof_input.py --write-json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input",
     "cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend",
+    "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "just gate-fast",
     "just gate",
@@ -281,6 +283,8 @@ def require_signed_q8(value: Any, label: str) -> None:
 
 def _load_source(path: pathlib.Path, label: str) -> dict[str, Any]:
     try:
+        if not path.is_absolute():
+            path = ROOT / path
         if path.is_symlink():
             raise D128ResidualAddInputError(f"{label} evidence must not be a symlink: {path}")
         resolved = path.resolve(strict=False)
@@ -600,6 +604,8 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
 
 
 def _assert_repo_output_path(path: pathlib.Path) -> pathlib.Path:
+    if not path.is_absolute():
+        path = ROOT / path
     if path.is_symlink():
         raise D128ResidualAddInputError(f"output path must not be a symlink: {path}")
     resolved = path.resolve()
