@@ -183,6 +183,15 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         self.assertTrue(attempt["blocked_before_metrics"])
         self.assertTrue(all(value is None for value in attempt["proof_metrics"].values()))
 
+    def test_build_payload_returns_copies_of_module_level_lists(self) -> None:
+        payload = GATE.build_payload()
+        payload["proof_object_attempt"]["missing_backend_features"].append("tampered")
+        payload["non_claims"].append("tampered")
+        payload["validation_commands"].append("tampered")
+        self.assertNotIn("tampered", GATE.MISSING_BACKEND_FEATURES)
+        self.assertNotIn("tampered", GATE.NON_CLAIMS)
+        self.assertNotIn("tampered", GATE.VALIDATION_COMMANDS)
+
     def test_mutation_inventory_covers_binding_artifact_and_metric_surfaces(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
         expected_layers = {

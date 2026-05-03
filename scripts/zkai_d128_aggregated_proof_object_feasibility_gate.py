@@ -688,7 +688,7 @@ def proof_object_attempt() -> dict[str, Any]:
             "verifier_time_ms": None,
             "compressed_proof_size_bytes": None,
         },
-        "missing_backend_features": MISSING_BACKEND_FEATURES,
+        "missing_backend_features": list(MISSING_BACKEND_FEATURES),
         "first_blocker": FIRST_BLOCKER,
         "blocked_before_metrics": True,
     }
@@ -730,8 +730,8 @@ def _build_payload_from_canonical_source(source: dict[str, Any]) -> dict[str, An
             "aggregation_target_version": TARGET_VERSION,
             "blocked_before_metrics": True,
         },
-        "non_claims": NON_CLAIMS,
-        "validation_commands": VALIDATION_COMMANDS,
+        "non_claims": list(NON_CLAIMS),
+        "validation_commands": list(VALIDATION_COMMANDS),
     }
     refresh_commitments(payload)
     _validate_draft_payload(payload)
