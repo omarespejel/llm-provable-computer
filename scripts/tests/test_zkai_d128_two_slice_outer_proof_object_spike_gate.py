@@ -210,6 +210,16 @@ class ZkAiD128TwoSliceOuterProofObjectSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "mutation metadata"):
             GATE.validate_payload(payload)
 
+    def test_accepted_mutation_case_reports_not_all_rejected(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["mutated_accepted"] = True
+        payload["cases"][0]["rejected"] = False
+        payload["cases"][0]["rejection_layer"] = "accepted"
+        payload["cases"][0]["error"] = ""
+        payload["all_mutations_rejected"] = False
+        with self.assertRaisesRegex(GATE.D128TwoSliceOuterProofObjectSpikeError, "not all"):
+            GATE.validate_payload(payload)
+
     def test_tsv_columns_are_stable(self) -> None:
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)
