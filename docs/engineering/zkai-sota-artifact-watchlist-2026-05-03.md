@@ -104,11 +104,13 @@ The gate rejects these overclaims:
 ## Validation
 
 ```bash
+just gate-fast
 python3 scripts/zkai_sota_artifact_watchlist_gate.py \
   --write-json docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_sota_artifact_watchlist_gate
 python3 scripts/paper/paper_preflight.py --repo-root .
+just gate
 ```
 
 ## Claim boundary

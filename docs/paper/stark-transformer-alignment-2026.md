@@ -1273,7 +1273,8 @@ Zero, SP1, and SNIP-36 as receipt or settlement watchlist rows. The gate rejects
 promotion of source-backed systems into matched benchmarks unless proof bytes, verifier
 inputs, public statement fields, and mutation tests are reproducible. Evidence is
 recorded in `docs/engineering/zkai-sota-artifact-watchlist-2026-05-03.md` and
-`docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json`.
+`docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json`, with the TSV
+summary at `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv`.
 
 The third priority is to make state and numeric policy first-class. The d128 result
 shows that a global q8 rule that happens to hold for a d64 fixture is not a safe
