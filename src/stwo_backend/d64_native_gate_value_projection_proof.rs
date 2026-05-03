@@ -39,7 +39,7 @@ use super::d64_native_rmsnorm_to_projection_bridge_proof::{
 };
 
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_INPUT_SCHEMA: &str =
-    "zkai-d64-gate-value-projection-air-proof-input-v1";
+    "zkai-d64-gate-value-projection-air-proof-input-v2";
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_INPUT_DECISION: &str =
     "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF";
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_PROOF_VERSION: &str =
@@ -65,6 +65,7 @@ pub const ZKAI_D64_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT: &str =
     "blake2b-256:d7127c1002acd821428da00b5ca1aabdb5a43809d6834b9b6b08d13d8e9f8e02";
 pub const ZKAI_D64_GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT: &str =
     "blake2b-256:2ea591b42ef4a2bc6c5c88f8dc33003bb4a0cf357b57f01e1c5b7dce822035db";
+pub const ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR: usize = ZKAI_D64_WIDTH;
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const WEIGHT_GENERATOR_SEED: &str = "zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05-v1";
@@ -103,12 +104,14 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not residual proof",
     "not binding the full d64 output_activation_commitment",
     "output aggregation is verifier-recomputed from checked public multiplication rows, not a private AIR aggregation claim",
+    "projection outputs are fixed-point floor quotients; divisor and remainders are bound for auditability",
 ];
 
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "projection input row commitment recomputation before proof verification",
     "gate/value projection multiplication row commitment recomputation before proof verification",
     "gate/value output commitment recomputation before proof verification",
+    "gate/value projection scale divisor and remainder recomputation before proof verification",
     "AIR multiplication relation for every checked gate/value row",
     "gate and value matrix roots recomputed from checked row weights",
     "full output_activation_commitment relabeling rejection",
@@ -191,12 +194,17 @@ pub struct ZkAiD64GateValueProjectionProofInput {
     pub gate_projection_output_commitment: String,
     pub value_projection_output_commitment: String,
     pub gate_value_projection_output_commitment: String,
+    pub projection_scale_divisor: usize,
+    pub gate_projection_remainder_sha256: String,
+    pub value_projection_remainder_sha256: String,
     pub gate_value_projection_mul_row_commitment: String,
     pub public_instance_commitment: String,
     pub statement_commitment: String,
     pub projection_input_q8: Vec<i64>,
     pub gate_projection_q8: Vec<i64>,
     pub value_projection_q8: Vec<i64>,
+    pub gate_projection_remainder_q8: Vec<i64>,
+    pub value_projection_remainder_q8: Vec<i64>,
     pub non_claims: Vec<String>,
     pub proof_verifier_hardening: Vec<String>,
     pub next_backend_step: String,
@@ -337,6 +345,11 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
         ZKAI_D64_VALUE_PROJECTION_MUL_ROWS,
         "value projection mul rows",
     )?;
+    expect_usize(
+        input.projection_scale_divisor,
+        ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR,
+        "projection_scale_divisor",
+    )?;
     expect_eq(
         &input.source_bridge_proof_version,
         ZKAI_D64_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
@@ -441,9 +454,37 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
             "value projection output vector length mismatch",
         ));
     }
+    if input.gate_projection_remainder_q8.len() != ZKAI_D64_FF_DIM {
+        return Err(gate_value_error(
+            "gate projection remainder vector length mismatch",
+        ));
+    }
+    if input.value_projection_remainder_q8.len() != ZKAI_D64_FF_DIM {
+        return Err(gate_value_error(
+            "value projection remainder vector length mismatch",
+        ));
+    }
 
     for (index, value) in input.projection_input_q8.iter().enumerate() {
         expect_signed_m31(*value, &format!("projection input q8 {index}"))?;
+    }
+    for (label, values) in [
+        (
+            "gate projection remainder",
+            &input.gate_projection_remainder_q8,
+        ),
+        (
+            "value projection remainder",
+            &input.value_projection_remainder_q8,
+        ),
+    ] {
+        for (index, value) in values.iter().enumerate() {
+            if *value < 0 || *value >= ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR as i64 {
+                return Err(gate_value_error(format!(
+                    "{label} {index} outside divisor range"
+                )));
+            }
+        }
     }
     let rows = build_rows(&input.projection_input_q8)?;
     let mut gate_accumulators = vec![0i64; ZKAI_D64_FF_DIM];
@@ -499,14 +540,30 @@ fn validate_gate_value_input(input: &ZkAiD64GateValueProjectionProofInput) -> Re
         &input.source_projection_input_row_commitment,
         "projection input recomputed commitment",
     )?;
-    let recomputed_gate = divide_accumulators(&gate_accumulators)?;
-    let recomputed_value = divide_accumulators(&value_accumulators)?;
+    let (recomputed_gate, recomputed_gate_remainder) = divide_accumulators(&gate_accumulators)?;
+    let (recomputed_value, recomputed_value_remainder) = divide_accumulators(&value_accumulators)?;
     if recomputed_gate != input.gate_projection_q8 {
         return Err(gate_value_error("gate projection output drift"));
     }
     if recomputed_value != input.value_projection_q8 {
         return Err(gate_value_error("value projection output drift"));
     }
+    if recomputed_gate_remainder != input.gate_projection_remainder_q8 {
+        return Err(gate_value_error("gate projection remainder drift"));
+    }
+    if recomputed_value_remainder != input.value_projection_remainder_q8 {
+        return Err(gate_value_error("value projection remainder drift"));
+    }
+    expect_eq(
+        &sha256_hex(canonical_i64_array(&input.gate_projection_remainder_q8).as_bytes()),
+        &input.gate_projection_remainder_sha256,
+        "gate projection remainder hash",
+    )?;
+    expect_eq(
+        &sha256_hex(canonical_i64_array(&input.value_projection_remainder_q8).as_bytes()),
+        &input.value_projection_remainder_sha256,
+        "value projection remainder hash",
+    )?;
     expect_eq(
         &sequence_commitment(
             &input.gate_projection_q8,
@@ -585,12 +642,14 @@ fn validate_gate_value_row(
     Ok(())
 }
 
-fn divide_accumulators(accumulators: &[i64]) -> Result<Vec<i64>> {
-    let mut out = Vec::with_capacity(accumulators.len());
+fn divide_accumulators(accumulators: &[i64]) -> Result<(Vec<i64>, Vec<i64>)> {
+    let mut quotients = Vec::with_capacity(accumulators.len());
+    let mut remainders = Vec::with_capacity(accumulators.len());
     for value in accumulators {
-        out.push(value.div_euclid(ZKAI_D64_WIDTH as i64));
+        quotients.push(value.div_euclid(ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR as i64));
+        remainders.push(value.rem_euclid(ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR as i64));
     }
-    Ok(out)
+    Ok((quotients, remainders))
 }
 
 fn build_rows(inputs: &[i64]) -> Result<Vec<D64GateValueProjectionMulRow>> {
@@ -1097,6 +1156,18 @@ mod tests {
         assert_eq!(input.projection_input_q8.len(), ZKAI_D64_WIDTH);
         let rows = build_rows(&input.projection_input_q8).expect("derived rows");
         assert_eq!(rows.len(), ZKAI_D64_GATE_VALUE_ROW_COUNT);
+        assert_eq!(
+            input.projection_scale_divisor,
+            ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR
+        );
+        assert_eq!(
+            input.gate_projection_remainder_sha256,
+            sha256_hex(canonical_i64_array(&input.gate_projection_remainder_q8).as_bytes())
+        );
+        assert_eq!(
+            input.value_projection_remainder_sha256,
+            sha256_hex(canonical_i64_array(&input.value_projection_remainder_q8).as_bytes())
+        );
         assert_eq!(rows[0].matrix, "gate");
         assert_eq!(rows[0].projection_input_q8, 46);
         assert_eq!(rows[0].weight_q8, -2);
@@ -1112,6 +1183,22 @@ mod tests {
         assert_ne!(
             input.gate_value_projection_output_commitment,
             ZKAI_D64_OUTPUT_ACTIVATION_COMMITMENT
+        );
+    }
+
+    #[test]
+    fn gate_value_reconstructs_floor_division_surface() {
+        let input = input();
+        let rows = build_rows(&input.projection_input_q8).expect("derived rows");
+        let gate_accumulator: i64 = rows
+            .iter()
+            .filter(|row| row.matrix == "gate" && row.output_index == 0)
+            .map(|row| row.product_q8)
+            .sum();
+        assert_eq!(
+            gate_accumulator,
+            input.gate_projection_q8[0] * input.projection_scale_divisor as i64
+                + input.gate_projection_remainder_q8[0]
         );
     }
 
@@ -1219,6 +1306,35 @@ mod tests {
         assert!(error
             .to_string()
             .contains("gate projection output commitment"));
+    }
+
+    #[test]
+    fn gate_value_rejects_projection_remainder_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        let remainder = value["gate_projection_remainder_q8"][0]
+            .as_i64()
+            .expect("remainder");
+        value["gate_projection_remainder_q8"][0] =
+            Value::from((remainder + 1).rem_euclid(ZKAI_D64_WIDTH as i64));
+        let error = zkai_d64_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("gate projection remainder drift"));
+    }
+
+    #[test]
+    fn gate_value_rejects_projection_scale_divisor_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["projection_scale_divisor"] =
+            Value::from(ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR + 1);
+        let error = zkai_d64_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("projection_scale_divisor"));
     }
 
     #[test]

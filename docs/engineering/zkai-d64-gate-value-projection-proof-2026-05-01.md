@@ -27,6 +27,19 @@ The verifier then recomputes the projection-input row commitment, gate/value
 matrix roots, gate/value output vectors, the gate/value output commitments, and
 the gate/value multiplication-row commitment before accepting the proof.
 
+The output vectors are intentionally fixed-point quotient vectors, not raw
+matrix sums:
+
+```text
+gate_projection_q8[row]  = floor(sum_col(input_q8[col] * gate_weight_q8[row, col]) / 64)
+value_projection_q8[row] = floor(sum_col(input_q8[col] * value_weight_q8[row, col]) / 64)
+```
+
+The slice now binds the scale divisor (`64`) plus gate/value remainder hashes.
+That does not change the statement value consumed by activation/SwiGLU; it makes
+the quotient semantics explicit and fail-closed against future raw-sum vs
+fixed-point reinterpretation.
+
 This deliberately does not prove activation, SwiGLU mixing, down projection,
 residual addition, or the full d64 `output_activation_commitment`.
 
@@ -40,6 +53,9 @@ residual addition, or the full d64 `output_activation_commitment`.
 | Gate projection output | `blake2b-256:11d4782e19becb15a541ff542971789049c802277255410db88b6423998b1ef8` |
 | Value projection output | `blake2b-256:71599f8691b781d78edddac94f09c3b4c1d572e20013c6122faea8d83abf724d` |
 | Gate/value projection output | `blake2b-256:d7127c1002acd821428da00b5ca1aabdb5a43809d6834b9b6b08d13d8e9f8e02` |
+| Projection scale divisor | `64` |
+| Gate projection remainder SHA-256 | `2421b8ab627a2be714df2f450eb3e5e7bf6471add648e9e27aff04da5da08219` |
+| Value projection remainder SHA-256 | `4d45e1d70b0ab390ad91b1ccb572df7e78461b4ede6ba8b509288eea1ff08fb3` |
 | Gate/value multiplication rows | `blake2b-256:2ea591b42ef4a2bc6c5c88f8dc33003bb4a0cf357b57f01e1c5b7dce822035db` |
 | Full d64 output activation | `blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f` |
 | Gate/value output relabels full output | `false` |
@@ -68,6 +84,8 @@ The focused Rust tests reject:
 - projection-input vector drift,
 - projection-input commitment drift,
 - gate output commitment drift,
+- projection scale-divisor drift,
+- projection remainder drift,
 - gate/value row commitment drift,
 - checked public-row tampering after proving,
 - proof-byte tampering,
@@ -90,6 +108,8 @@ on output-vector equality.
 - This is not a down-projection proof.
 - This is not a residual proof.
 - This does not bind the full d64 `output_activation_commitment`.
+- This is not a raw unscaled matrix-sum statement; it is a fixed-point quotient
+  statement with divisor/remainder evidence.
 - Output aggregation is verifier-recomputed from checked public multiplication
   rows; this is not yet a private aggregation AIR claim.
 

@@ -1,8 +1,8 @@
 {
   "all_mutations_rejected": true,
   "block_receipt": {
-    "block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
-    "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+    "block_receipt_commitment": "blake2b-256:37a10d2ace48e915157c96eef1abd159074dd8fb7653636d3992f1cd7f1122a6",
+    "evidence_manifest_commitment": "blake2b-256:ad9d6477e0940ca084024d3cf2a064880bdfddb075f9848cd0e2bc2ef36dc124",
     "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
     "model_config": {
       "activation_clamp_q8": 1024,
@@ -20,7 +20,7 @@
     "public_instance_commitment": "blake2b-256:ee01ed070eddd5b85990461776834fd827ecd8d37d295fdfa0b2d518b6b6366d",
     "receipt_version": "zkai-d64-block-receipt-v1",
     "required_backend_version": "stwo-rmsnorm-swiglu-residual-d64-v2",
-    "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+    "slice_chain_commitment": "blake2b-256:9c553d6f8c8abb20de8690a65f3b87f5f7293648286d1a6032996cb4d17c500a",
     "slice_versions": [
       {
         "proof_backend_version": "stwo-d64-rmsnorm-public-row-air-proof-v2",
@@ -34,7 +34,7 @@
       },
       {
         "proof_backend_version": "stwo-d64-gate-value-projection-air-proof-v1",
-        "schema": "zkai-d64-gate-value-projection-air-proof-input-v1",
+        "schema": "zkai-d64-gate-value-projection-air-proof-input-v2",
         "slice_id": "gate_value_projection"
       },
       {
@@ -44,7 +44,7 @@
       },
       {
         "proof_backend_version": "stwo-d64-down-projection-air-proof-v1",
-        "schema": "zkai-d64-down-projection-air-proof-input-v1",
+        "schema": "zkai-d64-down-projection-air-proof-input-v2",
         "slice_id": "down_projection"
       },
       {
@@ -188,7 +188,7 @@
     }
   ],
   "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
-  "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+  "evidence_manifest_commitment": "blake2b-256:ad9d6477e0940ca084024d3cf2a064880bdfddb075f9848cd0e2bc2ef36dc124",
   "non_claims": [
     "not recursive aggregation of the six slice proofs",
     "not one compressed verifier object",
@@ -233,7 +233,7 @@
       "index": 2,
       "proof_backend_version": "stwo-d64-gate-value-projection-air-proof-v1",
       "row_count": 32768,
-      "schema": "zkai-d64-gate-value-projection-air-proof-input-v1",
+      "schema": "zkai-d64-gate-value-projection-air-proof-input-v2",
       "slice_id": "gate_value_projection",
       "source_commitments": {
         "projection_input_row_commitment": "blake2b-256:3a84feca5eab58736fdf01369fc64d3afc45c97ecdc629e64f0bb2eb2f8de094"
@@ -265,7 +265,7 @@
       "index": 4,
       "proof_backend_version": "stwo-d64-down-projection-air-proof-v1",
       "row_count": 16384,
-      "schema": "zkai-d64-down-projection-air-proof-input-v1",
+      "schema": "zkai-d64-down-projection-air-proof-input-v2",
       "slice_id": "down_projection",
       "source_commitments": {
         "hidden_activation_commitment": "blake2b-256:18482fa6e000d8fb0e0d7b39db46355eeec556622ca69478d1a039438495b047"
@@ -290,7 +290,7 @@
       }
     }
   ],
-  "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+  "slice_chain_commitment": "blake2b-256:9c553d6f8c8abb20de8690a65f3b87f5f7293648286d1a6032996cb4d17c500a",
   "source_evidence_manifest": [
     {
       "decision": "GO_PUBLIC_ROW_INPUT_FOR_D64_RMSNORM_AIR_PROOF",
@@ -314,12 +314,12 @@
     },
     {
       "decision": "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF",
-      "file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+      "file_sha256": "9eabe95cb1daa28f1b3791dd1c0e1438d128a16d63d6648ab441bd9d15a82431",
       "index": 2,
       "path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
-      "payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7",
+      "payload_sha256": "db9bdf7667fe59b46936b0d84d170d9e24445073dc6ff1a13424f7915effd9d5",
       "proof_backend_version": "stwo-d64-gate-value-projection-air-proof-v1",
-      "schema": "zkai-d64-gate-value-projection-air-proof-input-v1",
+      "schema": "zkai-d64-gate-value-projection-air-proof-input-v2",
       "slice_id": "gate_value_projection"
     },
     {
@@ -334,12 +334,12 @@
     },
     {
       "decision": "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF",
-      "file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+      "file_sha256": "7a78f8410fcf209ffbc9dcb41251f33c785a4fdcd84394349ad3da170bd33355",
       "index": 4,
       "path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
-      "payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc",
+      "payload_sha256": "e27e3e9f127ab7ecff24b67d6068a27fd347d1aaa9d5bb50a2eae401ec582dc8",
       "proof_backend_version": "stwo-d64-down-projection-air-proof-v1",
-      "schema": "zkai-d64-down-projection-air-proof-input-v1",
+      "schema": "zkai-d64-down-projection-air-proof-input-v2",
       "slice_id": "down_projection"
     },
     {

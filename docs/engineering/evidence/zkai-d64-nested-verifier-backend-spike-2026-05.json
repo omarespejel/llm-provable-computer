@@ -413,7 +413,7 @@
       "surface": "parser_or_schema"
     }
   ],
-  "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+  "nested_verifier_contract_commitment": "blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a",
   "non_claims": [
     "not a recursive proof object",
     "not a PCD accumulator",
@@ -440,10 +440,10 @@
     "backend_proof_result": "NO_GO_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
     "contract_result": "GO_D64_NESTED_VERIFIER_BACKEND_CONTRACT",
     "decision": "NO_GO_D64_NESTED_VERIFIER_BACKEND_PROOF_ARTIFACT_UNAVAILABLE",
-    "file_sha256": "0aad7ef6e5bbc558c65597f9092421d2b2dc96b26089609d267574f598094310",
-    "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "file_sha256": "e2ed45cc7f72895eda2861ceb2caef3b63d29c24d848e246733a93513c66afbc",
+    "nested_verifier_contract_commitment": "blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a",
     "path": "docs/engineering/evidence/zkai-d64-nested-verifier-backend-contract-2026-05.json",
-    "payload_sha256": "a386b78ade01b5e02fe7d6494d025346dc2cc0b379268b89e2a948467f8f6aea",
+    "payload_sha256": "424c2dd3b7de9b52fd56b9d1c71c5d8a678cce684596c2bc0f92db48b49cc975",
     "schema": "zkai-d64-nested-verifier-backend-contract-v1"
   },
   "summary": {
@@ -463,7 +463,7 @@
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "source_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "source_contract_commitment": "blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a",
     "verifier_handle_exists": false
   },
   "validation_commands": [

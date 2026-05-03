@@ -37,6 +37,11 @@ This repository currently has three live lanes.
 
 3. Verifiable-AI statement-bound transformer lane
    - The `d=64` native route has a six-slice proof-backed receipt chain.
+   - The d64 gate/value and down-projection slices intentionally use
+     fixed-point floor-quotient semantics, not raw projection sums. The
+     quotient scale divisors and remainder hashes are now checked in the
+     evidence and verifiers; see
+     `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
      down-projection, and a parameterized vector residual-add slice. The

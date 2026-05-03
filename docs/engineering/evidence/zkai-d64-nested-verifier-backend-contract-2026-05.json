@@ -317,9 +317,9 @@
   "nested_verifier_contract": {
     "contract_kind": "d64-two-slice-nested-verifier-backend-contract",
     "contract_version": "zkai-d64-two-slice-nested-verifier-contract-v1",
-    "evidence_manifest_commitment": "blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c",
+    "evidence_manifest_commitment": "blake2b-256:ad9d6477e0940ca084024d3cf2a064880bdfddb075f9848cd0e2bc2ef36dc124",
     "input_activation_commitment": "blake2b-256:4f765c71601320b3ee9341056299e79a004fa94aaa2edcb5c161cb7366b051fc",
-    "input_block_receipt_commitment": "blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42",
+    "input_block_receipt_commitment": "blake2b-256:37a10d2ace48e915157c96eef1abd159074dd8fb7653636d3992f1cd7f1122a6",
     "minimum_nested_slice_checks": 2,
     "model_config": {
       "activation_clamp_q8": 1024,
@@ -359,7 +359,7 @@
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "slice_chain_commitment": "blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e",
+    "slice_chain_commitment": "blake2b-256:9c553d6f8c8abb20de8690a65f3b87f5f7293648286d1a6032996cb4d17c500a",
     "source_aggregation_target": {
       "composition_mutation_cases": 14,
       "feasibility_mutation_cases": 16,
@@ -370,11 +370,11 @@
       "target_version": "zkai-d64-recursive-pcd-aggregation-target-v1",
       "total_checked_rows": 49600
     },
-    "source_aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "source_aggregation_target_commitment": "blake2b-256:4b8dc9b7838c477e03bcdd4bae6e36809a45a5b9c198d6ba31574c6c1182e9ae",
     "statement_commitment": "blake2b-256:9689c4c4e46a62d3f4156c818c1cc146e7312ff91a44f521bd897e806b2f3b38",
     "verifier_domain": "ptvm:zkai:d64-rmsnorm-swiglu-statement-target:v2"
   },
-  "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+  "nested_verifier_contract_commitment": "blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a",
   "non_claims": [
     "not a recursive proof object",
     "not a PCD accumulator",
@@ -387,11 +387,11 @@
   "result": "BOUNDED_NO_GO",
   "schema": "zkai-d64-nested-verifier-backend-contract-v1",
   "source_feasibility_evidence": {
-    "aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "aggregation_target_commitment": "blake2b-256:4b8dc9b7838c477e03bcdd4bae6e36809a45a5b9c198d6ba31574c6c1182e9ae",
     "decision": "NO_GO_D64_RECURSIVE_PCD_AGGREGATION_PROVER_UNAVAILABLE",
-    "file_sha256": "7b5df1c747dce73094026a32b5af7b10592fe3ce8376041122a6ccb1e0168beb",
+    "file_sha256": "2c2949da569f8019f89b2867b3150093290ace4168c7fe3e67762b5ed999079e",
     "path": "docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json",
-    "payload_sha256": "1852ddfb13e722511544e2a863ad8f44ab37af8dfe8d790a5dea319bf76bbad9",
+    "payload_sha256": "3b12732de78ae4f92b0d7850c20e067429797fda6ee8c73b642fd9290180c1a8",
     "schema": "zkai-d64-recursive-pcd-aggregation-feasibility-v1"
   },
   "summary": {
@@ -401,13 +401,13 @@
     "minimum_nested_slice_checks": 2,
     "mutation_cases": 20,
     "mutations_rejected": 20,
-    "nested_verifier_contract_commitment": "blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd",
+    "nested_verifier_contract_commitment": "blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a",
     "selected_slice_count": 2,
     "selected_slice_ids": [
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "source_aggregation_target_commitment": "blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43",
+    "source_aggregation_target_commitment": "blake2b-256:4b8dc9b7838c477e03bcdd4bae6e36809a45a5b9c198d6ba31574c6c1182e9ae",
     "source_feasibility_mutation_cases": 16,
     "source_feasibility_mutations_rejected": 16,
     "source_recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_PROOF_ARTIFACT_UNAVAILABLE"

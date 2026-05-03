@@ -29,6 +29,11 @@ signed-q8 floor division by `ff_dim = 256`:
 residual_delta_q8[row] = floor(sum_col(product_q8[row, col]) / 256)
 ```
 
+The slice now binds the scale divisor (`256`) plus the residual-delta remainder
+hash. This preserves the existing fixed-point quotient statement consumed by the
+residual-add slice, while making the discarded division remainder auditable and
+fail-closed against future raw-sum vs quotient reinterpretation.
+
 Before accepting the proof, the verifier recomputes the source hidden activation
 commitment, the down matrix root from deterministic checked row weights, the
 multiplication-row commitment, and the residual-delta commitment.
@@ -45,6 +50,8 @@ residual-add slice records the final-output binding in
 | Down matrix root | `blake2b-256:19b08584116916a72297047f01e2dc7505fb19e9508b384c7d80dfe3cb82c330` |
 | Down-projection rows | `blake2b-256:a0e069f148403112d512dff050b211e490e03d8af846d27c7f2cebe3bdb7fb68` |
 | Residual delta output | `blake2b-256:ff67391fd2636e118af323efb1ed559114421a96e8ea30a7424c114e7074622a` |
+| Residual-delta scale divisor | `256` |
+| Residual-delta remainder SHA-256 | `33a0e907169d6459d309484a56f007e7b5dd372a2740c82e7cd16c2e4da1587e` |
 | Full d64 output activation | `blake2b-256:c63929ab0be63f116d3ad74613392eaa43e3db6c6a8b4f53be32ac57f15e1c5f` |
 | Residual delta relabels full output | `false` |
 
@@ -72,6 +79,8 @@ The focused Rust tests reject:
 - hidden activation vector drift,
 - source hidden activation commitment drift,
 - residual-delta vector drift,
+- residual-delta scale-divisor drift,
+- residual-delta remainder drift,
 - fixed-point q8 semantic-bound drift for hidden activations and residual deltas,
 - down matrix root drift,
 - down-projection row commitment drift,
@@ -91,6 +100,8 @@ JSON/TSV round-trip issues.
 - This is not a full d64 block proof.
 - This is not a residual proof; the residual-add proof is a separate slice.
 - This does not by itself bind the full d64 `output_activation_commitment`.
+- This is not a raw unscaled down-projection sum statement; it is a fixed-point
+  quotient statement with divisor/remainder evidence.
 - This is not a private down-weight opening proof; down-projection rows are
   verifier-recomputed from checked public rows before proof verification.
 - This is not model-scale transformer inference.

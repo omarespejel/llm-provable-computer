@@ -23,7 +23,7 @@ BRIDGE_JSON = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-rmsnorm-to-
 JSON_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-gate-value-projection-proof-2026-05.json"
 TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-gate-value-projection-proof-2026-05.tsv"
 
-SCHEMA = "zkai-d64-gate-value-projection-air-proof-input-v1"
+SCHEMA = "zkai-d64-gate-value-projection-air-proof-input-v2"
 DECISION = "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF"
 TARGET_ID = "rmsnorm-swiglu-residual-d64-v2"
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d64-v2"
@@ -49,6 +49,7 @@ VALUE_PROJECTION_OUTPUT_DOMAIN = "ptvm:zkai:d64-value-projection-output:v1"
 GATE_VALUE_PROJECTION_OUTPUT_DOMAIN = "ptvm:zkai:d64-gate-value-projection-output:v1"
 GATE_VALUE_PROJECTION_MUL_ROW_DOMAIN = "ptvm:zkai:d64-gate-value-projection-mul-rows:v1"
 NEXT_BACKEND_STEP = "encode activation/SwiGLU rows that consume gate_value_projection_output_commitment and produce hidden_activation_commitment"
+PROJECTION_SCALE_DIVISOR = WIDTH
 
 NON_CLAIMS = [
     "not full d64 block proof",
@@ -57,12 +58,14 @@ NON_CLAIMS = [
     "not residual proof",
     "not binding the full d64 output_activation_commitment",
     "output aggregation is verifier-recomputed from checked public multiplication rows, not a private AIR aggregation claim",
+    "projection outputs are fixed-point floor quotients; divisor and remainders are bound for auditability",
 ]
 
 PROOF_VERIFIER_HARDENING = [
     "projection input row commitment recomputation before proof verification",
     "gate/value projection multiplication row commitment recomputation before proof verification",
     "gate/value output commitment recomputation before proof verification",
+    "gate/value projection scale divisor and remainder recomputation before proof verification",
     "AIR multiplication relation for every checked gate/value row",
     "gate and value matrix roots recomputed from checked row weights",
     "full output_activation_commitment relabeling rejection",
@@ -89,6 +92,9 @@ TSV_COLUMNS = (
     "gate_projection_output_commitment",
     "value_projection_output_commitment",
     "gate_value_projection_output_commitment",
+    "projection_scale_divisor",
+    "gate_projection_remainder_sha256",
+    "value_projection_remainder_sha256",
     "projection_output_relabels_full_output",
     "non_claims",
     "next_backend_step",
@@ -236,6 +242,16 @@ def output_commitment(gate: list[int], value: list[int]) -> str:
     )
 
 
+def divide_accumulators(accumulators: list[int], divisor: int) -> tuple[list[int], list[int]]:
+    quotients: list[int] = []
+    remainders: list[int] = []
+    for value in accumulators:
+        quotient, remainder = divmod(value, divisor)
+        quotients.append(quotient)
+        remainders.append(remainder)
+    return quotients, remainders
+
+
 def rows_commitment(rows: list[dict[str, Any]]) -> str:
     material = [
         [
@@ -259,9 +275,9 @@ def rows_commitment(rows: list[dict[str, Any]]) -> str:
     )
 
 
-def build_rows(inputs: list[int]) -> tuple[list[dict[str, Any]], list[int], list[int]]:
+def build_rows(inputs: list[int]) -> tuple[list[dict[str, Any]], list[int], list[int], list[int], list[int]]:
     rows: list[dict[str, Any]] = []
-    outputs: dict[str, list[int]] = {"gate": [], "value": []}
+    accumulators: dict[str, list[int]] = {"gate": [], "value": []}
     row_index = 0
     for matrix in ("gate", "value"):
         for output_index in range(FF_DIM):
@@ -285,14 +301,16 @@ def build_rows(inputs: list[int]) -> tuple[list[dict[str, Any]], list[int], list
                 )
                 acc += product_q8
                 row_index += 1
-            outputs[matrix].append(acc // WIDTH)
-    return rows, outputs["gate"], outputs["value"]
+            accumulators[matrix].append(acc)
+    gate, gate_remainder = divide_accumulators(accumulators["gate"], PROJECTION_SCALE_DIVISOR)
+    value, value_remainder = divide_accumulators(accumulators["value"], PROJECTION_SCALE_DIVISOR)
+    return rows, gate, value, gate_remainder, value_remainder
 
 
 def build_payload(bridge: dict[str, Any] | None = None) -> dict[str, Any]:
     bridge = load_bridge() if bridge is None else bridge
     inputs = projection_input_values(bridge)
-    rows, gate, value = build_rows(inputs)
+    rows, gate, value, gate_remainder, value_remainder = build_rows(inputs)
     reference = FIXTURE.evaluate_reference_block()
     if inputs != reference["normed_q8"]:
         raise GateValueProjectionInputError("projection input does not match canonical RMSNorm normed_q8")
@@ -319,12 +337,17 @@ def build_payload(bridge: dict[str, Any] | None = None) -> dict[str, Any]:
         "gate_projection_output_commitment": sequence_commitment(gate, GATE_PROJECTION_OUTPUT_DOMAIN, [FF_DIM]),
         "value_projection_output_commitment": sequence_commitment(value, VALUE_PROJECTION_OUTPUT_DOMAIN, [FF_DIM]),
         "gate_value_projection_output_commitment": output_commitment(gate, value),
+        "projection_scale_divisor": PROJECTION_SCALE_DIVISOR,
+        "gate_projection_remainder_sha256": sha256_hex(gate_remainder),
+        "value_projection_remainder_sha256": sha256_hex(value_remainder),
         "gate_value_projection_mul_row_commitment": rows_commitment(rows),
         "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
         "statement_commitment": STATEMENT_COMMITMENT,
         "projection_input_q8": inputs,
         "gate_projection_q8": gate,
         "value_projection_q8": value,
+        "gate_projection_remainder_q8": gate_remainder,
+        "value_projection_remainder_q8": value_remainder,
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
@@ -342,8 +365,10 @@ def validate_payload(payload: Any) -> None:
         "row_count", "gate_projection_mul_rows", "value_projection_mul_rows", "source_bridge_proof_version",
         "source_projection_input_row_commitment", "gate_matrix_root", "value_matrix_root",
         "proof_native_parameter_commitment", "gate_projection_output_commitment", "value_projection_output_commitment",
-        "gate_value_projection_output_commitment", "gate_value_projection_mul_row_commitment", "public_instance_commitment",
-        "statement_commitment", "projection_input_q8", "gate_projection_q8", "value_projection_q8", "non_claims",
+        "gate_value_projection_output_commitment", "projection_scale_divisor", "gate_projection_remainder_sha256",
+        "value_projection_remainder_sha256", "gate_value_projection_mul_row_commitment", "public_instance_commitment",
+        "statement_commitment", "projection_input_q8", "gate_projection_q8", "value_projection_q8",
+        "gate_projection_remainder_q8", "value_projection_remainder_q8", "non_claims",
         "proof_verifier_hardening", "next_backend_step", "validation_commands",
     }
     if set(payload) != expected_fields:
@@ -364,6 +389,7 @@ def validate_payload(payload: Any) -> None:
         "gate_matrix_root": GATE_MATRIX_ROOT,
         "value_matrix_root": VALUE_MATRIX_ROOT,
         "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
+        "projection_scale_divisor": PROJECTION_SCALE_DIVISOR,
         "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
         "statement_commitment": STATEMENT_COMMITMENT,
         "non_claims": NON_CLAIMS,
@@ -379,15 +405,30 @@ def validate_payload(payload: Any) -> None:
     inputs = payload["projection_input_q8"]
     gate = payload["gate_projection_q8"]
     value = payload["value_projection_q8"]
+    gate_remainder = payload["gate_projection_remainder_q8"]
+    value_remainder = payload["value_projection_remainder_q8"]
     if not isinstance(inputs, list) or len(inputs) != WIDTH:
         raise GateValueProjectionInputError("projection input vector mismatch")
     if not isinstance(gate, list) or len(gate) != FF_DIM or not isinstance(value, list) or len(value) != FF_DIM:
         raise GateValueProjectionInputError("projection output vector mismatch")
+    if not isinstance(gate_remainder, list) or len(gate_remainder) != FF_DIM:
+        raise GateValueProjectionInputError("gate projection remainder vector mismatch")
+    if not isinstance(value_remainder, list) or len(value_remainder) != FF_DIM:
+        raise GateValueProjectionInputError("value projection remainder vector mismatch")
     for value_index, input_value in enumerate(inputs):
         if not isinstance(input_value, int):
             raise GateValueProjectionInputError("projection input must be integer")
         require_signed_m31(input_value, f"projection input {value_index}")
-    rows, recomputed_gate, recomputed_value = build_rows(inputs)
+    for label, remainders in (
+        ("gate projection remainder", gate_remainder),
+        ("value projection remainder", value_remainder),
+    ):
+        for index, item in enumerate(remainders):
+            if not isinstance(item, int):
+                raise GateValueProjectionInputError(f"{label} values must be integers")
+            if not 0 <= item < PROJECTION_SCALE_DIVISOR:
+                raise GateValueProjectionInputError(f"{label} {index} outside divisor range")
+    rows, recomputed_gate, recomputed_value, recomputed_gate_remainder, recomputed_value_remainder = build_rows(inputs)
     for expected_row_index, row in enumerate(rows):
         expected_keys = {"row_index", "matrix", "matrix_selector", "output_index", "input_index", "projection_input_q8", "weight_q8", "product_q8"}
         if not isinstance(row, dict) or set(row) != expected_keys:
@@ -417,6 +458,14 @@ def validate_payload(payload: Any) -> None:
         raise GateValueProjectionInputError("gate projection output drift")
     if recomputed_value != value:
         raise GateValueProjectionInputError("value projection output drift")
+    if recomputed_gate_remainder != gate_remainder:
+        raise GateValueProjectionInputError("gate projection remainder drift")
+    if recomputed_value_remainder != value_remainder:
+        raise GateValueProjectionInputError("value projection remainder drift")
+    if sha256_hex(gate_remainder) != payload["gate_projection_remainder_sha256"]:
+        raise GateValueProjectionInputError("gate projection remainder hash drift")
+    if sha256_hex(value_remainder) != payload["value_projection_remainder_sha256"]:
+        raise GateValueProjectionInputError("value projection remainder hash drift")
     if matrix_root(rows, "gate") != payload["gate_matrix_root"]:
         raise GateValueProjectionInputError("gate matrix root recomputation drift")
     if matrix_root(rows, "value") != payload["value_matrix_root"]:
@@ -447,6 +496,9 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
             "gate_projection_output_commitment": payload["gate_projection_output_commitment"],
             "value_projection_output_commitment": payload["value_projection_output_commitment"],
             "gate_value_projection_output_commitment": payload["gate_value_projection_output_commitment"],
+            "projection_scale_divisor": payload["projection_scale_divisor"],
+            "gate_projection_remainder_sha256": payload["gate_projection_remainder_sha256"],
+            "value_projection_remainder_sha256": payload["value_projection_remainder_sha256"],
             "projection_output_relabels_full_output": str(
                 payload["gate_value_projection_output_commitment"] == OUTPUT_ACTIVATION_COMMITMENT
             ).lower(),

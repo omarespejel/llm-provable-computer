@@ -27,8 +27,8 @@ verifier checks inside one proof or accumulator.
 | Total checked slice rows | `49,600` |
 | Composition mutations inherited | `14 / 14` rejected |
 | Feasibility-gate mutations | `16 / 16` rejected |
-| Block receipt commitment | `blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42` |
-| Aggregation target commitment | `blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43` |
+| Block receipt commitment | `blake2b-256:37a10d2ace48e915157c96eef1abd159074dd8fb7653636d3992f1cd7f1122a6` |
+| Aggregation target commitment | `blake2b-256:4b8dc9b7838c477e03bcdd4bae6e36809a45a5b9c198d6ba31574c6c1182e9ae` |
 
 ## What is now true
 

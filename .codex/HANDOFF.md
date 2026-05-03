@@ -101,6 +101,11 @@ Tablero boundary.
 - The `d=64` native route has a six-slice proof-backed receipt chain:
   RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
   activation/SwiGLU, down projection, and residual add.
+- The d64 projection and down-projection slices intentionally expose
+  fixed-point floor quotients rather than raw projection sums. The May 3 audit
+  adds divisor/remainder evidence and verifier drift checks for that statement
+  surface; see
+  `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
 - Recursive/PCD compression remains a bounded no-go until a real outer proof or
   accumulator backend exists.
 - The `d=128` route now has six partial proof handles: RMSNorm public rows,
