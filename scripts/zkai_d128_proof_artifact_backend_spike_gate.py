@@ -208,11 +208,6 @@ D128_DOWN_COMMITMENT_FIELDS = (
     "statement_commitment",
     "public_instance_commitment",
 )
-D128_DOWN_RANGE_POLICY = (
-    "signed-M31 hidden activations and residual deltas; "
-    "exact residual delta quotient/remainder binding; q8 down weights"
-)
-
 PARAMETERIZED_RESIDUAL_ADD_SYMBOLS = (
     "ZkAiVectorBlockProofInput",
     "ZkAiVectorBlockProofEnvelope",
@@ -1090,7 +1085,7 @@ def build_source_probe() -> dict[str, Any]:
             "residual_delta_relabels_full_output": (
                 d128_down_evidence["residual_delta_commitment"] == D128_DOWN_GATE.OUTPUT_ACTIVATION_COMMITMENT
             ),
-            "range_policy": D128_DOWN_RANGE_POLICY,
+            "range_policy": D128_DOWN_GATE.RANGE_POLICY,
         },
         "parameterized_residual_add": {
             "status": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
@@ -2342,7 +2337,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         down_probe.get("range_policy"),
-        D128_DOWN_RANGE_POLICY,
+        D128_DOWN_GATE.RANGE_POLICY,
         "d128 down-projection range policy",
     )
     expect_equal(
@@ -2540,7 +2535,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     )
     expect_equal(
         route_by_name["direct_d128_down_projection_air"].get("range_policy"),
-        D128_DOWN_RANGE_POLICY,
+        D128_DOWN_GATE.RANGE_POLICY,
         "direct d128 down-projection route range policy",
     )
     expect_equal(

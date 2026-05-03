@@ -153,6 +153,10 @@ python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py \
   --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv
 
 python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate
+
+just gate-fast
+
+just gate
 ```
 
 ## Next step
