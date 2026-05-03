@@ -192,7 +192,7 @@
       "classification": "NO_GO_AUDIT_TEST_SURFACE_NOT_RECURSIVE_BACKEND_TESTS",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "a1d5136057ed5fde5b4e6663b257b3ea262218526b6279c96f773d0264aee9fa",
+      "file_sha256": "3c298c164e006351d38b7ff4f3a067248a03527575a2aabfc758d45c3606e4d0",
       "kind": "current_no_go_audit_test_surface",
       "missing_required_tokens": [],
       "name": "d128_two_slice_recursive_pcd_no_go_audit_tests",
