@@ -67,7 +67,7 @@ verifier time, or relabeling suite.
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block metrics | blocked before full proof object |
-| Mutation checks | `67 / 67` rejected |
+| Mutation checks | `69 / 69` rejected |
 
 ## Backend-route classification
 
@@ -79,7 +79,7 @@ verifier time, or relabeling suite.
 | `direct_d128_rmsnorm_to_projection_bridge_air` | `GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY` | A real Stwo proof handle exists for the d128 handoff from RMSNorm-local rows to projection-input rows. |
 | `direct_d128_gate_value_projection_air` | `GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY` | A real Stwo proof handle exists for the d128 gate/value projection multiplication rows that consume the bridge output. |
 | `direct_d128_activation_swiglu_air` | `GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY` | A real Stwo proof handle exists for the d128 activation/SwiGLU rows that consume the gate/value output and emit hidden activation. |
-| `direct_d128_down_projection_air` | `GO_PARTIAL_D128_DOWN_PROJECTION_ONLY` | A real Stwo proof handle exists for the d128 down-projection rows that consume hidden activation and emit a residual-delta commitment. |
+| `direct_d128_down_projection_air` | `GO_PARTIAL_D128_DOWN_PROJECTION_ONLY` | A real Stwo proof handle exists for the d128 down-projection rows that consume hidden activation and emit an exact residual-delta quotient/remainder commitment. |
 | `lift_existing_d64_modules_by_metadata` | `NO_GO` | The d64 modules validate d64 width, target id, domains, proof versions, and log sizes. A metadata relabel cannot make them d128. |
 | `parameterized_vector_residual_add_air` | `GO_PARTIAL_D128_RESIDUAL_ADD_ONLY` | A real parameterized Stwo proof handle exists for the d128 residual-add vector slice. |
 | `parameterized_transformer_block_air` | `NO_GO_FULL_BLOCK_SLICES_MISSING` | Native residual and full block composition do not exist yet. |
@@ -135,9 +135,9 @@ The gate now validates:
 - the d128 down-projection evidence before starting, including source
   activation statement/public-instance binding, source hidden-activation
   commitment recomputation, down-matrix-root recomputation,
-  multiplication-row commitment recomputation, residual-delta commitment
-  recomputation, statement/public-instance recomputation, proof-native
-  parameter recomputation, and relabel rejection against the full
+  multiplication-row commitment recomputation, exact residual-delta
+  quotient/remainder/divisor commitment recomputation, statement/public-instance
+  recomputation, proof-native parameter recomputation, and relabel rejection against the full
   output-activation commitment;
 - the d128 residual-add vector evidence before starting, including statement,
   public-instance, proof-native parameter, input, residual-delta, output, and row

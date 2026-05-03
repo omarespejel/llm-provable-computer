@@ -49,8 +49,8 @@ This repository currently has three live lanes.
      rows plus a `2049`-row bounded activation lookup table, and emits
      `hidden_activation_commitment`.
    - The d128 down-projection handle consumes `hidden_activation_commitment`,
-     checks `65,536` multiplication rows, and emits
-     `residual_delta_commitment`.
+     checks `65,536` multiplication rows, and emits an exact
+     quotient/remainder-bound `residual_delta_commitment`.
    - This is a partial GO only: native residual, full composition, recursion,
      and full-block metrics remain blocked.
 
@@ -124,7 +124,7 @@ The repo now also has one explicit answer on the second-backend question:
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 10. Continue the verifiable-AI d128 lane with native residual/composition work
-    that consumes `residual_delta_commitment`; do not report full-block metrics
+    that consumes exact quotient/remainder-bound `residual_delta_commitment`; do not report full-block metrics
     until the full d128 receipt or a checked no-go exists.
 
 ## What not to do
