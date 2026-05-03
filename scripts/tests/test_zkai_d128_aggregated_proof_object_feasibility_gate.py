@@ -98,6 +98,32 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
             all(not item["accepted_as_aggregated_proof_object"] for item in inventory.values())
         )
 
+    def test_candidate_inventory_treats_dangling_symlink_as_present_required_artifact(self) -> None:
+        original_surfaces = GATE.CANDIDATE_SURFACES
+        try:
+            with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+                tmp = pathlib.Path(raw_tmp)
+                link = tmp / "dangling-required-artifact.json"
+                link.symlink_to(tmp / "missing-target.json")
+                GATE.CANDIDATE_SURFACES = (
+                    {
+                        "name": "dangling_required_artifact",
+                        "kind": "required_proof_artifact",
+                        "path": link.relative_to(ROOT).as_posix(),
+                        "expected_exists": False,
+                        "expected_file_sha256": None,
+                        "classification": "MISSING_REQUIRED_ARTIFACT",
+                        "reason": "dangling symlink placeholders must still count as present artifacts",
+                    },
+                )
+                with self.assertRaisesRegex(
+                    GATE.D128AggregatedProofObjectFeasibilityError,
+                    "required aggregated proof artifact now exists",
+                ):
+                    GATE.candidate_inventory()
+        finally:
+            GATE.CANDIDATE_SURFACES = original_surfaces
+
     def test_proof_object_attempt_blocks_metrics_until_artifact_exists(self) -> None:
         attempt = self.fresh_payload()["proof_object_attempt"]
         self.assertFalse(attempt["aggregated_proof_object_claimed"])
