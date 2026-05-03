@@ -417,7 +417,7 @@
     },
     {
       "baseline_result": "GO",
-      "error": "recursive outer proof claimed without backend",
+      "error": "recursive or PCD status mismatch",
       "mutated_accepted": false,
       "mutation": "recursive_outer_proof_claimed",
       "rejected": true,
@@ -426,7 +426,7 @@
     },
     {
       "baseline_result": "GO",
-      "error": "PCD outer proof claimed without backend",
+      "error": "recursive or PCD status mismatch",
       "mutated_accepted": false,
       "mutation": "pcd_outer_proof_claimed",
       "rejected": true,
@@ -435,7 +435,7 @@
     },
     {
       "baseline_result": "GO",
-      "error": "recursive proof metric supplied before proof backend exists",
+      "error": "recursive or PCD status mismatch",
       "mutated_accepted": false,
       "mutation": "recursive_proof_metric_smuggled",
       "rejected": true,
@@ -444,7 +444,7 @@
     },
     {
       "baseline_result": "GO",
-      "error": "recursive blocker mismatch",
+      "error": "recursive or PCD status mismatch",
       "mutated_accepted": false,
       "mutation": "recursive_blocker_removed",
       "rejected": true,
