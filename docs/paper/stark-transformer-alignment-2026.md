@@ -1234,35 +1234,52 @@ especially when the inference layer itself may be GKR/sumcheck-heavy or TEE-assi
 ### 8.3 Highest-leverage next step
 
 Given the current artifact boundary and the external landscape, the highest-leverage
-near-term result is no longer to create either the first matched within-S-two primitive
-benchmark or the first shared-table reuse benchmark from scratch. Both now exist on the
-checked CLI paths `bench-stwo-primitive-lookup-vs-naive` and
-`bench-stwo-shared-table-reuse`, with checked evidence files under
-`docs/paper/evidence/` and Figures 3-4.
+near-term result has shifted again. The primitive lookup benchmarks and shared-table
+reuse rows are no longer the only concrete anchors; the repository now also has a
+statement-bound `d=128`, `ff_dim=512` RMSNorm-SwiGLU-residual block receipt over
+`197,504` checked rows, with a verifier-relevant per-tensor range-policy commitment.
 
-The next step is to lift that same measurement discipline from fixed table slices to a
-richer transformer kernel while keeping reuse explicit. Methodologically, the symbolic
-model now has one isolated calibration anchor and one reuse-sensitive anchor inside the
-same backend, and that reuse-sensitive anchor now spans normalization, softmax-exp, and
-activation instead of just one table family. The right follow-on work is therefore to
-preserve strict statement binding, add more adversarial and nested-proof checks,
-investigate resource-bound regressions as the kernel grows, and keep the paper's prose
-and checked artifacts aligned as those measured surfaces widen. After that, the obvious
-expansion is to move from these fixed RMSNorm, activation, and exp-table slices toward
-richer attention and normalization kernels, while keeping the same explicit
-shared-proof-versus-independent-envelope comparison frame.
+That changes the next research question. The main missing object is no longer another
+receipt. It is an executable recursive or proof-carrying-data backend for the smallest
+useful checked target. The current two-slice target already isolates
+`rmsnorm_public_rows` plus `rmsnorm_projection_bridge`; it binds a
+`two_slice_target_commitment` and records a bounded no-go because no nested verifier
+program, AIR, or circuit can express those two slice-verifier checks today. A real GO on
+that target would be a qualitatively stronger result than another receipt wrapper:
+it would produce an outer proof or PCD artifact, bind the selected slice statements and
+source evidence hashes as public inputs, and only then report proof size, verifier time,
+and proof-generation time.
 
-More generic folding and recursive-argument frameworks already cover much of the broad
-abstraction space [41, 43, 44, 45]. The sharper contribution available here is
-transformer-specific measurement and then, later, transformer-specific accumulation over
-a fixed relation. Within that boundary, the credible sequencing is: first harden the
-measured primitive benchmark so the verifier conditions are fully explicit; then widen the
-primitive family; then use those measurements to decide whether recursive carried-state
-accumulation is the next paper's main result or only a supporting layer [38, 39, 42, 47, 48].
+Generic folding and accumulation work remains relevant to the eventual backend
+choice [41, 43, 44, 45], and formal-verification practice plus distributed
+proving-system engineering remain adjacent hardening directions [42, 48]. But the
+local blocker is more concrete: express the selected slice verifiers inside an
+executable outer proof surface without weakening the public-input contract.
 
-That direction keeps the next contribution technically attributable: near-term gains can
-be read as better-specified lookup-vs-naive primitive evidence inside one backend, while
-later gains can be read as accumulation/compression gains over a fixed public boundary.
+The second priority is a matched external artifact watchlist rather than a premature
+leaderboard. Public systems such as DeepProve, NANOZK, Jolt Atlas, zkLLM, EZKL,
+Obelyzk, LuminAIR, RISC Zero, and SP1 occupy different points in the design space:
+model-scale proving, layerwise compact objects, statement binding, zkVM receipts, and
+recursive/onchain settlement. The correct comparator for the next local result depends
+on which object exists. A d128 receipt should be compared as a receipt. A d128 outer
+proof should be compared as a proof object. A Starknet verifier should be compared only
+against another deployment or settlement path.
+
+The third priority is to make state and numeric policy first-class. The d128 result
+shows that a global q8 rule that happens to hold for a d64 fixture is not a safe
+statement rule at larger width; tensor identity and range policy must be bound together.
+The attention/KV receipt shows the same principle for autoregressive state: output
+binding alone is not enough if prior and next state can be relabeled. These are not
+performance rows. They are the statement-semantics work that prevents future
+performance rows from being meaningless.
+
+The credible sequencing is therefore: first build or cleanly no-go the two-slice
+recursive/PCD backend; second measure proof size and verifier time only after that
+artifact exists; third add matched external rows only when public proof artifacts and
+verifier inputs make baseline verification and metadata mutation reproducible; fourth
+widen toward proof-backed attention/KV and nonlinear policy receipts. That keeps the
+next contribution technically attributable and prevents the paper from comparing
+unlike objects.
 
 ______________________________________________________________________
 

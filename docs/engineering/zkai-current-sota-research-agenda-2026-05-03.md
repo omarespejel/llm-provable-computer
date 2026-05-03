@@ -1,0 +1,105 @@
+# zkAI Current SOTA Research Agenda (2026-05-03)
+
+This note records the current research posture after the d128 range-policy
+receipt binding landed in PR `#418`.
+
+The goal is not to claim a broad zkML win. The goal is to keep the next work
+aligned with the current state of the field and to avoid comparing unlike
+objects.
+
+## Current Landscape
+
+The public zkML and verifiable-AI landscape now splits into four axes.
+
+| Axis | Current public direction | How this repository should respond |
+|---|---|---|
+| Model-scale proving | DeepProve reports full GPT-2 and later Gemma-class proof progress; NANOZK reports layerwise LLM proofs; Jolt Atlas reports lookup-centric ONNX/NanoGPT/GPT-2 rows. | Do not claim model-scale leadership until an aggregated proof object exists. Use these systems as benchmark/context targets, not strawmen. |
+| Layerwise compact proofs | NANOZK is the cleanest public compact-object calibration row because it reports small verifier-facing layer proofs. | Compare only in compact-object or layerwise receipt regimes unless a matched proof artifact is available. |
+| Statement binding | EZKL, snarkjs, JSTprove, and native Stwo adapters show the same separation: raw proof validity is not application statement validity. | Keep making statement receipts adapter-neutral and fail-closed under relabeling. |
+| Settlement / recursion | Obelyzk has the strongest source-backed public Starknet deployment calibration; Stwo/SNIP-36 point toward protocol-native proof verification. | Treat local accumulators as pre-recursive until an executable recursive/PCD backend exists. |
+
+## What We Have Now
+
+The local d128 track now has a statement-bound transformer-block receipt over
+`197,504` checked rows. It binds:
+
+- six checked slice handles,
+- model/input/output commitments,
+- source evidence hashes,
+- statement commitment,
+- block receipt commitment, and
+- per-tensor `range_policy_commitment`.
+
+This is a meaningful verifiable-AI result because it closes a semantic trap:
+the d64 fixture happens to fit a global `+/-1024` q8 bound, but d128 projection,
+activation, residual, and output tensors do not. The verifier must bind tensor
+identity and numeric range policy together. Otherwise a valid proof can be
+interpreted under the wrong statement.
+
+The current d128 full-block accumulator is also useful, but it is not recursive
+proof compression. It is a verifier-facing accumulator object that keeps the
+claim boundary honest until a real outer proof backend exists.
+
+## What Would Be a Real Next Breakthrough
+
+The next high-value result is not another receipt wrapper and not another
+paper-only claim. It is one executable recursive or PCD proof-object backend for
+the smallest useful d128 target:
+
+```text
+rmsnorm_public_rows
++ rmsnorm_projection_bridge
+```
+
+GO means:
+
+- a real outer proof or PCD accumulator artifact exists,
+- it verifies the two selected slice-verifier checks,
+- it binds `two_slice_target_commitment` as public input,
+- it binds selected slice statement commitments,
+- it binds selected source evidence hashes, and
+- it reports proof size, verifier time, and proof-generation time only after the
+  proof object exists.
+
+NO-GO is still useful if it records the exact missing backend feature. The
+current checked no-go already says the blocker is not "six slices are too big";
+it is that no nested verifier program/AIR/circuit exists for even the two-slice
+contract.
+
+## What Not To Do
+
+- Do not compare the d128 receipt against DeepProve, NANOZK, Jolt Atlas, or EZKL
+  as if it were an end-to-end proof benchmark.
+- Do not report recursive metrics from a non-recursive accumulator.
+- Do not promote the d64 q8 range behavior into a universal numeric statement
+  rule.
+- Do not treat a statement envelope as an attack on an external proof system.
+  It is an application-layer binding requirement.
+
+## Next Tracks
+
+1. **Recursive/PCD backend track.** Build or cleanly no-go the executable
+   two-slice d128 outer proof backend. Tracked in issue `#420`.
+2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
+   verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
+   EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification
+   and metadata mutation are reproducible. Tracked in issue `#419`.
+3. **Stateful transformer track.** Turn the source-backed attention/KV receipt
+   into a proof-backed receipt so autoregressive state is bound, not narrated.
+   Tracked in issue `#336`.
+4. **Numeric-policy track.** Generalize range-policy receipts to activation,
+   Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
+5. **Agent receipt track.** Continue treating agent/action receipts as consumers
+   of model subreceipts, not substitutes for model proof verification.
+
+## Paper Implication
+
+The paper-facing sentence should be:
+
+> The strongest current contribution is statement-bound verifier discipline for
+> transformer-shaped proof systems: prove the computation, bind the meaning of
+> the claim, and only then ask whether a recursive or settlement layer can
+> compress the verifier-facing object.
+
+That sentence is deliberately narrower than "we beat zkML systems." It is also
+more durable.
