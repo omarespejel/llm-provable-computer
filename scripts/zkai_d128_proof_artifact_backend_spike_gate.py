@@ -439,6 +439,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_block_receipt_composition_route_status_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
+    ("d128_block_receipt_composition_route_proof_artifact_drift", "backend_routes"),
     ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
     ("d128_block_receipt_composition_synchronized_commitment_drift", "source_probe"),
     ("d128_block_receipt_composition_evidence_descriptor_drift", "source_probe"),
@@ -542,7 +543,6 @@ D128_BLOCK_GATE = _load_module(
     D128_BLOCK_GATE_PATH,
     "zkai_d128_block_receipt_composition_for_backend_spike",
 )
-D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE: dict[str, Any] | None = None
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -632,13 +632,10 @@ def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, 
 
 
 def authoritative_d128_block_evidence_descriptor() -> dict[str, Any]:
-    global D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE  # noqa: PLW0603 - process-local cache avoids repeated hashing.
-    if D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE is None:
-        D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE = source_descriptor(
-            D128_BLOCK_EVIDENCE,
-            load_json(D128_BLOCK_EVIDENCE),
-        )
-    return copy.deepcopy(D128_BLOCK_EVIDENCE_DESCRIPTOR_CACHE)
+    return source_descriptor(
+        D128_BLOCK_EVIDENCE,
+        load_json(D128_BLOCK_EVIDENCE),
+    )
 
 
 def load_checked_target() -> dict[str, Any]:
@@ -1343,7 +1340,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "verifier_handle_exists": False,
             "proof_size_bytes": None,
             "verifier_time_ms": None,
-            "blocker": "d128 RMSNorm public-row, bridge, gate/value, activation, down-projection, and source-bound residual-add native proofs exist, but composition and full block verifier do not",
+            "blocker": "d128 RMSNorm public-row, bridge, gate/value, activation, down-projection, and source-bound residual-add native proofs exist, and a statement-bound receipt composition gate exists, but no aggregated/native full-block proof object exists",
             "missing_modules": source_probe["missing_d128_modules"],
             "missing_export_symbols": source_probe["missing_d128_export_symbols"],
         },
@@ -2413,6 +2410,16 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         "d128_block_receipt_composition_route_receipt_flag_drift",
         "backend_routes",
         drift_d128_block_receipt_flag,
+    )
+
+    def drift_d128_block_receipt_proof_artifact_flag(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["proof_artifact_exists"] = True
+
+    add(
+        "d128_block_receipt_composition_route_proof_artifact_drift",
+        "backend_routes",
+        drift_d128_block_receipt_proof_artifact_flag,
     )
 
     def drift_d128_block_receipt_mutation_count(p: dict[str, Any]) -> None:
