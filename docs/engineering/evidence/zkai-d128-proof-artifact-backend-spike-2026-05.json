@@ -314,11 +314,12 @@
       "verifier_time_ms": null
     },
     {
-      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
       "blocker": "receipt composition only; not recursive aggregation or one compressed verifier object",
       "evidence": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
       "proof_artifact_exists": false,
       "proof_size_bytes": null,
+      "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
       "receipt_artifact_exists": true,
       "route": "d128_block_receipt_composition",
       "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
@@ -1374,7 +1375,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING",
-  "gate_commitment": "blake2b-256:d335d7aa106db61e04237f504d8850596beca65a66fa020794f17442ce5e63d0",
+  "gate_commitment": "blake2b-256:766125a6c2c3d192dbadb061f30f39934abc2dbd9a164b13610aa261f7f7b742",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1890,7 +1891,7 @@
   "proof_status": {
     "blocked_before_metrics": true,
     "d128_block_receipt_composition_exists": true,
-    "d128_block_receipt_composition_mutation_cases": 20,
+    "d128_block_receipt_composition_mutation_cases": 21,
     "first_blocker": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
     "first_blocker_detail": "a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing",
     "partial_d128_activation_swiglu_checked_in_proof_artifact_exists": false,
@@ -1978,17 +1979,17 @@
       "target_width": 128
     },
     "d128_block_receipt_composition": {
-      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
       "evidence": {
         "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
-        "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+        "file_sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f",
         "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
-        "payload_sha256": "0e8d8ce2c5049a234cf56999a9413184adada1e9948819950836d9a5d2ede01f",
+        "payload_sha256": "95256011232d2c0727b2e87f4dc3224e5e34cb3ef650f2185e8fd297c1365b08",
         "result": "GO",
         "schema": "zkai-d128-block-receipt-composition-gate-v1"
       },
-      "mutation_cases": 20,
-      "mutations_rejected": 20,
+      "mutation_cases": 21,
+      "mutations_rejected": 21,
       "non_claims": [
         "not recursive aggregation of the six slice proofs",
         "not one compressed verifier object",
@@ -1999,8 +2000,9 @@
         "not onchain deployment evidence"
       ],
       "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+      "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
       "slice_count": 6,
-      "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+      "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
       "status": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
       "total_checked_rows": 197504
     },

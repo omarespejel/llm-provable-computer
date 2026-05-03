@@ -216,6 +216,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             probe["d128_block_receipt_composition"]["output_activation_commitment"],
             probe["d128_residual_add"]["output_activation_commitment"],
         )
+        self.assertEqual(
+            probe["d128_block_receipt_composition"]["range_policy_commitment"],
+            "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
+        )
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
         self.assertEqual(len(probe["d64_hardcoded_markers"]), len(GATE.D64_HARDCODE_MARKERS))
         markers = {row["path"]: row["markers"] for row in probe["d64_hardcoded_markers"]}
@@ -407,6 +411,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(
             routes["d128_block_receipt_composition"]["block_receipt_commitment"],
             self.block_receipt_evidence["block_receipt"]["block_receipt_commitment"],
+        )
+        self.assertEqual(
+            routes["d128_block_receipt_composition"]["range_policy_commitment"],
+            self.block_receipt_evidence["block_receipt"]["range_policy_commitment"],
         )
         self.assertEqual(routes["d128_metrics_and_relabeling_suite"]["status"], "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT")
         for name, row in routes.items():

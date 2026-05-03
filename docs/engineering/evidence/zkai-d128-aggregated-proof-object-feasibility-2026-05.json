@@ -1,13 +1,13 @@
 {
   "aggregated_proof_object_result": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
-  "aggregation_target_commitment": "blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9",
+  "aggregation_target_commitment": "blake2b-256:5fb1cdb0eb67d0e233cc2c2cd388603090847596991ad6a6c7ba4a081b9d4d9b",
   "aggregation_target_manifest": {
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "composition_evidence": {
       "all_mutations_rejected": true,
-      "case_count": 20,
+      "case_count": 21,
       "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
-      "mutations_rejected": 20,
+      "mutations_rejected": 21,
       "result": "GO",
       "schema": "zkai-d128-block-receipt-composition-gate-v1",
       "total_checked_rows": 197504
@@ -27,17 +27,19 @@
     },
     "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
     "public_inputs": {
-      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
       "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
       "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
       "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+      "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
       "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
       "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
-      "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+      "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
       "statement_kind": "d128-rmsnorm-swiglu-residual-block",
       "target_id": "rmsnorm-swiglu-residual-d128-v1",
       "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
     },
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
     "required_nested_verifier_checks": [
       {
@@ -178,7 +180,7 @@
       }
     ],
     "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
     "statement_kind": "d128-rmsnorm-swiglu-residual-block",
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "target_kind": "d128-block-receipt-aggregated-proof-object-target",
@@ -189,13 +191,14 @@
   "aggregation_target_result": "GO_D128_AGGREGATION_TARGET_ONLY",
   "all_mutations_rejected": true,
   "block_receipt_public_inputs": {
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
     "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
     "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
     "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
     "statement_kind": "d128-rmsnorm-swiglu-residual-block",
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
@@ -206,7 +209,7 @@
       "classification": "GO_AGGREGATION_TARGET_ONLY",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+      "file_sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f",
       "kind": "statement_bound_receipt",
       "name": "d128_block_receipt_composition_gate",
       "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
@@ -217,7 +220,7 @@
       "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "fcc0134ffafe6ca6ee9c70f53cad578f433e9617c2969be0b536b2fe0d8f105f",
+      "file_sha256": "f670fea5f90af8c8e8d49776b2f4ba3588bfd16aa9aaeb7e899b87c6910586fe",
       "kind": "backend_route_classification",
       "name": "d128_backend_spike_gate",
       "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
@@ -279,7 +282,7 @@
       "reason": "no verifier handle exists for an aggregated d128 proof object"
     }
   ],
-  "case_count": 37,
+  "case_count": 39,
   "cases": [
     {
       "baseline_result": "BOUNDED_NO_GO",
@@ -349,6 +352,15 @@
       "error": "aggregation target manifest mismatch",
       "mutated_accepted": false,
       "mutation": "output_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "range_policy_commitment_drift",
       "rejected": true,
       "rejection_layer": "aggregation_target_manifest",
       "surface": "aggregation_target_manifest"
@@ -526,6 +538,15 @@
     },
     {
       "baseline_result": "BOUNDED_NO_GO",
+      "error": "range_policy_commitment_bound_as_public_input claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "range_policy_public_input_claimed_without_proof",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
       "error": "aggregated proof artifact supplied to no-go feasibility gate",
       "mutated_accepted": false,
       "mutation": "invented_aggregated_proof_artifact",
@@ -660,146 +681,156 @@
     },
     {
       "index": 8,
-      "mutation": "slice_chain_commitment_drift",
+      "mutation": "range_policy_commitment_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 9,
-      "mutation": "evidence_manifest_commitment_drift",
+      "mutation": "slice_chain_commitment_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 10,
-      "mutation": "nested_verifier_check_removed",
+      "mutation": "evidence_manifest_commitment_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 11,
-      "mutation": "nested_verifier_check_reordered",
+      "mutation": "nested_verifier_check_removed",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 12,
-      "mutation": "nested_verifier_source_hash_drift",
+      "mutation": "nested_verifier_check_reordered",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 13,
-      "mutation": "nested_verifier_statement_drift",
+      "mutation": "nested_verifier_source_hash_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 14,
-      "mutation": "verifier_domain_drift",
+      "mutation": "nested_verifier_statement_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 15,
-      "mutation": "required_backend_version_drift",
+      "mutation": "verifier_domain_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 16,
-      "mutation": "composition_mutation_count_drift",
+      "mutation": "required_backend_version_drift",
       "surface": "aggregation_target_manifest"
     },
     {
       "index": 17,
+      "mutation": "composition_mutation_count_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 18,
       "mutation": "candidate_inventory_acceptance_relabel",
       "surface": "candidate_inventory"
     },
     {
-      "index": 18,
+      "index": 19,
       "mutation": "candidate_inventory_file_sha256_tampered",
       "surface": "candidate_inventory"
     },
     {
-      "index": 19,
+      "index": 20,
       "mutation": "candidate_inventory_required_artifact_removed",
       "surface": "candidate_inventory"
     },
     {
-      "index": 20,
+      "index": 21,
       "mutation": "aggregated_proof_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 21,
+      "index": 22,
       "mutation": "recursive_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 22,
+      "index": 23,
       "mutation": "pcd_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 23,
+      "index": 24,
       "mutation": "verifier_handle_claimed_without_artifact",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 24,
+      "index": 25,
       "mutation": "aggregation_target_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 25,
+      "index": 26,
       "mutation": "block_receipt_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 26,
+      "index": 27,
       "mutation": "statement_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
-      "index": 27,
-      "mutation": "invented_aggregated_proof_artifact",
-      "surface": "proof_object_attempt"
-    },
-    {
       "index": 28,
-      "mutation": "proof_size_metric_smuggled_before_proof",
+      "mutation": "range_policy_public_input_claimed_without_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 29,
-      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "mutation": "invented_aggregated_proof_artifact",
       "surface": "proof_object_attempt"
     },
     {
       "index": 30,
-      "mutation": "proof_generation_time_metric_smuggled_before_proof",
+      "mutation": "proof_size_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 31,
-      "mutation": "first_blocker_removed",
+      "mutation": "verifier_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 32,
-      "mutation": "missing_backend_feature_removed",
+      "mutation": "proof_generation_time_metric_smuggled_before_proof",
       "surface": "proof_object_attempt"
     },
     {
       "index": 33,
+      "mutation": "first_blocker_removed",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 34,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 35,
       "mutation": "decision_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 34,
+      "index": 36,
       "mutation": "result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 35,
+      "index": 37,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 36,
+      "index": 38,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     }
@@ -821,12 +852,12 @@
     "aggregation_target_commitment_bound_as_public_input": false,
     "block_receipt_commitment_bound_as_public_input": false,
     "blocked_before_metrics": true,
-    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt commitment plus statement commitment as public inputs",
-    "go_criterion": "one outer proof, accumulator, or proof-carrying artifact verifies the six d128 slice-verifier checks and binds block_receipt_commitment and statement_commitment as public inputs",
+    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt, statement, and range-policy commitments as public inputs",
+    "go_criterion": "one outer proof, accumulator, or proof-carrying artifact verifies the six d128 slice-verifier checks and binds block_receipt_commitment, statement_commitment, and range_policy_commitment as public inputs",
     "missing_backend_features": [
       "recursive verifier program/AIR/circuit for each d128 slice verifier",
       "outer proof or PCD accumulator object over the six d128 slice-verifier checks",
-      "adapter that binds block_receipt_commitment and statement_commitment into outer public inputs",
+      "adapter that binds block_receipt_commitment, statement_commitment, and range_policy_commitment into outer public inputs",
       "local verifier handle for the resulting aggregated proof object",
       "fail-closed mutation tests for source manifest, slice chain, commitments, verifier-domain, and fake metrics"
     ],
@@ -837,6 +868,7 @@
       "proof_size_bytes": null,
       "verifier_time_ms": null
     },
+    "range_policy_commitment_bound_as_public_input": false,
     "recursive_aggregation_claimed": false,
     "statement_commitment_bound_as_public_input": false,
     "verifier_handle_claimed": false,
@@ -845,28 +877,30 @@
   "result": "BOUNDED_NO_GO",
   "schema": "zkai-d128-aggregated-proof-object-feasibility-v1",
   "source_block_receipt_evidence": {
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
-    "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+    "file_sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f",
     "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
-    "payload_sha256": "0e8d8ce2c5049a234cf56999a9413184adada1e9948819950836d9a5d2ede01f",
+    "payload_sha256": "95256011232d2c0727b2e87f4dc3224e5e34cb3ef650f2185e8fd297c1365b08",
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "result": "GO",
     "schema": "zkai-d128-block-receipt-composition-gate-v1",
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c"
   },
   "summary": {
     "aggregated_proof_object_status": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
     "aggregation_target_kind": "d128-block-receipt-aggregated-proof-object-target",
     "aggregation_target_version": "zkai-d128-aggregated-proof-object-target-v1",
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "blocked_before_metrics": true,
-    "composition_mutation_cases": 20,
-    "composition_mutations_rejected": 20,
-    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt commitment plus statement commitment as public inputs",
-    "mutation_cases": 37,
-    "mutations_rejected": 37,
+    "composition_mutation_cases": 21,
+    "composition_mutations_rejected": 21,
+    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt, statement, and range-policy commitments as public inputs",
+    "mutation_cases": 39,
+    "mutations_rejected": 39,
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "slice_count": 6,
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
     "target_status": "GO_D128_AGGREGATION_TARGET_ONLY",
     "total_checked_rows": 197504
   },

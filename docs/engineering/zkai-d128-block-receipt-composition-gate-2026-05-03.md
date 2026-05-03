@@ -23,15 +23,16 @@ This is a receipt-composition result, not recursive aggregation. The block recei
 |---|---:|
 | Slice count | 6 |
 | Total checked rows | 197,504 |
-| Mutation cases | 20 |
-| Mutations rejected | 20 |
+| Mutation cases | 21 |
+| Mutations rejected | 21 |
 
 | Commitment | Value |
 |---|---|
 | Input activation | `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78` |
 | Output activation | `blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1` |
-| Block statement | `blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60` |
-| Block receipt | `blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a` |
+| Range policy | `blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985` |
+| Block statement | `blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c` |
+| Block receipt | `blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea` |
 
 ## What Is Bound
 
@@ -47,6 +48,7 @@ The receipt validates all of the following before accepting:
 - residual delta feeds residual-add;
 - the original input activation is replayed into the final residual-add step;
 - the final output commitment cannot be relabeled from the input, RMSNorm output, projection input, gate/value output, hidden activation, or residual delta;
+- the per-tensor range-policy commitment recomputes from checked d64 and d128 source evidence;
 - the block statement and block receipt commitments recompute from the committed chain and source manifest.
 
 ## Non-Claims

@@ -39,8 +39,8 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         self.assertEqual(payload["aggregated_proof_object_result"], GATE.AGGREGATED_PROOF_RESULT)
         self.assertEqual(payload["summary"]["slice_count"], 6)
         self.assertEqual(payload["summary"]["total_checked_rows"], 197_504)
-        self.assertEqual(payload["summary"]["composition_mutation_cases"], 20)
-        self.assertEqual(payload["summary"]["composition_mutations_rejected"], 20)
+        self.assertEqual(payload["summary"]["composition_mutation_cases"], 21)
+        self.assertEqual(payload["summary"]["composition_mutations_rejected"], 21)
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertIn("missing outer proof", payload["summary"]["first_blocker"])
@@ -54,11 +54,15 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         public_inputs = self.fresh_payload()["block_receipt_public_inputs"]
         self.assertEqual(
             public_inputs["block_receipt_commitment"],
-            "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+            "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         )
         self.assertEqual(
             public_inputs["statement_commitment"],
-            "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+            "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
+        )
+        self.assertEqual(
+            public_inputs["range_policy_commitment"],
+            "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
         )
         self.assertEqual(
             public_inputs,
@@ -199,6 +203,7 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
             "aggregated_proof_claimed_without_artifact": "proof_object_attempt",
             "aggregation_target_public_input_claimed_without_proof": "proof_object_attempt",
             "block_receipt_public_input_claimed_without_proof": "proof_object_attempt",
+            "range_policy_public_input_claimed_without_proof": "proof_object_attempt",
             "proof_size_metric_smuggled_before_proof": "proof_object_attempt",
             "proof_generation_time_metric_smuggled_before_proof": "proof_object_attempt",
             "decision_changed_to_go": "parser_or_schema",
@@ -225,6 +230,11 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
     def test_rejects_attempt_to_claim_public_input_binding_without_proof(self) -> None:
         payload = self.fresh_payload()
         payload["proof_object_attempt"]["block_receipt_commitment_bound_as_public_input"] = True
+        with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "claimed"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["proof_object_attempt"]["range_policy_commitment_bound_as_public_input"] = True
         with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "claimed"):
             GATE.validate_payload(payload)
 

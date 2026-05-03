@@ -1,6 +1,6 @@
 {
   "accumulator_artifact": {
-    "accumulator_commitment": "blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633",
+    "accumulator_commitment": "blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc",
     "accumulator_kind": "non-recursive-full-block-verifier-accumulator",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "issue": 413,
@@ -8,7 +8,7 @@
       "accumulator_kind": "non-recursive-full-block-verifier-accumulator",
       "accumulator_schema": "zkai-d128-full-block-verifier-accumulator-v1",
       "block_receipt": {
-        "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+        "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
         "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
         "model_config": {
@@ -22,6 +22,7 @@
           "width": 128
         },
         "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+        "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
         "receipt_version": "zkai-d128-block-receipt-v1",
         "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
         "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
@@ -57,7 +58,7 @@
             "slice_id": "residual_add"
           }
         ],
-        "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+        "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
         "statement_kind": "d128-rmsnorm-swiglu-residual-block",
         "target_id": "rmsnorm-swiglu-residual-d128-v1",
         "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
@@ -65,11 +66,13 @@
       "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
       "issue": 413,
       "public_inputs": {
-        "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+        "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
+        "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
         "required_public_inputs": [
           "block_receipt_commitment",
           "statement_commitment",
+          "range_policy_commitment",
           "slice_chain_commitment",
           "evidence_manifest_commitment",
           "slice_statement_commitments",
@@ -134,7 +137,7 @@
             "source_payload_sha256": "01b03d7625ac604b2abf7c5b73542c296206499d255967c4049f5ced731d8fba"
           }
         ],
-        "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+        "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c"
       },
       "slice_chain": [
         {
@@ -476,7 +479,7 @@
   },
   "accumulator_result": "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR",
   "all_mutations_rejected": true,
-  "case_count": 48,
+  "case_count": 52,
   "cases": [
     {
       "baseline_result": "GO",
@@ -519,6 +522,15 @@
       "error": "source block receipt descriptor mismatch",
       "mutated_accepted": false,
       "mutation": "source_statement_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt",
+      "surface": "source_block_receipt"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "source block receipt descriptor mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_range_policy_commitment_drift",
       "rejected": true,
       "rejection_layer": "source_block_receipt",
       "surface": "source_block_receipt"
@@ -581,6 +593,15 @@
       "baseline_result": "GO",
       "error": "accumulator block receipt mismatch",
       "mutated_accepted": false,
+      "mutation": "accumulator_range_policy_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "accumulator_artifact",
+      "surface": "accumulator_artifact"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "accumulator block receipt mismatch",
+      "mutated_accepted": false,
       "mutation": "accumulator_slice_chain_commitment_drift",
       "rejected": true,
       "rejection_layer": "accumulator_artifact",
@@ -609,6 +630,15 @@
       "error": "public inputs mismatch",
       "mutated_accepted": false,
       "mutation": "public_input_statement_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "public_inputs",
+      "surface": "public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "public inputs mismatch",
+      "mutated_accepted": false,
+      "mutation": "public_input_range_policy_commitment_drift",
       "rejected": true,
       "rejection_layer": "public_inputs",
       "surface": "public_inputs"
@@ -806,6 +836,15 @@
       "baseline_result": "GO",
       "error": "verifier handle mismatch",
       "mutated_accepted": false,
+      "mutation": "verifier_handle_range_policy_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "verifier_handle",
+      "surface": "verifier_handle"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "verifier handle mismatch",
+      "mutated_accepted": false,
       "mutation": "verifier_handle_accumulator_commitment_drift",
       "rejected": true,
       "rejection_layer": "verifier_handle",
@@ -942,216 +981,236 @@
     },
     {
       "index": 5,
-      "mutation": "source_slice_chain_commitment_drift",
+      "mutation": "source_range_policy_commitment_drift",
       "surface": "source_block_receipt"
     },
     {
       "index": 6,
-      "mutation": "source_evidence_manifest_commitment_drift",
+      "mutation": "source_slice_chain_commitment_drift",
       "surface": "source_block_receipt"
     },
     {
       "index": 7,
+      "mutation": "source_evidence_manifest_commitment_drift",
+      "surface": "source_block_receipt"
+    },
+    {
+      "index": 8,
       "mutation": "accumulator_commitment_drift",
       "surface": "accumulator_artifact"
     },
     {
-      "index": 8,
+      "index": 9,
       "mutation": "accumulator_claim_boundary_changed_to_recursive",
       "surface": "accumulator_artifact"
     },
     {
-      "index": 9,
+      "index": 10,
       "mutation": "accumulator_block_receipt_commitment_drift",
       "surface": "accumulator_artifact"
     },
     {
-      "index": 10,
+      "index": 11,
       "mutation": "accumulator_statement_commitment_drift",
       "surface": "accumulator_artifact"
     },
     {
-      "index": 11,
-      "mutation": "accumulator_slice_chain_commitment_drift",
-      "surface": "accumulator_artifact"
-    },
-    {
       "index": 12,
-      "mutation": "accumulator_evidence_manifest_commitment_drift",
+      "mutation": "accumulator_range_policy_commitment_drift",
       "surface": "accumulator_artifact"
     },
     {
       "index": 13,
+      "mutation": "accumulator_slice_chain_commitment_drift",
+      "surface": "accumulator_artifact"
+    },
+    {
+      "index": 14,
+      "mutation": "accumulator_evidence_manifest_commitment_drift",
+      "surface": "accumulator_artifact"
+    },
+    {
+      "index": 15,
       "mutation": "public_input_block_receipt_commitment_drift",
       "surface": "public_inputs"
     },
     {
-      "index": 14,
+      "index": 16,
       "mutation": "public_input_statement_commitment_drift",
       "surface": "public_inputs"
     },
     {
-      "index": 15,
-      "mutation": "public_input_slice_chain_commitment_drift",
-      "surface": "public_inputs"
-    },
-    {
-      "index": 16,
-      "mutation": "public_input_evidence_manifest_commitment_drift",
-      "surface": "public_inputs"
-    },
-    {
       "index": 17,
-      "mutation": "public_input_slice_statement_drift",
+      "mutation": "public_input_range_policy_commitment_drift",
       "surface": "public_inputs"
     },
     {
       "index": 18,
-      "mutation": "public_input_source_hash_drift",
+      "mutation": "public_input_slice_chain_commitment_drift",
       "surface": "public_inputs"
     },
     {
       "index": 19,
+      "mutation": "public_input_evidence_manifest_commitment_drift",
+      "surface": "public_inputs"
+    },
+    {
+      "index": 20,
+      "mutation": "public_input_slice_statement_drift",
+      "surface": "public_inputs"
+    },
+    {
+      "index": 21,
+      "mutation": "public_input_source_hash_drift",
+      "surface": "public_inputs"
+    },
+    {
+      "index": 22,
       "mutation": "slice_removed",
       "surface": "slice_transcript"
     },
     {
-      "index": 20,
+      "index": 23,
       "mutation": "slice_duplicated",
       "surface": "slice_transcript"
     },
     {
-      "index": 21,
+      "index": 24,
       "mutation": "slice_reordered",
       "surface": "slice_transcript"
     },
     {
-      "index": 22,
+      "index": 25,
       "mutation": "slice_row_count_drift",
       "surface": "slice_transcript"
     },
     {
-      "index": 23,
+      "index": 26,
       "mutation": "slice_source_commitment_drift",
       "surface": "slice_transcript"
     },
     {
-      "index": 24,
+      "index": 27,
       "mutation": "slice_target_commitment_drift",
       "surface": "slice_transcript"
     },
     {
-      "index": 25,
+      "index": 28,
       "mutation": "source_manifest_file_hash_drift",
       "surface": "source_evidence_manifest"
     },
     {
-      "index": 26,
+      "index": 29,
       "mutation": "source_manifest_payload_hash_drift",
       "surface": "source_evidence_manifest"
     },
     {
-      "index": 27,
+      "index": 30,
       "mutation": "transcript_statement_commitment_drift",
       "surface": "source_evidence_manifest"
     },
     {
-      "index": 28,
+      "index": 31,
       "mutation": "transcript_public_instance_commitment_drift",
       "surface": "source_evidence_manifest"
     },
     {
-      "index": 29,
+      "index": 32,
       "mutation": "verifier_domain_drift",
       "surface": "verifier_transcript"
     },
     {
-      "index": 30,
+      "index": 33,
       "mutation": "validator_name_drift",
       "surface": "verifier_transcript"
     },
     {
-      "index": 31,
+      "index": 34,
       "mutation": "validator_result_false",
       "surface": "verifier_transcript"
     },
     {
-      "index": 32,
+      "index": 35,
       "mutation": "verifier_handle_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 33,
+      "index": 36,
       "mutation": "verifier_handle_claim_boundary_changed_to_recursive",
       "surface": "verifier_handle"
     },
     {
-      "index": 34,
+      "index": 37,
       "mutation": "verifier_handle_block_receipt_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 35,
+      "index": 38,
       "mutation": "verifier_handle_statement_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 36,
+      "index": 39,
+      "mutation": "verifier_handle_range_policy_commitment_drift",
+      "surface": "verifier_handle"
+    },
+    {
+      "index": 40,
       "mutation": "verifier_handle_accumulator_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 37,
+      "index": 41,
       "mutation": "verifier_handle_missing_required_public_input",
       "surface": "verifier_handle"
     },
     {
-      "index": 38,
+      "index": 42,
       "mutation": "recursive_outer_proof_claimed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 39,
+      "index": 43,
       "mutation": "pcd_outer_proof_claimed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 40,
+      "index": 44,
       "mutation": "recursive_proof_metric_smuggled",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 41,
+      "index": 45,
       "mutation": "recursive_blocker_removed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 42,
+      "index": 46,
       "mutation": "decision_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 43,
+      "index": 47,
       "mutation": "result_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 44,
+      "index": 48,
       "mutation": "accumulator_result_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 45,
+      "index": 49,
       "mutation": "recursive_result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 46,
+      "index": 50,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 47,
+      "index": 51,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     }
@@ -1183,31 +1242,33 @@
   "result": "GO",
   "schema": "zkai-d128-full-block-accumulator-backend-v1",
   "source_block_receipt": {
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
     "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
-    "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+    "file_sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f",
     "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
-    "payload_sha256": "0e8d8ce2c5049a234cf56999a9413184adada1e9948819950836d9a5d2ede01f",
+    "payload_sha256": "95256011232d2c0727b2e87f4dc3224e5e34cb3ef650f2185e8fd297c1365b08",
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "result": "GO",
     "schema": "zkai-d128-block-receipt-composition-gate-v1",
     "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c"
   },
   "summary": {
-    "accumulator_commitment": "blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633",
+    "accumulator_commitment": "blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc",
     "accumulator_status": "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR",
-    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
-    "go_criterion": "one verifier-facing full-block accumulator object exists, a local verifier handle accepts it, and the accumulator binds block_receipt_commitment, statement_commitment, slice-chain and evidence-manifest commitments, every slice statement commitment, and every source evidence hash",
-    "mutation_cases": 48,
-    "mutations_rejected": 48,
+    "go_criterion": "one verifier-facing full-block accumulator object exists, a local verifier handle accepts it, and the accumulator binds block_receipt_commitment, statement_commitment, range_policy_commitment, slice-chain and evidence-manifest commitments, every slice statement commitment, and every source evidence hash",
+    "mutation_cases": 52,
+    "mutations_rejected": 52,
+    "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
     "recursive_blocker": "no executable recursive/PCD outer proof backend currently proves the six d128 slice-verifier checks inside one cryptographic outer proof",
     "recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
     "slice_count": 6,
-    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
     "total_checked_rows": 197504,
-    "verifier_handle_commitment": "blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb"
+    "verifier_handle_commitment": "blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4"
   },
   "validation_commands": [
     "python3 scripts/zkai_d128_full_block_accumulator_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.tsv",
@@ -1220,15 +1281,17 @@
     "accepted": true,
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "preimage": {
-      "accepted_accumulator_commitment": "blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633",
+      "accepted_accumulator_commitment": "blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc",
       "accepted_accumulator_kind": "non-recursive-full-block-verifier-accumulator",
       "accepted_accumulator_schema": "zkai-d128-full-block-verifier-accumulator-v1",
       "accepted_claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
-      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
       "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
+      "range_policy_commitment": "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
       "required_public_inputs": [
         "block_receipt_commitment",
         "statement_commitment",
+        "range_policy_commitment",
         "slice_chain_commitment",
         "evidence_manifest_commitment",
         "slice_statement_commitments",
@@ -1294,16 +1357,16 @@
           "source_payload_sha256": "01b03d7625ac604b2abf7c5b73542c296206499d255967c4049f5ced731d8fba"
         }
       ],
-      "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+      "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
       "verifier_steps": [
         "validate checked d128 block receipt evidence",
         "validate source slice evidence hashes and slice-chain edges",
-        "compare block receipt, statement, slice-chain, and evidence-manifest commitments",
+        "compare block receipt, statement, range-policy, slice-chain, and evidence-manifest commitments",
         "compare every slice statement commitment and source hash",
         "recompute accumulator commitment"
       ]
     },
     "schema": "zkai-d128-full-block-accumulator-verifier-handle-v1",
-    "verifier_handle_commitment": "blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb"
+    "verifier_handle_commitment": "blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4"
   }
 }

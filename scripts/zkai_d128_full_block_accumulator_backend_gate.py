@@ -65,6 +65,7 @@ VERIFIER_HANDLE_DOMAIN = "ptvm:zkai:d128-full-block:accumulator-verifier-handle:
 REQUIRED_PUBLIC_INPUTS = [
     "block_receipt_commitment",
     "statement_commitment",
+    "range_policy_commitment",
     "slice_chain_commitment",
     "evidence_manifest_commitment",
     "slice_statement_commitments",
@@ -73,8 +74,8 @@ REQUIRED_PUBLIC_INPUTS = [
 
 GO_CRITERION = (
     "one verifier-facing full-block accumulator object exists, a local verifier handle accepts it, "
-    "and the accumulator binds block_receipt_commitment, statement_commitment, slice-chain and "
-    "evidence-manifest commitments, every slice statement commitment, and every source evidence hash"
+    "and the accumulator binds block_receipt_commitment, statement_commitment, range_policy_commitment, "
+    "slice-chain and evidence-manifest commitments, every slice statement commitment, and every source evidence hash"
 )
 
 RECURSIVE_BLOCKER = (
@@ -118,16 +119,19 @@ EXPECTED_MUTATION_INVENTORY = (
     ("source_block_receipt_result_drift", "source_block_receipt"),
     ("source_block_receipt_commitment_drift", "source_block_receipt"),
     ("source_statement_commitment_drift", "source_block_receipt"),
+    ("source_range_policy_commitment_drift", "source_block_receipt"),
     ("source_slice_chain_commitment_drift", "source_block_receipt"),
     ("source_evidence_manifest_commitment_drift", "source_block_receipt"),
     ("accumulator_commitment_drift", "accumulator_artifact"),
     ("accumulator_claim_boundary_changed_to_recursive", "accumulator_artifact"),
     ("accumulator_block_receipt_commitment_drift", "accumulator_artifact"),
     ("accumulator_statement_commitment_drift", "accumulator_artifact"),
+    ("accumulator_range_policy_commitment_drift", "accumulator_artifact"),
     ("accumulator_slice_chain_commitment_drift", "accumulator_artifact"),
     ("accumulator_evidence_manifest_commitment_drift", "accumulator_artifact"),
     ("public_input_block_receipt_commitment_drift", "public_inputs"),
     ("public_input_statement_commitment_drift", "public_inputs"),
+    ("public_input_range_policy_commitment_drift", "public_inputs"),
     ("public_input_slice_chain_commitment_drift", "public_inputs"),
     ("public_input_evidence_manifest_commitment_drift", "public_inputs"),
     ("public_input_slice_statement_drift", "public_inputs"),
@@ -149,6 +153,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("verifier_handle_claim_boundary_changed_to_recursive", "verifier_handle"),
     ("verifier_handle_block_receipt_commitment_drift", "verifier_handle"),
     ("verifier_handle_statement_commitment_drift", "verifier_handle"),
+    ("verifier_handle_range_policy_commitment_drift", "verifier_handle"),
     ("verifier_handle_accumulator_commitment_drift", "verifier_handle"),
     ("verifier_handle_missing_required_public_input", "verifier_handle"),
     ("recursive_outer_proof_claimed", "recursive_or_pcd_status"),
@@ -423,6 +428,7 @@ def block_receipt_source_descriptor(source: dict[str, Any], path: pathlib.Path =
         "result": source["result"],
         "block_receipt_commitment": receipt["block_receipt_commitment"],
         "statement_commitment": receipt["statement_commitment"],
+        "range_policy_commitment": receipt["range_policy_commitment"],
         "slice_chain_commitment": source["slice_chain_commitment"],
         "evidence_manifest_commitment": source["evidence_manifest_commitment"],
     }
@@ -542,6 +548,10 @@ def accumulator_preimage(source: dict[str, Any], transcript: list[dict[str, Any]
         "required_public_inputs": list(REQUIRED_PUBLIC_INPUTS),
         "block_receipt_commitment": require_commitment(receipt.get("block_receipt_commitment"), "block receipt commitment"),
         "statement_commitment": require_commitment(receipt.get("statement_commitment"), "statement commitment"),
+        "range_policy_commitment": require_commitment(
+            receipt.get("range_policy_commitment"),
+            "range policy commitment",
+        ),
         "slice_chain_commitment": require_commitment(source.get("slice_chain_commitment"), "slice chain commitment"),
         "evidence_manifest_commitment": require_commitment(
             source.get("evidence_manifest_commitment"), "evidence manifest commitment"
@@ -607,6 +617,7 @@ def verifier_handle_preimage(artifact: dict[str, Any]) -> dict[str, Any]:
         "required_public_inputs": list(REQUIRED_PUBLIC_INPUTS),
         "block_receipt_commitment": public_inputs["block_receipt_commitment"],
         "statement_commitment": public_inputs["statement_commitment"],
+        "range_policy_commitment": public_inputs["range_policy_commitment"],
         "slice_chain_commitment": public_inputs["slice_chain_commitment"],
         "evidence_manifest_commitment": public_inputs["evidence_manifest_commitment"],
         "slice_statement_commitments": copy.deepcopy(public_inputs["slice_statement_commitments"]),
@@ -614,7 +625,7 @@ def verifier_handle_preimage(artifact: dict[str, Any]) -> dict[str, Any]:
         "verifier_steps": [
             "validate checked d128 block receipt evidence",
             "validate source slice evidence hashes and slice-chain edges",
-            "compare block receipt, statement, slice-chain, and evidence-manifest commitments",
+            "compare block receipt, statement, range-policy, slice-chain, and evidence-manifest commitments",
             "compare every slice statement commitment and source hash",
             "recompute accumulator commitment",
         ],
@@ -672,6 +683,7 @@ def build_payload() -> dict[str, Any]:
             "total_checked_rows": EXPECTED_CHECKED_ROWS,
             "block_receipt_commitment": descriptor["block_receipt_commitment"],
             "statement_commitment": descriptor["statement_commitment"],
+            "range_policy_commitment": descriptor["range_policy_commitment"],
             "accumulator_commitment": artifact["accumulator_commitment"],
             "verifier_handle_commitment": handle["verifier_handle_commitment"],
             "go_criterion": GO_CRITERION,
@@ -791,6 +803,7 @@ def _expected_summary(source: dict[str, Any], artifact: dict[str, Any], handle: 
         "total_checked_rows": EXPECTED_CHECKED_ROWS,
         "block_receipt_commitment": descriptor["block_receipt_commitment"],
         "statement_commitment": descriptor["statement_commitment"],
+        "range_policy_commitment": descriptor["range_policy_commitment"],
         "accumulator_commitment": artifact["accumulator_commitment"],
         "verifier_handle_commitment": handle["verifier_handle_commitment"],
         "go_criterion": GO_CRITERION,
@@ -939,16 +952,19 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("source_block_receipt_result_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("result", "NO_GO"))
     add("source_block_receipt_commitment_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("block_receipt_commitment", "blake2b-256:" + "22" * 32))
     add("source_statement_commitment_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("statement_commitment", "blake2b-256:" + "23" * 32))
+    add("source_range_policy_commitment_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("range_policy_commitment", "blake2b-256:" + "24" * 32))
     add("source_slice_chain_commitment_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("slice_chain_commitment", "blake2b-256:" + "24" * 32))
     add("source_evidence_manifest_commitment_drift", "source_block_receipt", lambda p: p["source_block_receipt"].__setitem__("evidence_manifest_commitment", "blake2b-256:" + "25" * 32))
     add("accumulator_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"].__setitem__("accumulator_commitment", "blake2b-256:" + "33" * 32))
     add("accumulator_claim_boundary_changed_to_recursive", "accumulator_artifact", lambda p: p["accumulator_artifact"].__setitem__("claim_boundary", "RECURSIVE_OUTER_PROOF"))
     add("accumulator_block_receipt_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["block_receipt"].__setitem__("block_receipt_commitment", "blake2b-256:" + "44" * 32))
     add("accumulator_statement_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["block_receipt"].__setitem__("statement_commitment", "blake2b-256:" + "45" * 32))
+    add("accumulator_range_policy_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["block_receipt"].__setitem__("range_policy_commitment", "blake2b-256:" + "46" * 32))
     add("accumulator_slice_chain_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["block_receipt"].__setitem__("slice_chain_commitment", "blake2b-256:" + "46" * 32))
     add("accumulator_evidence_manifest_commitment_drift", "accumulator_artifact", lambda p: p["accumulator_artifact"]["preimage"]["block_receipt"].__setitem__("evidence_manifest_commitment", "blake2b-256:" + "47" * 32))
     add("public_input_block_receipt_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("block_receipt_commitment", "blake2b-256:" + "55" * 32))
     add("public_input_statement_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("statement_commitment", "blake2b-256:" + "56" * 32))
+    add("public_input_range_policy_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("range_policy_commitment", "blake2b-256:" + "57" * 32))
     add("public_input_slice_chain_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("slice_chain_commitment", "blake2b-256:" + "57" * 32))
     add("public_input_evidence_manifest_commitment_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"].__setitem__("evidence_manifest_commitment", "blake2b-256:" + "58" * 32))
     add("public_input_slice_statement_drift", "public_inputs", lambda p: p["accumulator_artifact"]["preimage"]["public_inputs"]["slice_statement_commitments"][0].__setitem__("statement_commitment", "blake2b-256:" + "66" * 32))
@@ -970,6 +986,7 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("verifier_handle_claim_boundary_changed_to_recursive", "verifier_handle", lambda p: p["verifier_handle"].__setitem__("claim_boundary", "RECURSIVE_OUTER_PROOF"))
     add("verifier_handle_block_receipt_commitment_drift", "verifier_handle", lambda p: p["verifier_handle"]["preimage"].__setitem__("block_receipt_commitment", "blake2b-256:" + "ee" * 32))
     add("verifier_handle_statement_commitment_drift", "verifier_handle", lambda p: p["verifier_handle"]["preimage"].__setitem__("statement_commitment", "blake2b-256:" + "ef" * 32))
+    add("verifier_handle_range_policy_commitment_drift", "verifier_handle", lambda p: p["verifier_handle"]["preimage"].__setitem__("range_policy_commitment", "blake2b-256:" + "fa" * 32))
     add("verifier_handle_accumulator_commitment_drift", "verifier_handle", lambda p: p["verifier_handle"]["preimage"].__setitem__("accepted_accumulator_commitment", "blake2b-256:" + "ff" * 32))
     add("verifier_handle_missing_required_public_input", "verifier_handle", lambda p: p["verifier_handle"]["preimage"]["required_public_inputs"].pop())
     add("recursive_outer_proof_claimed", "recursive_or_pcd_status", lambda p: p["recursive_or_pcd_status"].__setitem__("recursive_outer_proof_claimed", True))

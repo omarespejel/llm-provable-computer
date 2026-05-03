@@ -1093,8 +1093,9 @@ them into one statement-bound block receipt over `197504` checked rows. A
 separate aggregated-proof-object feasibility gate then records the next boundary
 honestly: the receipt is a valid aggregation target, but the outer
 proof/accumulator backend and verifier handle that would bind
-`block_receipt_commitment` and `statement_commitment` as public inputs do not
-yet exist. The feasibility gate rejects `37 / 37` commitment-drift,
+`block_receipt_commitment`, `statement_commitment`, and
+`range_policy_commitment` as public inputs do not yet exist. The feasibility
+gate rejects `39 / 39` commitment-drift, public-input-drift,
 fake-proof-artifact, fake-public-input-binding, and metric-smuggling mutations.
 That is a GO for the local statement-bound receipt and a bounded NO-GO for
 local full-block proof size, verifier time, or proof-generation time.
@@ -1116,6 +1117,9 @@ per-tensor statement requirement and rejects `10 / 10` policy-relabeling and
 source-drift mutations. The conclusion is narrow but important for zkML
 systems: the verifier must bind tensor identity and numeric range policy
 together; a global q8 assumption is not a safe statement rule at larger width.
+The refreshed d128 block receipt and full-block accumulator now bind this
+`range_policy_commitment` as verifier-relevant public statement data rather
+than treating it as explanatory metadata.
 Evidence is recorded in
 `docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-range-policy-discipline-2026-05.json`.
@@ -1124,7 +1128,7 @@ The next narrowing step has also landed as a two-slice spike. It projects only
 the d128 `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier checks
 into a `256`-row outer-proof target and binds that target with
 `two_slice_target_commitment =
-blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`.
+blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6`.
 The gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations, but
 it still records a bounded NO-GO for executable recursive/PCD proof-object
@@ -1144,9 +1148,9 @@ and
 The next issue `#409` follow-up then lands the non-recursive branch for that
 same target. It builds a verifier-facing accumulator with accumulator
 commitment
-`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+`blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d`
 and verifier-handle commitment
-`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+`blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131`.
 The accumulator validates the two selected source slice evidence files with
 their slice-local validators and binds the target commitment, selected
 statement commitments, and selected source evidence hashes. It rejects `37 / 37`
@@ -1173,8 +1177,9 @@ Evidence is recorded in
 The next full-block accumulator gate extends the same non-recursive handoff to
 all six d128 slices. It accumulates the checked d128 block receipt over
 `197,504` rows, binding `block_receipt_commitment`, `statement_commitment`,
-`slice_chain_commitment`, `evidence_manifest_commitment`, every slice statement
-commitment, and every source evidence hash. It rejects `48 / 48` source,
+`range_policy_commitment`, `slice_chain_commitment`,
+`evidence_manifest_commitment`, every slice statement commitment, and every
+source evidence hash. It rejects `52 / 52` source,
 public-input, accumulator-artifact, source-manifest, slice-transcript,
 verifier-transcript, verifier-domain, verifier-handle, recursive-claim,
 recursive-metric-smuggling, parser/schema, validation-command-drift, and

@@ -21,6 +21,7 @@ import pathlib
 import stat as stat_module
 import sys
 import tempfile
+from functools import lru_cache
 from typing import Any, Callable
 
 
@@ -35,6 +36,7 @@ GATE_VALUE_PATH = ROOT / "scripts" / "zkai_d128_gate_value_projection_proof_inpu
 ACTIVATION_SWIGLU_PATH = ROOT / "scripts" / "zkai_d128_activation_swiglu_proof_input.py"
 DOWN_PROJECTION_PATH = ROOT / "scripts" / "zkai_d128_down_projection_proof_input.py"
 RESIDUAL_ADD_PATH = ROOT / "scripts" / "zkai_d128_residual_add_proof_input.py"
+RANGE_POLICY_PATH = ROOT / "scripts" / "zkai_d128_range_policy_discipline_gate.py"
 
 SCHEMA = "zkai-d128-block-receipt-composition-gate-v1"
 DECISION = "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE"
@@ -169,6 +171,7 @@ GATE_VALUE = _load_module(GATE_VALUE_PATH, "zkai_d128_gate_value_for_block_recei
 ACTIVATION_SWIGLU = _load_module(ACTIVATION_SWIGLU_PATH, "zkai_d128_activation_for_block_receipt")
 DOWN_PROJECTION = _load_module(DOWN_PROJECTION_PATH, "zkai_d128_down_for_block_receipt")
 RESIDUAL_ADD = _load_module(RESIDUAL_ADD_PATH, "zkai_d128_residual_for_block_receipt")
+RANGE_POLICY = _load_module(RANGE_POLICY_PATH, "zkai_d128_range_policy_for_block_receipt")
 
 INPUT_ACTIVATION_COMMITMENT = RESIDUAL_ADD.INPUT_ACTIVATION_COMMITMENT
 OUTPUT_ACTIVATION_COMMITMENT = RESIDUAL_ADD.OUTPUT_ACTIVATION_COMMITMENT
@@ -517,6 +520,13 @@ def model_config() -> dict[str, Any]:
     }
 
 
+@lru_cache(maxsize=1)
+def checked_range_policy_commitment() -> str:
+    policy = RANGE_POLICY.build_core_payload()
+    RANGE_POLICY.validate_payload(policy, require_mutations=False)
+    return require_commitment(policy["range_policy_commitment"], "range_policy_commitment")
+
+
 def _statement_payload_for_commitment(receipt: dict[str, Any]) -> dict[str, Any]:
     payload = copy.deepcopy(receipt)
     payload["statement_commitment"] = None
@@ -553,6 +563,7 @@ def build_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str
     payloads = payloads or source_payloads()
     manifest = source_manifest(payloads)
     chain = slice_chain(payloads)
+    range_policy_commitment = checked_range_policy_commitment()
     receipt = {
         "receipt_version": RECEIPT_VERSION,
         "statement_kind": STATEMENT_KIND,
@@ -560,6 +571,7 @@ def build_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str
         "model_config": model_config(),
         "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
         "output_activation_commitment": OUTPUT_ACTIVATION_COMMITMENT,
+        "range_policy_commitment": range_policy_commitment,
         "required_backend_version": REQUIRED_BACKEND_VERSION,
         "verifier_domain": VERIFIER_DOMAIN,
         "slice_versions": [
@@ -585,6 +597,7 @@ def build_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str
             "total_checked_rows": sum(int(item["row_count"]) for item in chain),
             "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
             "output_activation_commitment": OUTPUT_ACTIVATION_COMMITMENT,
+            "range_policy_commitment": range_policy_commitment,
             "non_claims": NON_CLAIMS,
             "next_backend_step": "recursive or proof-carrying aggregation of this receipt, if a future verifier proves the slice verifiers inside one object",
         },
@@ -820,6 +833,7 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
             "model_config",
             "input_activation_commitment",
             "output_activation_commitment",
+            "range_policy_commitment",
             "required_backend_version",
             "verifier_domain",
             "slice_versions",
@@ -836,6 +850,7 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
         "target_id": TARGET_ID,
         "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
         "output_activation_commitment": OUTPUT_ACTIVATION_COMMITMENT,
+        "range_policy_commitment": checked_range_policy_commitment(),
         "required_backend_version": REQUIRED_BACKEND_VERSION,
         "verifier_domain": VERIFIER_DOMAIN,
         "slice_chain_commitment": payload.get("slice_chain_commitment"),
@@ -910,6 +925,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         "total_checked_rows",
         "input_activation_commitment",
         "output_activation_commitment",
+        "range_policy_commitment",
         "non_claims",
         "next_backend_step",
     }
@@ -924,6 +940,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(summary.get("total_checked_rows"), total_checked_rows, "summary row count")
     expect_equal(summary.get("input_activation_commitment"), INPUT_ACTIVATION_COMMITMENT, "summary input commitment")
     expect_equal(summary.get("output_activation_commitment"), OUTPUT_ACTIVATION_COMMITMENT, "summary output commitment")
+    expect_equal(summary.get("range_policy_commitment"), checked_range_policy_commitment(), "summary range policy commitment")
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non_claims")
     expect_equal(summary.get("non_claims"), NON_CLAIMS, "summary non_claims")
     expect_equal(payload.get("validation_commands"), VALIDATION_COMMANDS, "validation commands")
@@ -1085,6 +1102,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "output_commitment_drift",
         "block_receipt",
         lambda p: p["block_receipt"].__setitem__("output_activation_commitment", "blake2b-256:" + "44" * 32),
+    )
+    add(
+        "range_policy_commitment_drift",
+        "block_receipt",
+        lambda p: p["block_receipt"].__setitem__("range_policy_commitment", "blake2b-256:" + "45" * 32),
     )
     add(
         "non_claims_drift",

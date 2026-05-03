@@ -22,9 +22,9 @@ The accumulator consumes the checked two-slice target:
 |---|---|
 | Selected slices | `rmsnorm_public_rows`, `rmsnorm_projection_bridge` |
 | Selected checked rows | `256` |
-| Two-slice target commitment | `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640` |
-| Accumulator commitment | `blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb` |
-| Verifier-handle commitment | `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633` |
+| Two-slice target commitment | `blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6` |
+| Accumulator commitment | `blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d` |
+| Verifier-handle commitment | `blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131` |
 | Claim boundary | `NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF` |
 
 The local verifier handle accepts the accumulator only after checking:

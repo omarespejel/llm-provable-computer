@@ -563,20 +563,21 @@ source-bound residual-add proof checks `128` residual-add rows and recomputes
 its input, residual-delta, output, row, public-instance, proof-native parameter,
 and statement commitments. The d128 block receipt composition gate now binds
 the six slice handles into one statement-bound receipt over `197,504` checked
-rows and rejects `20 / 20` receipt mutations. A follow-up aggregated
+rows, binds the checked per-tensor `range_policy_commitment`, and rejects
+`21 / 21` receipt mutations. A follow-up aggregated
 proof-object feasibility gate then classifies that receipt as a valid
 aggregation target, but records a bounded no-go for claiming recursive
 aggregation, PCD, or one compressed proof today: the outer proof/accumulator
 backend and verifier handle do not yet exist. The future outer artifact must
-bind `block_receipt_commitment` and `statement_commitment` as public inputs.
-That follow-up rejects `37 / 37` promotion, relabeling, and fake-metric
-mutations.
+bind `block_receipt_commitment`, `statement_commitment`, and
+`range_policy_commitment` as public inputs. That follow-up rejects `39 / 39`
+promotion, relabeling, public-input, and fake-metric mutations.
 
 A narrower d128 two-slice outer proof-object spike projects only
 `rmsnorm_public_rows` and `rmsnorm_projection_bridge` from the checked full
 target. Those two slices form a valid `256`-row target with
 `two_slice_target_commitment =
-blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6`,
 but the same recursive/PCD backend blocker remains: no executable recursive
 outer proof backend exists yet. That spike rejects `40 / 40`
 target-drift, source-hash, selected-slice removal, selected-slice duplication,
@@ -590,9 +591,9 @@ metric is meaningful.
 The issue `#409` follow-up now fills the non-recursive accumulator branch for
 that same two-slice target. It builds a verifier-facing accumulator with
 accumulator commitment
-`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+`blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d`
 and verifier-handle commitment
-`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+`blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131`.
 The accumulator validates the source two-slice target evidence, validates both
 selected source slice evidence files with their slice-local validators, and
 binds the target commitment, selected statement commitments, and selected
@@ -605,12 +606,13 @@ The issue `#413` follow-up extends that non-recursive accumulator branch to the
 full d128 block receipt. It builds a verifier-facing accumulator over all six
 checked d128 slice handles and `197,504` checked rows, with accumulator
 commitment
-`blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+`blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc`
 and verifier-handle commitment
-`blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`.
+`blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4`.
 The accumulator binds `block_receipt_commitment`, `statement_commitment`,
-`slice_chain_commitment`, `evidence_manifest_commitment`, every slice statement
-commitment, and every source evidence hash. It rejects `48 / 48` source,
+`range_policy_commitment`, `slice_chain_commitment`,
+`evidence_manifest_commitment`, every slice statement commitment, and every
+source evidence hash. It rejects `52 / 52` source,
 public-input, accumulator-artifact, source-manifest, slice-transcript,
 verifier-transcript, verifier-domain, verifier-handle, recursive-claim,
 recursive-metric-smuggling, parser/schema, validation-command-drift, and

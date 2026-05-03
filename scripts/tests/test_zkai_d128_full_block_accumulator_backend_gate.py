@@ -52,6 +52,11 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
         descriptor = payload["source_block_receipt"]
         self.assertEqual(public_inputs["block_receipt_commitment"], descriptor["block_receipt_commitment"])
         self.assertEqual(public_inputs["statement_commitment"], descriptor["statement_commitment"])
+        self.assertEqual(public_inputs["range_policy_commitment"], descriptor["range_policy_commitment"])
+        self.assertEqual(
+            public_inputs["range_policy_commitment"],
+            "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
+        )
         self.assertEqual(public_inputs["slice_chain_commitment"], descriptor["slice_chain_commitment"])
         self.assertEqual(public_inputs["evidence_manifest_commitment"], descriptor["evidence_manifest_commitment"])
         self.assertEqual(public_inputs["required_public_inputs"], GATE.REQUIRED_PUBLIC_INPUTS)
@@ -117,7 +122,9 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
         expected_layers = {
             "source_block_receipt_file_hash_drift": "source_block_receipt",
             "accumulator_commitment_drift": "accumulator_artifact",
+            "public_input_range_policy_commitment_drift": "public_inputs",
             "public_input_statement_commitment_drift": "public_inputs",
+            "verifier_handle_range_policy_commitment_drift": "verifier_handle",
             "slice_removed": "verifier_transcript",
             "source_manifest_payload_hash_drift": "source_evidence_manifest",
             "verifier_domain_drift": "verifier_transcript",
@@ -135,6 +142,11 @@ class ZkAiD128FullBlockAccumulatorBackendGateTests(unittest.TestCase):
     def test_rejects_block_receipt_public_input_relabeling(self) -> None:
         payload = self.fresh_payload()
         payload["accumulator_artifact"]["preimage"]["public_inputs"]["block_receipt_commitment"] = "blake2b-256:" + "11" * 32
+        with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "public inputs"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["accumulator_artifact"]["preimage"]["public_inputs"]["range_policy_commitment"] = "blake2b-256:" + "12" * 32
         with self.assertRaisesRegex(GATE.D128FullBlockAccumulatorBackendError, "public inputs"):
             GATE.validate_payload(payload)
 
