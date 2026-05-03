@@ -94,6 +94,28 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "route_table\\[0\\] must be an object"):
             GATE.validate_core_payload(payload)
 
+    def test_source_commitment_relabeling_rejects(self) -> None:
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["source_evidence"]["two_slice_target_commitment"] = "blake2b-256:" + "0" * 64
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "recursive backend target commitment"):
+            GATE.validate_core_payload(payload)
+
+    def test_route_evidence_shape_and_path_drift_rejects(self) -> None:
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_table"][2]["evidence"]["source"] = "../outside.json"
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "safe repo-relative"):
+            GATE.validate_core_payload(payload)
+
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_table"][4]["evidence"]["tracked_issue"] = 999
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "tracked_issue"):
+            GATE.validate_core_payload(payload)
+
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_table"][7]["evidence"]["unexpected"] = True
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "evidence keys"):
+            GATE.validate_core_payload(payload)
+
     def test_mutation_inventory_scalar_entry_rejects_as_gate_error(self) -> None:
         payload = self.fresh_payload()
         payload["mutation_inventory"][0] = "not-a-mutation-object"
