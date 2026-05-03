@@ -88,6 +88,17 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "Cargo.toml sha256"):
             GATE.validate_core_payload(payload)
 
+    def test_repo_probe_external_dependency_hint_drift_rejects(self) -> None:
+        for field, message in (
+            ("external_zkvm_dependencies_declared", "external zkVM dependencies declared"),
+            ("external_snark_ivc_dependencies_declared", "external SNARK/IVC dependencies declared"),
+        ):
+            with self.subTest(field=field):
+                payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+                payload["local_repo_probe"][field] = not payload["local_repo_probe"][field]
+                with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, message):
+                    GATE.validate_core_payload(payload)
+
     def test_route_table_scalar_entry_rejects_as_gate_error(self) -> None:
         payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
         payload["route_table"][0] = "not-a-route-object"
@@ -146,6 +157,22 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
                 mutated = GATE.mutate_payload(self.fresh_payload(), mutation)
                 with self.assertRaises(GATE.D128RecursivePCDRouteSelectorError):
                     GATE.validate_core_payload(mutated)
+
+    def test_route_decision_nested_shape_and_reason_drift_reject(self) -> None:
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_decision"]["selected_target"]["unexpected"] = True
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "selected_target keys"):
+            GATE.validate_core_payload(payload)
+
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_decision"]["proof_metrics"]["unexpected"] = None
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "proof_metrics keys"):
+            GATE.validate_core_payload(payload)
+
+        payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+        payload["route_decision"]["why_not_local_stwo_next"] = "local recursion is fine"
+        with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "why_not_local_stwo_next"):
+            GATE.validate_core_payload(payload)
 
     def test_rejects_source_evidence_drift(self) -> None:
         for mutation in (
