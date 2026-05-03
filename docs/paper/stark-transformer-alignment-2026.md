@@ -1174,6 +1174,22 @@ Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json`.
 
+A follow-up proof-native compression gate then tests a smaller target without
+changing the claim boundary. It compresses the same two-slice
+transcript/public-input contract from an `8,822` byte source accumulator
+artifact to a `4,435` byte verifier-facing object and binds the target
+commitment, selected slice statements, selected source hashes, selected public
+instances, selected proof-native parameter commitments, verifier domain,
+backend version, source accumulator commitment, and source verifier-handle
+commitment. It rejects `34 / 34` binding, relabeling, compression-metric,
+verifier-handle, recursive-claim, and parser/schema mutations. This is useful
+systems evidence for smaller pre-recursive statement packaging, but it is still
+not recursive aggregation, PCD, STARK-in-STARK, or a public zkML benchmark row.
+Evidence is recorded in
+`docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
+and
+`docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json`.
+
 The next full-block accumulator gate extends the same non-recursive handoff to
 all six d128 slices. It accumulates the checked d128 block receipt over
 `197,504` rows, binding `block_receipt_commitment`, `statement_commitment`,

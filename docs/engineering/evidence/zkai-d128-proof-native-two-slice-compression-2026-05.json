@@ -1,0 +1,767 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 34,
+  "cases": [
+    {
+      "baseline_result": "GO",
+      "error": "source accumulator file hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "source accumulator payload hash mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "source accumulator descriptor mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_result_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "source accumulator descriptor mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_claim_boundary_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "source accumulator descriptor mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "source_accumulator",
+      "surface": "source_accumulator"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_artifact_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_artifact"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact claim boundary mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_artifact_claim_boundary_changed_to_recursive",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_artifact"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_public_target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_selected_statement_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_selected_source_hash_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_selected_public_instance_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_selected_parameter_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_verifier_domain_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_backend_version_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_source_accumulator_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_slice_removed",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_transcript"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_slice_duplicated",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_transcript"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_slice_reordered",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_transcript"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compressed artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "compressed_slice_row_count_drift",
+      "rejected": true,
+      "rejection_layer": "compressed_artifact",
+      "surface": "compressed_transcript"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compression status mismatch",
+      "mutated_accepted": false,
+      "mutation": "compression_ratio_relabeling",
+      "rejected": true,
+      "rejection_layer": "compression_metrics",
+      "surface": "compression_metrics"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "verifier handle mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "verifier_handle",
+      "surface": "verifier_handle"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "verifier handle claim boundary mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_claim_boundary_changed_to_recursive",
+      "rejected": true,
+      "rejection_layer": "verifier_handle",
+      "surface": "verifier_handle"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "verifier handle mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_artifact_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "verifier_handle",
+      "surface": "verifier_handle"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "verifier handle mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_missing_required_public_input",
+      "rejected": true,
+      "rejection_layer": "verifier_handle",
+      "surface": "verifier_handle"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "recursive or PCD status mismatch",
+      "mutated_accepted": false,
+      "mutation": "recursive_outer_proof_claimed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_status",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "recursive or PCD status mismatch",
+      "mutated_accepted": false,
+      "mutation": "pcd_outer_proof_claimed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_status",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "recursive or PCD status mismatch",
+      "mutated_accepted": false,
+      "mutation": "recursive_proof_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_status",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "recursive or PCD status mismatch",
+      "mutated_accepted": false,
+      "mutation": "recursive_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "recursive_or_pcd_status",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "decision mismatch",
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_no_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_no_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "compression result mismatch",
+      "mutated_accepted": false,
+      "mutation": "compression_result_changed_to_no_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "recursive or PCD result mismatch",
+      "mutated_accepted": false,
+      "mutation": "recursive_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "non-claims mismatch",
+      "mutated_accepted": false,
+      "mutation": "non_claims_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "validation commands mismatch",
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+  "compressed_artifact": {
+    "artifact_kind": "proof-native-two-slice-transcript-compression",
+    "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "compressed_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+    "issue": 424,
+    "preimage": {
+      "artifact_kind": "proof-native-two-slice-transcript-compression",
+      "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+      "compressed_transcript": [
+        {
+          "index": 0,
+          "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+          "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "row_count": 128,
+          "slice_id": "rmsnorm_public_rows",
+          "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+          "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
+          "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+          "target_commitments": {
+            "rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
+          }
+        },
+        {
+          "index": 1,
+          "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+          "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "row_count": 128,
+          "slice_id": "rmsnorm_projection_bridge",
+          "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+          "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3",
+          "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728",
+          "target_commitments": {
+            "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17"
+          }
+        }
+      ],
+      "issue": 424,
+      "proof_native_public_input_contract": {
+        "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+        "required_public_inputs": [
+          "two_slice_target_commitment",
+          "selected_slice_statement_commitments",
+          "selected_source_evidence_hashes",
+          "selected_slice_public_instance_commitments",
+          "selected_slice_proof_native_parameter_commitments",
+          "verifier_domain",
+          "required_backend_version",
+          "source_accumulator_commitment",
+          "source_verifier_handle_commitment"
+        ],
+        "selected_slice_proof_native_parameter_commitments": [
+          {
+            "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+            "slice_id": "rmsnorm_public_rows"
+          },
+          {
+            "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+            "slice_id": "rmsnorm_projection_bridge"
+          }
+        ],
+        "selected_slice_public_instance_commitments": [
+          {
+            "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+            "slice_id": "rmsnorm_public_rows"
+          },
+          {
+            "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+            "slice_id": "rmsnorm_projection_bridge"
+          }
+        ],
+        "selected_slice_statement_commitments": [
+          {
+            "slice_id": "rmsnorm_public_rows",
+            "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+          },
+          {
+            "slice_id": "rmsnorm_projection_bridge",
+            "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+          }
+        ],
+        "selected_source_evidence_hashes": [
+          {
+            "slice_id": "rmsnorm_public_rows",
+            "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+            "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+          },
+          {
+            "slice_id": "rmsnorm_projection_bridge",
+            "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+            "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+          }
+        ],
+        "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+        "source_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+        "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+        "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+      },
+      "schema": "zkai-d128-proof-native-two-slice-compressed-artifact-v1",
+      "selected_checked_rows": 256,
+      "selected_slice_ids": [
+        "rmsnorm_public_rows",
+        "rmsnorm_projection_bridge"
+      ],
+      "width": 128
+    },
+    "schema": "zkai-d128-proof-native-two-slice-compressed-artifact-v1"
+  },
+  "compression_result": "GO_PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+  "compression_status": {
+    "compressed_artifact_exists": true,
+    "compression_metrics": {
+      "artifact_bytes_ratio_vs_source_accumulator": 0.50272,
+      "byte_savings": 4387,
+      "compressed_artifact_serialized_bytes": 4435,
+      "recursive_proof_metrics": null,
+      "source_accumulator_artifact_serialized_bytes": 8822,
+      "timing_mode": "not_timed"
+    },
+    "not_pcd": true,
+    "not_recursive": true,
+    "not_stark_in_stark": true,
+    "result": "GO_PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "verifier_handle_accepts": true
+  },
+  "decision": "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION",
+  "issue": 424,
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "source_accumulator_file_hash_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 1,
+      "mutation": "source_accumulator_payload_hash_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 2,
+      "mutation": "source_accumulator_result_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 3,
+      "mutation": "source_accumulator_claim_boundary_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 4,
+      "mutation": "source_accumulator_commitment_drift",
+      "surface": "source_accumulator"
+    },
+    {
+      "index": 5,
+      "mutation": "compressed_artifact_commitment_drift",
+      "surface": "compressed_artifact"
+    },
+    {
+      "index": 6,
+      "mutation": "compressed_artifact_claim_boundary_changed_to_recursive",
+      "surface": "compressed_artifact"
+    },
+    {
+      "index": 7,
+      "mutation": "compressed_public_target_commitment_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 8,
+      "mutation": "compressed_selected_statement_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 9,
+      "mutation": "compressed_selected_source_hash_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 10,
+      "mutation": "compressed_selected_public_instance_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 11,
+      "mutation": "compressed_selected_parameter_commitment_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 12,
+      "mutation": "compressed_verifier_domain_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 13,
+      "mutation": "compressed_backend_version_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 14,
+      "mutation": "compressed_source_accumulator_commitment_drift",
+      "surface": "compressed_public_inputs"
+    },
+    {
+      "index": 15,
+      "mutation": "compressed_slice_removed",
+      "surface": "compressed_transcript"
+    },
+    {
+      "index": 16,
+      "mutation": "compressed_slice_duplicated",
+      "surface": "compressed_transcript"
+    },
+    {
+      "index": 17,
+      "mutation": "compressed_slice_reordered",
+      "surface": "compressed_transcript"
+    },
+    {
+      "index": 18,
+      "mutation": "compressed_slice_row_count_drift",
+      "surface": "compressed_transcript"
+    },
+    {
+      "index": 19,
+      "mutation": "compression_ratio_relabeling",
+      "surface": "compression_metrics"
+    },
+    {
+      "index": 20,
+      "mutation": "verifier_handle_commitment_drift",
+      "surface": "verifier_handle"
+    },
+    {
+      "index": 21,
+      "mutation": "verifier_handle_claim_boundary_changed_to_recursive",
+      "surface": "verifier_handle"
+    },
+    {
+      "index": 22,
+      "mutation": "verifier_handle_artifact_commitment_drift",
+      "surface": "verifier_handle"
+    },
+    {
+      "index": 23,
+      "mutation": "verifier_handle_missing_required_public_input",
+      "surface": "verifier_handle"
+    },
+    {
+      "index": 24,
+      "mutation": "recursive_outer_proof_claimed",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "index": 25,
+      "mutation": "pcd_outer_proof_claimed",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "index": 26,
+      "mutation": "recursive_proof_metric_smuggled",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "index": 27,
+      "mutation": "recursive_blocker_removed",
+      "surface": "recursive_or_pcd_status"
+    },
+    {
+      "index": 28,
+      "mutation": "decision_changed_to_no_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 29,
+      "mutation": "result_changed_to_no_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 30,
+      "mutation": "compression_result_changed_to_no_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 31,
+      "mutation": "recursive_result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 32,
+      "mutation": "non_claims_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 33,
+      "mutation": "validation_command_drift",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive aggregation of selected slice proofs",
+    "not proof-carrying data",
+    "not STARK-in-STARK verification",
+    "not one cryptographic outer proof over the two selected verifiers",
+    "not proof-size evidence for a recursive outer proof",
+    "not verifier-time evidence for a recursive outer proof",
+    "not proof-generation-time evidence for a recursive outer proof",
+    "not aggregation of all six d128 slice proofs",
+    "not matched public zkML benchmark evidence",
+    "not onchain deployment evidence"
+  ],
+  "recursive_or_pcd_result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
+  "recursive_or_pcd_status": {
+    "first_blocker": "no executable recursive/PCD outer proof backend currently proves the two selected d128 slice-verifier checks inside one cryptographic outer proof",
+    "outer_proof_artifacts": [],
+    "pcd_outer_proof_claimed": false,
+    "proof_metrics": {
+      "recursive_proof_generation_time_ms": null,
+      "recursive_proof_size_bytes": null,
+      "recursive_verifier_time_ms": null
+    },
+    "recursive_outer_proof_claimed": false,
+    "result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "stark_in_stark_claimed": false
+  },
+  "result": "GO",
+  "schema": "zkai-d128-proof-native-two-slice-compression-gate-v1",
+  "source_accumulator": {
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "accumulator_result": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
+    "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+    "decision": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND",
+    "file_sha256": "abe085ac2ebe3c0f980a7d98e53815b7a286b52649e73427bf2f18d49cb2a34d",
+    "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+    "payload_sha256": "d671e708f5d8d00454d4a4fded860a225201b67dc1b591f8cd7ce05dc366e8b2",
+    "recursive_or_pcd_result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "result": "GO",
+    "schema": "zkai-d128-two-slice-accumulator-backend-v1",
+    "selected_checked_rows": 256,
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
+  },
+  "summary": {
+    "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "compressed_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+    "compression_metrics": {
+      "artifact_bytes_ratio_vs_source_accumulator": 0.50272,
+      "byte_savings": 4387,
+      "compressed_artifact_serialized_bytes": 4435,
+      "recursive_proof_metrics": null,
+      "source_accumulator_artifact_serialized_bytes": 8822,
+      "timing_mode": "not_timed"
+    },
+    "compression_status": "GO_PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "go_criterion": "one proof-native compressed transcript/public-input artifact exists for the d128 two-slice contract, a local verifier handle accepts it by recomputing the same bound public inputs, and the serialized artifact is smaller than the source non-recursive accumulator artifact",
+    "mutation_cases": 34,
+    "mutations_rejected": 34,
+    "recursive_blocker": "no executable recursive/PCD outer proof backend currently proves the two selected d128 slice-verifier checks inside one cryptographic outer proof",
+    "recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_proof_native_two_slice_compression_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_proof_native_two_slice_compression_gate",
+    "python3 -m py_compile scripts/zkai_d128_proof_native_two_slice_compression_gate.py scripts/tests/test_zkai_d128_proof_native_two_slice_compression_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ],
+  "verifier_handle": {
+    "accepted": true,
+    "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "preimage": {
+      "accepted_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+      "accepted_artifact_kind": "proof-native-two-slice-transcript-compression",
+      "accepted_artifact_schema": "zkai-d128-proof-native-two-slice-compressed-artifact-v1",
+      "accepted_claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "required_public_inputs": [
+        "two_slice_target_commitment",
+        "selected_slice_statement_commitments",
+        "selected_source_evidence_hashes",
+        "selected_slice_public_instance_commitments",
+        "selected_slice_proof_native_parameter_commitments",
+        "verifier_domain",
+        "required_backend_version",
+        "source_accumulator_commitment",
+        "source_verifier_handle_commitment"
+      ],
+      "schema": "zkai-d128-proof-native-two-slice-compression-verifier-handle-v1",
+      "selected_slice_proof_native_parameter_commitments": [
+        {
+          "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_public_instance_commitments": [
+        {
+          "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_statement_commitments": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+        }
+      ],
+      "selected_source_evidence_hashes": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+          "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+          "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+        }
+      ],
+      "source_accumulator_file_sha256": "abe085ac2ebe3c0f980a7d98e53815b7a286b52649e73427bf2f18d49cb2a34d",
+      "source_accumulator_path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+      "source_accumulator_payload_sha256": "d671e708f5d8d00454d4a4fded860a225201b67dc1b591f8cd7ce05dc366e8b2",
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+      "verifier_steps": [
+        "validate source two-slice accumulator evidence",
+        "recompute compressed proof-native public input contract",
+        "recompute compressed transcript commitment",
+        "reject recursive/PCD metric claims"
+      ]
+    },
+    "schema": "zkai-d128-proof-native-two-slice-compression-verifier-handle-v1",
+    "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
+  }
+}

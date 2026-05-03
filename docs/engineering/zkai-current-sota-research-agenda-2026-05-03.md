@@ -41,8 +41,11 @@ proof compression. It is a verifier-facing accumulator object that keeps the
 claim boundary honest until a real outer proof backend exists. The issue `#420`
 route selector now makes the next-step decision explicit: local Stwo-native
 recursion is blocked before metrics by the missing nested-verifier backend for
-the two-slice d128 target, while external zkVM/SNARK statement-receipt adapters
-and proof-native non-recursive compression remain research candidates.
+the two-slice d128 target. The issue `#424` follow-up converts the proof-native
+non-recursive compression candidate into a narrow GO: the two-slice
+transcript/public-input contract compresses from `8,822` source accumulator
+artifact bytes to a `4,435` byte verifier-facing object, while still reporting
+no recursive proof size, verifier time, or proof-generation metrics.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -93,8 +96,8 @@ accumulators.
    and
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
    The best next experiments are issue `#422` external zkVM/SNARK statement
-   receipt adapters and issue `#424` proof-native two-slice compression that
-   does not claim recursion.
+   receipt adapters and issue `#426` cryptographic backend over the `#424`
+   public-input contract.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification
