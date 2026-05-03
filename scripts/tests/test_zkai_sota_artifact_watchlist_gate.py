@@ -173,7 +173,8 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
 
         payload = self.fresh_payload()
         payload["git_commit"] = "unavailable"
-        GATE.validate_payload(payload)
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "git_commit malformed"):
+            GATE.validate_payload(payload)
 
     def test_rejects_summary_source_context_or_watchlist_drift(self) -> None:
         payload = self.fresh_payload()
@@ -225,6 +226,16 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
             payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
         )
         with self.assertRaisesRegex(GATE.SotaWatchlistError, "repo-relative"):
+            GATE.validate_payload(payload)
+
+    def test_local_evidence_must_be_a_string(self) -> None:
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "EZKL")
+        row["local_evidence"] = ["docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json"]
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "local evidence must be a string"):
             GATE.validate_payload(payload)
 
     def test_tsv_rows_are_stable_and_make_boolean_status_explicit(self) -> None:
