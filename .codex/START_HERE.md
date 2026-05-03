@@ -84,11 +84,11 @@ This repository currently has three live lanes.
    - The d128 two-slice recursive/PCD backend gate now audits the issue `#411`
      route directly and records a hard bounded no-go:
      `NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`. The
-     blocker is the missing nested-verifier AIR/circuit or PCD backend that
-     proves the two selected d128 slice verifiers inside one cryptographic
-     outer object. It rejects `31 / 31` relabeling, fake-artifact,
-     fake-public-input-binding, metric-smuggling, blocker-removal, and weakened-GO drift
-     mutations; see
+     first blocker is that no nested verifier program/AIR/circuit can express
+     the two selected d128 slice verifier checks. It rejects `31 / 31`
+     relabeling, fake-artifact, fake-public-input-binding, metric-smuggling,
+     blocker-removal, weakened-GO drift, unknown-field injection, and
+     parser/schema mutations; see
      `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
    - The d128 full-block accumulator backend gate now turns the six-slice
      block receipt into a real verifier-facing non-recursive accumulator over

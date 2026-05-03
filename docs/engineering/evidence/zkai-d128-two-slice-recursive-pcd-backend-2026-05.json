@@ -5,7 +5,7 @@
     "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
     "attempt": {
       "blocked_before_metrics": true,
-      "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+      "first_blocker": "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks",
       "local_verifier_handle_exists": false,
       "missing_backend_features": [
         "nested verifier AIR/circuit for d128 rmsnorm_public_rows verifier",
@@ -23,7 +23,7 @@
       "target_public_input_binding_executable": false
     },
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
-    "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+    "first_blocker": "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks",
     "go_criterion": "one executable recursive or PCD outer proof artifact exists for the two selected d128 slice-verifier checks; a local verifier handle accepts it; and the artifact binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes as public inputs",
     "recursive_or_pcd_result": "NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING",
     "required_public_inputs_for_future_go": [
@@ -90,8 +90,8 @@
       "reason": "proves and verifies the inner RMSNorm public-row slice; it is not an AIR/circuit for proving that verifier inside another proof",
       "required_for_go": false,
       "required_tokens": [
-        "prove_zkai_d128_rmsnorm_public_row_envelope",
-        "verify_zkai_d128_rmsnorm_public_row_envelope"
+        "rust_fn:prove_zkai_d128_rmsnorm_public_row_envelope",
+        "rust_fn:verify_zkai_d128_rmsnorm_public_row_envelope"
       ],
       "required_tokens_present": true
     },
@@ -107,8 +107,8 @@
       "reason": "proves and verifies the inner bridge slice; it is not an AIR/circuit for proving that verifier inside another proof",
       "required_for_go": false,
       "required_tokens": [
-        "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
-        "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope"
+        "rust_fn:prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+        "rust_fn:verify_zkai_d128_rmsnorm_to_projection_bridge_envelope"
       ],
       "required_tokens_present": true
     },
@@ -124,8 +124,8 @@
       "reason": "records recursive claim boundaries and source checks; it does not execute the selected d128 slice verifiers inside an outer proof",
       "required_for_go": false,
       "required_tokens": [
-        "phase36_prepare_recursive_verifier_harness_receipt",
-        "verify_phase36_recursive_verifier_harness_receipt"
+        "rust_fn:phase36_prepare_recursive_verifier_harness_receipt",
+        "rust_fn:verify_phase36_recursive_verifier_harness_receipt"
       ],
       "required_tokens_present": true
     },
@@ -141,8 +141,8 @@
       "reason": "the local dependency surface exposes Stwo proving/verifying support, but this repository has no recursive/PCD backend module wired to d128 verifier checks",
       "required_for_go": false,
       "required_tokens": [
-        "stwo = { version = \"2.2.0\"",
-        "stwo-backend = [\"dep:stwo\""
+        "toml_line:stwo = { version = \"2.2.0\", default-features = false, features = [\"std\", \"prover\"], optional = true }",
+        "toml_line:stwo-backend = [\"dep:stwo\", \"dep:stwo-constraint-framework\", \"dep:flate2\"]"
       ],
       "required_tokens_present": true
     },
@@ -200,8 +200,8 @@
       "reason": "tests this bounded no-go gate and relabeling guardrails, but does not test a future executable recursive proof artifact",
       "required_for_go": false,
       "required_tokens": [
-        "test_rejects_recursive_claim_relabeling_and_metric_smuggling",
-        "test_rejects_candidate_inventory_tampering"
+        "python_def:test_rejects_recursive_claim_relabeling_and_metric_smuggling",
+        "python_def:test_rejects_candidate_inventory_tampering"
       ],
       "required_tokens_present": true
     },
@@ -738,7 +738,7 @@
   "summary": {
     "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
-    "first_blocker": "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object",
+    "first_blocker": "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks",
     "go_criterion": "one executable recursive or PCD outer proof artifact exists for the two selected d128 slice-verifier checks; a local verifier handle accepts it; and the artifact binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes as public inputs",
     "issue": 411,
     "missing_backend_feature_count": 6,
