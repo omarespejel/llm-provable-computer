@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import sys
 import tempfile
@@ -1026,6 +1027,23 @@ def _safe_output_path(path: pathlib.Path, expected_suffix: str) -> pathlib.Path:
     return candidate
 
 
+def _resolved_output_target(path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_root = EVIDENCE_DIR.resolve(strict=True)
+    resolved_parent = path.parent.resolve(strict=True)
+    try:
+        resolved_parent.relative_to(evidence_root)
+    except ValueError as err:
+        raise D128ProofNativeTwoSliceCompressionError(f"output parent escaped docs/engineering/evidence: {path}") from err
+    final_path = resolved_parent / path.name
+    resolved_final = final_path.resolve(strict=False)
+    try:
+        resolved_final.relative_to(evidence_root)
+    except ValueError as err:
+        raise D128ProofNativeTwoSliceCompressionError(f"output path must stay under docs/engineering/evidence: {path}") from err
+    return final_path, resolved_final
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     validate_payload(payload)
     outputs: list[tuple[pathlib.Path, bytes]] = []
@@ -1033,15 +1051,20 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         outputs.append((_safe_output_path(json_path, ".json"), json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"))
     if tsv_path is not None:
         outputs.append((_safe_output_path(tsv_path, ".tsv"), to_tsv(payload).encode("utf-8")))
-    resolved_outputs = [path.resolve(strict=False) for path, _data in outputs]
+    resolved_targets = [(path, data, *_resolved_output_target(path)) for path, data in outputs]
+    resolved_outputs = [resolved_final for _path, _data, _final_path, resolved_final in resolved_targets]
     if len(resolved_outputs) != len(set(resolved_outputs)):
         raise D128ProofNativeTwoSliceCompressionError("write-json and write-tsv output paths must be distinct")
-    for path, data in outputs:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("wb", delete=False, dir=path.parent) as handle:
-            tmp = pathlib.Path(handle.name)
-            handle.write(data)
-        tmp.replace(path)
+    for _path, data, final_path, _resolved_final in resolved_targets:
+        tmp: pathlib.Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile("wb", delete=False, dir=str(final_path.parent)) as handle:
+                tmp = pathlib.Path(handle.name)
+                handle.write(data)
+            os.replace(tmp, final_path)
+        finally:
+            if tmp is not None and tmp.exists():
+                tmp.unlink()
 
 
 def main(argv: list[str] | None = None) -> int:
