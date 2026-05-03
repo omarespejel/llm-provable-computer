@@ -78,6 +78,7 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         ):
             self.assertTrue(cases[mutation]["rejected"], mutation)
             self.assertTrue(cases[mutation]["error"], mutation)
+            self.assertNotIn("mutation case count drift", cases[mutation]["error"])
 
     def test_rejects_deepprove_empirical_promotion_after_recommit(self) -> None:
         payload = self.fresh_payload()
@@ -106,6 +107,17 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         row = next(row for row in payload["systems"] if row["system"] == "NANOZK")
         row["recommended_use"] = "matched local benchmark"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "source-backed system promoted"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_matched_benchmark_language_with_unrelated_not(self) -> None:
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "NANOZK")
+        row["recommended_use"] = "not only matched local benchmark"
         payload["systems_commitment"] = GATE.blake2b_commitment(
             payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
         )

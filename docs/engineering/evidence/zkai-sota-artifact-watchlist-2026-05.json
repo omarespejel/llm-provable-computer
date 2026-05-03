@@ -14,7 +14,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "source-backed system overclaims reproducibility: NANOZK",
+      "error": "source-backed system promoted to matched benchmark: NANOZK",
       "index": 1,
       "mutated_accepted": false,
       "mutation": "nanozk_matched_benchmark_overclaim",
@@ -144,7 +144,7 @@
   ],
   "decision": "GO_CHECKED_SOTA_ARTIFACT_WATCHLIST",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "87cd5827f3bc2c707f70a3712b3ada7bf18f0aa5",
+  "git_commit": "ae95936f76735b5e0a843159008a864bdc6debd7",
   "issue": "#419",
   "mutation_inventory": [
     {

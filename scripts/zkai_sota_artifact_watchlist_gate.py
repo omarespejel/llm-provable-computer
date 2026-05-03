@@ -466,7 +466,7 @@ def _is_https_url(raw: str) -> bool:
     return parsed.scheme == "https" and bool(parsed.netloc)
 
 
-def validate_payload(payload: dict[str, Any]) -> None:
+def validate_payload(payload: dict[str, Any], *, require_mutations: bool = True) -> None:
     expected_fields = {
         "schema",
         "generated_at",
@@ -509,7 +509,8 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise SotaWatchlistError("systems commitment mismatch")
     validate_systems(systems)
     validate_summary(payload["summary"], systems)
-    validate_mutations(payload)
+    if require_mutations:
+        validate_mutations(payload)
 
 
 def require_list(value: Any, field: str) -> list[Any]:
@@ -577,7 +578,7 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
                 raise SotaWatchlistError(f"source-backed system promoted to empirical adapter: {system}")
             if row["baseline_verification_reproducible"] or row["metadata_mutation_reproducible"]:
                 raise SotaWatchlistError(f"source-backed system overclaims reproducibility: {system}")
-            if "matched" in row["recommended_use"] and "not" not in row["recommended_use"]:
+            if _source_context_matched_overclaim(row["recommended_use"]):
                 raise SotaWatchlistError(f"source-backed system promoted to matched benchmark: {system}")
         if system == "NANOZK":
             if "not a matched local benchmark" not in row["recommended_use"]:
@@ -614,6 +615,18 @@ def validate_summary(summary: Any, systems: list[dict[str, Any]]) -> None:
         raise SotaWatchlistError("deployment summary drift")
     if "#420" not in summary["current_best_next_research_step"]:
         raise SotaWatchlistError("best-next-step drift")
+
+
+def _source_context_matched_overclaim(recommended_use: str) -> bool:
+    normalized = " ".join(recommended_use.lower().split())
+    if re.search(r"\bmatched\b", normalized) is None:
+        return False
+    allowed_negations = (
+        "not a matched",
+        "not matched",
+        "not as a matched",
+    )
+    return not any(phrase in normalized for phrase in allowed_negations)
 
 
 def mutation_inventory() -> list[dict[str, str]]:
@@ -660,7 +673,7 @@ def _mutation_fns() -> dict[str, Callable[[dict[str, Any]], None]]:
             }
         ),
         "nanozk_matched_benchmark_overclaim": lambda p: _find_system(p, "NANOZK").update(
-            {"recommended_use": "matched local benchmark", "baseline_verification_reproducible": True}
+            {"recommended_use": "matched local benchmark"}
         ),
         "jolt_baseline_verification_overclaim": lambda p: _find_system(p, "Jolt Atlas").update(
             {"baseline_verification_reproducible": True}
@@ -714,7 +727,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         rejected = False
         error = ""
         try:
-            validate_payload(mutated)
+            validate_payload(mutated, require_mutations=False)
         except Exception as err:  # noqa: BLE001 - normalize gate diagnostics.
             rejected = True
             error = str(err) or f"{type(err).__name__} with empty message"
