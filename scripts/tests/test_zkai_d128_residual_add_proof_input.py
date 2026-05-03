@@ -47,6 +47,16 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
         with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "input_activation_commitment"):
             D128_RESIDUAL.build_payload(source, D128_RESIDUAL.load_down_source())
 
+    def test_payload_rejects_rmsnorm_source_statement_rebind(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_rmsnorm_statement_commitment"] = "blake2b-256:" + "12" * 32
+        payload["statement_commitment"] = D128_RESIDUAL.statement_commitment(payload)
+        payload["public_instance_commitment"] = D128_RESIDUAL.public_instance_commitment(
+            payload["statement_commitment"]
+        )
+        with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "source_rmsnorm_statement"):
+            D128_RESIDUAL.validate_payload(payload)
+
     def test_payload_rejects_down_source_residual_commitment_drift(self) -> None:
         source = copy.deepcopy(D128_RESIDUAL.load_down_source())
         source["residual_delta_commitment"] = "blake2b-256:" + "22" * 32

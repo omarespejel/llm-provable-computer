@@ -42,6 +42,7 @@ MAX_SOURCE_JSON_BYTES = 2 * 1024 * 1024
 SOURCE_RMSNORM_SCHEMA = "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3"
 SOURCE_RMSNORM_DECISION = "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF"
 SOURCE_RMSNORM_PROOF_VERSION = "stwo-d128-rmsnorm-public-row-air-proof-v3"
+SOURCE_RMSNORM_STATEMENT_COMMITMENT = "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
 SOURCE_DOWN_PROJECTION_SCHEMA = "zkai-d128-down-projection-air-proof-input-v1"
 SOURCE_DOWN_PROJECTION_DECISION = "GO_INPUT_FOR_D128_DOWN_PROJECTION_AIR_PROOF"
 SOURCE_DOWN_PROJECTION_PROOF_VERSION = "stwo-d128-down-projection-air-proof-v1"
@@ -493,6 +494,7 @@ def validate_payload(payload: Any) -> None:
         "width": WIDTH,
         "row_count": WIDTH,
         "source_rmsnorm_proof_version": SOURCE_RMSNORM_PROOF_VERSION,
+        "source_rmsnorm_statement_commitment": SOURCE_RMSNORM_STATEMENT_COMMITMENT,
         "source_down_projection_proof_version": SOURCE_DOWN_PROJECTION_PROOF_VERSION,
         "source_down_projection_statement_commitment": SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
         "source_down_projection_public_instance_commitment": SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
