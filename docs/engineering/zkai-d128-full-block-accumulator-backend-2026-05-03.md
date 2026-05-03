@@ -21,17 +21,19 @@ The accumulator consumes the checked d128 block receipt:
 |---|---|
 | Slice count | `6` |
 | Checked rows | `197,504` |
-| Block receipt commitment | `blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a` |
-| Statement commitment | `blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60` |
-| Accumulator commitment | `blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633` |
-| Verifier-handle commitment | `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb` |
+| Block receipt commitment | `blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea` |
+| Statement commitment | `blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c` |
+| Range-policy commitment | `blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985` |
+| Accumulator commitment | `blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc` |
+| Verifier-handle commitment | `blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4` |
 | Claim boundary | `NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF` |
 
 The local verifier handle accepts the accumulator only after checking:
 
 1. the source d128 block receipt evidence validates;
 2. the six source slice evidence hashes match the checked source manifest;
-3. `block_receipt_commitment` and `statement_commitment` are bound as public inputs;
+3. `block_receipt_commitment`, `statement_commitment`, and
+   `range_policy_commitment` are bound as public inputs;
 4. `slice_chain_commitment` and `evidence_manifest_commitment` are bound as public inputs;
 5. every slice statement commitment is bound;
 6. every source file and payload hash is bound;
@@ -51,11 +53,11 @@ blocked until a real recursive/PCD backend artifact exists.
 
 ## Mutation Coverage
 
-The gate rejects `48 / 48` mutation cases, including:
+The gate rejects `52 / 52` mutation cases, including:
 
-- source block-receipt evidence path, file-hash, payload-hash, result, receipt-commitment, statement-commitment, slice-chain, and evidence-manifest drift;
-- accumulator commitment, claim-boundary, block-receipt, statement, slice-chain, and evidence-manifest drift;
-- public-input relabeling for block receipt, statement, slice-chain, evidence-manifest, slice statements, and source hashes;
+- source block-receipt evidence path, file-hash, payload-hash, result, receipt-commitment, statement-commitment, range-policy commitment, slice-chain, and evidence-manifest drift;
+- accumulator commitment, claim-boundary, block-receipt, statement, range-policy, slice-chain, and evidence-manifest drift;
+- public-input relabeling for block receipt, statement, range-policy, slice-chain, evidence-manifest, slice statements, and source hashes;
 - slice removal, duplication, reordering, row-count drift, source-commitment drift, and target-commitment drift;
 - source-manifest file-hash and payload-hash drift;
 - verifier-domain, verifier-transcript, and verifier-handle relabeling;
@@ -99,6 +101,7 @@ A future recursive GO must keep the same bindings:
 
 - `block_receipt_commitment`;
 - `statement_commitment`;
+- `range_policy_commitment`;
 - `slice_chain_commitment`;
 - `evidence_manifest_commitment`;
 - every slice statement commitment;

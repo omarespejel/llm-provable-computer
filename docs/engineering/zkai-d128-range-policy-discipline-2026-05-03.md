@@ -98,15 +98,13 @@ The gate rejects:
   rows.
 - This does not say d64 and d128 use different arithmetic semantics.
 
-## Follow-Up
+## Receipt Binding Follow-Up
 
-The current gate is intentionally non-invasive: it does not change the existing
-d128 block receipt commitment or force a downstream accumulator refresh.
-
-A later hardening PR can promote the `range_policy_commitment` into the d128
-block receipt itself. That would make the top-level receipt bind the range
-policy directly, but it should be done with a planned regeneration of downstream
-accumulator and recursive-audit evidence.
+The follow-up hardening is now applied in the d128 block-receipt composition
+gate: `range_policy_commitment` is a verifier-relevant receipt field, and the
+receipt commitment changes if that range policy is relabeled. The downstream
+aggregation-target, two-slice, full-block accumulator, and recursive-audit
+evidence were regenerated against the refreshed receipt.
 
 ## Reproduce
 

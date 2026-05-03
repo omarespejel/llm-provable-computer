@@ -405,10 +405,12 @@ from checked row weights, and emits a domain-separated
 `gate_value_projection_output_commitment`. Together with the d128 RMSNorm,
 bridge, activation/SwiGLU, down-projection, and residual-add proofs, the d128
 backend route now has six proof-backed slice surfaces plus a statement-bound
-block receipt over `197,504` checked rows. It is still not an aggregated d128
-block proof and still reports no full-block proof size, verifier time, or
-proof-generation time. The next blocker is the missing outer proof/accumulator
-backend and verifier handle.
+block receipt over `197,504` checked rows. That receipt now binds the checked
+per-tensor `range_policy_commitment`, so larger-width tensor range semantics
+are verifier-relevant statement data rather than explanatory metadata. It is
+still not an aggregated d128 block proof and still reports no full-block proof
+size, verifier time, or proof-generation time. The next blocker is the missing
+outer proof/accumulator backend and verifier handle.
 
 The first attention/KV receipt contract is also checked in:
 

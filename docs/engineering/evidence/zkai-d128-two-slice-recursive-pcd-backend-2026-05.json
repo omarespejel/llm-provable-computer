@@ -2,7 +2,7 @@
   "accumulator_baseline_result": "GO_D128_TWO_SLICE_NON_RECURSIVE_ACCUMULATOR_BASELINE",
   "all_mutations_rejected": true,
   "backend_probe": {
-    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
     "attempt": {
       "blocked_before_metrics": true,
       "first_blocker": "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks",
@@ -46,15 +46,15 @@
         "slice_id": "rmsnorm_projection_bridge"
       }
     ],
-    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
-    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
   },
   "candidate_inventory": [
     {
       "classification": "GO_NON_RECURSIVE_ACCUMULATOR_ONLY",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "c7ffed0d09edbdca75a93a060242ffd9836487b465f9abab47cc5f7df9f18a16",
+      "file_sha256": "a6adb3e868f401e320b0cc72bdea7f1a3c318ccef21e4e9eb37233a374c120f5",
       "kind": "non_recursive_accumulator",
       "missing_required_tokens": null,
       "name": "d128_two_slice_accumulator_backend",
@@ -68,7 +68,7 @@
       "classification": "GO_TARGET_ONLY_NOT_RECURSIVE_BACKEND",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "8ea47c5f1c30b5735954774946afe28633272fcf6dfaf0a3ec8d750bb6972645",
+      "file_sha256": "57528ad1826195a350d594556e62a6462d493c5f8bd6709a677fca65fd1e0052",
       "kind": "target_definition",
       "missing_required_tokens": null,
       "name": "d128_two_slice_outer_target_spike",
@@ -717,13 +717,13 @@
   "result": "BOUNDED_NO_GO",
   "schema": "zkai-d128-two-slice-recursive-pcd-backend-gate-v1",
   "source_accumulator": {
-    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
     "accumulator_result": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "decision": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND",
-    "file_sha256": "c7ffed0d09edbdca75a93a060242ffd9836487b465f9abab47cc5f7df9f18a16",
+    "file_sha256": "a6adb3e868f401e320b0cc72bdea7f1a3c318ccef21e4e9eb37233a374c120f5",
     "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
-    "payload_sha256": "1526b71d8f3f2784636bed49a240662a595c2052e298549dcba878144a047b8e",
+    "payload_sha256": "786e4c35308ba0756d76d323d75ae3fef64b9200b38b8970c3ac978efd319f10",
     "recursive_or_pcd_result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
     "result": "GO",
     "schema": "zkai-d128-two-slice-accumulator-backend-v1",
@@ -732,11 +732,11 @@
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
-    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
   },
   "summary": {
-    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
     "first_blocker": "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks",
     "go_criterion": "one executable recursive or PCD outer proof artifact exists for the two selected d128 slice-verifier checks; a local verifier handle accepts it; and the artifact binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes as public inputs",
@@ -760,8 +760,8 @@
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
-    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
   },
   "validation_commands": [
     "python3 scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.tsv",

@@ -45,12 +45,13 @@ MAX_SOURCE_JSON_BYTES = 16 * 1024 * 1024
 BLOCK_RECEIPT_SCHEMA = "zkai-d128-block-receipt-composition-gate-v1"
 BLOCK_RECEIPT_DECISION = "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE"
 BLOCK_RECEIPT_RESULT = "GO"
-EXPECTED_BLOCK_RECEIPT_COMMITMENT = "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a"
-EXPECTED_BLOCK_STATEMENT_COMMITMENT = "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+EXPECTED_BLOCK_RECEIPT_COMMITMENT = "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea"
+EXPECTED_BLOCK_STATEMENT_COMMITMENT = "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c"
 EXPECTED_INPUT_ACTIVATION_COMMITMENT = "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78"
 EXPECTED_OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1"
+EXPECTED_RANGE_POLICY_COMMITMENT = "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985"
 EXPECTED_TOTAL_CHECKED_ROWS = 197_504
-EXPECTED_COMPOSITION_MUTATIONS = 20
+EXPECTED_COMPOSITION_MUTATIONS = 21
 EXPECTED_SLICE_IDS = (
     "rmsnorm_public_rows",
     "rmsnorm_projection_bridge",
@@ -62,19 +63,19 @@ EXPECTED_SLICE_IDS = (
 
 FIRST_BLOCKER = (
     "missing outer proof or accumulator backend that proves the six d128 slice-verifier "
-    "checks and binds the d128 block receipt commitment plus statement commitment as public inputs"
+    "checks and binds the d128 block receipt, statement, and range-policy commitments as public inputs"
 )
 
 GO_CRITERION = (
     "one outer proof, accumulator, or proof-carrying artifact verifies the six d128 "
-    "slice-verifier checks and binds block_receipt_commitment and statement_commitment "
-    "as public inputs"
+    "slice-verifier checks and binds block_receipt_commitment, statement_commitment, "
+    "and range_policy_commitment as public inputs"
 )
 
 MISSING_BACKEND_FEATURES = [
     "recursive verifier program/AIR/circuit for each d128 slice verifier",
     "outer proof or PCD accumulator object over the six d128 slice-verifier checks",
-    "adapter that binds block_receipt_commitment and statement_commitment into outer public inputs",
+    "adapter that binds block_receipt_commitment, statement_commitment, and range_policy_commitment into outer public inputs",
     "local verifier handle for the resulting aggregated proof object",
     "fail-closed mutation tests for source manifest, slice chain, commitments, verifier-domain, and fake metrics",
 ]
@@ -118,6 +119,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("statement_commitment_drift", "aggregation_target_manifest"),
     ("input_commitment_drift", "aggregation_target_manifest"),
     ("output_commitment_drift", "aggregation_target_manifest"),
+    ("range_policy_commitment_drift", "aggregation_target_manifest"),
     ("slice_chain_commitment_drift", "aggregation_target_manifest"),
     ("evidence_manifest_commitment_drift", "aggregation_target_manifest"),
     ("nested_verifier_check_removed", "aggregation_target_manifest"),
@@ -137,6 +139,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("aggregation_target_public_input_claimed_without_proof", "proof_object_attempt"),
     ("block_receipt_public_input_claimed_without_proof", "proof_object_attempt"),
     ("statement_public_input_claimed_without_proof", "proof_object_attempt"),
+    ("range_policy_public_input_claimed_without_proof", "proof_object_attempt"),
     ("invented_aggregated_proof_artifact", "proof_object_attempt"),
     ("proof_size_metric_smuggled_before_proof", "proof_object_attempt"),
     ("verifier_time_metric_smuggled_before_proof", "proof_object_attempt"),
@@ -155,7 +158,7 @@ CANDIDATE_SURFACES = (
         "kind": "statement_bound_receipt",
         "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
         "expected_exists": True,
-        "expected_file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+        "expected_file_sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f",
         "classification": "GO_AGGREGATION_TARGET_ONLY",
         "reason": "binds the six d128 slice handles into one statement-bound receipt, but is not an outer proof object",
     },
@@ -164,7 +167,7 @@ CANDIDATE_SURFACES = (
         "kind": "backend_route_classification",
         "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
         "expected_exists": True,
-        "expected_file_sha256": "fcc0134ffafe6ca6ee9c70f53cad578f433e9617c2969be0b536b2fe0d8f105f",
+        "expected_file_sha256": "f670fea5f90af8c8e8d49776b2f4ba3588bfd16aa9aaeb7e899b87c6910586fe",
         "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
         "reason": "records the current full-block blocker; it does not provide a verifier-facing proof object",
     },
@@ -410,6 +413,11 @@ def _validate_checked_block_receipt_payload(payload: Any) -> dict[str, Any]:
         EXPECTED_OUTPUT_ACTIVATION_COMMITMENT,
         "d128 block output activation commitment",
     )
+    expect_equal(
+        receipt.get("range_policy_commitment"),
+        EXPECTED_RANGE_POLICY_COMMITMENT,
+        "d128 block range policy commitment",
+    )
     require_commitment(payload.get("slice_chain_commitment"), "d128 slice chain commitment")
     require_commitment(payload.get("evidence_manifest_commitment"), "d128 evidence manifest commitment")
     chain = require_list(payload.get("slice_chain"), "d128 slice chain")
@@ -510,6 +518,7 @@ def source_evidence_descriptor(source: dict[str, Any], path: pathlib.Path = BLOC
         "result": source["result"],
         "block_receipt_commitment": receipt["block_receipt_commitment"],
         "statement_commitment": receipt["statement_commitment"],
+        "range_policy_commitment": receipt["range_policy_commitment"],
     }
 
 
@@ -518,6 +527,7 @@ def block_receipt_public_inputs(source: dict[str, Any]) -> dict[str, Any]:
     return {
         "block_receipt_commitment": receipt["block_receipt_commitment"],
         "statement_commitment": receipt["statement_commitment"],
+        "range_policy_commitment": receipt["range_policy_commitment"],
         "slice_chain_commitment": source["slice_chain_commitment"],
         "evidence_manifest_commitment": source["evidence_manifest_commitment"],
         "input_activation_commitment": receipt["input_activation_commitment"],
@@ -594,6 +604,7 @@ def aggregation_target_manifest(source: dict[str, Any]) -> dict[str, Any]:
         "public_inputs": block_receipt_public_inputs(source),
         "block_receipt_commitment": receipt["block_receipt_commitment"],
         "statement_commitment": receipt["statement_commitment"],
+        "range_policy_commitment": receipt["range_policy_commitment"],
         "slice_chain_commitment": source["slice_chain_commitment"],
         "evidence_manifest_commitment": source["evidence_manifest_commitment"],
         "input_activation_commitment": receipt["input_activation_commitment"],
@@ -680,6 +691,7 @@ def proof_object_attempt() -> dict[str, Any]:
         "aggregation_target_commitment_bound_as_public_input": False,
         "block_receipt_commitment_bound_as_public_input": False,
         "statement_commitment_bound_as_public_input": False,
+        "range_policy_commitment_bound_as_public_input": False,
         "aggregated_proof_artifacts": [],
         "verifier_handles": [],
         "proof_metrics": {
@@ -726,6 +738,7 @@ def _build_payload_from_canonical_source(source: dict[str, Any]) -> dict[str, An
             "composition_mutations_rejected": summary["mutations_rejected"],
             "block_receipt_commitment": source["block_receipt"]["block_receipt_commitment"],
             "statement_commitment": source["block_receipt"]["statement_commitment"],
+            "range_policy_commitment": source["block_receipt"]["range_policy_commitment"],
             "aggregation_target_kind": TARGET_KIND,
             "aggregation_target_version": TARGET_VERSION,
             "blocked_before_metrics": True,
@@ -759,6 +772,7 @@ def _validate_source_descriptor(
             "result",
             "block_receipt_commitment",
             "statement_commitment",
+            "range_policy_commitment",
         },
         "source block receipt evidence",
     )
@@ -788,6 +802,11 @@ def _validate_source_descriptor(
         "source block receipt commitment",
     )
     expect_equal(descriptor.get("statement_commitment"), receipt["statement_commitment"], "source statement commitment")
+    expect_equal(
+        descriptor.get("range_policy_commitment"),
+        receipt["range_policy_commitment"],
+        "source range policy commitment",
+    )
     return source
 
 
@@ -798,6 +817,7 @@ def _validate_public_inputs(payload: dict[str, Any], source: dict[str, Any]) -> 
     for field in (
         "block_receipt_commitment",
         "statement_commitment",
+        "range_policy_commitment",
         "slice_chain_commitment",
         "evidence_manifest_commitment",
         "input_activation_commitment",
@@ -860,6 +880,7 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
             "aggregation_target_commitment_bound_as_public_input",
             "block_receipt_commitment_bound_as_public_input",
             "statement_commitment_bound_as_public_input",
+            "range_policy_commitment_bound_as_public_input",
             "aggregated_proof_artifacts",
             "verifier_handles",
             "proof_metrics",
@@ -877,6 +898,7 @@ def _validate_attempt(payload: dict[str, Any]) -> None:
         "aggregation_target_commitment_bound_as_public_input",
         "block_receipt_commitment_bound_as_public_input",
         "statement_commitment_bound_as_public_input",
+        "range_policy_commitment_bound_as_public_input",
     ):
         if attempt.get(field) is not False:
             raise D128AggregatedProofObjectFeasibilityError(f"{field} claimed without checked aggregated proof object")
@@ -997,6 +1019,7 @@ def _validate_common_payload(
         "composition_mutations_rejected": source_summary["mutations_rejected"],
         "block_receipt_commitment": source["block_receipt"]["block_receipt_commitment"],
         "statement_commitment": source["block_receipt"]["statement_commitment"],
+        "range_policy_commitment": source["block_receipt"]["range_policy_commitment"],
         "aggregation_target_kind": TARGET_KIND,
         "aggregation_target_version": TARGET_VERSION,
         "blocked_before_metrics": True,
@@ -1090,6 +1113,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "output_commitment_drift",
         "aggregation_target_manifest",
         lambda p: p["aggregation_target_manifest"].__setitem__("output_activation_commitment", "blake2b-256:" + "66" * 32),
+    )
+    add(
+        "range_policy_commitment_drift",
+        "aggregation_target_manifest",
+        lambda p: p["aggregation_target_manifest"].__setitem__("range_policy_commitment", "blake2b-256:" + "67" * 32),
     )
     add(
         "slice_chain_commitment_drift",
@@ -1194,6 +1222,11 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         "statement_public_input_claimed_without_proof",
         "proof_object_attempt",
         lambda p: p["proof_object_attempt"].__setitem__("statement_commitment_bound_as_public_input", True),
+    )
+    add(
+        "range_policy_public_input_claimed_without_proof",
+        "proof_object_attempt",
+        lambda p: p["proof_object_attempt"].__setitem__("range_policy_commitment_bound_as_public_input", True),
     )
     add(
         "invented_aggregated_proof_artifact",

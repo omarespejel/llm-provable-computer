@@ -39,9 +39,9 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(payload["result"], "GO")
         self.assertEqual(payload["summary"]["slice_count"], 6)
         self.assertEqual(payload["summary"]["total_checked_rows"], 197_504)
-        self.assertEqual(payload["case_count"], 20)
+        self.assertEqual(payload["case_count"], 21)
         self.assertTrue(payload["all_mutations_rejected"])
-        self.assertEqual(payload["summary"]["mutations_rejected"], 20)
+        self.assertEqual(payload["summary"]["mutations_rejected"], 21)
         self.assertEqual(
             payload["block_receipt"]["output_activation_commitment"],
             EXPECTED_OUTPUT_ACTIVATION_COMMITMENT,
@@ -52,12 +52,22 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         receipt = payload["block_receipt"]
         self.assertEqual(
             receipt["statement_commitment"],
-            "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+            "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
         )
         self.assertEqual(
             receipt["block_receipt_commitment"],
-            "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+            "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         )
+
+    def test_receipt_binds_checked_range_policy_commitment(self) -> None:
+        payload = self.fresh_payload()
+        expected = COMPOSITION.checked_range_policy_commitment()
+        self.assertEqual(
+            expected,
+            "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985",
+        )
+        self.assertEqual(payload["block_receipt"]["range_policy_commitment"], expected)
+        self.assertEqual(payload["summary"]["range_policy_commitment"], expected)
 
     def test_rejects_missing_reordered_and_duplicated_slice_chain(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
@@ -154,6 +164,8 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertIn("block receipt input_activation_commitment", cases["input_commitment_drift"]["error"])
         self.assertEqual(cases["output_commitment_drift"]["rejection_layer"], "block_receipt")
         self.assertIn("block receipt output_activation_commitment", cases["output_commitment_drift"]["error"])
+        self.assertEqual(cases["range_policy_commitment_drift"]["rejection_layer"], "block_receipt")
+        self.assertIn("block receipt range_policy_commitment", cases["range_policy_commitment_drift"]["error"])
 
     def test_rejects_non_claim_and_mutation_metric_drift(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}

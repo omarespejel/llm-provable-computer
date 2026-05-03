@@ -69,7 +69,7 @@ or verifier time, because the recursive/single-proof object does not exist.
 | Activation/SwiGLU proof roundtrip | locally constructed and verified by Rust tests |
 | Down-projection proof roundtrip | locally constructed and verified by Rust tests over `65,536` checked multiplication rows |
 | Source-bound residual-add proof roundtrip | locally constructed and verified by Rust tests |
-| Block receipt composition | `197,504` checked rows, `20 / 20` receipt mutations rejected |
+| Block receipt composition | `197,504` checked rows, `21 / 21` receipt mutations rejected |
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block proof metrics | blocked before aggregated proof object |
@@ -160,8 +160,9 @@ The gate now validates:
   commitment recomputation, and relabel rejection;
 - the d128 block receipt composition evidence before starting, including source
   file hashes, source payload hashes, six-slice ordering, inter-slice
-  commitment edges, block statement recomputation, block receipt recomputation,
-  and `20 / 20` receipt mutation rejection;
+  commitment edges, range-policy commitment recomputation, block statement
+  recomputation, block receipt recomputation, and `21 / 21` receipt mutation
+  rejection;
 - that the remaining expected d128 native modules and exports are still absent;
 - that the d64 modules remain hard-coded to d64 width/domain surfaces;
 - that the partial routes are GO without promoting them to a full-block proof;

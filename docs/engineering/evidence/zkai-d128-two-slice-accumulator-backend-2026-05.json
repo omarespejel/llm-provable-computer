@@ -1,6 +1,6 @@
 {
   "accumulator_artifact": {
-    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
     "accumulator_kind": "non-recursive-two-slice-verifier-accumulator",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "issue": 409,
@@ -10,7 +10,7 @@
       "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
       "issue": 409,
       "public_inputs": {
-        "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+        "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         "required_public_inputs": [
           "two_slice_target_commitment",
           "selected_slice_statement_commitments",
@@ -39,9 +39,9 @@
             "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
           }
         ],
-        "source_full_aggregation_target_commitment": "blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9",
-        "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
-        "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640"
+        "source_full_aggregation_target_commitment": "blake2b-256:5fb1cdb0eb67d0e233cc2c2cd388603090847596991ad6a6c7ba4a081b9d4d9b",
+        "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
+        "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
       },
       "selected_checked_rows": 256,
       "selected_slice_ids": [
@@ -51,7 +51,7 @@
       "two_slice_target_manifest": {
         "aggregation_target_kind": "d128-block-receipt-aggregated-proof-object-target",
         "aggregation_target_version": "zkai-d128-aggregated-proof-object-target-v1",
-        "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+        "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
         "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
         "ff_dim": 512,
         "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
@@ -109,8 +109,8 @@
           "rmsnorm_projection_bridge"
         ],
         "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
-        "source_full_aggregation_target_commitment": "blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9",
-        "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+        "source_full_aggregation_target_commitment": "blake2b-256:5fb1cdb0eb67d0e233cc2c2cd388603090847596991ad6a6c7ba4a081b9d4d9b",
+        "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
         "target_kind": "d128-two-slice-outer-proof-target",
         "target_version": "zkai-d128-two-slice-outer-proof-target-v1",
         "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
@@ -725,17 +725,17 @@
   "schema": "zkai-d128-two-slice-accumulator-backend-v1",
   "source_two_slice_target": {
     "decision": "NO_GO_D128_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
-    "file_sha256": "8ea47c5f1c30b5735954774946afe28633272fcf6dfaf0a3ec8d750bb6972645",
+    "file_sha256": "57528ad1826195a350d594556e62a6462d493c5f8bd6709a677fca65fd1e0052",
     "outer_proof_object_result": "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
     "path": "docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json",
-    "payload_sha256": "9d73c23e84f18c0b0a00b67c22b32e7514596c55fde7125a439efa682eba8e9b",
+    "payload_sha256": "6b13508fe2eb07ed350b0eeff6bc2689fd3fa11eccbf6b06027979126d75005c",
     "result": "BOUNDED_NO_GO",
     "schema": "zkai-d128-two-slice-outer-proof-object-spike-v1",
     "target_result": "GO_D128_TWO_SLICE_OUTER_PROOF_TARGET",
-    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640"
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
   },
   "summary": {
-    "accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
     "accumulator_status": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "go_criterion": "one verifier-facing accumulator object exists, a local verifier handle accepts it, and the accumulator binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes",
@@ -748,8 +748,8 @@
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
-    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
   },
   "validation_commands": [
     "python3 scripts/zkai_d128_two_slice_accumulator_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.tsv",
@@ -762,7 +762,7 @@
     "accepted": true,
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "preimage": {
-      "accepted_accumulator_commitment": "blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb",
+      "accepted_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
       "accepted_accumulator_kind": "non-recursive-two-slice-verifier-accumulator",
       "accepted_accumulator_schema": "zkai-d128-two-slice-verifier-accumulator-v1",
       "accepted_claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
@@ -794,7 +794,7 @@
           "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
         }
       ],
-      "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640",
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
       "verifier_steps": [
         "validate checked two-slice target evidence",
         "validate selected source slice evidence with slice-local validators",
@@ -803,6 +803,6 @@
       ]
     },
     "schema": "zkai-d128-two-slice-accumulator-verifier-handle-v1",
-    "verifier_handle_commitment": "blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633"
+    "verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131"
   }
 }

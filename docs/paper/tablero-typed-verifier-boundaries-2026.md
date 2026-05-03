@@ -933,12 +933,13 @@ and proof-system version. The route now has six local proof-backed slice
 handles: RMSNorm public rows, the RMSNorm-to-projection bridge, gate/value
 projection, activation/SwiGLU, down-projection, and source-bound residual-add.
 A composition gate binds those six slice artifacts into one d128 block receipt
-over `197504` checked rows and rejects `20 / 20` receipt mutations. A follow-up
-aggregated-proof-object feasibility gate classifies that receipt as a valid
-aggregation target, binds the block receipt commitment and statement commitment
-as the required future public-input contract, and rejects `37 / 37` promotion,
-relabeling, and fake-metric mutations. This is a GO for a statement-bound block
-receipt and aggregation target, and still a bounded NO-GO for aggregated proof
+over `197504` checked rows, binds the per-tensor `range_policy_commitment`, and
+rejects `21 / 21` receipt mutations. A follow-up aggregated-proof-object
+feasibility gate classifies that receipt as a valid aggregation target, binds
+the block receipt commitment, statement commitment, and range-policy commitment
+as the required future public-input contract, and rejects `39 / 39` promotion,
+relabeling, public-input, and fake-metric mutations. This is a GO for a
+statement-bound block receipt and aggregation target, and still a bounded NO-GO for aggregated proof
 size, verifier time, and proof-generation time, because the outer
 proof/accumulator backend and verifier handle do not exist yet. The receipt
 result is anchored to
@@ -958,14 +959,15 @@ as correct for weights and selected public rows, activation clamp bounds as
 correct for the lookup output, and signed-M31 or quotient/remainder policies as
 correct for wider intermediate tensors. That is receipt semantics, not
 performance evidence. It prevents the d64 fixture's accidental q8 fit from
-being promoted into a universal verifier rule.
+being promoted into a universal verifier rule, and the refreshed d128 receipt
+now rejects attempts to relabel the policy after receipt serialization.
 
 The smallest follow-up target is now checked separately. A two-slice outer
 proof-object spike projects only `rmsnorm_public_rows` and
 `rmsnorm_projection_bridge` from the full d128 target. Those two verifier
 checks form a valid `256`-row target with
 `two_slice_target_commitment =
-blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6`,
 and the gate rejects `40 / 40` source-drift, target-drift, selected-slice,
 fake-artifact, fake-public-input-binding, and metric-smuggling mutations. It
 records a bounded NO-GO for recursive/PCD proof-object existence: no executable
@@ -981,9 +983,9 @@ and
 The next issue `#409` follow-up fills the non-recursive accumulator branch for
 that same two-slice target. It builds a verifier-facing accumulator with
 accumulator commitment
-`blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+`blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d`
 and verifier-handle commitment
-`blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`.
+`blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131`.
 The accumulator validates the source two-slice target evidence, validates both
 selected source slice evidence files with their slice-local validators, and
 binds `two_slice_target_commitment`, the selected slice statement commitments,
@@ -1015,12 +1017,13 @@ The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all
 six checked slice handles and `197,504` checked rows. The accumulator commitment
 is
-`blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+`blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc`
 and the verifier-handle commitment is
-`blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`.
-It binds the block receipt commitment, statement commitment, slice-chain
-commitment, evidence-manifest commitment, every slice statement commitment, and
-every source evidence hash, rejecting `48 / 48` source, public-input,
+`blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4`.
+It binds the block receipt commitment, statement commitment, range-policy
+commitment, slice-chain commitment, evidence-manifest commitment, every slice
+statement commitment, and every source evidence hash, rejecting `52 / 52`
+source, public-input,
 accumulator-artifact, source-manifest, slice-transcript, verifier-transcript,
 verifier-domain, verifier-handle, recursive-claim, recursive-metric-smuggling,
 parser/schema, validation-command-drift, and non-claim-removal mutations. This

@@ -20,10 +20,10 @@ smallest useful target:
 | Selected slices | `rmsnorm_public_rows`, `rmsnorm_projection_bridge` |
 | Selected checked rows | `256` |
 | Target result | `GO_D128_TWO_SLICE_OUTER_PROOF_TARGET` |
-| Target commitment | `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640` |
-| Source full target commitment | `blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9` |
-| Block receipt commitment | `blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a` |
-| Statement commitment | `blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60` |
+| Target commitment | `blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6` |
+| Source full target commitment | `blake2b-256:5fb1cdb0eb67d0e233cc2c2cd388603090847596991ad6a6c7ba4a081b9d4d9b` |
+| Block receipt commitment | `blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea` |
+| Statement commitment | `blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c` |
 
 The target is intentionally smaller than the six-slice block receipt. It tests
 whether the aggregation blocker is caused by full-block size or by the absence

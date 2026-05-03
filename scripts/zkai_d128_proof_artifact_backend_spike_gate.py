@@ -56,9 +56,10 @@ ISSUE = 387
 TARGET_ID = "rmsnorm-swiglu-residual-d128-v1"
 TARGET_WIDTH = 128
 TARGET_FF_DIM = 512
-D128_BLOCK_RECEIPT_MUTATION_CASES = 20
-D128_BLOCK_STATEMENT_COMMITMENT = "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
-D128_BLOCK_RECEIPT_COMMITMENT = "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a"
+D128_BLOCK_RECEIPT_MUTATION_CASES = 21
+D128_BLOCK_STATEMENT_COMMITMENT = "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c"
+D128_BLOCK_RECEIPT_COMMITMENT = "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea"
+D128_BLOCK_RANGE_POLICY_COMMITMENT = "blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985"
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
@@ -1309,6 +1310,7 @@ def build_source_probe() -> dict[str, Any]:
             "mutations_rejected": block_summary["mutations_rejected"],
             "statement_commitment": block_receipt["statement_commitment"],
             "block_receipt_commitment": block_receipt["block_receipt_commitment"],
+            "range_policy_commitment": block_receipt["range_policy_commitment"],
             "output_activation_commitment": block_receipt["output_activation_commitment"],
             "non_claims": block_receipt_evidence["non_claims"],
         },
@@ -1603,6 +1605,9 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "evidence": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
             "block_receipt_commitment": source_probe["d128_block_receipt_composition"][
                 "block_receipt_commitment"
+            ],
+            "range_policy_commitment": source_probe["d128_block_receipt_composition"][
+                "range_policy_commitment"
             ],
         },
         {
@@ -3052,6 +3057,15 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         D128_BLOCK_RECEIPT_COMMITMENT,
         "d128 block receipt commitment",
     )
+    range_policy_commitment = require_commitment(
+        block_receipt_probe.get("range_policy_commitment"),
+        "d128 block receipt range policy commitment",
+    )
+    expect_equal(
+        range_policy_commitment,
+        D128_BLOCK_RANGE_POLICY_COMMITMENT,
+        "d128 block receipt range policy commitment",
+    )
     expect_equal(
         block_receipt_probe.get("output_activation_commitment"),
         residual_add_probe.get("output_activation_commitment"),
@@ -3266,6 +3280,11 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
         route_by_name["d128_block_receipt_composition"].get("block_receipt_commitment"),
         source_probe["d128_block_receipt_composition"]["block_receipt_commitment"],
         "d128 block receipt route commitment",
+    )
+    expect_equal(
+        route_by_name["d128_block_receipt_composition"].get("range_policy_commitment"),
+        source_probe["d128_block_receipt_composition"]["range_policy_commitment"],
+        "d128 block receipt route range policy commitment",
     )
     for raw_route in routes:
         route_obj = require_object(raw_route, "backend route")

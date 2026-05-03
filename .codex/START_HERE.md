@@ -60,7 +60,10 @@ This repository currently has three live lanes.
    - The d128 range-policy discipline gate records that the d64 fixture happens
      to fit the old `+/-1024` q8 semantic bound, but valid d128 projection,
      hidden, residual, and output tensors exceed it; per-tensor range policy is
-     now checked as statement data. See
+     now checked as statement data and bound into the d128 block receipt via
+     `range_policy_commitment`
+     `blake2b-256:eaf759676311c9a4edf62be33e5f6118c8c01be0db625cec9bc87294c1e24985`.
+     See
      `docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md`.
    - The d128 block receipt composition gate now binds the six checked slice
      handles into one statement-bound receipt over `197,504` checked rows; see
@@ -74,15 +77,15 @@ This repository currently has three live lanes.
      the smallest useful target: `rmsnorm_public_rows` plus
      `rmsnorm_projection_bridge` form a valid `256`-row two-slice target with
      commitment
-     `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+     `blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6`,
      while recording that no executable recursive/PCD proof backend exists for
      even that target; see
      `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`.
    - The d128 two-slice accumulator backend gate now turns that target into a
      real verifier-facing non-recursive accumulator with accumulator commitment
-     `blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
+     `blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d`
      and verifier-handle commitment
-     `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`;
+     `blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131`;
      it rejects `37 / 37` binding/relabeling/recursive-claim mutations. This
      is an accumulator-integrity GO, not recursive/PCD proof compression; see
      `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
@@ -98,19 +101,20 @@ This repository currently has three live lanes.
    - The d128 full-block accumulator backend gate now turns the six-slice
      block receipt into a real verifier-facing non-recursive accumulator over
      `197,504` checked rows, with accumulator commitment
-     `blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+     `blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc`
      and verifier-handle commitment
-     `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`;
-     it rejects `48 / 48` source, public-input, accumulator-artifact,
+     `blake2b-256:81c56504e0b90126f9a9d53f190ba571bc31e4659166a45dee75204d385020e4`;
+     it rejects `52 / 52` source, public-input, accumulator-artifact,
      source-manifest, slice-transcript, verifier-transcript, verifier-handle,
      verifier-domain, recursive-claim, recursive-metric-smuggling,
      parser/schema, validation-command-drift, and non-claim-removal mutations.
      This is accumulator-integrity GO only; see
      `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
-   - The d128 lane now has receipt-composition, two-slice accumulator, and
-     full-block accumulator GO results, plus a checked issue `#411` recursive
-     backend no-go. Recursion, one compressed cryptographic verifier object,
-     and proof-size/verifier-time/proof-generation-time metrics remain blocked.
+   - The d128 lane now has receipt-composition, range-policy-bound full-block
+     public inputs, two-slice accumulator, and full-block accumulator GO
+     results, plus a checked issue `#411` recursive backend no-go. Recursion,
+     one compressed cryptographic verifier object, and proof-size/verifier-time/
+     proof-generation-time metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
