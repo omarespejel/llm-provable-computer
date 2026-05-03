@@ -23,6 +23,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.payload = GATE.build_gate_result()
+        cls.block_receipt_evidence = GATE.load_json(GATE.D128_BLOCK_EVIDENCE)
 
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
@@ -207,7 +208,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(probe["d128_block_receipt_composition"]["slice_count"], 6)
         self.assertEqual(probe["d128_block_receipt_composition"]["total_checked_rows"], 197_504)
-        self.assertEqual(probe["d128_block_receipt_composition"]["mutation_cases"], 20)
+        self.assertEqual(
+            probe["d128_block_receipt_composition"]["mutation_cases"],
+            self.block_receipt_evidence["case_count"],
+        )
         self.assertEqual(
             probe["d128_block_receipt_composition"]["output_activation_commitment"],
             probe["d128_residual_add"]["output_activation_commitment"],
@@ -400,6 +404,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(routes["d128_block_receipt_composition"]["status"], "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE")
         self.assertTrue(routes["d128_block_receipt_composition"]["receipt_artifact_exists"])
         self.assertFalse(routes["d128_block_receipt_composition"]["proof_artifact_exists"])
+        self.assertEqual(
+            routes["d128_block_receipt_composition"]["block_receipt_commitment"],
+            self.block_receipt_evidence["block_receipt"]["block_receipt_commitment"],
+        )
         self.assertEqual(routes["d128_metrics_and_relabeling_suite"]["status"], "NO_GO_BLOCKED_BEFORE_PROOF_OBJECT")
         for name, row in routes.items():
             self.assertIsNone(row["proof_size_bytes"], name)
@@ -434,7 +442,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_residual_add_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_residual_add_checked_in_proof_artifact_exists"])
         self.assertTrue(status["d128_block_receipt_composition_exists"])
-        self.assertEqual(status["d128_block_receipt_composition_mutation_cases"], 20)
+        self.assertEqual(
+            status["d128_block_receipt_composition_mutation_cases"],
+            self.block_receipt_evidence["case_count"],
+        )
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
@@ -768,6 +779,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_block_receipt_composition_route_receipt_flag_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(
+            cases["d128_block_receipt_composition_route_proof_artifact_drift"]["rejection_layer"],
             "backend_routes",
         )
         self.assertEqual(

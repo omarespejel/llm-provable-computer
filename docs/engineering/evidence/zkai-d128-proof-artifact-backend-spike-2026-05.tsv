@@ -1,6 +1,6 @@
 route	status	target_width	target_ff_dim	proof_artifact_exists	verifier_handle_exists	proof_size_bytes	verifier_time_ms	blocker
 existing_d64_slice_chain	GO_ANCHOR_ONLY	64	256	True	True			d64 slice proofs exist, but this is not the d128 target
-direct_d128_native_modules	NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, bridge, gate/value, activation, down-projection, and source-bound residual-add native proofs exist, but composition and full block verifier do not
+direct_d128_native_modules	NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING	128	512	False	False			d128 RMSNorm public-row, bridge, gate/value, activation, down-projection, and source-bound residual-add native proofs exist, and a statement-bound receipt composition gate exists, but no aggregated/native full-block proof object exists
 direct_d128_rmsnorm_public_row_air	GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY	128		True	True			RMSNorm public-row slice only; not projection, activation, down-projection, residual, bridge, or full block
 direct_d128_rmsnorm_to_projection_bridge_air	GO_D128_RMSNORM_TO_PROJECTION_BRIDGE_ONLY	128		True	True			RMSNorm-to-projection bridge slice only; not gate/value projection, activation, down-projection, residual, or full block
 direct_d128_gate_value_projection_air	GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY	128	512	True	True			gate/value projection slice only; not activation, down-projection, residual, composition, or full block
@@ -105,6 +105,7 @@ full_block_parameterized_route_promoted	backend_routes	False	True	backend_routes
 d128_block_receipt_composition_route_status_drift	backend_routes	False	True	backend_routes	d128 block receipt route status mismatch
 d128_block_receipt_composition_route_commitment_drift	backend_routes	False	True	backend_routes	d128 block receipt route commitment mismatch
 d128_block_receipt_composition_route_receipt_flag_drift	backend_routes	False	True	backend_routes	d128 receipt artifact mismatch
+d128_block_receipt_composition_route_proof_artifact_drift	backend_routes	False	True	backend_routes	d128 receipt proof artifact mismatch
 d128_block_receipt_composition_mutations_rejected_drift	source_probe	False	True	source_probe	d128 block receipt mutations rejected mismatch
 d128_block_receipt_composition_synchronized_commitment_drift	source_probe	False	True	source_probe	d128 block receipt statement commitment mismatch
 d128_block_receipt_composition_evidence_descriptor_drift	source_probe	False	True	source_probe	d128 block receipt evidence descriptor mismatch
