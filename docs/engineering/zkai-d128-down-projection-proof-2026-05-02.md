@@ -34,7 +34,7 @@ multiplication rows, and emits `residual_delta_commitment`.
 | Statement commitment | `blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599` |
 | Public-instance commitment | `blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1` |
 | Rust proof tests | `23` passed |
-| Python input tests | `27` passed |
+| Python input tests | `29` passed |
 
 ## Boundary
 
@@ -86,6 +86,21 @@ residual deltas as signed-M31 bounded values, while keeping down weights under
 the q8 semantic bound. This is intentional. Applying the old q8 activation
 bound here would reject the real d128 activation evidence rather than harden the
 proof.
+
+Tensor-specific classification for the current d128 receipt chain:
+
+| Tensor class | Bound / numeric domain | Reason |
+| --- | --- | --- |
+| normalized input rows | signed-M31 | RMS-normalized values are statement values, not q8 weights |
+| projection-input rows | signed-M31 | bridge output inherits normalized-row range |
+| gate/value projection outputs | signed-M31 | projection accumulators can exceed the old q8 semantic range |
+| activation lookup table values | bounded table domain | checked by the activation/SwiGLU lookup-table surface |
+| activation/SwiGLU hidden activations | signed-M31 | checked evidence ranges from `-99510` to `112680` |
+| down-projection weights | q8 semantic bound `+/-1024` | deterministic synthetic weights are fixed-point q8 parameters |
+| down-projection products | signed-M31 | product rows bind hidden value times q8 weight |
+| residual-delta quotients | signed-M31 | quotient after division by `512`; checked evidence ranges from `-15589` to `14697` |
+| residual-delta remainders | integer range `[0,512)` | carries exact division semantics for the next slice |
+| final output activation | not emitted by this slice | blocked until native residual/composition exists |
 
 The emitted residual-delta boundary is exact, not rounded: it binds the quotient
 vector, the remainder vector, and the fixed divisor `512`. Follow-up issue

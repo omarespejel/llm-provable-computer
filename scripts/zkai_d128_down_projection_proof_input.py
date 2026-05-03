@@ -61,7 +61,9 @@ PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:ee69217168238b20e0b46a722554b42
 PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1"
 STATEMENT_COMMITMENT = "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599"
 RESIDUAL_DELTA_COMMITMENT = "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2"
+RESIDUAL_DELTA_REMAINDER_SHA256 = "a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d"
 DOWN_PROJECTION_MUL_ROW_COMMITMENT = "blake2b-256:76c1e5a35ffbc0c9b390f73d3491d973e85180421ac6168c0cb0e18a91a2ca68"
+RANGE_POLICY = "signed-M31 hidden activations and residual deltas; exact residual delta quotient/remainder binding; q8 down weights"
 
 NEXT_BACKEND_STEP = "bind d128 residual-add rows to residual_delta_commitment and output_activation_commitment"
 
@@ -124,12 +126,44 @@ class D128DownProjectionInputError(ValueError):
     pass
 
 
+def _read_repo_regular_file_bytes(path: pathlib.Path) -> tuple[bytes, pathlib.Path]:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise D128DownProjectionInputError(f"module path must not be a symlink: {path}")
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise D128DownProjectionInputError(f"module path escapes repository: {path}") from err
+    try:
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise D128DownProjectionInputError(f"module path is not a regular file: {path}")
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise D128DownProjectionInputError(f"module path is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise D128DownProjectionInputError(f"module path changed while reading: {path}")
+            with os.fdopen(fd, "rb") as handle:
+                fd = None
+                return handle.read(), resolved
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise D128DownProjectionInputError(f"failed to load module path {path}: {err}") from err
+
+
 def _load_module(path: pathlib.Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
+    source, resolved = _read_repo_regular_file_bytes(path)
+    spec = importlib.util.spec_from_loader(module_name, loader=None, origin=str(resolved))
+    if spec is None:
         raise D128DownProjectionInputError(f"failed to load {module_name} from {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module.__file__ = str(resolved)
+    exec(compile(source, str(resolved), "exec"), module.__dict__)
     return module
 
 

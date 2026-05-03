@@ -222,6 +222,22 @@ class ZkAiD128DownProjectionProofInputTests(unittest.TestCase):
             with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "failed to load"):
                 DOWN_PROJECTION.load_source(source_path)
 
+    def test_load_module_rejects_symlink_helper_path(self) -> None:
+        with tempfile.TemporaryDirectory(dir=self.target_dir) as tmp:
+            helper_path = pathlib.Path(tmp) / "helper.py"
+            link_path = pathlib.Path(tmp) / "helper-link.py"
+            helper_path.write_text("VALUE = 1\n", encoding="utf-8")
+            link_path.symlink_to(helper_path)
+            with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "symlink"):
+                DOWN_PROJECTION._load_module(link_path, "tampered_helper")
+
+    def test_load_module_rejects_path_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            helper_path = pathlib.Path(tmp) / "helper.py"
+            helper_path.write_text("VALUE = 1\n", encoding="utf-8")
+            with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "escapes repository"):
+                DOWN_PROJECTION._load_module(helper_path, "escaped_helper")
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=self.target_dir) as tmp:

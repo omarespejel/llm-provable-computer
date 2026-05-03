@@ -170,6 +170,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             probe["d128_down_projection"]["residual_delta_remainder_sha256"],
             GATE.sha256_hex_json(down_evidence["residual_delta_remainder_q8"]),
         )
+        self.assertEqual(probe["d128_down_projection"]["range_policy"], GATE.D128_DOWN_RANGE_POLICY)
         self.assertFalse(probe["d128_down_projection"]["residual_delta_relabels_full_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
