@@ -1164,7 +1164,7 @@
       "error": "d128 receipt proof artifact mismatch",
       "index": 91,
       "mutated_accepted": false,
-      "mutation": "d128_block_receipt_composition_route_proof_artifact_drift",
+      "mutation": "d128_block_receipt_composition_proof_artifact_exists_drift",
       "rejected": true,
       "rejection_layer": "backend_routes",
       "surface": "backend_routes"
@@ -1374,7 +1374,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING",
-  "gate_commitment": "blake2b-256:c6dd92665e2cbcd8e2b05de5d6f6ba6cce9a031d748966584497bca2d7df3fc8",
+  "gate_commitment": "blake2b-256:d335d7aa106db61e04237f504d8850596beca65a66fa020794f17442ce5e63d0",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1834,7 +1834,7 @@
     },
     {
       "index": 91,
-      "mutation": "d128_block_receipt_composition_route_proof_artifact_drift",
+      "mutation": "d128_block_receipt_composition_proof_artifact_exists_drift",
       "surface": "backend_routes"
     },
     {

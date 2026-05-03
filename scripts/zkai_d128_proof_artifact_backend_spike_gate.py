@@ -439,7 +439,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_block_receipt_composition_route_status_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
     ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
-    ("d128_block_receipt_composition_route_proof_artifact_drift", "backend_routes"),
+    ("d128_block_receipt_composition_proof_artifact_exists_drift", "backend_routes"),
     ("d128_block_receipt_composition_mutations_rejected_drift", "source_probe"),
     ("d128_block_receipt_composition_synchronized_commitment_drift", "source_probe"),
     ("d128_block_receipt_composition_evidence_descriptor_drift", "source_probe"),
@@ -2417,7 +2417,7 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         route["proof_artifact_exists"] = True
 
     add(
-        "d128_block_receipt_composition_route_proof_artifact_drift",
+        "d128_block_receipt_composition_proof_artifact_exists_drift",
         "backend_routes",
         drift_d128_block_receipt_proof_artifact_flag,
     )
