@@ -594,9 +594,9 @@ ERROR_LAYER_PATTERNS = (
     (re.compile(r"\bsource_evidence_manifest\b"), "source_evidence_manifest"),
     (re.compile(r"\bvalidation_commands\b|\bvalidation commands\b"), "validation_commands"),
     (re.compile(r"\brange_policy_commitment\b"), "range_policy_commitment"),
+    (re.compile(r"\bsummary\b"), "summary"),
     (re.compile(r"\bkey mismatch\b|\bextra="), "parser_or_schema"),
     (re.compile(r"\btensor_policies\b"), "range_policy"),
-    (re.compile(r"\bsummary\b"), "summary"),
     (re.compile(r"\brange\b|\bpolicy\b"), "range_policy"),
 )
 
