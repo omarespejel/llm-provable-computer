@@ -540,6 +540,7 @@ The d128 route now has six proof-backed slice handles plus a composition gate:
 - `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv`
 - `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
 - `docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.tsv`
 - `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`
 - `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.tsv`
@@ -595,8 +596,8 @@ and verifier-handle commitment
 The accumulator validates the source two-slice target evidence, validates both
 selected source slice evidence files with their slice-local validators, and
 binds the target commitment, selected statement commitments, and selected
-source evidence hashes. It rejects `36 / 36` binding, relabeling,
-verifier-handle, recursive-claim, and recursive-metric-smuggling mutations. The
+source evidence hashes. It rejects `37 / 37` binding, relabeling,
+verifier-domain, verifier-handle, recursive-claim, and recursive-metric-smuggling mutations. The
 claim boundary is explicit:
 `NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF`.
 

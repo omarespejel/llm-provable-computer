@@ -118,6 +118,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("source_statement_commitment_drift", "selected_source_evidence"),
     ("source_public_instance_commitment_drift", "selected_source_evidence"),
     ("source_target_commitment_drift", "selected_source_evidence"),
+    ("verifier_domain_drift", "verifier_transcript"),
     ("validator_name_drift", "verifier_transcript"),
     ("validator_result_false", "verifier_transcript"),
     ("verifier_handle_commitment_drift", "verifier_handle"),
@@ -340,8 +341,10 @@ def _verify_check_against_source(check: dict[str, Any], source: dict[str, Any], 
         f"{slice_id} proof-native parameters",
     )
     expect_equal(source.get("row_count"), check.get("row_count"), f"{slice_id} row count")
-    expect_equal(file_sha256(path), check.get("source_file_sha256"), f"{slice_id} source file hash")
-    expect_equal(sha256_hex_json(source), check.get("source_payload_sha256"), f"{slice_id} source payload hash")
+    source_file_hash = file_sha256(path)
+    source_payload_hash = sha256_hex_json(source)
+    expect_equal(source_file_hash, check.get("source_file_sha256"), f"{slice_id} source file hash")
+    expect_equal(source_payload_hash, check.get("source_payload_sha256"), f"{slice_id} source payload hash")
     for field, expected in require_object(check.get("source_commitments"), f"{slice_id} source commitments").items():
         actual = source.get(field)
         if actual != expected and source.get(f"source_{field}") == expected:
@@ -361,9 +364,15 @@ def _verify_check_against_source(check: dict[str, Any], source: dict[str, Any], 
         "validator_script": relative_path(SLICE_VALIDATOR_SCRIPTS[slice_id]),
         "verified": True,
         "row_count": source["row_count"],
-        "statement_commitment": source["statement_commitment"],
-        "public_instance_commitment": source["public_instance_commitment"],
-        "proof_native_parameter_commitment": source["proof_native_parameter_commitment"],
+        "statement_commitment": require_commitment(source.get("statement_commitment"), f"{slice_id} statement"),
+        "public_instance_commitment": require_commitment(
+            source.get("public_instance_commitment"),
+            f"{slice_id} public instance",
+        ),
+        "proof_native_parameter_commitment": require_commitment(
+            source.get("proof_native_parameter_commitment"),
+            f"{slice_id} proof-native parameters",
+        ),
         "source_commitments": copy.deepcopy(check["source_commitments"]),
         "target_commitments": copy.deepcopy(check["target_commitments"]),
     }
@@ -407,10 +416,33 @@ def _selected_source_evidence_hashes(transcript: list[dict[str, Any]]) -> list[d
 
 
 def accumulator_preimage(source: dict[str, Any], transcript: list[dict[str, Any]]) -> dict[str, Any]:
-    public_inputs = copy.deepcopy(source["outer_public_input_contract"])
-    expect_equal(public_inputs["two_slice_target_commitment"], source["two_slice_target_commitment"], "public target")
-    expect_equal(public_inputs["selected_slice_statement_commitments"], _selected_statement_commitments(transcript), "public statements")
-    expect_equal(public_inputs["selected_source_evidence_hashes"], _selected_source_evidence_hashes(transcript), "public source hashes")
+    public_inputs = copy.deepcopy(
+        require_object(source.get("outer_public_input_contract"), "outer public input contract")
+    )
+    expect_equal(
+        require_list(public_inputs.get("required_public_inputs"), "outer public input required public inputs"),
+        [
+            "two_slice_target_commitment",
+            "selected_slice_statement_commitments",
+            "selected_source_evidence_hashes",
+        ],
+        "outer public input required public inputs",
+    )
+    expect_equal(
+        require_commitment(public_inputs.get("two_slice_target_commitment"), "outer public input target"),
+        require_commitment(source.get("two_slice_target_commitment"), "source two-slice target commitment"),
+        "public target",
+    )
+    expect_equal(
+        require_list(public_inputs.get("selected_slice_statement_commitments"), "outer public input statements"),
+        _selected_statement_commitments(transcript),
+        "public statements",
+    )
+    expect_equal(
+        require_list(public_inputs.get("selected_source_evidence_hashes"), "outer public input source hashes"),
+        _selected_source_evidence_hashes(transcript),
+        "public source hashes",
+    )
     return {
         "accumulator_schema": ACCUMULATOR_SCHEMA,
         "accumulator_kind": ACCUMULATOR_KIND,
@@ -662,7 +694,28 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
     expect_equal(tuple(pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
     expect_equal(payload.get("case_count"), len(cases), "case_count")
     expect_equal(payload.get("all_mutations_rejected"), all(case["rejected"] for case in cases), "all_mutations_rejected")
+    expected_by_pair = {
+        (case["mutation"], case["surface"]): case
+        for case in mutation_cases(_draft_payload_for_case_replay(payload))
+    }
+    for index, raw_case in enumerate(cases):
+        case = require_object(raw_case, f"mutation case {index}")
+        expected = expected_by_pair.get((case["mutation"], case["surface"]))
+        if expected is None:
+            raise D128TwoSliceAccumulatorBackendError(f"missing recomputed mutation case {index}")
+        for column in TSV_COLUMNS:
+            expect_equal(case[column], expected[column], f"mutation case {index} {column}")
     return len(cases), rejected
+
+
+def _draft_payload_for_case_replay(payload: dict[str, Any]) -> dict[str, Any]:
+    draft = copy.deepcopy(payload)
+    for field in ("mutation_inventory", "cases", "case_count", "all_mutations_rejected"):
+        draft.pop(field, None)
+    summary = require_object(draft.get("summary"), "summary")
+    summary.pop("mutation_cases", None)
+    summary.pop("mutations_rejected", None)
+    return draft
 
 
 def validate_payload(payload: Any) -> None:
@@ -722,6 +775,7 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("source_statement_commitment_drift", "selected_source_evidence", lambda p: p["accumulator_artifact"]["preimage"]["verifier_transcript"][0].__setitem__("statement_commitment", "blake2b-256:" + "aa" * 32))
     add("source_public_instance_commitment_drift", "selected_source_evidence", lambda p: p["accumulator_artifact"]["preimage"]["verifier_transcript"][0].__setitem__("public_instance_commitment", "blake2b-256:" + "bb" * 32))
     add("source_target_commitment_drift", "selected_source_evidence", lambda p: p["accumulator_artifact"]["preimage"]["verifier_transcript"][1]["target_commitments"].__setitem__("projection_input_row_commitment", "blake2b-256:" + "cc" * 32))
+    add("verifier_domain_drift", "verifier_transcript", lambda p: p["accumulator_artifact"]["preimage"]["two_slice_target_manifest"].__setitem__("verifier_domain", "ptvm:zkai:d128:tampered-verifier-domain:v0"))
     add("validator_name_drift", "verifier_transcript", lambda p: p["accumulator_artifact"]["preimage"]["verifier_transcript"][0].__setitem__("validator", "wrong_validator"))
     add("validator_result_false", "verifier_transcript", lambda p: p["accumulator_artifact"]["preimage"]["verifier_transcript"][0].__setitem__("verified", False))
     add("verifier_handle_commitment_drift", "verifier_handle", lambda p: p["verifier_handle"].__setitem__("verifier_handle_commitment", "blake2b-256:" + "dd" * 32))

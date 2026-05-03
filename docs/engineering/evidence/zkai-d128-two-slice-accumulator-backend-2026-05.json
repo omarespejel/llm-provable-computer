@@ -170,7 +170,7 @@
   },
   "accumulator_result": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
   "all_mutations_rejected": true,
-  "case_count": 36,
+  "case_count": 37,
   "cases": [
     {
       "baseline_result": "GO",
@@ -342,6 +342,15 @@
       "rejected": true,
       "rejection_layer": "accumulator_artifact",
       "surface": "selected_source_evidence"
+    },
+    {
+      "baseline_result": "GO",
+      "error": "accumulator artifact mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_drift",
+      "rejected": true,
+      "rejection_layer": "accumulator_artifact",
+      "surface": "verifier_transcript"
     },
     {
       "baseline_result": "GO",
@@ -598,86 +607,91 @@
     },
     {
       "index": 19,
-      "mutation": "validator_name_drift",
+      "mutation": "verifier_domain_drift",
       "surface": "verifier_transcript"
     },
     {
       "index": 20,
-      "mutation": "validator_result_false",
+      "mutation": "validator_name_drift",
       "surface": "verifier_transcript"
     },
     {
       "index": 21,
+      "mutation": "validator_result_false",
+      "surface": "verifier_transcript"
+    },
+    {
+      "index": 22,
       "mutation": "verifier_handle_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 22,
+      "index": 23,
       "mutation": "verifier_handle_claim_boundary_changed_to_recursive",
       "surface": "verifier_handle"
     },
     {
-      "index": 23,
+      "index": 24,
       "mutation": "verifier_handle_target_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 24,
+      "index": 25,
       "mutation": "verifier_handle_accumulator_commitment_drift",
       "surface": "verifier_handle"
     },
     {
-      "index": 25,
+      "index": 26,
       "mutation": "verifier_handle_missing_required_public_input",
       "surface": "verifier_handle"
     },
     {
-      "index": 26,
+      "index": 27,
       "mutation": "recursive_outer_proof_claimed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 27,
+      "index": 28,
       "mutation": "pcd_outer_proof_claimed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 28,
+      "index": 29,
       "mutation": "recursive_proof_metric_smuggled",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 29,
+      "index": 30,
       "mutation": "recursive_blocker_removed",
       "surface": "recursive_or_pcd_status"
     },
     {
-      "index": 30,
+      "index": 31,
       "mutation": "decision_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 31,
+      "index": 32,
       "mutation": "result_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 32,
+      "index": 33,
       "mutation": "accumulator_result_changed_to_no_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 33,
+      "index": 34,
       "mutation": "recursive_result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 34,
+      "index": 35,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 35,
+      "index": 36,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     }
@@ -725,8 +739,8 @@
     "accumulator_status": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR",
     "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
     "go_criterion": "one verifier-facing accumulator object exists, a local verifier handle accepts it, and the accumulator binds two_slice_target_commitment, selected slice statement commitments, and selected source evidence hashes",
-    "mutation_cases": 36,
-    "mutations_rejected": 36,
+    "mutation_cases": 37,
+    "mutations_rejected": 37,
     "recursive_blocker": "no executable recursive/PCD outer proof backend currently proves the two selected d128 slice-verifier checks inside one cryptographic outer proof",
     "recursive_or_pcd_status": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING",
     "selected_checked_rows": 256,

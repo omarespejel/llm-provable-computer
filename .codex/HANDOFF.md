@@ -149,7 +149,7 @@ Tablero boundary.
   `blake2b-256:ca123db73913c19fbe4b844982c720890ade41a31aa65ef0ac867129ac8c08fb`
   and verifier-handle commitment
   `blake2b-256:4bfb415af949b90e477c406036795730cf04dc1ce4852db392391dcc3548a633`;
-  it rejects `36 / 36` binding, relabeling, verifier-handle, and
+  it rejects `37 / 37` binding, relabeling, verifier-handle, and
   recursive-claim mutations. This is accumulator integrity only, not recursion;
   see `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus two-slice accumulator GO only: recursion,
