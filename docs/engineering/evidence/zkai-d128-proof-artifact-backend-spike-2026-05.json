@@ -998,15 +998,15 @@
       {
         "evidence": {
           "decision": "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF",
-          "file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+          "file_sha256": "9eabe95cb1daa28f1b3791dd1c0e1438d128a16d63d6648ab441bd9d15a82431",
           "path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
-          "payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7",
+          "payload_sha256": "db9bdf7667fe59b46936b0d84d170d9e24445073dc6ff1a13424f7915effd9d5",
           "result": null,
-          "schema": "zkai-d64-gate-value-projection-air-proof-input-v1"
+          "schema": "zkai-d64-gate-value-projection-air-proof-input-v2"
         },
         "module": {
           "exists": true,
-          "file_sha256": "baa70ad8c741bae962031677d80bcfe51fcf597ce5301775f6043713d722ac42",
+          "file_sha256": "829d47cd5e301a76fcd867155f994ab50bc9012de69b62ff96ceb150a148d189",
           "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
         },
         "proof_version": "stwo-d64-gate-value-projection-air-proof-v1",
@@ -1036,15 +1036,15 @@
       {
         "evidence": {
           "decision": "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF",
-          "file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+          "file_sha256": "7a78f8410fcf209ffbc9dcb41251f33c785a4fdcd84394349ad3da170bd33355",
           "path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
-          "payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc",
+          "payload_sha256": "e27e3e9f127ab7ecff24b67d6068a27fd347d1aaa9d5bb50a2eae401ec582dc8",
           "result": null,
-          "schema": "zkai-d64-down-projection-air-proof-input-v1"
+          "schema": "zkai-d64-down-projection-air-proof-input-v2"
         },
         "module": {
           "exists": true,
-          "file_sha256": "163f3b2c62be8256c7005789bb5e77805836320183c4f04a348ab0e4c45a086f",
+          "file_sha256": "f95ef6744487ba07c0ec7356939c60899a11c3e17bf48acc0178c4284b4db934",
           "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
         },
         "proof_version": "stwo-d64-down-projection-air-proof-v1",
@@ -1074,9 +1074,9 @@
     ],
     "source": {
       "decision": "GO_D64_BLOCK_RECEIPT_COMPOSITION_GATE",
-      "file_sha256": "8e924e15535a4f5a57660fed6ea3a11cf8b1ae123f6d05723230416100659206",
+      "file_sha256": "a70c61a9724fb269d054f94f39f5b59e6cb7091c35782f6f53f94f3874e2ec13",
       "path": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
-      "payload_sha256": "ec98a1fd52bf344b35d586c47608ab80a0b8a771e8c5d7b3a017cc5e564dc599",
+      "payload_sha256": "0a04a2ee2adf7cf557b2de889b3fe7ec3b7ce22d4b57082e239bdc07fc3f452e",
       "result": "GO",
       "schema": "zkai-d64-block-receipt-composition-gate-v1"
     },
@@ -1084,7 +1084,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:8e8635c27a7d470e69cf6710241e1a64bc46f698895745106c11bec51822e903",
+  "gate_commitment": "blake2b-256:b21ff7f43ef9e445ae5a539b0fbe9857faffdb051fddbe70666b36123cfe05d9",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1780,15 +1780,15 @@
       {
         "evidence": {
           "decision": "GO_INPUT_FOR_D64_GATE_VALUE_PROJECTION_AIR_PROOF",
-          "file_sha256": "69a2f78a1aa181a589fb5694c34faf3a2c0f784f73e3d07441e2a16368722755",
+          "file_sha256": "9eabe95cb1daa28f1b3791dd1c0e1438d128a16d63d6648ab441bd9d15a82431",
           "path": "docs/engineering/evidence/zkai-d64-gate-value-projection-proof-2026-05.json",
-          "payload_sha256": "8597373e50dce1f2590179d4eb189add3917d54d7cbf309916193198e7c02ce7",
+          "payload_sha256": "db9bdf7667fe59b46936b0d84d170d9e24445073dc6ff1a13424f7915effd9d5",
           "result": null,
-          "schema": "zkai-d64-gate-value-projection-air-proof-input-v1"
+          "schema": "zkai-d64-gate-value-projection-air-proof-input-v2"
         },
         "module": {
           "exists": true,
-          "file_sha256": "baa70ad8c741bae962031677d80bcfe51fcf597ce5301775f6043713d722ac42",
+          "file_sha256": "829d47cd5e301a76fcd867155f994ab50bc9012de69b62ff96ceb150a148d189",
           "path": "src/stwo_backend/d64_native_gate_value_projection_proof.rs"
         },
         "proof_version": "stwo-d64-gate-value-projection-air-proof-v1",
@@ -1818,15 +1818,15 @@
       {
         "evidence": {
           "decision": "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF",
-          "file_sha256": "547ace4fdee4b773b8559c03cc2ab33b8d43aed885befad84d152a8da205f995",
+          "file_sha256": "7a78f8410fcf209ffbc9dcb41251f33c785a4fdcd84394349ad3da170bd33355",
           "path": "docs/engineering/evidence/zkai-d64-down-projection-proof-2026-05.json",
-          "payload_sha256": "29011a2c09fcc2131ce0aa0308d93e9e44a8eda42323c6d6fa145817ed57f5dc",
+          "payload_sha256": "e27e3e9f127ab7ecff24b67d6068a27fd347d1aaa9d5bb50a2eae401ec582dc8",
           "result": null,
-          "schema": "zkai-d64-down-projection-air-proof-input-v1"
+          "schema": "zkai-d64-down-projection-air-proof-input-v2"
         },
         "module": {
           "exists": true,
-          "file_sha256": "163f3b2c62be8256c7005789bb5e77805836320183c4f04a348ab0e4c45a086f",
+          "file_sha256": "f95ef6744487ba07c0ec7356939c60899a11c3e17bf48acc0178c4284b4db934",
           "path": "src/stwo_backend/d64_native_down_projection_proof.rs"
         },
         "proof_version": "stwo-d64-down-projection-air-proof-v1",

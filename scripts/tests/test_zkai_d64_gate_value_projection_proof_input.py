@@ -32,7 +32,37 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
         self.assertEqual(payload["source_projection_input_row_commitment"], GATE_VALUE.PROJECTION_INPUT_ROW_COMMITMENT)
         self.assertEqual(payload["gate_matrix_root"], GATE_VALUE.GATE_MATRIX_ROOT)
         self.assertEqual(payload["value_matrix_root"], GATE_VALUE.VALUE_MATRIX_ROOT)
+        self.assertEqual(payload["projection_scale_divisor"], GATE_VALUE.PROJECTION_SCALE_DIVISOR)
+        self.assertEqual(len(payload["gate_projection_remainder_q8"]), GATE_VALUE.FF_DIM)
+        self.assertEqual(len(payload["value_projection_remainder_q8"]), GATE_VALUE.FF_DIM)
+        self.assertEqual(
+            payload["gate_projection_remainder_sha256"],
+            GATE_VALUE.sha256_hex(payload["gate_projection_remainder_q8"]),
+        )
+        self.assertEqual(
+            payload["value_projection_remainder_sha256"],
+            GATE_VALUE.sha256_hex(payload["value_projection_remainder_q8"]),
+        )
         self.assertNotEqual(payload["gate_value_projection_output_commitment"], GATE_VALUE.OUTPUT_ACTIVATION_COMMITMENT)
+
+    def test_payload_binds_floor_division_semantics(self) -> None:
+        payload = self.fresh_payload()
+        rows, gate, value, gate_remainder, value_remainder = GATE_VALUE.build_rows(payload["projection_input_q8"])
+        self.assertEqual(len(rows), payload["row_count"])
+        self.assertEqual(gate, payload["gate_projection_q8"])
+        self.assertEqual(value, payload["value_projection_q8"])
+        self.assertEqual(gate_remainder, payload["gate_projection_remainder_q8"])
+        self.assertEqual(value_remainder, payload["value_projection_remainder_q8"])
+        first_gate_acc = sum(
+            row["product_q8"]
+            for row in rows
+            if row["matrix"] == "gate" and row["output_index"] == 0
+        )
+        self.assertEqual(
+            first_gate_acc,
+            payload["gate_projection_q8"][0] * payload["projection_scale_divisor"]
+            + payload["gate_projection_remainder_q8"][0],
+        )
 
     def test_payload_rejects_projection_output_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
@@ -80,6 +110,26 @@ class ZkAiD64GateValueProjectionProofInputTests(unittest.TestCase):
         payload = self.fresh_payload()
         payload["value_projection_q8"][0] += 1
         with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "value projection output drift"):
+            GATE_VALUE.validate_payload(payload)
+
+    def test_payload_rejects_projection_scale_divisor_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["projection_scale_divisor"] += 1
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "projection_scale_divisor"):
+            GATE_VALUE.validate_payload(payload)
+
+    def test_payload_rejects_gate_remainder_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["gate_projection_remainder_q8"][0] = (
+            payload["gate_projection_remainder_q8"][0] + 1
+        ) % payload["projection_scale_divisor"]
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "gate projection remainder drift"):
+            GATE_VALUE.validate_payload(payload)
+
+    def test_payload_rejects_value_remainder_hash_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["value_projection_remainder_sha256"] = "0" * 64
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "value projection remainder hash"):
             GATE_VALUE.validate_payload(payload)
 
     def test_load_bridge_rejects_oversized_source_json(self) -> None:

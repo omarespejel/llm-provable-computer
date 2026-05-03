@@ -24,7 +24,7 @@ SOURCE_JSON = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-activation-
 JSON_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-down-projection-proof-2026-05.json"
 TSV_OUT = ROOT / "docs" / "engineering" / "evidence" / "zkai-d64-down-projection-proof-2026-05.tsv"
 
-SCHEMA = "zkai-d64-down-projection-air-proof-input-v1"
+SCHEMA = "zkai-d64-down-projection-air-proof-input-v2"
 DECISION = "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF"
 TARGET_ID = "rmsnorm-swiglu-residual-d64-v2"
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d64-v2"
@@ -47,6 +47,7 @@ HIDDEN_ACTIVATION_DOMAIN = "ptvm:zkai:d64-hidden-activation:v1"
 RESIDUAL_DELTA_DOMAIN = "ptvm:zkai:d64-residual-delta:v1"
 DOWN_PROJECTION_MUL_ROW_DOMAIN = "ptvm:zkai:d64-down-projection-mul-rows:v1"
 NEXT_BACKEND_STEP = "encode residual-add rows that consume residual_delta_commitment and produce output_activation_commitment"
+RESIDUAL_DELTA_SCALE_DIVISOR = FF_DIM
 
 NON_CLAIMS = [
     "not full d64 block proof",
@@ -54,12 +55,14 @@ NON_CLAIMS = [
     "not binding the full d64 output_activation_commitment",
     "not a private down-weight opening proof",
     "down projection aggregation is verifier-recomputed from checked public multiplication rows, not a private AIR aggregation claim",
+    "residual deltas are fixed-point floor quotients; divisor and remainders are bound for auditability",
 ]
 
 PROOF_VERIFIER_HARDENING = [
     "activation/SwiGLU hidden activation commitment recomputation before proof verification",
     "down-projection multiplication row commitment recomputation before proof verification",
     "residual-delta commitment recomputation before proof verification",
+    "residual-delta scale divisor and remainder recomputation before proof verification",
     "AIR multiplication relation for every checked down-projection row",
     "down matrix root recomputed from checked row weights",
     "explicit fixed-point q8 semantic bounds for hidden activations, down weights, and residual deltas",
@@ -83,6 +86,8 @@ TSV_COLUMNS = (
     "row_count",
     "down_projection_mul_rows",
     "residual_delta_rows",
+    "residual_delta_scale_divisor",
+    "residual_delta_remainder_sha256",
     "source_hidden_activation_commitment",
     "down_matrix_root",
     "residual_delta_commitment",
@@ -248,11 +253,21 @@ def rows_commitment(rows: list[dict[str, int]]) -> str:
     )
 
 
-def build_rows(hidden: list[int]) -> tuple[list[dict[str, int]], list[int]]:
+def divide_accumulators(accumulators: list[int], divisor: int) -> tuple[list[int], list[int]]:
+    quotients: list[int] = []
+    remainders: list[int] = []
+    for value in accumulators:
+        quotient, remainder = divmod(value, divisor)
+        quotients.append(quotient)
+        remainders.append(remainder)
+    return quotients, remainders
+
+
+def build_rows(hidden: list[int]) -> tuple[list[dict[str, int]], list[int], list[int]]:
     if len(hidden) != FF_DIM:
         raise DownProjectionInputError("hidden activation vector length mismatch")
     rows: list[dict[str, int]] = []
-    residual_delta: list[int] = []
+    accumulators: list[int] = []
     row_index = 0
     for output_index in range(WIDTH):
         acc = 0
@@ -275,14 +290,18 @@ def build_rows(hidden: list[int]) -> tuple[list[dict[str, int]], list[int]]:
             )
             acc += product_q8
             row_index += 1
-        residual_delta.append(acc // FF_DIM)
-    return rows, residual_delta
+        accumulators.append(acc)
+    residual_delta, residual_delta_remainder = divide_accumulators(
+        accumulators,
+        RESIDUAL_DELTA_SCALE_DIVISOR,
+    )
+    return rows, residual_delta, residual_delta_remainder
 
 
 def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
     source = load_source() if source is None else source
     hidden = source_hidden_vector(source)
-    rows, residual_delta = build_rows(hidden)
+    rows, residual_delta, residual_delta_remainder = build_rows(hidden)
     reference = FIXTURE.evaluate_reference_block()
     if hidden != reference["hidden_q8"]:
         raise DownProjectionInputError("hidden activation output does not match canonical reference")
@@ -299,6 +318,8 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "row_count": len(rows),
         "down_projection_mul_rows": WIDTH * FF_DIM,
         "residual_delta_rows": WIDTH,
+        "residual_delta_scale_divisor": RESIDUAL_DELTA_SCALE_DIVISOR,
+        "residual_delta_remainder_sha256": sha256_hex(residual_delta_remainder),
         "source_activation_swiglu_proof_version": SOURCE_ACTIVATION_SWIGLU_PROOF_VERSION,
         "source_hidden_activation_commitment": source["hidden_activation_commitment"],
         "down_matrix_root": matrix_root(rows),
@@ -309,6 +330,7 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "statement_commitment": STATEMENT_COMMITMENT,
         "hidden_q8": hidden,
         "residual_delta_q8": residual_delta,
+        "residual_delta_remainder_q8": residual_delta_remainder,
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
@@ -323,11 +345,12 @@ def validate_payload(payload: Any) -> None:
         raise DownProjectionInputError("payload must be an object")
     expected_fields = {
         "schema", "decision", "target_id", "required_backend_version", "verifier_domain", "width", "ff_dim",
-        "row_count", "down_projection_mul_rows", "residual_delta_rows", "source_activation_swiglu_proof_version",
+        "row_count", "down_projection_mul_rows", "residual_delta_rows", "residual_delta_scale_divisor",
+        "residual_delta_remainder_sha256", "source_activation_swiglu_proof_version",
         "source_hidden_activation_commitment", "down_matrix_root", "proof_native_parameter_commitment",
         "residual_delta_commitment", "down_projection_mul_row_commitment", "public_instance_commitment",
-        "statement_commitment", "hidden_q8", "residual_delta_q8", "non_claims", "proof_verifier_hardening",
-        "next_backend_step", "validation_commands",
+        "statement_commitment", "hidden_q8", "residual_delta_q8", "residual_delta_remainder_q8", "non_claims",
+        "proof_verifier_hardening", "next_backend_step", "validation_commands",
     }
     if set(payload) != expected_fields:
         raise DownProjectionInputError("payload field set mismatch")
@@ -342,6 +365,7 @@ def validate_payload(payload: Any) -> None:
         "row_count": WIDTH * FF_DIM,
         "down_projection_mul_rows": WIDTH * FF_DIM,
         "residual_delta_rows": WIDTH,
+        "residual_delta_scale_divisor": RESIDUAL_DELTA_SCALE_DIVISOR,
         "source_activation_swiglu_proof_version": SOURCE_ACTIVATION_SWIGLU_PROOF_VERSION,
         "source_hidden_activation_commitment": HIDDEN_ACTIVATION_COMMITMENT,
         "down_matrix_root": DOWN_MATRIX_ROOT,
@@ -360,19 +384,27 @@ def validate_payload(payload: Any) -> None:
         raise DownProjectionInputError("residual delta commitment relabeled as full output commitment")
     hidden = payload["hidden_q8"]
     residual_delta = payload["residual_delta_q8"]
+    residual_delta_remainder = payload["residual_delta_remainder_q8"]
     if not isinstance(hidden, list) or len(hidden) != FF_DIM:
         raise DownProjectionInputError("hidden activation vector mismatch")
     if not isinstance(residual_delta, list) or len(residual_delta) != WIDTH:
         raise DownProjectionInputError("residual delta vector mismatch")
+    if not isinstance(residual_delta_remainder, list) or len(residual_delta_remainder) != WIDTH:
+        raise DownProjectionInputError("residual delta remainder vector mismatch")
     for label, values in (("hidden activation", hidden), ("residual delta", residual_delta)):
         for index, item in enumerate(values):
             if not isinstance(item, int):
                 raise DownProjectionInputError(f"{label} values must be integers")
             require_signed_q8(item, f"{label} {index}")
             require_signed_m31(item, f"{label} {index}")
+    for index, item in enumerate(residual_delta_remainder):
+        if not isinstance(item, int):
+            raise DownProjectionInputError("residual delta remainder values must be integers")
+        if not 0 <= item < RESIDUAL_DELTA_SCALE_DIVISOR:
+            raise DownProjectionInputError(f"residual delta remainder {index} outside divisor range")
     if sequence_commitment(hidden, HIDDEN_ACTIVATION_DOMAIN, [FF_DIM]) != payload["source_hidden_activation_commitment"]:
         raise DownProjectionInputError("source hidden activation commitment drift")
-    rows, recomputed_delta = build_rows(hidden)
+    rows, recomputed_delta, recomputed_remainder = build_rows(hidden)
     for expected_row_index, row in enumerate(rows):
         expected_keys = {"row_index", "output_index", "hidden_index", "hidden_q8", "weight_q8", "product_q8"}
         if not isinstance(row, dict) or set(row) != expected_keys:
@@ -397,6 +429,10 @@ def validate_payload(payload: Any) -> None:
             raise DownProjectionInputError("hidden activation value drift")
     if recomputed_delta != residual_delta:
         raise DownProjectionInputError("residual delta output drift")
+    if recomputed_remainder != residual_delta_remainder:
+        raise DownProjectionInputError("residual delta remainder drift")
+    if sha256_hex(residual_delta_remainder) != payload["residual_delta_remainder_sha256"]:
+        raise DownProjectionInputError("residual delta remainder hash drift")
     if matrix_root(rows) != payload["down_matrix_root"]:
         raise DownProjectionInputError("down matrix root recomputation drift")
     if sequence_commitment(residual_delta, RESIDUAL_DELTA_DOMAIN, [WIDTH]) != payload["residual_delta_commitment"]:
@@ -417,6 +453,8 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
             "row_count": payload["row_count"],
             "down_projection_mul_rows": payload["down_projection_mul_rows"],
             "residual_delta_rows": payload["residual_delta_rows"],
+            "residual_delta_scale_divisor": payload["residual_delta_scale_divisor"],
+            "residual_delta_remainder_sha256": payload["residual_delta_remainder_sha256"],
             "source_hidden_activation_commitment": payload["source_hidden_activation_commitment"],
             "down_matrix_root": payload["down_matrix_root"],
             "residual_delta_commitment": payload["residual_delta_commitment"],

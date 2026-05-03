@@ -32,9 +32,28 @@ class ZkAiD64DownProjectionProofInputTests(unittest.TestCase):
         self.assertEqual(payload["residual_delta_rows"], DOWN_PROJECTION.WIDTH)
         self.assertEqual(len(payload["hidden_q8"]), DOWN_PROJECTION.FF_DIM)
         self.assertEqual(len(payload["residual_delta_q8"]), DOWN_PROJECTION.WIDTH)
+        self.assertEqual(len(payload["residual_delta_remainder_q8"]), DOWN_PROJECTION.WIDTH)
+        self.assertEqual(payload["residual_delta_scale_divisor"], DOWN_PROJECTION.RESIDUAL_DELTA_SCALE_DIVISOR)
+        self.assertEqual(
+            payload["residual_delta_remainder_sha256"],
+            DOWN_PROJECTION.sha256_hex(payload["residual_delta_remainder_q8"]),
+        )
         self.assertEqual(payload["down_matrix_root"], DOWN_PROJECTION.DOWN_MATRIX_ROOT)
         self.assertEqual(payload["source_hidden_activation_commitment"], DOWN_PROJECTION.HIDDEN_ACTIVATION_COMMITMENT)
         self.assertNotEqual(payload["residual_delta_commitment"], DOWN_PROJECTION.OUTPUT_ACTIVATION_COMMITMENT)
+
+    def test_payload_binds_floor_division_semantics(self) -> None:
+        payload = self.fresh_payload()
+        rows, residual_delta, residual_delta_remainder = DOWN_PROJECTION.build_rows(payload["hidden_q8"])
+        self.assertEqual(len(rows), payload["row_count"])
+        self.assertEqual(residual_delta, payload["residual_delta_q8"])
+        self.assertEqual(residual_delta_remainder, payload["residual_delta_remainder_q8"])
+        first_acc = sum(row["product_q8"] for row in rows if row["output_index"] == 0)
+        self.assertEqual(
+            first_acc,
+            payload["residual_delta_q8"][0] * payload["residual_delta_scale_divisor"]
+            + payload["residual_delta_remainder_q8"][0],
+        )
 
     def test_payload_rejects_residual_delta_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
@@ -64,6 +83,26 @@ class ZkAiD64DownProjectionProofInputTests(unittest.TestCase):
         payload = self.fresh_payload()
         payload["residual_delta_q8"][0] += 1
         with self.assertRaisesRegex(DOWN_PROJECTION.DownProjectionInputError, "residual delta output drift"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_remainder_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_remainder_q8"][0] = (
+            payload["residual_delta_remainder_q8"][0] + 1
+        ) % payload["residual_delta_scale_divisor"]
+        with self.assertRaisesRegex(DOWN_PROJECTION.DownProjectionInputError, "residual delta remainder drift"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_remainder_hash_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_remainder_sha256"] = "0" * 64
+        with self.assertRaisesRegex(DOWN_PROJECTION.DownProjectionInputError, "residual delta remainder hash"):
+            DOWN_PROJECTION.validate_payload(payload)
+
+    def test_payload_rejects_residual_delta_scale_divisor_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["residual_delta_scale_divisor"] += 1
+        with self.assertRaisesRegex(DOWN_PROJECTION.DownProjectionInputError, "residual_delta_scale_divisor"):
             DOWN_PROJECTION.validate_payload(payload)
 
     def test_payload_rejects_hidden_q8_bounds_drift(self) -> None:

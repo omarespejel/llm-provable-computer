@@ -27,8 +27,8 @@ bind the `nested_verifier_contract_commitment` as public input.
 | Selected slices | `rmsnorm_public_rows`, `rmsnorm_projection_bridge` |
 | Source feasibility mutations inherited | `16 / 16` rejected |
 | Contract-gate mutations | `20 / 20` rejected |
-| Source aggregation target commitment | `blake2b-256:bfcf5ce25826e007fd44d63bff9172c8f5cc0b741f581e0f6e55bc3d678e7b43` |
-| Nested-verifier contract commitment | `blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd` |
+| Source aggregation target commitment | `blake2b-256:4b8dc9b7838c477e03bcdd4bae6e36809a45a5b9c198d6ba31574c6c1182e9ae` |
+| Nested-verifier contract commitment | `blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a` |
 
 ## What is now true
 

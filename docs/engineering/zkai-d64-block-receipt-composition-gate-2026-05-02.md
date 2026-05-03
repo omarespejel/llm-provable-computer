@@ -31,9 +31,9 @@ exposes one domain-separated `block_receipt_commitment`.
 | Slice count | `6` |
 | Total checked slice rows | `49,600` |
 | Mutation cases | `14 / 14` rejected |
-| Block receipt commitment | `blake2b-256:b902e651e7bb78fcf6dac5d7162c6c10fb3694dd1066a0b675e49aae18e39d42` |
+| Block receipt commitment | `blake2b-256:37a10d2ace48e915157c96eef1abd159074dd8fb7653636d3992f1cd7f1122a6` |
 | Slice-chain commitment | `blake2b-256:52727069692d826d8549f730cd1ccf052e40dfeed7e6525ba2256fbaf8ae099e` |
-| Evidence-manifest commitment | `blake2b-256:f82ec7049be3c6635b5a726b5add9f76f293351be75d52514afa000c7f6a7d5c` |
+| Evidence-manifest commitment | `blake2b-256:ad9d6477e0940ca084024d3cf2a064880bdfddb075f9848cd0e2bc2ef36dc124` |
 
 ## What the receipt binds
 
@@ -48,6 +48,8 @@ The block receipt binds:
 - original d64 `statement_commitment`;
 - verifier domain;
 - exact slice schemas and proof-version identifiers;
+- fixed-point quotient scaling metadata for the projection/down-projection
+  slices, including scale divisors and remainder hashes;
 - source evidence file hashes and payload hashes;
 - the ordered slice commitment chain.
 

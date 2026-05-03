@@ -39,7 +39,7 @@ use super::d64_native_export_contract::{
 };
 
 pub const ZKAI_D64_DOWN_PROJECTION_INPUT_SCHEMA: &str =
-    "zkai-d64-down-projection-air-proof-input-v1";
+    "zkai-d64-down-projection-air-proof-input-v2";
 pub const ZKAI_D64_DOWN_PROJECTION_INPUT_DECISION: &str =
     "GO_INPUT_FOR_D64_DOWN_PROJECTION_AIR_PROOF";
 pub const ZKAI_D64_DOWN_PROJECTION_PROOF_VERSION: &str = "stwo-d64-down-projection-air-proof-v1";
@@ -58,6 +58,7 @@ pub const ZKAI_D64_RESIDUAL_DELTA_COMMITMENT: &str =
     "blake2b-256:ff67391fd2636e118af323efb1ed559114421a96e8ea30a7424c114e7074622a";
 pub const ZKAI_D64_DOWN_PROJECTION_MUL_ROW_COMMITMENT: &str =
     "blake2b-256:a0e069f148403112d512dff050b211e490e03d8af846d27c7f2cebe3bdb7fb68";
+pub const ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR: usize = ZKAI_D64_FF_DIM;
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const WEIGHT_GENERATOR_SEED: &str = "zkai-d64-rmsnorm-swiglu-statement-fixture-2026-05-v1";
@@ -87,12 +88,14 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not binding the full d64 output_activation_commitment",
     "not a private down-weight opening proof",
     "down projection aggregation is verifier-recomputed from checked public multiplication rows, not a private AIR aggregation claim",
+    "residual deltas are fixed-point floor quotients; divisor and remainders are bound for auditability",
 ];
 
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "activation/SwiGLU hidden activation commitment recomputation before proof verification",
     "down-projection multiplication row commitment recomputation before proof verification",
     "residual-delta commitment recomputation before proof verification",
+    "residual-delta scale divisor and remainder recomputation before proof verification",
     "AIR multiplication relation for every checked down-projection row",
     "down matrix root recomputed from checked row weights",
     "explicit fixed-point q8 semantic bounds for hidden activations, down weights, and residual deltas",
@@ -164,6 +167,8 @@ pub struct ZkAiD64DownProjectionProofInput {
     pub row_count: usize,
     pub down_projection_mul_rows: usize,
     pub residual_delta_rows: usize,
+    pub residual_delta_scale_divisor: usize,
+    pub residual_delta_remainder_sha256: String,
     pub source_activation_swiglu_proof_version: String,
     pub source_hidden_activation_commitment: String,
     pub down_matrix_root: String,
@@ -174,6 +179,7 @@ pub struct ZkAiD64DownProjectionProofInput {
     pub statement_commitment: String,
     pub hidden_q8: Vec<i64>,
     pub residual_delta_q8: Vec<i64>,
+    pub residual_delta_remainder_q8: Vec<i64>,
     pub non_claims: Vec<String>,
     pub proof_verifier_hardening: Vec<String>,
     pub next_backend_step: String,
@@ -318,6 +324,11 @@ fn validate_down_projection_input(input: &ZkAiD64DownProjectionProofInput) -> Re
         ZKAI_D64_RESIDUAL_ROWS,
         "residual delta rows",
     )?;
+    expect_usize(
+        input.residual_delta_scale_divisor,
+        ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR,
+        "residual_delta_scale_divisor",
+    )?;
     expect_eq(
         &input.source_activation_swiglu_proof_version,
         ZKAI_D64_ACTIVATION_SWIGLU_PROOF_VERSION,
@@ -394,6 +405,11 @@ fn validate_down_projection_input(input: &ZkAiD64DownProjectionProofInput) -> Re
             "residual delta vector length mismatch",
         ));
     }
+    if input.residual_delta_remainder_q8.len() != ZKAI_D64_WIDTH {
+        return Err(down_projection_error(
+            "residual delta remainder vector length mismatch",
+        ));
+    }
     for (label, values) in [
         ("hidden activation q8", &input.hidden_q8),
         ("residual delta q8", &input.residual_delta_q8),
@@ -401,6 +417,13 @@ fn validate_down_projection_input(input: &ZkAiD64DownProjectionProofInput) -> Re
         for (index, value) in values.iter().enumerate() {
             expect_signed_q8(*value, &format!("{label} {index}"))?;
             expect_signed_m31(*value, &format!("{label} {index}"))?;
+        }
+    }
+    for (index, value) in input.residual_delta_remainder_q8.iter().enumerate() {
+        if *value < 0 || *value >= ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR as i64 {
+            return Err(down_projection_error(format!(
+                "residual delta remainder {index} outside divisor range"
+            )));
         }
     }
     expect_eq(
@@ -426,10 +449,18 @@ fn validate_down_projection_input(input: &ZkAiD64DownProjectionProofInput) -> Re
             "down projection accumulator",
         )?;
     }
-    let recomputed_delta = divide_accumulators(&accumulators)?;
+    let (recomputed_delta, recomputed_remainder) = divide_accumulators(&accumulators)?;
     if recomputed_delta != input.residual_delta_q8 {
         return Err(down_projection_error("residual delta output drift"));
     }
+    if recomputed_remainder != input.residual_delta_remainder_q8 {
+        return Err(down_projection_error("residual delta remainder drift"));
+    }
+    expect_eq(
+        &sha256_hex(canonical_i64_array(&input.residual_delta_remainder_q8).as_bytes()),
+        &input.residual_delta_remainder_sha256,
+        "residual delta remainder hash",
+    )?;
     expect_eq(
         &sequence_commitment(
             &input.residual_delta_q8,
@@ -481,12 +512,14 @@ fn validate_down_projection_row(
     Ok(())
 }
 
-fn divide_accumulators(accumulators: &[i64]) -> Result<Vec<i64>> {
-    let mut out = Vec::with_capacity(accumulators.len());
+fn divide_accumulators(accumulators: &[i64]) -> Result<(Vec<i64>, Vec<i64>)> {
+    let mut quotients = Vec::with_capacity(accumulators.len());
+    let mut remainders = Vec::with_capacity(accumulators.len());
     for value in accumulators {
-        out.push(value.div_euclid(ZKAI_D64_FF_DIM as i64));
+        quotients.push(value.div_euclid(ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR as i64));
+        remainders.push(value.rem_euclid(ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR as i64));
     }
-    Ok(out)
+    Ok((quotients, remainders))
 }
 
 fn build_rows(hidden: &[i64]) -> Result<Vec<D64DownProjectionMulRow>> {
@@ -975,6 +1008,14 @@ mod tests {
         assert_eq!(input.hidden_q8.len(), ZKAI_D64_FF_DIM);
         let rows = build_rows(&input.hidden_q8).expect("derived rows");
         assert_eq!(rows.len(), ZKAI_D64_DOWN_PROJECTION_MUL_ROWS);
+        assert_eq!(
+            input.residual_delta_scale_divisor,
+            ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR
+        );
+        assert_eq!(
+            input.residual_delta_remainder_sha256,
+            sha256_hex(canonical_i64_array(&input.residual_delta_remainder_q8).as_bytes())
+        );
         assert_eq!(rows[0].hidden_q8, -68);
         assert_eq!(rows[0].weight_q8, -6);
         assert_eq!(rows[0].product_q8, 408);
@@ -990,6 +1031,22 @@ mod tests {
         assert_ne!(
             input.residual_delta_commitment,
             ZKAI_D64_OUTPUT_ACTIVATION_COMMITMENT
+        );
+    }
+
+    #[test]
+    fn down_projection_reconstructs_floor_division_surface() {
+        let input = input();
+        let rows = build_rows(&input.hidden_q8).expect("derived rows");
+        let accumulator: i64 = rows
+            .iter()
+            .filter(|row| row.output_index == 0)
+            .map(|row| row.product_q8)
+            .sum();
+        assert_eq!(
+            accumulator,
+            input.residual_delta_q8[0] * input.residual_delta_scale_divisor as i64
+                + input.residual_delta_remainder_q8[0]
         );
     }
 
@@ -1075,6 +1132,33 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("residual delta output drift"));
+    }
+
+    #[test]
+    fn down_projection_rejects_residual_delta_remainder_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        let remainder = value["residual_delta_remainder_q8"][0]
+            .as_i64()
+            .expect("remainder");
+        value["residual_delta_remainder_q8"][0] =
+            Value::from((remainder + 1).rem_euclid(ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR as i64));
+        let error = zkai_d64_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("residual delta remainder drift"));
+    }
+
+    #[test]
+    fn down_projection_rejects_residual_delta_scale_divisor_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["residual_delta_scale_divisor"] =
+            Value::from(ZKAI_D64_RESIDUAL_DELTA_SCALE_DIVISOR + 1);
+        let error = zkai_d64_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("residual_delta_scale_divisor"));
     }
 
     #[test]

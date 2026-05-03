@@ -40,7 +40,7 @@ handle, or binding test required to claim recursion or PCD aggregation.
 | Result | `HARD_NO_GO` |
 | Backend result | `NO_GO_EXECUTABLE_OUTER_BACKEND_ARTIFACT_MISSING` |
 | Selected slices | `rmsnorm_public_rows`, `rmsnorm_projection_bridge` |
-| Source contract commitment | `blake2b-256:4a02af0e424022e995e17e780d20e3b229d52de8e15427af21630b4dfdf7c4cd` |
+| Source contract commitment | `blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a` |
 | Candidate surfaces inventoried | `8` |
 | Required GO artifacts missing | `3` |
 | Spike mutation checks | `20 / 20` rejected |
