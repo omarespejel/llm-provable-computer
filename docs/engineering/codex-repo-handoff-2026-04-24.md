@@ -187,8 +187,18 @@ Tablero boundary.
   it rejects `37 / 37` binding, relabeling, verifier-handle, and
   recursive-claim mutations. This is accumulator integrity only, not recursion;
   see `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
-- This is now receipt-composition plus two-slice accumulator GO only: recursion,
-  one compressed cryptographic verifier object, and full-block
+- The d128 full-block accumulator backend gate now builds a real
+  verifier-facing non-recursive accumulator for all six checked d128 slice
+  handles over `197,504` checked rows, with accumulator commitment
+  `blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+  and verifier-handle commitment
+  `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`;
+  it rejects `48 / 48` source, public-input, slice-transcript,
+  verifier-domain, verifier-handle, recursive-claim, and parser/schema
+  mutations. This is accumulator integrity only, not recursion; see
+  `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
+- This is now receipt-composition plus two-slice and full-block accumulator GO:
+  recursion, one compressed cryptographic verifier object, and recursive
   proof-size/verifier-time/proof-generation-time metrics remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
@@ -246,11 +256,11 @@ Tablero boundary.
    not a replay-elimination headline on the scale of Phase44D.
 10. Treat the first d128 aggregation attempt (`#405`) and the two-slice target
     spike (`#408`) as checked bounded no-gos for recursive proof-object
-    existence, but treat the issue `#409` accumulator gate as the current
-    positive handoff object: a real non-recursive two-slice accumulator and
-    verifier handle now exist. Do not report recursive/full-block
-    proof-size/verifier-time/proof-generation-time metrics until a real
-    recursive or PCD proof object exists.
+    existence, but treat issues `#409` and `#413` as the current positive
+    handoff objects: real non-recursive two-slice and full-block accumulators
+    and verifier handles now exist. Do not report recursive proof-size,
+    verifier-time, or proof-generation-time metrics until a real recursive or
+    PCD proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
