@@ -973,6 +973,23 @@ recursive proof compression. It is anchored to
 `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json`.
 
+The issue `#413` follow-up extends the same non-recursive accumulator pattern to
+the full d128 block receipt. It builds one verifier-facing accumulator over all
+six checked slice handles and `197,504` checked rows. The accumulator commitment
+is
+`blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+and the verifier-handle commitment is
+`blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`.
+It binds the block receipt commitment, statement commitment, slice-chain
+commitment, evidence-manifest commitment, every slice statement commitment, and
+every source evidence hash, rejecting `48 / 48` source, public-input,
+slice-transcript, verifier-domain, verifier-handle, recursive-claim, and
+recursive-metric-smuggling mutations. This strengthens the pre-recursive
+handoff object while preserving the same non-claim: it is not recursive proof
+compression. It is anchored to
+`docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md` and
+`docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model

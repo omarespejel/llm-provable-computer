@@ -81,10 +81,19 @@ This repository currently has three live lanes.
      it rejects `37 / 37` binding/relabeling/recursive-claim mutations. This
      is an accumulator-integrity GO, not recursive/PCD proof compression; see
      `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
-   - The d128 lane now has receipt-composition and two-slice accumulator GO
-     results, but recursion, one compressed cryptographic verifier object, and
-     full-block proof-size/verifier-time/proof-generation-time metrics remain
-     blocked.
+   - The d128 full-block accumulator backend gate now turns the six-slice
+     block receipt into a real verifier-facing non-recursive accumulator over
+     `197,504` checked rows, with accumulator commitment
+     `blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+     and verifier-handle commitment
+     `blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`;
+     it rejects `48 / 48` source/public-input/slice/verifier-handle/
+     recursive-claim mutations. This is accumulator-integrity GO only; see
+     `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
+   - The d128 lane now has receipt-composition, two-slice accumulator, and
+     full-block accumulator GO results, but recursion, one compressed
+     cryptographic verifier object, and proof-size/verifier-time/
+     proof-generation-time metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -157,11 +166,11 @@ The repo now also has one explicit answer on the second-backend question:
    until a deliberate promotion pass.
 10. Treat the first d128 aggregation attempt (`#405`) and two-slice target
     spike (`#408`) as checked bounded no-gos for recursive proof-object
-    existence, but treat the issue `#409` accumulator gate as the current
-    positive handoff object: a real non-recursive two-slice accumulator and
-    verifier handle now exist. Do not report recursive/full-block
-    proof-size/verifier-time/proof-generation-time metrics until a real
-    recursive or PCD proof object exists.
+    existence, but treat issues `#409` and `#413` as the current positive
+    handoff objects: real non-recursive two-slice and full-block accumulators
+    and verifier handles now exist. Do not report recursive proof-size,
+    verifier-time, or proof-generation-time metrics until a real recursive or
+    PCD proof object exists.
 
 ## What not to do
 

@@ -601,6 +601,20 @@ verifier-domain, verifier-handle, recursive-claim, and recursive-metric-smugglin
 claim boundary is explicit:
 `NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF`.
 
+The issue `#413` follow-up extends that non-recursive accumulator branch to the
+full d128 block receipt. It builds a verifier-facing accumulator over all six
+checked d128 slice handles and `197,504` checked rows, with accumulator
+commitment
+`blake2b-256:22718198bc7a657523bcfed3050a20d1e9c172e8fdf9b46066c3ebf1ea9c8633`
+and verifier-handle commitment
+`blake2b-256:815bf18673dbd08fd3596834e5aa26e67126911fd7f091f18574dedec75dbfeb`.
+The accumulator binds `block_receipt_commitment`, `statement_commitment`,
+`slice_chain_commitment`, `evidence_manifest_commitment`, every slice statement
+commitment, and every source evidence hash. It rejects `48 / 48` source,
+public-input, slice-transcript, verifier-domain, verifier-handle,
+recursive-claim, and recursive-metric-smuggling mutations. This is still
+accumulator integrity only, not recursive proof compression.
+
 The d64 block receipt composition gate consumes the checked slice handles:
 
 - `docs/engineering/zkai-d64-block-receipt-composition-gate-2026-05-02.md`
