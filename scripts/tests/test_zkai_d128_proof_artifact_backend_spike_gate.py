@@ -44,6 +44,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["d128_gate_value_projection_route"], "GO_PARTIAL_D128_GATE_VALUE_PROJECTION_ONLY")
         self.assertEqual(payload["summary"]["d128_activation_swiglu_route"], "GO_PARTIAL_D128_ACTIVATION_SWIGLU_ONLY")
         self.assertEqual(payload["summary"]["d128_down_projection_route"], "GO_PARTIAL_D128_DOWN_PROJECTION_ONLY")
+        self.assertEqual(payload["summary"]["d128_residual_add_route"], "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_residual_add_route"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(payload["summary"]["parameterized_full_block_route"], "NO_GO_FULL_BLOCK_SLICES_MISSING")
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
@@ -83,10 +84,12 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertNotIn("src/stwo_backend/d128_native_gate_value_projection_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("src/stwo_backend/d128_native_activation_swiglu_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("src/stwo_backend/d128_native_down_projection_proof.rs", probe["missing_d128_modules"])
+        self.assertNotIn("src/stwo_backend/d128_native_residual_add_proof.rs", probe["missing_d128_modules"])
         self.assertNotIn("prove_zkai_d128_rmsnorm_to_projection_bridge_envelope", probe["missing_d128_export_symbols"])
         self.assertNotIn("prove_zkai_d128_gate_value_projection_envelope", probe["missing_d128_export_symbols"])
         self.assertNotIn("prove_zkai_d128_activation_swiglu_envelope", probe["missing_d128_export_symbols"])
         self.assertNotIn("prove_zkai_d128_down_projection_envelope", probe["missing_d128_export_symbols"])
+        self.assertNotIn("prove_zkai_d128_residual_add_envelope", probe["missing_d128_export_symbols"])
         self.assertEqual(probe["d128_rmsnorm_public_row"]["status"], "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY")
         self.assertEqual(probe["d128_rmsnorm_public_row"]["present_symbols"], list(GATE.D128_RMSNORM_SYMBOLS))
         self.assertEqual(
@@ -172,6 +175,29 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(probe["d128_down_projection"]["range_policy"], GATE.D128_DOWN_GATE.RANGE_POLICY)
         self.assertFalse(probe["d128_down_projection"]["residual_delta_relabels_full_output"])
+        self.assertEqual(probe["d128_residual_add"]["status"], "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY")
+        self.assertEqual(probe["d128_residual_add"]["present_symbols"], list(GATE.D128_RESIDUAL_SYMBOLS))
+        residual_evidence = GATE.load_json(GATE.D128_RESIDUAL_EVIDENCE)
+        for field in GATE.D128_RESIDUAL_COMMITMENT_FIELDS:
+            self.assertIn(field, probe["d128_residual_add"])
+            self.assertEqual(
+                probe["d128_residual_add"][field],
+                residual_evidence[field],
+            )
+        self.assertEqual(
+            probe["d128_residual_add"]["source_rmsnorm_statement_commitment"],
+            probe["d128_rmsnorm_public_row"]["statement_commitment"],
+        )
+        self.assertEqual(
+            probe["d128_residual_add"]["source_down_projection_statement_commitment"],
+            probe["d128_down_projection"]["statement_commitment"],
+        )
+        self.assertEqual(
+            probe["d128_residual_add"]["residual_delta_commitment"],
+            probe["d128_down_projection"]["residual_delta_commitment"],
+        )
+        self.assertFalse(probe["d128_residual_add"]["residual_delta_relabels_full_output"])
+        self.assertFalse(probe["d128_residual_add"]["input_relabels_output"])
         self.assertEqual(probe["parameterized_residual_add"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertEqual(probe["parameterized_residual_add"]["present_symbols"], list(GATE.PARAMETERIZED_RESIDUAL_ADD_SYMBOLS))
         self.assertEqual(probe["missing_parameterized_full_block_symbols"], list(GATE.MISSING_PARAMETERIZED_FULL_BLOCK_SYMBOLS))
@@ -195,6 +221,19 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
                 GATE.build_source_probe()
         finally:
             GATE.VECTOR_RESIDUAL_GATE.validate_payload = original
+
+    def test_source_probe_runs_source_bound_d128_residual_add_validator(self) -> None:
+        original = GATE.D128_RESIDUAL_GATE.validate_payload
+
+        def reject(_payload: dict) -> None:
+            raise GATE.D128_RESIDUAL_GATE.D128ResidualAddInputError("simulated d128 residual evidence drift")
+
+        try:
+            GATE.D128_RESIDUAL_GATE.validate_payload = reject
+            with self.assertRaisesRegex(GATE.D128BackendSpikeError, "d128 residual-add evidence"):
+                GATE.build_source_probe()
+        finally:
+            GATE.D128_RESIDUAL_GATE.validate_payload = original
 
     def test_source_probe_runs_full_rmsnorm_evidence_validator(self) -> None:
         original = GATE.D128_RMSNORM_GATE.validate_payload
@@ -334,6 +373,13 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertEqual(routes["direct_d128_down_projection_air"]["status"], "GO_PARTIAL_D128_DOWN_PROJECTION_ONLY")
         self.assertTrue(routes["direct_d128_down_projection_air"]["local_roundtrip_proof_constructed"])
         self.assertFalse(routes["direct_d128_down_projection_air"]["checked_in_proof_artifact_exists"])
+        self.assertEqual(routes["direct_d128_residual_add_air"]["status"], "GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY")
+        self.assertTrue(routes["direct_d128_residual_add_air"]["local_roundtrip_proof_constructed"])
+        self.assertFalse(routes["direct_d128_residual_add_air"]["checked_in_proof_artifact_exists"])
+        self.assertEqual(
+            routes["direct_d128_residual_add_air"]["output_activation_commitment"],
+            self.fresh_payload()["source_probe"]["d128_residual_add"]["output_activation_commitment"],
+        )
         self.assertEqual(routes["lift_existing_d64_modules_by_metadata"]["status"], "NO_GO")
         self.assertEqual(routes["parameterized_vector_residual_add_air"]["status"], "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY")
         self.assertTrue(routes["parameterized_vector_residual_add_air"]["local_roundtrip_proof_constructed"])
@@ -368,6 +414,10 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_down_projection_verifier_exists"])
         self.assertTrue(status["partial_d128_down_projection_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_down_projection_checked_in_proof_artifact_exists"])
+        self.assertTrue(status["partial_d128_residual_add_proof_exists"])
+        self.assertTrue(status["partial_d128_residual_add_verifier_exists"])
+        self.assertTrue(status["partial_d128_residual_add_local_roundtrip_proof_constructed"])
+        self.assertFalse(status["partial_d128_residual_add_checked_in_proof_artifact_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
@@ -558,6 +608,23 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128BackendSpikeError, "down-projection route residual"):
             GATE.validate_payload(payload)
 
+    def test_rejects_source_bound_residual_relabeling(self) -> None:
+        payload = self.fresh_payload()
+        residual = payload["source_probe"]["d128_residual_add"]
+        residual["residual_delta_commitment"] = residual["output_activation_commitment"]
+        residual["residual_delta_relabels_full_output"] = True
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_residual_add_air")
+        route["residual_delta_commitment"] = residual["output_activation_commitment"]
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "residual-add residual-delta commitment"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_source_bound_residual_route_output_drift(self) -> None:
+        payload = self.fresh_payload()
+        route = next(row for row in payload["backend_routes"] if row["route"] == "direct_d128_residual_add_air")
+        route["output_activation_commitment"] = "blake2b-256:" + "93" * 32
+        with self.assertRaisesRegex(GATE.D128BackendSpikeError, "residual-add route output"):
+            GATE.validate_payload(payload)
+
     def test_rejects_removed_missing_module(self) -> None:
         payload = self.fresh_payload()
         payload["source_probe"]["missing_d128_modules"] = payload["source_probe"]["missing_d128_modules"][1:]
@@ -658,6 +725,19 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(
             cases["d128_down_projection_route_statement_commitment_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(cases["d128_residual_add_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(
+            cases["d128_residual_add_residual_delta_commitment_drift"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_residual_add_relabels_full_output"]["rejection_layer"],
+            "source_probe",
+        )
+        self.assertEqual(
+            cases["d128_residual_add_route_output_commitment_drift"]["rejection_layer"],
             "backend_routes",
         )
         self.assertEqual(cases["full_block_parameterized_route_promoted"]["rejection_layer"], "backend_routes")

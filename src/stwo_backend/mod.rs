@@ -10,6 +10,8 @@ mod d128_native_down_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_gate_value_projection_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_residual_add_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_to_projection_bridge_proof;
@@ -145,6 +147,20 @@ pub use d128_native_gate_value_projection_proof::{
     ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
     ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_VERSION, ZKAI_D128_VALUE_MATRIX_ROOT,
     ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_residual_add_proof::{
+    prove_zkai_d128_residual_add_envelope, verify_zkai_d128_residual_add_envelope,
+    zkai_d128_residual_add_input_from_json_str, D128ResidualAddRow, ZkAiD128ResidualAddEnvelope,
+    ZkAiD128ResidualAddProofInput, ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+    ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_DECISION,
+    ZKAI_D128_RESIDUAL_ADD_INPUT_DECISION, ZKAI_D128_RESIDUAL_ADD_INPUT_SCHEMA,
+    ZKAI_D128_RESIDUAL_ADD_MAX_JSON_BYTES, ZKAI_D128_RESIDUAL_ADD_MAX_PROOF_BYTES,
+    ZKAI_D128_RESIDUAL_ADD_NEXT_BACKEND_STEP,
+    ZKAI_D128_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_PROOF_VERSION,
+    ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
+    ZKAI_D128_RESIDUAL_ADD_SEMANTIC_SCOPE, ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+    ZKAI_D128_RESIDUAL_ADD_STATEMENT_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_rmsnorm_public_row_proof::{

@@ -144,8 +144,10 @@ Tablero boundary.
   accumulator backend exists.
 - The `d=128` route now has six partial proof handles: RMSNorm public rows,
   RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
-  down-projection, and a parameterized vector residual-add slice. The residual
-  handle is not a native residual proof or a composed full-block receipt.
+  down-projection, and a source-bound native residual-add slice. The residual
+  slice consumes the exact quotient/remainder-bound `residual_delta_commitment`,
+  recomputes the final output activation commitment, and rejects intermediate
+  relabeling.
 - The d128 gate/value projection handle proves `131,072` public multiplication
   rows (`65,536` gate and `65,536` value rows), consumes the bridge's
   `projection_input_row_commitment`, recomputes deterministic gate/value matrix
@@ -159,8 +161,8 @@ Tablero boundary.
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
   quotient/remainder-bound `residual_delta_commitment`.
-- This is a partial GO only: native residual, full composition, recursion, and
-  full-block metrics remain blocked.
+- This is a partial GO only: full composition, recursion, and full-block
+  metrics remain blocked.
 - Do not compare d128 against public zkML systems until the full statement
   receipt or a deliberately scoped slice comparator exists.
 
@@ -214,11 +216,10 @@ Tablero boundary.
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-10. Continue the verifiable-AI d128 lane by building the native
-    residual/composition handle that consumes exact quotient/remainder-bound
-    `residual_delta_commitment`; do
-    not jump to full-block metrics until native residual and composition exist
-    or are explicitly classified as no-go.
+10. Continue the verifiable-AI d128 lane by building full-block receipt
+    composition over the six checked d128 slice handles; do not jump to
+    full-block metrics until composition exists or is explicitly classified as
+    no-go.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
