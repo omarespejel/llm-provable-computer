@@ -1150,6 +1150,17 @@ mod tests {
     }
 
     #[test]
+    fn down_projection_rejects_residual_delta_remainder_hash_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["residual_delta_remainder_sha256"] = Value::String("0".repeat(64));
+        let error = zkai_d64_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("residual delta remainder hash"));
+    }
+
+    #[test]
     fn down_projection_rejects_residual_delta_scale_divisor_drift() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["residual_delta_scale_divisor"] =

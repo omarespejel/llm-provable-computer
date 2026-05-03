@@ -48,8 +48,12 @@ The block receipt binds:
 - original d64 `statement_commitment`;
 - verifier domain;
 - exact slice schemas and proof-version identifiers;
-- fixed-point quotient scaling metadata for the projection/down-projection
-  slices, including scale divisors and remainder hashes;
+- fixed-point quotient scaling metadata for projection/down-projection:
+  `projection_scale_divisor=64`,
+  `gate_projection_remainder_sha256=2421b8ab627a2be714df2f450eb3e5e7bf6471add648e9e27aff04da5da08219`,
+  `value_projection_remainder_sha256=4d45e1d70b0ab390ad91b1ccb572df7e78461b4ede6ba8b509288eea1ff08fb3`,
+  `residual_delta_scale_divisor=256`, and
+  `residual_delta_remainder_sha256=33a0e907169d6459d309484a56f007e7b5dd372a2740c82e7cd16c2e4da1587e`;
 - source evidence file hashes and payload hashes;
 - the ordered slice commitment chain.
 
