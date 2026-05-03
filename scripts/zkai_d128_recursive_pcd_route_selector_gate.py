@@ -19,7 +19,7 @@ import pathlib
 import sys
 import tempfile
 import tomllib
-from typing import Any, Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -805,7 +805,7 @@ def validate_local_repo_probe(value: Any) -> dict[str, Any]:
     return probe
 
 
-def validate_route_evidence(route_id: str, evidence: Any) -> dict[str, Any]:
+def validate_route_evidence(route_id: str, evidence: Any, repo_probe: dict[str, Any]) -> dict[str, Any]:
     evidence = require_object(evidence, f"{route_id}.evidence", layer="route_table")
     if route_id == "local_stwo_nested_verifier_air":
         expect_equal(set(evidence), {"backend_module_exists", "requires_new_trusted_core"}, f"{route_id}.evidence keys", layer="route_table")
@@ -835,11 +835,21 @@ def validate_route_evidence(route_id: str, evidence: Any) -> dict[str, Any]:
         expect_equal(require_int(evidence.get("tracked_issue"), f"{route_id}.tracked_issue", layer="route_table"), 424, f"{route_id}.tracked_issue", layer="route_table")
     elif route_id == "external_zkvm_statement_receipt_adapter":
         expect_equal(set(evidence), {"local_dependencies_declared", "tracked_issue"}, f"{route_id}.evidence keys", layer="route_table")
-        require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table")
+        expect_equal(
+            require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table"),
+            repo_probe["external_zkvm_dependencies_declared"],
+            f"{route_id}.local_dependencies_declared",
+            layer="route_table",
+        )
         expect_equal(require_int(evidence.get("tracked_issue"), f"{route_id}.tracked_issue", layer="route_table"), 422, f"{route_id}.tracked_issue", layer="route_table")
     elif route_id == "external_snark_or_ivc_statement_adapter":
         expect_equal(set(evidence), {"local_dependencies_declared"}, f"{route_id}.evidence keys", layer="route_table")
-        require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table")
+        expect_equal(
+            require_bool(evidence.get("local_dependencies_declared"), f"{route_id}.local_dependencies_declared", layer="route_table"),
+            repo_probe["external_snark_ivc_dependencies_declared"],
+            f"{route_id}.local_dependencies_declared",
+            layer="route_table",
+        )
     elif route_id == "starknet_settlement_adapter":
         expect_equal(set(evidence), {"snip36_parked"}, f"{route_id}.evidence keys", layer="route_table")
         expect_equal(require_bool(evidence.get("snip36_parked"), f"{route_id}.snip36_parked", layer="route_table"), True, f"{route_id}.snip36_parked", layer="route_table")
@@ -848,7 +858,7 @@ def validate_route_evidence(route_id: str, evidence: Any) -> dict[str, Any]:
     return evidence
 
 
-def validate_route_table(value: Any) -> list[dict[str, Any]]:
+def validate_route_table(value: Any, repo_probe: dict[str, Any]) -> list[dict[str, Any]]:
     routes = require_list(value, "route_table", layer="route_table")
     route_objects = [
         require_object(route, f"route_table[{index}]", layer="route_table")
@@ -875,7 +885,7 @@ def validate_route_table(value: Any) -> list[dict[str, Any]]:
         require_str(route.get("claim_boundary"), f"{route_id}.claim_boundary", layer="route_table")
         require_str(route.get("next_action"), f"{route_id}.next_action", layer="route_table")
         require_str(route.get("blocking_missing_object"), f"{route_id}.blocking_missing_object", layer="route_table")
-        validate_route_evidence(route_id, route.get("evidence"))
+        validate_route_evidence(route_id, route.get("evidence"), repo_probe)
 
     expect_equal(
         by_id["local_stwo_nested_verifier_air"]["status"],
@@ -1017,8 +1027,8 @@ def validate_core_payload(payload: Any) -> dict[str, Any]:
     expect_equal(payload.get("result"), RESULT, "result")
     expect_equal(payload.get("issue"), ISSUE, "issue")
     source = validate_source_evidence(payload.get("source_evidence"))
-    validate_local_repo_probe(payload.get("local_repo_probe"))
-    routes = validate_route_table(payload.get("route_table"))
+    repo_probe = validate_local_repo_probe(payload.get("local_repo_probe"))
+    routes = validate_route_table(payload.get("route_table"), repo_probe)
     validate_route_decision(payload.get("route_decision"), source, routes)
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non_claims")
     expect_equal(payload.get("validation_commands"), VALIDATION_COMMANDS, "validation_commands")
