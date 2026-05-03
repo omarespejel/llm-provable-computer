@@ -920,7 +920,7 @@ and proof-system version. The route now has six local proof-backed slice
 handles: RMSNorm public rows, the RMSNorm-to-projection bridge, gate/value
 projection, activation/SwiGLU, down-projection, and source-bound residual-add.
 A composition gate binds those six slice artifacts into one d128 block receipt
-over `197504` checked rows and rejects `19 / 19` receipt mutations. This is a
+over `197504` checked rows and rejects `20 / 20` receipt mutations. This is a
 GO for a statement-bound block receipt and still a bounded NO-GO for aggregated
 proof size, verifier time, and proof-generation time, because recursive
 aggregation or a single compressed verifier object does not exist yet. The

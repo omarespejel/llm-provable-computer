@@ -55,7 +55,7 @@
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
   },
-  "case_count": 19,
+  "case_count": 20,
   "cases": [
     {
       "baseline_accepted": true,
@@ -209,6 +209,15 @@
       "rejected": true,
       "rejection_layer": "block_receipt",
       "surface": "block_receipt"
+    },
+    {
+      "baseline_accepted": true,
+      "error": "non_claims mismatch",
+      "mutated_accepted": false,
+      "mutation": "non_claims_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
     },
     {
       "baseline_accepted": true,
@@ -427,8 +436,8 @@
   ],
   "summary": {
     "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
-    "mutation_cases": 19,
-    "mutations_rejected": 19,
+    "mutation_cases": 20,
+    "mutations_rejected": 20,
     "next_backend_step": "recursive or proof-carrying aggregation of this receipt, if a future verifier proves the slice verifiers inside one object",
     "non_claims": [
       "not recursive aggregation of the six slice proofs",

@@ -207,7 +207,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         )
         self.assertEqual(probe["d128_block_receipt_composition"]["slice_count"], 6)
         self.assertEqual(probe["d128_block_receipt_composition"]["total_checked_rows"], 197_504)
-        self.assertEqual(probe["d128_block_receipt_composition"]["mutation_cases"], 19)
+        self.assertEqual(probe["d128_block_receipt_composition"]["mutation_cases"], 20)
         self.assertEqual(
             probe["d128_block_receipt_composition"]["output_activation_commitment"],
             probe["d128_residual_add"]["output_activation_commitment"],
@@ -434,7 +434,7 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
         self.assertTrue(status["partial_d128_residual_add_local_roundtrip_proof_constructed"])
         self.assertFalse(status["partial_d128_residual_add_checked_in_proof_artifact_exists"])
         self.assertTrue(status["d128_block_receipt_composition_exists"])
-        self.assertEqual(status["d128_block_receipt_composition_mutation_cases"], 19)
+        self.assertEqual(status["d128_block_receipt_composition_mutation_cases"], 20)
         self.assertTrue(status["partial_parameterized_residual_add_proof_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_verifier_exists"])
         self.assertTrue(status["partial_parameterized_residual_add_local_roundtrip_proof_constructed"])
@@ -758,6 +758,18 @@ class ZkAiD128ProofArtifactBackendSpikeGateTests(unittest.TestCase):
             "backend_routes",
         )
         self.assertEqual(cases["full_block_parameterized_route_promoted"]["rejection_layer"], "backend_routes")
+        self.assertEqual(
+            cases["d128_block_receipt_composition_route_status_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(
+            cases["d128_block_receipt_composition_route_commitment_drift"]["rejection_layer"],
+            "backend_routes",
+        )
+        self.assertEqual(
+            cases["d128_block_receipt_composition_route_receipt_flag_drift"]["rejection_layer"],
+            "backend_routes",
+        )
         self.assertEqual(cases["missing_module_removed"]["rejection_layer"], "source_probe")
         self.assertEqual(cases["proof_size_metric_smuggled"]["rejection_layer"], "metrics")
         for case in cases.values():

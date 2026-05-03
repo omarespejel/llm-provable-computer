@@ -69,7 +69,7 @@ or verifier time, because the recursive/single-proof object does not exist.
 | Activation/SwiGLU proof roundtrip | locally constructed and verified by Rust tests |
 | Down-projection proof roundtrip | locally constructed and verified by Rust tests over `65,536` checked multiplication rows |
 | Source-bound residual-add proof roundtrip | locally constructed and verified by Rust tests |
-| Block receipt composition | `197,504` checked rows, `19 / 19` receipt mutations rejected |
+| Block receipt composition | `197,504` checked rows, `20 / 20` receipt mutations rejected |
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block proof metrics | blocked before aggregated proof object |
@@ -161,7 +161,7 @@ The gate now validates:
 - the d128 block receipt composition evidence before starting, including source
   file hashes, source payload hashes, six-slice ordering, inter-slice
   commitment edges, block statement recomputation, block receipt recomputation,
-  and `19 / 19` receipt mutation rejection;
+  and `20 / 20` receipt mutation rejection;
 - that the remaining expected d128 native modules and exports are still absent;
 - that the d64 modules remain hard-coded to d64 width/domain surfaces;
 - that the partial routes are GO without promoting them to a full-block proof;
@@ -270,6 +270,7 @@ This result does **not** claim:
   `scripts/tests/test_zkai_d128_gate_value_projection_proof_input.py`
   `scripts/tests/test_zkai_d128_activation_swiglu_proof_input.py`
   `scripts/tests/test_zkai_d128_down_projection_proof_input.py`
+  `scripts/tests/test_zkai_d128_residual_add_proof_input.py`
   `scripts/tests/test_zkai_d128_vector_residual_add_proof_input.py`
 
 ## Reproduce
@@ -295,9 +296,17 @@ python3 scripts/zkai_d128_down_projection_proof_input.py \
   --write-json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.tsv
 
+python3 scripts/zkai_d128_residual_add_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv
+
 python3 scripts/zkai_d128_vector_residual_add_proof_input.py \
   --write-json docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv
+
+python3 scripts/zkai_d128_block_receipt_composition_gate.py \
+  --write-json docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv
 
 python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py \
   --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json \
@@ -309,7 +318,9 @@ python3 -m unittest \
   scripts.tests.test_zkai_d128_gate_value_projection_proof_input \
   scripts.tests.test_zkai_d128_activation_swiglu_proof_input \
   scripts.tests.test_zkai_d128_down_projection_proof_input \
+  scripts.tests.test_zkai_d128_residual_add_proof_input \
   scripts.tests.test_zkai_d128_vector_residual_add_proof_input \
+  scripts.tests.test_zkai_d128_block_receipt_composition_gate \
   scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate
 
 cargo +nightly-2025-07-14 test \
@@ -334,6 +345,11 @@ cargo +nightly-2025-07-14 test \
 
 cargo +nightly-2025-07-14 test \
   d128_native_down_projection_proof \
+  --lib \
+  --features stwo-backend
+
+cargo +nightly-2025-07-14 test \
+  d128_native_residual_add_proof \
   --lib \
   --features stwo-backend
 

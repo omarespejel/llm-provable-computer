@@ -9,7 +9,7 @@ direct_d128_down_projection_air	GO_PARTIAL_D128_DOWN_PROJECTION_ONLY	128	512	Tru
 direct_d128_residual_add_air	GO_D128_SOURCE_BOUND_RESIDUAL_ADD_ONLY	128		True	True			source-bound residual-add slice only; not composed with the previous d128 slices into a full block receipt
 lift_existing_d64_modules_by_metadata	NO_GO	128	512	False	False			d64 modules validate hard-coded width, target id, domains, and log sizes
 parameterized_vector_residual_add_air	GO_PARTIAL_D128_RESIDUAL_ADD_ONLY	128		True	True			residual-add vector slice only; not a full d128 transformer-block proof
-parameterized_transformer_block_air	NO_GO_AGGREGATED_PROOF_OBJECT_MISSING	128	512	False	False			a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing
+parameterized_transformer_block_air	NO_GO_AGGREGATED_PROOF_OBJECT_MISSING	128	512	False	False			NO_GO_AGGREGATED_PROOF_OBJECT_MISSING
 d128_block_receipt_composition	GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE	128	512	False	True			receipt composition only; not recursive aggregation or one compressed verifier object
 d128_metrics_and_relabeling_suite	NO_GO_BLOCKED_BEFORE_PROOF_OBJECT	128	512	False	False			do not report proof size, verifier time, or relabeling resistance until a d128 proof object and verifier handle exist
 
@@ -102,6 +102,9 @@ d128_residual_add_relabels_full_output	source_probe	False	True	source_probe	d128
 d128_residual_add_route_statement_commitment_drift	backend_routes	False	True	backend_routes	direct d128 residual-add route statement_commitment mismatch
 d128_residual_add_route_output_commitment_drift	backend_routes	False	True	backend_routes	direct d128 residual-add route output_activation_commitment mismatch
 full_block_parameterized_route_promoted	backend_routes	False	True	backend_routes	parameterized full-block route status mismatch
+d128_block_receipt_composition_route_status_drift	backend_routes	False	True	backend_routes	d128 block receipt route status mismatch
+d128_block_receipt_composition_route_commitment_drift	backend_routes	False	True	backend_routes	d128 block receipt route commitment mismatch
+d128_block_receipt_composition_route_receipt_flag_drift	backend_routes	False	True	backend_routes	d128 receipt artifact mismatch
 d64_anchor_removed	d64_anchor	False	True	d64_anchor	d64 anchor status mismatch
 missing_module_removed	source_probe	False	True	source_probe	missing d128 module inventory mismatch
 d64_hardcoded_marker_removed	source_probe	False	True	source_probe	src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch

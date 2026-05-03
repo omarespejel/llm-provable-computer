@@ -59,7 +59,8 @@ TARGET_FF_DIM = 512
 REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
 REQUIRED_TOOLCHAIN = "nightly-2025-07-14"
 GATE_COMMITMENT_DOMAIN = "ptvm:zkai:d128-proof-artifact-backend-spike:v1"
-FIRST_BLOCKER = (
+FIRST_BLOCKER = "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING"
+FIRST_BLOCKER_DETAIL = (
     "a statement-bound d128 block receipt now composes six proof-backed slices, "
     "but recursive aggregation or a single compressed verifier object is still missing"
 )
@@ -432,6 +433,9 @@ EXPECTED_MUTATION_INVENTORY = (
     ("d128_residual_add_route_statement_commitment_drift", "backend_routes"),
     ("d128_residual_add_route_output_commitment_drift", "backend_routes"),
     ("full_block_parameterized_route_promoted", "backend_routes"),
+    ("d128_block_receipt_composition_route_status_drift", "backend_routes"),
+    ("d128_block_receipt_composition_route_commitment_drift", "backend_routes"),
+    ("d128_block_receipt_composition_route_receipt_flag_drift", "backend_routes"),
     ("d64_anchor_removed", "d64_anchor"),
     ("missing_module_removed", "source_probe"),
     ("d64_hardcoded_marker_removed", "source_probe"),
@@ -1568,6 +1572,7 @@ def build_backend_routes(source_probe: dict[str, Any]) -> list[dict[str, Any]]:
             "proof_size_bytes": None,
             "verifier_time_ms": None,
             "blocker": FIRST_BLOCKER,
+            "blocker_detail": FIRST_BLOCKER_DETAIL,
             "missing_symbols": source_probe["missing_parameterized_full_block_symbols"],
         },
         {
@@ -1619,6 +1624,7 @@ def build_payload() -> dict[str, Any]:
         "target_width": TARGET_WIDTH,
         "target_ff_dim": TARGET_FF_DIM,
         "first_blocker": FIRST_BLOCKER,
+        "first_blocker_detail": FIRST_BLOCKER_DETAIL,
         "d64_anchor_route": "GO_ANCHOR_ONLY",
         "direct_d128_route": "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
         "d128_rmsnorm_public_row_route": "GO_PARTIAL_D128_RMSNORM_PUBLIC_ROWS_ONLY",
@@ -1673,6 +1679,7 @@ def build_payload() -> dict[str, Any]:
         "verifier_time_ms": None,
         "blocked_before_metrics": True,
         "first_blocker": FIRST_BLOCKER,
+        "first_blocker_detail": FIRST_BLOCKER_DETAIL,
         "required_toolchain": REQUIRED_TOOLCHAIN,
         "stable_toolchain_status": "not_supported_by_upstream_stwo_feature_gates",
     }
@@ -2360,6 +2367,36 @@ def _mutated_cases(payload: dict[str, Any]) -> list[tuple[str, str, dict[str, An
         route["verifier_handle_exists"] = True
 
     add("full_block_parameterized_route_promoted", "backend_routes", promote_full_block_parameterized_route)
+
+    def drift_d128_block_receipt_status(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["status"] = "GO_D128_RECURSIVE_AGGREGATION_OBJECT"
+
+    add(
+        "d128_block_receipt_composition_route_status_drift",
+        "backend_routes",
+        drift_d128_block_receipt_status,
+    )
+
+    def drift_d128_block_receipt_commitment(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["block_receipt_commitment"] = "blake2b-256:" + "8a" * 32
+
+    add(
+        "d128_block_receipt_composition_route_commitment_drift",
+        "backend_routes",
+        drift_d128_block_receipt_commitment,
+    )
+
+    def drift_d128_block_receipt_flag(p: dict[str, Any]) -> None:
+        route = next(row for row in p["backend_routes"] if row["route"] == "d128_block_receipt_composition")
+        route["receipt_artifact_exists"] = False
+
+    add(
+        "d128_block_receipt_composition_route_receipt_flag_drift",
+        "backend_routes",
+        drift_d128_block_receipt_flag,
+    )
     add("d64_anchor_removed", "d64_anchor", lambda p: p.__setitem__("d64_anchor", {"status": "MISSING"}))
 
     def remove_missing_module(p: dict[str, Any]) -> None:
@@ -2440,6 +2477,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(summary.get("target_width"), TARGET_WIDTH, "summary target width")
     expect_equal(summary.get("target_ff_dim"), TARGET_FF_DIM, "summary target ff_dim")
     expect_equal(summary.get("first_blocker"), FIRST_BLOCKER, "summary first blocker")
+    expect_equal(summary.get("first_blocker_detail"), FIRST_BLOCKER_DETAIL, "summary first blocker detail")
     expect_equal(
         summary.get("direct_d128_route"),
         "NO_GO_FULL_NATIVE_CHAIN_SLICES_MISSING",
@@ -3310,6 +3348,7 @@ def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     expect_equal(proof_status.get("proof_size_bytes"), None, "proof size")
     expect_equal(proof_status.get("verifier_time_ms"), None, "verifier time")
     expect_equal(proof_status.get("blocked_before_metrics"), True, "blocked before metrics")
+    expect_equal(proof_status.get("first_blocker_detail"), FIRST_BLOCKER_DETAIL, "proof status first blocker detail")
     expect_equal(proof_status.get("required_toolchain"), REQUIRED_TOOLCHAIN, "required toolchain")
 
     if set(data.get("non_claims", [])) != set(NON_CLAIMS):

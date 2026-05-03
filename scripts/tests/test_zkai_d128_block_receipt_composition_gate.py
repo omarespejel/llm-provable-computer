@@ -35,9 +35,9 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(payload["result"], "GO")
         self.assertEqual(payload["summary"]["slice_count"], 6)
         self.assertEqual(payload["summary"]["total_checked_rows"], 197_504)
-        self.assertEqual(payload["case_count"], 19)
+        self.assertEqual(payload["case_count"], 20)
         self.assertTrue(payload["all_mutations_rejected"])
-        self.assertEqual(payload["summary"]["mutations_rejected"], 19)
+        self.assertEqual(payload["summary"]["mutations_rejected"], 20)
         self.assertEqual(
             payload["block_receipt"]["output_activation_commitment"],
             COMPOSITION.OUTPUT_ACTIVATION_COMMITMENT,
@@ -144,6 +144,21 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         self.assertEqual(cases["output_commitment_drift"]["rejection_layer"], "block_receipt")
         self.assertIn("block receipt output_activation_commitment", cases["output_commitment_drift"]["error"])
 
+    def test_rejects_non_claim_and_mutation_metric_drift(self) -> None:
+        cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
+        self.assertTrue(cases["non_claims_drift"]["rejected"])
+        self.assertEqual(cases["non_claims_drift"]["rejection_layer"], "parser_or_schema")
+
+        payload = self.fresh_payload()
+        payload["case_count"] = 1
+        with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "case count"):
+            COMPOSITION.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["summary"]["mutations_rejected"] = 0
+        with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "mutations rejected"):
+            COMPOSITION.validate_payload(payload)
+
     def test_rejects_down_projection_residual_delta_source_drift(self) -> None:
         source = COMPOSITION.source_payloads()
         source["down_projection"]["residual_delta_commitment"] = "blake2b-256:" + "66" * 32
@@ -156,7 +171,7 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
 
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
-        with tempfile.TemporaryDirectory() as raw_tmp:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             json_path = tmp / "block-receipt.json"
             tsv_path = tmp / "block-receipt.tsv"
@@ -164,6 +179,24 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, payload)
             self.assertIn("missing_bridge_slice", tsv_path.read_text(encoding="utf-8"))
+
+    def test_write_outputs_rejects_paths_outside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            out = pathlib.Path(raw_tmp) / "outside.json"
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "escapes repository"):
+                COMPOSITION.write_outputs(payload, out, None)
+
+    def test_write_outputs_rejects_symlink_outputs_inside_repo(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real = tmp / "real.json"
+            real.write_text("{}", encoding="utf-8")
+            symlink = tmp / "link.json"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "symlink"):
+                COMPOSITION.write_outputs(payload, symlink, None)
 
     def test_load_json_rejects_oversized_repo_local_source(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:

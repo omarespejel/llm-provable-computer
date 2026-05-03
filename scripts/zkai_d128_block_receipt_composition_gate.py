@@ -16,8 +16,10 @@ import dataclasses
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import sys
+import tempfile
 from typing import Any, Callable
 
 
@@ -198,7 +200,7 @@ def file_sha256(path: pathlib.Path) -> str:
 
 
 def relative_path(path: pathlib.Path) -> str:
-    return str(path.resolve().relative_to(ROOT.resolve()))
+    return path.resolve().relative_to(ROOT.resolve()).as_posix()
 
 
 def require_commitment(value: Any, field: str) -> str:
@@ -538,7 +540,7 @@ def build_payload(payloads: dict[str, dict[str, Any]] | None = None) -> dict[str
         "validation_commands": VALIDATION_COMMANDS,
     }
     refresh_commitments(payload)
-    validate_payload(payload)
+    validate_payload(payload, require_mutations=False)
     return payload
 
 
@@ -789,7 +791,7 @@ def _validate_receipt(payload: dict[str, Any]) -> None:
     )
 
 
-def validate_payload(payload: Any) -> None:
+def validate_payload(payload: Any, *, require_mutations: bool = True) -> None:
     if not isinstance(payload, dict):
         raise D128BlockReceiptError("block receipt composition payload must be an object")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
@@ -820,6 +822,39 @@ def validate_payload(payload: Any) -> None:
     expect_equal(summary.get("total_checked_rows"), total_checked_rows, "summary row count")
     expect_equal(summary.get("input_activation_commitment"), INPUT_ACTIVATION_COMMITMENT, "summary input commitment")
     expect_equal(summary.get("output_activation_commitment"), OUTPUT_ACTIVATION_COMMITMENT, "summary output commitment")
+    expect_equal(payload.get("non_claims"), NON_CLAIMS, "non_claims")
+    expect_equal(summary.get("non_claims"), NON_CLAIMS, "summary non_claims")
+    expect_equal(payload.get("validation_commands"), VALIDATION_COMMANDS, "validation commands")
+    if require_mutations:
+        cases = payload.get("cases")
+        if not isinstance(cases, list):
+            raise D128BlockReceiptError("mutation cases must be a list")
+        expected = expected_mutation_inventory()
+        expect_equal(payload.get("case_count"), len(cases), "case count length")
+        expect_equal(payload.get("case_count"), len(expected), "case count inventory")
+        expect_equal(summary.get("mutation_cases"), len(cases), "summary mutation count")
+        rejected_count = 0
+        for index, (case, expected_case) in enumerate(zip(cases, expected, strict=True)):
+            if not isinstance(case, dict):
+                raise D128BlockReceiptError("mutation case must be an object")
+            expect_equal(case.get("mutation"), expected_case["mutation"], f"mutation case {index} name")
+            expect_equal(case.get("surface"), expected_case["surface"], f"mutation case {index} surface")
+            expect_equal(case.get("baseline_accepted"), True, f"mutation case {index} baseline")
+            if not isinstance(case.get("mutated_accepted"), bool):
+                raise D128BlockReceiptError(f"mutation case {index} accepted flag must be boolean")
+            if not isinstance(case.get("rejected"), bool):
+                raise D128BlockReceiptError(f"mutation case {index} rejected flag must be boolean")
+            expect_equal(
+                case["mutated_accepted"],
+                not case["rejected"],
+                f"mutation case {index} accepted/rejected relation",
+            )
+            if case["rejected"]:
+                rejected_count += 1
+                if not case.get("error"):
+                    raise D128BlockReceiptError(f"mutation case {index} error must be non-empty")
+        expect_equal(summary.get("mutations_rejected"), rejected_count, "summary mutations rejected")
+        expect_equal(payload.get("all_mutations_rejected"), all(case["rejected"] for case in cases), "all mutations rejected")
 
 
 def classify_error(error: Exception) -> str:
@@ -931,6 +966,15 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
         lambda p: p["block_receipt"].__setitem__("output_activation_commitment", "blake2b-256:" + "44" * 32),
     )
     add(
+        "non_claims_drift",
+        "parser_or_schema",
+        lambda p: (
+            p.__setitem__("non_claims", []),
+            p["summary"].__setitem__("non_claims", []),
+        ),
+        refresh=False,
+    )
+    add(
         "source_payload_hash_drift",
         "source_evidence_manifest",
         lambda p: p["source_evidence_manifest"][0].__setitem__("payload_sha256", "66" * 32),
@@ -943,13 +987,20 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     return cases
 
 
+def expected_mutation_inventory() -> list[dict[str, str]]:
+    return [
+        {"mutation": mutation, "surface": surface}
+        for mutation, surface, _mutated in _mutated_cases(build_payload())
+    ]
+
+
 def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     baseline = copy.deepcopy(baseline or build_payload())
-    validate_payload(baseline)
+    validate_payload(baseline, require_mutations=False)
     cases = []
     for mutation, surface, mutated in _mutated_cases(baseline):
         try:
-            validate_payload(mutated)
+            validate_payload(mutated, require_mutations=False)
             accepted = True
             error = ""
             layer = "accepted"
@@ -996,13 +1047,65 @@ def to_tsv(payload: dict[str, Any]) -> str:
     return buffer.getvalue()
 
 
+def _assert_repo_output_path(path: pathlib.Path) -> pathlib.Path:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise D128BlockReceiptError(f"output path must not be a symlink: {path}")
+    resolved = candidate.resolve()
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise D128BlockReceiptError(f"output path escapes repository: {path}") from err
+    if resolved.exists() and resolved.is_dir():
+        raise D128BlockReceiptError(f"output path must not be a directory: {path}")
+    parent = resolved.parent
+    if parent.exists() and not parent.is_dir():
+        raise D128BlockReceiptError(f"output parent is not a directory: {parent}")
+    parent.mkdir(parents=True, exist_ok=True)
+    return resolved
+
+
+def _fsync_parent_directories(paths: list[pathlib.Path]) -> None:
+    seen: set[pathlib.Path] = set()
+    for path in paths:
+        parent = path.resolve().parent
+        if parent in seen:
+            continue
+        seen.add(parent)
+        flags = getattr(os, "O_DIRECTORY", 0) | os.O_RDONLY
+        try:
+            fd = os.open(parent, flags)
+        except OSError:
+            continue
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
+def _atomic_write_text(path: pathlib.Path, text: str) -> pathlib.Path:
+    resolved = _assert_repo_output_path(path)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=resolved.parent, delete=False) as handle:
+        tmp = pathlib.Path(handle.name)
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    try:
+        os.replace(tmp, resolved)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+    return resolved
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    validate_payload(payload)
+    written: list[pathlib.Path] = []
     if json_path is not None:
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        written.append(_atomic_write_text(json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n"))
     if tsv_path is not None:
-        tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        tsv_path.write_text(to_tsv(payload), encoding="utf-8")
+        written.append(_atomic_write_text(tsv_path, to_tsv(payload)))
+    _fsync_parent_directories(written)
 
 
 def main(argv: list[str] | None = None) -> int:
