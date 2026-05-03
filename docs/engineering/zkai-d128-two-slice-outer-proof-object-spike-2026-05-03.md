@@ -35,7 +35,7 @@ of an outer proof-object backend surface.
 
 The first blocker is:
 
-> no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks and bind `two_slice_target_commitment` as a public input
+> no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks, bind `two_slice_target_commitment` as a public input, bind the selected slice statements, and bind the selected source evidence hashes
 
 Missing required GO artifacts:
 

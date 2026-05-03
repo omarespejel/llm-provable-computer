@@ -665,9 +665,33 @@
   "outer_public_input_contract": {
     "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
     "required_public_inputs": [
-      "two_slice_target_commitment"
+      "two_slice_target_commitment",
+      "selected_slice_statement_commitments",
+      "selected_source_evidence_hashes"
     ],
     "selected_slice_chain_commitment": "blake2b-256:aeefec1d07653cb314c83d405a82bfa5af7cc09f9aeafdd3073dca5dfe83e088",
+    "selected_slice_statement_commitments": [
+      {
+        "slice_id": "rmsnorm_public_rows",
+        "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+      },
+      {
+        "slice_id": "rmsnorm_projection_bridge",
+        "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+      }
+    ],
+    "selected_source_evidence_hashes": [
+      {
+        "slice_id": "rmsnorm_public_rows",
+        "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+        "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+      },
+      {
+        "slice_id": "rmsnorm_projection_bridge",
+        "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+        "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+      }
+    ],
     "source_full_aggregation_target_commitment": "blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9",
     "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
     "two_slice_target_commitment": "blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640"
@@ -691,14 +715,14 @@
   ],
   "proof_object_attempt": {
     "blocked_before_metrics": true,
-    "first_blocker": "no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks and bind two_slice_target_commitment as a public input",
-    "go_criterion": "one outer proof, accumulator, or proof-carrying artifact verifies the two selected d128 slice-verifier checks and binds two_slice_target_commitment as a public input",
+    "first_blocker": "no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks, bind two_slice_target_commitment as a public input, bind the selected slice statements, and bind the selected source evidence hashes",
+    "go_criterion": "one outer proof, accumulator, or proof-carrying artifact verifies the two selected d128 slice-verifier checks, binds two_slice_target_commitment as a public input, binds the selected slice statements, and binds the selected source evidence hashes",
     "missing_backend_features": [
       "nested verifier program/AIR/circuit for d128 rmsnorm_public_rows",
       "nested verifier program/AIR/circuit for d128 rmsnorm_projection_bridge",
       "outer proof or PCD accumulator object over the selected d128 verifier checks",
       "outer verifier handle for that proof or accumulator object",
-      "public-input binding inside the outer backend for two_slice_target_commitment",
+      "public-input binding inside the outer backend for two_slice_target_commitment, selected slice statements, and selected source evidence hashes",
       "mutation tests against relabeling of the selected outer proof public inputs"
     ],
     "outer_proof_artifacts": [],
@@ -734,7 +758,7 @@
   "summary": {
     "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
     "blocked_before_metrics": true,
-    "first_blocker": "no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks and bind two_slice_target_commitment as a public input",
+    "first_blocker": "no executable outer proof/accumulator backend artifact in the current repository can prove the selected two d128 slice-verifier checks, bind two_slice_target_commitment as a public input, bind the selected slice statements, and bind the selected source evidence hashes",
     "mutation_cases": 39,
     "mutations_rejected": 39,
     "outer_proof_object_status": "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
