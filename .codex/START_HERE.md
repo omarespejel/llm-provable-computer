@@ -57,6 +57,11 @@ This repository currently has three live lanes.
    - The d128 down-projection handle consumes `hidden_activation_commitment`,
      checks `65,536` multiplication rows, and emits an exact
      quotient/remainder-bound `residual_delta_commitment`.
+   - The d128 range-policy discipline gate records that the d64 fixture happens
+     to fit the old `+/-1024` q8 semantic bound, but valid d128 projection,
+     hidden, residual, and output tensors exceed it; per-tensor range policy is
+     now checked as statement data. See
+     `docs/engineering/zkai-d128-range-policy-discipline-2026-05-03.md`.
    - The d128 block receipt composition gate now binds the six checked slice
      handles into one statement-bound receipt over `197,504` checked rows; see
      `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.
