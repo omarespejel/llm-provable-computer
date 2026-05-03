@@ -463,14 +463,8 @@ def paper_actions() -> list[dict[str, str]]:
     ]
 
 
-def canonical_system_expectations() -> dict[str, dict[str, str]]:
-    return {
-        row["system"]: {
-            "status": row["status"],
-            "recommended_use": row["recommended_use"],
-        }
-        for row in system_rows()
-    }
+def canonical_system_expectations() -> dict[str, dict[str, Any]]:
+    return {row["system"]: row for row in system_rows()}
 
 
 def _is_https_url(raw: str) -> bool:
@@ -507,6 +501,12 @@ def validate_payload(payload: dict[str, Any], *, require_mutations: bool = True)
         raise SotaWatchlistError("decision drift")
     if payload["question"] != QUESTION:
         raise SotaWatchlistError("question drift")
+    if payload["classification_rules"] != classification_rules():
+        raise SotaWatchlistError("classification rules drift")
+    if payload["paper_actions"] != paper_actions():
+        raise SotaWatchlistError("paper actions drift")
+    if payload["non_claims"] != NON_CLAIMS:
+        raise SotaWatchlistError("non-claims drift")
     validate_generated_at(payload["generated_at"])
     validate_git_commit(payload["git_commit"])
     if payload["checked_at"] != CHECKED_AT:
@@ -576,11 +576,6 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
         status = row["status"]
         if status not in ALLOWED_STATUSES:
             raise SotaWatchlistError(f"unknown status for {system}")
-        canonical = canonical_system_expectations()[system]
-        if row["status"] != canonical["status"]:
-            raise SotaWatchlistError(f"canonical status drift for {system}")
-        if row["recommended_use"] != canonical["recommended_use"]:
-            raise SotaWatchlistError(f"canonical recommended_use drift for {system}")
         if row["checked_at"] != CHECKED_AT:
             raise SotaWatchlistError(f"checked_at drift for {system}")
         if not _is_https_url(row["primary_source"]):
@@ -589,6 +584,10 @@ def validate_systems(systems: list[dict[str, Any]]) -> None:
             raise SotaWatchlistError(f"local evidence must be a string for {system}")
         if row["local_evidence"]:
             _resolve_repo_relative_existing_file(row["local_evidence"], f"local evidence for {system}")
+        canonical = canonical_system_expectations()[system]
+        for field, expected in canonical.items():
+            if row[field] != expected:
+                raise SotaWatchlistError(f"canonical {field} drift for {system}")
         for flag in (
             "public_proof_artifact_available",
             "public_verifier_input_available",

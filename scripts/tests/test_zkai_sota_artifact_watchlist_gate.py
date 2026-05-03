@@ -171,6 +171,41 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.SotaWatchlistError, "git_commit malformed"):
             GATE.validate_payload(payload)
 
+    def test_rejects_top_level_policy_array_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["classification_rules"][0]["rule"] = "leaderboard"
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "classification rules drift"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["paper_actions"][0]["paper"] = "different paper"
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "paper actions drift"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["non_claims"].append("new unreviewed non-claim")
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "non-claims drift"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_canonical_provenance_field_drift(self) -> None:
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "NANOZK")
+        row["primary_source"] = "https://example.com/nanozk"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "canonical primary_source drift"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        row = next(row for row in payload["systems"] if row["system"] == "Obelyzk")
+        row["blocked_metric"] = "matched benchmark"
+        payload["systems_commitment"] = GATE.blake2b_commitment(
+            payload["systems"], "ptvm:zkai:sota-artifact-watchlist:systems:v1"
+        )
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "canonical blocked_metric drift"):
+            GATE.validate_payload(payload)
+
         payload = self.fresh_payload()
         payload["git_commit"] = "unavailable"
         with self.assertRaisesRegex(GATE.SotaWatchlistError, "git_commit malformed"):
