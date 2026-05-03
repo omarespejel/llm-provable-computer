@@ -611,11 +611,21 @@ def aggregation_target_manifest(source: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _candidate_path_from_spec(spec: dict[str, Any]) -> pathlib.Path:
+    raw_path = require_str(spec.get("path"), "candidate surface path")
+    pure_path = pathlib.PurePosixPath(raw_path)
+    if pure_path.is_absolute() or raw_path != pure_path.as_posix() or any(part in ("", ".", "..") for part in pure_path.parts):
+        raise D128AggregatedProofObjectFeasibilityError(f"candidate surface path must be repo-relative: {raw_path}")
+    return ROOT.joinpath(*pure_path.parts)
+
+
 def _candidate_path_present(path: pathlib.Path) -> bool:
     try:
         path.lstat()
     except FileNotFoundError:
         return False
+    except OSError as err:
+        raise D128AggregatedProofObjectFeasibilityError(f"failed to inspect candidate artifact path {path}: {err}") from err
     return True
 
 
@@ -628,7 +638,7 @@ def _candidate_file_sha256(path: pathlib.Path) -> str | None:
 def candidate_inventory() -> list[dict[str, Any]]:
     inventory = []
     for spec in CANDIDATE_SURFACES:
-        path = ROOT / spec["path"]
+        path = _candidate_path_from_spec(spec)
         exists = _candidate_path_present(path)
         expected_sha256 = spec["expected_file_sha256"]
         if spec["expected_exists"] is True and exists is not True:

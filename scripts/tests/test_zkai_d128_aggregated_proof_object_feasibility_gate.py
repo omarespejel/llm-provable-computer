@@ -124,6 +124,52 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
         finally:
             GATE.CANDIDATE_SURFACES = original_surfaces
 
+    def test_candidate_inventory_rejects_non_repo_relative_candidate_path(self) -> None:
+        original_surfaces = GATE.CANDIDATE_SURFACES
+        try:
+            GATE.CANDIDATE_SURFACES = (
+                {
+                    "name": "absolute_candidate_path",
+                    "kind": "required_proof_artifact",
+                    "path": "/tmp/not-a-repo-artifact.json",
+                    "expected_exists": False,
+                    "expected_file_sha256": None,
+                    "classification": "MISSING_REQUIRED_ARTIFACT",
+                    "reason": "candidate paths must be repo-relative",
+                },
+            )
+            with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "repo-relative"):
+                GATE.candidate_inventory()
+
+            GATE.CANDIDATE_SURFACES = (
+                {
+                    "name": "parent_escape_candidate_path",
+                    "kind": "required_proof_artifact",
+                    "path": "../not-a-repo-artifact.json",
+                    "expected_exists": False,
+                    "expected_file_sha256": None,
+                    "classification": "MISSING_REQUIRED_ARTIFACT",
+                    "reason": "candidate paths must not escape the repo",
+                },
+            )
+            with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "repo-relative"):
+                GATE.candidate_inventory()
+        finally:
+            GATE.CANDIDATE_SURFACES = original_surfaces
+
+    def test_candidate_path_presence_wraps_os_errors(self) -> None:
+        original_lstat = pathlib.Path.lstat
+
+        def denied_lstat(_self: pathlib.Path) -> object:
+            raise PermissionError("denied for test")
+
+        try:
+            pathlib.Path.lstat = denied_lstat  # type: ignore[method-assign]
+            with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "failed to inspect"):
+                GATE._candidate_path_present(ROOT / "docs")
+        finally:
+            pathlib.Path.lstat = original_lstat  # type: ignore[method-assign]
+
     def test_proof_object_attempt_blocks_metrics_until_artifact_exists(self) -> None:
         attempt = self.fresh_payload()["proof_object_attempt"]
         self.assertFalse(attempt["aggregated_proof_object_claimed"])
