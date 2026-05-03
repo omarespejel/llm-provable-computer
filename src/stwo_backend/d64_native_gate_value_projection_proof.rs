@@ -1326,6 +1326,48 @@ mod tests {
     }
 
     #[test]
+    fn gate_value_rejects_value_projection_remainder_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        let remainder = value["value_projection_remainder_q8"][0]
+            .as_i64()
+            .expect("remainder");
+        value["value_projection_remainder_q8"][0] = Value::from(
+            (remainder + 1).rem_euclid(ZKAI_D64_GATE_VALUE_PROJECTION_SCALE_DIVISOR as i64),
+        );
+        let error = zkai_d64_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("value projection remainder drift"));
+    }
+
+    #[test]
+    fn gate_value_rejects_gate_projection_remainder_hash_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["gate_projection_remainder_sha256"] = Value::String("0".repeat(64));
+        let error = zkai_d64_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("gate projection remainder hash"));
+    }
+
+    #[test]
+    fn gate_value_rejects_value_projection_remainder_hash_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["value_projection_remainder_sha256"] = Value::String("0".repeat(64));
+        let error = zkai_d64_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("value projection remainder hash"));
+    }
+
+    #[test]
     fn gate_value_rejects_projection_scale_divisor_drift() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["projection_scale_divisor"] =
