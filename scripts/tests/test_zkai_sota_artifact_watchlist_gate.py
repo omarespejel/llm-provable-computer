@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+from unittest import mock
 import pathlib
 import tempfile
 import unittest
@@ -159,6 +160,21 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.SotaWatchlistError, "systems commitment mismatch"):
             GATE.validate_payload(payload)
 
+    def test_rejects_malformed_generated_at_or_git_commit(self) -> None:
+        payload = self.fresh_payload()
+        payload["generated_at"] = "not-a-timestamp"
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "generated_at malformed"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["git_commit"] = "not-a-sha"
+        with self.assertRaisesRegex(GATE.SotaWatchlistError, "git_commit malformed"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["git_commit"] = "unavailable"
+        GATE.validate_payload(payload)
+
     def test_rejects_summary_source_context_or_watchlist_drift(self) -> None:
         payload = self.fresh_payload()
         payload["summary"]["source_context_only_rows"] = ["DeepProve-1"]
@@ -236,6 +252,21 @@ class ZkAiSotaArtifactWatchlistGateTests(unittest.TestCase):
             self.assertEqual(tsv[0].split("\t"), list(GATE.TSV_COLUMNS))
             self.assertIn("DeepProve-1", tsv[5])
             self.assertIn("SNIP-36", tsv[-1])
+
+    def test_mutation_cases_reraises_unexpected_validation_errors(self) -> None:
+        payload = self.fresh_payload()
+        original_validate = GATE.validate_payload
+
+        def explode_on_core_validation(candidate: dict, *, require_mutations: bool = True) -> None:
+            if not require_mutations:
+                raise RuntimeError("unexpected validator bug")
+            original_validate(candidate, require_mutations=require_mutations)
+
+        with (
+            mock.patch.object(GATE, "validate_payload", new=explode_on_core_validation),
+            self.assertRaisesRegex(RuntimeError, "unexpected validator bug"),
+        ):
+            GATE.mutation_cases(payload)
 
     def test_git_commit_override_is_normalized_and_validated(self) -> None:
         old = dict()
