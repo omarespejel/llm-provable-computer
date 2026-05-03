@@ -609,9 +609,13 @@ def _validate_target(payload: dict[str, Any], source: dict[str, Any]) -> None:
     )
 
 
-def _validate_candidate_inventory(payload: dict[str, Any]) -> None:
+def _validate_candidate_inventory(
+    payload: dict[str, Any],
+    *,
+    expected_candidate_inventory: list[dict[str, Any]] | None = None,
+) -> None:
     inventory = require_list(payload.get("candidate_inventory"), "candidate inventory")
-    expected = candidate_inventory()
+    expected = expected_candidate_inventory if expected_candidate_inventory is not None else candidate_inventory()
     expect_equal(inventory, expected, "candidate inventory")
     if any(require_object(item, "candidate inventory row").get("accepted_as_outer_proof_object") for item in inventory):
         raise D128TwoSliceOuterProofObjectSpikeError("candidate inventory must not accept any current outer proof object")
@@ -666,7 +670,60 @@ def _validate_summary(payload: dict[str, Any], source: dict[str, Any]) -> None:
         expect_equal(summary.get("mutations_rejected"), len(EXPECTED_MUTATION_INVENTORY), "summary mutations rejected")
 
 
-def validate_payload(payload: Any, *, source_override: dict[str, Any] | None = None) -> None:
+def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int] | None:
+    has_cases = "cases" in payload
+    has_case_count = "case_count" in payload
+    has_all_rejected = "all_mutations_rejected" in payload
+    has_inventory = "mutation_inventory" in payload
+    if not (has_cases or has_case_count or has_all_rejected or has_inventory):
+        return None
+    if not (has_cases and has_case_count and has_all_rejected and has_inventory):
+        raise D128TwoSliceOuterProofObjectSpikeError(
+            "mutation metadata must include mutation_inventory, cases, case_count, and all_mutations_rejected together"
+        )
+    expect_equal(payload.get("mutation_inventory"), expected_mutation_inventory(), "mutation inventory")
+    cases = require_list(payload.get("cases"), "mutation cases")
+    case_pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+    rejected_count = 0
+    expected_keys = set(TSV_COLUMNS)
+    for index, raw_case in enumerate(cases):
+        case = require_object(raw_case, f"mutation case {index}")
+        if set(case) != expected_keys:
+            raise D128TwoSliceOuterProofObjectSpikeError(f"mutation case {index} columns mismatch")
+        mutation = require_str(case.get("mutation"), f"mutation case {index} mutation")
+        surface = require_str(case.get("surface"), f"mutation case {index} surface")
+        pair = (mutation, surface)
+        if pair in seen_pairs:
+            raise D128TwoSliceOuterProofObjectSpikeError(f"duplicate mutation case {index}")
+        seen_pairs.add(pair)
+        case_pairs.append(pair)
+        expect_equal(case.get("baseline_result"), RESULT, f"mutation case {index} baseline_result")
+        if not isinstance(case.get("mutated_accepted"), bool):
+            raise D128TwoSliceOuterProofObjectSpikeError(f"mutation case {index} mutated_accepted must be boolean")
+        if not isinstance(case.get("rejected"), bool):
+            raise D128TwoSliceOuterProofObjectSpikeError(f"mutation case {index} rejected must be boolean")
+        if case["rejected"] == case["mutated_accepted"]:
+            raise D128TwoSliceOuterProofObjectSpikeError(
+                f"mutation case {index} rejected/accepted fields are inconsistent"
+            )
+        require_str(case.get("rejection_layer"), f"mutation case {index} rejection_layer")
+        if not isinstance(case.get("error"), str):
+            raise D128TwoSliceOuterProofObjectSpikeError(f"mutation case {index} error must be a string")
+        if case["rejected"]:
+            rejected_count += 1
+    expect_equal(tuple(case_pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
+    expect_equal(payload.get("case_count"), len(cases), "mutation case_count")
+    expect_equal(payload.get("all_mutations_rejected"), all(case["rejected"] for case in cases), "all mutations rejected")
+    return len(cases), rejected_count
+
+
+def validate_payload(
+    payload: Any,
+    *,
+    source_override: dict[str, Any] | None = None,
+    expected_candidate_inventory: list[dict[str, Any]] | None = None,
+) -> None:
     payload = require_object(payload, "two-slice outer proof-object spike payload")
     expect_equal(payload.get("schema"), SCHEMA, "schema")
     expect_equal(payload.get("decision"), DECISION, "decision")
@@ -676,42 +733,63 @@ def validate_payload(payload: Any, *, source_override: dict[str, Any] | None = N
     expect_equal(payload.get("outer_proof_object_result"), OUTER_PROOF_RESULT, "outer proof-object result")
     source = _validate_source_descriptor(payload, source_override=source_override)
     _validate_target(payload, source)
-    _validate_candidate_inventory(payload)
+    _validate_candidate_inventory(payload, expected_candidate_inventory=expected_candidate_inventory)
     _validate_attempt(payload)
     _validate_summary(payload, source)
     expect_equal(payload.get("non_claims"), NON_CLAIMS, "non-claims")
     expect_equal(payload.get("pivot_options"), PIVOT_OPTIONS, "pivot options")
     expect_equal(payload.get("validation_commands"), VALIDATION_COMMANDS, "validation commands")
-    if "mutation_inventory" not in payload:
+    case_metadata = _validate_case_metadata(payload)
+    if case_metadata is None:
         return
-    expect_equal(payload.get("mutation_inventory"), expected_mutation_inventory(), "mutation inventory")
-    cases = require_list(payload.get("cases"), "mutation cases")
-    expect_equal(payload.get("case_count"), len(EXPECTED_MUTATION_INVENTORY), "mutation case_count")
-    if payload.get("all_mutations_rejected") is not True:
+    case_count, rejected_count = case_metadata
+    if rejected_count != case_count:
         raise D128TwoSliceOuterProofObjectSpikeError("not all two-slice outer proof-object mutations rejected")
-    seen = set()
-    for case in cases:
-        case = require_object(case, "mutation case")
-        mutation = require_str(case.get("mutation"), "mutation case mutation")
-        if mutation in seen:
-            raise D128TwoSliceOuterProofObjectSpikeError("duplicate mutation case")
-        seen.add(mutation)
-        if case.get("mutated_accepted") is not False or case.get("rejected") is not True:
-            raise D128TwoSliceOuterProofObjectSpikeError("mutation case did not fail closed")
-        require_str(case.get("error"), "mutation case error")
-    expect_equal(seen, {mutation for mutation, _surface in EXPECTED_MUTATION_INVENTORY}, "mutation case inventory")
-    expect_equal(payload["summary"].get("mutation_cases"), len(EXPECTED_MUTATION_INVENTORY), "summary mutation case count")
-    expect_equal(payload["summary"].get("mutations_rejected"), len(EXPECTED_MUTATION_INVENTORY), "summary mutation rejection count")
+    expect_equal(payload["summary"].get("mutation_cases"), case_count, "summary mutation case count")
+    expect_equal(payload["summary"].get("mutations_rejected"), rejected_count, "summary mutation rejection count")
 
 
 MutationFn = Callable[[dict[str, Any]], None]
 
 
-def _case(name: str, surface: str, baseline: dict[str, Any], mutate: MutationFn) -> dict[str, Any]:
+def classify_error(error: Exception) -> str:
+    text = str(error).lower()
+    if "schema" in text or "decision" in text or "result" in text or "non-claims" in text or "validation commands" in text:
+        return "parser_or_schema"
+    if "source aggregation" in text or "file_sha" in text or "payload_sha" in text:
+        return "source_aggregation_evidence"
+    if "two-slice target commitment" in text:
+        return "two_slice_target_commitment"
+    if "candidate inventory" in text or "candidate artifact" in text or "required two-slice outer proof artifact" in text:
+        return "candidate_inventory"
+    if "proof" in text or "pcd" in text or "verifier handle" in text or "metric" in text or "blocker" in text:
+        return "proof_object_attempt"
+    if "outer public input" in text:
+        return "outer_public_input_contract"
+    if "two-slice target" in text or "selected slice" in text or "public input" in text:
+        return "two_slice_target"
+    if "summary" in text:
+        return "summary"
+    return "parser_or_schema"
+
+
+def _case(
+    name: str,
+    surface: str,
+    baseline: dict[str, Any],
+    mutate: MutationFn,
+    *,
+    source_override: dict[str, Any],
+    expected_candidate_inventory: list[dict[str, Any]],
+) -> dict[str, Any]:
     mutated = copy.deepcopy(baseline)
     try:
         mutate(mutated)
-        validate_payload(mutated, source_override=load_checked_source())
+        validate_payload(
+            mutated,
+            source_override=source_override,
+            expected_candidate_inventory=expected_candidate_inventory,
+        )
         return {
             "mutation": name,
             "surface": surface,
@@ -723,13 +801,14 @@ def _case(name: str, surface: str, baseline: dict[str, Any], mutate: MutationFn)
         }
     except Exception as err:  # noqa: BLE001 - mutations intentionally collect rejection diagnostics.
         message = str(err) or f"{type(err).__name__} with empty message"
+        layer = classify_error(err)
         return {
             "mutation": name,
             "surface": surface,
             "baseline_result": baseline["result"],
             "mutated_accepted": False,
             "rejected": True,
-            "rejection_layer": surface,
+            "rejection_layer": layer,
             "error": message,
         }
 
@@ -740,6 +819,8 @@ def _selected_check(payload: dict[str, Any], index: int = 0) -> dict[str, Any]:
 
 
 def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    source = load_checked_source()
+    expected_inventory = candidate_inventory()
     mutators: dict[str, MutationFn] = {
         "source_feasibility_path_drift": lambda p: p["source_aggregation_evidence"].__setitem__("path", "docs/engineering/evidence/../evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json"),
         "source_feasibility_file_hash_drift": lambda p: p["source_aggregation_evidence"].__setitem__("file_sha256", "0" * 64),
@@ -783,7 +864,16 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
     }
     cases = []
     for mutation, surface in EXPECTED_MUTATION_INVENTORY:
-        cases.append(_case(mutation, surface, payload, mutators[mutation]))
+        cases.append(
+            _case(
+                mutation,
+                surface,
+                payload,
+                mutators[mutation],
+                source_override=source,
+                expected_candidate_inventory=expected_inventory,
+            )
+        )
     return cases
 
 

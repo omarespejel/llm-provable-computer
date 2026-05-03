@@ -133,7 +133,7 @@
       "mutated_accepted": false,
       "mutation": "source_feasibility_result_drift",
       "rejected": true,
-      "rejection_layer": "source_aggregation_evidence",
+      "rejection_layer": "parser_or_schema",
       "surface": "source_aggregation_evidence"
     },
     {
@@ -403,7 +403,7 @@
       "mutated_accepted": false,
       "mutation": "missing_backend_feature_removed",
       "rejected": true,
-      "rejection_layer": "proof_object_attempt",
+      "rejection_layer": "parser_or_schema",
       "surface": "proof_object_attempt"
     },
     {
