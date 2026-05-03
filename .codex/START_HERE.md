@@ -37,18 +37,22 @@ This repository currently has three live lanes.
 
 3. Verifiable-AI statement-bound transformer lane
    - The `d=64` native route has a six-slice proof-backed receipt chain.
-   - The `d=128` route now has five partial proof handles: RMSNorm public rows,
+   - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
-     and a parameterized vector residual-add slice. The fifth handle is not a
-     native residual proof or a composed full-block receipt.
+     down-projection, and a parameterized vector residual-add slice. The
+     residual handle is not a native residual proof or a composed full-block
+     receipt.
    - The d128 gate/value projection handle proves `131,072` public
      multiplication rows and emits `gate_value_projection_output_commitment`.
    - The d128 activation/SwiGLU handle consumes
      `gate_value_projection_output_commitment`, checks `512` activation/SwiGLU
      rows plus a `2049`-row bounded activation lookup table, and emits
      `hidden_activation_commitment`.
-   - This is a partial GO only: down projection, native residual, full
-     composition, recursion, and full-block metrics remain blocked.
+   - The d128 down-projection handle consumes `hidden_activation_commitment`,
+     checks `65,536` multiplication rows, and emits an exact
+     quotient/remainder-bound `residual_delta_commitment`.
+   - This is a partial GO only: native residual, full composition, recursion,
+     and full-block metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -119,9 +123,9 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
-10. Continue the verifiable-AI d128 lane with the down-projection proof handle
-    that consumes `hidden_activation_commitment`; do not report full-block
-    metrics until the full d128 receipt or a checked no-go exists.
+10. Continue the verifiable-AI d128 lane with native residual/composition work
+    that consumes exact quotient/remainder-bound `residual_delta_commitment`; do not report full-block metrics
+    until the full d128 receipt or a checked no-go exists.
 
 ## What not to do
 
