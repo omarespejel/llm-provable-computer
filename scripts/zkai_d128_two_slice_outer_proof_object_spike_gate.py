@@ -138,6 +138,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("outer_proof_claimed_without_artifact", "proof_object_attempt"),
     ("pcd_claimed_without_artifact", "proof_object_attempt"),
     ("verifier_handle_claimed_without_artifact", "proof_object_attempt"),
+    ("go_criterion_drift", "proof_object_attempt"),
     ("target_public_input_claimed_without_proof", "proof_object_attempt"),
     ("selected_statements_claimed_without_proof", "proof_object_attempt"),
     ("selected_source_hashes_claimed_without_proof", "proof_object_attempt"),
@@ -346,7 +347,16 @@ def _safe_candidate_path(raw_path: str) -> pathlib.Path:
     pure_path = pathlib.PurePosixPath(require_str(raw_path, "candidate path"))
     if pure_path.is_absolute() or raw_path != pure_path.as_posix() or any(part in ("", ".", "..") for part in pure_path.parts):
         raise D128TwoSliceOuterProofObjectSpikeError(f"candidate path must be repo-relative: {raw_path}")
-    return ROOT.joinpath(*pure_path.parts)
+    resolved_root = ROOT.resolve()
+    candidate = ROOT.joinpath(*pure_path.parts)
+    resolved_path = candidate.resolve(strict=False)
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as err:
+        raise D128TwoSliceOuterProofObjectSpikeError(
+            f"candidate path must stay under repository root: {raw_path}"
+        ) from err
+    return candidate
 
 
 def _path_entry_exists(path: pathlib.Path) -> bool:
@@ -671,6 +681,7 @@ def _validate_candidate_inventory(
 
 def _validate_attempt(payload: dict[str, Any]) -> None:
     attempt = require_object(payload.get("proof_object_attempt"), "proof object attempt")
+    expect_equal(attempt.get("go_criterion"), GO_CRITERION, "go criterion")
     for field in (
         "outer_proof_object_claimed",
         "pcd_accumulator_claimed",
@@ -813,6 +824,8 @@ def classify_error(error: Exception) -> str:
         return "candidate_inventory"
     if "missing backend feature" in text:
         return "proof_object_attempt"
+    if "go criterion" in text:
+        return "proof_object_attempt"
     if "schema" in text or "decision" in text or "result" in text or "non-claims" in text or "validation commands" in text:
         return "parser_or_schema"
     if "proof" in text or "pcd" in text or "verifier handle" in text or "metric" in text or "blocker" in text:
@@ -900,6 +913,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         "outer_proof_claimed_without_artifact": lambda p: p["proof_object_attempt"].__setitem__("outer_proof_object_claimed", True),
         "pcd_claimed_without_artifact": lambda p: p["proof_object_attempt"].__setitem__("pcd_accumulator_claimed", True),
         "verifier_handle_claimed_without_artifact": lambda p: p["proof_object_attempt"].__setitem__("verifier_handle_claimed", True),
+        "go_criterion_drift": lambda p: p["proof_object_attempt"].__setitem__("go_criterion", "GO if target commitment alone is bound"),
         "target_public_input_claimed_without_proof": lambda p: p["proof_object_attempt"].__setitem__("two_slice_target_commitment_bound_as_public_input", True),
         "selected_statements_claimed_without_proof": lambda p: p["proof_object_attempt"].__setitem__("selected_slice_statements_bound", True),
         "selected_source_hashes_claimed_without_proof": lambda p: p["proof_object_attempt"].__setitem__("selected_source_evidence_hashes_bound", True),
