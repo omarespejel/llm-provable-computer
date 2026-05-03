@@ -27,6 +27,7 @@ import json
 import pathlib
 import sys
 import tempfile
+from functools import lru_cache
 from typing import Any, Callable
 
 
@@ -242,18 +243,32 @@ def require_commitment(value: Any, field: str) -> str:
     return value
 
 
-def file_sha256(path: pathlib.Path) -> str:
+def _cache_key(path: pathlib.Path) -> str:
+    return path.resolve(strict=False).as_posix()
+
+
+@lru_cache(maxsize=None)
+def _file_sha256_cached(path_key: str) -> str:
     try:
-        return TWO_SLICE.file_sha256(path)
+        return TWO_SLICE.file_sha256(pathlib.Path(path_key))
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
-        raise D128TwoSliceAccumulatorBackendError(f"failed to hash source evidence {path}: {err}") from err
+        raise D128TwoSliceAccumulatorBackendError(f"failed to hash source evidence {path_key}: {err}") from err
+
+
+def file_sha256(path: pathlib.Path) -> str:
+    return _file_sha256_cached(_cache_key(path))
+
+
+@lru_cache(maxsize=None)
+def _load_json_cached(path_key: str) -> dict[str, Any]:
+    try:
+        return TWO_SLICE.load_json(pathlib.Path(path_key))
+    except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
+        raise D128TwoSliceAccumulatorBackendError(f"failed to load source evidence {path_key}: {err}") from err
 
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
-    try:
-        return TWO_SLICE.load_json(path)
-    except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
-        raise D128TwoSliceAccumulatorBackendError(f"failed to load source evidence {path}: {err}") from err
+    return copy.deepcopy(_load_json_cached(_cache_key(path)))
 
 
 def relative_path(path: pathlib.Path) -> str:
@@ -356,8 +371,8 @@ def _verify_check_against_source(check: dict[str, Any], source: dict[str, Any], 
         "index": require_int(check.get("index"), f"{slice_id} index"),
         "slice_id": slice_id,
         "source_path": relative_path(path),
-        "source_file_sha256": file_sha256(path),
-        "source_payload_sha256": sha256_hex_json(source),
+        "source_file_sha256": source_file_hash,
+        "source_payload_sha256": source_payload_hash,
         "schema": source["schema"],
         "decision": source["decision"],
         "validator": SLICE_VALIDATOR_MODULES[slice_id],

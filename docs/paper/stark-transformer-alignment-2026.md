@@ -1119,7 +1119,9 @@ two-slice target. A future recursive GO on this target must bind the target
 commitment, selected slice statements, and selected source evidence hashes as
 public inputs. This is useful negative evidence: the current recursive blocker
 is not merely six-slice scale; it is the missing recursive outer proof-object
-backend surface.
+backend surface. Until that backend exists, proof size, verifier time, and
+proof-generation time for a recursive/compressed two-slice or full-block
+artifact remain blocked metrics rather than reported results.
 Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
 and
