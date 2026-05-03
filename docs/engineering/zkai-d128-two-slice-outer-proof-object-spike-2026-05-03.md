@@ -91,8 +91,9 @@ Tracked follow-up: issue `#409`.
 Do not jump back to the six-slice target yet. The next productive route is one
 of:
 
-1. implement a real two-slice outer proof or accumulator backend that binds
-   `two_slice_target_commitment`;
+1. implement issue `#409`: a real two-slice outer proof or accumulator backend
+   that binds `two_slice_target_commitment`, the selected slice statement
+   commitments, and the selected source evidence hashes as public inputs;
 2. build a proof-native two-slice compression object and keep the claim boundary
    explicitly non-recursive;
 3. try the same two-slice statement envelope against an external
