@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -149,6 +150,18 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
             with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "escapes repository"):
                 D128_RESIDUAL.load_down_source(source_path)
 
+    def test_load_source_treats_relative_paths_as_repo_relative(self) -> None:
+        cwd = pathlib.Path.cwd()
+        with tempfile.TemporaryDirectory(dir=self.target_dir) as tmp:
+            os.chdir(tmp)
+            try:
+                payload = D128_RESIDUAL.load_down_source(
+                    pathlib.Path("docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json")
+                )
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(payload["residual_delta_commitment"], D128_RESIDUAL.RESIDUAL_DELTA_COMMITMENT)
+
     def test_write_outputs_round_trips(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
@@ -160,6 +173,15 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
             rows = D128_RESIDUAL.rows_for_tsv(loaded)
             self.assertEqual(len(rows), 1)
             self.assertIn(payload["output_activation_commitment"], tsv_path.read_text(encoding="utf-8"))
+
+    def test_write_outputs_treats_relative_paths_as_repo_relative(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=self.target_dir) as tmp:
+            rel_json = pathlib.Path(tmp).relative_to(ROOT) / "relative-d128-residual.json"
+            D128_RESIDUAL.write_outputs(payload, rel_json, None)
+            written = ROOT / rel_json
+            self.assertTrue(written.exists())
+            self.assertEqual(json.loads(written.read_text(encoding="utf-8")), payload)
 
     def test_write_outputs_rejects_symlink_outputs_inside_repo(self) -> None:
         payload = self.fresh_payload()

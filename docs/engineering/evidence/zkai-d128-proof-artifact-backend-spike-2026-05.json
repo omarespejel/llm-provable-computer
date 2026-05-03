@@ -1296,7 +1296,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_FULL_BLOCK_PROOF_ARTIFACT_SLICES_MISSING",
-  "gate_commitment": "blake2b-256:ae73e985a05e362000422fcd25648befa1dbdd88021df556e3c2bb0d68116ed8",
+  "gate_commitment": "blake2b-256:afbb329382fbe43ee33d93784690c04c3c3dc04019c76017a2de4f54e24c3f60",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1945,9 +1945,9 @@
     "d128_residual_add": {
       "evidence": {
         "decision": "GO_INPUT_FOR_D128_RESIDUAL_ADD_AIR_PROOF",
-        "file_sha256": "dcd33a9782d01cac76b92598a2f6dc31978bde2e19b4a07d8bdb0c677fc6c3d9",
+        "file_sha256": "588a608abcf373ece9d35c8e3cb33d3c9947ec2c2fc98566101978a35b9f0b6c",
         "path": "docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json",
-        "payload_sha256": "405ce1b83b836ba77e1032ab2550b8b50ae5f724a49f4cf7624b30a8b09c7b38",
+        "payload_sha256": "01b03d7625ac604b2abf7c5b73542c296206499d255967c4049f5ced731d8fba",
         "result": null,
         "schema": "zkai-d128-residual-add-air-proof-input-v1"
       },
