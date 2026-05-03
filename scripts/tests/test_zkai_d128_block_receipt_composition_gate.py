@@ -46,16 +46,14 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
     def test_receipt_and_statement_commitments_round_trip(self) -> None:
         payload = self.fresh_payload()
         receipt = payload["block_receipt"]
-        expected_statement = COMPOSITION.blake2b_commitment(
-            COMPOSITION._statement_payload_for_commitment(receipt),
-            COMPOSITION.BLOCK_STATEMENT_DOMAIN,
+        self.assertEqual(
+            receipt["statement_commitment"],
+            "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
         )
-        expected_receipt = COMPOSITION.blake2b_commitment(
-            COMPOSITION._receipt_payload_for_commitment(receipt),
-            COMPOSITION.BLOCK_RECEIPT_DOMAIN,
+        self.assertEqual(
+            receipt["block_receipt_commitment"],
+            "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
         )
-        self.assertEqual(receipt["statement_commitment"], expected_statement)
-        self.assertEqual(receipt["block_receipt_commitment"], expected_receipt)
 
     def test_rejects_missing_reordered_and_duplicated_slice_chain(self) -> None:
         cases = {case["mutation"]: case for case in self.fresh_payload()["cases"]}
@@ -164,6 +162,16 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
         with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "rejection layer"):
             COMPOSITION.validate_payload(payload)
 
+        payload = self.fresh_payload()
+        payload["cases"][0]["mutated_accepted"] = True
+        payload["cases"][0]["rejected"] = False
+        payload["cases"][0]["rejection_layer"] = "accepted"
+        payload["cases"][0]["error"] = ""
+        payload["summary"]["mutations_rejected"] = payload["case_count"] - 1
+        payload["all_mutations_rejected"] = False
+        with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "all mutation cases rejected"):
+            COMPOSITION.validate_payload(payload)
+
     def test_rejects_extra_claim_bearing_fields(self) -> None:
         for target, field in (
             ("payload", "proof_size_bytes"),
@@ -236,6 +244,18 @@ class ZkAiD128BlockReceiptCompositionGateTests(unittest.TestCase):
             path.write_bytes(b"\xff")
             with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "failed to load"):
                 COMPOSITION.load_json(path)
+
+    def test_rejects_symlinked_source_evidence(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real = tmp / "real.json"
+            real.write_text("{}", encoding="utf-8")
+            symlink = tmp / "source-link.json"
+            symlink.symlink_to(real)
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "symlink"):
+                COMPOSITION.load_json(symlink)
+            with self.assertRaisesRegex(COMPOSITION.D128BlockReceiptError, "symlink"):
+                COMPOSITION.file_sha256(symlink)
 
 
 if __name__ == "__main__":

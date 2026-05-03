@@ -339,7 +339,7 @@
       "verifier_time_ms": null
     }
   ],
-  "case_count": 97,
+  "case_count": 98,
   "cases": [
     {
       "error": "decision mismatch",
@@ -1170,8 +1170,17 @@
       "surface": "source_probe"
     },
     {
-      "error": "d64 anchor status mismatch",
+      "error": "d128 block receipt statement commitment mismatch",
       "index": 92,
+      "mutated_accepted": false,
+      "mutation": "d128_block_receipt_composition_synchronized_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "source_probe",
+      "surface": "source_probe"
+    },
+    {
+      "error": "d64 anchor status mismatch",
+      "index": 93,
       "mutated_accepted": false,
       "mutation": "d64_anchor_removed",
       "rejected": true,
@@ -1180,7 +1189,7 @@
     },
     {
       "error": "missing d128 module inventory mismatch",
-      "index": 93,
+      "index": 94,
       "mutated_accepted": false,
       "mutation": "missing_module_removed",
       "rejected": true,
@@ -1189,7 +1198,7 @@
     },
     {
       "error": "src/stwo_backend/d64_native_rmsnorm_public_row_proof.rs hardcoded markers mismatch",
-      "index": 94,
+      "index": 95,
       "mutated_accepted": false,
       "mutation": "d64_hardcoded_marker_removed",
       "rejected": true,
@@ -1198,7 +1207,7 @@
     },
     {
       "error": "non-claims inventory mismatch",
-      "index": 95,
+      "index": 96,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
       "rejected": true,
@@ -1207,7 +1216,7 @@
     },
     {
       "error": "summary mutation count mismatch",
-      "index": 96,
+      "index": 97,
       "mutated_accepted": false,
       "mutation": "mutation_case_accepted",
       "rejected": true,
@@ -1347,7 +1356,7 @@
     "total_checked_rows": 49600
   },
   "decision": "NO_GO_D128_AGGREGATED_FULL_BLOCK_PROOF_ARTIFACT_MISSING",
-  "gate_commitment": "blake2b-256:4190619c131e34728b2d0fc7f3674a7724a0f5718b92915c0c95927e2e31be8d",
+  "gate_commitment": "blake2b-256:e30f84358d30461ec51c59b5931064b48ea8947c7702dd5a66b0e25191df5c04",
   "issue": 387,
   "mutation_inventory": [
     {
@@ -1812,26 +1821,31 @@
     },
     {
       "index": 92,
+      "mutation": "d128_block_receipt_composition_synchronized_commitment_drift",
+      "surface": "source_probe"
+    },
+    {
+      "index": 93,
       "mutation": "d64_anchor_removed",
       "surface": "d64_anchor"
     },
     {
-      "index": 93,
+      "index": 94,
       "mutation": "missing_module_removed",
       "surface": "source_probe"
     },
     {
-      "index": 94,
+      "index": 95,
       "mutation": "d64_hardcoded_marker_removed",
       "surface": "source_probe"
     },
     {
-      "index": 95,
+      "index": 96,
       "mutation": "non_claim_removed",
       "surface": "claim_boundary"
     },
     {
-      "index": 96,
+      "index": 97,
       "mutation": "mutation_case_accepted",
       "surface": "mutation_harness"
     }
@@ -2368,8 +2382,8 @@
     "first_blocker": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
     "first_blocker_detail": "a statement-bound d128 block receipt now composes six proof-backed slices, but recursive aggregation or a single compressed verifier object is still missing",
     "issue": 387,
-    "mutation_cases": 97,
-    "mutations_rejected": 97,
+    "mutation_cases": 98,
+    "mutations_rejected": 98,
     "parameterized_full_block_route": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
     "parameterized_residual_add_route": "GO_PARTIAL_D128_RESIDUAL_ADD_ONLY",
     "target_ff_dim": 512,
