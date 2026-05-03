@@ -1092,11 +1092,19 @@ RMSNorm-SwiGLU-residual target, proves six local slice surfaces, and composes
 them into one statement-bound block receipt over `197504` checked rows. A
 separate aggregated-proof-object feasibility gate then records the next boundary
 honestly: the receipt is a valid aggregation target, but the outer
-proof/accumulator backend and verifier handle do not yet exist. That is a GO
-for the local statement-bound receipt and a bounded NO-GO for local full-block
-proof size, verifier time, or proof-generation time. This is the correct shape of the next comparison:
-define and bind the layerwise object first, then measure only after the proof
-object exists.
+proof/accumulator backend and verifier handle that would bind
+`block_receipt_commitment` and `statement_commitment` as public inputs do not
+yet exist. The feasibility gate rejects `37 / 37` commitment-drift,
+fake-proof-artifact, fake-public-input-binding, and metric-smuggling mutations.
+That is a GO for the local statement-bound receipt and a bounded NO-GO for
+local full-block proof size, verifier time, or proof-generation time.
+Engineering evidence is recorded in
+`docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`,
+`docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`,
+and
+`docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv`.
+This is the correct shape of the next comparison: define and bind the layerwise
+object first, then measure only after the proof object exists.
 
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope

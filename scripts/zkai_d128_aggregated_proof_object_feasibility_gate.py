@@ -85,6 +85,7 @@ NON_CLAIMS = [
     "not proof-carrying-data accumulation",
     "not verifier-time benchmark evidence for an aggregated d128 proof",
     "not proof-size benchmark evidence for an aggregated d128 proof",
+    "not proof-generation-time benchmark evidence for an aggregated d128 proof",
     "not matched NANOZK, DeepProve, EZKL, or snarkjs comparison evidence",
     "not onchain deployment evidence",
     "not a claim that d128 aggregation is impossible",
