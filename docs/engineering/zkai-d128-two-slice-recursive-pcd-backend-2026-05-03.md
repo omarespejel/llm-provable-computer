@@ -40,7 +40,7 @@ or PCD evidence.
 
 The first blocker is:
 
-> missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected d128 slice verifiers inside one cryptographic outer object
+> no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks
 
 Missing backend features:
 
@@ -70,8 +70,8 @@ The gate rejects `31 / 31` mutation cases across:
 - proof-size, verifier-time, and proof-generation-time metric smuggling before
   a proof object exists;
 - first-blocker removal, missing-backend-feature removal, weakened-GO drift,
-  recursive-result relabeling, top-level claim drift, non-claim removal, and
-  validation-command drift.
+  recursive-result relabeling, top-level claim drift, unknown-field injection,
+  non-claim removal, and validation-command drift.
 
 ## Non-Claims
 

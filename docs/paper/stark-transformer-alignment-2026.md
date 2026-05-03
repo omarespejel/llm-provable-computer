@@ -1144,12 +1144,13 @@ a recursive proof-compression result. Evidence is recorded in
 
 The issue `#411` backend audit then tests the exact upgrade that would make the
 two-slice target a recursive result. It records
-`NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: no local
-nested-verifier AIR/circuit or PCD backend currently proves the two selected
-d128 slice verifiers inside one cryptographic outer object. The gate rejects
+`NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: no nested
+verifier program/AIR/circuit can express the two selected d128 slice verifier
+checks. The gate rejects
 `31 / 31` source-accumulator, candidate-inventory, fake-backend,
-fake-public-input-binding, metric-smuggling, blocker-removal, weakened-GO drift, and parser/schema
-mutations. The important point is the claim boundary: the accumulator is a real
+fake-public-input-binding, metric-smuggling, blocker-removal, weakened-GO drift,
+unknown-field injection, and parser/schema mutations. The important point is
+the claim boundary: the accumulator is a real
 statement-preserving verifier-facing object, but it is not a recursive proof.
 Evidence is recorded in
 `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md` and

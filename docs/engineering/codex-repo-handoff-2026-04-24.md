@@ -189,11 +189,12 @@ Tablero boundary.
   see `docs/engineering/zkai-d128-two-slice-accumulator-backend-2026-05-03.md`.
 - The d128 two-slice recursive/PCD backend gate now audits issue `#411`
   directly and records
-  `NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: the missing
-  piece is still a nested-verifier AIR/circuit or PCD backend that proves the
-  two selected d128 slice verifiers inside one cryptographic outer object. It
-  rejects `31 / 31` source-accumulator, candidate-inventory, fake-backend,
-  public-input-binding, metric-smuggling, blocker-removal, weakened-GO drift, and parser/schema mutations; see
+  `NO_GO_EXECUTABLE_RECURSIVE_PCD_OUTER_PROOF_BACKEND_MISSING`: the first
+  blocker is that no nested verifier program/AIR/circuit can express the two
+  selected d128 slice verifier checks. It rejects `31 / 31`
+  source-accumulator, candidate-inventory, fake-backend, public-input-binding,
+  metric-smuggling, blocker-removal, weakened-GO drift, unknown-field
+  injection, and parser/schema mutations; see
   `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice

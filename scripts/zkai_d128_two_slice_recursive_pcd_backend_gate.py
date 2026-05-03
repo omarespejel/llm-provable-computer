@@ -19,6 +19,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import stat as stat_module
 import sys
 import tempfile
@@ -59,8 +60,7 @@ GO_CRITERION = (
 )
 
 FIRST_BLOCKER = (
-    "missing executable nested-verifier AIR/circuit or PCD backend that proves the two selected "
-    "d128 slice verifiers inside one cryptographic outer object"
+    "no nested verifier program/AIR/circuit can express the two selected d128 slice verifier checks"
 )
 
 MISSING_BACKEND_FEATURES = [
@@ -167,7 +167,10 @@ CANDIDATE_SURFACE_SPECS = (
         "expected_exists": True,
         "required_for_go": False,
         "classification": "INNER_STARK_VERIFIER_NOT_NESTED_VERIFIER_CIRCUIT",
-        "required_tokens": ("prove_zkai_d128_rmsnorm_public_row_envelope", "verify_zkai_d128_rmsnorm_public_row_envelope"),
+        "required_tokens": (
+            "rust_fn:prove_zkai_d128_rmsnorm_public_row_envelope",
+            "rust_fn:verify_zkai_d128_rmsnorm_public_row_envelope",
+        ),
         "reason": "proves and verifies the inner RMSNorm public-row slice; it is not an AIR/circuit for proving that verifier inside another proof",
     },
     {
@@ -178,8 +181,8 @@ CANDIDATE_SURFACE_SPECS = (
         "required_for_go": False,
         "classification": "INNER_STARK_VERIFIER_NOT_NESTED_VERIFIER_CIRCUIT",
         "required_tokens": (
-            "prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
-            "verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+            "rust_fn:prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+            "rust_fn:verify_zkai_d128_rmsnorm_to_projection_bridge_envelope",
         ),
         "reason": "proves and verifies the inner bridge slice; it is not an AIR/circuit for proving that verifier inside another proof",
     },
@@ -191,8 +194,8 @@ CANDIDATE_SURFACE_SPECS = (
         "required_for_go": False,
         "classification": "HARNESS_SURFACE_NOT_D128_RECURSIVE_PCD_BACKEND",
         "required_tokens": (
-            "phase36_prepare_recursive_verifier_harness_receipt",
-            "verify_phase36_recursive_verifier_harness_receipt",
+            "rust_fn:phase36_prepare_recursive_verifier_harness_receipt",
+            "rust_fn:verify_phase36_recursive_verifier_harness_receipt",
         ),
         "reason": "records recursive claim boundaries and source checks; it does not execute the selected d128 slice verifiers inside an outer proof",
     },
@@ -203,7 +206,10 @@ CANDIDATE_SURFACE_SPECS = (
         "expected_exists": True,
         "required_for_go": False,
         "classification": "NO_LOCAL_RECURSIVE_PCD_INTEGRATION_EXPOSED",
-        "required_tokens": ('stwo = { version = "2.2.0"', 'stwo-backend = ["dep:stwo"'),
+        "required_tokens": (
+            'toml_line:stwo = { version = "2.2.0", default-features = false, features = ["std", "prover"], optional = true }',
+            'toml_line:stwo-backend = ["dep:stwo", "dep:stwo-constraint-framework", "dep:flate2"]',
+        ),
         "reason": "the local dependency surface exposes Stwo proving/verifying support, but this repository has no recursive/PCD backend module wired to d128 verifier checks",
     },
     {
@@ -244,8 +250,8 @@ CANDIDATE_SURFACE_SPECS = (
         "required_for_go": False,
         "classification": "NO_GO_AUDIT_TEST_SURFACE_NOT_RECURSIVE_BACKEND_TESTS",
         "required_tokens": (
-            "test_rejects_recursive_claim_relabeling_and_metric_smuggling",
-            "test_rejects_candidate_inventory_tampering",
+            "python_def:test_rejects_recursive_claim_relabeling_and_metric_smuggling",
+            "python_def:test_rejects_candidate_inventory_tampering",
         ),
         "reason": "tests this bounded no-go gate and relabeling guardrails, but does not test a future executable recursive proof artifact",
     },
@@ -474,6 +480,22 @@ def _candidate_file_info(path_text: str) -> dict[str, Any]:
     return {"exists": True, "file_sha256": sha256_hex_bytes(data), "required_tokens_present": None, "missing_required_tokens": None}
 
 
+def required_token_present(raw: str, token: str) -> bool:
+    if token.startswith("rust_fn:"):
+        name = re.escape(token.removeprefix("rust_fn:"))
+        return re.search(rf"(?m)^\s*pub\s+fn\s+{name}\s*\(", raw) is not None
+    if token.startswith("python_def:"):
+        name = re.escape(token.removeprefix("python_def:"))
+        return re.search(rf"(?m)^\s*def\s+{name}\s*\(", raw) is not None
+    if token.startswith("toml_line:"):
+        line = re.escape(token.removeprefix("toml_line:"))
+        return re.search(rf"(?m)^\s*{line}\s*$", raw) is not None
+    raise D128TwoSliceRecursivePCDBackendError(
+        f"unsupported required token matcher: {token}",
+        layer="candidate_inventory",
+    )
+
+
 @lru_cache(maxsize=1)
 def _candidate_inventory_cached() -> tuple[tuple[tuple[str, Any], ...], ...]:
     inventory: list[dict[str, Any]] = []
@@ -495,7 +517,7 @@ def _candidate_inventory_cached() -> tuple[tuple[tuple[str, Any], ...], ...]:
             raw = _open_repo_regular_file(ROOT / spec["path"], MAX_SOURCE_JSON_BYTES, layer="candidate_inventory").decode(
                 "utf-8", errors="replace"
             )
-            missing = [token for token in required_tokens if token not in raw]
+            missing = [token for token in required_tokens if not required_token_present(raw, token)]
             item["required_tokens_present"] = len(missing) == 0
             item["missing_required_tokens"] = missing
         inventory.append(item)
