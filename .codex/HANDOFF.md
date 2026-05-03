@@ -134,6 +134,13 @@ Tablero boundary.
   the next step: the block receipt is a valid aggregation target, but the outer
   proof/accumulator backend and verifier handle do not yet exist; see
   `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
+- The d128 two-slice outer proof-object spike narrows the blocker to
+  `rmsnorm_public_rows` plus `rmsnorm_projection_bridge`: those two checked
+  slices form a valid `256`-row outer-proof target with commitment
+  `blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+  but no executable outer proof/accumulator backend or verifier handle exists
+  for even that target; see
+  `docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`.
 - This is a receipt-composition GO only: recursion, one compressed verifier
   object, and full-block proof-size/verifier-time/proof-generation-time metrics remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
@@ -218,12 +225,12 @@ Use these in order of authority for current state:
 9. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
-10. Treat the first d128 aggregation attempt (`#405`) as a checked bounded
-    no-go until an outer proof/accumulator backend and verifier handle exist.
-    The next d128 research step should be a smaller proof-object spike, such as
-    a two-slice d128 outer-proof target, before attempting all six slices. Do
-    not report full-block proof-size/verifier-time/proof-generation-time metrics until a real
-    aggregated proof object exists.
+10. Treat the first d128 aggregation attempt (`#405`) and the two-slice
+    follow-up (`#408`) as checked bounded no-gos for proof-object existence.
+    The two-slice target exists and is bound, but the missing piece is still a
+    real outer proof/accumulator backend and verifier handle. Do not report
+    full-block proof-size/verifier-time/proof-generation-time metrics until a
+    real aggregated proof object exists.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

@@ -938,6 +938,22 @@ plus `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.
 and
 `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`.
 
+The smallest follow-up target is now checked separately. A two-slice outer
+proof-object spike projects only `rmsnorm_public_rows` and
+`rmsnorm_projection_bridge` from the full d128 target. Those two verifier
+checks form a valid `256`-row target with
+`two_slice_target_commitment =
+blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`,
+and the gate rejects `39 / 39` source-drift, target-drift, selected-slice,
+fake-artifact, fake-public-input-binding, and metric-smuggling mutations. It
+still records a bounded NO-GO for proof-object existence: no executable outer
+proof/accumulator backend or verifier handle exists for even the two-slice
+target. This narrows the research blocker from "six slices may be too large" to
+"the outer proof-object backend surface is missing." It is anchored to
+`docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
+and
+`docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`.
+
 A separate composition gate then consumes the checked Stwo statement receipt as
 the model subreceipt inside an agent-step receipt. The composed
 `AgentStepReceiptV1` binds its model identity, model artifact, model

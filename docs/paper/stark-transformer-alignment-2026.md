@@ -1106,6 +1106,22 @@ and
 This is the correct shape of the next comparison: define and bind the layerwise
 object first, then measure only after the proof object exists.
 
+The next narrowing step has also landed as a two-slice spike. It projects only
+the d128 `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier checks
+into a `256`-row outer-proof target and binds that target with
+`two_slice_target_commitment =
+blake2b-256:f225e101964073351fe72cc8fac496d963a5cd1c721bf6b286832a8f26d94640`.
+The gate rejects `39 / 39` source-drift, target-drift, selected-slice,
+fake-artifact, fake-public-input-binding, and metric-smuggling mutations, but
+it still records a bounded NO-GO for executable proof-object existence because
+no outer proof/accumulator backend or verifier handle exists for even the
+two-slice target. This is useful negative evidence: the current blocker is not
+merely six-slice scale; it is the missing outer proof-object backend surface.
+Evidence is recorded in
+`docs/engineering/zkai-d128-two-slice-outer-proof-object-spike-2026-05-03.md`
+and
+`docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json`.
+
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope
 discipline.
