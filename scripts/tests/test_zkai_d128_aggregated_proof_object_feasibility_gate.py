@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -158,17 +159,12 @@ class ZkAiD128AggregatedProofObjectFeasibilityGateTests(unittest.TestCase):
             GATE.CANDIDATE_SURFACES = original_surfaces
 
     def test_candidate_path_presence_wraps_os_errors(self) -> None:
-        original_lstat = pathlib.Path.lstat
-
         def denied_lstat(_self: pathlib.Path) -> object:
             raise PermissionError("denied for test")
 
-        try:
-            pathlib.Path.lstat = denied_lstat  # type: ignore[method-assign]
+        with mock.patch.object(pathlib.Path, "lstat", denied_lstat):
             with self.assertRaisesRegex(GATE.D128AggregatedProofObjectFeasibilityError, "failed to inspect"):
                 GATE._candidate_path_present(ROOT / "docs")
-        finally:
-            pathlib.Path.lstat = original_lstat  # type: ignore[method-assign]
 
     def test_proof_object_attempt_blocks_metrics_until_artifact_exists(self) -> None:
         attempt = self.fresh_payload()["proof_object_attempt"]
