@@ -127,6 +127,18 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "evidence keys"):
             GATE.validate_core_payload(payload)
 
+    def test_route_evidence_dependency_hint_drift_rejects(self) -> None:
+        for route_index, route_id in (
+            (5, "external_zkvm_statement_receipt_adapter"),
+            (6, "external_snark_or_ivc_statement_adapter"),
+        ):
+            with self.subTest(route_id=route_id):
+                payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
+                evidence = payload["route_table"][route_index]["evidence"]
+                evidence["local_dependencies_declared"] = not evidence["local_dependencies_declared"]
+                with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "local_dependencies_declared"):
+                    GATE.validate_core_payload(payload)
+
     def test_mutation_inventory_scalar_entry_rejects_as_gate_error(self) -> None:
         payload = self.fresh_payload()
         payload["mutation_inventory"][0] = "not-a-mutation-object"
