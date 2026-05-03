@@ -24,7 +24,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "source-backed system overclaims reproducibility: Jolt Atlas",
+      "error": "canonical baseline_verification_reproducible drift for Jolt Atlas",
       "index": 2,
       "mutated_accepted": false,
       "mutation": "jolt_baseline_verification_overclaim",
@@ -64,7 +64,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "empirical adapter row missing local evidence for EZKL",
+      "error": "canonical local_evidence drift for EZKL",
       "index": 6,
       "mutated_accepted": false,
       "mutation": "ezkl_artifact_removed",
@@ -104,7 +104,7 @@
     },
     {
       "baseline_result": "accepted",
-      "error": "required non-claim missing",
+      "error": "non-claims drift",
       "index": 10,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
@@ -144,7 +144,7 @@
   ],
   "decision": "GO_CHECKED_SOTA_ARTIFACT_WATCHLIST",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "f9f02830a65dbefd9057ef7084fdf9722b2d22d9",
+  "git_commit": "55b314aaaa17b24049d58622f62fdfb567e34e9e",
   "issue": "#419",
   "mutation_inventory": [
     {
