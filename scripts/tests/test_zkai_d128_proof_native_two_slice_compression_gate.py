@@ -198,6 +198,11 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "keys mismatch"):
             GATE.validate_payload(payload)
 
+        payload = self.fresh_payload()
+        payload["cases"][0]["unexpected"] = True
+        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "mutation case 0 keys mismatch"):
+            GATE.validate_payload(payload)
+
     def test_rejects_partial_duplicate_and_tampered_mutation_metadata(self) -> None:
         payload = self.fresh_payload()
         del payload["cases"]

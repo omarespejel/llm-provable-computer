@@ -90,6 +90,7 @@ TSV_COLUMNS = (
     "rejection_layer",
     "error",
 )
+MUTATION_CASE_KEYS = set(TSV_COLUMNS)
 
 EXPECTED_MUTATION_INVENTORY = (
     ("source_accumulator_file_hash_drift", "source_accumulator"),
@@ -825,6 +826,7 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
     rejected = 0
     for index, raw_case in enumerate(cases):
         case = require_object(raw_case, f"mutation case {index}")
+        expect_keys(case, MUTATION_CASE_KEYS, f"mutation case {index}")
         for column in TSV_COLUMNS:
             if column not in case:
                 raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} missing {column}")
