@@ -87,7 +87,7 @@ This repository currently has three live lanes.
      blocker is the missing nested-verifier AIR/circuit or PCD backend that
      proves the two selected d128 slice verifiers inside one cryptographic
      outer object. It rejects `31 / 31` relabeling, fake-artifact,
-     fake-public-input-binding, metric-smuggling, and blocker-removal
+     fake-public-input-binding, metric-smuggling, blocker-removal, and weakened-GO drift
      mutations; see
      `docs/engineering/zkai-d128-two-slice-recursive-pcd-backend-2026-05-03.md`.
    - The d128 full-block accumulator backend gate now turns the six-slice

@@ -189,14 +189,31 @@
       "required_tokens_present": null
     },
     {
+      "classification": "NO_GO_AUDIT_TEST_SURFACE_NOT_RECURSIVE_BACKEND_TESTS",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "a1d5136057ed5fde5b4e6663b257b3ea262218526b6279c96f773d0264aee9fa",
+      "kind": "current_no_go_audit_test_surface",
+      "missing_required_tokens": [],
+      "name": "d128_two_slice_recursive_pcd_no_go_audit_tests",
+      "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend_gate.py",
+      "reason": "tests this bounded no-go gate and relabeling guardrails, but does not test a future executable recursive proof artifact",
+      "required_for_go": false,
+      "required_tokens": [
+        "test_rejects_recursive_claim_relabeling_and_metric_smuggling",
+        "test_rejects_candidate_inventory_tampering"
+      ],
+      "required_tokens_present": true
+    },
+    {
       "classification": "MISSING_REQUIRED_ARTIFACT",
       "exists": false,
       "expected_exists": false,
       "file_sha256": null,
-      "kind": "required_test_surface",
+      "kind": "required_future_backend_test_surface",
       "missing_required_tokens": null,
-      "name": "required_d128_two_slice_recursive_pcd_mutation_tests",
-      "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend.py",
+      "name": "required_d128_two_slice_recursive_pcd_artifact_mutation_tests",
+      "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_proof_backend.py",
       "reason": "a future recursive GO must include fail-closed public-input relabeling tests",
       "required_for_go": true,
       "required_tokens": [],
@@ -735,7 +752,7 @@
       "required_d128_two_slice_recursive_pcd_backend_module",
       "required_d128_two_slice_recursive_pcd_proof_artifact",
       "required_d128_two_slice_recursive_pcd_verifier_handle",
-      "required_d128_two_slice_recursive_pcd_mutation_tests"
+      "required_d128_two_slice_recursive_pcd_artifact_mutation_tests"
     ],
     "result": "BOUNDED_NO_GO",
     "selected_checked_rows": 256,
@@ -749,7 +766,9 @@
   "validation_commands": [
     "python3 scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_two_slice_recursive_pcd_backend_gate",
+    "python3 -m py_compile scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
     "just gate-fast",
     "just gate"
   ]

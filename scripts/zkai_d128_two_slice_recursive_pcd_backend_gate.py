@@ -88,7 +88,9 @@ NON_CLAIMS = [
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_two_slice_recursive_pcd_backend_gate",
+    "python3 -m py_compile scripts/zkai_d128_two_slice_recursive_pcd_backend_gate.py scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
     "just gate-fast",
     "just gate",
 ]
@@ -235,9 +237,22 @@ CANDIDATE_SURFACE_SPECS = (
         "reason": "no local verifier handle exists for a recursive or PCD two-slice artifact",
     },
     {
-        "name": "required_d128_two_slice_recursive_pcd_mutation_tests",
-        "kind": "required_test_surface",
-        "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend.py",
+        "name": "d128_two_slice_recursive_pcd_no_go_audit_tests",
+        "kind": "current_no_go_audit_test_surface",
+        "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_backend_gate.py",
+        "expected_exists": True,
+        "required_for_go": False,
+        "classification": "NO_GO_AUDIT_TEST_SURFACE_NOT_RECURSIVE_BACKEND_TESTS",
+        "required_tokens": (
+            "test_rejects_recursive_claim_relabeling_and_metric_smuggling",
+            "test_rejects_candidate_inventory_tampering",
+        ),
+        "reason": "tests this bounded no-go gate and relabeling guardrails, but does not test a future executable recursive proof artifact",
+    },
+    {
+        "name": "required_d128_two_slice_recursive_pcd_artifact_mutation_tests",
+        "kind": "required_future_backend_test_surface",
+        "path": "scripts/tests/test_zkai_d128_two_slice_recursive_pcd_proof_backend.py",
         "expected_exists": False,
         "required_for_go": True,
         "classification": "MISSING_REQUIRED_ARTIFACT",

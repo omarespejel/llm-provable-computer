@@ -1148,7 +1148,7 @@ two-slice target a recursive result. It records
 nested-verifier AIR/circuit or PCD backend currently proves the two selected
 d128 slice verifiers inside one cryptographic outer object. The gate rejects
 `31 / 31` source-accumulator, candidate-inventory, fake-backend,
-fake-public-input-binding, metric-smuggling, blocker-removal, and parser/schema
+fake-public-input-binding, metric-smuggling, blocker-removal, weakened-GO drift, and parser/schema
 mutations. The important point is the claim boundary: the accumulator is a real
 statement-preserving verifier-facing object, but it is not a recursive proof.
 Evidence is recorded in
