@@ -154,6 +154,18 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
                 GATE.read_json_file(malformed)
             self.assertEqual(context.exception.layer, "source_evidence")
 
+    def test_non_utf8_source_evidence_uses_source_evidence_layer(self) -> None:
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp:
+            malformed = pathlib.Path(raw_tmp) / "non-utf8-route-selector-source.json"
+            malformed.write_bytes(b"\xff")
+            with self.assertRaisesRegex(
+                GATE.D128RecursivePCDRouteSelectorError,
+                "unreadable or malformed source evidence",
+            ) as context:
+                GATE.read_json_file(malformed)
+            self.assertEqual(context.exception.layer, "source_evidence")
+
     def test_write_outputs_round_trips_and_rejects_bad_tsv_suffix(self) -> None:
         payload = self.fresh_payload()
         evidence_dir = ROOT / "docs" / "engineering" / "evidence"
@@ -179,6 +191,19 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/route.json"), None)
         with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "end with .json"):
             GATE.write_outputs(payload, pathlib.Path("docs/engineering/evidence/route.txt"), None)
+
+    def test_write_outputs_rejects_symlink_escape_from_evidence_dir(self) -> None:
+        payload = self.fresh_payload()
+        evidence_dir = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=evidence_dir) as raw_tmp, tempfile.TemporaryDirectory(dir=ROOT) as raw_outside:
+            link = pathlib.Path(raw_tmp) / "outside-link"
+            try:
+                link.symlink_to(pathlib.Path(raw_outside), target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation unsupported: {err}")
+            escaped = (link / "route.json").relative_to(ROOT)
+            with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, "docs/engineering/evidence"):
+                GATE.write_outputs(payload, escaped, None)
 
     def test_write_outputs_cleans_temp_file_when_replace_fails(self) -> None:
         payload = self.fresh_payload()
