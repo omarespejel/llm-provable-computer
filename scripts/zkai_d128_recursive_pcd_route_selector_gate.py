@@ -52,8 +52,13 @@ WHY_EXTERNAL_OR_PROOF_NATIVE_NEXT = (
     "next useful experiment is to test a real proof object outside the missing local "
     "nested-verifier surface, or to compress the two-slice transcript without calling it recursion"
 )
-EXTERNAL_ZKVM_DEPENDENCIES = frozenset({"risc0", "sp1", "nexus", "jolt"})
-EXTERNAL_SNARK_IVC_DEPENDENCIES = frozenset({"halo2", "nova", "groth16", "plonk", "snark"})
+DEPENDENCY_TABLE_KEYS = frozenset({"dependencies", "dev-dependencies", "build-dependencies"})
+EXTERNAL_ZKVM_DEPENDENCIES = frozenset(
+    {"risc0", "risc0-zkvm", "sp1", "sp1-sdk", "nexus", "nexus-sdk", "jolt", "jolt-core", "jolt-sdk"}
+)
+EXTERNAL_SNARK_IVC_DEPENDENCIES = frozenset(
+    {"halo2", "halo2_proofs", "nova", "nova-snark", "groth16", "ark-groth16", "plonk", "snark"}
+)
 
 EXPECTED_TWO_SLICE_ACCUMULATOR_SCHEMA = "zkai-d128-two-slice-accumulator-backend-v1"
 EXPECTED_TWO_SLICE_ACCUMULATOR_DECISION = "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND"
@@ -302,10 +307,30 @@ def cargo_lock_package_version(cargo_lock: dict[str, Any], name: str) -> str | N
 
 
 def cargo_dependency_names(cargo_toml: dict[str, Any]) -> set[str]:
-    deps = cargo_toml.get("dependencies")
-    if not isinstance(deps, dict):
-        return set()
-    return {name for name in deps if isinstance(name, str)}
+    names: set[str] = set()
+
+    def collect_table(deps: Any) -> None:
+        if not isinstance(deps, dict):
+            return
+        for name, spec in deps.items():
+            if isinstance(name, str):
+                names.add(name)
+            if isinstance(spec, dict):
+                package = spec.get("package")
+                if isinstance(package, str):
+                    names.add(package)
+
+    def walk(section: Any) -> None:
+        if not isinstance(section, dict):
+            return
+        for key, value in section.items():
+            if key in DEPENDENCY_TABLE_KEYS:
+                collect_table(value)
+            elif isinstance(value, dict):
+                walk(value)
+
+    walk(cargo_toml)
+    return names
 
 
 def external_zkvm_dependencies_declared(cargo_toml: dict[str, Any]) -> bool:

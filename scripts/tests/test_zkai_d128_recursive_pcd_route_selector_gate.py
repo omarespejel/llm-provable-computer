@@ -103,6 +103,22 @@ class ZkAiD128RecursivePCDRouteSelectorGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(GATE.D128RecursivePCDRouteSelectorError, message):
                     GATE.validate_core_payload(payload)
 
+    def test_dependency_probe_scans_standard_cargo_sections(self) -> None:
+        cargo_toml = {
+            "dev-dependencies": {"sp1-sdk": "1"},
+            "build-dependencies": {"snark": {"version": "1"}},
+            "workspace": {"dependencies": {"risc0_alias": {"package": "risc0-zkvm", "version": "1"}}},
+            "target": {"cfg(unix)": {"dependencies": {"nova-snark": "1"}}},
+        }
+        self.assertEqual(
+            {"sp1-sdk", "snark", "risc0_alias", "risc0-zkvm", "nova-snark"},
+            GATE.cargo_dependency_names(cargo_toml),
+        )
+        self.assertTrue(GATE.external_zkvm_dependencies_declared(cargo_toml))
+        self.assertTrue(GATE.external_snark_ivc_dependencies_declared(cargo_toml))
+        self.assertFalse(GATE.external_zkvm_dependencies_declared({"dependencies": {"serde": "1"}}))
+        self.assertFalse(GATE.external_snark_ivc_dependencies_declared({"dependencies": {"serde": "1"}}))
+
     def test_route_table_scalar_entry_rejects_as_gate_error(self) -> None:
         payload = {key: self.fresh_payload()[key] for key in GATE.BASE_TOP_LEVEL_KEYS}
         payload["route_table"][0] = "not-a-route-object"
