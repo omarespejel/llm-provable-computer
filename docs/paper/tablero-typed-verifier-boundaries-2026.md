@@ -1044,17 +1044,37 @@ and records
 `NO_GO_LOCAL_D128_RECURSIVE_PCD_BACKEND_TODAY`. Only the two non-recursive
 accumulator routes are usable today. The local Stwo-native nested-verifier route
 is blocked before metrics by
-`NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`; proof-native
-two-slice compression without recursion, external zkVM statement receipts, and
-external SNARK/IVC adapters remain research candidates, not successes. The gate
+`NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`; external
+zkVM statement receipts and external SNARK/IVC adapters remain research
+candidates, not successes. The gate
 rejects `24 / 24` source-drift, route-relabeling, blocker-removal,
 metric-smuggling, weakened-GO, and parser/schema mutations. This turns the next
 research step into an executable decision: test a real external statement
-receipt or a proof-native non-recursive compression object, but do not report
-recursive proof size, verifier time, or proof-generation time from the current
-accumulators. It is anchored to
+receipt or a cryptographic backend over the same public-input contract, but do
+not report recursive proof size, verifier time, or proof-generation time from
+the current accumulators. It is anchored to
 `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md` and
 `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json`.
+
+The issue `#424` follow-up then answers the proof-native compression branch
+without pretending it is recursion. It compresses the same two-slice
+transcript/public-input contract from an `8,822` byte source accumulator
+artifact to a `4,435` byte verifier-facing object, binding the target
+commitment, selected slice statements, selected source hashes, selected public
+instances, selected proof-native parameter commitments, verifier domain,
+backend version, source accumulator commitment, and source verifier-handle
+commitment. The compressed artifact commitment is
+`blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4`
+and the verifier-handle commitment is
+`blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641`.
+The gate rejects `34 / 34` binding, relabeling, compression-metric,
+verifier-handle, recursive-claim, and parser/schema mutations. This is a useful
+small-object result for the verifier-facing transcript surface, but it is not a
+cryptographic outer proof, not recursive aggregation, not PCD, and not timing
+or proof-size evidence for a recursive system. It is anchored to
+`docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
+and
+`docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json`.
 
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all

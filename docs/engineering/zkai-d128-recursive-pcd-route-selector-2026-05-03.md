@@ -104,6 +104,15 @@ The next two useful research moves are:
 The first tests proof-system independence. The second tests whether a useful
 compressed object exists locally even before nested-verifier recursion.
 
+## Current-State Postscript After Issue `#424`
+
+Issue `#424` now has a narrow GO in
+`docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
+That follow-up compresses the two-slice transcript/public-input contract into a
+smaller verifier-facing object, but it does not change this route selector's
+recursive/PCD conclusion: local Stwo-native recursion remains blocked before
+metrics.
+
 ## Reproduce
 
 ```bash

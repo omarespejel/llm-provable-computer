@@ -20,8 +20,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 14. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
 15. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
 16. `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
-17. `docs/engineering/reproducibility.md`
-18. `git status --short --branch`
+17. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
+18. `docs/engineering/reproducibility.md`
+19. `git status --short --branch`
 
 ## What this repository is now
 
@@ -102,14 +103,22 @@ This repository currently has three live lanes.
    - The d128 recursive/PCD route selector now answers issue `#420` as a
      bounded route decision: local Stwo-native recursion is blocked before
      metrics by
-     `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. Only
-     the two-slice and full-block non-recursive accumulator routes are usable
-     today; proof-native two-slice compression, external zkVM statement
-     receipts, and external SNARK/IVC adapters are research candidates, not
-     successes. It rejects `24 / 24` source-drift, route-relabeling,
+     `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. The
+     two-slice and full-block non-recursive accumulator routes remain usable;
+     external zkVM statement receipts and external SNARK/IVC adapters remain
+     research candidates. It rejects `24 / 24` source-drift, route-relabeling,
      blocker-removal, metric-smuggling, weakened-GO, and parser/schema
      mutations; see
      `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.
+   - The d128 proof-native two-slice compression gate now answers issue `#424`
+     as a narrow GO: the two-slice accumulator transcript/public-input contract
+     compresses from `8,822` source accumulator artifact bytes to a `4,435` byte
+     proof-native verifier-facing object with compressed artifact commitment
+     `blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4`.
+     It rejects `34 / 34` binding, relabeling, compression-metric,
+     verifier-handle, recursive-claim, and parser/schema mutations. This is
+     transcript/public-input compression only, not recursion or PCD; see
+     `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
    - The d128 full-block accumulator backend gate now turns the six-slice
      block receipt into a real verifier-facing non-recursive accumulator over
      `197,504` checked rows, with accumulator commitment
@@ -123,11 +132,11 @@ This repository currently has three live lanes.
      This is accumulator-integrity GO only; see
      `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
    - The d128 lane now has receipt-composition, range-policy-bound full-block
-     public inputs, two-slice accumulator, and full-block accumulator GO
-     results, plus checked issue `#411` and `#420` recursive backend no-go /
-     route-selector evidence. Recursion, one compressed cryptographic verifier
-     object, and proof-size/verifier-time/proof-generation-time metrics remain
-     blocked.
+     public inputs, two-slice accumulator, full-block accumulator, and
+     proof-native two-slice transcript-compression GO results, plus checked
+     issue `#411` and `#420` recursive backend no-go / route-selector evidence.
+     Recursion, one compressed cryptographic verifier object, and
+     proof-size/verifier-time/proof-generation-time metrics remain blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -201,13 +210,14 @@ The repo now also has one explicit answer on the second-backend question:
 10. Treat the first d128 aggregation attempt (`#405`), two-slice target spike
     (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
-    existence. Treat issues `#409` and `#413` as the current positive handoff
-    objects: real non-recursive two-slice and full-block accumulators and
-    verifier handles now exist. The next useful experiments are issue `#422`
-    external statement-receipt adapters and issue `#424` proof-native two-slice
-    compression that does not claim recursion. Do not report recursive
-    proof-size, verifier-time, or proof-generation-time metrics until a real
-    recursive or PCD proof object exists.
+    existence. Treat issues `#409`, `#413`, and `#424` as the current positive
+    handoff objects: real non-recursive two-slice/full-block accumulators and a
+    proof-native two-slice transcript-compressed verifier-facing object now
+     exist. The next useful experiments are issue `#422` external
+     statement-receipt adapters and issue `#426` cryptographic backend over the
+     `#424` public-input contract. Do not report recursive proof-size,
+     verifier-time, or proof-generation-time metrics until a real recursive or
+     PCD proof object exists.
 
 ## What not to do
 
