@@ -23,8 +23,8 @@ This is a receipt-composition result, not recursive aggregation. The block recei
 |---|---:|
 | Slice count | 6 |
 | Total checked rows | 197,504 |
-| Mutation cases | 19 |
-| Mutations rejected | 19 |
+| Mutation cases | 20 |
+| Mutations rejected | 20 |
 
 | Commitment | Value |
 |---|---|
@@ -71,4 +71,4 @@ python3 scripts/paper/paper_preflight.py --repo-root .
 
 ## Next Backend Step
 
-The next honest upgrade is recursive or proof-carrying aggregation of this receipt, tracked in `#405`, if a future verifier proves the slice verifiers inside one object. Until that exists, report this as a statement-bound d128 block receipt over six proof-backed slices, not as a single compressed proof.
+The next honest upgrade is recursive or proof-carrying aggregation of this receipt, tracked in `#405`, if a future verifier proves the slice verifiers inside one object. The current feasibility gate records a bounded no-go for that step in `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`, because the outer proof object and verifier handle do not yet exist. Until they do, report this as a statement-bound d128 block receipt over six proof-backed slices, not as a single compressed proof.

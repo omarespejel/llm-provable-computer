@@ -1,0 +1,837 @@
+{
+  "aggregated_proof_object_result": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
+  "aggregation_target_commitment": "blake2b-256:32279c71b882580a39501aba0aeaecff441a8ccb98ee6e49f068cebfc7a287e9",
+  "aggregation_target_manifest": {
+    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "composition_evidence": {
+      "all_mutations_rejected": true,
+      "case_count": 20,
+      "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+      "mutations_rejected": 20,
+      "result": "GO",
+      "schema": "zkai-d128-block-receipt-composition-gate-v1",
+      "total_checked_rows": 197504
+    },
+    "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
+    "ff_dim": 512,
+    "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+    "model_config": {
+      "activation_clamp_q8": 1024,
+      "ff_dim": 512,
+      "model_id": "urn:zkai:ptvm:rmsnorm-swiglu-residual-d128-v1",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "scale_q8": 256,
+      "statement_kind": "d128-rmsnorm-swiglu-residual-block",
+      "target_id": "rmsnorm-swiglu-residual-d128-v1",
+      "width": 128
+    },
+    "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+    "public_inputs": {
+      "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+      "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
+      "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+      "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
+      "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+      "statement_kind": "d128-rmsnorm-swiglu-residual-block",
+      "target_id": "rmsnorm-swiglu-residual-d128-v1",
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    },
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+    "required_nested_verifier_checks": [
+      {
+        "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
+        "index": 0,
+        "proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+        "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+        "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+        "row_count": 128,
+        "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3",
+        "slice_id": "rmsnorm_public_rows",
+        "source_commitments": {
+          "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78"
+        },
+        "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+        "source_path": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+        "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
+        "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+        "target_commitments": {
+          "rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
+        }
+      },
+      {
+        "decision": "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+        "index": 1,
+        "proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+        "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+        "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+        "row_count": 128,
+        "schema": "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1",
+        "slice_id": "rmsnorm_projection_bridge",
+        "source_commitments": {
+          "rmsnorm_output_row_commitment": "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87",
+          "source_rmsnorm_public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "source_rmsnorm_statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+        "source_path": "docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json",
+        "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3",
+        "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728",
+        "target_commitments": {
+          "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17"
+        }
+      },
+      {
+        "decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
+        "index": 2,
+        "proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
+        "proof_native_parameter_commitment": "blake2b-256:d1a46c1b0b66363d99ab94953af741710bfadfda2332907274096577efe6bf17",
+        "public_instance_commitment": "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c",
+        "row_count": 131072,
+        "schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
+        "slice_id": "gate_value_projection",
+        "source_commitments": {
+          "projection_input_row_commitment": "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17",
+          "source_bridge_public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "source_bridge_statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+        },
+        "source_file_sha256": "e3da3297947d4dcdf836cadce83df46a70e5abc2c11b40100d75c7a4f1534d15",
+        "source_path": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json",
+        "source_payload_sha256": "c4c453829fc3c4543d759d0e6a4e662ccad994ac183e30bf13f63b00c78e3d9f",
+        "statement_commitment": "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf",
+        "target_commitments": {
+          "gate_projection_output_commitment": "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7",
+          "gate_value_projection_output_commitment": "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3",
+          "value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf"
+        }
+      },
+      {
+        "decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
+        "index": 3,
+        "proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+        "proof_native_parameter_commitment": "blake2b-256:e7ea04baa22db9af4c7b7107a779cca9e0708090e478a6239707dd77ea44212d",
+        "public_instance_commitment": "blake2b-256:400909bc5391608356a82db328209e275788787658d9689a88a66fbaa669695e",
+        "row_count": 512,
+        "schema": "zkai-d128-activation-swiglu-air-proof-input-v1",
+        "slice_id": "activation_swiglu",
+        "source_commitments": {
+          "gate_projection_output_commitment": "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7",
+          "gate_value_projection_output_commitment": "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3",
+          "source_gate_value_projection_public_instance_commitment": "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c",
+          "source_gate_value_projection_statement_commitment": "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf",
+          "value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf"
+        },
+        "source_file_sha256": "282c660c69934f57d66136e369550fe7b207a3ca41e12c9bc1e0d65ec3e34380",
+        "source_path": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json",
+        "source_payload_sha256": "eeb5161946e8851642fa68b725d870fc8207b62254a302d21e06b848a23d5147",
+        "statement_commitment": "blake2b-256:b6f7c2b52c71ff5b096c6151305d24a07f40d162c65836d72b7c39bbdc319f31",
+        "target_commitments": {
+          "hidden_activation_commitment": "blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312"
+        }
+      },
+      {
+        "decision": "GO_INPUT_FOR_D128_DOWN_PROJECTION_AIR_PROOF",
+        "index": 4,
+        "proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+        "proof_native_parameter_commitment": "blake2b-256:ee69217168238b20e0b46a722554b42abe4fd5c599231f130d25ca7e4b432aef",
+        "public_instance_commitment": "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1",
+        "row_count": 65536,
+        "schema": "zkai-d128-down-projection-air-proof-input-v1",
+        "slice_id": "down_projection",
+        "source_commitments": {
+          "hidden_activation_commitment": "blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312",
+          "source_activation_swiglu_public_instance_commitment": "blake2b-256:400909bc5391608356a82db328209e275788787658d9689a88a66fbaa669695e",
+          "source_activation_swiglu_statement_commitment": "blake2b-256:b6f7c2b52c71ff5b096c6151305d24a07f40d162c65836d72b7c39bbdc319f31"
+        },
+        "source_file_sha256": "d554209cbeccb37d63b6bfb7f7dc2059bfe7ba8ea5a93b17e4134f087269d09e",
+        "source_path": "docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json",
+        "source_payload_sha256": "626a7f1fa06cfb5e6239d82f8b21c84f2d7829b02af58a5f06378fa5048d2c01",
+        "statement_commitment": "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599",
+        "target_commitments": {
+          "residual_delta_commitment": "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2"
+        }
+      },
+      {
+        "decision": "GO_INPUT_FOR_D128_RESIDUAL_ADD_AIR_PROOF",
+        "index": 5,
+        "proof_backend_version": "stwo-d128-residual-add-air-proof-v1",
+        "proof_native_parameter_commitment": "blake2b-256:f958da6fa72df8bc32873b3602a128ed35b65f9427e8627af0b39ff7e21b31bc",
+        "public_instance_commitment": "blake2b-256:460b15062fab393fb27076ff82ce3d4ce2fcdcb8279171e9096809f697984cde",
+        "row_count": 128,
+        "schema": "zkai-d128-residual-add-air-proof-input-v1",
+        "slice_id": "residual_add",
+        "source_commitments": {
+          "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+          "residual_delta_commitment": "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2",
+          "source_down_projection_public_instance_commitment": "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1",
+          "source_down_projection_statement_commitment": "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599",
+          "source_rmsnorm_statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        "source_file_sha256": "588a608abcf373ece9d35c8e3cb33d3c9947ec2c2fc98566101978a35b9f0b6c",
+        "source_path": "docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json",
+        "source_payload_sha256": "01b03d7625ac604b2abf7c5b73542c296206499d255967c4049f5ced731d8fba",
+        "statement_commitment": "blake2b-256:7324cabcfe588b50f9fd4c52d0654b1f110cb157b757dac643362a70010f0fb2",
+        "target_commitments": {
+          "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1"
+        }
+      }
+    ],
+    "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
+    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_kind": "d128-rmsnorm-swiglu-residual-block",
+    "target_id": "rmsnorm-swiglu-residual-d128-v1",
+    "target_kind": "d128-block-receipt-aggregated-proof-object-target",
+    "target_version": "zkai-d128-aggregated-proof-object-target-v1",
+    "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+    "width": 128
+  },
+  "aggregation_target_result": "GO_D128_AGGREGATION_TARGET_ONLY",
+  "all_mutations_rejected": true,
+  "block_receipt_public_inputs": {
+    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "evidence_manifest_commitment": "blake2b-256:fef121579d07a50bd500dd75a766fc19771859cf5a97e0b68317fb254143ce2a",
+    "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+    "output_activation_commitment": "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1",
+    "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+    "slice_chain_commitment": "blake2b-256:619d5a10f6bb51d4c0ec57ddca496037ea33681ea0c54fc6323d93fcfed6d363",
+    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "statement_kind": "d128-rmsnorm-swiglu-residual-block",
+    "target_id": "rmsnorm-swiglu-residual-d128-v1",
+    "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+  },
+  "candidate_inventory": [
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "GO_AGGREGATION_TARGET_ONLY",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+      "kind": "statement_bound_receipt",
+      "name": "d128_block_receipt_composition_gate",
+      "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+      "reason": "binds the six d128 slice handles into one statement-bound receipt, but is not an outer proof object"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "fcc0134ffafe6ca6ee9c70f53cad578f433e9617c2969be0b536b2fe0d8f105f",
+      "kind": "backend_route_classification",
+      "name": "d128_backend_spike_gate",
+      "path": "docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json",
+      "reason": "records the current full-block blocker; it does not provide a verifier-facing proof object"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "REFERENCE_ONLY_NOT_D128",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "2c2949da569f8019f89b2867b3150093290ace4168c7fe3e67762b5ed999079e",
+      "kind": "smaller_width_no_go_reference",
+      "name": "d64_recursive_pcd_feasibility_gate",
+      "path": "docs/engineering/evidence/zkai-d64-recursive-pcd-aggregation-feasibility-2026-05.json",
+      "reason": "d64 feasibility evidence is useful prior art, but cannot be relabeled as a d128 proof object"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_module",
+      "name": "d128_full_block_native_module",
+      "path": "src/stwo_backend/d128_native_transformer_block_proof.rs",
+      "reason": "no direct native full-block d128 proof/verifier module is present"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_module",
+      "name": "d128_nested_verifier_aggregation_module",
+      "path": "src/stwo_backend/d128_nested_verifier_aggregation_proof.rs",
+      "reason": "no nested verifier aggregation module exists for the six d128 slice verifiers"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_proof_artifact",
+      "name": "d128_aggregated_proof_artifact",
+      "path": "docs/engineering/evidence/zkai-d128-aggregated-proof-object-2026-05.json",
+      "reason": "no checked aggregated proof object artifact exists"
+    },
+    {
+      "accepted_as_aggregated_proof_object": false,
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_verifier_handle",
+      "name": "d128_aggregated_verifier_handle",
+      "path": "docs/engineering/evidence/zkai-d128-aggregated-proof-object-verifier-2026-05.json",
+      "reason": "no verifier handle exists for an aggregated d128 proof object"
+    }
+  ],
+  "case_count": 34,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target commitment mismatch",
+      "mutated_accepted": false,
+      "mutation": "aggregation_target_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_commitment",
+      "surface": "aggregation_target_commitment"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source block receipt file_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_block_receipt_file_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt_evidence",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source block receipt payload_sha256 mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_block_receipt_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt_evidence",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "source block receipt decision mismatch",
+      "mutated_accepted": false,
+      "mutation": "source_block_receipt_decision_drift",
+      "rejected": true,
+      "rejection_layer": "source_block_receipt_evidence",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "block_receipt_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "statement_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "input_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "output_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "slice_chain_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "evidence_manifest_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_check_removed",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_check_reordered",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_source_hash_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "nested_verifier_statement_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "required_backend_version_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregation target manifest mismatch",
+      "mutated_accepted": false,
+      "mutation": "composition_mutation_count_drift",
+      "rejected": true,
+      "rejection_layer": "aggregation_target_manifest",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "candidate inventory mismatch",
+      "mutated_accepted": false,
+      "mutation": "candidate_inventory_required_artifact_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregated_proof_object_claimed claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "aggregated_proof_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "recursive_aggregation_claimed claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "recursive_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "pcd_accumulator_claimed claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "pcd_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "verifier_handle_claimed claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_claimed_without_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "block_receipt_commitment_bound_as_public_input claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "block_receipt_public_input_claimed_without_proof",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "statement_commitment_bound_as_public_input claimed without checked aggregated proof object",
+      "mutated_accepted": false,
+      "mutation": "statement_public_input_claimed_without_proof",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "aggregated proof artifact supplied to no-go feasibility gate",
+      "mutated_accepted": false,
+      "mutation": "invented_aggregated_proof_artifact",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "proof_size_bytes metric supplied before proof object exists",
+      "mutated_accepted": false,
+      "mutation": "proof_size_metric_smuggled_before_proof",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "verifier_time_ms metric supplied before proof object exists",
+      "mutated_accepted": false,
+      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "first blocker mismatch",
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "proof_object_attempt",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "missing backend features mismatch",
+      "mutated_accepted": false,
+      "mutation": "missing_backend_feature_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "decision mismatch",
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "result mismatch",
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "non-claims mismatch",
+      "mutated_accepted": false,
+      "mutation": "non_claims_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO",
+      "error": "validation commands mismatch",
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "decision": "NO_GO_D128_AGGREGATED_PROOF_OBJECT_MISSING",
+  "issue": 405,
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "aggregation_target_commitment_drift",
+      "surface": "aggregation_target_commitment"
+    },
+    {
+      "index": 1,
+      "mutation": "source_block_receipt_file_hash_drift",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "index": 2,
+      "mutation": "source_block_receipt_payload_hash_drift",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "index": 3,
+      "mutation": "source_block_receipt_decision_drift",
+      "surface": "source_block_receipt_evidence"
+    },
+    {
+      "index": 4,
+      "mutation": "block_receipt_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 5,
+      "mutation": "statement_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 6,
+      "mutation": "input_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 7,
+      "mutation": "output_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 8,
+      "mutation": "slice_chain_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 9,
+      "mutation": "evidence_manifest_commitment_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 10,
+      "mutation": "nested_verifier_check_removed",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 11,
+      "mutation": "nested_verifier_check_reordered",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 12,
+      "mutation": "nested_verifier_source_hash_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 13,
+      "mutation": "nested_verifier_statement_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 14,
+      "mutation": "verifier_domain_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 15,
+      "mutation": "required_backend_version_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 16,
+      "mutation": "composition_mutation_count_drift",
+      "surface": "aggregation_target_manifest"
+    },
+    {
+      "index": 17,
+      "mutation": "candidate_inventory_acceptance_relabel",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 18,
+      "mutation": "candidate_inventory_required_artifact_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 19,
+      "mutation": "aggregated_proof_claimed_without_artifact",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 20,
+      "mutation": "recursive_claimed_without_artifact",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 21,
+      "mutation": "pcd_claimed_without_artifact",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 22,
+      "mutation": "verifier_handle_claimed_without_artifact",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 23,
+      "mutation": "block_receipt_public_input_claimed_without_proof",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 24,
+      "mutation": "statement_public_input_claimed_without_proof",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 25,
+      "mutation": "invented_aggregated_proof_artifact",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 26,
+      "mutation": "proof_size_metric_smuggled_before_proof",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 27,
+      "mutation": "verifier_time_metric_smuggled_before_proof",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 28,
+      "mutation": "first_blocker_removed",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 29,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "proof_object_attempt"
+    },
+    {
+      "index": 30,
+      "mutation": "decision_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 31,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 32,
+      "mutation": "non_claims_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 33,
+      "mutation": "validation_command_drift",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive aggregation of the six d128 slice proofs",
+    "not one compressed verifier object",
+    "not proof-carrying-data accumulation",
+    "not verifier-time benchmark evidence for an aggregated d128 proof",
+    "not proof-size benchmark evidence for an aggregated d128 proof",
+    "not matched NANOZK, DeepProve, EZKL, or snarkjs comparison evidence",
+    "not onchain deployment evidence",
+    "not a claim that d128 aggregation is impossible"
+  ],
+  "proof_object_attempt": {
+    "aggregated_proof_artifacts": [],
+    "aggregated_proof_object_claimed": false,
+    "aggregation_target_commitment_bound_as_public_input": false,
+    "block_receipt_commitment_bound_as_public_input": false,
+    "blocked_before_metrics": true,
+    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt commitment plus statement commitment as public inputs",
+    "go_criterion": "one outer proof, accumulator, or proof-carrying artifact verifies the six d128 slice-verifier checks and binds block_receipt_commitment and statement_commitment as public inputs",
+    "missing_backend_features": [
+      "recursive verifier program/AIR/circuit for each d128 slice verifier",
+      "outer proof or PCD accumulator object over the six d128 slice-verifier checks",
+      "adapter that binds block_receipt_commitment and statement_commitment into outer public inputs",
+      "local verifier handle for the resulting aggregated proof object",
+      "fail-closed mutation tests for source manifest, slice chain, commitments, verifier-domain, and fake metrics"
+    ],
+    "pcd_accumulator_claimed": false,
+    "proof_metrics": {
+      "compressed_proof_size_bytes": null,
+      "proof_size_bytes": null,
+      "prove_time_ms": null,
+      "verifier_time_ms": null
+    },
+    "recursive_aggregation_claimed": false,
+    "statement_commitment_bound_as_public_input": false,
+    "verifier_handle_claimed": false,
+    "verifier_handles": []
+  },
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-d128-aggregated-proof-object-feasibility-v1",
+  "source_block_receipt_evidence": {
+    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "decision": "GO_D128_BLOCK_RECEIPT_COMPOSITION_GATE",
+    "file_sha256": "492d61b1009f907a0ad48f34e02dc0c4ca0e3e176820452521e52ab59379ab9c",
+    "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+    "payload_sha256": "0e8d8ce2c5049a234cf56999a9413184adada1e9948819950836d9a5d2ede01f",
+    "result": "GO",
+    "schema": "zkai-d128-block-receipt-composition-gate-v1",
+    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60"
+  },
+  "summary": {
+    "aggregated_proof_object_status": "NO_GO_AGGREGATED_PROOF_OBJECT_MISSING",
+    "aggregation_target_kind": "d128-block-receipt-aggregated-proof-object-target",
+    "aggregation_target_version": "zkai-d128-aggregated-proof-object-target-v1",
+    "block_receipt_commitment": "blake2b-256:a2cd8a3dc2f3a5d176fe0a569929fd6e146c4cccfab9aaa18a92a3da057b9c3a",
+    "blocked_before_metrics": true,
+    "composition_mutation_cases": 20,
+    "composition_mutations_rejected": 20,
+    "first_blocker": "missing outer proof or accumulator backend that proves the six d128 slice-verifier checks and binds the d128 block receipt commitment plus statement commitment as public inputs",
+    "mutation_cases": 34,
+    "mutations_rejected": 34,
+    "slice_count": 6,
+    "statement_commitment": "blake2b-256:f808e10c539370b63f8f8300a0a6dfa9cb0fa02eed4ca3fbd83a378c4a0a2b60",
+    "target_status": "GO_D128_AGGREGATION_TARGET_ONLY",
+    "total_checked_rows": 197504
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_aggregated_proof_object_feasibility_gate.py --write-json docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_aggregated_proof_object_feasibility_gate",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate"
+  ]
+}

@@ -535,6 +535,9 @@ The d128 route now has six proof-backed slice handles plus a composition gate:
 - `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`
 - `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv`
+- `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`
+- `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-aggregated-proof-object-feasibility-2026-05.tsv`
 
 Decision: partial GO only. The d128 RMSNorm public-row proof checks `128`
 normalization rows and recomputes the input, scale, config, scale-tree,
@@ -554,8 +557,12 @@ source-bound residual-add proof checks `128` residual-add rows and recomputes
 its input, residual-delta, output, row, public-instance, proof-native parameter,
 and statement commitments. The d128 block receipt composition gate now binds
 the six slice handles into one statement-bound receipt over `197,504` checked
-rows and rejects `20 / 20` receipt mutations. This is still not recursive
-aggregation or one compressed proof.
+rows and rejects `20 / 20` receipt mutations. A follow-up aggregated
+proof-object feasibility gate then classifies that receipt as a valid
+aggregation target, but records a bounded no-go for claiming recursive
+aggregation, PCD, or one compressed proof today: the outer proof/accumulator
+backend and verifier handle do not yet exist. That follow-up rejects `34 / 34`
+promotion, relabeling, and fake-metric mutations.
 
 The d64 block receipt composition gate consumes the checked slice handles:
 

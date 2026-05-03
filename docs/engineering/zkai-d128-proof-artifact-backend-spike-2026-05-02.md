@@ -73,7 +73,7 @@ or verifier time, because the recursive/single-proof object does not exist.
 | Parameterized residual-add proof roundtrip | locally constructed and verified by Rust tests |
 | Checked-in proof bytes | no |
 | Full-block proof metrics | blocked before aggregated proof object |
-| Mutation checks | `93 / 93` rejected |
+| Mutation checks | `100 / 100` rejected |
 
 ## Backend-route classification
 
@@ -189,10 +189,13 @@ numbers are blocked until:
   public-instance, proof, verifying-key, setup, evidence-manifest, and
   verifier-domain fields.
 
-The next concrete backend follow-up is recursive or proof-carrying aggregation
-of the checked block receipt. Until that exists, report the d128 result as a
-statement-bound receipt over six proof-backed slices, not as one compressed
-proof.
+The concrete backend follow-up is now recorded in
+`docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
+That gate classifies the checked block receipt as a valid aggregation target but
+records a bounded no-go for claiming a recursive, PCD, or one compressed proof
+object today. Until an outer proof object and verifier handle exist, report the
+d128 result as a statement-bound receipt over six proof-backed slices, not as
+one compressed proof.
 
 ## Non-claims
 

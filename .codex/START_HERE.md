@@ -60,8 +60,14 @@ This repository currently has three live lanes.
    - The d128 block receipt composition gate now binds the six checked slice
      handles into one statement-bound receipt over `197,504` checked rows; see
      `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`.
-   - This is a receipt-composition GO only: recursion, one compressed verifier
-     object, and full-block proof-size/verifier-time metrics remain blocked.
+   - The d128 aggregated proof-object feasibility gate now records a bounded
+     no-go for the next step: the block receipt is a valid aggregation target,
+     but the outer proof/accumulator backend and verifier handle do not yet
+     exist; see
+     `docs/engineering/zkai-d128-aggregated-proof-object-feasibility-2026-05-03.md`.
+   - This is still a receipt-composition GO only: recursion, one compressed
+     verifier object, and full-block proof-size/verifier-time metrics remain
+     blocked.
 
 Do not collapse these lanes into one claim.
 
@@ -132,10 +138,12 @@ The repo now also has one explicit answer on the second-backend question:
    replay-elimination headline on the scale of Phase44D.
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
-10. Continue the verifiable-AI d128 lane with recursive or proof-carrying
-    aggregation of the checked d128 block receipt (`#405`); do not report
-    full-block proof-size/verifier-time metrics until a real aggregated proof
-    object or a checked no-go exists.
+10. Treat the first d128 aggregation attempt (`#405`) as a checked bounded
+    no-go until an outer proof/accumulator backend and verifier handle exist.
+    The next d128 research step should be a smaller proof-object spike, such as
+    a two-slice d128 outer-proof target, before attempting all six slices.
+    Do not report full-block proof-size/verifier-time metrics until a real
+    aggregated proof object exists.
 
 ## What not to do
 
