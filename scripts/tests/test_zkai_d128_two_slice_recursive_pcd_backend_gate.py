@@ -116,6 +116,11 @@ class ZkAiD128TwoSliceRecursivePCDBackendGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128TwoSliceRecursivePCDBackendError, "key set mismatch"):
             GATE.validate_payload(payload)
 
+    def test_validate_payload_rejects_core_only_payload_with_typed_error(self) -> None:
+        core = GATE.build_core_payload()
+        with self.assertRaisesRegex(GATE.D128TwoSliceRecursivePCDBackendError, "top-level payload"):
+            GATE.validate_payload(core)
+
     def test_tsv_columns_are_stable(self) -> None:
         header = GATE.to_tsv(self.fresh_payload()).splitlines()[0].split("\t")
         self.assertEqual(tuple(header), GATE.TSV_COLUMNS)

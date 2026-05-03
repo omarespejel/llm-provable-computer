@@ -972,6 +972,9 @@ def validate_cases(value: Any, expected_cases: list[dict[str, Any]]) -> None:
 
 
 def validate_payload(payload: dict[str, Any]) -> None:
+    if not isinstance(payload, dict):
+        raise D128TwoSliceRecursivePCDBackendError("payload must be a JSON object")
+    expect_key_set(payload, FINAL_KEYS, "top-level payload")
     validate_core_payload(payload)
     expected_core = build_core_payload()
     expected_cases = run_mutations(expected_core)
