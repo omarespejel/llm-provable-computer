@@ -1066,7 +1066,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         with tempfile.NamedTemporaryFile("wb", delete=False, dir=path.parent) as handle:
             tmp = pathlib.Path(handle.name)
             handle.write(data)
-        tmp.replace(path)
+        try:
+            tmp.replace(path)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
 
 
 def main(argv: list[str] | None = None) -> int:
