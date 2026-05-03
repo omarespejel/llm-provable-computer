@@ -506,7 +506,7 @@ row commitment, and recomputes the final `output_activation_commitment`. This
 closes the native d64 final-output seam for the slice chain. It is still not a
 recursive aggregate proof and not a private parameter-opening proof.
 
-The d128 route now has four partial proof handles:
+The d128 route now has six proof-backed slice handles plus a composition gate:
 
 - `docs/engineering/zkai-d128-rmsnorm-public-row-proof-2026-05-02.md`
 - `docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json`
@@ -520,10 +520,21 @@ The d128 route now has four partial proof handles:
 - `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.tsv`
 - `src/stwo_backend/d128_native_gate_value_projection_proof.rs`
-- `docs/engineering/zkai-d128-vector-residual-add-proof-2026-05-02.md`
-- `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-d128-vector-residual-add-proof-2026-05.tsv`
-- `src/stwo_backend/zkai_vector_block_residual_add_proof.rs`
+- `docs/engineering/zkai-d128-activation-swiglu-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_activation_swiglu_proof.rs`
+- `docs/engineering/zkai-d128-down-projection-proof-2026-05-02.md`
+- `docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_down_projection_proof.rs`
+- `docs/engineering/zkai-d128-residual-add-proof-2026-05-03.md`
+- `docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.tsv`
+- `src/stwo_backend/d128_native_residual_add_proof.rs`
+- `docs/engineering/zkai-d128-block-receipt-composition-gate-2026-05-03.md`
+- `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`
+- `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.tsv`
 
 Decision: partial GO only. The d128 RMSNorm public-row proof checks `128`
 normalization rows and recomputes the input, scale, config, scale-tree,
@@ -543,7 +554,7 @@ source-bound residual-add proof checks `128` residual-add rows and recomputes
 its input, residual-delta, output, row, public-instance, proof-native parameter,
 and statement commitments. The d128 block receipt composition gate now binds
 the six slice handles into one statement-bound receipt over `197,504` checked
-rows and rejects `19 / 19` receipt mutations. This is still not recursive
+rows and rejects `20 / 20` receipt mutations. This is still not recursive
 aggregation or one compressed proof.
 
 The d64 block receipt composition gate consumes the checked slice handles:

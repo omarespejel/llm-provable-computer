@@ -14,8 +14,9 @@ block is already composed?
 GO for the source-bound d128 residual-add proof slice.
 
 This is not a GO for a full d128 transformer-block proof, recursion, proof-size
-benchmark, or verifier-time benchmark. The remaining blocker is composition of
-the already checked d128 slice receipts into one full block receipt.
+benchmark, or verifier-time benchmark. The remaining blocker is a real
+recursive/proof-carrying aggregation object over the checked d128 block
+receipt.
 
 ## Evidence
 
