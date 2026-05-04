@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from typing import Any
 
 
@@ -664,7 +665,7 @@ def write_text_checked(path: pathlib.Path, text: str) -> None:
     if resolved != root and root not in resolved.parents:
         raise D128SnarkTimingSetupError(f"output path must stay under {EVIDENCE_DIR}", layer="output_path")
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
 
