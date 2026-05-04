@@ -70,6 +70,7 @@ EXTERNAL_SYSTEM = {
     "proof_system": PROOF_SYSTEM,
     "verification_api": "snarkjs groth16 verify verification_key.json public.json proof.json",
 }
+TIMING_POLICY = "not_measured_in_this_gate"
 BN128_FIELD_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -82,8 +83,14 @@ ARTIFACTS = {
     "metadata": "metadata.json",
 }
 
+GATE_COMMAND = (
+    "python3 scripts/zkai_d128_snark_ivc_statement_receipt_gate.py "
+    "--write-json docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json "
+    "--write-tsv docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.tsv"
+)
 VALIDATION_COMMANDS = [
-    "python3 scripts/zkai_d128_snark_ivc_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.tsv",
+    "npm ci --prefix scripts",
+    GATE_COMMAND,
     "python3 -m unittest scripts.tests.test_zkai_d128_snark_ivc_statement_receipt_gate",
     "python3 -m py_compile scripts/zkai_d128_snark_ivc_statement_receipt_gate.py scripts/tests/test_zkai_d128_snark_ivc_statement_receipt_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
@@ -633,6 +640,19 @@ def statement_receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def expected_receipt_metrics() -> dict[str, Any]:
+    public_signals = require_list(load_json(artifact_path("public_signals")), "public signals", layer="receipt_metrics")
+    return {
+        "proof_size_bytes": artifact_path("proof").stat().st_size,
+        "public_signals_bytes": artifact_path("public_signals").stat().st_size,
+        "verification_key_bytes": artifact_path("verification_key").stat().st_size,
+        "public_signal_count": len(public_signals),
+        "verifier_time_ms": None,
+        "proof_generation_time_ms": None,
+        "timing_policy": TIMING_POLICY,
+    }
+
+
 def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any]], None] = snarkjs_verify) -> dict[str, Any]:
     baseline = baseline_receipt()
     verify_proof_only(baseline, external_verify=external_verify)
@@ -664,9 +684,6 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
     all_rejected = all(case["rejected"] for case in cases)
     source = source_contract()
     receipt = baseline_receipt()
-    proof_size = artifact_path("proof").stat().st_size
-    public_size = artifact_path("public_signals").stat().st_size
-    vk_size = artifact_path("verification_key").stat().st_size
     payload = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -679,15 +696,7 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
         "proof_verifier_checks": {
             "public_signal_relabeling": proof_verifier_check,
         },
-        "receipt_metrics": {
-            "proof_size_bytes": proof_size,
-            "public_signals_bytes": public_size,
-            "verification_key_bytes": vk_size,
-            "public_signal_count": len(receipt["public_signals"]),
-            "verifier_time_ms": None,
-            "proof_generation_time_ms": None,
-            "timing_policy": "not_measured_in_this_gate",
-        },
+        "receipt_metrics": expected_receipt_metrics(),
         "external_system": copy.deepcopy(EXTERNAL_SYSTEM),
         "artifact_metadata": load_json(artifact_path("metadata")),
         "artifact_paths": {key: str(artifact_path(key).relative_to(ROOT)) for key in ARTIFACTS},
@@ -699,7 +708,7 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
         "validation_commands": list(VALIDATION_COMMANDS),
         "repro": {
             "git_commit": _git_commit(),
-            "command": VALIDATION_COMMANDS[0],
+            "command": GATE_COMMAND,
         },
         "summary": SUMMARY,
     }
@@ -745,11 +754,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
         expect_equal(case.get("surface"), surface, f"surface for {mutation}")
         if case.get("mutated_accepted") is True:
             raise D128SnarkReceiptError(f"mutation accepted: {mutation}", layer="mutation_suite")
-    metrics = require_object(payload["receipt_metrics"], "receipt metrics")
-    if metrics.get("proof_size_bytes") != artifact_path("proof").stat().st_size:
-        raise D128SnarkReceiptError("proof size metric mismatch", layer="receipt_metrics")
-    if metrics.get("verifier_time_ms") is not None or metrics.get("proof_generation_time_ms") is not None:
-        raise D128SnarkReceiptError("timing metrics must remain null in this gate", layer="receipt_metrics")
+    expect_equal(
+        require_object(payload["receipt_metrics"], "receipt metrics"),
+        expected_receipt_metrics(),
+        "receipt metrics",
+        layer="receipt_metrics",
+    )
     proof_checks = require_object(payload["proof_verifier_checks"], "proof verifier checks")
     public_signal_check = require_object(proof_checks.get("public_signal_relabeling"), "public signal proof verifier check")
     if public_signal_check.get("rejected") is not True or public_signal_check.get("rejection_layer") != "external_proof_verifier":

@@ -35,6 +35,7 @@ from typing import Any, Callable
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 PROOF_NATIVE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compression_gate.py"
+SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_snark_ivc_statement_receipt_gate.py"
 PROOF_NATIVE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
 SNARK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.json"
@@ -335,6 +336,7 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
 
 
 PROOF_NATIVE = _load_module(PROOF_NATIVE_SCRIPT, "zkai_d128_proof_native_for_cryptographic_backend_gate")
+SNARK_RECEIPT = _load_module(SNARK_RECEIPT_SCRIPT, "zkai_d128_snark_receipt_for_cryptographic_backend_gate")
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -490,6 +492,10 @@ def source_proof_native_contract(source: dict[str, Any], path: pathlib.Path = PR
 def _load_checked_snark_receipt_cached(path_text: str) -> dict[str, Any]:
     path = pathlib.Path(path_text)
     payload = load_json(path, layer="external_snark_receipt", field="SNARK receipt evidence")
+    try:
+        SNARK_RECEIPT.validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
+        raise D128CryptographicBackendGateError(f"SNARK receipt validation failed: {err}", layer="external_snark_receipt") from err
     expect_equal(payload.get("schema"), EXPECTED_SNARK_RECEIPT_SCHEMA, "SNARK receipt schema", layer="external_snark_receipt")
     expect_equal(payload.get("issue"), SNARK_RECEIPT_ISSUE, "SNARK receipt issue", layer="external_snark_receipt")
     expect_equal(payload.get("source_issue"), SOURCE_ISSUE, "SNARK receipt source issue", layer="external_snark_receipt")
