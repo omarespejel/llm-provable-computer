@@ -37,25 +37,28 @@ EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 PROOF_NATIVE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compression_gate.py"
 SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_snark_ivc_statement_receipt_gate.py"
 ZKVM_RECEIPT_ADAPTER_SCRIPT = ROOT / "scripts" / "zkai_d128_zkvm_statement_receipt_adapter_gate.py"
+RISC0_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_risc0_statement_receipt_gate.py"
 PROOF_NATIVE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
 SNARK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
 ZKVM_RECEIPT_ADAPTER_EVIDENCE = EVIDENCE_DIR / "zkai-d128-zkvm-statement-receipt-adapter-2026-05.json"
+RISC0_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-risc0-statement-receipt-2026-05.json"
 SNARK_RECEIPT_TIMING_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-receipt-timing-setup-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.tsv"
 
 SCHEMA = "zkai-d128-cryptographic-backend-gate-v1"
-DECISION = "GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
+DECISION = "GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
 RESULT = "GO"
 ISSUE = 426
 SOURCE_ISSUE = 424
 SNARK_RECEIPT_ISSUE = 428
 ZKVM_RECEIPT_ADAPTER_ISSUE = 422
-CLAIM_BOUNDARY = "EXTERNAL_SNARK_STATEMENT_RECEIPT_AVAILABLE_NOT_RECURSION"
-PRIMARY_BLOCKER = "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE"
+RISC0_RECEIPT_ISSUE = 433
+CLAIM_BOUNDARY = "EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPTS_AVAILABLE_NOT_RECURSION"
+PRIMARY_BLOCKER = "NONE_FOR_EXTERNAL_STATEMENT_RECEIPT_ROUTES"
 FIRST_MISSING_OBJECT = (
-    "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; "
-    "an external SNARK statement receipt now proves the #424 public-input contract"
+    "local nested verifier AIR/circuit and local PCD/IVC backend remain missing; external SNARK and RISC Zero "
+    "statement receipts now prove or receipt the #424 public-input contract"
 )
 GO_CRITERION = (
     "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; "
@@ -64,7 +67,7 @@ GO_CRITERION = (
     "public-instance commitments, proof-native parameter commitments, verifier domain, "
     "backend version, source accumulator commitment, and source verifier-handle commitment"
 )
-NEXT_ROUTE = "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_PRODUCTION_SNARK_SETUP_AND_TIMING"
+NEXT_ROUTE = "LOCAL_RECURSIVE_OR_PCD_BACKEND_OR_COMPARATIVE_EXTERNAL_RECEIPT_CONTROL"
 
 EXPECTED_PROOF_NATIVE_SCHEMA = "zkai-d128-proof-native-two-slice-compression-gate-v1"
 EXPECTED_PROOF_NATIVE_DECISION = "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION"
@@ -76,8 +79,12 @@ EXPECTED_SNARK_RECEIPT_SCHEMA = "zkai-d128-snark-ivc-statement-receipt-gate-v1"
 EXPECTED_SNARK_RECEIPT_DECISION = "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
 EXPECTED_SNARK_RECEIPT_RESULT = "GO"
 EXPECTED_ZKVM_RECEIPT_ADAPTER_SCHEMA = "zkai-d128-zkvm-statement-receipt-adapter-gate-v1"
-EXPECTED_ZKVM_RECEIPT_ADAPTER_DECISION = "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING"
+EXPECTED_ZKVM_RECEIPT_ADAPTER_DECISION = "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE"
 EXPECTED_ZKVM_RECEIPT_ADAPTER_RESULT = "NO_GO"
+EXPECTED_RISC0_RECEIPT_SCHEMA = "zkai-d128-zkvm-statement-receipt-candidate-v1"
+EXPECTED_RISC0_RECEIPT_EVIDENCE_SCHEMA = "zkai-d128-risc0-statement-receipt-gate-v1"
+EXPECTED_RISC0_RECEIPT_DECISION = "GO_D128_RISC0_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
+EXPECTED_RISC0_RECEIPT_RESULT = "GO"
 EXPECTED_SELECTED_SLICE_IDS = ("rmsnorm_public_rows", "rmsnorm_projection_bridge")
 EXPECTED_SELECTED_ROWS = 256
 
@@ -107,6 +114,10 @@ FIXED_BACKEND_ARTIFACTS = (
         "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json",
     ),
     (
+        "external_risc0_statement_receipt_artifact",
+        "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
+    ),
+    (
         "external_snark_ivc_statement_receipt_artifact",
         "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
     ),
@@ -125,19 +136,20 @@ NON_CLAIMS = [
     "not recursive aggregation",
     "not proof-carrying data",
     "not STARK-in-STARK verification",
-    "not a zkVM receipt",
-    "not recursive verification of the underlying Stwo slice proofs inside SNARK",
-    "not verifier-time evidence for a cryptographic backend",
-    "not proof-generation-time evidence for a cryptographic backend",
-    "not a claim that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement the contract",
+    "not recursive verification of the underlying Stwo slice proofs inside SNARK or zkVM",
+    "not a RISC Zero benchmark",
+    "not paper-facing verifier-time or proof-generation benchmark evidence",
+    "not a cross-system performance comparison",
+    "not a claim that SP1, Halo2, Nova, or other external systems cannot implement the contract",
     "not a public zkML benchmark row",
     "not onchain deployment evidence",
 ]
 
 VALIDATION_COMMANDS = [
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_d128_risc0_statement_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.tsv",
     "python3 scripts/zkai_d128_cryptographic_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.tsv",
-    "python3 -m unittest scripts.tests.test_zkai_d128_cryptographic_backend_gate",
-    "python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py scripts/tests/test_zkai_d128_cryptographic_backend_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_d128_risc0_statement_receipt_gate scripts.tests.test_zkai_d128_cryptographic_backend_gate",
+    "python3 -m py_compile scripts/zkai_d128_risc0_statement_receipt_gate.py scripts/tests/test_zkai_d128_risc0_statement_receipt_gate.py scripts/zkai_d128_cryptographic_backend_gate.py scripts/tests/test_zkai_d128_cryptographic_backend_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
     "just gate-fast",
@@ -345,6 +357,7 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
 PROOF_NATIVE = _load_module(PROOF_NATIVE_SCRIPT, "zkai_d128_proof_native_for_cryptographic_backend_gate")
 SNARK_RECEIPT = _load_module(SNARK_RECEIPT_SCRIPT, "zkai_d128_snark_receipt_for_cryptographic_backend_gate")
 ZKVM_RECEIPT_ADAPTER = _load_module(ZKVM_RECEIPT_ADAPTER_SCRIPT, "zkai_d128_zkvm_receipt_adapter_for_cryptographic_backend_gate")
+RISC0_RECEIPT = _load_module(RISC0_RECEIPT_SCRIPT, "zkai_d128_risc0_receipt_for_cryptographic_backend_gate")
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -565,12 +578,59 @@ def load_checked_zkvm_receipt_adapter(path: pathlib.Path = ZKVM_RECEIPT_ADAPTER_
     return copy.deepcopy(_load_checked_zkvm_receipt_adapter_cached(path.as_posix()))
 
 
+@functools.lru_cache(maxsize=1)
+def _load_checked_risc0_receipt_cached(path_text: str) -> dict[str, Any]:
+    path = pathlib.Path(path_text)
+    payload = load_json(path, layer="external_risc0_receipt", field="RISC Zero receipt evidence")
+    try:
+        RISC0_RECEIPT.validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize imported validator failures.
+        raise D128CryptographicBackendGateError(f"RISC Zero receipt validation failed: {err}", layer="external_risc0_receipt") from err
+    expect_equal(payload.get("schema"), EXPECTED_RISC0_RECEIPT_SCHEMA, "RISC Zero receipt schema", layer="external_risc0_receipt")
+    expect_equal(payload.get("evidence_schema"), EXPECTED_RISC0_RECEIPT_EVIDENCE_SCHEMA, "RISC Zero evidence schema", layer="external_risc0_receipt")
+    expect_equal(payload.get("issue"), RISC0_RECEIPT_ISSUE, "RISC Zero receipt issue", layer="external_risc0_receipt")
+    expect_equal(payload.get("source_issue"), SOURCE_ISSUE, "RISC Zero receipt source issue", layer="external_risc0_receipt")
+    expect_equal(payload.get("adapter_issue"), ZKVM_RECEIPT_ADAPTER_ISSUE, "RISC Zero adapter issue", layer="external_risc0_receipt")
+    expect_equal(payload.get("decision"), EXPECTED_RISC0_RECEIPT_DECISION, "RISC Zero receipt decision", layer="external_risc0_receipt")
+    expect_equal(payload.get("result"), EXPECTED_RISC0_RECEIPT_RESULT, "RISC Zero receipt result", layer="external_risc0_receipt")
+    expect_equal(payload.get("all_mutations_rejected"), True, "RISC Zero receipt mutation result", layer="external_risc0_receipt")
+    expect_equal(payload.get("journal_contract"), ZKVM_RECEIPT_ADAPTER.journal_contract(), "RISC Zero journal contract", layer="external_risc0_receipt")
+    artifact = require_object(payload.get("receipt_artifact"), "RISC Zero receipt artifact", layer="external_risc0_receipt")
+    proof_metrics = require_object(payload.get("proof_metrics"), "RISC Zero proof metrics", layer="external_risc0_receipt")
+    proof_size = proof_metrics.get("proof_size_bytes")
+    if not isinstance(proof_size, int) or proof_size <= 0:
+        raise D128CryptographicBackendGateError("RISC Zero proof_size_bytes must be positive", layer="external_risc0_receipt")
+    if artifact.get("size_bytes") != proof_size:
+        raise D128CryptographicBackendGateError("RISC Zero artifact size must match proof_size_bytes", layer="external_risc0_receipt")
+    for metric in ("verifier_time_ms", "proof_generation_time_ms"):
+        value = proof_metrics.get(metric)
+        if not isinstance(value, (int, float)) or value <= 0:
+            raise D128CryptographicBackendGateError(f"RISC Zero {metric} must be positive", layer="external_risc0_receipt")
+    verification = require_object(payload.get("receipt_verification"), "RISC Zero receipt verification", layer="external_risc0_receipt")
+    expect_equal(verification.get("receipt_verified"), True, "RISC Zero receipt verified", layer="external_risc0_receipt")
+    expect_equal(verification.get("decoded_journal_matches_expected"), True, "RISC Zero journal match", layer="external_risc0_receipt")
+    return payload
+
+
+def load_checked_risc0_receipt(path: pathlib.Path = RISC0_RECEIPT_EVIDENCE) -> dict[str, Any]:
+    return copy.deepcopy(_load_checked_risc0_receipt_cached(path.as_posix()))
+
+
 def snark_receipt_route_metrics(receipt: dict[str, Any]) -> dict[str, Any]:
     metrics = require_object(receipt.get("receipt_metrics"), "SNARK receipt metrics", layer="external_snark_receipt")
     return {
         "proof_size_bytes": metrics["proof_size_bytes"],
         "verifier_time_ms": None,
         "proof_generation_time_ms": None,
+    }
+
+
+def risc0_receipt_route_metrics(receipt: dict[str, Any]) -> dict[str, Any]:
+    metrics = require_object(receipt.get("proof_metrics"), "RISC Zero receipt metrics", layer="external_risc0_receipt")
+    return {
+        "proof_size_bytes": metrics["proof_size_bytes"],
+        "verifier_time_ms": metrics["verifier_time_ms"],
+        "proof_generation_time_ms": metrics["proof_generation_time_ms"],
     }
 
 
@@ -672,6 +732,8 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     allowed_inventory_paths = {relative_path(SNARK_RECEIPT_EVIDENCE)}
     if ZKVM_RECEIPT_ADAPTER_EVIDENCE.exists():
         allowed_inventory_paths.add(relative_path(ZKVM_RECEIPT_ADAPTER_EVIDENCE))
+    if RISC0_RECEIPT_EVIDENCE.exists():
+        allowed_inventory_paths.add(relative_path(RISC0_RECEIPT_EVIDENCE))
     if SNARK_RECEIPT_TIMING_EVIDENCE.exists():
         # Issue #430 is timing/setup hardening for the #428 route, not a new
         # cryptographic backend route. Allow it in the inventory without
@@ -680,7 +742,13 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     unexpected_fixed = [
         artifact
         for artifact in probe["fixed_backend_artifacts"]
-        if artifact["exists"] and artifact["artifact_id"] not in {"external_snark_ivc_statement_receipt_artifact", "external_zkvm_statement_receipt_artifact"}
+        if artifact["exists"]
+        and artifact["artifact_id"]
+        not in {
+            "external_snark_ivc_statement_receipt_artifact",
+            "external_zkvm_statement_receipt_artifact",
+            "external_risc0_statement_receipt_artifact",
+        }
     ]
     unexpected_candidates = sorted(set(probe["artifact_candidates"]) - allowed_inventory_paths)
     if unexpected_fixed or unexpected_candidates:
@@ -690,6 +758,13 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
         )
     zkvm_adapter_exists = _artifact_exists(probe, "external_zkvm_statement_receipt_artifact")
     zkvm_adapter = load_checked_zkvm_receipt_adapter() if zkvm_adapter_exists else None
+    risc0_receipt_exists = _artifact_exists(probe, "external_risc0_statement_receipt_artifact")
+    risc0_receipt = load_checked_risc0_receipt() if risc0_receipt_exists else None
+    risc0_metrics = risc0_receipt_route_metrics(risc0_receipt) if risc0_receipt is not None else {
+        "proof_size_bytes": None,
+        "verifier_time_ms": None,
+        "proof_generation_time_ms": None,
+    }
     snark_receipt_exists = _artifact_exists(probe, "external_snark_ivc_statement_receipt_artifact")
     if not snark_receipt_exists:
         raise D128CryptographicBackendGateError(
@@ -759,38 +834,54 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
             "route_id": "external_zkvm_statement_receipt_backend",
             "route_kind": "external_zkvm_statement_receipt",
             "status": (
-                zkvm_adapter["decision"]
-                if zkvm_adapter is not None
-                else "NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT"
+                "GO_EXTERNAL_RISC0_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT"
+                if risc0_receipt is not None
+                else (
+                    zkvm_adapter["decision"]
+                    if zkvm_adapter is not None
+                    else "NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT"
+                )
             ),
             "cryptographic_backend": True,
-            "usable_today": False,
+            "usable_today": risc0_receipt is not None,
             "claim_boundary": (
-                zkvm_adapter["claim_boundary"]
-                if zkvm_adapter is not None
-                else "external_adapter_candidate_not_checked_backend"
+                risc0_receipt["claim_boundary"]
+                if risc0_receipt is not None
+                else (
+                    zkvm_adapter["claim_boundary"]
+                    if zkvm_adapter is not None
+                    else "external_adapter_candidate_not_checked_backend"
+                )
             ),
             "blocking_missing_object": (
-                zkvm_adapter["backend_decision"]["first_blocker"]
-                if zkvm_adapter is not None
-                else "checked_external_zkvm_receipt_for_d128_two_slice_contract"
+                "none_for_external_risc0_statement_receipt"
+                if risc0_receipt is not None
+                else (
+                    zkvm_adapter["backend_decision"]["first_blocker"]
+                    if zkvm_adapter is not None
+                    else "checked_external_zkvm_receipt_for_d128_two_slice_contract"
+                )
             ),
-            "next_action": "install/pin one zkVM toolchain and produce a real receipt over the #424 public journal/public-values contract",
-            "proof_metrics": {
-                "proof_size_bytes": None,
-                "verifier_time_ms": None,
-                "proof_generation_time_ms": None,
-            },
+            "next_action": (
+                "use as proof-system-independent zkVM statement-receipt control; do not claim recursion"
+                if risc0_receipt is not None
+                else "install/pin one zkVM toolchain and produce a real receipt over the #424 public journal/public-values contract"
+            ),
+            "proof_metrics": risc0_metrics,
             "evidence": {
                 "local_dependencies_declared": probe["external_zkvm_dependencies_declared"],
                 "dependency_names": copy.deepcopy(probe["external_zkvm_dependency_names"]),
-                "receipt_artifact_exists": False,
+                "receipt_artifact_exists": risc0_receipt_exists,
                 "adapter_gate_artifact_exists": zkvm_adapter_exists,
-                "tracked_issue": ZKVM_RECEIPT_ADAPTER_ISSUE,
+                "tracked_issue": RISC0_RECEIPT_ISSUE if risc0_receipt is not None else ZKVM_RECEIPT_ADAPTER_ISSUE,
                 "adapter_artifact": relative_path(ZKVM_RECEIPT_ADAPTER_EVIDENCE) if zkvm_adapter is not None else None,
                 "adapter_decision": zkvm_adapter["decision"] if zkvm_adapter is not None else None,
                 "adapter_first_blocker": zkvm_adapter["backend_decision"]["first_blocker"] if zkvm_adapter is not None else None,
                 "journal_commitment": zkvm_adapter["journal_contract"]["journal_commitment"] if zkvm_adapter is not None else None,
+                "receipt_artifact": relative_path(RISC0_RECEIPT_EVIDENCE) if risc0_receipt is not None else None,
+                "receipt_decision": risc0_receipt["decision"] if risc0_receipt is not None else None,
+                "receipt_commitment": risc0_receipt["receipt_commitment"] if risc0_receipt is not None else None,
+                "image_id_hex": risc0_receipt["receipt_verification"]["image_id_hex"] if risc0_receipt is not None else None,
             },
         },
         {
@@ -814,7 +905,7 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
                 else "checked_external_snark_or_ivc_receipt_for_d128_two_slice_contract"
             ),
             "next_action": (
-                "use as proof-system-independent statement-receipt control; keep #422 for zkVM public-values receipts"
+                "use as proof-system-independent statement-receipt control; compare against the #433 zkVM receipt without treating either as recursion"
                 if snark_receipt_exists
                 else "build a SNARK/IVC statement-receipt adapter only if it can bind the same #424 public-input contract"
             ),
@@ -1005,7 +1096,17 @@ def validate_route(route: Any, index: int) -> dict[str, Any]:
     require_object(route["evidence"], f"route {index} evidence", layer="backend_routes")
     metrics = require_object(route["proof_metrics"], f"route {index} proof metrics", layer="backend_routes")
     expect_keys(metrics, ROUTE_METRIC_KEYS, f"route {index} proof metrics", layer="backend_routes")
-    if route["route_id"] == "external_snark_or_ivc_statement_receipt_backend" and route["usable_today"] is True:
+    if route["route_id"] == "external_zkvm_statement_receipt_backend" and route["usable_today"] is True:
+        proof_size = metrics.get("proof_size_bytes")
+        verifier_time = metrics.get("verifier_time_ms")
+        proof_generation_time = metrics.get("proof_generation_time_ms")
+        if not isinstance(proof_size, int) or proof_size <= 0:
+            raise D128CryptographicBackendGateError("RISC Zero route proof_size_bytes must be positive", layer="backend_routes")
+        if not isinstance(verifier_time, (int, float)) or verifier_time <= 0:
+            raise D128CryptographicBackendGateError("RISC Zero route verifier_time_ms must be positive", layer="backend_routes")
+        if not isinstance(proof_generation_time, (int, float)) or proof_generation_time <= 0:
+            raise D128CryptographicBackendGateError("RISC Zero route proof_generation_time_ms must be positive", layer="backend_routes")
+    elif route["route_id"] == "external_snark_or_ivc_statement_receipt_backend" and route["usable_today"] is True:
         proof_size = metrics.get("proof_size_bytes")
         if not isinstance(proof_size, int) or proof_size <= 0:
             raise D128CryptographicBackendGateError("SNARK route proof_size_bytes must be positive", layer="backend_routes")
@@ -1013,7 +1114,10 @@ def validate_route(route: Any, index: int) -> dict[str, Any]:
             raise D128CryptographicBackendGateError("SNARK route timing metrics must remain null in this gate", layer="backend_routes")
     elif any(value is not None for value in metrics.values()):
         raise D128CryptographicBackendGateError(f"route {index} smuggles proof metrics before backend exists", layer="backend_routes")
-    if route["cryptographic_backend"] is True and route["usable_today"] is True and route["route_id"] != "external_snark_or_ivc_statement_receipt_backend":
+    if route["cryptographic_backend"] is True and route["usable_today"] is True and route["route_id"] not in {
+        "external_zkvm_statement_receipt_backend",
+        "external_snark_or_ivc_statement_receipt_backend",
+    }:
         raise D128CryptographicBackendGateError("cryptographic route cannot be usable without a checked backend artifact", layer="backend_routes")
     return route
 
@@ -1044,11 +1148,14 @@ def validate_backend_decision(value: Any, routes: list[dict[str, Any]]) -> dict[
     expect_equal(decision["blocked_before_metrics"], not bool(usable_crypto), "blocked before metrics", layer="backend_decision")
     expect_equal(metrics["metrics_enabled"], bool(usable_crypto), "metrics enabled", layer="backend_decision")
     if usable_crypto:
-        if usable_crypto[0]["route_id"] != "external_snark_or_ivc_statement_receipt_backend":
+        if usable_crypto[0]["route_id"] not in {
+            "external_zkvm_statement_receipt_backend",
+            "external_snark_or_ivc_statement_receipt_backend",
+        }:
             raise D128CryptographicBackendGateError("unexpected usable cryptographic route", layer="backend_decision")
         expect_equal(metrics["proof_size_bytes"], usable_crypto[0]["proof_metrics"]["proof_size_bytes"], "decision proof size", layer="backend_decision")
-        if metrics["verifier_time_ms"] is not None or metrics["proof_generation_time_ms"] is not None:
-            raise D128CryptographicBackendGateError("backend decision timing metrics are not measured", layer="backend_decision")
+        expect_equal(metrics["verifier_time_ms"], usable_crypto[0]["proof_metrics"]["verifier_time_ms"], "decision verifier time", layer="backend_decision")
+        expect_equal(metrics["proof_generation_time_ms"], usable_crypto[0]["proof_metrics"]["proof_generation_time_ms"], "decision proof generation time", layer="backend_decision")
     elif any(metrics[key] is not None for key in ("proof_size_bytes", "verifier_time_ms", "proof_generation_time_ms")):
         raise D128CryptographicBackendGateError("backend decision smuggles proof metrics before backend exists", layer="backend_decision")
     expected = backend_decision(routes)

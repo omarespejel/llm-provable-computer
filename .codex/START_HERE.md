@@ -25,8 +25,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 19. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
 20. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
 21. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
-22. `docs/engineering/reproducibility.md`
-23. `git status --short --branch`
+22. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
+23. `docs/engineering/reproducibility.md`
+24. `git status --short --branch`
 
 ## What this repository is now
 
@@ -110,8 +111,8 @@ This repository currently has three live lanes.
      `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. The
      two-slice and full-block non-recursive accumulator routes remain usable;
      the later external SNARK adapter is now a checked statement-receipt GO,
-     and the later external zkVM adapter is now a checked journal-contract
-     no-go. The route selector itself rejects `24 / 24` source-drift,
+     and the later RISC Zero route is now a checked zkVM statement-receipt GO
+     over the issue `#422` journal contract. The route selector itself rejects `24 / 24` source-drift,
      route-relabeling, blocker-removal, metric-smuggling, weakened-GO, and
      parser/schema mutations; see
      `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.
@@ -125,11 +126,11 @@ This repository currently has three live lanes.
      transcript/public-input compression only, not recursion or PCD; see
      `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
    - The d128 cryptographic-backend gate now records that issue `#428` closes
-     the external SNARK branch for the same proof-native two-slice contract.
-     Its decision is
-     `GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
-     the local nested-verifier AIR/circuit, local PCD/IVC, and external zkVM
-     routes remain missing. It rejects `35 / 35` source-contract, repo-probe,
+     the external SNARK branch and issue `#433` closes the RISC Zero zkVM branch
+     for the same proof-native two-slice contract. Its decision is
+     `GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
+     the local nested-verifier AIR/circuit and local PCD/IVC routes remain
+     missing. It rejects `35 / 35` source-contract, repo-probe,
      fake-route, metric-smuggling, and parser/schema mutations; see
      `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`.
    - The d128 SNARK/IVC statement-receipt gate now answers issue `#428` as a
@@ -162,13 +163,11 @@ This repository currently has three live lanes.
    - The d128 lane now has receipt-composition, range-policy-bound full-block
      public inputs, two-slice accumulator, full-block accumulator, and
      proof-native two-slice transcript-compression GO results, plus checked
-     issue `#411` and `#420` recursive/backend no-go evidence, and issue
-     `#428` external SNARK statement-receipt GO evidence. Local recursion,
-     zkVM receipts, verifier-time metrics, and proof-generation-time metrics
-     remain blocked. Issue `#422` now maps the same #424 contract into a
-     concrete zkVM public journal/public-values contract, but records a bounded
-     no-go because `rzup`, `cargo-risczero`, `sp1up`, and `cargo-prove` are not
-     installed and no zkVM receipt artifact exists.
+     issue `#411` and `#420` recursive/backend no-go evidence, issue `#428`
+     external SNARK statement-receipt GO evidence, and issue `#433` external
+     RISC Zero statement-receipt GO evidence. Local recursion and PCD remain
+     blocked. RISC Zero verifier/prover timings are single local engineering
+     measurements, not public benchmark rows.
 
 Do not collapse these lanes into one claim.
 
@@ -242,19 +241,20 @@ The repo now also has one explicit answer on the second-backend question:
 10. Treat the first d128 aggregation attempt (`#405`), two-slice target spike
     (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
-    existence. Treat issue `#428` as the current positive external SNARK
+    existence. Treat issue `#428` as the positive external SNARK
     statement-receipt adapter over the `#424` public-input contract, issue
-    `#430` as its local throwaway-setup timing hardening result, and issue
-    `#422` as the checked zkVM public journal/public-values no-go for that same
-    contract. Treat issues `#409`, `#413`, and `#424` as the other positive
+    `#430` as its local throwaway-setup timing hardening result, issue `#422`
+    as the checked zkVM public journal/public-values contract for that same
+    surface, and issue `#433` as the positive external RISC Zero statement
+    receipt over that journal. Treat issues `#409`, `#413`, and `#424` as the other positive
     handoff objects: real non-recursive two-slice/full-block accumulators and a
     proof-native two-slice transcript-compressed verifier-facing object. The
-    next useful experiment after #422 is a new route-specific issue that
-    installs/pins exactly one zkVM toolchain and produces a real receipt. Do
-    not report recursive proof-size, verifier-time, or proof-generation-time
-    metrics until a real recursive or PCD proof object exists; report #430
-    SNARK verifier/prover timings only as statement-receipt adapter timings
-    under local throwaway setup.
+    next useful experiment is no longer "produce any external receipt"; it is
+    either local recursion/PCD for the two-slice target or comparative external
+    receipt controls across SNARK and zkVM. Do not report recursive proof-size,
+    verifier-time, or proof-generation-time metrics until a real recursive or
+    PCD proof object exists; report #430 SNARK and #433 RISC Zero timings only
+    as statement-receipt adapter timings under their stated local policies.
 
 ## What not to do
 

@@ -108,10 +108,8 @@ just gate
 
 ## Next Step
 
-Issue `#422` now records that explicit zkVM toolchain/bootstrap gate. The same
-#424 public-input contract maps into a concrete zkVM public
-journal/public-values contract, but this checkout has no RISC Zero or SP1
-receipt route today (`rzup`, `cargo-risczero`, `sp1up`, and `cargo-prove` are
-missing, and no receipt artifact exists). The next proof-system-transfer test is
-therefore route-specific: install and pin exactly one zkVM toolchain, then
-produce a real receipt for the checked journal contract.
+Issue `#422` records the explicit zkVM public journal/public-values contract.
+Issue `#433` now verifies a real RISC Zero receipt for that checked journal
+contract. The next proof-system-transfer test is therefore no longer "install
+one zkVM and produce any receipt"; it is local recursion/PCD or comparative
+external-control work across the checked SNARK and zkVM receipts.

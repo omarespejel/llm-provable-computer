@@ -1,0 +1,425 @@
+{
+  "adapter_issue": 422,
+  "all_mutations_rejected": true,
+  "case_count": 20,
+  "cases": [
+    {
+      "error": "journal contract mismatch",
+      "mutation": "model_or_program_identity_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "input_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "output_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "policy_label_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "action_label_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "verifier_domain_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "source_file_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "source_payload_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal commitment mismatch",
+      "mutation": "journal_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "route id mismatch",
+      "mutation": "route_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "system mismatch",
+      "mutation": "system_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "summary image id mismatch",
+      "mutation": "image_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "receipt commitment mismatch",
+      "mutation": "receipt_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "proof size mismatch",
+      "mutation": "receipt_size_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary proof time mismatch",
+      "mutation": "proof_generation_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary verify time mismatch",
+      "mutation": "verifier_time_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "decision mismatch",
+      "mutation": "decision_relabeling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "validation commands mismatch",
+      "mutation": "validation_command_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "payload keys mismatch: missing=[] extra=['unknown']",
+      "mutation": "unknown_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "RISC0_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_JOURNAL_NOT_RECURSION",
+  "decision": "GO_D128_RISC0_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+  "evidence_schema": "zkai-d128-risc0-statement-receipt-gate-v1",
+  "go_criterion": "RISC Zero host proves or verifies a receipt whose journal decodes to the exact #422 journal contract, and the checked evidence rejects relabeling of bound statement fields",
+  "issue": 433,
+  "journal_commitment": "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
+  "journal_contract": {
+    "action_label": "verify_d128_two_slice_statement_receipt",
+    "input_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "issue": 422,
+    "journal_commitment": "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
+    "journal_kind": "zkvm-public-journal-or-public-values-contract",
+    "journal_payload_sha256": "ca95820ddebea2310ded622b9dfe948953e7f0706632eeeeeae7d35b3da71e65",
+    "model_or_program_identity": {
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "source_contract_schema": "zkai-d128-proof-native-two-slice-compression-gate-v1",
+      "statement_family": "d128-rmsnorm-swiglu-two-slice"
+    },
+    "output_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+    "policy_label": "statement-receipt-adapter-policy:d128-two-slice:no-metadata-relabeling:v1",
+    "public_values": {
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "required_public_inputs": [
+        "two_slice_target_commitment",
+        "selected_slice_statement_commitments",
+        "selected_source_evidence_hashes",
+        "selected_slice_public_instance_commitments",
+        "selected_slice_proof_native_parameter_commitments",
+        "verifier_domain",
+        "required_backend_version",
+        "source_accumulator_commitment",
+        "source_verifier_handle_commitment"
+      ],
+      "selected_slice_proof_native_parameter_commitments": [
+        {
+          "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_public_instance_commitments": [
+        {
+          "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_statement_commitments": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+        }
+      ],
+      "selected_source_evidence_hashes": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+          "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+          "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+        }
+      ],
+      "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+      "source_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    },
+    "schema": "zkai-d128-zkvm-statement-journal-contract-v1",
+    "source_file_sha256": "1da36dc26184e5295e1b31773741a24a3cde99c3ab77c1acbca19e263111b09e",
+    "source_issue": 424,
+    "source_payload_sha256": "10e29894dd77f8a7970d1d9d17c9d5c336e4a19060041cef4ff778d4be6f1b06",
+    "source_verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641",
+    "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+  },
+  "mutation_inventory": [
+    {
+      "mutation": "model_or_program_identity_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "input_commitment_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "output_commitment_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "policy_label_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "action_label_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "verifier_domain_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "source_file_hash_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "source_payload_hash_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_commitment_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "route_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "system_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "image_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_commitment_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_size_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "proof_generation_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "verifier_time_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "decision_relabeling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claim_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive verification of the underlying Stwo slice proofs inside RISC Zero",
+    "not end-to-end zkML inference proving",
+    "not a public zkML benchmark row",
+    "not a Starknet deployment result",
+    "not a claim that RISC Zero is faster or slower than the native Stwo route"
+  ],
+  "proof_metrics": {
+    "metrics_enabled": true,
+    "proof_generation_time_ms": 178636.324583,
+    "proof_size_bytes": 310234,
+    "timing_policy": "single_local_run_engineering_only",
+    "verifier_time_ms": 25.198083
+  },
+  "receipt_artifact": {
+    "commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
+    "path": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.bincode",
+    "sha256": "3afcf7b71b83bb7a539e4d30d3604dbf7e27abe960221208ac46abbbfd5ddfef",
+    "size_bytes": 310234
+  },
+  "receipt_commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
+  "receipt_verification": {
+    "decoded_journal_matches_expected": true,
+    "host_summary_mode": "verify",
+    "host_summary_schema": "zkai-d128-risc0-host-summary-v1",
+    "image_id_hex": "dd87546db470a99fa5b32dc6e9fbc39c7d0ef1b3475573f44d5ad984a98454e5",
+    "journal_sha256": "e0f2d23932e0846d9b7a6d15edb0d3d5ed39dea252a73d6c6657e68e676e98ba",
+    "receipt_sha256": "3afcf7b71b83bb7a539e4d30d3604dbf7e27abe960221208ac46abbbfd5ddfef",
+    "receipt_verified": true,
+    "risc0_zkvm_version": "3.0.5",
+    "verifier_executed": true
+  },
+  "result": "GO",
+  "route_id": "risc0_zkvm_statement_receipt",
+  "schema": "zkai-d128-zkvm-statement-receipt-candidate-v1",
+  "source_issue": 424,
+  "summary": {
+    "image_id_hex": "dd87546db470a99fa5b32dc6e9fbc39c7d0ef1b3475573f44d5ad984a98454e5",
+    "journal_commitment": "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
+    "proof_generation_time_ms": 178636.324583,
+    "receipt_commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
+    "receipt_size_bytes": 310234,
+    "verifier_time_ms": 25.198083
+  },
+  "system": "RISC Zero",
+  "toolchain_probe": {
+    "commands": {
+      "cargo": {
+        "available": true,
+        "command": [
+          "cargo",
+          "--version"
+        ],
+        "command_id": "cargo",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo 1.92.0 (344c4567c 2025-10-21)"
+      },
+      "cargo-risczero": {
+        "available": true,
+        "command": [
+          "cargo",
+          "risczero",
+          "--version"
+        ],
+        "command_id": "cargo-risczero",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo-risczero 3.0.5"
+      },
+      "rustc": {
+        "available": true,
+        "command": [
+          "rustc",
+          "--version"
+        ],
+        "command_id": "rustc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
+      },
+      "rzup": {
+        "available": true,
+        "command": [
+          "rzup",
+          "--version"
+        ],
+        "command_id": "rzup",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rzup 0.5.0"
+      }
+    },
+    "host_os": "darwin",
+    "probe_scope": "local_risc0_receipt_generation_and_verification",
+    "rzup_components": {
+      "cargo-risczero": "3.0.5",
+      "cpp": "2024.1.5",
+      "r0vm": "3.0.5",
+      "rust": "1.94.1"
+    }
+  },
+  "validation_commands": [
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_d128_risc0_statement_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.tsv",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_d128_risc0_statement_receipt_gate",
+    "python3 -m py_compile scripts/zkai_d128_risc0_statement_receipt_gate.py scripts/tests/test_zkai_d128_risc0_statement_receipt_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check"
+  ]
+}

@@ -5,9 +5,9 @@
       "risc0_zkvm_statement_receipt",
       "sp1_zkvm_statement_receipt"
     ],
-    "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING",
-    "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
-    "first_blocker": "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
+    "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE_NOT_A_RECEIPT_GO",
+    "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE",
+    "first_blocker": "MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING",
     "go_criterion": "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, and its public journal/public-values bind the #424 d128 two-slice public-input contract",
     "no_go_criterion": "record the exact blocker before metrics: missing local toolchain bootstrap, missing proof fixture, missing public-values binding route, prover cost too high for a small fixture, or verifier API blocker",
     "proof_metrics": {
@@ -169,8 +169,8 @@
       "surface": "parser_or_schema"
     }
   ],
-  "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING",
-  "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
+  "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE_NOT_A_RECEIPT_GO",
+  "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE",
   "issue": 422,
   "journal_contract": {
     "action_label": "verify_d128_two_slice_statement_receipt",
@@ -353,11 +353,8 @@
   "result": "NO_GO",
   "route_decisions": [
     {
-      "first_blocker": "missing_commands:rzup,cargo-risczero",
-      "missing_commands": [
-        "rzup",
-        "cargo-risczero"
-      ],
+      "first_blocker": "missing_receipt_verification_and_public_values_binding",
+      "missing_commands": [],
       "proof_metrics": {
         "proof_generation_time_ms": null,
         "proof_size_bytes": null,
@@ -365,20 +362,20 @@
       },
       "public_statement_surface": "receipt journal plus image id",
       "receipt_artifact": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
-      "receipt_artifact_candidate_valid": false,
-      "receipt_artifact_exists": false,
+      "receipt_artifact_candidate_valid": true,
+      "receipt_artifact_exists": true,
       "receipt_artifact_probe": {
-        "candidate_valid": false,
-        "exists": false,
-        "reason": "missing_receipt_artifact",
-        "size_bytes": null
+        "candidate_valid": true,
+        "exists": true,
+        "reason": "receipt_candidate_parseable",
+        "size_bytes": 15206
       },
       "required_commands": [
         "rzup",
         "cargo-risczero"
       ],
       "route_id": "risc0_zkvm_statement_receipt",
-      "status": "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING",
+      "status": "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED",
       "system": "RISC Zero",
       "usable_today": false
     },
@@ -494,7 +491,7 @@
     "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
   },
   "source_issue": 424,
-  "summary": "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, but this local checkout has no complete RISC Zero or SP1 proving toolchain bootstrap.",
+  "summary": "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, and a toolchain plus receipt-looking artifact can exist, but this gate does not yet verify the receipt or public-values binding.",
   "toolchain_probe": {
     "commands": {
       "cargo": {
@@ -521,15 +518,16 @@
         "stdout": ""
       },
       "cargo-risczero": {
-        "available": false,
+        "available": true,
         "command": [
-          "cargo-risczero",
+          "cargo",
+          "risczero",
           "--version"
         ],
         "command_id": "cargo-risczero",
-        "returncode": null,
+        "returncode": 0,
         "stderr": "",
-        "stdout": ""
+        "stdout": "cargo-risczero 3.0.5"
       },
       "docker": {
         "available": true,
@@ -565,15 +563,15 @@
         "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
       },
       "rzup": {
-        "available": false,
+        "available": true,
         "command": [
           "rzup",
           "--version"
         ],
         "command_id": "rzup",
-        "returncode": null,
+        "returncode": 0,
         "stderr": "",
-        "stdout": ""
+        "stdout": "rzup 0.5.0"
       },
       "sp1up": {
         "available": false,

@@ -100,12 +100,14 @@ The follow-up state is now:
    d128 two-slice contract;
 2. issue `#430` measured that SNARK receipt route under a local throwaway setup;
 3. issue `#422` mapped the same contract into a zkVM public journal/public-values
-   contract and recorded a bounded no-go because no RISC Zero or SP1 receipt
-   route exists in the checked local toolchain.
+   contract;
+4. issue `#433` verified a real RISC Zero receipt for that #422 journal
+   contract.
 
-The next useful route-specific experiment is to install/pin exactly one zkVM
-toolchain and produce a real receipt for the #422 journal contract. Do not report
-zkVM proof metrics until such a receipt verifies.
+The next useful route-specific experiment is no longer a generic external
+receipt. It is either local recursion/PCD for the two-slice target, or a
+comparative external-control pass that keeps SNARK and zkVM receipt timings
+scoped as adapter evidence rather than recursive proof metrics.
 
 ## Current-State Postscript After Issue `#424`
 

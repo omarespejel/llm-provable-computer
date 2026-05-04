@@ -4,26 +4,27 @@
     "blocked_before_metrics": false,
     "candidate_route_ids": [
       "local_stwo_nested_verifier_backend",
-      "local_pcd_or_ivc_outer_proof_backend",
-      "external_zkvm_statement_receipt_backend"
+      "local_pcd_or_ivc_outer_proof_backend"
     ],
-    "first_missing_object": "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; an external SNARK statement receipt now proves the #424 public-input contract",
+    "first_missing_object": "local nested verifier AIR/circuit and local PCD/IVC backend remain missing; external SNARK and RISC Zero statement receipts now prove or receipt the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
-    "next_route": "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_PRODUCTION_SNARK_SETUP_AND_TIMING",
-    "primary_blocker": "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE",
+    "next_route": "LOCAL_RECURSIVE_OR_PCD_BACKEND_OR_COMPARATIVE_EXTERNAL_RECEIPT_CONTROL",
+    "primary_blocker": "NONE_FOR_EXTERNAL_STATEMENT_RECEIPT_ROUTES",
     "proof_metrics": {
       "metrics_enabled": true,
-      "proof_generation_time_ms": null,
-      "proof_size_bytes": 802,
-      "verifier_time_ms": null
+      "proof_generation_time_ms": 178636.324583,
+      "proof_size_bytes": 310234,
+      "verifier_time_ms": 25.198083
     },
     "source_issue": 424,
     "usable_cryptographic_backend_route_ids": [
+      "external_zkvm_statement_receipt_backend",
       "external_snark_or_ivc_statement_receipt_backend"
     ]
   },
   "backend_probe": {
     "artifact_candidates": [
+      "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
       "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
       "docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json",
       "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json"
@@ -54,6 +55,11 @@
         "artifact_id": "external_zkvm_statement_receipt_artifact",
         "exists": true,
         "path": "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json"
+      },
+      {
+        "artifact_id": "external_risc0_statement_receipt_artifact",
+        "exists": true,
+        "path": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json"
       },
       {
         "artifact_id": "external_snark_ivc_statement_receipt_artifact",
@@ -121,30 +127,34 @@
       "usable_today": false
     },
     {
-      "blocking_missing_object": "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
-      "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING",
+      "blocking_missing_object": "none_for_external_risc0_statement_receipt",
+      "claim_boundary": "RISC0_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_JOURNAL_NOT_RECURSION",
       "cryptographic_backend": true,
       "evidence": {
         "adapter_artifact": "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json",
-        "adapter_decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
-        "adapter_first_blocker": "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
+        "adapter_decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE",
+        "adapter_first_blocker": "MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING",
         "adapter_gate_artifact_exists": true,
         "dependency_names": [],
+        "image_id_hex": "dd87546db470a99fa5b32dc6e9fbc39c7d0ef1b3475573f44d5ad984a98454e5",
         "journal_commitment": "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
         "local_dependencies_declared": false,
-        "receipt_artifact_exists": false,
-        "tracked_issue": 422
+        "receipt_artifact": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
+        "receipt_artifact_exists": true,
+        "receipt_commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
+        "receipt_decision": "GO_D128_RISC0_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+        "tracked_issue": 433
       },
-      "next_action": "install/pin one zkVM toolchain and produce a real receipt over the #424 public journal/public-values contract",
+      "next_action": "use as proof-system-independent zkVM statement-receipt control; do not claim recursion",
       "proof_metrics": {
-        "proof_generation_time_ms": null,
-        "proof_size_bytes": null,
-        "verifier_time_ms": null
+        "proof_generation_time_ms": 178636.324583,
+        "proof_size_bytes": 310234,
+        "verifier_time_ms": 25.198083
       },
       "route_id": "external_zkvm_statement_receipt_backend",
       "route_kind": "external_zkvm_statement_receipt",
-      "status": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
-      "usable_today": false
+      "status": "GO_EXTERNAL_RISC0_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT",
+      "usable_today": true
     },
     {
       "blocking_missing_object": "none_for_external_snark_statement_receipt",
@@ -160,7 +170,7 @@
         "statement_commitment": "blake2b-256:2f126211db4d43932027ca4ee1bb74beaa1a559ae71d1ac909f0b73fc3d2bf01",
         "tracked_issue": 428
       },
-      "next_action": "use as proof-system-independent statement-receipt control; keep #422 for zkVM public-values receipts",
+      "next_action": "use as proof-system-independent statement-receipt control; compare against the #433 zkVM receipt without treating either as recursion",
       "proof_metrics": {
         "proof_generation_time_ms": null,
         "proof_size_bytes": 802,
@@ -508,8 +518,8 @@
       "surface": "parser_or_schema"
     }
   ],
-  "claim_boundary": "EXTERNAL_SNARK_STATEMENT_RECEIPT_AVAILABLE_NOT_RECURSION",
-  "decision": "GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+  "claim_boundary": "EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPTS_AVAILABLE_NOT_RECURSION",
+  "decision": "GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
   "issue": 426,
   "mutation_inventory": [
     {
@@ -692,11 +702,11 @@
     "not recursive aggregation",
     "not proof-carrying data",
     "not STARK-in-STARK verification",
-    "not a zkVM receipt",
-    "not recursive verification of the underlying Stwo slice proofs inside SNARK",
-    "not verifier-time evidence for a cryptographic backend",
-    "not proof-generation-time evidence for a cryptographic backend",
-    "not a claim that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement the contract",
+    "not recursive verification of the underlying Stwo slice proofs inside SNARK or zkVM",
+    "not a RISC Zero benchmark",
+    "not paper-facing verifier-time or proof-generation benchmark evidence",
+    "not a cross-system performance comparison",
+    "not a claim that SP1, Halo2, Nova, or other external systems cannot implement the contract",
     "not a public zkML benchmark row",
     "not onchain deployment evidence"
   ],
@@ -793,30 +803,31 @@
   "summary": {
     "candidate_route_ids": [
       "local_stwo_nested_verifier_backend",
-      "local_pcd_or_ivc_outer_proof_backend",
-      "external_zkvm_statement_receipt_backend"
+      "local_pcd_or_ivc_outer_proof_backend"
     ],
     "compressed_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
     "compressed_artifact_serialized_bytes": 4435,
-    "first_missing_object": "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; an external SNARK statement receipt now proves the #424 public-input contract",
+    "first_missing_object": "local nested verifier AIR/circuit and local PCD/IVC backend remain missing; external SNARK and RISC Zero statement receipts now prove or receipt the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
     "mutation_cases": 35,
     "mutations_rejected": 35,
-    "primary_blocker": "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE",
+    "primary_blocker": "NONE_FOR_EXTERNAL_STATEMENT_RECEIPT_ROUTES",
     "result": "GO",
     "selected_checked_rows": 256,
     "source_issue": 424,
     "source_result": "GO",
     "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
     "usable_cryptographic_backend_route_ids": [
+      "external_zkvm_statement_receipt_backend",
       "external_snark_or_ivc_statement_receipt_backend"
     ],
     "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
   },
   "validation_commands": [
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_d128_risc0_statement_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.tsv",
     "python3 scripts/zkai_d128_cryptographic_backend_gate.py --write-json docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.tsv",
-    "python3 -m unittest scripts.tests.test_zkai_d128_cryptographic_backend_gate",
-    "python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py scripts/tests/test_zkai_d128_cryptographic_backend_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_d128_risc0_statement_receipt_gate scripts.tests.test_zkai_d128_cryptographic_backend_gate",
+    "python3 -m py_compile scripts/zkai_d128_risc0_statement_receipt_gate.py scripts/tests/test_zkai_d128_risc0_statement_receipt_gate.py scripts/zkai_d128_cryptographic_backend_gate.py scripts/tests/test_zkai_d128_cryptographic_backend_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
     "just gate-fast",

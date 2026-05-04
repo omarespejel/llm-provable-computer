@@ -121,9 +121,8 @@ It measures proof generation and verification under a median-of-5 timing policy
 after regenerating a local throwaway Groth16 setup. The setup remains explicitly
 non-production.
 
-Issue `#422` now records the corresponding zkVM public journal/public-values
-contract and an honest bounded no-go: this checkout has no RISC Zero or SP1
-receipt route because the local zkVM proving CLIs are missing and no receipt
-artifact exists. The transfer test is therefore narrower and cleaner now: pick
-one zkVM route, install and pin it, then produce a real receipt for the exact
-#424-derived journal contract.
+Issue `#422` records the corresponding zkVM public journal/public-values
+contract. Issue `#433` now completes the RISC Zero transfer test by verifying a
+real receipt for that exact #424-derived journal contract. The transfer test is
+therefore no longer "can any zkVM receipt exist"; it is now "which local
+recursive/PCD route can compress or aggregate the checked receipt surface?"

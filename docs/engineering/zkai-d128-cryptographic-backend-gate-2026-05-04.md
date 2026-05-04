@@ -1,22 +1,21 @@
 # d128 Cryptographic Backend Gate
 
-Date: 2026-05-04
+Date: 2026-05-05
 
 ## Decision
 
-`GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`
+`GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`
 
 This gate answers issue `#426`.
 
 The repository has a checked proof-native d128 two-slice public-input contract
-from issue `#424`, and issue `#428` now adds an executable external
-`snarkjs/Groth16` statement receipt for that contract.
+from issue `#424`. Issue `#428` adds an executable external
+`snarkjs/Groth16` statement receipt for that contract, and issue `#433` now adds
+a real RISC Zero receipt over the corresponding issue `#422` public journal.
 
-This supersedes the original bounded no-go for the external SNARK route. It does
-not change the local-recursion boundary: there is still no local nested-verifier
-AIR/circuit, no local PCD/IVC outer proof generator, and no real zkVM receipt.
-Issue `#422` now narrows the zkVM branch to a checked public journal/public-values
-contract plus a toolchain/bootstrap no-go.
+This supersedes the earlier bounded no-go for external statement receipts. It
+does not change the local-recursion boundary: there is still no local
+nested-verifier AIR/circuit and no local PCD/IVC outer proof generator.
 
 ## Source Contract
 
@@ -46,23 +45,27 @@ The target backend must bind the same public-input contract:
 
 ## Backend Probe
 
-The checked repo probe now finds one usable external cryptographic backend
-route: the issue `#428` `snarkjs/Groth16` statement receipt for the exact issue
-`#424` public-input contract. The local recursive/PCD routes remain missing, and
-the real external zkVM receipt route remains missing:
+The checked repo probe now finds two usable external cryptographic backend
+routes for the same statement surface:
+
+- issue `#433`: a RISC Zero receipt over the issue `#422` journal contract;
+- issue `#428`: a `snarkjs/Groth16` statement receipt over the issue `#424`
+  public-input contract.
+
+The local recursive/PCD routes remain missing:
 
 | Route | Status | Usable today |
 |---|---|---:|
 | Source proof-native two-slice contract | `GO_INPUT_CONTRACT_ONLY_NOT_CRYPTOGRAPHIC_BACKEND` | yes, as input only |
 | Local Stwo nested verifier backend | `NO_GO_MISSING_NESTED_VERIFIER_AIR_OR_CIRCUIT` | no |
 | Local PCD or IVC outer proof backend | `NO_GO_MISSING_OUTER_PROOF_GENERATOR_AND_VERIFIER_HANDLE` | no |
-| External zkVM statement receipt backend | `NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING` | no |
+| External zkVM statement receipt backend | `GO_EXTERNAL_RISC0_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT` | yes |
 | External SNARK or IVC statement receipt backend | `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT` | yes |
 | Starknet settlement adapter | `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` | no |
 
 The remaining missing objects are:
 
-> local nested verifier AIR/circuit, local PCD/IVC backend, and real external zkVM receipt
+> local nested verifier AIR/circuit and local PCD/IVC backend
 
 ## Why This Matters
 
@@ -74,18 +77,21 @@ This gate makes the remaining research fork explicit:
 
 - build a local nested-verifier AIR/circuit or PCD/IVC backend for the same
   public-input contract; or
-- install/pin one external zkVM toolchain and produce a real statement receipt
-  over the issue `#422` journal/public-values contract.
+- use the external SNARK and RISC Zero receipts as proof-system-independent
+  controls for statement-envelope binding, without treating either as recursion.
 
 The external SNARK/IVC branch is no longer a missing route: issue `#428`
 landed the `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT`
-adapter. `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` still applies only to the
-Starknet settlement adapter, because no settlement-shaped proof object exists
-for this contract yet.
+adapter. The external zkVM branch is also no longer a missing route: issue `#433`
+landed the `GO_EXTERNAL_RISC0_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT`
+receipt. `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` still applies only to the
+Starknet settlement adapter, because no settlement-shaped adapter exists for
+these proof objects yet.
 
-The SNARK route may now report the checked proof size (`802` bytes). Do not
-report verifier time or proof-generation time until a dedicated timing gate
-measures them.
+The route table may report the SNARK proof size (`802` bytes) and the RISC Zero
+receipt size (`310234` bytes) plus its single local engineering verifier/prover
+times. Do not promote those single-run RISC Zero times into public benchmark
+claims or cross-system comparisons.
 
 ## Mutation Coverage
 
@@ -98,7 +104,7 @@ The gate rejects `35 / 35` mutation cases, including:
   accumulator, and source verifier-handle relabeling;
 - compressed artifact and verifier-handle commitment drift;
 - repo-probe dependency or artifact-presence relabeling;
-- fake local nested-verifier, local PCD/IVC, external zkVM receipt, or stale
+- fake local nested-verifier, local PCD/IVC, stale external zkVM, or stale
   external SNARK/IVC route relabeling;
 - route blocker removal and route-level metric smuggling;
 - decision-level proof-size, verifier-time, and proof-generation-time metric
@@ -113,24 +119,35 @@ This gate does not claim:
 - recursive aggregation;
 - proof-carrying data;
 - STARK-in-STARK verification;
-- a zkVM receipt;
-- recursive verification of the underlying Stwo slice proofs inside SNARK;
-- verifier-time evidence for a cryptographic backend;
-- proof-generation-time evidence for a cryptographic backend;
-- that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement
-  the contract;
+- recursive verification of the underlying Stwo slice proofs inside SNARK or
+  zkVM;
+- a RISC Zero benchmark;
+- paper-facing verifier-time or proof-generation benchmark evidence;
+- a cross-system performance comparison;
+- that SP1, Halo2, Nova, or other external systems cannot implement the
+  contract;
 - a public zkML benchmark row; or
 - onchain deployment evidence.
 
 ## Reproduce
 
 ```bash
+PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" \
+python3 scripts/zkai_d128_risc0_statement_receipt_gate.py \
+  --verify-existing \
+  --write-json docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.tsv
+
 python3 scripts/zkai_d128_cryptographic_backend_gate.py \
   --write-json docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.tsv
 
-python3 -m unittest scripts.tests.test_zkai_d128_cryptographic_backend_gate
+python3 -m unittest \
+  scripts.tests.test_zkai_d128_risc0_statement_receipt_gate \
+  scripts.tests.test_zkai_d128_cryptographic_backend_gate
 python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py \
+  scripts/zkai_d128_risc0_statement_receipt_gate.py \
+  scripts/tests/test_zkai_d128_risc0_statement_receipt_gate.py \
   scripts/tests/test_zkai_d128_cryptographic_backend_gate.py
 python3 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
@@ -140,10 +157,9 @@ just gate
 
 ## Next Step
 
-Issue `#428` is now the proof-system-independent control: a real SNARK
-statement receipt exists for the exact issue `#424` public-input contract. Issue
-`#422` now records the corresponding zkVM journal/public-values contract and the
-first blocker (`MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP`). The next useful
-implementation experiment is route-specific: install and pin either RISC Zero or
-SP1, then produce a real receipt for that exact contract without reporting
-proof metrics until the receipt verifies.
+Issue `#428` and issue `#433` are now proof-system-independent controls: one
+SNARK receipt and one zkVM receipt bind the same d128 two-slice statement
+surface. The next useful implementation experiment is no longer "produce any
+external receipt"; it is either local recursion/PCD for the two-slice target, or
+a comparative external-control pass that keeps SNARK and zkVM receipt metrics
+strictly scoped as adapter evidence.

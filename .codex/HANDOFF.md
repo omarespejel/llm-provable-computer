@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-05-04
+Last refreshed: 2026-05-05
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `510bc80b2d3b1a9e30df945812cb712bc2541757`
+Mainline reference at refresh: `68fa36b66788a702f5e310303ace3931ece62d5e`
 
 ## Immediate orientation
 
@@ -174,7 +174,8 @@ Tablero boundary.
   `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. The
   two-slice and full-block non-recursive accumulator routes remain usable; the
   later external SNARK adapter is now a checked statement-receipt GO, and the
-  later external zkVM adapter is now a checked journal-contract no-go. The route
+  later RISC Zero route is now a checked zkVM statement-receipt GO over the
+  issue `#422` journal contract. The route
   selector itself rejects `24 / 24` source-drift, route-relabeling,
   blocker-removal, metric-smuggling, weakened-GO, and parser/schema mutations;
   see `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.
@@ -190,11 +191,11 @@ Tablero boundary.
   transcript/public-input compression only, not recursion or PCD; see
   `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
 - The d128 cryptographic-backend gate now records that issue `#428` closes
-  the external SNARK branch for the same proof-native two-slice contract. Its
-  decision is
-  `GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
-  the local nested-verifier AIR/circuit, local PCD/IVC, and external zkVM
-  routes remain missing. It rejects `35 / 35` source-contract, repo-probe,
+  the external SNARK branch and issue `#433` closes the RISC Zero zkVM branch
+  for the same proof-native two-slice contract. Its decision is
+  `GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
+  the local nested-verifier AIR/circuit and local PCD/IVC routes remain
+  missing. It rejects `35 / 35` source-contract, repo-probe,
   fake-route, metric-smuggling, and parser/schema mutations; see
   `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`.
 - The d128 SNARK/IVC statement-receipt gate now answers issue `#428` as a
@@ -211,15 +212,16 @@ Tablero boundary.
   it rejects `19 / 19` timing/setup/binding mutations. This is not a
   production trusted setup, not recursion, and not a public zkML benchmark; see
   `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`.
-- The d128 zkVM statement-receipt adapter gate now answers issue `#422` as a
-  bounded NO-GO, not as a papered-over missing result. The issue `#424`
-  public-input contract maps into a concrete zkVM public journal/public-values
-  contract with journal commitment
-  `blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569`,
-  but the local branch has no RISC Zero or SP1 receipt route because `rzup`,
-  `cargo-risczero`, `sp1up`, and `cargo-prove` are missing and no zkVM receipt
-  artifact exists. It rejects `21 / 21` source, journal, route, metric,
-  non-claim, validation-command, and parser/schema mutations; see
+- The d128 zkVM statement-receipt adapter gate answers issue `#422` as a
+  bounded adapter result. The issue `#424` public-input contract maps into a
+  concrete zkVM public journal/public-values contract with journal commitment
+  `blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569`.
+  The follow-up issue `#433` now proves that journal with a real RISC Zero
+  receipt and rejects `20 / 20` relabeling / metric-smuggling mutations. This is
+  a zkVM statement receipt, not recursive verification of the underlying Stwo
+  slice proofs inside RISC Zero. The adapter gate still rejects `21 / 21`
+  source, journal, route, metric, non-claim, validation-command, and
+  parser/schema mutations; see
   `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice
@@ -235,12 +237,13 @@ Tablero boundary.
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus range-policy-bound full-block public
   inputs, two-slice/full-block accumulator GO, proof-native two-slice
-  transcript-compression GO, checked issue `#426` external SNARK
-  statement-receipt GO evidence, checked issue `#430` SNARK
-  receipt-timing/setup evidence, and checked issue `#422` zkVM journal-contract
-  no-go evidence. Local recursion, PCD, one compressed local recursive verifier
-  object, recursive proof-size/verifier-time/proof-generation-time metrics, and
-  real external zkVM receipts remain blocked or unimplemented.
+  transcript-compression GO, checked issue `#426` external backend routing
+  evidence, checked issue `#428` external SNARK statement-receipt GO evidence,
+  checked issue `#430` SNARK receipt-timing/setup evidence, checked issue `#422`
+  zkVM journal-contract evidence, and checked issue `#433` external RISC Zero
+  statement-receipt GO evidence. Local recursion, PCD, one compressed local
+  recursive verifier object, and recursive proof-size/verifier-time/proof-
+  generation-time metrics remain blocked or unimplemented.
 - Do not compare d128 recursive proof-size/verifier-time/proof-generation-time
   against public zkML systems until an aggregated proof object exists, or until
   the comparison is explicitly scoped as receipt/composition-only. The #430
@@ -274,8 +277,9 @@ Use these in order of authority for current state:
 22. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
 23. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
 24. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
-25. `docs/engineering/reproducibility.md`
-26. `git status --short --branch`
+25. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
+26. `docs/engineering/reproducibility.md`
+27. `git status --short --branch`
 
 ## Merge culture
 
@@ -333,19 +337,20 @@ Use these in order of authority for current state:
 10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
     spike (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
-    existence. Treat issue `#428` as the current positive external SNARK
+    existence. Treat issue `#428` as the positive external SNARK
     statement-receipt adapter over the `#424` public-input contract, issue
-    `#430` as its local throwaway-setup timing hardening result, and issue
-    `#422` as the checked zkVM public journal/public-values no-go for that same
-    contract. Treat issues `#409`, `#413`, and `#424` as the other positive
+    `#430` as its local throwaway-setup timing hardening result, issue `#422`
+    as the checked zkVM public journal/public-values contract for that same
+    surface, and issue `#433` as the positive external RISC Zero statement
+    receipt over that journal. Treat issues `#409`, `#413`, and `#424` as the other positive
     handoff objects: real non-recursive two-slice/full-block accumulators and a
     proof-native two-slice transcript-compressed verifier-facing object. The
-    next useful experiment after #422 is a new route-specific issue that
-    installs/pins exactly one zkVM toolchain and produces a real receipt. Do
-    not report recursive proof-size, verifier-time, or proof-generation-time
-    metrics until a real recursive or PCD proof object exists; report #430
-    SNARK verifier/prover timings only as statement-receipt adapter timings
-    under local throwaway setup.
+    next useful experiment is no longer "produce any external receipt"; it is
+    either local recursion/PCD for the two-slice target or comparative external
+    receipt controls across SNARK and zkVM. Do not report recursive proof-size,
+    verifier-time, or proof-generation-time metrics until a real recursive or
+    PCD proof object exists; report #430 SNARK and #433 RISC Zero timings only
+    as statement-receipt adapter timings under their stated local policies.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
