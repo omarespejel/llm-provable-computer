@@ -50,9 +50,11 @@ The issue `#426` follow-up originally audited that exact `#424` contract against
 the available backend routes and recorded the missing-backend boundary. Issue
 `#428` now closes the external SNARK branch: a real `snarkjs/Groth16` statement
 receipt exists for the `#424` public-input contract, with an `802` byte proof
-and `29 / 29` relabeling / metric-smuggling mutations rejected. The local
-nested-verifier route, local PCD/IVC route, and external zkVM route remain
-missing.
+and `29 / 29` relabeling / metric-smuggling mutations rejected. Issue `#430`
+then hardens that route with median-of-5 timing under a local throwaway setup:
+`349.647 ms` proof generation and `290.702 ms` verification, while rejecting
+`15 / 15` timing/setup/binding mutations. The local nested-verifier route,
+local PCD/IVC route, and external zkVM route remain missing.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -79,8 +81,9 @@ NO-GO is still useful if it records the exact missing backend feature. The
 current checked backend evidence now says the blocker is not "six slices are too
 big": the two-slice statement can be receipted by an external SNARK today. The
 remaining hard blocker is local recursion / PCD or a zkVM receipt over the same
-contract. Verifier-time and proof-generation-time metrics remain unmeasured for
-the SNARK route until a dedicated timing gate exists.
+contract. The SNARK route now has verifier/prover timings, but only as
+statement-receipt adapter timings under local throwaway setup; they are not
+recursive proof-object metrics and not public zkML benchmark rows.
 
 ## What Not To Do
 
@@ -109,9 +112,10 @@ the SNARK route until a dedicated timing gate exists.
    and
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
    Issue `#428` now provides the proof-system-independent control: an external
-   SNARK statement receipt over the `#424` public-input contract. The best next
-   experiment is issue `#422`: an external zkVM statement receipt adapter over
-   the same contract.
+   SNARK statement receipt over the `#424` public-input contract. Issue `#430`
+   adds local throwaway-setup timing for that route. The best next experiment
+   is issue `#422`: an external zkVM statement receipt adapter over the same
+   contract.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification

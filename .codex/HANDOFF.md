@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-04
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `53eed04d760d8e4ee7dcad7cd4c57ae32f53b6ec`
+Mainline reference at refresh: `3e41617dbaf7966f5eba89bd5a35d53759f40f9c`
 
 ## Immediate orientation
 
@@ -202,6 +202,14 @@ Tablero boundary.
   relabeling / metric-smuggling mutations. This is a SNARK statement receipt,
   not recursive verification of the underlying Stwo slice proofs; see
   `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`.
+- The d128 SNARK receipt timing/setup gate now answers issue `#430` as a
+  narrow timing-hardening GO: the #428 statement-receipt circuit can be
+  regenerated under a local throwaway Groth16 setup, proved five times, and
+  verified five times. The checked medians are `349.647 ms` proof generation
+  and `290.702 ms` verification, with a `29978.661 ms` single local setup run;
+  it rejects `15 / 15` timing/setup/binding mutations. This is not a
+  production trusted setup, not recursion, and not a public zkML benchmark; see
+  `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice
   handles over `197,504` checked rows, with accumulator commitment
@@ -216,13 +224,16 @@ Tablero boundary.
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus range-policy-bound full-block public
   inputs, two-slice/full-block accumulator GO, proof-native two-slice
-  transcript-compression GO, plus checked issue `#411`, `#420`, and `#426`
-  recursive/backend NO-GO evidence: recursion, one compressed
-  cryptographic verifier object, and recursive proof-size/verifier-time/
-  proof-generation-time metrics remain blocked.
-- Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
-  an aggregated proof object exists, or until the comparison is explicitly
-  scoped as receipt/composition-only.
+  transcript-compression GO, checked issue `#426` external SNARK
+  statement-receipt GO evidence, and checked issue `#430` SNARK
+  receipt-timing/setup evidence. Local recursion, PCD, one compressed local
+  recursive verifier object, recursive proof-size/verifier-time/
+  proof-generation-time metrics, and external zkVM receipts remain blocked or
+  unimplemented.
+- Do not compare d128 recursive proof-size/verifier-time/proof-generation-time
+  against public zkML systems until an aggregated proof object exists, or until
+  the comparison is explicitly scoped as receipt/composition-only. The #430
+  SNARK timings are receipt-adapter timings under local throwaway setup only.
 
 ## Source-of-truth documents
 
@@ -250,8 +261,9 @@ Use these in order of authority for current state:
 20. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
 21. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
 22. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
-23. `docs/engineering/reproducibility.md`
-24. `git status --short --branch`
+23. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
+24. `docs/engineering/reproducibility.md`
+25. `git status --short --branch`
 
 ## Merge culture
 
@@ -310,15 +322,16 @@ Use these in order of authority for current state:
     spike (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
     existence. Treat issue `#428` as the current positive external SNARK
-    statement-receipt adapter over the `#424` public-input contract. Treat
+    statement-receipt adapter over the `#424` public-input contract, and issue
+    `#430` as its local throwaway-setup timing hardening result. Treat
     issues `#409`, `#413`, and `#424` as the other positive handoff objects:
     real non-recursive two-slice/full-block accumulators and a proof-native
     two-slice transcript-compressed verifier-facing object. The next useful
     experiment is issue `#422`: an external zkVM statement-receipt adapter over
     the same contract. Do not report recursive proof-size, verifier-time, or
     proof-generation-time metrics until a real recursive or PCD proof object
-    exists, and do not report SNARK verifier/prover timings until a dedicated
-    timing gate measures them.
+    exists; report #430 SNARK verifier/prover timings only as
+    statement-receipt adapter timings under local throwaway setup.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

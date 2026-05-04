@@ -113,14 +113,15 @@ just gate-fast
 just gate
 ```
 
-## Next Step
+## Follow-Up State
 
-The best follow-up is now issue `#422`: build the same public-input contract as
-a zkVM receipt using public journal/public-values semantics. That would test
-whether the receipt discipline transfers from SNARK public signals to zkVM
-receipt journals.
+Issue `#430` now records the timing/setup hardening follow-up:
+`docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`.
+It measures proof generation and verification under a median-of-5 timing policy
+after regenerating a local throwaway Groth16 setup. The setup remains explicitly
+non-production.
 
-A separate production-hardening follow-up is tracked in issue `#430`: measure
-verifier time and proof-generation time under a dedicated timing policy and
-replace the local throwaway Groth16 setup with a deliberately documented setup
-story if this route becomes more than a research adapter.
+The best transfer follow-up remains issue `#422`: build the same public-input
+contract as a zkVM receipt using public journal/public-values semantics. That
+would test whether the receipt discipline transfers from SNARK public signals
+to zkVM receipt journals.

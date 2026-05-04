@@ -1087,8 +1087,10 @@ external zkVM routes in the missing-backend bucket. It rejects `35 / 35`
 source-contract, repo-probe, fake-route, metric-smuggling, and parser/schema
 mutations. This keeps the paper boundary explicit: the d128 line now has an
 external SNARK statement receipt, but not a recursive proof, not a PCD proof,
-not a zkVM receipt, and not verifier-time/proof-generation-time evidence. It is
-anchored to
+and not a zkVM receipt. The issue `#430` follow-up adds verifier/prover timing
+only for this statement-receipt adapter under local throwaway setup; those
+timings are not recursive-proof or public zkML benchmark evidence. The backend
+existence result is anchored to
 `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md` and
 `docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json`.
 
@@ -1105,6 +1107,18 @@ bound by an external SNARK receipt, giving a proof-system-independent control
 for the statement-receipt discipline. It is anchored to
 `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md` and
 `docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json`.
+
+The timing/setup hardening follow-up regenerates the same statement-receipt
+circuit under a local throwaway Groth16 setup, proves it five times, and
+verifies it five times. The checked medians are `349.647 ms` for proof
+generation and `290.702 ms` for verification, with a `29978.661 ms` single
+local setup run and `15 / 15` timing/setup/binding mutations rejected. This is
+useful because it turns the external SNARK receipt from a pure existence
+artifact into a measured adapter. It is still deliberately not a production
+trusted setup, not recursive verification of the Stwo proofs, and not a
+matched public zkML benchmark row. It is anchored to
+`docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md` and
+`docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json`.
 
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all

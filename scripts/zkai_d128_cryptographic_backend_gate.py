@@ -38,6 +38,7 @@ PROOF_NATIVE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compr
 SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_snark_ivc_statement_receipt_gate.py"
 PROOF_NATIVE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
 SNARK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
+SNARK_RECEIPT_TIMING_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-receipt-timing-setup-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.tsv"
 
@@ -635,6 +636,11 @@ def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
 
 def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     allowed_inventory_paths = {relative_path(SNARK_RECEIPT_EVIDENCE)}
+    if SNARK_RECEIPT_TIMING_EVIDENCE.exists():
+        # Issue #430 is timing/setup hardening for the #428 route, not a new
+        # cryptographic backend route. Allow it in the inventory without
+        # reclassifying it as a usable backend.
+        allowed_inventory_paths.add(relative_path(SNARK_RECEIPT_TIMING_EVIDENCE))
     unexpected_fixed = [
         artifact
         for artifact in probe["fixed_backend_artifacts"]

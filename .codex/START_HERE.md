@@ -23,8 +23,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 17. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
 18. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
 19. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
-20. `docs/engineering/reproducibility.md`
-21. `git status --short --branch`
+20. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
+21. `docs/engineering/reproducibility.md`
+22. `git status --short --branch`
 
 ## What this repository is now
 
@@ -135,6 +136,15 @@ This repository currently has three live lanes.
      relabeling / metric-smuggling mutations. This is a SNARK statement
      receipt, not recursive verification of the underlying Stwo slice proofs;
      see `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`.
+   - The d128 SNARK receipt timing/setup gate now answers issue `#430` as a
+     narrow timing-hardening GO: the #428 statement-receipt circuit can be
+     regenerated under a local throwaway Groth16 setup, proved five times, and
+     verified five times. The checked medians are `349.647 ms` proof generation
+     and `290.702 ms` verification, with a `29978.661 ms` single local setup
+     run; the gate rejects `15 / 15` timing/setup/binding mutations. This is
+     not a production trusted setup, not recursion, and not a public zkML
+     benchmark; see
+     `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`.
    - The d128 full-block accumulator backend gate now turns the six-slice
      block receipt into a real verifier-facing non-recursive accumulator over
      `197,504` checked rows, with accumulator commitment
