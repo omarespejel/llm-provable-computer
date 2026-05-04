@@ -622,7 +622,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_d128_snark_ivc_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.tsv",
-    "git_commit": "2184b95050ab24ead5a689426f70726ece3a5674"
+    "git_commit": "56e90ae8d746d135fb32626836a3e3dfa6df9fc6"
   },
   "result": "GO",
   "schema": "zkai-d128-snark-ivc-statement-receipt-gate-v1",
@@ -713,6 +713,7 @@
   },
   "summary": "A real snarkjs/Groth16 verifier-facing receipt accepts the d128 #424 two-slice public-input contract. Its public signals bind the contract-derived field elements, and the statement envelope rejects all tested relabeling. This is a SNARK statement receipt, not recursive verification of the underlying Stwo proofs.",
   "validation_commands": [
+    "npm ci --prefix scripts",
     "python3 scripts/zkai_d128_snark_ivc_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_snark_ivc_statement_receipt_gate",
     "python3 -m py_compile scripts/zkai_d128_snark_ivc_statement_receipt_gate.py scripts/tests/test_zkai_d128_snark_ivc_statement_receipt_gate.py",

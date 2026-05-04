@@ -125,6 +125,16 @@ class D128SnarkIvcStatementReceiptGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "statement_policy")
 
+    def test_payload_validation_rederives_receipt_metrics(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged = copy.deepcopy(payload)
+        forged["receipt_metrics"]["public_signals_bytes"] += 1
+
+        with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "receipt metrics mismatch") as err:
+            GATE.validate_payload(forged)
+
+        self.assertEqual(err.exception.layer, "receipt_metrics")
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
 
