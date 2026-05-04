@@ -852,7 +852,7 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
                 raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error_code must identify the rejection")
         if not isinstance(case["error"], str):
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be a string")
-        if "\t" in case["error"] or "\n" in case["error"]:
+        if "\t" in case["error"] or "\n" in case["error"] or "\r" in case["error"]:
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be single-line TSV-safe text")
         if accepted and case["error"]:
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} accepted error must be empty")
