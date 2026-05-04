@@ -121,7 +121,9 @@ It measures proof generation and verification under a median-of-5 timing policy
 after regenerating a local throwaway Groth16 setup. The setup remains explicitly
 non-production.
 
-The best transfer follow-up remains issue `#422`: build the same public-input
-contract as a zkVM receipt using public journal/public-values semantics. That
-would test whether the receipt discipline transfers from SNARK public signals
-to zkVM receipt journals.
+Issue `#422` now records the corresponding zkVM public journal/public-values
+contract and an honest bounded no-go: this checkout has no RISC Zero or SP1
+receipt route because the local zkVM proving CLIs are missing and no receipt
+artifact exists. The transfer test is therefore narrower and cleaner now: pick
+one zkVM route, install and pin it, then produce a real receipt for the exact
+#424-derived journal contract.

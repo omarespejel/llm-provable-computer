@@ -1,0 +1,595 @@
+{
+  "all_mutations_rejected": true,
+  "backend_decision": {
+    "candidate_route_ids": [
+      "risc0_zkvm_statement_receipt",
+      "sp1_zkvm_statement_receipt"
+    ],
+    "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
+    "first_blocker": "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
+    "go_criterion": "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, and its public journal/public-values bind the #424 d128 two-slice public-input contract",
+    "no_go_criterion": "record the exact blocker before metrics: missing local toolchain bootstrap, missing proof fixture, missing public-values binding route, prover cost too high for a small fixture, or verifier API blocker",
+    "proof_metrics": {
+      "metrics_enabled": false,
+      "proof_generation_time_ms": null,
+      "proof_size_bytes": null,
+      "verifier_time_ms": null
+    },
+    "result": "NO_GO",
+    "usable_route_ids": []
+  },
+  "case_count": 21,
+  "cases": [
+    {
+      "error": "source contract mismatch",
+      "mutation": "source_decision_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_contract",
+      "surface": "source_contract"
+    },
+    {
+      "error": "source contract mismatch",
+      "mutation": "source_claim_boundary_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_contract",
+      "surface": "source_contract"
+    },
+    {
+      "error": "source contract mismatch",
+      "mutation": "source_target_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_contract",
+      "surface": "source_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_schema_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_policy_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_action_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_verifier_domain_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_statement_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "journal contract mismatch",
+      "mutation": "journal_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_contract",
+      "surface": "journal_contract"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "risc0_toolchain_relabeling",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "toolchain_probe"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "sp1_toolchain_relabeling",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "toolchain_probe"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "risc0_route_relabeling_to_go",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "route_decisions"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "sp1_route_relabeling_to_go",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "route_decisions"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "receipt_artifact_smuggled",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "route_decisions"
+    },
+    {
+      "error": "backend decision mismatch",
+      "mutation": "proof_size_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "backend_decision",
+      "surface": "backend_decision"
+    },
+    {
+      "error": "backend decision mismatch",
+      "mutation": "verifier_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "backend_decision",
+      "surface": "backend_decision"
+    },
+    {
+      "error": "backend decision mismatch",
+      "mutation": "proof_generation_time_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "backend_decision",
+      "surface": "backend_decision"
+    },
+    {
+      "error": "decision mismatch",
+      "mutation": "decision_relabeling_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "validation commands mismatch",
+      "mutation": "validation_command_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "payload keys mismatch: missing=[] extra=['unknown']",
+      "mutation": "unknown_top_level_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING",
+  "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
+  "issue": 422,
+  "journal_contract": {
+    "action_label": "verify_d128_two_slice_statement_receipt",
+    "input_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "issue": 422,
+    "journal_commitment": "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
+    "journal_kind": "zkvm-public-journal-or-public-values-contract",
+    "journal_payload_sha256": "ca95820ddebea2310ded622b9dfe948953e7f0706632eeeeeae7d35b3da71e65",
+    "model_or_program_identity": {
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "source_contract_schema": "zkai-d128-proof-native-two-slice-compression-gate-v1",
+      "statement_family": "d128-rmsnorm-swiglu-two-slice"
+    },
+    "output_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+    "policy_label": "statement-receipt-adapter-policy:d128-two-slice:no-metadata-relabeling:v1",
+    "public_values": {
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "required_public_inputs": [
+        "two_slice_target_commitment",
+        "selected_slice_statement_commitments",
+        "selected_source_evidence_hashes",
+        "selected_slice_public_instance_commitments",
+        "selected_slice_proof_native_parameter_commitments",
+        "verifier_domain",
+        "required_backend_version",
+        "source_accumulator_commitment",
+        "source_verifier_handle_commitment"
+      ],
+      "selected_slice_proof_native_parameter_commitments": [
+        {
+          "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_public_instance_commitments": [
+        {
+          "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_statement_commitments": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+        }
+      ],
+      "selected_source_evidence_hashes": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+          "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+          "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+        }
+      ],
+      "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+      "source_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    },
+    "schema": "zkai-d128-zkvm-statement-journal-contract-v1",
+    "source_file_sha256": "1da36dc26184e5295e1b31773741a24a3cde99c3ab77c1acbca19e263111b09e",
+    "source_issue": 424,
+    "source_payload_sha256": "10e29894dd77f8a7970d1d9d17c9d5c336e4a19060041cef4ff778d4be6f1b06",
+    "source_verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641",
+    "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+  },
+  "mutation_inventory": [
+    {
+      "mutation": "source_decision_relabeling",
+      "surface": "source_contract"
+    },
+    {
+      "mutation": "source_claim_boundary_relabeling",
+      "surface": "source_contract"
+    },
+    {
+      "mutation": "source_target_commitment_relabeling",
+      "surface": "source_contract"
+    },
+    {
+      "mutation": "journal_schema_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_policy_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_action_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_verifier_domain_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_statement_hash_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "journal_commitment_relabeling",
+      "surface": "journal_contract"
+    },
+    {
+      "mutation": "risc0_toolchain_relabeling",
+      "surface": "toolchain_probe"
+    },
+    {
+      "mutation": "sp1_toolchain_relabeling",
+      "surface": "toolchain_probe"
+    },
+    {
+      "mutation": "risc0_route_relabeling_to_go",
+      "surface": "route_decisions"
+    },
+    {
+      "mutation": "sp1_route_relabeling_to_go",
+      "surface": "route_decisions"
+    },
+    {
+      "mutation": "receipt_artifact_smuggled",
+      "surface": "route_decisions"
+    },
+    {
+      "mutation": "proof_size_metric_smuggled",
+      "surface": "backend_decision"
+    },
+    {
+      "mutation": "verifier_time_metric_smuggled",
+      "surface": "backend_decision"
+    },
+    {
+      "mutation": "proof_generation_time_metric_smuggled",
+      "surface": "backend_decision"
+    },
+    {
+      "mutation": "decision_relabeling_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claim_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_top_level_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not a zkVM receipt",
+    "not a RISC Zero proof",
+    "not an SP1 proof",
+    "not a zkML performance benchmark",
+    "not recursive verification of the underlying Stwo slice proofs inside a zkVM",
+    "not a claim that RISC Zero or SP1 cannot implement this contract",
+    "not a claim that RISC Zero or SP1 are missing statement binding internally",
+    "not a Starknet deployment result",
+    "not a replacement for the Stwo-native d128 transformer receipt track"
+  ],
+  "result": "NO_GO",
+  "route_decisions": [
+    {
+      "first_blocker": "missing_commands:rzup,cargo-risczero",
+      "missing_commands": [
+        "rzup",
+        "cargo-risczero"
+      ],
+      "proof_metrics": {
+        "proof_generation_time_ms": null,
+        "proof_size_bytes": null,
+        "verifier_time_ms": null
+      },
+      "public_statement_surface": "receipt journal plus image id",
+      "receipt_artifact": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
+      "receipt_artifact_exists": false,
+      "required_commands": [
+        "rzup",
+        "cargo-risczero"
+      ],
+      "route_id": "risc0_zkvm_statement_receipt",
+      "status": "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING",
+      "system": "RISC Zero",
+      "usable_today": false
+    },
+    {
+      "first_blocker": "missing_commands:sp1up,cargo-prove",
+      "missing_commands": [
+        "sp1up",
+        "cargo-prove"
+      ],
+      "proof_metrics": {
+        "proof_generation_time_ms": null,
+        "proof_size_bytes": null,
+        "verifier_time_ms": null
+      },
+      "public_statement_surface": "public values plus verifying key/program metadata",
+      "receipt_artifact": "docs/engineering/evidence/zkai-d128-sp1-statement-receipt-2026-05.json",
+      "receipt_artifact_exists": false,
+      "required_commands": [
+        "sp1up",
+        "cargo-prove"
+      ],
+      "route_id": "sp1_zkvm_statement_receipt",
+      "status": "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING",
+      "system": "SP1",
+      "usable_today": false
+    }
+  ],
+  "schema": "zkai-d128-zkvm-statement-receipt-adapter-gate-v1",
+  "source_contract": {
+    "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+    "compressed_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
+    "decision": "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION",
+    "file_sha256": "1da36dc26184e5295e1b31773741a24a3cde99c3ab77c1acbca19e263111b09e",
+    "issue": 424,
+    "path": "docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json",
+    "payload_sha256": "10e29894dd77f8a7970d1d9d17c9d5c336e4a19060041cef4ff778d4be6f1b06",
+    "public_input_contract": {
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "required_public_inputs": [
+        "two_slice_target_commitment",
+        "selected_slice_statement_commitments",
+        "selected_source_evidence_hashes",
+        "selected_slice_public_instance_commitments",
+        "selected_slice_proof_native_parameter_commitments",
+        "verifier_domain",
+        "required_backend_version",
+        "source_accumulator_commitment",
+        "source_verifier_handle_commitment"
+      ],
+      "selected_slice_proof_native_parameter_commitments": [
+        {
+          "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_public_instance_commitments": [
+        {
+          "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+          "slice_id": "rmsnorm_public_rows"
+        },
+        {
+          "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+          "slice_id": "rmsnorm_projection_bridge"
+        }
+      ],
+      "selected_slice_statement_commitments": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
+        }
+      ],
+      "selected_source_evidence_hashes": [
+        {
+          "slice_id": "rmsnorm_public_rows",
+          "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+          "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05"
+        },
+        {
+          "slice_id": "rmsnorm_projection_bridge",
+          "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+          "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3"
+        }
+      ],
+      "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+      "source_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+      "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    },
+    "result": "GO",
+    "schema": "zkai-d128-proof-native-two-slice-compression-gate-v1",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "source_accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
+  },
+  "source_issue": 424,
+  "summary": "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, but this local checkout has no RISC Zero or SP1 proving toolchain/receipt artifact installed.",
+  "toolchain_probe": {
+    "commands": {
+      "cargo": {
+        "available": true,
+        "command": [
+          "cargo",
+          "--version"
+        ],
+        "command_id": "cargo",
+        "path": "/Users/espejelomar/.cargo/bin/cargo",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo 1.92.0 (344c4567c 2025-10-21)"
+      },
+      "cargo-prove": {
+        "available": false,
+        "command": [
+          "cargo",
+          "prove",
+          "--version"
+        ],
+        "command_id": "cargo-prove",
+        "path": "/Users/espejelomar/.cargo/bin/cargo",
+        "returncode": 101,
+        "stderr": "error: no such command: `prove`\n\nhelp: a command with a similar name exists: `remove`\n\nhelp: view all installed commands with `cargo --list`\nhelp: find a package to install `prove` with `cargo search cargo-prove`",
+        "stdout": ""
+      },
+      "cargo-risczero": {
+        "available": false,
+        "command": [
+          "cargo-risczero",
+          "--version"
+        ],
+        "command_id": "cargo-risczero",
+        "path": null,
+        "returncode": null,
+        "stderr": "",
+        "stdout": ""
+      },
+      "docker": {
+        "available": true,
+        "command": [
+          "docker",
+          "--version"
+        ],
+        "command_id": "docker",
+        "path": "/opt/homebrew/bin/docker",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Docker version 29.2.1, build a5c7197d72"
+      },
+      "protoc": {
+        "available": true,
+        "command": [
+          "protoc",
+          "--version"
+        ],
+        "command_id": "protoc",
+        "path": "/opt/homebrew/bin/protoc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "libprotoc 34.1"
+      },
+      "rustc": {
+        "available": true,
+        "command": [
+          "rustc",
+          "--version"
+        ],
+        "command_id": "rustc",
+        "path": "/Users/espejelomar/.cargo/bin/rustc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
+      },
+      "rzup": {
+        "available": false,
+        "command": [
+          "rzup",
+          "--version"
+        ],
+        "command_id": "rzup",
+        "path": null,
+        "returncode": null,
+        "stderr": "",
+        "stdout": ""
+      },
+      "sp1up": {
+        "available": false,
+        "command": [
+          "sp1up",
+          "--version"
+        ],
+        "command_id": "sp1up",
+        "path": null,
+        "returncode": null,
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    "host_os": "darwin",
+    "probe_scope": "local_cli_bootstrap_only_no_network_install"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_zkvm_statement_receipt_adapter_gate.py --write-json docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_zkvm_statement_receipt_adapter_gate",
+    "python3 -m py_compile scripts/zkai_d128_zkvm_statement_receipt_adapter_gate.py scripts/tests/test_zkai_d128_zkvm_statement_receipt_adapter_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

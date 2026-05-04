@@ -94,17 +94,18 @@ Do not keep spending the next sprint trying to extract local Stwo-native
 recursion from the current repository surface. The local route is blocked before
 metrics.
 
-The next two useful research moves are:
+The follow-up state is now:
 
-1. external zkVM statement-receipt adapter for the exact d128 two-slice
-   contract, tracked in issue `#422`;
-2. cryptographic backend work over the proof-native two-slice compression
-   contract, tracked in issue `#426`.
+1. issue `#428` produced a real external SNARK statement receipt for the exact
+   d128 two-slice contract;
+2. issue `#430` measured that SNARK receipt route under a local throwaway setup;
+3. issue `#422` mapped the same contract into a zkVM public journal/public-values
+   contract and recorded a bounded no-go because no RISC Zero or SP1 receipt
+   route exists in the checked local toolchain.
 
-The first tests proof-system independence. The second tests whether the now
-checked issue `#424` compressed object can be bound by an executable proof,
-receipt, PCD, or recursive-verifier backend without changing the statement
-boundary.
+The next useful route-specific experiment is to install/pin exactly one zkVM
+toolchain and produce a real receipt for the #422 journal contract. Do not report
+zkVM proof metrics until such a receipt verifies.
 
 ## Current-State Postscript After Issue `#424`
 

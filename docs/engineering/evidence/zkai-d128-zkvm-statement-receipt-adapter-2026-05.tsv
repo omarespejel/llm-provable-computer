@@ -1,0 +1,3 @@
+route_id	system	status	usable_today	first_blocker	required_commands	missing_commands	receipt_artifact	proof_size_bytes	verifier_time_ms	proof_generation_time_ms
+risc0_zkvm_statement_receipt	RISC Zero	NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING	false	missing_commands:rzup,cargo-risczero	rzup,cargo-risczero	rzup,cargo-risczero	docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json			
+sp1_zkvm_statement_receipt	SP1	NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING	false	missing_commands:sp1up,cargo-prove	sp1up,cargo-prove	sp1up,cargo-prove	docs/engineering/evidence/zkai-d128-sp1-statement-receipt-2026-05.json			
