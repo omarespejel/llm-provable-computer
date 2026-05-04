@@ -113,6 +113,16 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
             probe["artifact_candidates"],
         )
 
+    def test_json_loader_reports_snark_receipt_layer(self) -> None:
+        with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "SNARK receipt evidence is not a regular file") as err:
+            GATE.load_json(
+                GATE.EVIDENCE_DIR / "missing-snark-receipt-evidence.json",
+                layer="external_snark_receipt",
+                field="SNARK receipt evidence",
+            )
+
+        self.assertEqual(err.exception.layer, "external_snark_receipt")
+
     def test_cargo_dependency_probe_finds_nested_aliases(self) -> None:
         cargo_toml = {
             "dev-dependencies": {"sp1-sdk": "1"},

@@ -373,6 +373,12 @@ def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: byt
             )
         except subprocess.TimeoutExpired as err:
             raise D128SnarkReceiptError("snarkjs groth16 verifier timed out", layer="external_proof_verifier") from err
+        except OSError as err:
+            command = " ".join([*SNARKJS_COMMAND, "groth16", "verify"])
+            raise D128SnarkReceiptError(
+                f"failed to launch snarkjs verifier command `{command}`; ensure node/npx is installed and executable: {err}",
+                layer="external_proof_verifier",
+            ) from err
     output = ANSI_ESCAPE_RE.sub("", "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part))
     if result.returncode != 0:
         raise D128SnarkReceiptError(f"snarkjs groth16 verifier rejected: {output}", layer="external_proof_verifier")
@@ -625,7 +631,7 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
         "repro": {
-            "git_commit": os.environ.get("ZKAI_D128_SNARK_RECEIPT_GIT_COMMIT", _git_commit()),
+            "git_commit": _git_commit(),
             "command": VALIDATION_COMMANDS[0],
         },
         "summary": (
