@@ -61,6 +61,7 @@ is
 reproduce with:
 
 ```bash
+npm ci --prefix scripts
 python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py \
   --write-json docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv
