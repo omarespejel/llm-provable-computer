@@ -150,6 +150,22 @@ TSV_COLUMNS = (
     "proof_generation_time_ms",
 )
 
+SUMMARY_PREFIX = "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, "
+SUMMARY_BY_BLOCKER = {
+    FIRST_BLOCKER: (
+        SUMMARY_PREFIX
+        + "but this local checkout has no complete RISC Zero or SP1 proving toolchain bootstrap."
+    ),
+    "MISSING_ZKVM_RECEIPT_ARTIFACT": (
+        SUMMARY_PREFIX
+        + "and at least one zkVM route has its required commands, but no receipt artifact exists for verification."
+    ),
+    RECEIPT_VERIFICATION_BLOCKER: (
+        SUMMARY_PREFIX
+        + "and a toolchain plus receipt-looking artifact can exist, but this gate does not yet verify the receipt or public-values binding."
+    ),
+}
+
 
 class D128ZkvmStatementReceiptAdapterError(ValueError):
     def __init__(self, message: str, *, layer: str = "parser_or_schema") -> None:
@@ -370,18 +386,13 @@ def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
 
 def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
     usable = [route for route in routes if route["usable_today"]]
-    missing_command_routes = [route for route in routes if route["missing_commands"]]
-    missing_receipt_routes = [route for route in routes if not route["receipt_artifact_exists"]]
+    first_blocker = backend_first_blocker(routes)
     return {
         "result": "GO" if usable else RESULT,
         "decision": "GO_D128_ZKVM_STATEMENT_RECEIPT_AVAILABLE" if usable else DECISION,
         "usable_route_ids": [route["route_id"] for route in usable],
         "candidate_route_ids": [route["route_id"] for route in routes],
-        "first_blocker": (
-            "none"
-            if usable
-            else (FIRST_BLOCKER if missing_command_routes else ("MISSING_ZKVM_RECEIPT_ARTIFACT" if missing_receipt_routes else RECEIPT_VERIFICATION_BLOCKER))
-        ),
+        "first_blocker": first_blocker,
         "go_criterion": GO_CRITERION,
         "no_go_criterion": NO_GO_CRITERION,
         "proof_metrics": {
@@ -393,11 +404,33 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def backend_first_blocker(routes: list[dict[str, Any]]) -> str:
+    if any(route["usable_today"] for route in routes):
+        return "none"
+    toolchain_ready = [route for route in routes if not route["missing_commands"]]
+    if not toolchain_ready:
+        return FIRST_BLOCKER
+    if any(not route["receipt_artifact_exists"] for route in toolchain_ready):
+        return "MISSING_ZKVM_RECEIPT_ARTIFACT"
+    return RECEIPT_VERIFICATION_BLOCKER
+
+
+def summary_for_backend_decision(decision: dict[str, Any]) -> str:
+    blocker = decision.get("first_blocker")
+    if blocker == "none":
+        return SUMMARY_PREFIX + "and at least one zkVM route verifies the receipt and public-values binding."
+    summary = SUMMARY_BY_BLOCKER.get(blocker)
+    if summary is None:
+        raise D128ZkvmStatementReceiptAdapterError(f"unknown zkVM adapter blocker: {blocker}", layer="backend_decision")
+    return summary
+
+
 def build_payload(probe: dict[str, Any] | None = None) -> dict[str, Any]:
     source = source_contract()
     journal = journal_contract(source)
     probe = command_probe() if probe is None else copy.deepcopy(probe)
     routes = route_decisions(probe)
+    decision = backend_decision(routes)
     payload = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -409,17 +442,14 @@ def build_payload(probe: dict[str, Any] | None = None) -> dict[str, Any]:
         "journal_contract": journal,
         "toolchain_probe": probe,
         "route_decisions": routes,
-        "backend_decision": backend_decision(routes),
+        "backend_decision": decision,
         "mutation_inventory": [{"mutation": name, "surface": surface} for name, surface in EXPECTED_MUTATION_INVENTORY],
         "case_count": len(EXPECTED_MUTATION_INVENTORY),
         "all_mutations_rejected": True,
         "cases": [],
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
-        "summary": (
-            "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, "
-            "but this local checkout has no RISC Zero or SP1 proving toolchain/receipt artifact installed."
-        ),
+        "summary": summary_for_backend_decision(decision),
     }
     payload["cases"] = mutation_cases(payload)
     payload["case_count"] = len(payload["cases"])
@@ -537,11 +567,10 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     validate_journal_contract(payload["journal_contract"], source)
     probe = validate_toolchain_probe(payload["toolchain_probe"])
     routes = validate_routes(payload["route_decisions"], probe)
-    validate_backend_decision(payload["backend_decision"], routes)
+    decision = validate_backend_decision(payload["backend_decision"], routes)
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
-    if not isinstance(payload["summary"], str) or "no RISC Zero or SP1" not in payload["summary"]:
-        raise D128ZkvmStatementReceiptAdapterError("summary must state the zkVM blocker")
+    expect_equal(payload["summary"], summary_for_backend_decision(decision), "summary")
 
 
 def validate_payload(payload: Any) -> None:

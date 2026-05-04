@@ -479,7 +479,7 @@
     "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
   },
   "source_issue": 424,
-  "summary": "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, but this local checkout has no RISC Zero or SP1 proving toolchain/receipt artifact installed.",
+  "summary": "The #424 d128 two-slice statement can be mapped into a zkVM public journal/public-values contract, but this local checkout has no complete RISC Zero or SP1 proving toolchain bootstrap.",
   "toolchain_probe": {
     "commands": {
       "cargo": {
