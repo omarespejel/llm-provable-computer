@@ -24,13 +24,13 @@ Timing policy: `median_of_5_runs_from_perf_counter_ns_on_local_host`.
 
 | Metric | Result |
 |---|---:|
-| Setup time, single local throwaway run | `29978.661 ms` |
-| Proof-generation time, median of 5 | `349.647 ms` |
-| Proof-generation time, min / max | `345.260 ms` / `364.744 ms` |
-| Verifier time, median of 5 | `290.702 ms` |
-| Verifier time, min / max | `281.518 ms` / `292.157 ms` |
-| Generated proof size values | `803`, `804`, `805` bytes |
-| Generated verification-key size | `5849` bytes |
+| Setup time, single local throwaway run | `29336.175 ms` |
+| Proof-generation time, median of 5 | `314.067 ms` |
+| Proof-generation time, min / max | `307.084 ms` / `315.686 ms` |
+| Verifier time, median of 5 | `287.314 ms` |
+| Verifier time, min / max | `285.302 ms` / `305.300 ms` |
+| Generated proof size values | `804`, `805`, `806`, `807` bytes |
+| Generated verification-key size | `5856` bytes |
 | Source #428 proof size | `802` bytes |
 | Source #428 verification-key size | `5854` bytes |
 
@@ -52,6 +52,8 @@ the checked #428 public-signal artifact.
 | setup artifact scope | temporary directory deleted after gate |
 | snarkjs | `0.7.6` |
 | circom | `2.0.9` |
+| node | `v23.11.0` |
+| npm | `10.9.2` |
 
 This is intentionally not promoted into a production ceremony claim. It only
 shows that the statement-receipt route can be regenerated, proved, and verified
@@ -59,13 +61,14 @@ under a pinned local toolchain.
 
 ## Mutation Coverage
 
-The gate rejects `15 / 15` timing/setup mutations, including:
+The gate rejects `17 / 17` timing/setup mutations, including:
 
 - source #428 receipt decision, claim-boundary, and metric relabeling;
 - setup-policy promotion to production;
 - proving-key checked-in relabeling;
 - timing-policy drift;
 - proof-generation and verifier median metric smuggling;
+- reproduction-command relabeling;
 - public-signal, generated-public, verification-key, and proof-size binding
   drift;
 - non-claim removal;

@@ -1110,9 +1110,11 @@ for the statement-receipt discipline. It is anchored to
 
 The timing/setup hardening follow-up regenerates the same statement-receipt
 circuit under a local throwaway Groth16 setup, proves it five times, and
-verifies it five times. The checked medians are `349.647 ms` for proof
-generation and `290.702 ms` for verification, with a `29978.661 ms` single
-local setup run and `15 / 15` timing/setup/binding mutations rejected. This is
+verifies it five times. The checked medians are `314.067 ms` for proof
+generation and `287.314 ms` for verification, with a `29336.175 ms` single
+local setup run and `17 / 17` timing/setup/binding mutations rejected. Timing
+mode is `median_of_5_runs_from_perf_counter_ns_on_local_host`; tools are
+`snarkjs@0.7.6`, `circom 2.0.9`, `node v23.11.0`, and `npm 10.9.2`. This is
 useful because it turns the external SNARK receipt from a pure existence
 artifact into a measured adapter. It is still deliberately not a production
 trusted setup, not recursive verification of the Stwo proofs, and not a

@@ -121,6 +121,18 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
             probe["artifact_candidates"],
         )
 
+    def test_snark_timing_artifact_is_allowed_without_promoting_new_route(self) -> None:
+        probe = GATE.backend_probe()
+        timing_artifact = "docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json"
+        if GATE.SNARK_RECEIPT_TIMING_EVIDENCE.exists():
+            self.assertIn(timing_artifact, probe["artifact_candidates"])
+
+        routes = GATE.backend_routes(probe)
+        route_ids = [route["route_id"] for route in routes]
+        self.assertEqual(route_ids, list(GATE.ROUTE_IDS))
+        usable_routes = [route["route_id"] for route in routes if route["cryptographic_backend"] and route["usable_today"]]
+        self.assertEqual(usable_routes, ["external_snark_or_ivc_statement_receipt_backend"])
+
     def test_json_loader_reports_snark_receipt_layer(self) -> None:
         with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "SNARK receipt evidence is not a regular file") as err:
             GATE.load_json(
