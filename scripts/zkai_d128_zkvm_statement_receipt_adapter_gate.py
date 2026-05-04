@@ -52,6 +52,7 @@ RECEIPT_ARTIFACT_BLOCKER = "MISSING_ZKVM_RECEIPT_ARTIFACT"
 UNREADABLE_RECEIPT_ARTIFACT_BLOCKER = "MISSING_OR_UNREADABLE_ZKVM_RECEIPT_ARTIFACT"
 RECEIPT_VERIFICATION_BLOCKER = "MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING"
 RECEIPT_CANDIDATE_SCHEMA = "zkai-d128-zkvm-statement-receipt-candidate-v1"
+MAX_RECEIPT_CANDIDATE_BYTES = 1_048_576
 GO_CRITERION = (
     "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, "
     "and its public journal/public-values bind the #424 d128 two-slice public-input contract"
@@ -358,6 +359,8 @@ def receipt_candidate_probe(path: pathlib.Path, route: dict[str, Any], journal: 
         return {"exists": True, "candidate_valid": False, "size_bytes": None, "reason": "unreadable_receipt_artifact"}
     if size <= 0:
         return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "empty_receipt_artifact"}
+    if size > MAX_RECEIPT_CANDIDATE_BYTES:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "oversized_receipt_artifact"}
     try:
         candidate = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
