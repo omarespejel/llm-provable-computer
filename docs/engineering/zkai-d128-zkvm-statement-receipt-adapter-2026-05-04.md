@@ -27,7 +27,9 @@ and bound to the current journal commitment before the blocker can move past
 artifact availability. The blocker states are intentionally distinct:
 `MISSING_ZKVM_RECEIPT_ARTIFACT` means no file exists,
 `MISSING_OR_UNREADABLE_ZKVM_RECEIPT_ARTIFACT` means a file exists but is empty,
-oversized, unparseable, or not bound to the current journal, and
+oversized, unparseable, uses the wrong candidate schema, mismatches the route or
+zkVM system, is not bound to the current journal commitment, or lacks a valid
+`receipt_commitment`, and
 `MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING` means a
 candidate exists but verifier execution and public-values binding are still not
 implemented. A GO still requires the gate to run the route verifier and check
