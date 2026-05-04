@@ -24,7 +24,7 @@ underlying Stwo slice proofs inside RISC Zero.
 - receipt artifact:
   `docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.bincode`
 
-The receipt gate rejects `20 / 20` relabeling, metric-smuggling,
+The receipt gate rejects `21 / 21` relabeling, metric-smuggling,
 receipt-metadata, validation-command, and parser/schema mutations.
 
 ## Engineering Metrics
@@ -36,7 +36,7 @@ rows and not cross-system performance comparisons.
 |---|---:|
 | Receipt size | `310234` bytes |
 | Proof generation time | `178636.325 ms` |
-| Receipt verification time | `25.198 ms` |
+| Receipt verification time | `19.422 ms` |
 | Timing policy | `single_local_run_engineering_only` |
 
 The proof-generation time is preserved from the original `--prove` run when the
@@ -65,6 +65,24 @@ What this result does not establish:
 - not evidence that RISC Zero is faster or slower than the native Stwo route.
 
 ## Reproduction
+
+Toolchain pin for a fresh environment:
+
+```bash
+curl -L https://risczero.com/install | bash
+export PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH"
+rzup install cargo-risczero 3.0.5
+rzup install r0vm 3.0.5
+rustup toolchain install 1.92.0 --component rustfmt --component rust-src
+rzup show
+cargo risczero --version
+rustc +1.92.0 --version
+```
+
+The fixture also checks in
+`programs/risc0-d128-statement-receipt/rust-toolchain.toml` with
+`channel = "1.92.0"` so the host/method build does not float with the local
+stable channel.
 
 ```bash
 export PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH"

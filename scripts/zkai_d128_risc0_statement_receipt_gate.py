@@ -97,6 +97,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("system_relabeling", "receipt_metadata"),
     ("image_id_relabeling", "receipt_metadata"),
     ("receipt_commitment_relabeling", "receipt_metadata"),
+    ("strict_reverification_relabeling", "receipt_metadata"),
     ("receipt_size_metric_smuggling", "proof_metrics"),
     ("proof_generation_metric_smuggling", "proof_metrics"),
     ("verifier_time_metric_smuggling", "proof_metrics"),
@@ -112,6 +113,16 @@ class D128Risc0StatementReceiptError(ValueError):
     def __init__(self, message: str, *, layer: str = "parser_or_schema") -> None:
         super().__init__(message)
         self.layer = layer
+
+
+def _resolved_under_root(path: pathlib.Path, *, label: str, layer: str) -> pathlib.Path:
+    resolved = path.resolve(strict=False)
+    root = ROOT.resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as err:
+        raise D128Risc0StatementReceiptError(f"{label} path escapes repository root", layer=layer) from err
+    return resolved
 
 
 def _load_module(path: pathlib.Path, module_name: str) -> Any:
@@ -223,7 +234,7 @@ def rzup_components() -> dict[str, str]:
     current_name: str | None = None
     for raw_line in result.stdout.splitlines():
         line = raw_line.strip()
-        if not line or line.startswith("-") or line.startswith("Installed components") or line.startswith("rzup home"):
+        if not line or line.startswith(("-", "Installed components", "rzup home")):
             continue
         if not line.startswith("*"):
             current_name = line
@@ -287,6 +298,17 @@ def generate_or_verify_receipt(*, prove: bool, receipt_path: pathlib.Path) -> di
         return run_host("verify", journal_path, receipt_path, summary_path)
 
 
+def reverify_receipt_artifact(receipt_path: pathlib.Path) -> dict[str, Any]:
+    target_root = ROOT / "target"
+    target_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=target_root) as raw_tmp:
+        tmp = pathlib.Path(raw_tmp)
+        journal_path = tmp / "journal.json"
+        summary_path = tmp / "summary.json"
+        journal_path.write_bytes(expected_journal_bytes())
+        return run_host("verify", journal_path, receipt_path, summary_path)
+
+
 def build_payload(
     *,
     prove: bool = False,
@@ -295,9 +317,10 @@ def build_payload(
 ) -> dict[str, Any]:
     journal = expected_journal_contract()
     journal_bytes = expected_journal_bytes()
+    receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
     host_summary = generate_or_verify_receipt(prove=prove, receipt_path=receipt_path)
     receipt_bytes = receipt_path.read_bytes()
-    if len(receipt_bytes) <= 0 or len(receipt_bytes) > MAX_RECEIPT_BYTES:
+    if not receipt_bytes or len(receipt_bytes) > MAX_RECEIPT_BYTES:
         raise D128Risc0StatementReceiptError("receipt artifact size outside allowed bound", layer="receipt_artifact")
     receipt_commitment = blake2b_commitment_bytes(receipt_bytes)
     proof_generation_time_ms = host_summary.get("prove_time_ms")
@@ -333,6 +356,7 @@ def build_payload(
         "receipt_verification": {
             "host_summary_schema": host_summary["schema"],
             "host_summary_mode": host_summary["mode"],
+            "strict_receipt_reverified": True,
             "verifier_executed": True,
             "receipt_verified": True,
             "decoded_journal_matches_expected": True,
@@ -399,6 +423,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         add("system_relabeling", "receipt_metadata", lambda p: p.__setitem__("system", "SP1")),
         add("image_id_relabeling", "receipt_metadata", lambda p: p["receipt_verification"].__setitem__("image_id_hex", "00" * 32)),
         add("receipt_commitment_relabeling", "receipt_metadata", lambda p: p.__setitem__("receipt_commitment", "blake2b-256:" + "33" * 32)),
+        add("strict_reverification_relabeling", "receipt_metadata", lambda p: p["receipt_verification"].__setitem__("strict_receipt_reverified", False)),
         add("receipt_size_metric_smuggling", "proof_metrics", lambda p: p["proof_metrics"].__setitem__("proof_size_bytes", p["proof_metrics"]["proof_size_bytes"] + 1)),
         add("proof_generation_metric_smuggling", "proof_metrics", lambda p: p["proof_metrics"].__setitem__("proof_generation_time_ms", 1.0)),
         add("verifier_time_metric_smuggling", "proof_metrics", lambda p: p["proof_metrics"].__setitem__("verifier_time_ms", 1.0)),
@@ -409,7 +434,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def validate_core_payload(payload: dict[str, Any]) -> None:
+def validate_core_payload(payload: dict[str, Any], *, strict_receipt: bool = False) -> None:
     expected_keys = {
         "schema", "evidence_schema", "issue", "source_issue", "adapter_issue", "result", "decision",
         "claim_boundary", "route_id", "system", "journal_commitment", "receipt_commitment",
@@ -432,11 +457,13 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(payload["journal_commitment"], expected_journal["journal_commitment"], "journal commitment", layer="journal_contract")
     artifact = require_object(payload["receipt_artifact"], "receipt artifact", layer="receipt_metadata")
     expect_keys(artifact, {"path", "size_bytes", "sha256", "commitment"}, "receipt artifact", layer="receipt_metadata")
-    receipt_path = ROOT / artifact["path"]
+    if not isinstance(artifact["path"], str):
+        raise D128Risc0StatementReceiptError("receipt artifact path must be a string", layer="receipt_artifact")
+    receipt_path = _resolved_under_root(ROOT / artifact["path"], label="receipt artifact", layer="receipt_artifact")
     if not receipt_path.is_file():
         raise D128Risc0StatementReceiptError("receipt artifact missing", layer="receipt_artifact")
     receipt_bytes = receipt_path.read_bytes()
-    if len(receipt_bytes) <= 0 or len(receipt_bytes) > MAX_RECEIPT_BYTES:
+    if not receipt_bytes or len(receipt_bytes) > MAX_RECEIPT_BYTES:
         raise D128Risc0StatementReceiptError("receipt artifact size outside allowed bound", layer="receipt_artifact")
     expect_equal(artifact["size_bytes"], len(receipt_bytes), "receipt artifact size", layer="receipt_metadata")
     expect_equal(artifact["sha256"], sha256_bytes(receipt_bytes), "receipt artifact sha256", layer="receipt_metadata")
@@ -447,8 +474,8 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
         verification,
         {
             "host_summary_schema", "host_summary_mode", "verifier_executed", "receipt_verified",
-            "decoded_journal_matches_expected", "image_id_hex", "journal_sha256", "receipt_sha256",
-            "risc0_zkvm_version",
+            "decoded_journal_matches_expected", "strict_receipt_reverified", "image_id_hex",
+            "journal_sha256", "receipt_sha256", "risc0_zkvm_version",
         },
         "receipt verification",
         layer="receipt_metadata",
@@ -456,6 +483,7 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(verification["host_summary_schema"], "zkai-d128-risc0-host-summary-v1", "host summary schema", layer="receipt_metadata")
     if verification["host_summary_mode"] not in {"prove", "verify"}:
         raise D128Risc0StatementReceiptError("host summary mode mismatch", layer="receipt_metadata")
+    expect_equal(verification["strict_receipt_reverified"], True, "strict receipt reverified", layer="receipt_metadata")
     expect_equal(verification["verifier_executed"], True, "verifier executed", layer="receipt_metadata")
     expect_equal(verification["receipt_verified"], True, "receipt verified", layer="receipt_metadata")
     expect_equal(verification["decoded_journal_matches_expected"], True, "journal match", layer="receipt_metadata")
@@ -464,6 +492,14 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(verification["risc0_zkvm_version"], RISC0_ZKVM_VERSION, "RISC Zero version", layer="receipt_metadata")
     if not isinstance(verification["image_id_hex"], str) or len(verification["image_id_hex"]) != 64:
         raise D128Risc0StatementReceiptError("image id must be 32-byte hex", layer="receipt_metadata")
+    if strict_receipt:
+        strict_summary = reverify_receipt_artifact(receipt_path)
+        expect_equal(strict_summary["schema"], "zkai-d128-risc0-host-summary-v1", "strict host schema", layer="risc0_host")
+        expect_equal(strict_summary["mode"], "verify", "strict host mode", layer="risc0_host")
+        expect_equal(strict_summary["image_id_hex"], verification["image_id_hex"], "strict image id", layer="risc0_host")
+        expect_equal(strict_summary["journal_sha256"], sha256_bytes(expected_journal_bytes()), "strict journal sha256", layer="risc0_host")
+        expect_equal(strict_summary["receipt_sha256"], sha256_bytes(receipt_bytes), "strict receipt sha256", layer="risc0_host")
+        expect_equal(strict_summary["risc0_zkvm_version"], verification["risc0_zkvm_version"], "strict RISC Zero version", layer="risc0_host")
     probe = require_object(payload["toolchain_probe"], "toolchain probe", layer="toolchain_probe")
     expect_keys(probe, {"probe_scope", "host_os", "commands", "rzup_components"}, "toolchain probe", layer="toolchain_probe")
     expect_equal(probe["probe_scope"], "local_risc0_receipt_generation_and_verification", "probe scope", layer="toolchain_probe")
@@ -485,8 +521,8 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(metrics["metrics_enabled"], True, "metrics enabled", layer="proof_metrics")
     expect_equal(metrics["timing_policy"], "single_local_run_engineering_only", "timing policy", layer="proof_metrics")
     expect_equal(metrics["proof_size_bytes"], len(receipt_bytes), "proof size", layer="proof_metrics")
-    if metrics["proof_generation_time_ms"] is not None and (not isinstance(metrics["proof_generation_time_ms"], (int, float)) or metrics["proof_generation_time_ms"] <= 0):
-        raise D128Risc0StatementReceiptError("proof_generation_time_ms must be positive or null", layer="proof_metrics")
+    if not isinstance(metrics["proof_generation_time_ms"], (int, float)) or metrics["proof_generation_time_ms"] <= 0:
+        raise D128Risc0StatementReceiptError("proof_generation_time_ms must be positive", layer="proof_metrics")
     if not isinstance(metrics["verifier_time_ms"], (int, float)) or metrics["verifier_time_ms"] <= 0:
         raise D128Risc0StatementReceiptError("verifier_time_ms must be positive", layer="proof_metrics")
     expect_equal(payload["go_criterion"], GO_CRITERION, "go criterion")
@@ -501,7 +537,7 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(summary["verifier_time_ms"], metrics["verifier_time_ms"], "summary verify time", layer="proof_metrics")
 
 
-def validate_payload(payload: Any) -> None:
+def validate_payload(payload: Any, *, strict_receipt: bool = False) -> None:
     payload = require_object(payload, "payload")
     expected_keys = {
         "schema", "evidence_schema", "issue", "source_issue", "adapter_issue", "result", "decision",
@@ -511,7 +547,7 @@ def validate_payload(payload: Any) -> None:
         "all_mutations_rejected", "cases", "summary",
     }
     expect_keys(payload, expected_keys, "payload")
-    validate_core_payload(_core_payload(payload))
+    validate_core_payload(_core_payload(payload), strict_receipt=strict_receipt)
     inventory = require_list(payload["mutation_inventory"], "mutation inventory")
     expect_equal(tuple((item.get("mutation"), item.get("surface")) for item in inventory), EXPECTED_MUTATION_INVENTORY, "mutation inventory")
     cases = require_list(payload["cases"], "cases")
@@ -561,7 +597,7 @@ def write_text_checked(path: pathlib.Path, text: str) -> None:
     if resolved.exists() and resolved.is_dir():
         raise D128Risc0StatementReceiptError("output path must be a file, not a directory", layer="output_path")
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{hashlib.sha256(os.urandom(16)).hexdigest()[:8]}.tmp")
+    tmp = path.with_name(f".{path.name}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
 
@@ -591,6 +627,7 @@ def main() -> int:
     receipt_path = resolve_output_path(args.receipt)
     if receipt_path is None:
         raise D128Risc0StatementReceiptError("receipt path is required", layer="output_path")
+    receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
     previous_proof_generation_time_ms = None

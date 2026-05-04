@@ -583,7 +583,7 @@ def _load_checked_risc0_receipt_cached(path_text: str) -> dict[str, Any]:
     path = pathlib.Path(path_text)
     payload = load_json(path, layer="external_risc0_receipt", field="RISC Zero receipt evidence")
     try:
-        RISC0_RECEIPT.validate_payload(payload)
+        RISC0_RECEIPT.validate_payload(payload, strict_receipt=True)
     except Exception as err:  # noqa: BLE001 - normalize imported validator failures.
         raise D128CryptographicBackendGateError(f"RISC Zero receipt validation failed: {err}", layer="external_risc0_receipt") from err
     expect_equal(payload.get("schema"), EXPECTED_RISC0_RECEIPT_SCHEMA, "RISC Zero receipt schema", layer="external_risc0_receipt")
