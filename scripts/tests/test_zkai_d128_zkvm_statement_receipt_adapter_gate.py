@@ -118,6 +118,32 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
         self.assertEqual(payload["backend_decision"]["first_blocker"], "MISSING_ZKVM_RECEIPT_ARTIFACT")
         self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER["MISSING_ZKVM_RECEIPT_ARTIFACT"])
 
+    def test_backend_blocker_prefers_route_with_receipt_artifact(self) -> None:
+        probe = self.fixture_probe()
+        for entry in probe["commands"].values():
+            entry["available"] = True
+            entry["returncode"] = 0
+            entry["stdout"] = f"{entry['command_id']} test-version"
+
+        original_routes = GATE.ZKVM_ROUTES
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            receipt_path = pathlib.Path(raw_tmp) / "receipt.json"
+            receipt_path.write_text("{}\n", encoding="utf-8")
+            missing_receipt = pathlib.Path(raw_tmp) / "missing-receipt.json"
+            patched_routes = (
+                {**original_routes[0], "receipt_artifact": receipt_path.relative_to(GATE.ROOT).as_posix()},
+                {**original_routes[1], "receipt_artifact": missing_receipt.relative_to(GATE.ROOT).as_posix()},
+            )
+            GATE.ZKVM_ROUTES = patched_routes
+            try:
+                payload = GATE.build_payload(probe=probe)
+                GATE.validate_payload(payload)
+            finally:
+                GATE.ZKVM_ROUTES = original_routes
+
+        self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.RECEIPT_VERIFICATION_BLOCKER)
+        self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER[GATE.RECEIPT_VERIFICATION_BLOCKER])
+
     def test_rejects_journal_relabeling(self) -> None:
         payload = self.payload()
         core = GATE._core_payload(payload)
