@@ -24,10 +24,10 @@ def fake_measurements() -> dict:
     public_payload_hash = GATE.sha256_bytes(GATE.canonical_json_bytes(GATE.load_json(GATE.SOURCE_PUBLIC)))
     return {
         "tool_versions": {
-            "snarkjs": "snarkjs@0.7.6",
-            "circom": "circom compiler 2.0.9",
-            "node": "v23.11.0",
-            "npm": "10.9.2",
+            "snarkjs": f"snarkjs@{GATE.SNARKJS_VERSION}",
+            "circom": f"circom compiler {GATE.CIRCOM_VERSION}",
+            "node": GATE.NODE_VERSION,
+            "npm": GATE.NPM_VERSION,
         },
         "setup_metadata": {
             "setup_time_ms_single_run": 1234.567,
@@ -116,6 +116,22 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
         self.assertTrue(cases["verifier_metric_smuggled"]["rejected"])
         self.assertEqual(cases["verifier_metric_smuggled"]["rejection_layer"], "timing_metrics")
 
+    def test_rejects_node_and_npm_version_relabeling(self) -> None:
+        payload = self.payload()
+        for field in ("node", "npm"):
+            with self.subTest(field=field):
+                core = GATE._core_payload(payload)
+                core["tool_versions"][field] = "tampered"
+                with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, f"{field} version mismatch") as err:
+                    GATE.validate_core_payload(core)
+                self.assertEqual(err.exception.layer, "external_proof_tooling")
+
+        cases = {case["mutation"]: case for case in payload["cases"]}
+        self.assertTrue(cases["node_version_relabeling"]["rejected"])
+        self.assertEqual(cases["node_version_relabeling"]["rejection_layer"], "external_proof_tooling")
+        self.assertTrue(cases["npm_version_relabeling"]["rejected"])
+        self.assertEqual(cases["npm_version_relabeling"]["rejection_layer"], "external_proof_tooling")
+
     def test_rejects_repro_command_relabeling(self) -> None:
         payload = self.payload()
         core = GATE._core_payload(payload)
@@ -142,11 +158,22 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
         tsv = GATE.to_tsv(self.payload())
         self.assertIn("proof_generation", tsv)
         self.assertIn("verification", tsv)
+        self.assertIn("setup", tsv)
         self.assertEqual(tsv.splitlines()[0].split("\t"), list(GATE.TSV_COLUMNS))
+        rows = {line.split("\t")[0]: line.split("\t") for line in tsv.splitlines()[1:]}
+        self.assertEqual(set(rows), {"setup", "proof_generation", "verification"})
+        self.assertEqual(rows["setup"][1], "1")
+        self.assertEqual(rows["setup"][2], "1234.567")
 
     def test_output_path_must_stay_under_evidence_dir(self) -> None:
         with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "output path must stay"):
             GATE.write_text_checked(ROOT / "outside.json", "{}\n")
+
+    def test_rejects_identical_output_paths(self) -> None:
+        same = pathlib.Path("docs/engineering/evidence/same-output")
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "outputs must be distinct") as err:
+            GATE.resolve_output_paths(same, same)
+        self.assertEqual(err.exception.layer, "output_path")
 
     def test_write_outputs_round_trip(self) -> None:
         payload = self.payload()

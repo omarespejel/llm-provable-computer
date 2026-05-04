@@ -24,13 +24,13 @@ Timing policy: `median_of_5_runs_from_perf_counter_ns_on_local_host`.
 
 | Metric | Result |
 |---|---:|
-| Setup time, single local throwaway run | `29336.175 ms` |
-| Proof-generation time, median of 5 | `314.067 ms` |
-| Proof-generation time, min / max | `307.084 ms` / `315.686 ms` |
-| Verifier time, median of 5 | `287.314 ms` |
-| Verifier time, min / max | `285.302 ms` / `305.300 ms` |
-| Generated proof size values | `804`, `805`, `806`, `807` bytes |
-| Generated verification-key size | `5856` bytes |
+| Setup time, single local throwaway run | `35485.173 ms` |
+| Proof-generation time, median of 5 | `364.647 ms` |
+| Proof-generation time, min / max | `360.215 ms` / `367.136 ms` |
+| Verifier time, median of 5 | `338.871 ms` |
+| Verifier time, min / max | `335.518 ms` / `348.519 ms` |
+| Generated proof size values | `802`, `804`, `805`, `806`, `808` bytes |
+| Generated verification-key size | `5855` bytes |
 | Source #428 proof size | `802` bytes |
 | Source #428 verification-key size | `5854` bytes |
 
@@ -61,11 +61,12 @@ under a pinned local toolchain.
 
 ## Mutation Coverage
 
-The gate rejects `17 / 17` timing/setup mutations, including:
+The gate rejects `19 / 19` timing/setup mutations, including:
 
 - source #428 receipt decision, claim-boundary, and metric relabeling;
 - setup-policy promotion to production;
 - proving-key checked-in relabeling;
+- pinned `node` and `npm` version relabeling;
 - timing-policy drift;
 - proof-generation and verifier median metric smuggling;
 - reproduction-command relabeling;
