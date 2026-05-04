@@ -622,7 +622,13 @@ def validate_payload(payload: Any) -> None:
     expect_equal(payload["case_count"], len(cases), "case count")
     expect_equal(len(cases), len(EXPECTED_MUTATION_INVENTORY), "case length")
     expected_cases = {case["mutation"]: case for case in mutation_cases(_core_payload(payload))}
-    by_name = {case.get("mutation"): case for case in cases}
+    validated_cases: list[dict[str, Any]] = []
+    for index, raw_case in enumerate(cases):
+        case = require_object(raw_case, f"case[{index}]", layer="mutation_suite")
+        if not isinstance(case.get("mutation"), str):
+            raise D128SnarkTimingSetupError(f"case[{index}] mutation must be a string", layer="mutation_suite")
+        validated_cases.append(case)
+    by_name = {case["mutation"]: case for case in validated_cases}
     expect_equal(set(by_name), EXPECTED_MUTATION_SET, "case mutation set")
     for mutation, surface in EXPECTED_MUTATION_INVENTORY:
         case = by_name[mutation]

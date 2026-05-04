@@ -58,11 +58,14 @@ then hardens that route with median-of-5 timing under a local throwaway setup:
 `snarkjs@0.7.6`, `circom 2.0.9`, `node v23.11.0`, and `npm 10.9.2`; evidence
 is
 `docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json`;
-reproduce with `python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py
---write-json
-docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json
---write-tsv
-docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv`.
+reproduce with:
+
+```bash
+python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py \
+  --write-json docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv
+```
+
 The local nested-verifier route, local PCD/IVC route, and external zkVM route
 remain missing.
 

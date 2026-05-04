@@ -172,6 +172,15 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "mutation_suite")
 
+    def test_rejects_non_object_mutation_cases(self) -> None:
+        payload = self.payload()
+        payload["cases"][0] = "not-an-object"
+
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "case\\[0\\] must be an object") as err:
+            GATE.validate_payload(payload)
+
+        self.assertEqual(err.exception.layer, "mutation_suite")
+
     def test_tsv_contains_timing_rows(self) -> None:
         tsv = GATE.to_tsv(self.payload())
         self.assertIn("proof_generation", tsv)
