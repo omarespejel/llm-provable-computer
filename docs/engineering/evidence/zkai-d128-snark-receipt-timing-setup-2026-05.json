@@ -1,0 +1,298 @@
+{
+  "all_mutations_rejected": true,
+  "artifact_binding": {
+    "generated_proof_file_sha256_values": [
+      "4a23a3203a3f842d33ea1e9fece810f557478ff81745344c7146d593ffabb3a8",
+      "504f805801e7598cdc7b8cb95fa5987e820275347c4ac7b61e24529152d43bd8",
+      "b103dfd9a1527c6895a3cece176eaf32c6b1921ed7e0f1802d6fa5a398c1cc3e",
+      "cb07a413a8a9f55ec2584a263316d39546ed2edeb3cb90587e0536f39b185abd",
+      "fe8d47379711a3d010bacdb24b9aa02f0ace223b7759eb7d051693351e94ed34"
+    ],
+    "generated_proof_size_bytes_values": [
+      803,
+      804,
+      805
+    ],
+    "generated_public_file_sha256_values": [
+      "9ee74a372fb7c1958994e91e87365d7fc4c717badbfaa29722af5a7b3c204387"
+    ],
+    "generated_verification_key_file_sha256": "4af753e0a31ed7d3b3d7e03aca5acc4010288dffcda8496c795ba4c91b958ce0",
+    "source_proof_bytes": 802,
+    "source_public_payload_sha256": "b0fcc66a9b7f3a166d6b121a9de8e0223a87d8bce42ebd7c96a1dd0a8ff0c1c9",
+    "source_public_sha256": "9ee74a372fb7c1958994e91e87365d7fc4c717badbfaa29722af5a7b3c204387",
+    "source_verification_key_bytes": 5854
+  },
+  "case_count": 15,
+  "cases": [
+    {
+      "error": "source receipt mismatch",
+      "mutation": "source_receipt_decision_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_receipt",
+      "surface": "source_receipt"
+    },
+    {
+      "error": "source receipt mismatch",
+      "mutation": "source_receipt_claim_boundary_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_receipt",
+      "surface": "source_receipt"
+    },
+    {
+      "error": "source receipt mismatch",
+      "mutation": "source_receipt_metric_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_receipt",
+      "surface": "source_receipt"
+    },
+    {
+      "error": "setup policy mismatch",
+      "mutation": "setup_policy_promoted_to_production",
+      "rejected": true,
+      "rejection_layer": "setup_policy",
+      "surface": "setup_policy"
+    },
+    {
+      "error": "setup policy mismatch",
+      "mutation": "setup_policy_proving_key_checked_in_relabeling",
+      "rejected": true,
+      "rejection_layer": "setup_policy",
+      "surface": "setup_policy"
+    },
+    {
+      "error": "timing policy mismatch",
+      "mutation": "timing_policy_relabeling",
+      "rejected": true,
+      "rejection_layer": "timing_metrics",
+      "surface": "timing_metrics"
+    },
+    {
+      "error": "proof generation median mismatch",
+      "mutation": "proof_generation_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "timing_metrics",
+      "surface": "timing_metrics"
+    },
+    {
+      "error": "verifier median mismatch",
+      "mutation": "verifier_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "timing_metrics",
+      "surface": "timing_metrics"
+    },
+    {
+      "error": "source public file hash mismatch",
+      "mutation": "public_signal_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "error": "generated public hashes mismatch",
+      "mutation": "generated_public_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "error": "generated verification key hash mismatch",
+      "mutation": "generated_vk_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "error": "proof size values mismatch",
+      "mutation": "proof_size_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "non_claims_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "validation commands mismatch",
+      "mutation": "validation_command_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "payload keys mismatch: missing=[] extra=['unknown']",
+      "mutation": "unknown_top_level_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "SNARK_STATEMENT_RECEIPT_TIMED_UNDER_LOCAL_THROWAWAY_SETUP_NOT_RECURSION",
+  "decision": "GO_D128_SNARK_RECEIPT_TIMING_AND_THROWAWAY_SETUP_REGENERATION",
+  "issue": 430,
+  "mutation_inventory": [
+    {
+      "mutation": "source_receipt_decision_relabeling",
+      "surface": "source_receipt"
+    },
+    {
+      "mutation": "source_receipt_claim_boundary_relabeling",
+      "surface": "source_receipt"
+    },
+    {
+      "mutation": "source_receipt_metric_relabeling",
+      "surface": "source_receipt"
+    },
+    {
+      "mutation": "setup_policy_promoted_to_production",
+      "surface": "setup_policy"
+    },
+    {
+      "mutation": "setup_policy_proving_key_checked_in_relabeling",
+      "surface": "setup_policy"
+    },
+    {
+      "mutation": "timing_policy_relabeling",
+      "surface": "timing_metrics"
+    },
+    {
+      "mutation": "proof_generation_metric_smuggled",
+      "surface": "timing_metrics"
+    },
+    {
+      "mutation": "verifier_metric_smuggled",
+      "surface": "timing_metrics"
+    },
+    {
+      "mutation": "public_signal_hash_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
+      "mutation": "generated_public_hash_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
+      "mutation": "generated_vk_hash_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
+      "mutation": "proof_size_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
+      "mutation": "non_claims_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_top_level_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not recursive aggregation",
+    "not proof-carrying data",
+    "not STARK-in-SNARK verification",
+    "not verification of the underlying Stwo slice proofs inside Groth16",
+    "not a production trusted setup",
+    "not an onchain verifier benchmark",
+    "not a public zkML throughput benchmark",
+    "not a claim that Groth16 is the preferred production backend"
+  ],
+  "repro": {
+    "command": "python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv",
+    "git_commit": "3e41617dbaf7966f5eba89bd5a35d53759f40f9c"
+  },
+  "result": "GO",
+  "schema": "zkai-d128-snark-receipt-timing-setup-gate-v1",
+  "setup_metadata": {
+    "r1cs_sha256": "ed38698234ee8fe3eec2b2128037d2fc0e09cecff5d5703f97f7b70ba89974bf",
+    "setup_time_ms_single_run": 29978.661,
+    "verification_key_bytes": 5849,
+    "verification_key_file_sha256": "4af753e0a31ed7d3b3d7e03aca5acc4010288dffcda8496c795ba4c91b958ce0",
+    "verification_key_sha256": "746cd75c4563857c6c94d6864806dc26fc27a95774f800134b73f2b35228baf7",
+    "wasm_sha256": "e61537316ac402db2882753643b39aa6d11772ba83b0e6feaba4b4a628345bbe"
+  },
+  "setup_policy": {
+    "powers_of_tau_curve": "bn128",
+    "powers_of_tau_entropy_label": "ptvm timing smoke entropy",
+    "powers_of_tau_power": 12,
+    "production_trusted_setup": false,
+    "proving_key_checked_in": false,
+    "setup_artifact_scope": "temporary_directory_deleted_after_gate",
+    "setup_artifacts_checked_in": false,
+    "setup_class": "local_throwaway_groth16_setup_for_statement_receipt_timing_only",
+    "zkey_entropy_label": "ptvm timing zkey entropy"
+  },
+  "source_contract_issue": 424,
+  "source_issue": 428,
+  "source_receipt": {
+    "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_PUBLIC_INPUT_CONTRACT_NOT_RECURSION",
+    "decision": "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+    "issue": 428,
+    "proof_sha256": "d34136fdc1c83196ab5ac54a369dada129229d7e471efaa0ad8c2dc31920980a",
+    "proof_size_bytes": 802,
+    "public_signal_count": 17,
+    "public_signals_sha256": "b0fcc66a9b7f3a166d6b121a9de8e0223a87d8bce42ebd7c96a1dd0a8ff0c1c9",
+    "receipt_commitment": "blake2b-256:1b76f9a151bcc628e0a205a4a978b5626f4621634098ba7b7982c720dccc7f50",
+    "result": "GO",
+    "schema": "zkai-d128-snark-ivc-statement-receipt-gate-v1",
+    "source_file_sha256": "ee6e07138c6cb076da54902ffdb63bff4577d59a9771b63e374bfa723f5dc0c2",
+    "source_issue": 424,
+    "source_payload_sha256": "a8640f1a25365faaaf2c423472bdb2c1a561a1bc273f1363bd78085d6eea8aeb",
+    "statement_commitment": "blake2b-256:2f126211db4d43932027ca4ee1bb74beaa1a559ae71d1ac909f0b73fc3d2bf01",
+    "verification_key_sha256": "67b87643c69350e1fbb36ee2770b5aa2f8497b31d8956854024c0e1e571d85fd"
+  },
+  "summary": "The d128 #428 SNARK statement receipt can be regenerated under a local throwaway Groth16 setup, proved, and verified with median-of-5 timing evidence. The setup remains explicitly non-production.",
+  "timing_metrics": {
+    "proof_generation_time_ms_max": 364.744,
+    "proof_generation_time_ms_median": 349.647,
+    "proof_generation_time_ms_min": 345.26,
+    "proof_generation_time_ms_samples": [
+      349.647,
+      345.26,
+      350.587,
+      346.23,
+      364.744
+    ],
+    "proof_size_bytes_values": [
+      803,
+      804,
+      805
+    ],
+    "sample_count": 5,
+    "setup_time_ms_single_run": 29978.661,
+    "timing_policy": "median_of_5_runs_from_perf_counter_ns_on_local_host",
+    "verification_key_bytes": 5849,
+    "verifier_time_ms_max": 292.157,
+    "verifier_time_ms_median": 290.702,
+    "verifier_time_ms_min": 281.518,
+    "verifier_time_ms_samples": [
+      292.157,
+      284.899,
+      281.518,
+      290.702,
+      291.591
+    ]
+  },
+  "tool_versions": {
+    "circom": "circom compiler 2.0.9",
+    "snarkjs": "snarkjs@0.7.6"
+  },
+  "validation_commands": [
+    "npm ci --prefix scripts",
+    "python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_snark_receipt_timing_setup_gate",
+    "python3 -m py_compile scripts/zkai_d128_snark_receipt_timing_setup_gate.py scripts/tests/test_zkai_d128_snark_receipt_timing_setup_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

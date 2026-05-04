@@ -24,7 +24,8 @@
   },
   "backend_probe": {
     "artifact_candidates": [
-      "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json"
+      "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
+      "docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json"
     ],
     "cargo_lock_sha256": "da41355ce93176f7938280a8d9fbaf164effae91453455232912f0e46a0fcfb5",
     "cargo_toml_sha256": "9ca9a9f3e1be5352d38e237a8d54fdc895a91705a55982ea1f27459b01281d74",
