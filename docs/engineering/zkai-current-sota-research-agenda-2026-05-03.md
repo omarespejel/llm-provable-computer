@@ -53,8 +53,18 @@ receipt exists for the `#424` public-input contract, with an `802` byte proof
 and `29 / 29` relabeling / metric-smuggling mutations rejected. Issue `#430`
 then hardens that route with median-of-5 timing under a local throwaway setup:
 `364.647 ms` proof generation and `338.871 ms` verification, while rejecting
-`19 / 19` timing/setup/binding mutations. The local nested-verifier route,
-local PCD/IVC route, and external zkVM route remain missing.
+`19 / 19` timing/setup/binding mutations. Timing mode is
+`median_of_5_runs_from_perf_counter_ns_on_local_host`; tools are
+`snarkjs@0.7.6`, `circom 2.0.9`, `node v23.11.0`, and `npm 10.9.2`; evidence
+is
+`docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json`;
+reproduce with `python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py
+--write-json
+docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json
+--write-tsv
+docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv`.
+The local nested-verifier route, local PCD/IVC route, and external zkVM route
+remain missing.
 
 ## What Would Be a Real Next Breakthrough
 

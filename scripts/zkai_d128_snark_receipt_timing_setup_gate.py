@@ -620,13 +620,14 @@ def validate_payload(payload: Any) -> None:
     cases = require_list(payload["cases"], "cases")
     expect_equal(payload["case_count"], len(cases), "case count")
     expect_equal(len(cases), len(EXPECTED_MUTATION_INVENTORY), "case length")
+    expected_cases = {case["mutation"]: case for case in mutation_cases(_core_payload(payload))}
     by_name = {case.get("mutation"): case for case in cases}
     expect_equal(set(by_name), EXPECTED_MUTATION_SET, "case mutation set")
     for mutation, surface in EXPECTED_MUTATION_INVENTORY:
         case = by_name[mutation]
-        expect_equal(case.get("surface"), surface, f"surface {mutation}")
-        if case.get("rejected") is not True:
-            raise D128SnarkTimingSetupError(f"mutation accepted: {mutation}", layer="mutation_suite")
+        expect_keys(case, {"mutation", "surface", "rejected", "rejection_layer", "error"}, f"case {mutation}", layer="mutation_suite")
+        expect_equal(case.get("surface"), surface, f"surface {mutation}", layer="mutation_suite")
+        expect_equal(case, expected_cases[mutation], f"case {mutation}", layer="mutation_suite")
     if payload["all_mutations_rejected"] is not True:
         raise D128SnarkTimingSetupError("not all mutations rejected", layer="mutation_suite")
 
