@@ -175,6 +175,11 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
             GATE.resolve_output_paths(same, same)
         self.assertEqual(err.exception.layer, "output_path")
 
+    def test_rejects_output_directory_paths(self) -> None:
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "not a directory") as err:
+            GATE.resolve_output_path(GATE.EVIDENCE_DIR)
+        self.assertEqual(err.exception.layer, "output_path")
+
     def test_write_outputs_round_trip(self) -> None:
         payload = self.payload()
         with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:

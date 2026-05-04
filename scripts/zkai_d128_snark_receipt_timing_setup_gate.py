@@ -671,7 +671,10 @@ def write_text_checked(path: pathlib.Path, text: str) -> None:
 def resolve_output_path(path: pathlib.Path | None) -> pathlib.Path | None:
     if path is None:
         return None
-    return (ROOT / path).resolve() if not path.is_absolute() else path.resolve()
+    resolved = (ROOT / path).resolve() if not path.is_absolute() else path.resolve()
+    if resolved.exists() and resolved.is_dir():
+        raise D128SnarkTimingSetupError("output path must be a file, not a directory", layer="output_path")
+    return resolved
 
 
 def resolve_output_paths(json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> tuple[pathlib.Path | None, pathlib.Path | None]:
