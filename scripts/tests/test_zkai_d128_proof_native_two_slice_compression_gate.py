@@ -131,11 +131,11 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
         expected_layers = {
             "source_accumulator_commitment_drift": "source_accumulator",
             "compressed_artifact_commitment_drift": "compressed_artifact",
-            "compressed_public_target_commitment_drift": "compressed_artifact",
-            "compressed_selected_source_hash_drift": "compressed_artifact",
-            "compressed_verifier_domain_drift": "compressed_artifact",
-            "compressed_backend_version_drift": "compressed_artifact",
-            "compressed_slice_removed": "compressed_artifact",
+            "compressed_public_target_commitment_drift": "compressed_public_inputs",
+            "compressed_selected_source_hash_drift": "compressed_public_inputs",
+            "compressed_verifier_domain_drift": "compressed_public_inputs",
+            "compressed_backend_version_drift": "compressed_public_inputs",
+            "compressed_slice_removed": "compressed_transcript",
             "compression_ratio_relabeling": "compression_metrics",
             "verifier_handle_artifact_commitment_drift": "verifier_handle",
             "recursive_outer_proof_claimed": "recursive_or_pcd_status",
@@ -146,7 +146,7 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
             with self.subTest(mutation=mutation):
                 self.assertTrue(cases[mutation]["rejected"])
                 self.assertEqual(cases[mutation]["rejection_layer"], layer)
-                self.assertEqual(cases[mutation]["error_code"], layer)
+                self.assertEqual(cases[mutation]["error_code"], mutation)
 
     def test_rejects_target_statement_and_source_relabeling(self) -> None:
         mutations = [
