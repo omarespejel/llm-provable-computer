@@ -56,6 +56,8 @@ TIMING_POLICY = "median_of_5_runs_from_perf_counter_ns_on_local_host"
 PROOF_SYSTEM = "snarkjs/Groth16/BN128"
 SNARKJS_VERSION = "0.7.6"
 CIRCOM_VERSION = "2.0.9"
+NODE_VERSION = "v23.11.0"
+NPM_VERSION = "10.9.2"
 POT_POWER = 12
 SAMPLE_COUNT = 5
 SNARKJS = ROOT / "scripts" / "node_modules" / ".bin" / "snarkjs"
@@ -112,6 +114,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("source_receipt_metric_relabeling", "source_receipt"),
     ("setup_policy_promoted_to_production", "setup_policy"),
     ("setup_policy_proving_key_checked_in_relabeling", "setup_policy"),
+    ("node_version_relabeling", "external_proof_tooling"),
+    ("npm_version_relabeling", "external_proof_tooling"),
     ("timing_policy_relabeling", "timing_metrics"),
     ("proof_generation_metric_smuggled", "timing_metrics"),
     ("verifier_metric_smuggled", "timing_metrics"),
@@ -305,11 +309,17 @@ def tool_versions() -> dict[str, str]:
     circom_output = ANSI_ESCAPE_RE.sub("", run_command(["circom", "--version"], timeout_s=10).stdout.strip())
     if f"circom compiler {CIRCOM_VERSION}" not in circom_output and CIRCOM_VERSION not in circom_output.split():
         raise D128SnarkTimingSetupError("circom version mismatch", layer="external_proof_tooling")
+    node_output = run_command(["node", "--version"], timeout_s=10).stdout.strip()
+    if node_output != NODE_VERSION:
+        raise D128SnarkTimingSetupError("node version mismatch", layer="external_proof_tooling")
+    npm_output = run_command(["npm", "--version"], timeout_s=10).stdout.strip()
+    if npm_output != NPM_VERSION:
+        raise D128SnarkTimingSetupError("npm version mismatch", layer="external_proof_tooling")
     return {
         "snarkjs": f"snarkjs@{SNARKJS_VERSION}",
         "circom": f"circom compiler {CIRCOM_VERSION}",
-        "node": run_command(["node", "--version"], timeout_s=10).stdout.strip(),
-        "npm": run_command(["npm", "--version"], timeout_s=10).stdout.strip(),
+        "node": NODE_VERSION,
+        "npm": NPM_VERSION,
     }
 
 
@@ -404,11 +414,11 @@ def run_external_measurements() -> dict[str, Any]:
                 "source_proof_bytes": SOURCE_PROOF.stat().st_size,
                 "source_verification_key_bytes": SOURCE_VK.stat().st_size,
                 "generated_public_payload_sha256_values": sorted(set(generated_public_hashes)),
-            "generated_proof_file_sha256_values": sorted(set(generated_proof_hashes)),
-            "generated_proof_size_bytes_values": sorted(set(proof_sizes)),
-            "generated_verification_key_file_sha256": setup_metadata["verification_key_file_sha256"],
-        },
-    }
+                "generated_proof_file_sha256_values": sorted(set(generated_proof_hashes)),
+                "generated_proof_size_bytes_values": sorted(set(proof_sizes)),
+                "generated_verification_key_file_sha256": setup_metadata["verification_key_file_sha256"],
+            },
+        }
 
 
 def timing_metrics(measurements: dict[str, Any]) -> dict[str, Any]:
@@ -490,6 +500,8 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         add("source_receipt_metric_relabeling", "source_receipt", lambda p: p["source_receipt"].__setitem__("proof_size_bytes", 1)),
         add("setup_policy_promoted_to_production", "setup_policy", lambda p: p["setup_policy"].__setitem__("production_trusted_setup", True)),
         add("setup_policy_proving_key_checked_in_relabeling", "setup_policy", lambda p: p["setup_policy"].__setitem__("proving_key_checked_in", True)),
+        add("node_version_relabeling", "external_proof_tooling", lambda p: p["tool_versions"].__setitem__("node", "v0.0.0")),
+        add("npm_version_relabeling", "external_proof_tooling", lambda p: p["tool_versions"].__setitem__("npm", "0.0.0")),
         add("timing_policy_relabeling", "timing_metrics", lambda p: p["timing_metrics"].__setitem__("timing_policy", "single_run")),
         add("proof_generation_metric_smuggled", "timing_metrics", lambda p: p["timing_metrics"].__setitem__("proof_generation_time_ms_median", 0.001)),
         add("verifier_metric_smuggled", "timing_metrics", lambda p: p["timing_metrics"].__setitem__("verifier_time_ms_median", 0.001)),
@@ -526,9 +538,8 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     tool_versions_value = require_object(payload["tool_versions"], "tool versions", layer="external_proof_tooling")
     expect_equal(tool_versions_value.get("snarkjs"), f"snarkjs@{SNARKJS_VERSION}", "snarkjs version", layer="external_proof_tooling")
     expect_equal(tool_versions_value.get("circom"), f"circom compiler {CIRCOM_VERSION}", "circom version", layer="external_proof_tooling")
-    for field in ("node", "npm"):
-        if not isinstance(tool_versions_value.get(field), str) or not tool_versions_value[field]:
-            raise D128SnarkTimingSetupError(f"{field} version missing", layer="external_proof_tooling")
+    expect_equal(tool_versions_value.get("node"), NODE_VERSION, "node version", layer="external_proof_tooling")
+    expect_equal(tool_versions_value.get("npm"), NPM_VERSION, "npm version", layer="external_proof_tooling")
     metrics = require_object(payload["timing_metrics"], "timing metrics", layer="timing_metrics")
     expect_equal(metrics.get("timing_policy"), TIMING_POLICY, "timing policy", layer="timing_metrics")
     expect_equal(metrics.get("sample_count"), SAMPLE_COUNT, "sample count", layer="timing_metrics")
@@ -625,6 +636,7 @@ def to_tsv(payload: dict[str, Any]) -> str:
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
     rows = {
+        "setup": [payload["timing_metrics"]["setup_time_ms_single_run"]],
         "proof_generation": payload["timing_metrics"]["proof_generation_time_ms_samples"],
         "verification": payload["timing_metrics"]["verifier_time_ms_samples"],
     }
@@ -656,6 +668,20 @@ def write_text_checked(path: pathlib.Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+def resolve_output_path(path: pathlib.Path | None) -> pathlib.Path | None:
+    if path is None:
+        return None
+    return (ROOT / path).resolve() if not path.is_absolute() else path.resolve()
+
+
+def resolve_output_paths(json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> tuple[pathlib.Path | None, pathlib.Path | None]:
+    resolved_json = resolve_output_path(json_path)
+    resolved_tsv = resolve_output_path(tsv_path)
+    if resolved_json is not None and resolved_tsv is not None and resolved_json == resolved_tsv:
+        raise D128SnarkTimingSetupError("JSON and TSV outputs must be distinct", layer="output_path")
+    return resolved_json, resolved_tsv
+
+
 def _git_commit() -> str:
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -675,12 +701,13 @@ def main() -> int:
     payload = build_payload()
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)
-    if args.write_json:
-        write_text_checked((ROOT / args.write_json).resolve() if not args.write_json.is_absolute() else args.write_json, json_text)
+    json_path, tsv_path = resolve_output_paths(args.write_json, args.write_tsv)
+    if json_path is not None:
+        write_text_checked(json_path, json_text)
     else:
         print(json_text, end="")
-    if args.write_tsv:
-        write_text_checked((ROOT / args.write_tsv).resolve() if not args.write_tsv.is_absolute() else args.write_tsv, tsv_text)
+    if tsv_path is not None:
+        write_text_checked(tsv_path, tsv_text)
     return 0
 
 

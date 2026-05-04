@@ -124,8 +124,8 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
     def test_snark_timing_artifact_is_allowed_without_promoting_new_route(self) -> None:
         probe = GATE.backend_probe()
         timing_artifact = "docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json"
-        if GATE.SNARK_RECEIPT_TIMING_EVIDENCE.exists():
-            self.assertIn(timing_artifact, probe["artifact_candidates"])
+        self.assertTrue(GATE.SNARK_RECEIPT_TIMING_EVIDENCE.exists())
+        self.assertIn(timing_artifact, probe["artifact_candidates"])
 
         routes = GATE.backend_routes(probe)
         route_ids = [route["route_id"] for route in routes]

@@ -205,9 +205,9 @@ Tablero boundary.
 - The d128 SNARK receipt timing/setup gate now answers issue `#430` as a
   narrow timing-hardening GO: the #428 statement-receipt circuit can be
   regenerated under a local throwaway Groth16 setup, proved five times, and
-  verified five times. The checked medians are `314.067 ms` proof generation
-  and `287.314 ms` verification, with a `29336.175 ms` single local setup run;
-  it rejects `17 / 17` timing/setup/binding mutations. This is not a
+  verified five times. The checked medians are `364.647 ms` proof generation
+  and `338.871 ms` verification, with a `35485.173 ms` single local setup run;
+  it rejects `19 / 19` timing/setup/binding mutations. This is not a
   production trusted setup, not recursion, and not a public zkML benchmark; see
   `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`.
 - The d128 full-block accumulator backend gate now builds a real

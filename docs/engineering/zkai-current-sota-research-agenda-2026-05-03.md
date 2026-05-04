@@ -52,8 +52,8 @@ the available backend routes and recorded the missing-backend boundary. Issue
 receipt exists for the `#424` public-input contract, with an `802` byte proof
 and `29 / 29` relabeling / metric-smuggling mutations rejected. Issue `#430`
 then hardens that route with median-of-5 timing under a local throwaway setup:
-`314.067 ms` proof generation and `287.314 ms` verification, while rejecting
-`17 / 17` timing/setup/binding mutations. The local nested-verifier route,
+`364.647 ms` proof generation and `338.871 ms` verification, while rejecting
+`19 / 19` timing/setup/binding mutations. The local nested-verifier route,
 local PCD/IVC route, and external zkVM route remain missing.
 
 ## What Would Be a Real Next Breakthrough

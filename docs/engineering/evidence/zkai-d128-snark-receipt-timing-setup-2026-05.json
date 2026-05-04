@@ -2,28 +2,29 @@
   "all_mutations_rejected": true,
   "artifact_binding": {
     "generated_proof_file_sha256_values": [
-      "521ed8f12000e96cd8b589a91ad4ef12c4ea16e56aacb97fa692d528726beb51",
-      "6a23b4a62d0f1cf47e134dba22720b20ef78e23e076ea3c16f12d5350c3bd177",
-      "8867b346c66da3590d21959e9f22364664676fde1324f7bcc1ef55e145973670",
-      "a7b077fc8262de3f1f89cb6628e581a68c66d60931ca38d879d4dbcd6baecad2",
-      "c485901b8df7968d58a6b864596512257cc39048a096f4f49dad79715f79413c"
+      "03e87946ec645dfed70e345b74d23067408517d9d2328e1c444917b1c7909517",
+      "08d72165aebf44ebfc01e0001951e401ed8c7aba9047ba7f35a57d1d5ef0b204",
+      "271ce4d56fc62c41c3de683b56cc795ac65efdc6c244393d00768e02f8084ec7",
+      "3d42effd5c8af2bebc17504f618b21a17e3fcbb540dfec64fd2b0afc65628f39",
+      "f8d8415e89371dae20b8f133304ddc8674d221cb7955d5ec307c7e11c613fc3e"
     ],
     "generated_proof_size_bytes_values": [
+      802,
       804,
       805,
       806,
-      807
+      808
     ],
     "generated_public_payload_sha256_values": [
       "b0fcc66a9b7f3a166d6b121a9de8e0223a87d8bce42ebd7c96a1dd0a8ff0c1c9"
     ],
-    "generated_verification_key_file_sha256": "fc7366bf9756724154650f67caae81ee29faf42b70992679da800dc324c37e03",
+    "generated_verification_key_file_sha256": "cbaa71d15ff91d6a1bede779e15dbb114d73b0576fbe8b90dccb4c6a148180fc",
     "source_proof_bytes": 802,
     "source_public_payload_sha256": "b0fcc66a9b7f3a166d6b121a9de8e0223a87d8bce42ebd7c96a1dd0a8ff0c1c9",
     "source_public_sha256": "9ee74a372fb7c1958994e91e87365d7fc4c717badbfaa29722af5a7b3c204387",
     "source_verification_key_bytes": 5854
   },
-  "case_count": 17,
+  "case_count": 19,
   "cases": [
     {
       "error": "source receipt mismatch",
@@ -59,6 +60,20 @@
       "rejected": true,
       "rejection_layer": "setup_policy",
       "surface": "setup_policy"
+    },
+    {
+      "error": "node version mismatch",
+      "mutation": "node_version_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_tooling",
+      "surface": "external_proof_tooling"
+    },
+    {
+      "error": "npm version mismatch",
+      "mutation": "npm_version_relabeling",
+      "rejected": true,
+      "rejection_layer": "external_proof_tooling",
+      "surface": "external_proof_tooling"
     },
     {
       "error": "timing policy mismatch",
@@ -170,6 +185,14 @@
       "surface": "setup_policy"
     },
     {
+      "mutation": "node_version_relabeling",
+      "surface": "external_proof_tooling"
+    },
+    {
+      "mutation": "npm_version_relabeling",
+      "surface": "external_proof_tooling"
+    },
+    {
       "mutation": "timing_policy_relabeling",
       "surface": "timing_metrics"
     },
@@ -230,16 +253,16 @@
   ],
   "repro": {
     "command": "python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py --write-json docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv",
-    "git_commit": "73e07c3b272b2b3009177396f982229203b958c9"
+    "git_commit": "590e04c09d2caacc46b46858ae5c607311eb79fe"
   },
   "result": "GO",
   "schema": "zkai-d128-snark-receipt-timing-setup-gate-v1",
   "setup_metadata": {
     "r1cs_sha256": "ed38698234ee8fe3eec2b2128037d2fc0e09cecff5d5703f97f7b70ba89974bf",
-    "setup_time_ms_single_run": 29336.175,
-    "verification_key_bytes": 5856,
-    "verification_key_file_sha256": "fc7366bf9756724154650f67caae81ee29faf42b70992679da800dc324c37e03",
-    "verification_key_sha256": "3bbd6be2d1cf3de15429a82e23f733a3dd22a6d645eb394083a9cbe38d5f6ac9",
+    "setup_time_ms_single_run": 35485.173,
+    "verification_key_bytes": 5855,
+    "verification_key_file_sha256": "cbaa71d15ff91d6a1bede779e15dbb114d73b0576fbe8b90dccb4c6a148180fc",
+    "verification_key_sha256": "f7e163f233ca260ef72c57c07fa9ef9e9922251bfae914fa7b4d746472abe0d5",
     "wasm_sha256": "e61537316ac402db2882753643b39aa6d11772ba83b0e6feaba4b4a628345bbe"
   },
   "setup_policy": {
@@ -275,35 +298,36 @@
   },
   "summary": "The d128 #428 SNARK statement receipt can be regenerated under a local throwaway Groth16 setup, proved, and verified with median-of-5 timing evidence. The setup remains explicitly non-production.",
   "timing_metrics": {
-    "proof_generation_time_ms_max": 315.686,
-    "proof_generation_time_ms_median": 314.067,
-    "proof_generation_time_ms_min": 307.084,
+    "proof_generation_time_ms_max": 367.136,
+    "proof_generation_time_ms_median": 364.647,
+    "proof_generation_time_ms_min": 360.215,
     "proof_generation_time_ms_samples": [
-      313.036,
-      307.084,
-      314.067,
-      314.689,
-      315.686
+      366.466,
+      364.647,
+      364.002,
+      360.215,
+      367.136
     ],
     "proof_size_bytes_values": [
+      802,
       804,
       805,
       806,
-      807
+      808
     ],
     "sample_count": 5,
-    "setup_time_ms_single_run": 29336.175,
+    "setup_time_ms_single_run": 35485.173,
     "timing_policy": "median_of_5_runs_from_perf_counter_ns_on_local_host",
-    "verification_key_bytes": 5856,
-    "verifier_time_ms_max": 305.3,
-    "verifier_time_ms_median": 287.314,
-    "verifier_time_ms_min": 285.302,
+    "verification_key_bytes": 5855,
+    "verifier_time_ms_max": 348.519,
+    "verifier_time_ms_median": 338.871,
+    "verifier_time_ms_min": 335.518,
     "verifier_time_ms_samples": [
-      305.3,
-      285.441,
-      287.314,
-      285.302,
-      288.248
+      344.87,
+      348.519,
+      335.744,
+      338.871,
+      335.518
     ]
   },
   "tool_versions": {
