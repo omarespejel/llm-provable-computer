@@ -53,6 +53,7 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
         self.assertEqual(payload["decision"], GATE.DECISION)
         self.assertEqual(payload["result"], "NO_GO")
         self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.FIRST_BLOCKER)
+        self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER[GATE.FIRST_BLOCKER])
         self.assertEqual(payload["backend_decision"]["usable_route_ids"], [])
         self.assertFalse(payload["backend_decision"]["proof_metrics"]["metrics_enabled"])
         self.assertTrue(payload["all_mutations_rejected"])
@@ -104,6 +105,18 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
             self.assertFalse(route["usable_today"])
             self.assertEqual(route["status"], "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED")
             self.assertEqual(route["first_blocker"], "missing_receipt_verification_and_public_values_binding")
+
+    def test_backend_blocker_prefers_toolchain_ready_route(self) -> None:
+        probe = self.fixture_probe()
+        for command_id in ("sp1up", "cargo-prove"):
+            probe["commands"][command_id]["available"] = True
+            probe["commands"][command_id]["returncode"] = 0
+            probe["commands"][command_id]["stdout"] = f"{command_id} test-version"
+
+        payload = GATE.build_payload(probe=probe)
+        GATE.validate_payload(payload)
+        self.assertEqual(payload["backend_decision"]["first_blocker"], "MISSING_ZKVM_RECEIPT_ARTIFACT")
+        self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER["MISSING_ZKVM_RECEIPT_ARTIFACT"])
 
     def test_rejects_journal_relabeling(self) -> None:
         payload = self.payload()
