@@ -5,6 +5,7 @@
       "risc0_zkvm_statement_receipt",
       "sp1_zkvm_statement_receipt"
     ],
+    "claim_boundary": "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING",
     "decision": "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING",
     "first_blocker": "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
     "go_criterion": "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, and its public journal/public-values bind the #424 d128 two-slice public-input contract",
@@ -364,7 +365,14 @@
       },
       "public_statement_surface": "receipt journal plus image id",
       "receipt_artifact": "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
+      "receipt_artifact_candidate_valid": false,
       "receipt_artifact_exists": false,
+      "receipt_artifact_probe": {
+        "candidate_valid": false,
+        "exists": false,
+        "reason": "missing_receipt_artifact",
+        "size_bytes": null
+      },
       "required_commands": [
         "rzup",
         "cargo-risczero"
@@ -387,7 +395,14 @@
       },
       "public_statement_surface": "public values plus verifying key/program metadata",
       "receipt_artifact": "docs/engineering/evidence/zkai-d128-sp1-statement-receipt-2026-05.json",
+      "receipt_artifact_candidate_valid": false,
       "receipt_artifact_exists": false,
+      "receipt_artifact_probe": {
+        "candidate_valid": false,
+        "exists": false,
+        "reason": "missing_receipt_artifact",
+        "size_bytes": null
+      },
       "required_commands": [
         "sp1up",
         "cargo-prove"
