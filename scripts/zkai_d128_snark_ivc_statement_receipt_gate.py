@@ -16,6 +16,7 @@ import copy
 import csv
 import functools
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -31,6 +32,7 @@ from typing import Any
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 SOURCE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
+SOURCE_GATE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compression_gate.py"
 ARTIFACT_DIR = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.tsv"
@@ -51,10 +53,23 @@ SOURCE_RECURSIVE_RESULT = "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING"
 SNARKJS_VERSION = "0.7.6"
 PROOF_SYSTEM = "snarkjs/Groth16/BN128"
 VERIFIER_DOMAIN = f"snarkjs-groth16-verify-v{SNARKJS_VERSION}:d128-two-slice-statement-receipt-v1"
-SNARKJS_COMMAND = ("npx", "-y", f"snarkjs@{SNARKJS_VERSION}")
+SNARKJS_BINARY = ROOT / "scripts" / "node_modules" / ".bin" / "snarkjs"
+SNARKJS_ENV = "SNARKJS_PATH"
 PUBLIC_FIELD_DOMAIN = "ptvm:zkai:d128:snark-public-field:v1"
 STATEMENT_DOMAIN = "ptvm:zkai:d128:snark-statement-receipt:v1"
 RECEIPT_DOMAIN = "ptvm:zkai:d128:snark-receipt:v1"
+CLAIM_BOUNDARY = "SNARK_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_PUBLIC_INPUT_CONTRACT_NOT_RECURSION"
+SUMMARY = (
+    "A real snarkjs/Groth16 verifier-facing receipt accepts the d128 #424 two-slice public-input contract. "
+    "Its public signals bind the contract-derived field elements, and the statement envelope rejects all tested relabeling. "
+    "This is a SNARK statement receipt, not recursive verification of the underlying Stwo proofs."
+)
+EXTERNAL_SYSTEM = {
+    "name": "snarkjs",
+    "version": SNARKJS_VERSION,
+    "proof_system": PROOF_SYSTEM,
+    "verification_api": "snarkjs groth16 verify verification_key.json public.json proof.json",
+}
 BN128_FIELD_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -201,6 +216,17 @@ def artifact_path(key: str) -> pathlib.Path:
 
 
 @functools.lru_cache(maxsize=1)
+def source_gate_module() -> Any:
+    spec = importlib.util.spec_from_file_location("zkai_d128_proof_native_two_slice_compression_gate_for_snark_receipt", SOURCE_GATE_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise D128SnarkReceiptError(f"failed to load source #424 gate: {SOURCE_GATE_SCRIPT}", layer="source_contract")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+@functools.lru_cache(maxsize=1)
 def source_payload() -> dict[str, Any]:
     payload = require_object(load_json(SOURCE_EVIDENCE), "source evidence", layer="source_contract")
     expect_equal(payload.get("schema"), SOURCE_SCHEMA, "source schema", layer="source_contract")
@@ -209,6 +235,10 @@ def source_payload() -> dict[str, Any]:
     expect_equal(payload.get("result"), SOURCE_RESULT, "source result", layer="source_contract")
     expect_equal(payload.get("compression_result"), SOURCE_COMPRESSED_RESULT, "source compression result", layer="source_contract")
     expect_equal(payload.get("recursive_or_pcd_result"), SOURCE_RECURSIVE_RESULT, "source recursive result", layer="source_contract")
+    try:
+        source_gate_module().validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize source-gate validation failures.
+        raise D128SnarkReceiptError(f"source #424 gate validation failed: {err}", layer="source_contract") from err
     return copy.deepcopy(payload)
 
 
@@ -347,13 +377,51 @@ def _refresh_statement_commitment(receipt: dict[str, Any]) -> None:
     receipt["receipt_commitment"] = receipt_commitment(receipt)
 
 
+def snarkjs_command() -> tuple[str, ...]:
+    configured = os.environ.get(SNARKJS_ENV)
+    if configured:
+        return (configured,)
+    return (str(SNARKJS_BINARY),)
+
+
+@functools.lru_cache(maxsize=8)
+def assert_snarkjs_version(command: tuple[str, ...]) -> None:
+    try:
+        result = subprocess.run(
+            [*command, "--version"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired as err:
+        raise D128SnarkReceiptError("snarkjs version check timed out", layer="external_proof_verifier") from err
+    except OSError as err:
+        command_text = " ".join(command)
+        raise D128SnarkReceiptError(
+            f"failed to launch snarkjs command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to snarkjs {SNARKJS_VERSION}: {err}",
+            layer="external_proof_verifier",
+        ) from err
+    output = ANSI_ESCAPE_RE.sub("", "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part))
+    if f"snarkjs@{SNARKJS_VERSION}" not in output and output.strip() != SNARKJS_VERSION:
+        if result.returncode != 0:
+            raise D128SnarkReceiptError(f"snarkjs version check failed: {output}", layer="external_proof_verifier")
+        raise D128SnarkReceiptError(
+            f"snarkjs version mismatch: expected {SNARKJS_VERSION}, got {output or '<empty>'}",
+            layer="external_proof_verifier",
+        )
+
+
 def snarkjs_verify(proof: dict[str, Any], public_signals: list[Any], verification_key: dict[str, Any]) -> None:
+    command = snarkjs_command()
     cache_key = sha256_bytes(canonical_json_bytes([proof, public_signals, verification_key]))
-    _snarkjs_verify_cached(cache_key, canonical_json_bytes(proof), canonical_json_bytes(public_signals), canonical_json_bytes(verification_key))
+    _snarkjs_verify_cached(cache_key, canonical_json_bytes(proof), canonical_json_bytes(public_signals), canonical_json_bytes(verification_key), command)
 
 
 @functools.lru_cache(maxsize=64)
-def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: bytes, vk_bytes: bytes) -> None:  # noqa: ARG001
+def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: bytes, vk_bytes: bytes, command: tuple[str, ...]) -> None:  # noqa: ARG001
+    assert_snarkjs_version(command)
     with tempfile.TemporaryDirectory() as raw_tmp:
         tmp = pathlib.Path(raw_tmp)
         proof_path = tmp / "proof.json"
@@ -364,7 +432,7 @@ def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: byt
         vk_path.write_bytes(vk_bytes)
         try:
             result = subprocess.run(
-                [*SNARKJS_COMMAND, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
+                [*command, "groth16", "verify", str(vk_path), str(public_path), str(proof_path)],
                 cwd=ROOT,
                 text=True,
                 capture_output=True,
@@ -374,9 +442,9 @@ def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: byt
         except subprocess.TimeoutExpired as err:
             raise D128SnarkReceiptError("snarkjs groth16 verifier timed out", layer="external_proof_verifier") from err
         except OSError as err:
-            command = " ".join([*SNARKJS_COMMAND, "groth16", "verify"])
+            command_text = " ".join([*command, "groth16", "verify"])
             raise D128SnarkReceiptError(
-                f"failed to launch snarkjs verifier command `{command}`; ensure node/npx is installed and executable: {err}",
+                f"failed to launch snarkjs verifier command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to snarkjs {SNARKJS_VERSION}: {err}",
                 layer="external_proof_verifier",
             ) from err
     output = ANSI_ESCAPE_RE.sub("", "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part))
@@ -549,6 +617,22 @@ def proof_verifier_public_signal_check(
     }
 
 
+def statement_receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": receipt["schema"],
+        "statement_commitment": receipt["statement_commitment"],
+        "receipt_commitment": receipt["receipt_commitment"],
+        "proof_system": PROOF_SYSTEM,
+        "proof_system_version": SNARKJS_VERSION,
+        "verifier_domain": VERIFIER_DOMAIN,
+        "public_signal_count": len(receipt["public_signals"]),
+        "public_signal_field_count": len(receipt["statement"]["public_signal_field_entries"]),
+        "public_signals_sha256": public_signals_sha256(receipt["public_signals"]),
+        "proof_sha256": receipt["statement"]["proof_sha256"],
+        "verification_key_sha256": receipt["statement"]["verification_key_sha256"],
+    }
+
+
 def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any]], None] = snarkjs_verify) -> dict[str, Any]:
     baseline = baseline_receipt()
     verify_proof_only(baseline, external_verify=external_verify)
@@ -589,21 +673,9 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
         "source_issue": SOURCE_ISSUE,
         "decision": DECISION,
         "result": RESULT,
-        "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_PUBLIC_INPUT_CONTRACT_NOT_RECURSION",
+        "claim_boundary": CLAIM_BOUNDARY,
         "source_contract": source,
-        "statement_receipt": {
-            "schema": receipt["schema"],
-            "statement_commitment": receipt["statement_commitment"],
-            "receipt_commitment": receipt["receipt_commitment"],
-            "proof_system": PROOF_SYSTEM,
-            "proof_system_version": SNARKJS_VERSION,
-            "verifier_domain": VERIFIER_DOMAIN,
-            "public_signal_count": len(receipt["public_signals"]),
-            "public_signal_field_count": len(receipt["statement"]["public_signal_field_entries"]),
-            "public_signals_sha256": public_signals_sha256(receipt["public_signals"]),
-            "proof_sha256": receipt["statement"]["proof_sha256"],
-            "verification_key_sha256": receipt["statement"]["verification_key_sha256"],
-        },
+        "statement_receipt": statement_receipt_summary(receipt),
         "proof_verifier_checks": {
             "public_signal_relabeling": proof_verifier_check,
         },
@@ -616,12 +688,7 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
             "proof_generation_time_ms": None,
             "timing_policy": "not_measured_in_this_gate",
         },
-        "external_system": {
-            "name": "snarkjs",
-            "version": SNARKJS_VERSION,
-            "proof_system": PROOF_SYSTEM,
-            "verification_api": "snarkjs groth16 verify verification_key.json public.json proof.json",
-        },
+        "external_system": copy.deepcopy(EXTERNAL_SYSTEM),
         "artifact_metadata": load_json(artifact_path("metadata")),
         "artifact_paths": {key: str(artifact_path(key).relative_to(ROOT)) for key in ARTIFACTS},
         "mutation_inventory": [{"mutation": name, "surface": surface} for name, surface in EXPECTED_MUTATION_INVENTORY],
@@ -634,11 +701,7 @@ def run_gate(external_verify: Callable[[dict[str, Any], list[Any], dict[str, Any
             "git_commit": _git_commit(),
             "command": VALIDATION_COMMANDS[0],
         },
-        "summary": (
-            "A real snarkjs/Groth16 verifier-facing receipt accepts the d128 #424 two-slice public-input contract. "
-            "Its public signals bind the contract-derived field elements, and the statement envelope rejects all tested relabeling. "
-            "This is a SNARK statement receipt, not recursive verification of the underlying Stwo proofs."
-        ),
+        "summary": SUMMARY,
     }
     validate_payload(payload)
     return payload
@@ -657,9 +720,16 @@ def validate_payload(payload: dict[str, Any]) -> None:
     expect_equal(payload["source_issue"], SOURCE_ISSUE, "source issue")
     expect_equal(payload["decision"], DECISION, "decision")
     expect_equal(payload["result"], RESULT, "result")
+    expect_equal(payload["claim_boundary"], CLAIM_BOUNDARY, "claim boundary")
     expect_equal(payload["source_contract"], source_contract(), "source contract", layer="source_contract")
+    receipt = baseline_receipt()
+    expect_equal(payload["statement_receipt"], statement_receipt_summary(receipt), "statement receipt", layer="statement_policy")
+    expect_equal(payload["external_system"], EXTERNAL_SYSTEM, "external system", layer="external_proof_verifier")
+    expect_equal(payload["artifact_metadata"], load_json(artifact_path("metadata")), "artifact metadata", layer="artifact_binding")
+    expect_equal(payload["artifact_paths"], {key: str(artifact_path(key).relative_to(ROOT)) for key in ARTIFACTS}, "artifact paths", layer="artifact_binding")
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
+    expect_equal(payload["summary"], SUMMARY, "summary")
     require_object(payload["repro"], "repro")
     inventory = require_list(payload["mutation_inventory"], "mutation inventory")
     expect_equal(tuple((item.get("mutation"), item.get("surface")) for item in inventory), EXPECTED_MUTATION_INVENTORY, "mutation inventory")

@@ -641,12 +641,13 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
             layer="backend_routes",
         )
     snark_receipt_exists = _artifact_exists(probe, "external_snark_ivc_statement_receipt_artifact")
-    snark_receipt = load_checked_snark_receipt() if snark_receipt_exists else None
-    snark_metrics = snark_receipt_route_metrics(snark_receipt) if snark_receipt is not None else {
-        "proof_size_bytes": None,
-        "verifier_time_ms": None,
-        "proof_generation_time_ms": None,
-    }
+    if not snark_receipt_exists:
+        raise D128CryptographicBackendGateError(
+            "checked SNARK receipt evidence is required before emitting the external-SNARK GO backend gate",
+            layer="external_snark_receipt",
+        )
+    snark_receipt = load_checked_snark_receipt()
+    snark_metrics = snark_receipt_route_metrics(snark_receipt)
     return [
         {
             "route_id": "source_proof_native_two_slice_contract",

@@ -2,6 +2,7 @@
   "private": true,
   "description": "Helper tooling for paper evidence archiving and figure generation",
   "dependencies": {
-    "playwright": "1.59.1"
+    "playwright": "1.59.1",
+    "snarkjs": "0.7.6"
   }
 }

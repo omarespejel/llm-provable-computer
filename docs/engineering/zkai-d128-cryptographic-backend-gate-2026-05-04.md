@@ -44,7 +44,10 @@ The target backend must bind the same public-input contract:
 
 ## Backend Probe
 
-The checked repo probe found no usable cryptographic backend route today:
+The checked repo probe now finds one usable external cryptographic backend
+route: the issue `#428` `snarkjs/Groth16` statement receipt for the exact issue
+`#424` public-input contract. The local recursive/PCD routes and the external
+zkVM receipt route remain missing:
 
 | Route | Status | Usable today |
 |---|---|---:|
@@ -65,14 +68,18 @@ The previous issue `#424` result is a real improvement: it compresses the
 verifier-facing two-slice transcript/public-input object. But it is not a
 cryptographic proof object produced by a backend.
 
-This gate makes the next research fork explicit:
+This gate makes the remaining research fork explicit:
 
 - build a local nested-verifier AIR/circuit or PCD/IVC backend for the same
   public-input contract; or
 - build an external zkVM statement-receipt adapter over the same contract
-  (`#422`); or
-- build an external SNARK/IVC statement-receipt adapter over the same contract
-  (`#428`).
+  (`#422`).
+
+The external SNARK/IVC branch is no longer a missing route: issue `#428`
+landed the `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT`
+adapter. `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` still applies only to the
+Starknet settlement adapter, because no settlement-shaped proof object exists
+for this contract yet.
 
 The SNARK route may now report the checked proof size (`802` bytes). Do not
 report verifier time or proof-generation time until a dedicated timing gate
