@@ -4,18 +4,17 @@ Date: 2026-05-04
 
 ## Decision
 
-`NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`
+`GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`
 
 This gate answers issue `#426`.
 
 The repository has a checked proof-native d128 two-slice public-input contract
-from issue `#424`, but it does not yet have an executable cryptographic backend
-that proves or receipts that contract.
+from issue `#424`, and issue `#428` now adds an executable external
+`snarkjs/Groth16` statement receipt for that contract.
 
-This is a bounded no-go, not a failure of the d128 receipt line. It prevents the
-paper and follow-up notes from accidentally treating transcript/public-input
-compression as a recursive proof, PCD proof, zkVM receipt, SNARK receipt, or
-benchmarkable cryptographic verifier object.
+This supersedes the original bounded no-go for the external SNARK route. It does
+not change the local-recursion boundary: there is still no local nested-verifier
+AIR/circuit, no local PCD/IVC outer proof generator, and no zkVM receipt.
 
 ## Source Contract
 
@@ -53,12 +52,12 @@ The checked repo probe found no usable cryptographic backend route today:
 | Local Stwo nested verifier backend | `NO_GO_MISSING_NESTED_VERIFIER_AIR_OR_CIRCUIT` | no |
 | Local PCD or IVC outer proof backend | `NO_GO_MISSING_OUTER_PROOF_GENERATOR_AND_VERIFIER_HANDLE` | no |
 | External zkVM statement receipt backend | `NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT` | no |
-| External SNARK or IVC statement receipt backend | `NO_GO_SNARK_OR_IVC_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT` | no |
+| External SNARK or IVC statement receipt backend | `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT` | yes |
 | Starknet settlement adapter | `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` | no |
 
-The first missing object is:
+The remaining missing objects are:
 
-> nested verifier AIR/circuit or external zkVM/SNARK/IVC receipt artifact that proves the #424 public-input contract
+> local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt
 
 ## Why This Matters
 
@@ -75,9 +74,9 @@ This gate makes the next research fork explicit:
 - build an external SNARK/IVC statement-receipt adapter over the same contract
   (`#428`).
 
-Until one of those routes produces an executable artifact and verifier handle,
-do not report cryptographic-backend proof size, verifier time, or proof
-generation time.
+The SNARK route may now report the checked proof size (`802` bytes). Do not
+report verifier time or proof-generation time until a dedicated timing gate
+measures them.
 
 ## Mutation Coverage
 
@@ -90,8 +89,8 @@ The gate rejects `35 / 35` mutation cases, including:
   accumulator, and source verifier-handle relabeling;
 - compressed artifact and verifier-handle commitment drift;
 - repo-probe dependency or artifact-presence relabeling;
-- fake local nested-verifier, local PCD/IVC, external zkVM, or external
-  SNARK/IVC GO relabeling;
+- fake local nested-verifier, local PCD/IVC, external zkVM, or stale external
+  SNARK/IVC route relabeling;
 - route blocker removal and route-level metric smuggling;
 - decision-level proof-size, verifier-time, and proof-generation-time metric
   smuggling; and
@@ -106,8 +105,7 @@ This gate does not claim:
 - proof-carrying data;
 - STARK-in-STARK verification;
 - a zkVM receipt;
-- a SNARK or IVC receipt;
-- proof-size evidence for a cryptographic backend;
+- recursive verification of the underlying Stwo slice proofs inside SNARK;
 - verifier-time evidence for a cryptographic backend;
 - proof-generation-time evidence for a cryptographic backend;
 - that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement
@@ -133,8 +131,8 @@ just gate
 
 ## Next Step
 
-The next useful implementation experiment is issue `#422`: a narrow zkVM
-statement-receipt adapter that binds the exact issue `#424` public-input
-contract as receipt journal/public values. If that route is blocked or if we
-want a proof-system-independent control, issue `#428` tracks the SNARK/IVC
-statement-receipt adapter over the same contract.
+Issue `#428` is now the proof-system-independent control: a real SNARK
+statement receipt exists for the exact issue `#424` public-input contract. The
+next useful implementation experiment is issue `#422`: a narrow zkVM
+statement-receipt adapter that binds the same contract as receipt journal/public
+values.

@@ -36,19 +36,21 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 PROOF_NATIVE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compression_gate.py"
 PROOF_NATIVE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
+SNARK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.tsv"
 
 SCHEMA = "zkai-d128-cryptographic-backend-gate-v1"
-DECISION = "NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
-RESULT = "BOUNDED_NO_GO"
+DECISION = "GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
+RESULT = "GO"
 ISSUE = 426
 SOURCE_ISSUE = 424
-CLAIM_BOUNDARY = "PROOF_NATIVE_TWO_SLICE_CONTRACT_AVAILABLE_BACKEND_MISSING"
-PRIMARY_BLOCKER = "NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT"
+SNARK_RECEIPT_ISSUE = 428
+CLAIM_BOUNDARY = "EXTERNAL_SNARK_STATEMENT_RECEIPT_AVAILABLE_NOT_RECURSION"
+PRIMARY_BLOCKER = "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE"
 FIRST_MISSING_OBJECT = (
-    "nested verifier AIR/circuit or external zkVM/SNARK/IVC receipt artifact "
-    "that proves the #424 public-input contract"
+    "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; "
+    "an external SNARK statement receipt now proves the #424 public-input contract"
 )
 GO_CRITERION = (
     "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; "
@@ -57,7 +59,7 @@ GO_CRITERION = (
     "public-instance commitments, proof-native parameter commitments, verifier domain, "
     "backend version, source accumulator commitment, and source verifier-handle commitment"
 )
-NEXT_ROUTE = "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_LOCAL_NESTED_VERIFIER_DESIGN"
+NEXT_ROUTE = "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_PRODUCTION_SNARK_SETUP_AND_TIMING"
 
 EXPECTED_PROOF_NATIVE_SCHEMA = "zkai-d128-proof-native-two-slice-compression-gate-v1"
 EXPECTED_PROOF_NATIVE_DECISION = "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION"
@@ -65,6 +67,9 @@ EXPECTED_PROOF_NATIVE_RESULT = "GO"
 EXPECTED_COMPRESSION_RESULT = "GO_PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION"
 EXPECTED_RECURSIVE_OR_PCD_RESULT = "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_BACKEND_MISSING"
 EXPECTED_PROOF_NATIVE_CLAIM_BOUNDARY = "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION"
+EXPECTED_SNARK_RECEIPT_SCHEMA = "zkai-d128-snark-ivc-statement-receipt-gate-v1"
+EXPECTED_SNARK_RECEIPT_DECISION = "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
+EXPECTED_SNARK_RECEIPT_RESULT = "GO"
 EXPECTED_SELECTED_SLICE_IDS = ("rmsnorm_public_rows", "rmsnorm_projection_bridge")
 EXPECTED_SELECTED_ROWS = 256
 
@@ -113,8 +118,7 @@ NON_CLAIMS = [
     "not proof-carrying data",
     "not STARK-in-STARK verification",
     "not a zkVM receipt",
-    "not a SNARK or IVC receipt",
-    "not proof-size evidence for a cryptographic backend",
+    "not recursive verification of the underlying Stwo slice proofs inside SNARK",
     "not verifier-time evidence for a cryptographic backend",
     "not proof-generation-time evidence for a cryptographic backend",
     "not a claim that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement the contract",
@@ -482,6 +486,53 @@ def source_proof_native_contract(source: dict[str, Any], path: pathlib.Path = PR
     }
 
 
+@functools.lru_cache(maxsize=1)
+def _load_checked_snark_receipt_cached(path_text: str) -> dict[str, Any]:
+    path = pathlib.Path(path_text)
+    payload = load_json(path)
+    expect_equal(payload.get("schema"), EXPECTED_SNARK_RECEIPT_SCHEMA, "SNARK receipt schema", layer="external_snark_receipt")
+    expect_equal(payload.get("issue"), SNARK_RECEIPT_ISSUE, "SNARK receipt issue", layer="external_snark_receipt")
+    expect_equal(payload.get("source_issue"), SOURCE_ISSUE, "SNARK receipt source issue", layer="external_snark_receipt")
+    expect_equal(payload.get("decision"), EXPECTED_SNARK_RECEIPT_DECISION, "SNARK receipt decision", layer="external_snark_receipt")
+    expect_equal(payload.get("result"), EXPECTED_SNARK_RECEIPT_RESULT, "SNARK receipt result", layer="external_snark_receipt")
+    expect_equal(payload.get("all_mutations_rejected"), True, "SNARK receipt mutation result", layer="external_snark_receipt")
+    source_contract = require_object(payload.get("source_contract"), "SNARK receipt source contract", layer="external_snark_receipt")
+    expected_source = source_proof_native_contract(load_checked_proof_native())
+    expect_equal(source_contract.get("schema"), expected_source["schema"], "SNARK receipt source schema", layer="external_snark_receipt")
+    expect_equal(source_contract.get("decision"), expected_source["decision"], "SNARK receipt source decision", layer="external_snark_receipt")
+    expect_equal(source_contract.get("result"), expected_source["result"], "SNARK receipt source result", layer="external_snark_receipt")
+    expect_equal(source_contract.get("issue"), expected_source["issue"], "SNARK receipt source issue", layer="external_snark_receipt")
+    expect_equal(source_contract.get("compression_result"), expected_source["compression_result"], "SNARK receipt source compression result", layer="external_snark_receipt")
+    expect_equal(source_contract.get("recursive_or_pcd_result"), expected_source["recursive_or_pcd_result"], "SNARK receipt source recursive result", layer="external_snark_receipt")
+    expect_equal(source_contract.get("compressed_artifact_commitment"), expected_source["compressed_artifact_commitment"], "SNARK receipt compressed artifact", layer="external_snark_receipt")
+    expect_equal(source_contract.get("source_file_sha256"), expected_source["file_sha256"], "SNARK receipt source file hash", layer="external_snark_receipt")
+    expect_equal(source_contract.get("source_payload_sha256"), expected_source["payload_sha256"], "SNARK receipt source payload hash", layer="external_snark_receipt")
+    expect_equal(source_contract.get("public_input_contract"), expected_source["public_input_contract"], "SNARK receipt public-input contract", layer="external_snark_receipt")
+    receipt = require_object(payload.get("statement_receipt"), "SNARK statement receipt", layer="external_snark_receipt")
+    require_commitment(receipt.get("statement_commitment"), "SNARK statement commitment", layer="external_snark_receipt")
+    require_commitment(receipt.get("receipt_commitment"), "SNARK receipt commitment", layer="external_snark_receipt")
+    metrics = require_object(payload.get("receipt_metrics"), "SNARK receipt metrics", layer="external_snark_receipt")
+    proof_size = metrics.get("proof_size_bytes")
+    if not isinstance(proof_size, int) or proof_size <= 0:
+        raise D128CryptographicBackendGateError("SNARK receipt proof size must be a positive integer", layer="external_snark_receipt")
+    if metrics.get("verifier_time_ms") is not None or metrics.get("proof_generation_time_ms") is not None:
+        raise D128CryptographicBackendGateError("SNARK receipt timing metrics must remain null in this gate", layer="external_snark_receipt")
+    return payload
+
+
+def load_checked_snark_receipt(path: pathlib.Path = SNARK_RECEIPT_EVIDENCE) -> dict[str, Any]:
+    return copy.deepcopy(_load_checked_snark_receipt_cached(path.as_posix()))
+
+
+def snark_receipt_route_metrics(receipt: dict[str, Any]) -> dict[str, Any]:
+    metrics = require_object(receipt.get("receipt_metrics"), "SNARK receipt metrics", layer="external_snark_receipt")
+    return {
+        "proof_size_bytes": metrics["proof_size_bytes"],
+        "verifier_time_ms": None,
+        "proof_generation_time_ms": None,
+    }
+
+
 def cargo_dependency_names(cargo_toml: dict[str, Any]) -> set[str]:
     names: set[str] = set()
 
@@ -577,11 +628,25 @@ def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
 
 
 def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
-    if any(artifact["exists"] for artifact in probe["fixed_backend_artifacts"]) or probe["artifact_candidates"]:
+    allowed_inventory_paths = {relative_path(SNARK_RECEIPT_EVIDENCE)}
+    unexpected_fixed = [
+        artifact
+        for artifact in probe["fixed_backend_artifacts"]
+        if artifact["exists"] and artifact["artifact_id"] != "external_snark_ivc_statement_receipt_artifact"
+    ]
+    unexpected_candidates = sorted(set(probe["artifact_candidates"]) - allowed_inventory_paths)
+    if unexpected_fixed or unexpected_candidates:
         raise D128CryptographicBackendGateError(
             "backend inventory changed; refresh route classification before regenerating evidence",
             layer="backend_routes",
         )
+    snark_receipt_exists = _artifact_exists(probe, "external_snark_ivc_statement_receipt_artifact")
+    snark_receipt = load_checked_snark_receipt() if snark_receipt_exists else None
+    snark_metrics = snark_receipt_route_metrics(snark_receipt) if snark_receipt is not None else {
+        "proof_size_bytes": None,
+        "verifier_time_ms": None,
+        "proof_generation_time_ms": None,
+    }
     return [
         {
             "route_id": "source_proof_native_two_slice_contract",
@@ -663,21 +728,38 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
         {
             "route_id": "external_snark_or_ivc_statement_receipt_backend",
             "route_kind": "external_snark_or_ivc_statement_receipt",
-            "status": "NO_GO_SNARK_OR_IVC_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT",
+            "status": (
+                "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT"
+                if snark_receipt_exists
+                else "NO_GO_SNARK_OR_IVC_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT"
+            ),
             "cryptographic_backend": True,
-            "usable_today": False,
-            "claim_boundary": "external_adapter_candidate_not_checked_backend",
-            "blocking_missing_object": "checked_external_snark_or_ivc_receipt_for_d128_two_slice_contract",
-            "next_action": "build a SNARK/IVC statement-receipt adapter only if it can bind the same #424 public-input contract",
-            "proof_metrics": {
-                "proof_size_bytes": None,
-                "verifier_time_ms": None,
-                "proof_generation_time_ms": None,
-            },
+            "usable_today": snark_receipt_exists,
+            "claim_boundary": (
+                "external_snark_statement_receipt_not_recursion"
+                if snark_receipt_exists
+                else "external_adapter_candidate_not_checked_backend"
+            ),
+            "blocking_missing_object": (
+                "none_for_external_snark_statement_receipt"
+                if snark_receipt_exists
+                else "checked_external_snark_or_ivc_receipt_for_d128_two_slice_contract"
+            ),
+            "next_action": (
+                "use as proof-system-independent statement-receipt control; keep #422 for zkVM public-values receipts"
+                if snark_receipt_exists
+                else "build a SNARK/IVC statement-receipt adapter only if it can bind the same #424 public-input contract"
+            ),
+            "proof_metrics": snark_metrics,
             "evidence": {
                 "local_dependencies_declared": probe["external_snark_ivc_dependencies_declared"],
                 "dependency_names": copy.deepcopy(probe["external_snark_ivc_dependency_names"]),
                 "receipt_artifact_exists": _artifact_exists(probe, "external_snark_ivc_statement_receipt_artifact"),
+                "tracked_issue": SNARK_RECEIPT_ISSUE,
+                "receipt_artifact": relative_path(SNARK_RECEIPT_EVIDENCE) if snark_receipt_exists else None,
+                "receipt_decision": snark_receipt["decision"] if snark_receipt_exists else None,
+                "statement_commitment": snark_receipt["statement_receipt"]["statement_commitment"] if snark_receipt_exists else None,
+                "receipt_commitment": snark_receipt["statement_receipt"]["receipt_commitment"] if snark_receipt_exists else None,
             },
         },
         {
@@ -712,6 +794,13 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
         for route in routes
         if route["cryptographic_backend"] is True and route["usable_today"] is False
     ]
+    usable_route = next((route for route in routes if route["route_id"] in usable_crypto), None)
+    proof_metrics = {
+        "metrics_enabled": bool(usable_route),
+        "proof_size_bytes": usable_route["proof_metrics"]["proof_size_bytes"] if usable_route else None,
+        "verifier_time_ms": usable_route["proof_metrics"]["verifier_time_ms"] if usable_route else None,
+        "proof_generation_time_ms": usable_route["proof_metrics"]["proof_generation_time_ms"] if usable_route else None,
+    }
     return {
         "primary_blocker": PRIMARY_BLOCKER,
         "first_missing_object": FIRST_MISSING_OBJECT,
@@ -720,13 +809,8 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
         "next_route": NEXT_ROUTE,
         "usable_cryptographic_backend_route_ids": usable_crypto,
         "candidate_route_ids": candidate_routes,
-        "blocked_before_metrics": True,
-        "proof_metrics": {
-            "metrics_enabled": False,
-            "proof_size_bytes": None,
-            "verifier_time_ms": None,
-            "proof_generation_time_ms": None,
-        },
+        "blocked_before_metrics": not bool(usable_crypto),
+        "proof_metrics": proof_metrics,
     }
 
 
@@ -853,9 +937,15 @@ def validate_route(route: Any, index: int) -> dict[str, Any]:
     require_object(route["evidence"], f"route {index} evidence", layer="backend_routes")
     metrics = require_object(route["proof_metrics"], f"route {index} proof metrics", layer="backend_routes")
     expect_keys(metrics, ROUTE_METRIC_KEYS, f"route {index} proof metrics", layer="backend_routes")
-    if any(value is not None for value in metrics.values()):
+    if route["route_id"] == "external_snark_or_ivc_statement_receipt_backend" and route["usable_today"] is True:
+        proof_size = metrics.get("proof_size_bytes")
+        if not isinstance(proof_size, int) or proof_size <= 0:
+            raise D128CryptographicBackendGateError("SNARK route proof_size_bytes must be positive", layer="backend_routes")
+        if metrics.get("verifier_time_ms") is not None or metrics.get("proof_generation_time_ms") is not None:
+            raise D128CryptographicBackendGateError("SNARK route timing metrics must remain null in this gate", layer="backend_routes")
+    elif any(value is not None for value in metrics.values()):
         raise D128CryptographicBackendGateError(f"route {index} smuggles proof metrics before backend exists", layer="backend_routes")
-    if route["cryptographic_backend"] is True and route["usable_today"] is True:
+    if route["cryptographic_backend"] is True and route["usable_today"] is True and route["route_id"] != "external_snark_or_ivc_statement_receipt_backend":
         raise D128CryptographicBackendGateError("cryptographic route cannot be usable without a checked backend artifact", layer="backend_routes")
     return route
 
@@ -880,9 +970,18 @@ def validate_backend_decision(value: Any, routes: list[dict[str, Any]]) -> dict[
     expect_equal(decision["go_criterion"], GO_CRITERION, "go criterion", layer="backend_decision")
     expect_equal(decision["source_issue"], SOURCE_ISSUE, "source issue", layer="backend_decision")
     expect_equal(decision["next_route"], NEXT_ROUTE, "next route", layer="backend_decision")
-    expect_equal(decision["blocked_before_metrics"], True, "blocked before metrics", layer="backend_decision")
-    expect_equal(metrics["metrics_enabled"], False, "metrics enabled", layer="backend_decision")
-    if any(metrics[key] is not None for key in ("proof_size_bytes", "verifier_time_ms", "proof_generation_time_ms")):
+    usable_crypto = [
+        route for route in routes if route["cryptographic_backend"] is True and route["usable_today"] is True
+    ]
+    expect_equal(decision["blocked_before_metrics"], not bool(usable_crypto), "blocked before metrics", layer="backend_decision")
+    expect_equal(metrics["metrics_enabled"], bool(usable_crypto), "metrics enabled", layer="backend_decision")
+    if usable_crypto:
+        if usable_crypto[0]["route_id"] != "external_snark_or_ivc_statement_receipt_backend":
+            raise D128CryptographicBackendGateError("unexpected usable cryptographic route", layer="backend_decision")
+        expect_equal(metrics["proof_size_bytes"], usable_crypto[0]["proof_metrics"]["proof_size_bytes"], "decision proof size", layer="backend_decision")
+        if metrics["verifier_time_ms"] is not None or metrics["proof_generation_time_ms"] is not None:
+            raise D128CryptographicBackendGateError("backend decision timing metrics are not measured", layer="backend_decision")
+    elif any(metrics[key] is not None for key in ("proof_size_bytes", "verifier_time_ms", "proof_generation_time_ms")):
         raise D128CryptographicBackendGateError("backend decision smuggles proof metrics before backend exists", layer="backend_decision")
     expected = backend_decision(routes)
     expect_equal(decision, expected, "backend decision", layer="backend_decision")

@@ -1,28 +1,31 @@
 {
   "all_mutations_rejected": true,
   "backend_decision": {
-    "blocked_before_metrics": true,
+    "blocked_before_metrics": false,
     "candidate_route_ids": [
       "local_stwo_nested_verifier_backend",
       "local_pcd_or_ivc_outer_proof_backend",
-      "external_zkvm_statement_receipt_backend",
-      "external_snark_or_ivc_statement_receipt_backend"
+      "external_zkvm_statement_receipt_backend"
     ],
-    "first_missing_object": "nested verifier AIR/circuit or external zkVM/SNARK/IVC receipt artifact that proves the #424 public-input contract",
+    "first_missing_object": "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; an external SNARK statement receipt now proves the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
-    "next_route": "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_LOCAL_NESTED_VERIFIER_DESIGN",
-    "primary_blocker": "NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT",
+    "next_route": "EXTERNAL_ZKVM_STATEMENT_RECEIPT_ADAPTER_TRACKED_BY_422_OR_PRODUCTION_SNARK_SETUP_AND_TIMING",
+    "primary_blocker": "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE",
     "proof_metrics": {
-      "metrics_enabled": false,
+      "metrics_enabled": true,
       "proof_generation_time_ms": null,
-      "proof_size_bytes": null,
+      "proof_size_bytes": 802,
       "verifier_time_ms": null
     },
     "source_issue": 424,
-    "usable_cryptographic_backend_route_ids": []
+    "usable_cryptographic_backend_route_ids": [
+      "external_snark_or_ivc_statement_receipt_backend"
+    ]
   },
   "backend_probe": {
-    "artifact_candidates": [],
+    "artifact_candidates": [
+      "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json"
+    ],
     "cargo_lock_sha256": "da41355ce93176f7938280a8d9fbaf164effae91453455232912f0e46a0fcfb5",
     "cargo_toml_sha256": "9ca9a9f3e1be5352d38e237a8d54fdc895a91705a55982ea1f27459b01281d74",
     "external_snark_ivc_dependencies_declared": false,
@@ -52,7 +55,7 @@
       },
       {
         "artifact_id": "external_snark_ivc_statement_receipt_artifact",
-        "exists": false,
+        "exists": true,
         "path": "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json"
       }
     ],
@@ -137,24 +140,29 @@
       "usable_today": false
     },
     {
-      "blocking_missing_object": "checked_external_snark_or_ivc_receipt_for_d128_two_slice_contract",
-      "claim_boundary": "external_adapter_candidate_not_checked_backend",
+      "blocking_missing_object": "none_for_external_snark_statement_receipt",
+      "claim_boundary": "external_snark_statement_receipt_not_recursion",
       "cryptographic_backend": true,
       "evidence": {
         "dependency_names": [],
         "local_dependencies_declared": false,
-        "receipt_artifact_exists": false
+        "receipt_artifact": "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
+        "receipt_artifact_exists": true,
+        "receipt_commitment": "blake2b-256:1b76f9a151bcc628e0a205a4a978b5626f4621634098ba7b7982c720dccc7f50",
+        "receipt_decision": "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+        "statement_commitment": "blake2b-256:2f126211db4d43932027ca4ee1bb74beaa1a559ae71d1ac909f0b73fc3d2bf01",
+        "tracked_issue": 428
       },
-      "next_action": "build a SNARK/IVC statement-receipt adapter only if it can bind the same #424 public-input contract",
+      "next_action": "use as proof-system-independent statement-receipt control; keep #422 for zkVM public-values receipts",
       "proof_metrics": {
         "proof_generation_time_ms": null,
-        "proof_size_bytes": null,
+        "proof_size_bytes": 802,
         "verifier_time_ms": null
       },
       "route_id": "external_snark_or_ivc_statement_receipt_backend",
       "route_kind": "external_snark_or_ivc_statement_receipt",
-      "status": "NO_GO_SNARK_OR_IVC_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT",
-      "usable_today": false
+      "status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT",
+      "usable_today": true
     },
     {
       "blocking_missing_object": "proof_object_suitable_for_settlement_facts",
@@ -178,7 +186,7 @@
   "case_count": 35,
   "cases": [
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_file_hash_drift",
       "mutated_accepted": false,
       "mutation": "source_file_hash_drift",
@@ -187,7 +195,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_payload_hash_drift",
       "mutated_accepted": false,
       "mutation": "source_payload_hash_drift",
@@ -196,7 +204,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_result_drift",
       "mutated_accepted": false,
       "mutation": "source_result_drift",
@@ -205,7 +213,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_compression_result_drift",
       "mutated_accepted": false,
       "mutation": "source_compression_result_drift",
@@ -214,7 +222,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_recursive_result_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "source_recursive_result_relabel_to_go",
@@ -223,7 +231,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_claim_boundary_drift",
       "mutated_accepted": false,
       "mutation": "source_claim_boundary_drift",
@@ -232,7 +240,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_target_commitment_drift",
       "mutated_accepted": false,
       "mutation": "source_target_commitment_drift",
@@ -241,7 +249,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_selected_statement_drift",
       "mutated_accepted": false,
       "mutation": "source_selected_statement_drift",
@@ -250,7 +258,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_selected_source_hash_drift",
       "mutated_accepted": false,
       "mutation": "source_selected_source_hash_drift",
@@ -259,7 +267,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_selected_public_instance_drift",
       "mutated_accepted": false,
       "mutation": "source_selected_public_instance_drift",
@@ -268,7 +276,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_selected_parameter_commitment_drift",
       "mutated_accepted": false,
       "mutation": "source_selected_parameter_commitment_drift",
@@ -277,7 +285,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_verifier_domain_drift",
       "mutated_accepted": false,
       "mutation": "source_verifier_domain_drift",
@@ -286,7 +294,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_required_backend_version_drift",
       "mutated_accepted": false,
       "mutation": "source_required_backend_version_drift",
@@ -295,7 +303,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_accumulator_commitment_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_commitment_drift",
@@ -304,7 +312,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "source_verifier_handle_commitment_drift",
       "mutated_accepted": false,
       "mutation": "source_verifier_handle_commitment_drift",
@@ -313,7 +321,7 @@
       "surface": "source_public_input_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "compressed_artifact_commitment_drift",
       "mutated_accepted": false,
       "mutation": "compressed_artifact_commitment_drift",
@@ -322,7 +330,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "verifier_handle_commitment_drift",
       "mutated_accepted": false,
       "mutation": "verifier_handle_commitment_drift",
@@ -331,7 +339,7 @@
       "surface": "source_proof_native_contract"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "repo_probe_cargo_hash_drift",
       "mutated_accepted": false,
       "mutation": "repo_probe_cargo_hash_drift",
@@ -340,7 +348,7 @@
       "surface": "backend_probe"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "repo_probe_dependency_hint_drift",
       "mutated_accepted": false,
       "mutation": "repo_probe_dependency_hint_drift",
@@ -349,7 +357,7 @@
       "surface": "backend_probe"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "repo_probe_artifact_presence_relabeling",
       "mutated_accepted": false,
       "mutation": "repo_probe_artifact_presence_relabeling",
@@ -358,7 +366,7 @@
       "surface": "backend_probe"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_local_nested_verifier_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "route_local_nested_verifier_relabel_to_go",
@@ -367,7 +375,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_local_pcd_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "route_local_pcd_relabel_to_go",
@@ -376,7 +384,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_external_zkvm_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "route_external_zkvm_relabel_to_go",
@@ -385,7 +393,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_external_snark_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "route_external_snark_relabel_to_go",
@@ -394,7 +402,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_blocker_removed",
       "mutated_accepted": false,
       "mutation": "route_blocker_removed",
@@ -403,7 +411,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "route_metric_smuggled",
       "mutated_accepted": false,
       "mutation": "route_metric_smuggled",
@@ -412,7 +420,7 @@
       "surface": "backend_routes"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "backend_decision_usable_route_relabel_to_go",
       "mutated_accepted": false,
       "mutation": "backend_decision_usable_route_relabel_to_go",
@@ -421,7 +429,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "primary_blocker_removed",
       "mutated_accepted": false,
       "mutation": "primary_blocker_removed",
@@ -430,7 +438,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "proof_size_metric_smuggled",
       "mutated_accepted": false,
       "mutation": "proof_size_metric_smuggled",
@@ -439,7 +447,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "verifier_time_metric_smuggled",
       "mutated_accepted": false,
       "mutation": "verifier_time_metric_smuggled",
@@ -448,7 +456,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "proof_generation_time_metric_smuggled",
       "mutated_accepted": false,
       "mutation": "proof_generation_time_metric_smuggled",
@@ -457,7 +465,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "next_route_changed_to_settlement",
       "mutated_accepted": false,
       "mutation": "next_route_changed_to_settlement",
@@ -466,7 +474,7 @@
       "surface": "backend_decision"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "non_claims_removed",
       "mutated_accepted": false,
       "mutation": "non_claims_removed",
@@ -475,7 +483,7 @@
       "surface": "parser_or_schema"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "validation_command_drift",
       "mutated_accepted": false,
       "mutation": "validation_command_drift",
@@ -484,7 +492,7 @@
       "surface": "parser_or_schema"
     },
     {
-      "baseline_result": "BOUNDED_NO_GO",
+      "baseline_result": "GO",
       "error_code": "unknown_top_level_field_added",
       "mutated_accepted": false,
       "mutation": "unknown_top_level_field_added",
@@ -493,8 +501,8 @@
       "surface": "parser_or_schema"
     }
   ],
-  "claim_boundary": "PROOF_NATIVE_TWO_SLICE_CONTRACT_AVAILABLE_BACKEND_MISSING",
-  "decision": "NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+  "claim_boundary": "EXTERNAL_SNARK_STATEMENT_RECEIPT_AVAILABLE_NOT_RECURSION",
+  "decision": "GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
   "issue": 426,
   "mutation_inventory": [
     {
@@ -678,15 +686,14 @@
     "not proof-carrying data",
     "not STARK-in-STARK verification",
     "not a zkVM receipt",
-    "not a SNARK or IVC receipt",
-    "not proof-size evidence for a cryptographic backend",
+    "not recursive verification of the underlying Stwo slice proofs inside SNARK",
     "not verifier-time evidence for a cryptographic backend",
     "not proof-generation-time evidence for a cryptographic backend",
     "not a claim that RISC Zero, SP1, Halo2, Nova, or other external systems cannot implement the contract",
     "not a public zkML benchmark row",
     "not onchain deployment evidence"
   ],
-  "result": "BOUNDED_NO_GO",
+  "result": "GO",
   "schema": "zkai-d128-cryptographic-backend-gate-v1",
   "source_proof_native_contract": {
     "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
@@ -780,22 +787,23 @@
     "candidate_route_ids": [
       "local_stwo_nested_verifier_backend",
       "local_pcd_or_ivc_outer_proof_backend",
-      "external_zkvm_statement_receipt_backend",
-      "external_snark_or_ivc_statement_receipt_backend"
+      "external_zkvm_statement_receipt_backend"
     ],
     "compressed_artifact_commitment": "blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4",
     "compressed_artifact_serialized_bytes": 4435,
-    "first_missing_object": "nested verifier AIR/circuit or external zkVM/SNARK/IVC receipt artifact that proves the #424 public-input contract",
+    "first_missing_object": "local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt remain missing; an external SNARK statement receipt now proves the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
     "mutation_cases": 35,
     "mutations_rejected": 35,
-    "primary_blocker": "NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT",
-    "result": "BOUNDED_NO_GO",
+    "primary_blocker": "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE",
+    "result": "GO",
     "selected_checked_rows": 256,
     "source_issue": 424,
     "source_result": "GO",
     "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
-    "usable_cryptographic_backend_route_ids": [],
+    "usable_cryptographic_backend_route_ids": [
+      "external_snark_or_ivc_statement_receipt_backend"
+    ],
     "verifier_handle_commitment": "blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641"
   },
   "validation_commands": [

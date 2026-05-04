@@ -1077,19 +1077,34 @@ and
 `docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json`.
 
 The issue `#426` follow-up then asks the stricter backend question over that
-same public-input contract and records a bounded no-go:
-`NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`.
-The checked probe finds no local nested-verifier AIR/circuit, no local PCD/IVC
-outer proof generator plus verifier handle, no checked external zkVM receipt,
-and no checked external SNARK/IVC receipt for the contract today. It rejects
-`35 / 35` source-contract, repo-probe, fake-route, metric-smuggling, and
-parser/schema mutations. This keeps the paper boundary explicit: the d128 line
-has a smaller verifier-facing contract and strong relabeling resistance, but
-not yet a recursive proof, a PCD proof, a zkVM receipt, a SNARK/IVC receipt, or
-cryptographic-backend proof-size/verifier-time/proof-generation-time evidence.
-It is anchored to
+same public-input contract. The original answer was a bounded missing-backend
+result; the issue `#428` follow-up now changes the external SNARK branch of
+that answer. A real `snarkjs/Groth16` statement receipt exists for the exact
+issue `#424` contract. The updated backend gate records
+`GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`,
+while still keeping local nested-verifier AIR/circuit, local PCD/IVC, and
+external zkVM routes in the missing-backend bucket. It rejects `35 / 35`
+source-contract, repo-probe, fake-route, metric-smuggling, and parser/schema
+mutations. This keeps the paper boundary explicit: the d128 line now has an
+external SNARK statement receipt, but not a recursive proof, not a PCD proof,
+not a zkVM receipt, and not verifier-time/proof-generation-time evidence. It is
+anchored to
 `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md` and
 `docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json`.
+
+The issue `#428` receipt is deliberately small, but it is a real external proof
+artifact: `snarkjs groth16 verify` accepts the checked `802` byte proof, public
+signals, and verification key. The public signals are derived from the d128
+two-slice contract fields, and the statement envelope rejects `29 / 29`
+target, selected-statement, source-hash, public-instance, parameter,
+domain/version, artifact-hash, setup, commitment, metric-smuggling, non-claim,
+validation-command, and unknown-field mutations. A separate raw proof-verifier
+check rejects public-signal drift. The claim is not that Groth16 verifies the
+underlying Stwo slice proofs; it is that the same public-input contract can be
+bound by an external SNARK receipt, giving a proof-system-independent control
+for the statement-receipt discipline. It is anchored to
+`docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md` and
+`docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json`.
 
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all
