@@ -418,27 +418,27 @@ def relative_path(path: pathlib.Path) -> str:
     return path.resolve().relative_to(ROOT.resolve()).as_posix()
 
 
-def load_json(path: pathlib.Path) -> dict[str, Any]:
+def load_json(path: pathlib.Path, *, layer: str, field: str) -> dict[str, Any]:
     resolved = path.resolve()
     if not resolved.is_file():
-        raise D128CryptographicBackendGateError(f"source evidence is not a regular file: {path}", layer="source_proof_native_contract")
+        raise D128CryptographicBackendGateError(f"{field} is not a regular file: {path}", layer=layer)
     try:
         resolved.relative_to(ROOT.resolve())
     except ValueError as err:
-        raise D128CryptographicBackendGateError(f"source evidence path escapes repository: {path}", layer="source_proof_native_contract") from err
+        raise D128CryptographicBackendGateError(f"{field} path escapes repository: {path}", layer=layer) from err
     try:
         payload = json.loads(resolved.read_text(encoding="utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError, OSError) as err:
-        raise D128CryptographicBackendGateError(f"failed to load source evidence {path}: {err}", layer="source_proof_native_contract") from err
+        raise D128CryptographicBackendGateError(f"failed to load {field} {path}: {err}", layer=layer) from err
     if not isinstance(payload, dict):
-        raise D128CryptographicBackendGateError(f"source evidence must be a JSON object: {path}", layer="source_proof_native_contract")
+        raise D128CryptographicBackendGateError(f"{field} must be a JSON object: {path}", layer=layer)
     return payload
 
 
 @functools.lru_cache(maxsize=4)
 def _load_checked_proof_native_cached(path_text: str) -> dict[str, Any]:
     path = pathlib.Path(path_text)
-    payload = load_json(path)
+    payload = load_json(path, layer="source_proof_native_contract", field="source evidence")
     try:
         PROOF_NATIVE.validate_payload(payload)
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
@@ -489,7 +489,7 @@ def source_proof_native_contract(source: dict[str, Any], path: pathlib.Path = PR
 @functools.lru_cache(maxsize=1)
 def _load_checked_snark_receipt_cached(path_text: str) -> dict[str, Any]:
     path = pathlib.Path(path_text)
-    payload = load_json(path)
+    payload = load_json(path, layer="external_snark_receipt", field="SNARK receipt evidence")
     expect_equal(payload.get("schema"), EXPECTED_SNARK_RECEIPT_SCHEMA, "SNARK receipt schema", layer="external_snark_receipt")
     expect_equal(payload.get("issue"), SNARK_RECEIPT_ISSUE, "SNARK receipt issue", layer="external_snark_receipt")
     expect_equal(payload.get("source_issue"), SOURCE_ISSUE, "SNARK receipt source issue", layer="external_snark_receipt")

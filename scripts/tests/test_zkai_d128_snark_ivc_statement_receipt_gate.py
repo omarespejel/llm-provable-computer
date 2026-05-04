@@ -6,6 +6,7 @@ import json
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -50,6 +51,21 @@ class D128SnarkIvcStatementReceiptGateTests(unittest.TestCase):
             payload["proof_verifier_checks"]["public_signal_relabeling"]["rejection_layer"],
             "external_proof_verifier",
         )
+
+    def test_repro_git_commit_ignores_environment_override(self) -> None:
+        with mock.patch.dict(GATE.os.environ, {"ZKAI_D128_SNARK_RECEIPT_GIT_COMMIT": "spoofed"}, clear=False):
+            with mock.patch.object(GATE, "_git_commit", return_value="actual-commit"):
+                payload = GATE.run_gate(external_verify=fake_external_verify)
+
+        self.assertEqual(payload["repro"]["git_commit"], "actual-commit")
+
+    def test_snarkjs_launch_failure_is_layered(self) -> None:
+        GATE._snarkjs_verify_cached.cache_clear()
+        with mock.patch.object(GATE.subprocess, "run", side_effect=FileNotFoundError("npx")):
+            with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "failed to launch snarkjs verifier command") as err:
+                GATE._snarkjs_verify_cached("launch-failure-test", b"{}", b"[]", b"{}")
+
+        self.assertEqual(err.exception.layer, "external_proof_verifier")
 
     def test_raw_proof_only_accepts_semantic_relabel_but_statement_receipt_rejects(self) -> None:
         _surface, relabeled = GATE.mutated_receipts()["target_commitment_relabeling"]
