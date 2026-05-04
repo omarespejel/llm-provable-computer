@@ -230,7 +230,9 @@ Tablero boundary.
   transcript/public-input compression only, not recursion or PCD; see
   `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
 - The d128 cryptographic-backend gate now answers issue `#426` as a bounded
-  no-go over that same proof-native two-slice contract:
+  no-go over that same proof-native two-slice contract. Its decision is
+  `NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
+  its primary blocker is
   `NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
   It finds no local nested-verifier AIR/circuit, no local PCD/IVC outer proof
   generator plus verifier handle, no checked external zkVM receipt, and no
