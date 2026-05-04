@@ -1078,7 +1078,7 @@ and
 
 The issue `#426` follow-up then asks the stricter backend question over that
 same public-input contract and records a bounded no-go:
-`NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
+`NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`.
 The checked probe finds no local nested-verifier AIR/circuit, no local PCD/IVC
 outer proof generator plus verifier handle, no checked external zkVM receipt,
 and no checked external SNARK/IVC receipt for the contract today. It rejects

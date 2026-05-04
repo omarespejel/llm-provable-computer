@@ -116,7 +116,7 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
             "route_local_nested_verifier_relabel_to_go": "backend_routes",
             "route_external_zkvm_relabel_to_go": "backend_routes",
             "route_metric_smuggled": "backend_routes",
-            "backend_decision_changed_to_go": "backend_decision",
+            "backend_decision_usable_route_relabel_to_go": "backend_decision",
             "proof_size_metric_smuggled": "backend_decision",
             "validation_command_drift": "parser_or_schema",
         }

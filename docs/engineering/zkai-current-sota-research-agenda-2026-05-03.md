@@ -48,6 +48,8 @@ artifact bytes to a `4,435` byte verifier-facing object, while still reporting
 no recursive proof size, verifier time, or proof-generation metrics.
 The issue `#426` follow-up then audits that exact `#424` contract against the
 available backend routes and records a bounded no-go:
+`NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`.
+The primary blocker is
 `NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
 There is no local nested-verifier AIR/circuit, no local PCD/IVC outer proof
 generator plus verifier handle, no checked external zkVM receipt, and no

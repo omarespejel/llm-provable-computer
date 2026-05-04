@@ -128,6 +128,7 @@ python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py \
 python3 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
 just gate-fast
+just gate
 ```
 
 ## Next Step

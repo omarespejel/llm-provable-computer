@@ -129,6 +129,7 @@ VALIDATION_COMMANDS = [
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 ]
 
 ROUTE_IDS = (
@@ -178,7 +179,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("route_external_snark_relabel_to_go", "backend_routes"),
     ("route_blocker_removed", "backend_routes"),
     ("route_metric_smuggled", "backend_routes"),
-    ("backend_decision_changed_to_go", "backend_decision"),
+    ("backend_decision_usable_route_relabel_to_go", "backend_decision"),
     ("primary_blocker_removed", "backend_decision"),
     ("proof_size_metric_smuggled", "backend_decision"),
     ("verifier_time_metric_smuggled", "backend_decision"),
@@ -438,6 +439,7 @@ def _load_checked_proof_native_cached(path_text: str) -> dict[str, Any]:
         PROOF_NATIVE.validate_payload(payload)
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors.
         raise D128CryptographicBackendGateError(f"proof-native source validation failed: {err}", layer="source_proof_native_contract") from err
+    expect_equal(payload.get("issue"), SOURCE_ISSUE, "source issue", layer="source_proof_native_contract")
     expect_equal(payload.get("schema"), EXPECTED_PROOF_NATIVE_SCHEMA, "source schema", layer="source_proof_native_contract")
     expect_equal(payload.get("decision"), EXPECTED_PROOF_NATIVE_DECISION, "source decision", layer="source_proof_native_contract")
     expect_equal(payload.get("result"), EXPECTED_PROOF_NATIVE_RESULT, "source result", layer="source_proof_native_contract")
@@ -466,7 +468,7 @@ def source_proof_native_contract(source: dict[str, Any], path: pathlib.Path = PR
         "schema": source["schema"],
         "decision": source["decision"],
         "result": source["result"],
-        "issue": SOURCE_ISSUE,
+        "issue": source["issue"],
         "compression_result": source["compression_result"],
         "recursive_or_pcd_result": source["recursive_or_pcd_result"],
         "claim_boundary": source["claim_boundary"],
@@ -536,9 +538,17 @@ def _glob_candidate_artifacts() -> list[str]:
     return sorted(candidates)
 
 
-def backend_probe() -> dict[str, Any]:
-    cargo_toml = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
-    cargo_lock = tomllib.loads((ROOT / "Cargo.lock").read_text(encoding="utf-8"))
+def _read_toml_file(path: pathlib.Path, field: str) -> dict[str, Any]:
+    try:
+        return tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
+        raise D128CryptographicBackendGateError(f"failed to read or parse {field}: {err}", layer="backend_probe") from err
+
+
+@functools.lru_cache(maxsize=1)
+def _backend_probe_cached() -> dict[str, Any]:
+    cargo_toml = _read_toml_file(ROOT / "Cargo.toml", "Cargo.toml")
+    cargo_lock = _read_toml_file(ROOT / "Cargo.lock", "Cargo.lock")
     dependency_names = cargo_dependency_names(cargo_toml)
     zkvm_dependencies = sorted(EXTERNAL_ZKVM_DEPENDENCIES & dependency_names)
     snark_ivc_dependencies = sorted(EXTERNAL_SNARK_IVC_DEPENDENCIES & dependency_names)
@@ -555,6 +565,10 @@ def backend_probe() -> dict[str, Any]:
     }
 
 
+def backend_probe() -> dict[str, Any]:
+    return copy.deepcopy(_backend_probe_cached())
+
+
 def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
     for artifact in probe["fixed_backend_artifacts"]:
         if artifact["artifact_id"] == artifact_id:
@@ -563,6 +577,11 @@ def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
 
 
 def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
+    if any(artifact["exists"] for artifact in probe["fixed_backend_artifacts"]) or probe["artifact_candidates"]:
+        raise D128CryptographicBackendGateError(
+            "backend inventory changed; refresh route classification before regenerating evidence",
+            layer="backend_routes",
+        )
     return [
         {
             "route_id": "source_proof_native_two_slice_contract",
@@ -1021,7 +1040,7 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("route_external_snark_relabel_to_go", "backend_routes", lambda p: (p["backend_routes"][4].__setitem__("status", "GO_EXECUTABLE_BACKEND"), p["backend_routes"][4].__setitem__("usable_today", True)))
     add("route_blocker_removed", "backend_routes", lambda p: p["backend_routes"][1].__setitem__("blocking_missing_object", ""))
     add("route_metric_smuggled", "backend_routes", lambda p: p["backend_routes"][2]["proof_metrics"].__setitem__("verifier_time_ms", 1.0))
-    add("backend_decision_changed_to_go", "backend_decision", lambda p: p.__setitem__("result", "GO"))
+    add("backend_decision_usable_route_relabel_to_go", "backend_decision", lambda p: p["backend_decision"].__setitem__("usable_cryptographic_backend_route_ids", ["local_stwo_nested_verifier_backend"]))
     add("primary_blocker_removed", "backend_decision", lambda p: p["backend_decision"].__setitem__("primary_blocker", ""))
     add("proof_size_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_size_bytes", 1024))
     add("verifier_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("verifier_time_ms", 1.0))

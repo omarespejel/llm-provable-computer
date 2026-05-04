@@ -413,9 +413,9 @@
     },
     {
       "baseline_result": "BOUNDED_NO_GO",
-      "error_code": "backend_decision_changed_to_go",
+      "error_code": "backend_decision_usable_route_relabel_to_go",
       "mutated_accepted": false,
-      "mutation": "backend_decision_changed_to_go",
+      "mutation": "backend_decision_usable_route_relabel_to_go",
       "rejected": true,
       "rejection_layer": "backend_decision",
       "surface": "backend_decision"
@@ -629,7 +629,7 @@
     },
     {
       "index": 26,
-      "mutation": "backend_decision_changed_to_go",
+      "mutation": "backend_decision_usable_route_relabel_to_go",
       "surface": "backend_decision"
     },
     {
@@ -804,6 +804,7 @@
     "python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py scripts/tests/test_zkai_d128_cryptographic_backend_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }
