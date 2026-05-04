@@ -410,9 +410,9 @@ def backend_first_blocker(routes: list[dict[str, Any]]) -> str:
     toolchain_ready = [route for route in routes if not route["missing_commands"]]
     if not toolchain_ready:
         return FIRST_BLOCKER
-    if any(not route["receipt_artifact_exists"] for route in toolchain_ready):
-        return "MISSING_ZKVM_RECEIPT_ARTIFACT"
-    return RECEIPT_VERIFICATION_BLOCKER
+    if any(route["receipt_artifact_exists"] for route in toolchain_ready):
+        return RECEIPT_VERIFICATION_BLOCKER
+    return "MISSING_ZKVM_RECEIPT_ARTIFACT"
 
 
 def summary_for_backend_decision(decision: dict[str, Any]) -> str:
