@@ -489,7 +489,6 @@
           "--version"
         ],
         "command_id": "cargo",
-        "path": "/Users/espejelomar/.cargo/bin/cargo",
         "returncode": 0,
         "stderr": "",
         "stdout": "cargo 1.92.0 (344c4567c 2025-10-21)"
@@ -502,7 +501,6 @@
           "--version"
         ],
         "command_id": "cargo-prove",
-        "path": "/Users/espejelomar/.cargo/bin/cargo",
         "returncode": 101,
         "stderr": "error: no such command: `prove`\n\nhelp: a command with a similar name exists: `remove`\n\nhelp: view all installed commands with `cargo --list`\nhelp: find a package to install `prove` with `cargo search cargo-prove`",
         "stdout": ""
@@ -514,7 +512,6 @@
           "--version"
         ],
         "command_id": "cargo-risczero",
-        "path": null,
         "returncode": null,
         "stderr": "",
         "stdout": ""
@@ -526,7 +523,6 @@
           "--version"
         ],
         "command_id": "docker",
-        "path": "/opt/homebrew/bin/docker",
         "returncode": 0,
         "stderr": "",
         "stdout": "Docker version 29.2.1, build a5c7197d72"
@@ -538,7 +534,6 @@
           "--version"
         ],
         "command_id": "protoc",
-        "path": "/opt/homebrew/bin/protoc",
         "returncode": 0,
         "stderr": "",
         "stdout": "libprotoc 34.1"
@@ -550,7 +545,6 @@
           "--version"
         ],
         "command_id": "rustc",
-        "path": "/Users/espejelomar/.cargo/bin/rustc",
         "returncode": 0,
         "stderr": "",
         "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
@@ -562,7 +556,6 @@
           "--version"
         ],
         "command_id": "rzup",
-        "path": null,
         "returncode": null,
         "stderr": "",
         "stdout": ""
@@ -574,7 +567,6 @@
           "--version"
         ],
         "command_id": "sp1up",
-        "path": null,
         "returncode": null,
         "stderr": "",
         "stdout": ""
