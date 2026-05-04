@@ -368,7 +368,7 @@
         "candidate_valid": true,
         "exists": true,
         "reason": "receipt_candidate_parseable",
-        "size_bytes": 15206
+        "size_bytes": 15573
       },
       "required_commands": [
         "rzup",

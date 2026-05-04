@@ -56,6 +56,7 @@ class ZkAiD128Risc0StatementReceiptGateTests(unittest.TestCase):
         self.assertEqual(artifact["commitment"], payload["receipt_commitment"])
         self.assertEqual(verification["host_summary_schema"], "zkai-d128-risc0-host-summary-v1")
         self.assertEqual(verification["host_summary_mode"], "verify")
+        self.assertTrue(verification["strict_receipt_reverified"])
         self.assertTrue(verification["verifier_executed"])
         self.assertTrue(verification["receipt_verified"])
         self.assertTrue(verification["decoded_journal_matches_expected"])
@@ -89,6 +90,24 @@ class ZkAiD128Risc0StatementReceiptGateTests(unittest.TestCase):
             GATE.validate_payload(payload)
 
         self.assertEqual(err.exception.layer, "receipt_metadata")
+
+    def test_rejects_strict_reverification_relabeling(self) -> None:
+        payload = self.fresh_payload()
+        payload["receipt_verification"]["strict_receipt_reverified"] = False
+
+        with self.assertRaisesRegex(GATE.D128Risc0StatementReceiptError, "strict receipt") as err:
+            GATE.validate_payload(payload)
+
+        self.assertEqual(err.exception.layer, "receipt_metadata")
+
+    def test_rejects_receipt_path_traversal(self) -> None:
+        payload = self.fresh_payload()
+        payload["receipt_artifact"]["path"] = "../outside-repo-receipt.bincode"
+
+        with self.assertRaisesRegex(GATE.D128Risc0StatementReceiptError, "escapes repository root") as err:
+            GATE.validate_payload(payload)
+
+        self.assertEqual(err.exception.layer, "receipt_artifact")
 
     def test_rejects_metric_smuggling(self) -> None:
         payload = self.fresh_payload()

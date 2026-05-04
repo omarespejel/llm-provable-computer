@@ -1,7 +1,7 @@
 {
   "adapter_issue": 422,
   "all_mutations_rejected": true,
-  "case_count": 20,
+  "case_count": 21,
   "cases": [
     {
       "error": "journal contract mismatch",
@@ -90,6 +90,13 @@
     {
       "error": "receipt commitment mismatch",
       "mutation": "receipt_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "strict receipt reverified mismatch",
+      "mutation": "strict_reverification_relabeling",
       "rejected": true,
       "rejection_layer": "receipt_metadata",
       "surface": "receipt_metadata"
@@ -285,6 +292,10 @@
       "surface": "receipt_metadata"
     },
     {
+      "mutation": "strict_reverification_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
       "mutation": "receipt_size_metric_smuggling",
       "surface": "proof_metrics"
     },
@@ -325,7 +336,7 @@
     "proof_generation_time_ms": 178636.324583,
     "proof_size_bytes": 310234,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 25.198083
+    "verifier_time_ms": 19.421834
   },
   "receipt_artifact": {
     "commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
@@ -343,6 +354,7 @@
     "receipt_sha256": "3afcf7b71b83bb7a539e4d30d3604dbf7e27abe960221208ac46abbbfd5ddfef",
     "receipt_verified": true,
     "risc0_zkvm_version": "3.0.5",
+    "strict_receipt_reverified": true,
     "verifier_executed": true
   },
   "result": "GO",
@@ -355,7 +367,7 @@
     "proof_generation_time_ms": 178636.324583,
     "receipt_commitment": "blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd",
     "receipt_size_bytes": 310234,
-    "verifier_time_ms": 25.198083
+    "verifier_time_ms": 19.421834
   },
   "system": "RISC Zero",
   "toolchain_probe": {

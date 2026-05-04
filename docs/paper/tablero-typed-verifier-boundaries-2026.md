@@ -1104,7 +1104,7 @@ receipt commitment
 `blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd`,
 and image id
 `dd87546db470a99fa5b32dc6e9fbc39c7d0ef1b3475573f44d5ad984a98454e5`; it
-rejects `20 / 20` relabeling and metric-smuggling mutations. This is a zkVM
+rejects `21 / 21` relabeling and metric-smuggling mutations. This is a zkVM
 statement receipt, not recursive verification of the underlying Stwo slice
 proofs inside RISC Zero. The backend existence result is anchored to
 `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md` and

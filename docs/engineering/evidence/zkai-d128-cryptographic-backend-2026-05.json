@@ -14,7 +14,7 @@
       "metrics_enabled": true,
       "proof_generation_time_ms": 178636.324583,
       "proof_size_bytes": 310234,
-      "verifier_time_ms": 25.198083
+      "verifier_time_ms": 19.421834
     },
     "source_issue": 424,
     "usable_cryptographic_backend_route_ids": [
@@ -149,7 +149,7 @@
       "proof_metrics": {
         "proof_generation_time_ms": 178636.324583,
         "proof_size_bytes": 310234,
-        "verifier_time_ms": 25.198083
+        "verifier_time_ms": 19.421834
       },
       "route_id": "external_zkvm_statement_receipt_backend",
       "route_kind": "external_zkvm_statement_receipt",

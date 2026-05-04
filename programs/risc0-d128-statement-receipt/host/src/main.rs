@@ -4,6 +4,8 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{env, fs, path::PathBuf, time::Instant};
 
+const MAX_RECEIPT_BYTES: usize = 2_000_000;
+
 fn sha256_hex(bytes: &[u8]) -> String {
     hex::encode(Sha256::digest(bytes))
 }
@@ -30,7 +32,7 @@ fn write_summary(
     let summary = json!({
         "schema": "zkai-d128-risc0-host-summary-v1",
         "mode": mode,
-        "risc0_zkvm_version": "3.0.5",
+        "risc0_zkvm_version": risc0_zkvm::VERSION,
         "image_id_hex": image_id_hex(),
         "journal_sha256": sha256_hex(journal_bytes),
         "receipt_sha256": sha256_hex(receipt_bytes),
@@ -95,6 +97,15 @@ fn prove(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
 
 fn verify(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let journal_bytes = read_expected_journal(&journal_path);
+    let receipt_len = fs::metadata(&receipt_path)
+        .expect("read receipt artifact metadata")
+        .len();
+    if receipt_len == 0 || receipt_len > MAX_RECEIPT_BYTES as u64 {
+        panic!(
+            "receipt artifact size outside allowed bound: {} bytes",
+            receipt_len
+        );
+    }
     let receipt_bytes = fs::read(&receipt_path).expect("read receipt artifact");
     let receipt: Receipt =
         bincode::deserialize(&receipt_bytes).expect("deserialize RISC Zero receipt");
