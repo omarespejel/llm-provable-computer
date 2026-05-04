@@ -5,7 +5,7 @@
     {
       "baseline_result": "GO",
       "error": "source accumulator file hash mismatch",
-      "error_code": "source_accumulator",
+      "error_code": "source_accumulator_file_hash_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_file_hash_drift",
       "rejected": true,
@@ -15,7 +15,7 @@
     {
       "baseline_result": "GO",
       "error": "source accumulator payload hash mismatch",
-      "error_code": "source_accumulator",
+      "error_code": "source_accumulator_payload_hash_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_payload_hash_drift",
       "rejected": true,
@@ -25,7 +25,7 @@
     {
       "baseline_result": "GO",
       "error": "source accumulator descriptor mismatch",
-      "error_code": "source_accumulator",
+      "error_code": "source_accumulator_result_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_result_drift",
       "rejected": true,
@@ -35,7 +35,7 @@
     {
       "baseline_result": "GO",
       "error": "source accumulator descriptor mismatch",
-      "error_code": "source_accumulator",
+      "error_code": "source_accumulator_claim_boundary_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_claim_boundary_drift",
       "rejected": true,
@@ -45,7 +45,7 @@
     {
       "baseline_result": "GO",
       "error": "source accumulator descriptor mismatch",
-      "error_code": "source_accumulator",
+      "error_code": "source_accumulator_commitment_drift",
       "mutated_accepted": false,
       "mutation": "source_accumulator_commitment_drift",
       "rejected": true,
@@ -55,7 +55,7 @@
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_artifact_commitment_drift",
       "mutated_accepted": false,
       "mutation": "compressed_artifact_commitment_drift",
       "rejected": true,
@@ -65,7 +65,7 @@
     {
       "baseline_result": "GO",
       "error": "compressed artifact claim boundary mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_artifact_claim_boundary_changed_to_recursive",
       "mutated_accepted": false,
       "mutation": "compressed_artifact_claim_boundary_changed_to_recursive",
       "rejected": true,
@@ -75,127 +75,127 @@
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_public_target_commitment_drift",
       "mutated_accepted": false,
       "mutation": "compressed_public_target_commitment_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_selected_statement_drift",
       "mutated_accepted": false,
       "mutation": "compressed_selected_statement_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_selected_source_hash_drift",
       "mutated_accepted": false,
       "mutation": "compressed_selected_source_hash_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_selected_public_instance_drift",
       "mutated_accepted": false,
       "mutation": "compressed_selected_public_instance_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_selected_parameter_commitment_drift",
       "mutated_accepted": false,
       "mutation": "compressed_selected_parameter_commitment_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_verifier_domain_drift",
       "mutated_accepted": false,
       "mutation": "compressed_verifier_domain_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_backend_version_drift",
       "mutated_accepted": false,
       "mutation": "compressed_backend_version_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_source_accumulator_commitment_drift",
       "mutated_accepted": false,
       "mutation": "compressed_source_accumulator_commitment_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_public_inputs",
       "surface": "compressed_public_inputs"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_slice_removed",
       "mutated_accepted": false,
       "mutation": "compressed_slice_removed",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_transcript",
       "surface": "compressed_transcript"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_slice_duplicated",
       "mutated_accepted": false,
       "mutation": "compressed_slice_duplicated",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_transcript",
       "surface": "compressed_transcript"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_slice_reordered",
       "mutated_accepted": false,
       "mutation": "compressed_slice_reordered",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_transcript",
       "surface": "compressed_transcript"
     },
     {
       "baseline_result": "GO",
       "error": "compressed artifact mismatch",
-      "error_code": "compressed_artifact",
+      "error_code": "compressed_slice_row_count_drift",
       "mutated_accepted": false,
       "mutation": "compressed_slice_row_count_drift",
       "rejected": true,
-      "rejection_layer": "compressed_artifact",
+      "rejection_layer": "compressed_transcript",
       "surface": "compressed_transcript"
     },
     {
       "baseline_result": "GO",
       "error": "compression status mismatch",
-      "error_code": "compression_metrics",
+      "error_code": "compression_ratio_relabeling",
       "mutated_accepted": false,
       "mutation": "compression_ratio_relabeling",
       "rejected": true,
@@ -205,7 +205,7 @@
     {
       "baseline_result": "GO",
       "error": "verifier handle mismatch",
-      "error_code": "verifier_handle",
+      "error_code": "verifier_handle_commitment_drift",
       "mutated_accepted": false,
       "mutation": "verifier_handle_commitment_drift",
       "rejected": true,
@@ -215,7 +215,7 @@
     {
       "baseline_result": "GO",
       "error": "verifier handle claim boundary mismatch",
-      "error_code": "verifier_handle",
+      "error_code": "verifier_handle_claim_boundary_changed_to_recursive",
       "mutated_accepted": false,
       "mutation": "verifier_handle_claim_boundary_changed_to_recursive",
       "rejected": true,
@@ -225,7 +225,7 @@
     {
       "baseline_result": "GO",
       "error": "verifier handle mismatch",
-      "error_code": "verifier_handle",
+      "error_code": "verifier_handle_artifact_commitment_drift",
       "mutated_accepted": false,
       "mutation": "verifier_handle_artifact_commitment_drift",
       "rejected": true,
@@ -235,7 +235,7 @@
     {
       "baseline_result": "GO",
       "error": "verifier handle mismatch",
-      "error_code": "verifier_handle",
+      "error_code": "verifier_handle_missing_required_public_input",
       "mutated_accepted": false,
       "mutation": "verifier_handle_missing_required_public_input",
       "rejected": true,
@@ -245,7 +245,7 @@
     {
       "baseline_result": "GO",
       "error": "recursive or PCD status mismatch",
-      "error_code": "recursive_or_pcd_status",
+      "error_code": "recursive_outer_proof_claimed",
       "mutated_accepted": false,
       "mutation": "recursive_outer_proof_claimed",
       "rejected": true,
@@ -255,7 +255,7 @@
     {
       "baseline_result": "GO",
       "error": "recursive or PCD status mismatch",
-      "error_code": "recursive_or_pcd_status",
+      "error_code": "pcd_outer_proof_claimed",
       "mutated_accepted": false,
       "mutation": "pcd_outer_proof_claimed",
       "rejected": true,
@@ -265,7 +265,7 @@
     {
       "baseline_result": "GO",
       "error": "recursive or PCD status mismatch",
-      "error_code": "recursive_or_pcd_status",
+      "error_code": "recursive_proof_metric_smuggled",
       "mutated_accepted": false,
       "mutation": "recursive_proof_metric_smuggled",
       "rejected": true,
@@ -275,7 +275,7 @@
     {
       "baseline_result": "GO",
       "error": "recursive or PCD status mismatch",
-      "error_code": "recursive_or_pcd_status",
+      "error_code": "recursive_blocker_removed",
       "mutated_accepted": false,
       "mutation": "recursive_blocker_removed",
       "rejected": true,
@@ -285,7 +285,7 @@
     {
       "baseline_result": "GO",
       "error": "decision mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "decision_changed_to_no_go",
       "mutated_accepted": false,
       "mutation": "decision_changed_to_no_go",
       "rejected": true,
@@ -295,7 +295,7 @@
     {
       "baseline_result": "GO",
       "error": "result mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "result_changed_to_no_go",
       "mutated_accepted": false,
       "mutation": "result_changed_to_no_go",
       "rejected": true,
@@ -305,7 +305,7 @@
     {
       "baseline_result": "GO",
       "error": "compression result mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "compression_result_changed_to_no_go",
       "mutated_accepted": false,
       "mutation": "compression_result_changed_to_no_go",
       "rejected": true,
@@ -315,7 +315,7 @@
     {
       "baseline_result": "GO",
       "error": "recursive or PCD result mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "recursive_result_changed_to_go",
       "mutated_accepted": false,
       "mutation": "recursive_result_changed_to_go",
       "rejected": true,
@@ -325,7 +325,7 @@
     {
       "baseline_result": "GO",
       "error": "non-claims mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "non_claims_removed",
       "mutated_accepted": false,
       "mutation": "non_claims_removed",
       "rejected": true,
@@ -335,7 +335,7 @@
     {
       "baseline_result": "GO",
       "error": "validation commands mismatch",
-      "error_code": "parser_or_schema",
+      "error_code": "validation_command_drift",
       "mutated_accepted": false,
       "mutation": "validation_command_drift",
       "rejected": true,

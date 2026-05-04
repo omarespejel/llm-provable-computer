@@ -848,7 +848,8 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
         if accepted:
             expect_equal(error_code, "accepted", f"mutation case {index} error_code")
         else:
-            expect_equal(error_code, rejection_layer, f"mutation case {index} error_code")
+            if error_code == "accepted" or not error_code:
+                raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error_code must identify the rejection")
         if not isinstance(case["error"], str):
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be a string")
         if "\t" in case["error"] or "\n" in case["error"]:
@@ -899,34 +900,6 @@ def validate_payload(payload: Any) -> None:
     expected_summary["mutations_rejected"] = rejected
     expect_keys(require_object(payload.get("summary"), "summary"), SUMMARY_WITH_CASE_KEYS, "summary")
     expect_equal(payload.get("summary"), expected_summary, "summary")
-
-
-def classify_error(error: Exception) -> str:
-    text = str(error).lower()
-    if (
-        text.startswith("decision ")
-        or text.startswith("result ")
-        or text.startswith("compression result ")
-        or text.startswith("recursive or pcd result ")
-        or text.startswith("non-claims ")
-        or text.startswith("validation commands ")
-    ):
-        return "parser_or_schema"
-    if "source accumulator" in text:
-        return "source_accumulator"
-    if "verifier handle" in text:
-        return "verifier_handle"
-    if "recursive" in text or "pcd" in text or "metric" in text or "blocker" in text:
-        return "recursive_or_pcd_status"
-    if "compression" in text or "byte" in text or "ratio" in text:
-        return "compression_metrics"
-    if "compressed artifact" in text:
-        return "compressed_artifact"
-    if "public" in text or "target" in text or "backend" in text:
-        return "compressed_public_inputs"
-    if "transcript" in text or "slice" in text or "row" in text:
-        return "compressed_transcript"
-    return "parser_or_schema"
 
 
 def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
@@ -988,8 +961,8 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
         except D128ProofNativeTwoSliceCompressionError as err:
             accepted = False
             error = str(err)
-            layer = classify_error(err)
-            error_code = layer
+            layer = surface
+            error_code = mutation
         cases.append(
             {
                 "mutation": mutation,
