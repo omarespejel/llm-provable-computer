@@ -20,6 +20,7 @@ import json
 import os
 import pathlib
 import secrets
+import stat
 import sys
 from typing import Any, Callable
 
@@ -850,6 +851,12 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
             expect_equal(error_code, rejection_layer, f"mutation case {index} error_code")
         if not isinstance(case["error"], str):
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be a string")
+        if "\t" in case["error"] or "\n" in case["error"]:
+            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be single-line TSV-safe text")
+        if accepted and case["error"]:
+            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} accepted error must be empty")
+        if rejected_flag and not case["error"]:
+            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} rejected error must be non-empty")
         if rejected_flag:
             rejected += 1
     expect_equal(tuple(pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
@@ -1056,12 +1063,14 @@ def _resolved_output_target(path: pathlib.Path) -> tuple[pathlib.Path, pathlib.P
 
 
 def _write_bytes_via_dirfd(final_path: pathlib.Path, data: bytes) -> None:
-    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
     dir_fd = os.open(final_path.parent, flags)
     tmp_name = f".{final_path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
     tmp_fd: int | None = None
     tmp_created = False
     try:
+        if not stat.S_ISDIR(os.fstat(dir_fd).st_mode):
+            raise D128ProofNativeTwoSliceCompressionError(f"output parent is not a directory: {final_path.parent}")
         tmp_fd = os.open(tmp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
         tmp_created = True
         with os.fdopen(tmp_fd, "wb", closefd=True) as handle:
