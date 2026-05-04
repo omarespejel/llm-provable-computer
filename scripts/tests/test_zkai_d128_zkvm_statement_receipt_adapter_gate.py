@@ -165,6 +165,33 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
         self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER)
         self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER[GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER])
 
+    def test_oversized_receipt_placeholder_does_not_get_parsed(self) -> None:
+        probe = self.fixture_probe()
+        for command_id in ("sp1up", "cargo-prove"):
+            probe["commands"][command_id]["available"] = True
+            probe["commands"][command_id]["returncode"] = 0
+            probe["commands"][command_id]["stdout"] = f"{command_id} test-version"
+
+        original_routes = GATE.ZKVM_ROUTES
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            receipt_path = pathlib.Path(raw_tmp) / "oversized-receipt.json"
+            receipt_path.write_text("{" + (" " * GATE.MAX_RECEIPT_CANDIDATE_BYTES) + "}", encoding="utf-8")
+            patched_routes = (
+                original_routes[0],
+                {**original_routes[1], "receipt_artifact": receipt_path.relative_to(GATE.ROOT).as_posix()},
+            )
+            GATE.ZKVM_ROUTES = patched_routes
+            try:
+                payload = GATE.build_payload(probe=probe)
+                GATE.validate_payload(payload)
+            finally:
+                GATE.ZKVM_ROUTES = original_routes
+
+        route = payload["route_decisions"][1]
+        self.assertEqual(route["receipt_artifact_probe"]["reason"], "oversized_receipt_artifact")
+        self.assertGreater(route["receipt_artifact_probe"]["size_bytes"], GATE.MAX_RECEIPT_CANDIDATE_BYTES)
+        self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER)
+
     def test_backend_blocker_prefers_route_with_receipt_artifact(self) -> None:
         probe = self.fixture_probe()
         for entry in probe["commands"].values():
