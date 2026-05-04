@@ -108,8 +108,10 @@ just gate
 
 ## Next Step
 
-Issue `#422` remains the next proof-system-transfer test: run the same public
-input contract through zkVM public journal/public-values semantics. A local probe
-on this machine found `circom 2.0.9` available but no installed RISC Zero or SP1
-CLI (`rzup`, `cargo-risczero`, `sp1up`, `cargo-prove` not found), so #422 should
-start with an explicit toolchain/bootstrap gate before claiming a zkVM receipt.
+Issue `#422` now records that explicit zkVM toolchain/bootstrap gate. The same
+#424 public-input contract maps into a concrete zkVM public
+journal/public-values contract, but this checkout has no RISC Zero or SP1
+receipt route today (`rzup`, `cargo-risczero`, `sp1up`, and `cargo-prove` are
+missing, and no receipt artifact exists). The next proof-system-transfer test is
+therefore route-specific: install and pin exactly one zkVM toolchain, then
+produce a real receipt for the checked journal contract.

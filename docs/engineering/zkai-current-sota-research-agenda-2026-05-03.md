@@ -67,8 +67,14 @@ python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py \
   --write-tsv docs/engineering/evidence/zkai-d128-snark-receipt-timing-setup-2026-05.tsv
 ```
 
-The local nested-verifier route, local PCD/IVC route, and external zkVM route
-remain missing.
+Issue `#422` now maps that same `#424` public-input contract into a zkVM public
+journal/public-values contract with journal commitment
+`blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569`,
+but records a bounded no-go before metrics: the local branch has no RISC Zero
+or SP1 receipt route because `rzup`, `cargo-risczero`, `sp1up`, and
+`cargo-prove` are missing and no zkVM receipt artifact exists. The local
+nested-verifier route, local PCD/IVC route, and real external zkVM receipt route
+therefore remain missing.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -94,8 +100,8 @@ GO means:
 NO-GO is still useful if it records the exact missing backend feature. The
 current checked backend evidence now says the blocker is not "six slices are too
 big": the two-slice statement can be receipted by an external SNARK today. The
-remaining hard blocker is local recursion / PCD or a zkVM receipt over the same
-contract. The SNARK route now has verifier/prover timings, but only as
+remaining hard blocker is local recursion / PCD or a real zkVM receipt over the
+same contract. The SNARK route now has verifier/prover timings, but only as
 statement-receipt adapter timings under local throwaway setup; they are not
 recursive proof-object metrics and not public zkML benchmark rows.
 
@@ -127,9 +133,11 @@ recursive proof-object metrics and not public zkML benchmark rows.
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
    Issue `#428` now provides the proof-system-independent control: an external
    SNARK statement receipt over the `#424` public-input contract. Issue `#430`
-   adds local throwaway-setup timing for that route. The best next experiment
-   is issue `#422`: an external zkVM statement receipt adapter over the same
-   contract.
+   adds local throwaway-setup timing for that route. Issue `#422` records the
+   corresponding zkVM public journal/public-values contract and the checked
+   no-go blocker. The best next experiment is a route-specific zkVM follow-up:
+   install/pin exactly one zkVM toolchain and produce a real receipt for the
+   #422 journal contract.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification

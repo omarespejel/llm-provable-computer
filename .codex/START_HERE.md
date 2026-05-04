@@ -24,8 +24,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 18. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
 19. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
 20. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
-21. `docs/engineering/reproducibility.md`
-22. `git status --short --branch`
+21. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
+22. `docs/engineering/reproducibility.md`
+23. `git status --short --branch`
 
 ## What this repository is now
 
@@ -108,10 +109,11 @@ This repository currently has three live lanes.
      metrics by
      `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`. The
      two-slice and full-block non-recursive accumulator routes remain usable;
-     external zkVM statement receipts and external SNARK/IVC adapters remain
-     research candidates. It rejects `24 / 24` source-drift, route-relabeling,
-     blocker-removal, metric-smuggling, weakened-GO, and parser/schema
-     mutations; see
+     the later external SNARK adapter is now a checked statement-receipt GO,
+     and the later external zkVM adapter is now a checked journal-contract
+     no-go. The route selector itself rejects `24 / 24` source-drift,
+     route-relabeling, blocker-removal, metric-smuggling, weakened-GO, and
+     parser/schema mutations; see
      `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`.
    - The d128 proof-native two-slice compression gate now answers issue `#424`
      as a narrow GO: the two-slice accumulator transcript/public-input contract
@@ -163,7 +165,10 @@ This repository currently has three live lanes.
      issue `#411` and `#420` recursive/backend no-go evidence, and issue
      `#428` external SNARK statement-receipt GO evidence. Local recursion,
      zkVM receipts, verifier-time metrics, and proof-generation-time metrics
-     remain blocked.
+     remain blocked. Issue `#422` now maps the same #424 contract into a
+     concrete zkVM public journal/public-values contract, but records a bounded
+     no-go because `rzup`, `cargo-risczero`, `sp1up`, and `cargo-prove` are not
+     installed and no zkVM receipt artifact exists.
 
 Do not collapse these lanes into one claim.
 
@@ -238,15 +243,18 @@ The repo now also has one explicit answer on the second-backend question:
     (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
     existence. Treat issue `#428` as the current positive external SNARK
-    statement-receipt adapter over the `#424` public-input contract. Treat
-    issues `#409`, `#413`, and `#424` as the other positive handoff objects:
-    real non-recursive two-slice/full-block accumulators and a proof-native
-    two-slice transcript-compressed verifier-facing object. The next useful
-    experiment is issue `#422`: an external zkVM statement-receipt adapter over
-    the same contract. Do not report recursive proof-size, verifier-time, or
-    proof-generation-time metrics until a real recursive or PCD proof object
-    exists, and do not report SNARK verifier/prover timings until a dedicated
-    timing gate measures them.
+    statement-receipt adapter over the `#424` public-input contract, issue
+    `#430` as its local throwaway-setup timing hardening result, and issue
+    `#422` as the checked zkVM public journal/public-values no-go for that same
+    contract. Treat issues `#409`, `#413`, and `#424` as the other positive
+    handoff objects: real non-recursive two-slice/full-block accumulators and a
+    proof-native two-slice transcript-compressed verifier-facing object. The
+    next useful experiment after #422 is a new route-specific issue that
+    installs/pins exactly one zkVM toolchain and produces a real receipt. Do
+    not report recursive proof-size, verifier-time, or proof-generation-time
+    metrics until a real recursive or PCD proof object exists; report #430
+    SNARK verifier/prover timings only as statement-receipt adapter timings
+    under local throwaway setup.
 
 ## What not to do
 

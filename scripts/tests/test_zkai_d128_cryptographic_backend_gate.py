@@ -103,6 +103,11 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertIsNone(snark_route["proof_metrics"]["verifier_time_ms"])
         self.assertEqual(snark_route["evidence"]["tracked_issue"], 428)
         self.assertEqual(routes["external_zkvm_statement_receipt_backend"]["evidence"]["tracked_issue"], 422)
+        self.assertTrue(routes["external_zkvm_statement_receipt_backend"]["evidence"]["adapter_gate_artifact_exists"])
+        self.assertEqual(
+            routes["external_zkvm_statement_receipt_backend"]["blocking_missing_object"],
+            "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
+        )
         self.assertEqual(routes["starknet_settlement_adapter"]["status"], "DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS")
 
     def test_backend_probe_records_checked_snark_artifact_but_no_local_or_zkvm_backend(self) -> None:
@@ -114,10 +119,14 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertEqual(probe["external_snark_ivc_dependency_names"], [])
         by_id = {artifact["artifact_id"]: artifact for artifact in probe["fixed_backend_artifacts"]}
         self.assertFalse(by_id["local_stwo_nested_verifier_module"]["exists"])
-        self.assertFalse(by_id["external_zkvm_statement_receipt_artifact"]["exists"])
+        self.assertTrue(by_id["external_zkvm_statement_receipt_artifact"]["exists"])
         self.assertTrue(by_id["external_snark_ivc_statement_receipt_artifact"]["exists"])
         self.assertIn(
             "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
+            probe["artifact_candidates"],
+        )
+        self.assertIn(
+            "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json",
             probe["artifact_candidates"],
         )
 

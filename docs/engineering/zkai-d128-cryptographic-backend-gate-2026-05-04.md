@@ -14,7 +14,9 @@ from issue `#424`, and issue `#428` now adds an executable external
 
 This supersedes the original bounded no-go for the external SNARK route. It does
 not change the local-recursion boundary: there is still no local nested-verifier
-AIR/circuit, no local PCD/IVC outer proof generator, and no zkVM receipt.
+AIR/circuit, no local PCD/IVC outer proof generator, and no real zkVM receipt.
+Issue `#422` now narrows the zkVM branch to a checked public journal/public-values
+contract plus a toolchain/bootstrap no-go.
 
 ## Source Contract
 
@@ -46,21 +48,21 @@ The target backend must bind the same public-input contract:
 
 The checked repo probe now finds one usable external cryptographic backend
 route: the issue `#428` `snarkjs/Groth16` statement receipt for the exact issue
-`#424` public-input contract. The local recursive/PCD routes and the external
-zkVM receipt route remain missing:
+`#424` public-input contract. The local recursive/PCD routes remain missing, and
+the real external zkVM receipt route remains missing:
 
 | Route | Status | Usable today |
 |---|---|---:|
 | Source proof-native two-slice contract | `GO_INPUT_CONTRACT_ONLY_NOT_CRYPTOGRAPHIC_BACKEND` | yes, as input only |
 | Local Stwo nested verifier backend | `NO_GO_MISSING_NESTED_VERIFIER_AIR_OR_CIRCUIT` | no |
 | Local PCD or IVC outer proof backend | `NO_GO_MISSING_OUTER_PROOF_GENERATOR_AND_VERIFIER_HANDLE` | no |
-| External zkVM statement receipt backend | `NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT` | no |
+| External zkVM statement receipt backend | `NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING` | no |
 | External SNARK or IVC statement receipt backend | `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT` | yes |
 | Starknet settlement adapter | `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` | no |
 
 The remaining missing objects are:
 
-> local nested verifier AIR/circuit, local PCD/IVC backend, and external zkVM receipt
+> local nested verifier AIR/circuit, local PCD/IVC backend, and real external zkVM receipt
 
 ## Why This Matters
 
@@ -72,8 +74,8 @@ This gate makes the remaining research fork explicit:
 
 - build a local nested-verifier AIR/circuit or PCD/IVC backend for the same
   public-input contract; or
-- build an external zkVM statement-receipt adapter over the same contract
-  (`#422`).
+- install/pin one external zkVM toolchain and produce a real statement receipt
+  over the issue `#422` journal/public-values contract.
 
 The external SNARK/IVC branch is no longer a missing route: issue `#428`
 landed the `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_D128_CONTRACT`
@@ -96,8 +98,8 @@ The gate rejects `35 / 35` mutation cases, including:
   accumulator, and source verifier-handle relabeling;
 - compressed artifact and verifier-handle commitment drift;
 - repo-probe dependency or artifact-presence relabeling;
-- fake local nested-verifier, local PCD/IVC, external zkVM, or stale external
-  SNARK/IVC route relabeling;
+- fake local nested-verifier, local PCD/IVC, external zkVM receipt, or stale
+  external SNARK/IVC route relabeling;
 - route blocker removal and route-level metric smuggling;
 - decision-level proof-size, verifier-time, and proof-generation-time metric
   smuggling; and
@@ -139,7 +141,9 @@ just gate
 ## Next Step
 
 Issue `#428` is now the proof-system-independent control: a real SNARK
-statement receipt exists for the exact issue `#424` public-input contract. The
-next useful implementation experiment is issue `#422`: a narrow zkVM
-statement-receipt adapter that binds the same contract as receipt journal/public
-values.
+statement receipt exists for the exact issue `#424` public-input contract. Issue
+`#422` now records the corresponding zkVM journal/public-values contract and the
+first blocker (`MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP`). The next useful
+implementation experiment is route-specific: install and pin either RISC Zero or
+SP1, then produce a real receipt for that exact contract without reporting
+proof metrics until the receipt verifies.

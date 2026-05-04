@@ -36,8 +36,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 PROOF_NATIVE_SCRIPT = ROOT / "scripts" / "zkai_d128_proof_native_two_slice_compression_gate.py"
 SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_d128_snark_ivc_statement_receipt_gate.py"
+ZKVM_RECEIPT_ADAPTER_SCRIPT = ROOT / "scripts" / "zkai_d128_zkvm_statement_receipt_adapter_gate.py"
 PROOF_NATIVE_EVIDENCE = EVIDENCE_DIR / "zkai-d128-proof-native-two-slice-compression-2026-05.json"
 SNARK_RECEIPT_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-ivc-statement-receipt-2026-05.json"
+ZKVM_RECEIPT_ADAPTER_EVIDENCE = EVIDENCE_DIR / "zkai-d128-zkvm-statement-receipt-adapter-2026-05.json"
 SNARK_RECEIPT_TIMING_EVIDENCE = EVIDENCE_DIR / "zkai-d128-snark-receipt-timing-setup-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-cryptographic-backend-2026-05.tsv"
@@ -48,6 +50,7 @@ RESULT = "GO"
 ISSUE = 426
 SOURCE_ISSUE = 424
 SNARK_RECEIPT_ISSUE = 428
+ZKVM_RECEIPT_ADAPTER_ISSUE = 422
 CLAIM_BOUNDARY = "EXTERNAL_SNARK_STATEMENT_RECEIPT_AVAILABLE_NOT_RECURSION"
 PRIMARY_BLOCKER = "NONE_FOR_EXTERNAL_SNARK_STATEMENT_RECEIPT_ROUTE"
 FIRST_MISSING_OBJECT = (
@@ -72,6 +75,9 @@ EXPECTED_PROOF_NATIVE_CLAIM_BOUNDARY = "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_
 EXPECTED_SNARK_RECEIPT_SCHEMA = "zkai-d128-snark-ivc-statement-receipt-gate-v1"
 EXPECTED_SNARK_RECEIPT_DECISION = "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT"
 EXPECTED_SNARK_RECEIPT_RESULT = "GO"
+EXPECTED_ZKVM_RECEIPT_ADAPTER_SCHEMA = "zkai-d128-zkvm-statement-receipt-adapter-gate-v1"
+EXPECTED_ZKVM_RECEIPT_ADAPTER_DECISION = "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING"
+EXPECTED_ZKVM_RECEIPT_ADAPTER_RESULT = "NO_GO"
 EXPECTED_SELECTED_SLICE_IDS = ("rmsnorm_public_rows", "rmsnorm_projection_bridge")
 EXPECTED_SELECTED_ROWS = 256
 
@@ -98,7 +104,7 @@ FIXED_BACKEND_ARTIFACTS = (
     ),
     (
         "external_zkvm_statement_receipt_artifact",
-        "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-2026-05.json",
+        "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json",
     ),
     (
         "external_snark_ivc_statement_receipt_artifact",
@@ -338,6 +344,7 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
 
 PROOF_NATIVE = _load_module(PROOF_NATIVE_SCRIPT, "zkai_d128_proof_native_for_cryptographic_backend_gate")
 SNARK_RECEIPT = _load_module(SNARK_RECEIPT_SCRIPT, "zkai_d128_snark_receipt_for_cryptographic_backend_gate")
+ZKVM_RECEIPT_ADAPTER = _load_module(ZKVM_RECEIPT_ADAPTER_SCRIPT, "zkai_d128_zkvm_receipt_adapter_for_cryptographic_backend_gate")
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -531,6 +538,33 @@ def load_checked_snark_receipt(path: pathlib.Path = SNARK_RECEIPT_EVIDENCE) -> d
     return copy.deepcopy(_load_checked_snark_receipt_cached(path.as_posix()))
 
 
+@functools.lru_cache(maxsize=1)
+def _load_checked_zkvm_receipt_adapter_cached(path_text: str) -> dict[str, Any]:
+    path = pathlib.Path(path_text)
+    payload = load_json(path, layer="external_zkvm_receipt", field="zkVM receipt adapter evidence")
+    try:
+        ZKVM_RECEIPT_ADAPTER.validate_payload(payload)
+    except Exception as err:  # noqa: BLE001 - normalize imported validator failures.
+        raise D128CryptographicBackendGateError(f"zkVM receipt adapter validation failed: {err}", layer="external_zkvm_receipt") from err
+    expect_equal(payload.get("schema"), EXPECTED_ZKVM_RECEIPT_ADAPTER_SCHEMA, "zkVM adapter schema", layer="external_zkvm_receipt")
+    expect_equal(payload.get("issue"), ZKVM_RECEIPT_ADAPTER_ISSUE, "zkVM adapter issue", layer="external_zkvm_receipt")
+    expect_equal(payload.get("source_issue"), SOURCE_ISSUE, "zkVM adapter source issue", layer="external_zkvm_receipt")
+    expect_equal(payload.get("decision"), EXPECTED_ZKVM_RECEIPT_ADAPTER_DECISION, "zkVM adapter decision", layer="external_zkvm_receipt")
+    expect_equal(payload.get("result"), EXPECTED_ZKVM_RECEIPT_ADAPTER_RESULT, "zkVM adapter result", layer="external_zkvm_receipt")
+    expect_equal(payload.get("all_mutations_rejected"), True, "zkVM adapter mutation result", layer="external_zkvm_receipt")
+    decision = require_object(payload.get("backend_decision"), "zkVM adapter backend decision", layer="external_zkvm_receipt")
+    if decision.get("usable_route_ids"):
+        raise D128CryptographicBackendGateError("zkVM adapter cannot expose usable routes under the checked no-go decision", layer="external_zkvm_receipt")
+    metrics = require_object(decision.get("proof_metrics"), "zkVM adapter proof metrics", layer="external_zkvm_receipt")
+    if metrics.get("metrics_enabled") is not False or any(metrics.get(key) is not None for key in ("proof_size_bytes", "verifier_time_ms", "proof_generation_time_ms")):
+        raise D128CryptographicBackendGateError("zkVM adapter metrics must remain disabled before receipt GO", layer="external_zkvm_receipt")
+    return payload
+
+
+def load_checked_zkvm_receipt_adapter(path: pathlib.Path = ZKVM_RECEIPT_ADAPTER_EVIDENCE) -> dict[str, Any]:
+    return copy.deepcopy(_load_checked_zkvm_receipt_adapter_cached(path.as_posix()))
+
+
 def snark_receipt_route_metrics(receipt: dict[str, Any]) -> dict[str, Any]:
     metrics = require_object(receipt.get("receipt_metrics"), "SNARK receipt metrics", layer="external_snark_receipt")
     return {
@@ -636,6 +670,8 @@ def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
 
 def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     allowed_inventory_paths = {relative_path(SNARK_RECEIPT_EVIDENCE)}
+    if ZKVM_RECEIPT_ADAPTER_EVIDENCE.exists():
+        allowed_inventory_paths.add(relative_path(ZKVM_RECEIPT_ADAPTER_EVIDENCE))
     if SNARK_RECEIPT_TIMING_EVIDENCE.exists():
         # Issue #430 is timing/setup hardening for the #428 route, not a new
         # cryptographic backend route. Allow it in the inventory without
@@ -644,7 +680,7 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     unexpected_fixed = [
         artifact
         for artifact in probe["fixed_backend_artifacts"]
-        if artifact["exists"] and artifact["artifact_id"] != "external_snark_ivc_statement_receipt_artifact"
+        if artifact["exists"] and artifact["artifact_id"] not in {"external_snark_ivc_statement_receipt_artifact", "external_zkvm_statement_receipt_artifact"}
     ]
     unexpected_candidates = sorted(set(probe["artifact_candidates"]) - allowed_inventory_paths)
     if unexpected_fixed or unexpected_candidates:
@@ -652,6 +688,8 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
             "backend inventory changed; refresh route classification before regenerating evidence",
             layer="backend_routes",
         )
+    zkvm_adapter_exists = _artifact_exists(probe, "external_zkvm_statement_receipt_artifact")
+    zkvm_adapter = load_checked_zkvm_receipt_adapter() if zkvm_adapter_exists else None
     snark_receipt_exists = _artifact_exists(probe, "external_snark_ivc_statement_receipt_artifact")
     if not snark_receipt_exists:
         raise D128CryptographicBackendGateError(
@@ -720,12 +758,24 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
         {
             "route_id": "external_zkvm_statement_receipt_backend",
             "route_kind": "external_zkvm_statement_receipt",
-            "status": "NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT",
+            "status": (
+                zkvm_adapter["decision"]
+                if zkvm_adapter is not None
+                else "NO_GO_ZKVM_RECEIPT_ADAPTER_NOT_IMPLEMENTED_FOR_D128_CONTRACT"
+            ),
             "cryptographic_backend": True,
             "usable_today": False,
-            "claim_boundary": "external_adapter_candidate_not_checked_backend",
-            "blocking_missing_object": "checked_external_zkvm_receipt_for_d128_two_slice_contract",
-            "next_action": "work issue #422 with the #424 public inputs as receipt journal fields",
+            "claim_boundary": (
+                zkvm_adapter["claim_boundary"]
+                if zkvm_adapter is not None
+                else "external_adapter_candidate_not_checked_backend"
+            ),
+            "blocking_missing_object": (
+                zkvm_adapter["backend_decision"]["first_blocker"]
+                if zkvm_adapter is not None
+                else "checked_external_zkvm_receipt_for_d128_two_slice_contract"
+            ),
+            "next_action": "install/pin one zkVM toolchain and produce a real receipt over the #424 public journal/public-values contract",
             "proof_metrics": {
                 "proof_size_bytes": None,
                 "verifier_time_ms": None,
@@ -734,8 +784,13 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
             "evidence": {
                 "local_dependencies_declared": probe["external_zkvm_dependencies_declared"],
                 "dependency_names": copy.deepcopy(probe["external_zkvm_dependency_names"]),
-                "receipt_artifact_exists": _artifact_exists(probe, "external_zkvm_statement_receipt_artifact"),
-                "tracked_issue": 422,
+                "receipt_artifact_exists": False,
+                "adapter_gate_artifact_exists": zkvm_adapter_exists,
+                "tracked_issue": ZKVM_RECEIPT_ADAPTER_ISSUE,
+                "adapter_artifact": relative_path(ZKVM_RECEIPT_ADAPTER_EVIDENCE) if zkvm_adapter is not None else None,
+                "adapter_decision": zkvm_adapter["decision"] if zkvm_adapter is not None else None,
+                "adapter_first_blocker": zkvm_adapter["backend_decision"]["first_blocker"] if zkvm_adapter is not None else None,
+                "journal_commitment": zkvm_adapter["journal_contract"]["journal_commitment"] if zkvm_adapter is not None else None,
             },
         },
         {
