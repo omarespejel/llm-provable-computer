@@ -431,7 +431,8 @@ def load_json(path: pathlib.Path) -> dict[str, Any]:
 
 
 @functools.lru_cache(maxsize=4)
-def load_checked_proof_native(path: pathlib.Path = PROOF_NATIVE_EVIDENCE) -> dict[str, Any]:
+def _load_checked_proof_native_cached(path_text: str) -> dict[str, Any]:
+    path = pathlib.Path(path_text)
     payload = load_json(path)
     try:
         PROOF_NATIVE.validate_payload(payload)
@@ -446,6 +447,10 @@ def load_checked_proof_native(path: pathlib.Path = PROOF_NATIVE_EVIDENCE) -> dic
     if payload.get("all_mutations_rejected") is not True:
         raise D128CryptographicBackendGateError("source proof-native gate did not reject all mutations", layer="source_proof_native_contract")
     return payload
+
+
+def load_checked_proof_native(path: pathlib.Path = PROOF_NATIVE_EVIDENCE) -> dict[str, Any]:
+    return copy.deepcopy(_load_checked_proof_native_cached(path.as_posix()))
 
 
 def source_proof_native_contract(source: dict[str, Any], path: pathlib.Path = PROOF_NATIVE_EVIDENCE) -> dict[str, Any]:
