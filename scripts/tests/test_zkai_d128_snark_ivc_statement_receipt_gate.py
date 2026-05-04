@@ -62,8 +62,8 @@ class D128SnarkIvcStatementReceiptGateTests(unittest.TestCase):
     def test_snarkjs_launch_failure_is_layered(self) -> None:
         GATE._snarkjs_verify_cached.cache_clear()
         with mock.patch.object(GATE.subprocess, "run", side_effect=FileNotFoundError("npx")):
-            with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "failed to launch snarkjs verifier command") as err:
-                GATE._snarkjs_verify_cached("launch-failure-test", b"{}", b"[]", b"{}")
+            with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "failed to launch snarkjs command") as err:
+                GATE._snarkjs_verify_cached("launch-failure-test", b"{}", b"[]", b"{}", ("missing-snarkjs",))
 
         self.assertEqual(err.exception.layer, "external_proof_verifier")
 
@@ -74,6 +74,19 @@ class D128SnarkIvcStatementReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "source_contract mismatch") as err:
             GATE.verify_statement_receipt(relabeled, external_verify=fake_external_verify)
         self.assertEqual(err.exception.layer, "statement_policy")
+
+    def test_source_payload_runs_source_gate_validator(self) -> None:
+        forged = copy.deepcopy(GATE.source_payload())
+        forged["compressed_artifact"]["preimage"]["proof_native_public_input_contract"]["two_slice_target_commitment"] = "blake2b-256:" + "11" * 32
+
+        GATE.source_payload.cache_clear()
+        try:
+            with mock.patch.object(GATE, "load_json", return_value=forged):
+                with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "source #424 gate validation failed") as err:
+                    GATE.source_payload()
+            self.assertEqual(err.exception.layer, "source_contract")
+        finally:
+            GATE.source_payload.cache_clear()
 
     def test_public_signal_drift_is_rejected_by_raw_snark_verifier_check(self) -> None:
         check = GATE.proof_verifier_public_signal_check(GATE.baseline_receipt(), fake_external_verify)
@@ -101,6 +114,16 @@ class D128SnarkIvcStatementReceiptGateTests(unittest.TestCase):
 
         with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "not all SNARK receipt mutations rejected"):
             GATE.validate_payload(forged)
+
+    def test_payload_validation_rederives_verifier_facing_fields(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged = copy.deepcopy(payload)
+        forged["statement_receipt"]["proof_sha256"] = "0" * 64
+
+        with self.assertRaisesRegex(GATE.D128SnarkReceiptError, "statement receipt mismatch") as err:
+            GATE.validate_payload(forged)
+
+        self.assertEqual(err.exception.layer, "statement_policy")
 
     def test_tsv_columns_are_stable(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)

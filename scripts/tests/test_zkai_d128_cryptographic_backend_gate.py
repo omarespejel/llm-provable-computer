@@ -43,7 +43,15 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
             ["external_snark_or_ivc_statement_receipt_backend"],
         )
         self.assertFalse(payload["backend_decision"]["blocked_before_metrics"])
-        self.assertEqual(payload["backend_decision"]["proof_metrics"]["proof_size_bytes"], 802)
+        metrics = payload["backend_decision"]["proof_metrics"]
+        self.assertTrue(metrics["metrics_enabled"])
+        self.assertEqual(metrics["proof_size_bytes"], 802)
+        for key, value in metrics.items():
+            if key not in {"metrics_enabled", "proof_size_bytes"}:
+                self.assertIsNone(value)
+        for key, value in payload["backend_decision"].items():
+            if key not in {"blocked_before_metrics", "proof_metrics"} and key.endswith(("_bytes", "_ms", "_count")):
+                self.assertIsNone(value)
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
 
@@ -120,6 +128,22 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
                 layer="external_snark_receipt",
                 field="SNARK receipt evidence",
             )
+
+        self.assertEqual(err.exception.layer, "external_snark_receipt")
+
+    def test_backend_routes_fail_closed_when_snark_receipt_is_missing(self) -> None:
+        probe = GATE.backend_probe()
+        for artifact in probe["fixed_backend_artifacts"]:
+            if artifact["artifact_id"] == "external_snark_ivc_statement_receipt_artifact":
+                artifact["exists"] = False
+        probe["artifact_candidates"] = [
+            candidate
+            for candidate in probe["artifact_candidates"]
+            if candidate != "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json"
+        ]
+
+        with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "checked SNARK receipt evidence is required") as err:
+            GATE.backend_routes(probe)
 
         self.assertEqual(err.exception.layer, "external_snark_receipt")
 

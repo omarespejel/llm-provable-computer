@@ -8,9 +8,10 @@ Date: 2026-05-04
 
 This gate answers issue `#428`.
 
-The repository now has a real verifier-facing `snarkjs/Groth16` receipt for the
-issue `#424` d128 proof-native two-slice public-input contract. The receipt is
-small and executable: `snarkjs groth16 verify` accepts the checked proof,
+The repository now has a real verifier-facing `snarkjs/Groth16` receipt pinned
+to `snarkjs` proof-system version `0.7.6` for the issue `#424` d128
+proof-native two-slice public-input contract. The receipt is small and
+executable: `snarkjs` `0.7.6` `groth16 verify` accepts the checked proof,
 verification key, and public signals.
 
 This is a SNARK statement receipt, not recursive verification of the underlying
@@ -29,6 +30,7 @@ The receipt binds the same two selected d128 slices used by the #424 contract:
 | Selected checked rows | `256` |
 | Public-signal field count | `16` |
 | snarkjs public-signal count | `17` |
+| snarkjs proof-system version | `0.7.6` |
 | Proof size | `802` bytes |
 | Verification key size | `5854` bytes |
 | Public signals size | `1389` bytes |
@@ -92,11 +94,12 @@ This gate does not claim:
 - prover-performance, verifier-time, or proof-generation-time benchmarking;
 - a zkVM receipt;
 - onchain deployment evidence; or
-- that snarkjs/Groth16 is the preferred production backend.
+- that `snarkjs` `0.7.6`/Groth16 is the preferred production backend.
 
 ## Reproduce
 
 ```bash
+npm ci --prefix scripts
 python3 scripts/zkai_d128_snark_ivc_statement_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.tsv

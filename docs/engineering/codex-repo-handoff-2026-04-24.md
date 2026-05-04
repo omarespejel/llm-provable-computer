@@ -258,10 +258,13 @@ Tablero boundary.
   `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
 - This is now receipt-composition plus range-policy-bound full-block public
   inputs, two-slice/full-block accumulator GO, proof-native two-slice
-  transcript-compression GO, plus checked issue `#411`, `#420`, and `#426`
-  recursive/backend NO-GO evidence: recursion, one compressed
-  cryptographic verifier object, and recursive proof-size/verifier-time/
-  proof-generation-time metrics remain blocked.
+  transcript-compression GO, plus issue `#426` GO evidence for the external
+  `snarkjs/Groth16` statement-receipt route:
+  `GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`.
+  The checked bounded NO-GO evidence is now specifically issue `#411` and
+  issue `#420`: local recursion/PCD, one compressed local recursive verifier
+  object, and recursive proof-size/verifier-time/proof-generation-time metrics
+  remain blocked.
 - Do not compare d128 proof-size/verifier-time/proof-generation-time against public zkML systems until
   an aggregated proof object exists, or until the comparison is explicitly
   scoped as receipt/composition-only.
