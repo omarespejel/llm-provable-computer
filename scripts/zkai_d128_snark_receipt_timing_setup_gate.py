@@ -23,6 +23,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import shutil
 import statistics
 import subprocess
@@ -63,6 +64,7 @@ INPUT = SOURCE_ARTIFACT_DIR / "input.json"
 SOURCE_PUBLIC = SOURCE_ARTIFACT_DIR / "public.json"
 SOURCE_PROOF = SOURCE_ARTIFACT_DIR / "proof.json"
 SOURCE_VK = SOURCE_ARTIFACT_DIR / "verification_key.json"
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 GATE_COMMAND = (
     "python3 scripts/zkai_d128_snark_receipt_timing_setup_gate.py "
@@ -90,6 +92,7 @@ SETUP_POLICY = {
     "proving_key_checked_in": False,
     "setup_artifacts_checked_in": False,
     "setup_artifact_scope": "temporary_directory_deleted_after_gate",
+    "generated_artifact_sizes_may_differ_from_source": True,
 }
 
 NON_CLAIMS = [
@@ -116,6 +119,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("generated_public_hash_relabeling", "artifact_binding"),
     ("generated_vk_hash_relabeling", "artifact_binding"),
     ("proof_size_relabeling", "artifact_binding"),
+    ("generated_size_equivalence_relabeling", "setup_policy"),
+    ("repro_command_relabeling", "parser_or_schema"),
     ("non_claims_removed", "parser_or_schema"),
     ("validation_command_removed", "parser_or_schema"),
     ("unknown_top_level_field_added", "parser_or_schema"),
@@ -247,7 +252,12 @@ def command_text(command: list[str]) -> str:
     return " ".join(command)
 
 
-def run_command(command: list[str], *, cwd: pathlib.Path | None = None) -> subprocess.CompletedProcess[str]:
+def run_command(
+    command: list[str],
+    *,
+    cwd: pathlib.Path | None = None,
+    timeout_s: float = 120.0,
+) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             command,
@@ -256,15 +266,24 @@ def run_command(command: list[str], *, cwd: pathlib.Path | None = None) -> subpr
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            timeout=timeout_s,
         )
+    except subprocess.TimeoutExpired as err:
+        output = (err.stdout or "") if isinstance(err.stdout, str) else ""
+        stderr = (err.stderr or "") if isinstance(err.stderr, str) else ""
+        detail = "\n".join(part for part in (output, stderr) if part).strip()
+        raise D128SnarkTimingSetupError(
+            f"command timed out after {timeout_s}s: {command_text(command)}: {detail}",
+            layer="external_proof_tooling",
+        ) from err
     except (OSError, subprocess.CalledProcessError) as err:
         detail = getattr(err, "stderr", "") or str(err)
         raise D128SnarkTimingSetupError(f"command failed: {command_text(command)}: {detail}", layer="external_proof_tooling") from err
 
 
-def timed_command(command: list[str], *, cwd: pathlib.Path | None = None) -> float:
+def timed_command(command: list[str], *, cwd: pathlib.Path | None = None, timeout_s: float = 120.0) -> float:
     started = time.perf_counter_ns()
-    run_command(command, cwd=cwd)
+    run_command(command, cwd=cwd, timeout_s=timeout_s)
     elapsed = time.perf_counter_ns() - started
     return elapsed / 1_000_000
 
@@ -278,12 +297,20 @@ def tool_versions() -> dict[str, str]:
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        timeout=10,
     )
-    snarkjs_version = snarkjs_result.stdout.splitlines()[0].strip() if snarkjs_result.stdout else ""
-    circom_version = run_command(["circom", "--version"]).stdout.strip()
-    expect_equal(snarkjs_version, f"snarkjs@{SNARKJS_VERSION}", "snarkjs version", layer="external_proof_tooling")
-    expect_equal(circom_version, f"circom compiler {CIRCOM_VERSION}", "circom version", layer="external_proof_tooling")
-    return {"snarkjs": snarkjs_version, "circom": circom_version}
+    snarkjs_output = ANSI_ESCAPE_RE.sub("", f"{snarkjs_result.stdout}\n{snarkjs_result.stderr}")
+    if f"snarkjs@{SNARKJS_VERSION}" not in snarkjs_output and SNARKJS_VERSION not in snarkjs_output.split():
+        raise D128SnarkTimingSetupError("snarkjs version mismatch", layer="external_proof_tooling")
+    circom_output = ANSI_ESCAPE_RE.sub("", run_command(["circom", "--version"], timeout_s=10).stdout.strip())
+    if f"circom compiler {CIRCOM_VERSION}" not in circom_output and CIRCOM_VERSION not in circom_output.split():
+        raise D128SnarkTimingSetupError("circom version mismatch", layer="external_proof_tooling")
+    return {
+        "snarkjs": f"snarkjs@{SNARKJS_VERSION}",
+        "circom": f"circom compiler {CIRCOM_VERSION}",
+        "node": run_command(["node", "--version"], timeout_s=10).stdout.strip(),
+        "npm": run_command(["npm", "--version"], timeout_s=10).stdout.strip(),
+    }
 
 
 def metric_summary(samples: list[float]) -> dict[str, Any]:
@@ -303,7 +330,7 @@ def build_throwaway_setup(work: pathlib.Path) -> tuple[dict[str, Any], pathlib.P
     shutil.copy2(CIRCUIT, work / CIRCUIT.name)
     shutil.copy2(INPUT, work / INPUT.name)
     setup_started = time.perf_counter_ns()
-    run_command(["circom", str(work / CIRCUIT.name), "--r1cs", "--wasm", "--sym", "-o", str(build)])
+    run_command(["circom", str(work / CIRCUIT.name), "--r1cs", "--wasm", "--sym", "-o", str(build)], timeout_s=120)
     r1cs = build / "d128_statement_receipt.r1cs"
     wasm = build / "d128_statement_receipt_js" / "d128_statement_receipt.wasm"
     witness_js = build / "d128_statement_receipt_js" / "generate_witness.js"
@@ -313,18 +340,18 @@ def build_throwaway_setup(work: pathlib.Path) -> tuple[dict[str, Any], pathlib.P
     zkey0 = work / "statement_0000.zkey"
     zkey_final = work / "statement_final.zkey"
     verification_key = work / "verification_key.json"
-    run_command([str(SNARKJS), "powersoftau", "new", "bn128", str(POT_POWER), str(pot0), "-v"])
+    run_command([str(SNARKJS), "powersoftau", "new", "bn128", str(POT_POWER), str(pot0), "-v"], timeout_s=120)
     run_command([
         str(SNARKJS), "powersoftau", "contribute", str(pot0), str(pot1),
         "--name=ptvm timing smoke", "-e=ptvm timing smoke entropy", "-v",
-    ])
-    run_command([str(SNARKJS), "powersoftau", "prepare", "phase2", str(pot1), str(pot_final), "-v"])
-    run_command([str(SNARKJS), "groth16", "setup", str(r1cs), str(pot_final), str(zkey0)])
+    ], timeout_s=120)
+    run_command([str(SNARKJS), "powersoftau", "prepare", "phase2", str(pot1), str(pot_final), "-v"], timeout_s=120)
+    run_command([str(SNARKJS), "groth16", "setup", str(r1cs), str(pot_final), str(zkey0)], timeout_s=120)
     run_command([
         str(SNARKJS), "zkey", "contribute", str(zkey0), str(zkey_final),
         "--name=ptvm timing zkey", "-e=ptvm timing zkey entropy",
-    ])
-    run_command([str(SNARKJS), "zkey", "export", "verificationkey", str(zkey_final), str(verification_key)])
+    ], timeout_s=120)
+    run_command([str(SNARKJS), "zkey", "export", "verificationkey", str(zkey_final), str(verification_key)], timeout_s=120)
     setup_elapsed_ms = (time.perf_counter_ns() - setup_started) / 1_000_000
     metadata = {
         "setup_time_ms_single_run": round(setup_elapsed_ms, 3),
@@ -341,9 +368,9 @@ def run_proof_generation_sample(work: pathlib.Path, zkey: pathlib.Path, witness_
     witness = work / f"witness_{index}.wtns"
     proof = work / f"proof_{index}.json"
     public = work / f"public_{index}.json"
+    run_command(["node", str(witness_js), str(witness_js.parent / "d128_statement_receipt.wasm"), str(work / INPUT.name), str(witness)], timeout_s=60)
     started = time.perf_counter_ns()
-    run_command(["node", str(witness_js), str(witness_js.parent / "d128_statement_receipt.wasm"), str(work / INPUT.name), str(witness)])
-    run_command([str(SNARKJS), "groth16", "prove", str(zkey), str(witness), str(proof), str(public)])
+    run_command([str(SNARKJS), "groth16", "prove", str(zkey), str(witness), str(proof), str(public)], timeout_s=60)
     elapsed_ms = (time.perf_counter_ns() - started) / 1_000_000
     expect_equal(load_json(public), load_json(SOURCE_PUBLIC), "generated public signals", layer="artifact_binding")
     return elapsed_ms, proof, public
@@ -363,9 +390,9 @@ def run_external_measurements() -> dict[str, Any]:
             proof_ms, proof, public = run_proof_generation_sample(work, zkey, witness_js, index)
             proof_samples.append(proof_ms)
             proof_sizes.append(proof.stat().st_size)
-            generated_public_hashes.append(sha256_file(public))
+            generated_public_hashes.append(sha256_bytes(canonical_json_bytes(load_json(public))))
             generated_proof_hashes.append(sha256_file(proof))
-            verify_samples.append(timed_command([str(SNARKJS), "groth16", "verify", str(verification_key), str(public), str(proof)]))
+            verify_samples.append(timed_command([str(SNARKJS), "groth16", "verify", str(verification_key), str(public), str(proof)], timeout_s=60))
         return {
             "tool_versions": versions,
             "setup_metadata": setup_metadata,
@@ -376,7 +403,7 @@ def run_external_measurements() -> dict[str, Any]:
                 "source_public_payload_sha256": sha256_bytes(canonical_json_bytes(load_json(SOURCE_PUBLIC))),
                 "source_proof_bytes": SOURCE_PROOF.stat().st_size,
                 "source_verification_key_bytes": SOURCE_VK.stat().st_size,
-            "generated_public_file_sha256_values": sorted(set(generated_public_hashes)),
+                "generated_public_payload_sha256_values": sorted(set(generated_public_hashes)),
             "generated_proof_file_sha256_values": sorted(set(generated_proof_hashes)),
             "generated_proof_size_bytes_values": sorted(set(proof_sizes)),
             "generated_verification_key_file_sha256": setup_metadata["verification_key_file_sha256"],
@@ -467,9 +494,11 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         add("proof_generation_metric_smuggled", "timing_metrics", lambda p: p["timing_metrics"].__setitem__("proof_generation_time_ms_median", 0.001)),
         add("verifier_metric_smuggled", "timing_metrics", lambda p: p["timing_metrics"].__setitem__("verifier_time_ms_median", 0.001)),
         add("public_signal_hash_relabeling", "artifact_binding", lambda p: p["artifact_binding"].__setitem__("source_public_sha256", "0" * 64)),
-        add("generated_public_hash_relabeling", "artifact_binding", lambda p: p["artifact_binding"].__setitem__("generated_public_file_sha256_values", ["1" * 64])),
+        add("generated_public_hash_relabeling", "artifact_binding", lambda p: p["artifact_binding"].__setitem__("generated_public_payload_sha256_values", ["1" * 64])),
         add("generated_vk_hash_relabeling", "artifact_binding", lambda p: p["setup_metadata"].__setitem__("verification_key_file_sha256", "2" * 64)),
         add("proof_size_relabeling", "artifact_binding", lambda p: p["artifact_binding"].__setitem__("generated_proof_size_bytes_values", [1])),
+        add("generated_size_equivalence_relabeling", "setup_policy", lambda p: p["setup_policy"].__setitem__("generated_artifact_sizes_may_differ_from_source", False)),
+        add("repro_command_relabeling", "parser_or_schema", lambda p: p["repro"].__setitem__("command", "python3 scripts/fake.py")),
         add("non_claims_removed", "parser_or_schema", lambda p: p.__setitem__("non_claims", p["non_claims"][:-1])),
         add("validation_command_removed", "parser_or_schema", lambda p: p.__setitem__("validation_commands", p["validation_commands"][:-1])),
         add("unknown_top_level_field_added", "parser_or_schema", lambda p: p.__setitem__("unknown", True)),
@@ -494,10 +523,12 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     expect_equal(payload["setup_policy"], SETUP_POLICY, "setup policy", layer="setup_policy")
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
-    require_object(payload["repro"], "repro")
     tool_versions_value = require_object(payload["tool_versions"], "tool versions", layer="external_proof_tooling")
     expect_equal(tool_versions_value.get("snarkjs"), f"snarkjs@{SNARKJS_VERSION}", "snarkjs version", layer="external_proof_tooling")
     expect_equal(tool_versions_value.get("circom"), f"circom compiler {CIRCOM_VERSION}", "circom version", layer="external_proof_tooling")
+    for field in ("node", "npm"):
+        if not isinstance(tool_versions_value.get(field), str) or not tool_versions_value[field]:
+            raise D128SnarkTimingSetupError(f"{field} version missing", layer="external_proof_tooling")
     metrics = require_object(payload["timing_metrics"], "timing metrics", layer="timing_metrics")
     expect_equal(metrics.get("timing_policy"), TIMING_POLICY, "timing policy", layer="timing_metrics")
     expect_equal(metrics.get("sample_count"), SAMPLE_COUNT, "sample count", layer="timing_metrics")
@@ -530,8 +561,8 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     )
     expect_equal(artifact.get("source_proof_bytes"), SOURCE_PROOF.stat().st_size, "source proof size", layer="artifact_binding")
     expect_equal(artifact.get("source_verification_key_bytes"), SOURCE_VK.stat().st_size, "source vk size", layer="artifact_binding")
-    generated_public_hashes = require_list(artifact.get("generated_public_file_sha256_values"), "generated public hashes", layer="artifact_binding")
-    expect_equal(generated_public_hashes, [sha256_file(SOURCE_PUBLIC)], "generated public hashes", layer="artifact_binding")
+    generated_public_hashes = require_list(artifact.get("generated_public_payload_sha256_values"), "generated public hashes", layer="artifact_binding")
+    expect_equal(generated_public_hashes, [artifact["source_public_payload_sha256"]], "generated public hashes", layer="artifact_binding")
     proof_size_values = require_list(artifact.get("generated_proof_size_bytes_values"), "proof size values", layer="artifact_binding")
     if proof_size_values != metrics.get("proof_size_bytes_values") or any(not isinstance(value, int) or value <= 0 for value in proof_size_values):
         raise D128SnarkTimingSetupError("proof size values mismatch", layer="artifact_binding")
@@ -550,6 +581,17 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
         "generated verification key hash",
         layer="artifact_binding",
     )
+    repro = require_object(payload["repro"], "repro")
+    expect_keys(repro, {"git_commit", "command"}, "repro")
+    expect_equal(repro.get("command"), GATE_COMMAND, "repro command")
+    git_commit = repro.get("git_commit")
+    if git_commit != "unknown":
+        if not isinstance(git_commit, str) or len(git_commit) != 40:
+            raise D128SnarkTimingSetupError("git commit malformed")
+        try:
+            int(git_commit, 16)
+        except ValueError as err:
+            raise D128SnarkTimingSetupError("git commit malformed") from err
 
 
 def validate_payload(payload: Any) -> None:

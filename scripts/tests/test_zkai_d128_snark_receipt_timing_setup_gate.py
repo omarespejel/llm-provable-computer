@@ -23,7 +23,12 @@ def fake_measurements() -> dict:
     public_hash = GATE.sha256_file(GATE.SOURCE_PUBLIC)
     public_payload_hash = GATE.sha256_bytes(GATE.canonical_json_bytes(GATE.load_json(GATE.SOURCE_PUBLIC)))
     return {
-        "tool_versions": {"snarkjs": "snarkjs@0.7.6", "circom": "circom compiler 2.0.9"},
+        "tool_versions": {
+            "snarkjs": "snarkjs@0.7.6",
+            "circom": "circom compiler 2.0.9",
+            "node": "v23.11.0",
+            "npm": "10.9.2",
+        },
         "setup_metadata": {
             "setup_time_ms_single_run": 1234.567,
             "r1cs_sha256": "a" * 64,
@@ -51,7 +56,7 @@ def fake_measurements() -> dict:
             "source_public_payload_sha256": public_payload_hash,
             "source_proof_bytes": GATE.SOURCE_PROOF.stat().st_size,
             "source_verification_key_bytes": GATE.SOURCE_VK.stat().st_size,
-            "generated_public_file_sha256_values": [public_hash],
+            "generated_public_payload_sha256_values": [public_payload_hash],
             "generated_proof_file_sha256_values": ["e" * 64, "f" * 64],
             "generated_proof_size_bytes_values": [802],
             "generated_verification_key_file_sha256": "d" * 64,
@@ -111,10 +116,22 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
         self.assertTrue(cases["verifier_metric_smuggled"]["rejected"])
         self.assertEqual(cases["verifier_metric_smuggled"]["rejection_layer"], "timing_metrics")
 
+    def test_rejects_repro_command_relabeling(self) -> None:
+        payload = self.payload()
+        core = GATE._core_payload(payload)
+        core["repro"]["command"] = "python3 scripts/fake.py"
+
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "repro command mismatch") as err:
+            GATE.validate_core_payload(core)
+
+        self.assertEqual(err.exception.layer, "parser_or_schema")
+        cases = {case["mutation"]: case for case in payload["cases"]}
+        self.assertTrue(cases["repro_command_relabeling"]["rejected"])
+
     def test_rejects_artifact_binding_drift(self) -> None:
         payload = self.payload()
         core = GATE._core_payload(payload)
-        core["artifact_binding"]["generated_public_file_sha256_values"] = ["0" * 64]
+        core["artifact_binding"]["generated_public_payload_sha256_values"] = ["0" * 64]
 
         with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "generated public hashes mismatch") as err:
             GATE.validate_core_payload(core)

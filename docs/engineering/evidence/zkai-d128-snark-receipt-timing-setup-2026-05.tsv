@@ -1,3 +1,3 @@
 metric	sample_count	median_ms	min_ms	max_ms	all_samples_ms	timing_policy	setup_policy
-proof_generation	5	349.647	345.26	364.744	349.647,345.260,350.587,346.230,364.744	median_of_5_runs_from_perf_counter_ns_on_local_host	local_throwaway_groth16_setup_for_statement_receipt_timing_only
-verification	5	290.702	281.518	292.157	292.157,284.899,281.518,290.702,291.591	median_of_5_runs_from_perf_counter_ns_on_local_host	local_throwaway_groth16_setup_for_statement_receipt_timing_only
+proof_generation	5	314.067	307.084	315.686	313.036,307.084,314.067,314.689,315.686	median_of_5_runs_from_perf_counter_ns_on_local_host	local_throwaway_groth16_setup_for_statement_receipt_timing_only
+verification	5	287.314	285.302	305.3	305.300,285.441,287.314,285.302,288.248	median_of_5_runs_from_perf_counter_ns_on_local_host	local_throwaway_groth16_setup_for_statement_receipt_timing_only
