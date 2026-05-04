@@ -46,14 +46,13 @@ non-recursive compression candidate into a narrow GO: the two-slice
 transcript/public-input contract compresses from `8,822` source accumulator
 artifact bytes to a `4,435` byte verifier-facing object, while still reporting
 no recursive proof size, verifier time, or proof-generation metrics.
-The issue `#426` follow-up then audits that exact `#424` contract against the
-available backend routes and records a bounded no-go:
-`NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`.
-The primary blocker is
-`NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
-There is no local nested-verifier AIR/circuit, no local PCD/IVC outer proof
-generator plus verifier handle, no checked external zkVM receipt, and no
-checked external SNARK/IVC receipt for the contract today.
+The issue `#426` follow-up originally audited that exact `#424` contract against
+the available backend routes and recorded the missing-backend boundary. Issue
+`#428` now closes the external SNARK branch: a real `snarkjs/Groth16` statement
+receipt exists for the `#424` public-input contract, with an `802` byte proof
+and `29 / 29` relabeling / metric-smuggling mutations rejected. The local
+nested-verifier route, local PCD/IVC route, and external zkVM route remain
+missing.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -77,11 +76,11 @@ GO means:
   proof object exists.
 
 NO-GO is still useful if it records the exact missing backend feature. The
-current checked backend evidence says the blocker is not "six slices are too
-big"; it is that no executable backend artifact exists for even the two-slice
-contract. It also records that no proof-size, verifier-time, or
-proof-generation-time metrics may be reported from the non-recursive
-accumulators or proof-native transcript-compressed object.
+current checked backend evidence now says the blocker is not "six slices are too
+big": the two-slice statement can be receipted by an external SNARK today. The
+remaining hard blocker is local recursion / PCD or a zkVM receipt over the same
+contract. Verifier-time and proof-generation-time metrics remain unmeasured for
+the SNARK route until a dedicated timing gate exists.
 
 ## What Not To Do
 
@@ -109,10 +108,10 @@ accumulators or proof-native transcript-compressed object.
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json`
    and
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
-   The best next experiment is issue `#422`: an external zkVM statement receipt
-   adapter over the `#424` public-input contract. Issue `#428` tracks the
-   SNARK/IVC statement-receipt adapter over the same contract as the
-   proof-system-independent control.
+   Issue `#428` now provides the proof-system-independent control: an external
+   SNARK statement receipt over the `#424` public-input contract. The best next
+   experiment is issue `#422`: an external zkVM statement receipt adapter over
+   the same contract.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification

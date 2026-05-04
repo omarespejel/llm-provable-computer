@@ -188,17 +188,20 @@ Tablero boundary.
   verifier-handle, recursive-claim, and parser/schema mutations. This is
   transcript/public-input compression only, not recursion or PCD; see
   `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.
-- The d128 cryptographic-backend gate now answers issue `#426` as a bounded
-  no-go over that same proof-native two-slice contract. Its decision is
-  `NO_GO_D128_CRYPTOGRAPHIC_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
-  its primary blocker is
-  `NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
-  It finds no local nested-verifier AIR/circuit, no local PCD/IVC outer proof
-  generator plus verifier handle, no checked external zkVM receipt, and no
-  checked external SNARK/IVC receipt for the `#424` public-input contract. It
-  rejects `35 / 35` source-contract, repo-probe, fake-route,
-  metric-smuggling, and parser/schema mutations; see
+- The d128 cryptographic-backend gate now records that issue `#428` closes
+  the external SNARK branch for the same proof-native two-slice contract. Its
+  decision is
+  `GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`;
+  the local nested-verifier AIR/circuit, local PCD/IVC, and external zkVM
+  routes remain missing. It rejects `35 / 35` source-contract, repo-probe,
+  fake-route, metric-smuggling, and parser/schema mutations; see
   `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`.
+- The d128 SNARK/IVC statement-receipt gate now answers issue `#428` as a
+  narrow GO: a real `snarkjs/Groth16` receipt verifies the issue `#424`
+  public-input contract with an `802` byte proof and rejects `29 / 29`
+  relabeling / metric-smuggling mutations. This is a SNARK statement receipt,
+  not recursive verification of the underlying Stwo slice proofs; see
+  `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`.
 - The d128 full-block accumulator backend gate now builds a real
   verifier-facing non-recursive accumulator for all six checked d128 slice
   handles over `197,504` checked rows, with accumulator commitment
@@ -246,8 +249,9 @@ Use these in order of authority for current state:
 19. `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
 20. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
 21. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
-22. `docs/engineering/reproducibility.md`
-23. `git status --short --branch`
+22. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
+23. `docs/engineering/reproducibility.md`
+24. `git status --short --branch`
 
 ## Merge culture
 
@@ -305,16 +309,16 @@ Use these in order of authority for current state:
 10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
     spike (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
     route selector as checked bounded no-gos for local recursive proof-object
-    existence. Treat issue `#426` as the current checked no-go for an
-    executable cryptographic backend over the `#424` public-input contract.
-    Treat issues `#409`, `#413`, and `#424` as the current positive
-    handoff objects: real non-recursive two-slice/full-block accumulators and a
-    proof-native two-slice transcript-compressed verifier-facing object now
-    exist. The next useful experiments are issue `#422` external zkVM
-    statement-receipt adapters and issue `#428` external SNARK/IVC
-    statement-receipt adapters over the `#424` public-input contract. Do not
-    report recursive proof-size, verifier-time, or proof-generation-time
-    metrics until a real recursive or PCD proof object exists.
+    existence. Treat issue `#428` as the current positive external SNARK
+    statement-receipt adapter over the `#424` public-input contract. Treat
+    issues `#409`, `#413`, and `#424` as the other positive handoff objects:
+    real non-recursive two-slice/full-block accumulators and a proof-native
+    two-slice transcript-compressed verifier-facing object. The next useful
+    experiment is issue `#422`: an external zkVM statement-receipt adapter over
+    the same contract. Do not report recursive proof-size, verifier-time, or
+    proof-generation-time metrics until a real recursive or PCD proof object
+    exists, and do not report SNARK verifier/prover timings until a dedicated
+    timing gate measures them.
 11. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71
