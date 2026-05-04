@@ -216,22 +216,8 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
             GATE.validate_payload(payload)
 
         payload = self.fresh_payload()
-        payload["cases"][0]["error"] = "rewritten error"
-        GATE.validate_payload(payload)
-
-        payload = self.fresh_payload()
-        payload["cases"][0]["error"] = ""
-        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "rejected error must be non-empty"):
-            GATE.validate_payload(payload)
-
-        payload = self.fresh_payload()
-        payload["cases"][0]["error"] = "rewritten\nerror"
-        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "single-line TSV-safe"):
-            GATE.validate_payload(payload)
-
-        payload = self.fresh_payload()
-        payload["cases"][0]["error"] = "rewritten\rerror"
-        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "single-line TSV-safe"):
+        payload["cases"][0]["error"] = "free-form error text is not part of the checked schema"
+        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "mutation case 0 keys mismatch"):
             GATE.validate_payload(payload)
 
         payload = self.fresh_payload()

@@ -91,7 +91,6 @@ TSV_COLUMNS = (
     "rejected",
     "rejection_layer",
     "error_code",
-    "error",
 )
 MUTATION_CASE_KEYS = set(TSV_COLUMNS)
 
@@ -850,14 +849,6 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
         else:
             if error_code == "accepted" or not error_code:
                 raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error_code must identify the rejection")
-        if not isinstance(case["error"], str):
-            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be a string")
-        if "\t" in case["error"] or "\n" in case["error"] or "\r" in case["error"]:
-            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be single-line TSV-safe text")
-        if accepted and case["error"]:
-            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} accepted error must be empty")
-        if rejected_flag and not case["error"]:
-            raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} rejected error must be non-empty")
         if rejected_flag:
             rejected += 1
     expect_equal(tuple(pairs), EXPECTED_MUTATION_INVENTORY, "mutation case inventory")
@@ -870,8 +861,6 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
         if expected is None:
             raise D128ProofNativeTwoSliceCompressionError(f"missing recomputed mutation case {index}")
         for column in TSV_COLUMNS:
-            if column == "error":
-                continue
             expect_equal(case[column], expected[column], f"mutation case {index} {column}")
     return len(cases), rejected
 
@@ -955,12 +944,10 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
         try:
             _validate_draft_payload(mutated)
             accepted = True
-            error = ""
             layer = "accepted"
             error_code = "accepted"
-        except D128ProofNativeTwoSliceCompressionError as err:
+        except D128ProofNativeTwoSliceCompressionError:
             accepted = False
-            error = str(err)
             layer = surface
             error_code = mutation
         cases.append(
@@ -972,7 +959,6 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
                 "rejected": not accepted,
                 "rejection_layer": layer,
                 "error_code": error_code,
-                "error": error,
             }
         )
     return cases
