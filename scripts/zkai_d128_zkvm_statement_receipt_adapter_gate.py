@@ -48,6 +48,7 @@ SOURCE_RESULT = "GO"
 SOURCE_CLAIM_BOUNDARY = "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION"
 CLAIM_BOUNDARY = "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING"
 FIRST_BLOCKER = "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP"
+RECEIPT_VERIFICATION_BLOCKER = "MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING"
 GO_CRITERION = (
     "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, "
     "and its public journal/public-values bind the #424 d128 two-slice public-input contract"
@@ -296,7 +297,6 @@ def _command_probe_cached() -> str:
         entry = {
             "command_id": command_id,
             "command": list(command),
-            "path": executable,
             "available": executable is not None,
             "returncode": None,
             "stdout": "",
@@ -333,19 +333,31 @@ def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
         required = list(route["required_commands"])
         missing = [command for command in required if not require_object(commands.get(command), f"command {command}", layer="toolchain_probe").get("available")]
         receipt_path = ROOT / route["receipt_artifact"]
-        usable = not missing and receipt_path.is_file()
+        receipt_artifact_exists = receipt_path.is_file()
+        # Fail closed: a command set plus a receipt-looking file is not a GO
+        # until this gate verifies the receipt and its public journal binding.
+        usable = False
+        if missing:
+            status = "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING"
+            first_blocker = "missing_commands:" + ",".join(missing)
+        elif not receipt_artifact_exists:
+            status = "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING"
+            first_blocker = "missing_receipt_artifact"
+        else:
+            status = "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED"
+            first_blocker = "missing_receipt_verification_and_public_values_binding"
         routes.append(
             {
                 "route_id": route["route_id"],
                 "system": route["system"],
-                "status": "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE" if usable else "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING",
+                "status": status,
                 "usable_today": usable,
-                "first_blocker": "none" if usable else ("missing_commands:" + ",".join(missing) if missing else "missing_receipt_artifact"),
+                "first_blocker": first_blocker,
                 "required_commands": required,
                 "missing_commands": missing,
                 "public_statement_surface": route["public_statement_surface"],
                 "receipt_artifact": route["receipt_artifact"],
-                "receipt_artifact_exists": receipt_path.is_file(),
+                "receipt_artifact_exists": receipt_artifact_exists,
                 "proof_metrics": {
                     "proof_size_bytes": None,
                     "verifier_time_ms": None,
@@ -359,12 +371,17 @@ def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
 def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
     usable = [route for route in routes if route["usable_today"]]
     missing_command_routes = [route for route in routes if route["missing_commands"]]
+    missing_receipt_routes = [route for route in routes if not route["receipt_artifact_exists"]]
     return {
         "result": "GO" if usable else RESULT,
         "decision": "GO_D128_ZKVM_STATEMENT_RECEIPT_AVAILABLE" if usable else DECISION,
         "usable_route_ids": [route["route_id"] for route in usable],
         "candidate_route_ids": [route["route_id"] for route in routes],
-        "first_blocker": "none" if usable else (FIRST_BLOCKER if missing_command_routes else "MISSING_ZKVM_RECEIPT_ARTIFACT"),
+        "first_blocker": (
+            "none"
+            if usable
+            else (FIRST_BLOCKER if missing_command_routes else ("MISSING_ZKVM_RECEIPT_ARTIFACT" if missing_receipt_routes else RECEIPT_VERIFICATION_BLOCKER))
+        ),
         "go_criterion": GO_CRITERION,
         "no_go_criterion": NO_GO_CRITERION,
         "proof_metrics": {
@@ -437,11 +454,11 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         add("journal_verifier_domain_relabeling", "journal_contract", lambda p: p["journal_contract"].__setitem__("verifier_domain", "fake-domain")),
         add("journal_statement_hash_relabeling", "journal_contract", lambda p: p["journal_contract"].__setitem__("source_payload_sha256", "0" * 64)),
         add("journal_commitment_relabeling", "journal_contract", lambda p: p["journal_contract"].__setitem__("journal_commitment", "blake2b-256:" + "11" * 32)),
-        add("risc0_toolchain_relabeling", "toolchain_probe", lambda p: p["toolchain_probe"]["commands"]["rzup"].__setitem__("available", True)),
-        add("sp1_toolchain_relabeling", "toolchain_probe", lambda p: p["toolchain_probe"]["commands"]["sp1up"].__setitem__("available", True)),
+        add("risc0_toolchain_relabeling", "toolchain_probe", lambda p: p["toolchain_probe"]["commands"]["rzup"].__setitem__("available", not p["toolchain_probe"]["commands"]["rzup"]["available"])),
+        add("sp1_toolchain_relabeling", "toolchain_probe", lambda p: p["toolchain_probe"]["commands"]["sp1up"].__setitem__("available", not p["toolchain_probe"]["commands"]["sp1up"]["available"])),
         add("risc0_route_relabeling_to_go", "route_decisions", lambda p: p["route_decisions"][0].update({"status": "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE", "usable_today": True, "first_blocker": "none"})),
         add("sp1_route_relabeling_to_go", "route_decisions", lambda p: p["route_decisions"][1].update({"status": "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE", "usable_today": True, "first_blocker": "none"})),
-        add("receipt_artifact_smuggled", "route_decisions", lambda p: p["route_decisions"][0].__setitem__("receipt_artifact_exists", True)),
+        add("receipt_artifact_smuggled", "route_decisions", lambda p: p["route_decisions"][0].__setitem__("receipt_artifact_exists", not p["route_decisions"][0]["receipt_artifact_exists"])),
         add("proof_size_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_size_bytes", 1)),
         add("verifier_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("verifier_time_ms", 1.0)),
         add("proof_generation_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_generation_time_ms", 1.0)),
@@ -476,13 +493,11 @@ def validate_toolchain_probe(value: Any) -> dict[str, Any]:
     expect_equal(set(commands), {command_id for command_id, _cmd in COMMAND_PROBES}, "toolchain command set", layer="toolchain_probe")
     for command_id, command in COMMAND_PROBES:
         entry = require_object(commands.get(command_id), f"command {command_id}", layer="toolchain_probe")
-        expect_keys(entry, {"command_id", "command", "path", "available", "returncode", "stdout", "stderr"}, f"command {command_id}", layer="toolchain_probe")
+        expect_keys(entry, {"command_id", "command", "available", "returncode", "stdout", "stderr"}, f"command {command_id}", layer="toolchain_probe")
         expect_equal(entry["command_id"], command_id, f"command id {command_id}", layer="toolchain_probe")
         expect_equal(entry["command"], list(command), f"command args {command_id}", layer="toolchain_probe")
         if not isinstance(entry["available"], bool):
             raise D128ZkvmStatementReceiptAdapterError(f"command {command_id} availability must be bool", layer="toolchain_probe")
-        if entry["path"] is not None and not isinstance(entry["path"], str):
-            raise D128ZkvmStatementReceiptAdapterError(f"command {command_id} path malformed", layer="toolchain_probe")
     return probe
 
 

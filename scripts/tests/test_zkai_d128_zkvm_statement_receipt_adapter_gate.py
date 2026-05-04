@@ -30,7 +30,6 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
             commands[command_id] = {
                 "command_id": command_id,
                 "command": list(command),
-                "path": None,
                 "available": False,
                 "returncode": None,
                 "stdout": "",
@@ -79,6 +78,32 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
             self.assertFalse(route["usable_today"])
             self.assertTrue(route["status"].startswith("NO_GO"))
             self.assertTrue(all(value is None for value in route["proof_metrics"].values()))
+
+    def test_route_stays_no_go_with_toolchain_and_unverified_receipt_file(self) -> None:
+        probe = self.fixture_probe()
+        for entry in probe["commands"].values():
+            entry["available"] = True
+            entry["returncode"] = 0
+            entry["stdout"] = f"{entry['command_id']} test-version"
+
+        original_routes = GATE.ZKVM_ROUTES
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            receipt_path = pathlib.Path(raw_tmp) / "receipt.json"
+            receipt_path.write_text("{}\n", encoding="utf-8")
+            relative_receipt = receipt_path.relative_to(GATE.ROOT).as_posix()
+            GATE.ZKVM_ROUTES = tuple({**route, "receipt_artifact": relative_receipt} for route in original_routes)
+            try:
+                payload = GATE.build_payload(probe=probe)
+                GATE.validate_payload(payload)
+            finally:
+                GATE.ZKVM_ROUTES = original_routes
+
+        self.assertEqual(payload["backend_decision"]["usable_route_ids"], [])
+        self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.RECEIPT_VERIFICATION_BLOCKER)
+        for route in payload["route_decisions"]:
+            self.assertFalse(route["usable_today"])
+            self.assertEqual(route["status"], "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED")
+            self.assertEqual(route["first_blocker"], "missing_receipt_verification_and_public_values_binding")
 
     def test_rejects_journal_relabeling(self) -> None:
         payload = self.payload()

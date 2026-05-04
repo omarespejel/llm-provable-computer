@@ -19,6 +19,11 @@ The route is still a bounded NO-GO today because this local machine does not
 have a RISC Zero or SP1 proving toolchain installed, and the repository does not
 contain a real zkVM receipt artifact for the contract.
 
+The gate also fails closed for future local environments: command availability
+or a receipt-looking file is not enough to produce a GO. A GO requires the gate
+to run the route verifier and check that the public journal / public-values bind
+the exact statement contract below.
+
 ## Checked Result
 
 | Field | Value |
@@ -97,7 +102,7 @@ just gate
 
 ## Next Step
 
-The next useful follow-up is not more prose. Pick one route, install/pin its
+The follow-up for a real fixture is tracked separately in issue `#433`. Pick one route, install/pin its
 proving toolchain in a reproducible way, and produce the smallest real receipt
 for this exact journal contract. The GO criterion remains strict: verifier
 accepts the receipt and relabeling of model/program identity, input commitment,
