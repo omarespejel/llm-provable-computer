@@ -154,6 +154,24 @@ class D128SnarkReceiptTimingSetupGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "artifact_binding")
 
+    def test_rejects_mutation_case_diagnostic_drift(self) -> None:
+        payload = self.payload()
+        payload["cases"][0]["rejection_layer"] = "accepted"
+
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "case .* mismatch") as err:
+            GATE.validate_payload(payload)
+
+        self.assertEqual(err.exception.layer, "mutation_suite")
+
+    def test_rejects_extra_mutation_case_fields(self) -> None:
+        payload = self.payload()
+        payload["cases"][0]["extra"] = True
+
+        with self.assertRaisesRegex(GATE.D128SnarkTimingSetupError, "case .* keys mismatch") as err:
+            GATE.validate_payload(payload)
+
+        self.assertEqual(err.exception.layer, "mutation_suite")
+
     def test_tsv_contains_timing_rows(self) -> None:
         tsv = GATE.to_tsv(self.payload())
         self.assertIn("proof_generation", tsv)
