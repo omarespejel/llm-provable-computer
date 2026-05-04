@@ -1047,9 +1047,9 @@ is blocked before metrics by
 `NO_EXECUTABLE_NESTED_VERIFIER_BACKEND_FOR_D128_TWO_SLICE_TARGET`; at that point
 external zkVM statement receipts and external SNARK/IVC adapters were research
 candidates, not successes. Later follow-ups split those candidates cleanly:
-the SNARK branch became a checked statement-receipt GO, while the zkVM branch
-became a checked public-journal contract plus a toolchain/bootstrap no-go. The
-route-selector gate
+the SNARK branch became a checked statement-receipt GO, and the RISC Zero branch
+became a checked zkVM statement-receipt GO over the same public-journal
+contract. The route-selector gate
 rejects `24 / 24` source-drift, route-relabeling, blocker-removal,
 metric-smuggling, weakened-GO, and parser/schema mutations. This turns the next
 research step into an executable decision: test a real external statement
@@ -1081,34 +1081,37 @@ and
 
 The issue `#426` follow-up then asks the stricter backend question over that
 same public-input contract. The original answer was a bounded missing-backend
-result; the issue `#428` follow-up now changes the external SNARK branch of
-that answer. A real `snarkjs/Groth16` statement receipt exists for the exact
-issue `#424` contract. The updated backend gate records
-`GO_D128_EXTERNAL_SNARK_STATEMENT_RECEIPT_BACKEND_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`,
-while still keeping local nested-verifier AIR/circuit, local PCD/IVC, and real
-external zkVM receipts in the missing-backend bucket. It rejects `35 / 35`
+result; the issue `#428` and issue `#433` follow-ups now change the external
+adapter branches of that answer. A real `snarkjs/Groth16` statement receipt
+exists for the exact issue `#424` contract, and a real RISC Zero receipt exists
+for the corresponding issue `#422` public journal. The updated backend gate
+records
+`GO_D128_EXTERNAL_SNARK_AND_ZKVM_STATEMENT_RECEIPT_BACKENDS_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT`,
+while still keeping local nested-verifier AIR/circuit and local PCD/IVC in the
+missing-backend bucket. It rejects `35 / 35`
 source-contract, repo-probe, fake-route, metric-smuggling, and parser/schema
 mutations. This keeps the paper boundary explicit: the d128 line now has an
-external SNARK statement receipt, but not a recursive proof, not a PCD proof,
-and not a zkVM receipt. The issue `#430` follow-up adds verifier/prover timing
-only for this statement-receipt adapter under local throwaway setup; those
-timings are not recursive-proof or public zkML benchmark evidence. The issue
-`#422` follow-up then checks the zkVM branch without overclaiming it: the same
-#424 public-input contract maps into a concrete zkVM public journal/public-values
-contract, but the checked local probe has no RISC Zero or SP1 receipt route
-because `rzup`, `cargo-risczero`, `sp1up`, and `cargo-prove` are missing and no
-receipt artifact exists. That gate records
-`NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING`, binds the
-journal commitment
+external SNARK statement receipt and an external zkVM statement receipt, but not
+a recursive proof and not a PCD proof. The issue `#430` follow-up adds
+verifier/prover timing only for the SNARK statement-receipt adapter under local
+throwaway setup; those timings are not recursive-proof or public zkML benchmark
+evidence. The issue `#422` follow-up maps the same #424 public-input contract
+into a concrete zkVM public journal/public-values contract. The issue `#433`
+follow-up then verifies that journal with a real RISC Zero receipt. The RISC
+Zero receipt binds the journal commitment
 `blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569`,
-and rejects `21 / 21` source, journal, route, metric, non-claim,
-validation-command, and parser/schema mutations. This is a useful missing-route
-contract, not a zkVM result. The backend existence result is anchored to
+receipt commitment
+`blake2b-256:3a5b4bd93282879ff42178b6115d483bfa0d95383485df88604fbdacb2ad2dfd`,
+and image id
+`dd87546db470a99fa5b32dc6e9fbc39c7d0ef1b3475573f44d5ad984a98454e5`; it
+rejects `20 / 20` relabeling and metric-smuggling mutations. This is a zkVM
+statement receipt, not recursive verification of the underlying Stwo slice
+proofs inside RISC Zero. The backend existence result is anchored to
 `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md` and
 `docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json`; the
-zkVM adapter no-go is anchored to
-`docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md` and
-`docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json`.
+RISC Zero receipt is anchored to
+`docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md` and
+`docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json`.
 
 The issue `#428` receipt is deliberately small, but it is a real external proof
 artifact: `snarkjs groth16 verify` accepts the checked `802` byte proof, public
@@ -1245,11 +1248,11 @@ NO-GO bucket. The follow-up d128 route selector keeps the same discipline at the
 research-planning layer: local Stwo-native recursion is not benchmarkable until
 a nested-verifier backend exists, and external adapter or proof-native
 compression candidates are not successes until they produce checked proof
-objects for the same public-input contract. The #422 zkVM adapter gate adds one
-more guardrail: mapping a contract into a journal is not the same thing as
-having a zkVM receipt, so the paper should not compare or time a zkVM path until
-RISC Zero, SP1, or another zkVM backend verifies a real receipt for the checked
-journal contract.
+objects for the same public-input contract. The #422 zkVM adapter gate and #433
+RISC Zero receipt add one more guardrail: mapping a contract into a journal is
+not the same thing as having a verified zkVM receipt, and having a verified zkVM
+statement receipt is still not recursive verification of the underlying Stwo
+slice proofs.
 
 ### 8.4 No universal speedup claim
 
@@ -1290,10 +1293,10 @@ and carried state. Another verifier, agent receipt, or settlement layer should
 accept the proof only after that typed claim boundary is fixed.
 
 This is not the end of the story. Several open directions remain in the
-broader space: route-specific zkVM receipt production for the checked d128
-journal contract, broader cryptographic-backend transfer, stronger external
-calibration against deployed verifiers, statement-bound transformer blocks with
-more model structure, a recursive layer that preserves the same boundary
+broader space: local recursion/PCD for the checked d128 two-slice target,
+comparative external controls across SNARK and zkVM statement receipts, stronger
+external calibration against deployed verifiers, statement-bound transformer
+blocks with more model structure, a recursive layer that preserves the same boundary
 semantics, and prover-side cost reductions that make end-to-end transformer
 proving practical at production scale. Whether those directions are pursued by
 the authors of this paper or by other groups, the present contribution remains a

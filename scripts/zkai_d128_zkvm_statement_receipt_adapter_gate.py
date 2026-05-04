@@ -38,7 +38,7 @@ JSON_OUT = EVIDENCE_DIR / "zkai-d128-zkvm-statement-receipt-adapter-2026-05.json
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-zkvm-statement-receipt-adapter-2026-05.tsv"
 
 SCHEMA = "zkai-d128-zkvm-statement-receipt-adapter-gate-v1"
-DECISION = "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING"
+DECISION = "NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE"
 RESULT = "NO_GO"
 ISSUE = 422
 SOURCE_ISSUE = 424
@@ -46,7 +46,7 @@ SOURCE_SCHEMA = "zkai-d128-proof-native-two-slice-compression-gate-v1"
 SOURCE_DECISION = "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION"
 SOURCE_RESULT = "GO"
 SOURCE_CLAIM_BOUNDARY = "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION"
-CLAIM_BOUNDARY = "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING"
+CLAIM_BOUNDARY = "ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE_NOT_A_RECEIPT_GO"
 FIRST_BLOCKER = "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP"
 RECEIPT_ARTIFACT_BLOCKER = "MISSING_ZKVM_RECEIPT_ARTIFACT"
 UNREADABLE_RECEIPT_ARTIFACT_BLOCKER = "MISSING_OR_UNREADABLE_ZKVM_RECEIPT_ARTIFACT"
@@ -88,7 +88,7 @@ COMMAND_PROBES = (
     ("docker", ("docker", "--version")),
     ("protoc", ("protoc", "--version")),
     ("rzup", ("rzup", "--version")),
-    ("cargo-risczero", ("cargo-risczero", "--version")),
+    ("cargo-risczero", ("cargo", "risczero", "--version")),
     ("sp1up", ("sp1up", "--version")),
     ("cargo-prove", ("cargo", "prove", "--version")),
 )
@@ -666,11 +666,11 @@ def to_tsv(payload: dict[str, Any]) -> str:
                 "usable_today": str(route["usable_today"]).lower(),
                 "first_blocker": route["first_blocker"],
                 "required_commands": ",".join(route["required_commands"]),
-                "missing_commands": ",".join(route["missing_commands"]),
+                "missing_commands": ",".join(route["missing_commands"]) or "none",
                 "receipt_artifact": route["receipt_artifact"],
-                "proof_size_bytes": "",
-                "verifier_time_ms": "",
-                "proof_generation_time_ms": "",
+                "proof_size_bytes": "not_measured",
+                "verifier_time_ms": "not_measured",
+                "proof_generation_time_ms": "not_measured",
             }
         )
     return output.getvalue()

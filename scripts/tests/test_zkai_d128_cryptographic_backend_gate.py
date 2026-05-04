@@ -27,7 +27,7 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
 
-    def test_gate_records_external_snark_go_over_proof_native_contract(self) -> None:
+    def test_gate_records_external_statement_receipt_go_over_proof_native_contract(self) -> None:
         payload = self.fresh_payload()
         GATE.validate_payload(payload)
         self.assertEqual(payload["schema"], GATE.SCHEMA)
@@ -40,15 +40,14 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertEqual(payload["backend_decision"]["primary_blocker"], GATE.PRIMARY_BLOCKER)
         self.assertEqual(
             payload["backend_decision"]["usable_cryptographic_backend_route_ids"],
-            ["external_snark_or_ivc_statement_receipt_backend"],
+            ["external_zkvm_statement_receipt_backend", "external_snark_or_ivc_statement_receipt_backend"],
         )
         self.assertFalse(payload["backend_decision"]["blocked_before_metrics"])
         metrics = payload["backend_decision"]["proof_metrics"]
         self.assertTrue(metrics["metrics_enabled"])
-        self.assertEqual(metrics["proof_size_bytes"], 802)
-        for key, value in metrics.items():
-            if key not in {"metrics_enabled", "proof_size_bytes"}:
-                self.assertIsNone(value)
+        self.assertEqual(metrics["proof_size_bytes"], 310234)
+        self.assertGreater(metrics["proof_generation_time_ms"], 0)
+        self.assertGreater(metrics["verifier_time_ms"], 0)
         for key, value in payload["backend_decision"].items():
             if key not in {"blocked_before_metrics", "proof_metrics"} and key.endswith(("_bytes", "_ms", "_count")):
                 self.assertIsNone(value)
@@ -88,13 +87,25 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         for route_id in (
             "local_stwo_nested_verifier_backend",
             "local_pcd_or_ivc_outer_proof_backend",
-            "external_zkvm_statement_receipt_backend",
         ):
             with self.subTest(route_id=route_id):
                 self.assertTrue(routes[route_id]["cryptographic_backend"])
                 self.assertFalse(routes[route_id]["usable_today"])
                 self.assertTrue(routes[route_id]["status"].startswith("NO_GO"))
                 self.assertTrue(all(value is None for value in routes[route_id]["proof_metrics"].values()))
+        zkvm_route = routes["external_zkvm_statement_receipt_backend"]
+        self.assertTrue(zkvm_route["cryptographic_backend"])
+        self.assertTrue(zkvm_route["usable_today"])
+        self.assertTrue(zkvm_route["status"].startswith("GO_EXTERNAL_RISC0"))
+        self.assertEqual(zkvm_route["proof_metrics"]["proof_size_bytes"], 310234)
+        self.assertGreater(zkvm_route["proof_metrics"]["verifier_time_ms"], 0)
+        self.assertGreater(zkvm_route["proof_metrics"]["proof_generation_time_ms"], 0)
+        self.assertEqual(zkvm_route["evidence"]["tracked_issue"], 433)
+        self.assertTrue(zkvm_route["evidence"]["receipt_artifact_exists"])
+        self.assertEqual(
+            zkvm_route["evidence"]["journal_commitment"],
+            "blake2b-256:f5890b4cff1f1fba01caabe692af96e53a1c514b2f84201d17b2a793af298569",
+        )
         snark_route = routes["external_snark_or_ivc_statement_receipt_backend"]
         self.assertTrue(snark_route["cryptographic_backend"])
         self.assertTrue(snark_route["usable_today"])
@@ -102,15 +113,9 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertEqual(snark_route["proof_metrics"]["proof_size_bytes"], 802)
         self.assertIsNone(snark_route["proof_metrics"]["verifier_time_ms"])
         self.assertEqual(snark_route["evidence"]["tracked_issue"], 428)
-        self.assertEqual(routes["external_zkvm_statement_receipt_backend"]["evidence"]["tracked_issue"], 422)
-        self.assertTrue(routes["external_zkvm_statement_receipt_backend"]["evidence"]["adapter_gate_artifact_exists"])
-        self.assertEqual(
-            routes["external_zkvm_statement_receipt_backend"]["blocking_missing_object"],
-            "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP",
-        )
         self.assertEqual(routes["starknet_settlement_adapter"]["status"], "DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS")
 
-    def test_backend_probe_records_checked_snark_artifact_but_no_local_or_zkvm_backend(self) -> None:
+    def test_backend_probe_records_checked_external_artifacts_but_no_local_backend(self) -> None:
         probe = self.fresh_payload()["backend_probe"]
         self.assertEqual(probe, GATE.backend_probe())
         self.assertFalse(probe["external_zkvm_dependencies_declared"])
@@ -120,6 +125,7 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         by_id = {artifact["artifact_id"]: artifact for artifact in probe["fixed_backend_artifacts"]}
         self.assertFalse(by_id["local_stwo_nested_verifier_module"]["exists"])
         self.assertTrue(by_id["external_zkvm_statement_receipt_artifact"]["exists"])
+        self.assertTrue(by_id["external_risc0_statement_receipt_artifact"]["exists"])
         self.assertTrue(by_id["external_snark_ivc_statement_receipt_artifact"]["exists"])
         self.assertIn(
             "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
@@ -127,6 +133,10 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         )
         self.assertIn(
             "docs/engineering/evidence/zkai-d128-zkvm-statement-receipt-adapter-2026-05.json",
+            probe["artifact_candidates"],
+        )
+        self.assertIn(
+            "docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json",
             probe["artifact_candidates"],
         )
 
@@ -140,7 +150,10 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         route_ids = [route["route_id"] for route in routes]
         self.assertEqual(route_ids, list(GATE.ROUTE_IDS))
         usable_routes = [route["route_id"] for route in routes if route["cryptographic_backend"] and route["usable_today"]]
-        self.assertEqual(usable_routes, ["external_snark_or_ivc_statement_receipt_backend"])
+        self.assertEqual(
+            usable_routes,
+            ["external_zkvm_statement_receipt_backend", "external_snark_or_ivc_statement_receipt_backend"],
+        )
 
     def test_json_loader_reports_snark_receipt_layer(self) -> None:
         with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "SNARK receipt evidence is not a regular file") as err:
@@ -172,6 +185,19 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         receipt = GATE.load_checked_snark_receipt()
         receipt["statement_receipt"]["proof_sha256"] = "0" * 64
         GATE._load_checked_snark_receipt_cached.cache_clear()
+
+    def test_checked_risc0_receipt_runs_full_receipt_validator(self) -> None:
+        receipt = GATE.load_checked_risc0_receipt()
+        receipt["receipt_commitment"] = "blake2b-256:" + "00" * 32
+        GATE._load_checked_risc0_receipt_cached.cache_clear()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp) / "tampered-risc0-receipt.json"
+            tmp.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
+            with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "RISC Zero receipt validation failed") as err:
+                GATE.load_checked_risc0_receipt(tmp)
+
+        self.assertEqual(err.exception.layer, "external_risc0_receipt")
+        GATE._load_checked_risc0_receipt_cached.cache_clear()
         with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
             tmp = pathlib.Path(raw_tmp) / "tampered-snark-receipt.json"
             tmp.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
@@ -233,6 +259,11 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         core = GATE._core_payload_for_case_replay(self.fresh_payload())
         core["backend_decision"]["proof_metrics"]["proof_size_bytes"] = 1024
         with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "decision proof size"):
+            GATE.validate_core_payload(core)
+
+        core = GATE._core_payload_for_case_replay(self.fresh_payload())
+        core["backend_routes"][3]["proof_metrics"]["proof_size_bytes"] += 1
+        with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "backend routes"):
             GATE.validate_core_payload(core)
 
     def test_rejects_partial_duplicate_and_tampered_mutation_metadata(self) -> None:

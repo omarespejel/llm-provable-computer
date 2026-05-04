@@ -1,10 +1,10 @@
 # d128 zkVM Statement-Receipt Adapter Gate
 
-Date: 2026-05-04
+Date: 2026-05-05
 
 ## Decision
 
-`NO_GO_D128_ZKVM_STATEMENT_RECEIPT_TOOLCHAIN_BOOTSTRAP_MISSING`
+`NO_GO_D128_ZKVM_STATEMENT_RECEIPT_ADAPTER_INCOMPLETE`
 
 This gate answers issue `#422`.
 
@@ -15,9 +15,12 @@ statement commitments, source evidence hashes, public-instance commitments,
 proof-native parameter commitments, verifier domain, backend version, source
 accumulator commitment, and source verifier-handle commitment.
 
-The route is still a bounded NO-GO today because this local machine does not
-have a RISC Zero or SP1 proving toolchain installed, and the repository does not
-contain a real zkVM receipt artifact for the contract.
+This adapter gate remains a bounded NO-GO because it maps and probes the route
+but does not itself verify a zkVM receipt. The follow-up issue `#433` now
+provides the real RISC Zero receipt and host verification for the same journal
+contract. Treat this file as the journal-contract and adapter-boundary record;
+treat `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md` as the
+route-specific RISC Zero receipt GO.
 
 The gate also fails closed for future local environments: command availability
 or an arbitrary file at the receipt path is not enough to advance the route. A
@@ -47,9 +50,9 @@ that the public journal / public-values bind the exact statement contract below.
 | Output commitment | `blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4` |
 | Policy label | `statement-receipt-adapter-policy:d128-two-slice:no-metadata-relabeling:v1` |
 | Action label | `verify_d128_two_slice_statement_receipt` |
-| RISC Zero route | missing `rzup`, `cargo-risczero`; no receipt artifact |
+| RISC Zero route | candidate artifact present; adapter gate stops before verifier execution |
 | SP1 route | missing `sp1up`, `cargo-prove`; no receipt artifact |
-| Proof metrics | disabled; no proof object exists |
+| Proof metrics | disabled in this adapter gate; issue `#433` carries the RISC Zero receipt metrics |
 | Mutation coverage | `21 / 21` rejected |
 
 ## What This Means
@@ -59,11 +62,15 @@ facts that should not be collapsed:
 
 - `GO`: the #424 statement has a concrete zkVM public journal/public-values
   contract.
-- `NO-GO`: there is no local executable RISC Zero or SP1 receipt route today.
+- `NO-GO`: this adapter gate still does not execute the zkVM verifier or check
+  public-values binding itself.
+- `FOLLOW-UP GO`: issue `#433` executes the RISC Zero route for this journal
+  contract and verifies a real receipt.
 
 That is useful evidence for the paper because it keeps the claim honest: the
-SNARK adapter route is real, while the zkVM adapter route is now precisely
-blocked at toolchain/bootstrap and receipt-artifact availability.
+SNARK adapter route is real, the RISC Zero route is real in issue `#433`, and
+this issue `#422` artifact remains the checked journal/adapter boundary instead
+of pretending to be the route verifier.
 
 ## Mutation Coverage
 
@@ -111,11 +118,10 @@ just gate-fast
 just gate
 ```
 
-## Next Step
+## Follow-Up
 
-The follow-up for a real fixture is tracked separately in issue `#433`. Pick one route, install/pin its
-proving toolchain in a reproducible way, and produce the smallest real receipt
-for this exact journal contract. The GO criterion remains strict: verifier
-accepts the receipt and relabeling of model/program identity, input commitment,
-output commitment, action/policy label, verifier domain, proof-system version,
-or journal/public-values commitment is rejected.
+Issue `#433` is the follow-up for the real fixture. It pins RISC Zero `3.0.5`,
+checks in a receipt artifact for this exact journal contract, verifies the
+receipt against the compiled image id, and rejects relabeling of model/program
+identity, input commitment, output commitment, action/policy label, verifier
+domain, receipt commitment, and journal commitment.
