@@ -46,6 +46,12 @@ non-recursive compression candidate into a narrow GO: the two-slice
 transcript/public-input contract compresses from `8,822` source accumulator
 artifact bytes to a `4,435` byte verifier-facing object, while still reporting
 no recursive proof size, verifier time, or proof-generation metrics.
+The issue `#426` follow-up then audits that exact `#424` contract against the
+available backend routes and records a bounded no-go:
+`NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
+There is no local nested-verifier AIR/circuit, no local PCD/IVC outer proof
+generator plus verifier handle, no checked external zkVM receipt, and no
+checked external SNARK/IVC receipt for the contract today.
 
 ## What Would Be a Real Next Breakthrough
 
@@ -69,11 +75,11 @@ GO means:
   proof object exists.
 
 NO-GO is still useful if it records the exact missing backend feature. The
-current checked route selector says the blocker is not "six slices are too
-big"; it is that no nested verifier program/AIR/circuit exists for even the
-two-slice contract. It also records that no recursive proof-size, verifier-time,
-or proof-generation-time metrics may be reported from the non-recursive
-accumulators.
+current checked backend evidence says the blocker is not "six slices are too
+big"; it is that no executable backend artifact exists for even the two-slice
+contract. It also records that no proof-size, verifier-time, or
+proof-generation-time metrics may be reported from the non-recursive
+accumulators or proof-native transcript-compressed object.
 
 ## What Not To Do
 
@@ -89,15 +95,22 @@ accumulators.
 
 1. **Recursive/PCD backend track.** Treat the local Stwo-native route as a
    checked bounded no-go until a nested-verifier backend exists. The issue
-   `#420` route selector lives at
+   `#426` cryptographic-backend gate now lives at
+   `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
+   with JSON/TSV evidence at
+   `docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json`
+   and
+   `docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.tsv`.
+   The earlier issue `#420` route selector lives at
    `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
    with JSON/TSV evidence at
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.json`
    and
    `docs/engineering/evidence/zkai-d128-recursive-pcd-route-selector-2026-05.tsv`.
-   The best next experiments are issue `#422` external zkVM/SNARK statement
-   receipt adapters and issue `#426` cryptographic backend over the `#424`
-   public-input contract.
+   The best next experiment is issue `#422`: an external zkVM statement receipt
+   adapter over the `#424` public-input contract. Issue `#428` tracks the
+   SNARK/IVC statement-receipt adapter over the same contract as the
+   proof-system-independent control.
 2. **Comparator track.** Keep a SOTA artifact watchlist for public proof +
    verifier-input bundles from NANOZK, DeepProve, Jolt Atlas, Giza/LuminAIR,
    EZKL, RISC Zero, and SP1. Only add empirical rows when baseline verification

@@ -1076,6 +1076,21 @@ or proof-size evidence for a recursive system. It is anchored to
 and
 `docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json`.
 
+The issue `#426` follow-up then asks the stricter backend question over that
+same public-input contract and records a bounded no-go:
+`NO_EXECUTABLE_CRYPTOGRAPHIC_BACKEND_ARTIFACT_FOR_D128_TWO_SLICE_CONTRACT`.
+The checked probe finds no local nested-verifier AIR/circuit, no local PCD/IVC
+outer proof generator plus verifier handle, no checked external zkVM receipt,
+and no checked external SNARK/IVC receipt for the contract today. It rejects
+`35 / 35` source-contract, repo-probe, fake-route, metric-smuggling, and
+parser/schema mutations. This keeps the paper boundary explicit: the d128 line
+has a smaller verifier-facing contract and strong relabeling resistance, but
+not yet a recursive proof, a PCD proof, a zkVM receipt, a SNARK/IVC receipt, or
+cryptographic-backend proof-size/verifier-time/proof-generation-time evidence.
+It is anchored to
+`docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md` and
+`docs/engineering/evidence/zkai-d128-cryptographic-backend-2026-05.json`.
+
 The issue `#413` follow-up extends the same non-recursive accumulator pattern to
 the full d128 block receipt. It builds one verifier-facing accumulator over all
 six checked slice handles and `197,504` checked rows. The accumulator commitment
