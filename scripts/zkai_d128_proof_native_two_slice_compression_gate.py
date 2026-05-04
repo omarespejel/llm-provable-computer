@@ -89,6 +89,7 @@ TSV_COLUMNS = (
     "mutated_accepted",
     "rejected",
     "rejection_layer",
+    "error_code",
     "error",
 )
 MUTATION_CASE_KEYS = set(TSV_COLUMNS)
@@ -841,7 +842,12 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
         rejected_flag = require_bool(case["rejected"], f"mutation case {index} rejected")
         if accepted == rejected_flag:
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} rejected/accepted mismatch")
-        require_str(case["rejection_layer"], f"mutation case {index} rejection layer")
+        rejection_layer = require_str(case["rejection_layer"], f"mutation case {index} rejection layer")
+        error_code = require_str(case["error_code"], f"mutation case {index} error_code")
+        if accepted:
+            expect_equal(error_code, "accepted", f"mutation case {index} error_code")
+        else:
+            expect_equal(error_code, rejection_layer, f"mutation case {index} error_code")
         if not isinstance(case["error"], str):
             raise D128ProofNativeTwoSliceCompressionError(f"mutation case {index} error must be a string")
         if rejected_flag:
@@ -856,6 +862,8 @@ def _validate_case_metadata(payload: dict[str, Any]) -> tuple[int, int]:
         if expected is None:
             raise D128ProofNativeTwoSliceCompressionError(f"missing recomputed mutation case {index}")
         for column in TSV_COLUMNS:
+            if column == "error":
+                continue
             expect_equal(case[column], expected[column], f"mutation case {index} {column}")
     return len(cases), rejected
 
@@ -969,10 +977,12 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
             accepted = True
             error = ""
             layer = "accepted"
+            error_code = "accepted"
         except D128ProofNativeTwoSliceCompressionError as err:
             accepted = False
             error = str(err)
             layer = classify_error(err)
+            error_code = layer
         cases.append(
             {
                 "mutation": mutation,
@@ -981,6 +991,7 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
                 "mutated_accepted": accepted,
                 "rejected": not accepted,
                 "rejection_layer": layer,
+                "error_code": error_code,
                 "error": error,
             }
         )

@@ -146,6 +146,7 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
             with self.subTest(mutation=mutation):
                 self.assertTrue(cases[mutation]["rejected"])
                 self.assertEqual(cases[mutation]["rejection_layer"], layer)
+                self.assertEqual(cases[mutation]["error_code"], layer)
 
     def test_rejects_target_statement_and_source_relabeling(self) -> None:
         mutations = [
@@ -216,7 +217,11 @@ class ZkAiD128ProofNativeTwoSliceCompressionGateTests(unittest.TestCase):
 
         payload = self.fresh_payload()
         payload["cases"][0]["error"] = "rewritten error"
-        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "mutation case 0 error"):
+        GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["error_code"] = "rewritten_error_code"
+        with self.assertRaisesRegex(GATE.D128ProofNativeTwoSliceCompressionError, "mutation case 0 error_code"):
             GATE.validate_payload(payload)
 
     def test_tsv_columns_are_stable(self) -> None:
