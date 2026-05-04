@@ -48,7 +48,10 @@ SOURCE_RESULT = "GO"
 SOURCE_CLAIM_BOUNDARY = "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION"
 CLAIM_BOUNDARY = "ZKVM_STATEMENT_RECEIPT_ADAPTER_NOT_AVAILABLE_TOOLCHAIN_BOOTSTRAP_MISSING"
 FIRST_BLOCKER = "MISSING_LOCAL_ZKVM_TOOLCHAIN_BOOTSTRAP"
+RECEIPT_ARTIFACT_BLOCKER = "MISSING_ZKVM_RECEIPT_ARTIFACT"
+UNREADABLE_RECEIPT_ARTIFACT_BLOCKER = "MISSING_OR_UNREADABLE_ZKVM_RECEIPT_ARTIFACT"
 RECEIPT_VERIFICATION_BLOCKER = "MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING"
+RECEIPT_CANDIDATE_SCHEMA = "zkai-d128-zkvm-statement-receipt-candidate-v1"
 GO_CRITERION = (
     "a real RISC Zero or SP1 receipt/proof artifact exists, its verifier accepts it, "
     "and its public journal/public-values bind the #424 d128 two-slice public-input contract"
@@ -156,9 +159,13 @@ SUMMARY_BY_BLOCKER = {
         SUMMARY_PREFIX
         + "but this local checkout has no complete RISC Zero or SP1 proving toolchain bootstrap."
     ),
-    "MISSING_ZKVM_RECEIPT_ARTIFACT": (
+    RECEIPT_ARTIFACT_BLOCKER: (
         SUMMARY_PREFIX
         + "and at least one zkVM route has its required commands, but no receipt artifact exists for verification."
+    ),
+    UNREADABLE_RECEIPT_ARTIFACT_BLOCKER: (
+        SUMMARY_PREFIX
+        + "and at least one zkVM route has a receipt path, but the artifact is empty, unreadable, or not bound to the current journal contract."
     ),
     RECEIPT_VERIFICATION_BLOCKER: (
         SUMMARY_PREFIX
@@ -342,23 +349,56 @@ def command_probe() -> dict[str, Any]:
     return json.loads(_command_probe_cached())
 
 
+def receipt_candidate_probe(path: pathlib.Path, route: dict[str, Any], journal: dict[str, Any]) -> dict[str, Any]:
+    if not path.is_file():
+        return {"exists": False, "candidate_valid": False, "size_bytes": None, "reason": "missing_receipt_artifact"}
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return {"exists": True, "candidate_valid": False, "size_bytes": None, "reason": "unreadable_receipt_artifact"}
+    if size <= 0:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "empty_receipt_artifact"}
+    try:
+        candidate = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "unparseable_receipt_artifact"}
+    if not isinstance(candidate, dict):
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_not_object"}
+    if candidate.get("schema") != RECEIPT_CANDIDATE_SCHEMA:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_schema_mismatch"}
+    if candidate.get("route_id") != route["route_id"]:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_route_mismatch"}
+    if candidate.get("system") != route["system"]:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_system_mismatch"}
+    if candidate.get("journal_commitment") != journal["journal_commitment"]:
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_journal_mismatch"}
+    receipt_commitment = candidate.get("receipt_commitment")
+    if not isinstance(receipt_commitment, str) or not receipt_commitment.startswith("blake2b-256:"):
+        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_commitment_missing"}
+    return {"exists": True, "candidate_valid": True, "size_bytes": size, "reason": "receipt_candidate_parseable"}
+
+
 def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
     commands = require_object(probe.get("commands"), "probe commands", layer="toolchain_probe")
+    journal = journal_contract()
     routes = []
     for route in ZKVM_ROUTES:
         required = list(route["required_commands"])
         missing = [command for command in required if not require_object(commands.get(command), f"command {command}", layer="toolchain_probe").get("available")]
         receipt_path = ROOT / route["receipt_artifact"]
-        receipt_artifact_exists = receipt_path.is_file()
+        artifact_probe = receipt_candidate_probe(receipt_path, route, journal)
         # Fail closed: a command set plus a receipt-looking file is not a GO
         # until this gate verifies the receipt and its public journal binding.
         usable = False
         if missing:
             status = "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING"
             first_blocker = "missing_commands:" + ",".join(missing)
-        elif not receipt_artifact_exists:
+        elif not artifact_probe["exists"]:
             status = "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING"
             first_blocker = "missing_receipt_artifact"
+        elif not artifact_probe["candidate_valid"]:
+            status = "NO_GO_ZKVM_TOOLCHAIN_OR_RECEIPT_ARTIFACT_MISSING"
+            first_blocker = "missing_or_unreadable_receipt_artifact"
         else:
             status = "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED"
             first_blocker = "missing_receipt_verification_and_public_values_binding"
@@ -373,7 +413,9 @@ def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
                 "missing_commands": missing,
                 "public_statement_surface": route["public_statement_surface"],
                 "receipt_artifact": route["receipt_artifact"],
-                "receipt_artifact_exists": receipt_artifact_exists,
+                "receipt_artifact_exists": artifact_probe["exists"],
+                "receipt_artifact_candidate_valid": artifact_probe["candidate_valid"],
+                "receipt_artifact_probe": artifact_probe,
                 "proof_metrics": {
                     "proof_size_bytes": None,
                     "verifier_time_ms": None,
@@ -393,6 +435,7 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
         "usable_route_ids": [route["route_id"] for route in usable],
         "candidate_route_ids": [route["route_id"] for route in routes],
         "first_blocker": first_blocker,
+        "claim_boundary": CLAIM_BOUNDARY,
         "go_criterion": GO_CRITERION,
         "no_go_criterion": NO_GO_CRITERION,
         "proof_metrics": {
@@ -410,9 +453,11 @@ def backend_first_blocker(routes: list[dict[str, Any]]) -> str:
     toolchain_ready = [route for route in routes if not route["missing_commands"]]
     if not toolchain_ready:
         return FIRST_BLOCKER
-    if any(route["receipt_artifact_exists"] for route in toolchain_ready):
+    if any(route["receipt_artifact_candidate_valid"] for route in toolchain_ready):
         return RECEIPT_VERIFICATION_BLOCKER
-    return "MISSING_ZKVM_RECEIPT_ARTIFACT"
+    if any(route["receipt_artifact_exists"] for route in toolchain_ready):
+        return UNREADABLE_RECEIPT_ARTIFACT_BLOCKER
+    return RECEIPT_ARTIFACT_BLOCKER
 
 
 def summary_for_backend_decision(decision: dict[str, Any]) -> str:

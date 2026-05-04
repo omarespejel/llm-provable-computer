@@ -20,9 +20,14 @@ have a RISC Zero or SP1 proving toolchain installed, and the repository does not
 contain a real zkVM receipt artifact for the contract.
 
 The gate also fails closed for future local environments: command availability
-or a receipt-looking file is not enough to produce a GO. A GO requires the gate
-to run the route verifier and check that the public journal / public-values bind
-the exact statement contract below.
+or an arbitrary file at the receipt path is not enough to advance the route. A
+candidate receipt artifact must be non-empty, parseable as
+`zkai-d128-zkvm-statement-receipt-candidate-v1`, route-matched, and bound to the
+current journal commitment before the blocker can move from
+`MISSING_ZKVM_RECEIPT_ARTIFACT` to
+`MISSING_ZKVM_RECEIPT_VERIFICATION_AND_PUBLIC_VALUES_BINDING`. A GO still
+requires the gate to run the route verifier and check that the public journal /
+public-values bind the exact statement contract below.
 
 ## Checked Result
 
