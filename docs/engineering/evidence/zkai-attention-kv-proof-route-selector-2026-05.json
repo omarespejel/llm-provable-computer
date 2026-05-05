@@ -7,8 +7,8 @@
     "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_ATTENTION_KV_SOURCE_CONTRACT_NOT_ATTENTION_ARITHMETIC_PROOF",
     "decision": "GO_ATTENTION_KV_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_BACKED_TRANSITION_CONTRACT",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
-    "mutations_checked": 37,
-    "mutations_rejected": 37,
+    "mutations_checked": 39,
+    "mutations_rejected": 39,
     "proof_size_bytes": 802,
     "proof_system": "snarkjs/Groth16/BN128",
     "proof_system_version": "0.7.6",
@@ -22,7 +22,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "ffe100ac279874e43e33eacd0ee58a5051520fa4",
+  "git_commit": "77d926b57178be358205deae664ffc93a1b5b02f",
   "metrics": {
     "proof_generation_time_ms": null,
     "proof_size_bytes": 802,
@@ -87,6 +87,11 @@
       "rejected": true
     },
     {
+      "name": "next_go_criteria_weakened",
+      "reason": "next-go criteria drift",
+      "rejected": true
+    },
+    {
       "name": "claim_boundary_weakened",
       "reason": "claim boundary drift",
       "rejected": true
@@ -102,8 +107,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 14,
-  "mutations_rejected": 14,
+  "mutations_checked": 15,
+  "mutations_rejected": 15,
   "next_go_criteria": [
     "native Stwo proof or zkVM receipt verifies the same public-instance fields",
     "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
@@ -168,7 +173,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:bdd71857d7b7368b6712479489ba19c9c32006d167a76dd6c6b64bcd9e8cfe5d",
+  "selector_commitment": "blake2b-256:6ee7cbe2173770deed195096b932f0d4fdb66898657ccf7d4705c1e8eedc4e12",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

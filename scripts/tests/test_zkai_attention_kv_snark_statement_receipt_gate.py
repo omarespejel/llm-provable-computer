@@ -54,10 +54,10 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
 
     def test_repro_git_commit_ignores_environment_override(self) -> None:
         with mock.patch.dict(GATE.os.environ, {"ZKAI_ATTENTION_KV_SNARK_RECEIPT_GIT_COMMIT": "spoofed"}, clear=False):
-            with mock.patch.object(GATE, "_git_commit", return_value="actual-commit"):
+            with mock.patch.object(GATE, "_git_commit", return_value="a" * 40):
                 payload = GATE.run_gate(external_verify=fake_external_verify)
 
-        self.assertEqual(payload["repro"]["git_commit"], "actual-commit")
+        self.assertEqual(payload["repro"]["git_commit"], "a" * 40)
 
     def test_snarkjs_launch_failure_is_layered(self) -> None:
         GATE._snarkjs_verify_cached.cache_clear()
@@ -100,6 +100,8 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
             "proof_size_metric_smuggled",
             "verifier_time_metric_smuggled",
             "proof_generation_time_metric_smuggled",
+            "embedded_input_relabeling",
+            "embedded_artifact_map_relabeling",
             "unknown_statement_field_added",
             "unknown_top_level_field_added",
         ):
@@ -145,6 +147,14 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
             GATE.validate_payload(forged)
 
         self.assertEqual(err.exception.layer, "receipt_metrics")
+
+    def test_payload_validation_rejects_repro_drift(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged = copy.deepcopy(payload)
+        forged["repro"]["git_commit"] = "not-a-sha"
+
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "repro git_commit"):
+            GATE.validate_payload(forged)
 
     def test_tsv_columns_are_stable(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)

@@ -50,15 +50,16 @@ claim.
 | Verification key size | `6040` bytes |
 | Public signals | `18` |
 | Public signal field entries | `17` |
-| Mutations checked | `37` |
-| Mutations rejected | `37` |
+| Mutations checked | `39` |
+| Mutations rejected | `39` |
 | Timing policy | `not_measured_in_this_gate` |
 
 The checked mutation suite rejects source-statement, model/config, prior-KV,
 input, output, next-KV, public-instance, score-trace, proof-status, verifier
 domain, model id, statement-kind, public-signal, field-entry, artifact-hash,
-setup, metric-smuggling, non-claim, validation-command, statement-schema, and
-unknown-field mutations.
+embedded-input, embedded-artifact-map, setup, metric-smuggling, non-claim,
+validation-command, parser/schema, statement-schema, and unknown-field
+mutations.
 
 The raw proof verifier is also checked: the original proof verifies, while
 public-signal drift fails.
