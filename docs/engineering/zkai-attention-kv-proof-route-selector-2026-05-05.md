@@ -70,9 +70,9 @@ Claim boundary:
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
 | RISC Zero receipt size | `221842` bytes |
-| RISC Zero verifier time | `14.353 ms` |
-| Mutations checked | 17 |
-| Mutations rejected | 17 |
+| RISC Zero verifier time | `14.938 ms` |
+| Mutations checked | 20 |
+| Mutations rejected | 20 |
 
 The mutation suite rejects:
 
@@ -87,9 +87,12 @@ The mutation suite rejects:
 - external RISC Zero route removal,
 - external RISC Zero receipt decision drift,
 - external RISC Zero mutation-count drift,
+- external RISC Zero KV-update drift,
+- external RISC Zero timing-source drift,
 - fake verifier-time metric,
 - fake proof-size metric,
 - next-go criteria weakening,
+- non-claim weakening,
 - claim-boundary weakening,
 - first-blocker removal,
 - unknown top-level fields.
@@ -129,8 +132,8 @@ python3 scripts/zkai_attention_kv_snark_statement_receipt_gate.py \
 PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 \
   scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py \
   --verify-existing \
-  --write-json docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json \
-  --write-tsv docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv
+  --write-json target/zkai-attention-kv-risc0-semantics-receipt-verify.json \
+  --write-tsv target/zkai-attention-kv-risc0-semantics-receipt-verify.tsv
 
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \

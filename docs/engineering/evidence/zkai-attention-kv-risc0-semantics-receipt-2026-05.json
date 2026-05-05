@@ -422,25 +422,27 @@
   ],
   "proof_metrics": {
     "metrics_enabled": true,
-    "proof_generation_time_ms": 14259.2785,
+    "proof_generation_time_ms": 6909.913042,
+    "proof_generation_time_source": "current_prove_run",
     "proof_size_bytes": 221842,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 14.353209
+    "verifier_time_ms": 14.937917,
+    "verifier_time_source": "current_verify_run"
   },
   "receipt_artifact": {
-    "commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
+    "commitment": "blake2b-256:620b2fae605aaf54cf6827511d8c25920c01c5748b4cf6e8ee1f01422e96ac5c",
     "path": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.bincode",
-    "sha256": "65853082f674abef74e72fd71593c1b6ac41c7655088e37718239924ef1beb9a",
+    "sha256": "1546d524e82310af65eb5e18156fa7bca7d8698ca5a6b6a383592cb9821b4762",
     "size_bytes": 221842
   },
-  "receipt_commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
+  "receipt_commitment": "blake2b-256:620b2fae605aaf54cf6827511d8c25920c01c5748b4cf6e8ee1f01422e96ac5c",
   "receipt_verification": {
     "decoded_journal_matches_expected": true,
     "host_summary_mode": "verify",
     "host_summary_schema": "zkai-attention-kv-risc0-host-summary-v1",
-    "image_id_hex": "9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454",
+    "image_id_hex": "cbc061838cd2a42993e6310f7e55d0b28c64b3693c985a2ccdb3626944d3d1eb",
     "journal_sha256": "8d281d56dd01454426db29df5cb361356cf63a0581107e29bb2a6a7984410cab",
-    "receipt_sha256": "65853082f674abef74e72fd71593c1b6ac41c7655088e37718239924ef1beb9a",
+    "receipt_sha256": "1546d524e82310af65eb5e18156fa7bca7d8698ca5a6b6a383592cb9821b4762",
     "receipt_verified": true,
     "risc0_zkvm_version": "3.0.5",
     "strict_receipt_reverified": true,
@@ -537,14 +539,16 @@
       2,
       1
     ],
-    "image_id_hex": "9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454",
+    "image_id_hex": "cbc061838cd2a42993e6310f7e55d0b28c64b3693c985a2ccdb3626944d3d1eb",
     "journal_commitment": "blake2b-256:eddb5811f49a5d1cc32694404107cea6351b7dbf5d06b5c2e198bff1bf2d8872",
     "next_kv_items": 3,
-    "proof_generation_time_ms": 14259.2785,
-    "receipt_commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
+    "proof_generation_time_ms": 6909.913042,
+    "proof_generation_time_source": "current_prove_run",
+    "receipt_commitment": "blake2b-256:620b2fae605aaf54cf6827511d8c25920c01c5748b4cf6e8ee1f01422e96ac5c",
     "receipt_size_bytes": 221842,
     "selected_position": 0,
-    "verifier_time_ms": 14.353209
+    "verifier_time_ms": 14.937917,
+    "verifier_time_source": "current_verify_run"
   },
   "system": "RISC Zero",
   "toolchain_probe": {
@@ -605,7 +609,7 @@
     }
   },
   "validation_commands": [
-    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-semantics-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-semantics-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_semantics_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_semantics_receipt_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",

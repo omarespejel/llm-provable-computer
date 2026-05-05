@@ -69,7 +69,8 @@ fn image_id_hex() -> String {
 }
 
 fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i64 {
-    i64::from(lhs[0]) * i64::from(rhs[0]) + i64::from(lhs[1]) * i64::from(rhs[1])
+    let score = i128::from(lhs[0]) * i128::from(rhs[0]) + i128::from(lhs[1]) * i128::from(rhs[1]);
+    i64::try_from(score).expect("attention score outside i64 semantics bound")
 }
 
 fn attention_order(lhs: &ScoreRow, rhs: &ScoreRow) -> Ordering {
@@ -350,6 +351,27 @@ mod tests {
         let journal = expected_journal(&input);
         assert_eq!(journal.scores[0].score, 5_000_000_000);
         assert_eq!(journal.selected_position, 0);
+    }
+
+    #[test]
+    fn expected_journal_rejects_score_outside_i64_bound() {
+        let input = AttentionInput {
+            prior_kv_cache: vec![KvEntry {
+                position: 0,
+                key: [i32::MIN, i32::MIN],
+                value: [2, 1],
+            }],
+            input_step: InputStep {
+                token_position: 1,
+                query: [i32::MIN, i32::MIN],
+                new_key: [1, 0],
+                new_value: [4, 2],
+            },
+        };
+
+        let result = std::panic::catch_unwind(|| expected_journal(&input));
+
+        assert!(result.is_err(), "out-of-range i64 score must fail closed");
     }
 
     #[test]

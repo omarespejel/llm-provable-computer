@@ -45,13 +45,13 @@ proof-carrying data.
 | Proof system | `RISC Zero` |
 | `risc0-zkvm` version | `3.0.5` |
 | Receipt size | `221842` bytes |
-| Image ID | `9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454` |
+| Image ID | `cbc061838cd2a42993e6310f7e55d0b28c64b3693c985a2ccdb3626944d3d1eb` |
 | Selected position | `0` |
 | Attention output | `[2, 1]` |
 | Masking policy | `none` |
 | Next KV rows | `3` |
-| Single local proof-generation time | `14259.279 ms` |
-| Single local verification time | `14.353 ms` |
+| Single local proof-generation time | `6909.913 ms` |
+| Single local verification time | `14.938 ms` |
 | Mutations checked | `22` |
 | Mutations rejected | `22` |
 
@@ -114,8 +114,8 @@ PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" cargo test \
 PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 \
   scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py \
   --verify-existing \
-  --write-json docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json \
-  --write-tsv docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv
+  --write-json target/zkai-attention-kv-risc0-semantics-receipt-verify.json \
+  --write-tsv target/zkai-attention-kv-risc0-semantics-receipt-verify.tsv
 
 PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_risc0_semantics_receipt_gate
@@ -127,5 +127,7 @@ git diff --check
 ```
 
 To regenerate the receipt from scratch, replace `--verify-existing` with
-`--prove`. The checked JSON keeps the original proof-generation time from the
-fresh proof run and uses verification-only mode for routine rechecks.
+`--prove` and write to the checked evidence paths. Routine rechecks write to
+`target/`: proof-generation time is marked as historical when it is not
+remeasured, while verifier time is always taken from the current verification
+run.

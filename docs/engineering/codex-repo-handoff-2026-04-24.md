@@ -169,7 +169,7 @@ Tablero boundary.
   masking policy `none`, emits
   selected position `0`, attention output `[2, 1]`, and a three-row next KV
   cache. The checked receipt is `221842` bytes, verifies locally in
-  `14.353 ms` under a single-run engineering timing policy, and rejects
+  `14.938 ms` under a single-run engineering timing policy, and rejects
   `22 / 22` journal/source/receipt/metric/claim-boundary mutations. This is a
   zkVM semantics receipt, not native Stwo, not Softmax, not full inference, and
   not recursion/PCD; see

@@ -133,6 +133,7 @@ EXPECTED_MUTATION_NAMES = (
     "external_zkvm_receipt_decision_drift",
     "external_zkvm_receipt_mutation_rejections_drift",
     "external_zkvm_receipt_next_kv_items_drift",
+    "external_zkvm_metric_source_drift",
     "fake_verifier_time_metric",
     "fake_proof_size_metric",
     "next_go_criteria_weakened",
@@ -317,6 +318,8 @@ def risc0_receipt_summary(risc0_payload: dict[str, Any]) -> dict[str, Any]:
         "proof_system_version": risc0_payload["receipt_verification"]["risc0_zkvm_version"],
         "proof_size_bytes": metrics["proof_size_bytes"],
         "verifier_time_ms": metrics["verifier_time_ms"],
+        "proof_generation_time_source": metrics["proof_generation_time_source"],
+        "verifier_time_source": metrics["verifier_time_source"],
         "journal_commitment": risc0_payload["journal_commitment"],
         "receipt_commitment": risc0_payload["receipt_commitment"],
         "image_id_hex": risc0_payload["receipt_verification"]["image_id_hex"],
@@ -419,6 +422,7 @@ def build_payload() -> dict[str, Any]:
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
             "risc0_verifier_time_ms": risc0_summary["verifier_time_ms"],
+            "risc0_verifier_time_source": risc0_summary["verifier_time_source"],
             "proof_generation_time_ms": None,
             "verifier_time_ms": None,
             "timing_policy": snark_summary["timing_policy"],
@@ -496,6 +500,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["external_risc0_receipt"]["mutations_rejected"] -= 1
     elif name == "external_zkvm_receipt_next_kv_items_drift":
         out["external_risc0_receipt"]["next_kv_items"] -= 1
+    elif name == "external_zkvm_metric_source_drift":
+        out["external_risc0_receipt"]["verifier_time_source"] = "carried_from_existing_evidence_not_remeasured"
     elif name == "fake_verifier_time_metric":
         out["metrics"]["verifier_time_ms"] = 7.5
     elif name == "fake_proof_size_metric":
@@ -603,6 +609,10 @@ def validate_risc0_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero mutation rejection drift")
     if summary["proof_size_bytes"] <= 0 or summary["verifier_time_ms"] <= 0:
         raise AttentionKvRouteSelectorError("external RISC Zero proof metric drift")
+    if summary["proof_generation_time_source"] != "current_prove_run":
+        raise AttentionKvRouteSelectorError("external RISC Zero proof-generation metric source drift")
+    if summary["verifier_time_source"] != "current_verify_run":
+        raise AttentionKvRouteSelectorError("external RISC Zero verifier metric source drift")
     if summary["selected_position"] != 0 or summary["attention_output"] != [2, 1]:
         raise AttentionKvRouteSelectorError("external RISC Zero semantics drift")
     if summary["next_kv_items"] != 3 or len(summary["next_kv_cache"]) != summary["next_kv_items"]:
@@ -660,6 +670,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
         "risc0_receipt_size_bytes": payload["external_risc0_receipt"]["proof_size_bytes"],
         "risc0_verifier_time_ms": payload["external_risc0_receipt"]["verifier_time_ms"],
+        "risc0_verifier_time_source": payload["external_risc0_receipt"]["verifier_time_source"],
         "proof_generation_time_ms": None,
         "verifier_time_ms": None,
         "timing_policy": payload["external_snark_receipt"]["timing_policy"],
