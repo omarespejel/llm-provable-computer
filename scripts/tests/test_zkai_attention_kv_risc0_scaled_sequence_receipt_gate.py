@@ -121,16 +121,24 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
         self.assertGreater(metrics["proof_generation_time_ms"], 0)
         self.assertGreater(metrics["verifier_time_ms"], 0)
 
-    def test_carried_prove_time_requires_same_receipt_artifact(self) -> None:
+    def test_carried_prove_time_accepts_alternate_receipt_artifact(self) -> None:
         payload = self.fresh_payload()
         receipt_path = GATE.ROOT / payload["receipt_artifact"]["path"]
         previous = copy.deepcopy(payload)
         previous["receipt_artifact"]["sha256"] = "00" * 32
 
-        with self.assertRaisesRegex(GATE.AttentionKvRisc0SequenceReceiptError, "previous receipt sha256") as err:
-            GATE.carried_proof_generation_time(previous, receipt_path.read_bytes())
+        self.assertEqual(
+            GATE.carried_proof_generation_time(previous, receipt_path.read_bytes()),
+            payload["proof_metrics"]["proof_generation_time_ms"],
+        )
 
-        self.assertEqual(err.exception.layer, "proof_metrics")
+    def test_receipt_path_rejects_source_tree_outputs(self) -> None:
+        source_path = GATE.ROOT / "scripts" / "zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py"
+
+        with self.assertRaisesRegex(GATE.AttentionKvRisc0SequenceReceiptError, "approved artifact directories") as err:
+            GATE.require_allowed_receipt_path(source_path, label="receipt", layer="output_path")
+
+        self.assertEqual(err.exception.layer, "output_path")
 
     def test_rejects_transition_deletion(self) -> None:
         payload = self.fresh_payload()
