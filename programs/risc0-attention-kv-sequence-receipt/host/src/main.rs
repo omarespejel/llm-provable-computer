@@ -284,7 +284,6 @@ fn verify(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let receipt: Receipt = bincode::DefaultOptions::new()
         .with_fixint_encoding()
         .with_limit(MAX_RECEIPT_BYTES as u64)
-        .allow_trailing_bytes()
         .deserialize(&receipt_bytes)
         .expect("deserialize size-limited RISC Zero receipt");
     let (decoded, verify_time_ms) = verify_receipt(&receipt, &expected);
