@@ -53,8 +53,8 @@ Claim boundary:
 | Masking policy | `none` |
 | Tie break | `lowest_position` |
 | Receipt size | `246730` bytes |
-| Proof generation time | `13316.680 ms` |
-| Verifier time | `17.630 ms` |
+| Proof generation time | `13568.944 ms` |
+| Verifier time | `21.225 ms` |
 | Timing policy | `single_local_run_engineering_only` |
 | Mutations checked | `27` |
 | Mutations rejected | `27` |

@@ -24,7 +24,7 @@ Pinned local toolchain:
 
 - `risc0-zkvm = 3.0.5`
 - `rzup` components `cargo-risczero = 3.0.5`, `r0vm = 3.0.5`
-- Rust `1.88.0` via `rust-toolchain.toml`
+- Rust `1.92.0` via `rust-toolchain.toml`
 
 Typical commands:
 

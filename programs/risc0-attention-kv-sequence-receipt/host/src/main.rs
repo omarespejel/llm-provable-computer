@@ -1,3 +1,4 @@
+use bincode::Options;
 use methods::{ATTENTION_KV_SEQUENCE_RECEIPT_ELF, ATTENTION_KV_SEQUENCE_RECEIPT_ID};
 use risc0_zkvm::{default_prover, ExecutorEnv, Receipt};
 use serde::{Deserialize, Serialize};
@@ -15,7 +16,7 @@ use std::{
 const MAX_RECEIPT_BYTES: usize = 2_500_000;
 const JOURNAL_SCHEMA: &str = "zkai-attention-kv-risc0-sequence-journal-v1";
 const SEMANTICS: &str = "tiny-single-head-integer-argmax-attention-sequence-v1";
-const MIN_SEQUENCE_LENGTH: usize = 2;
+const EXACT_SEQUENCE_LENGTH: usize = 3;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 struct KvEntry {
@@ -137,8 +138,8 @@ fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal 
         "attention fixture needs at least one initial KV row"
     );
     assert!(
-        input.input_steps.len() >= MIN_SEQUENCE_LENGTH,
-        "sequence fixture needs at least two carried KV transitions"
+        input.input_steps.len() == EXACT_SEQUENCE_LENGTH,
+        "sequence fixture requires exactly three carried KV transitions"
     );
     let mut current_kv_cache = input.initial_kv_cache.clone();
     let mut transitions = Vec::with_capacity(input.input_steps.len());
@@ -167,6 +168,12 @@ fn read_input(path: &PathBuf) -> AttentionSequenceInput {
     serde_json::from_slice(&bytes).expect("decode attention sequence input JSON")
 }
 
+fn create_parent_dir(path: &PathBuf) {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).expect("create output parent directory");
+    }
+}
+
 fn write_summary(
     out_path: &PathBuf,
     mode: &str,
@@ -175,6 +182,7 @@ fn write_summary(
     prove_time_ms: Option<f64>,
     verify_time_ms: f64,
 ) {
+    create_parent_dir(out_path);
     let journal_json = serde_json::to_value(journal).expect("journal to JSON value");
     let journal_bytes = serde_json::to_vec(journal).expect("serialize journal for hash");
     let summary = json!({
@@ -236,6 +244,7 @@ fn prove(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let receipt = prove_info.receipt;
     let (decoded, verify_time_ms) = verify_receipt(&receipt, &expected);
     let receipt_bytes = bincode::serialize(&receipt).expect("serialize receipt");
+    create_parent_dir(&receipt_path);
     fs::write(&receipt_path, &receipt_bytes).expect("write receipt artifact");
     write_summary(
         &summary_path,
@@ -272,8 +281,12 @@ fn verify(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
             receipt_bytes.len()
         );
     }
-    let receipt: Receipt =
-        bincode::deserialize(&receipt_bytes).expect("deserialize RISC Zero receipt");
+    let receipt: Receipt = bincode::DefaultOptions::new()
+        .with_fixint_encoding()
+        .with_limit(MAX_RECEIPT_BYTES as u64)
+        .allow_trailing_bytes()
+        .deserialize(&receipt_bytes)
+        .expect("deserialize size-limited RISC Zero receipt");
     let (decoded, verify_time_ms) = verify_receipt(&receipt, &expected);
     write_summary(
         &summary_path,
@@ -355,6 +368,21 @@ mod tests {
     }
 
     #[test]
+    fn create_parent_dir_creates_nested_output_parent() {
+        let root =
+            std::env::temp_dir().join(format!("ptvm-risc0-sequence-test-{}", std::process::id()));
+        let out = root.join("nested").join("summary.json");
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("remove stale test directory");
+        }
+
+        create_parent_dir(&out);
+
+        assert!(out.parent().expect("parent").is_dir());
+        fs::remove_dir_all(root).expect("cleanup test directory");
+    }
+
+    #[test]
     fn expected_journal_carries_kv_state_across_three_steps() {
         let journal = expected_journal(&sample_input());
 
@@ -378,7 +406,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "sequence fixture needs at least two carried KV transitions")]
+    #[should_panic(expected = "sequence fixture requires exactly three carried KV transitions")]
     fn expected_journal_requires_a_real_sequence() {
         let mut input = sample_input();
         input.input_steps.truncate(1);

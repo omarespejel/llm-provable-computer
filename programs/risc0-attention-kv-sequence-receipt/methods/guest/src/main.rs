@@ -112,8 +112,8 @@ fn main() {
         "attention fixture needs at least one initial KV row"
     );
     assert!(
-        input.input_steps.len() >= 2,
-        "sequence fixture needs at least two carried KV transitions"
+        input.input_steps.len() == 3,
+        "sequence fixture requires exactly three carried KV transitions"
     );
 
     let mut current_kv_cache = input.initial_kv_cache.clone();
