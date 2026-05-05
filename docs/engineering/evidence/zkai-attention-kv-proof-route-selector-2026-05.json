@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_OR_SOFTMAX",
+  "claim_boundary": "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_NOT_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_PCD_NOT_AGENT_CORRECTNESS",
   "decision": "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
@@ -209,7 +209,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "3fa7a30e0834c5aeab3113458acd439777770011",
+  "git_commit": "70aa41455b10c5f3c3a0d43a6aa38973787c5ec9",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
@@ -506,7 +506,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:e3f86f2efc2255c5280159aa54ddc51cc3a4e3495c8b41a43be2c47aa653eca7",
+  "selector_commitment": "blake2b-256:377ae12d1df93691897d9b8dd016c8d2ef92d33123de5f42487b609df7579358",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

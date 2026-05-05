@@ -261,7 +261,7 @@ def expected_input() -> dict[str, Any]:
 def dot(lhs: list[int], rhs: list[int]) -> int:
     if len(lhs) != len(rhs):
         raise AttentionKvRisc0SequenceReceiptError("dot-product width mismatch", layer="sequence_journal")
-    return sum(left * right for left, right in zip(lhs, rhs, strict=True))
+    return sum(left * right for left, right in zip(lhs, rhs))
 
 
 def apply_step(step_index: int, prior_kv_cache: list[dict[str, Any]], input_step: dict[str, Any]) -> dict[str, Any]:
