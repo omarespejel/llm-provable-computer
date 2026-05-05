@@ -45,7 +45,9 @@ struct AttentionJournal {
 }
 
 fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i64 {
-    i64::from(lhs[0]) * i64::from(rhs[0]) + i64::from(lhs[1]) * i64::from(rhs[1])
+    let score = i128::from(lhs[0]) * i128::from(rhs[0])
+        + i128::from(lhs[1]) * i128::from(rhs[1]);
+    i64::try_from(score).expect("attention score outside i64 semantics bound")
 }
 
 fn attention_order(lhs: &ScoreRow, rhs: &ScoreRow) -> Ordering {

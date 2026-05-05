@@ -68,7 +68,7 @@ NON_CLAIMS = [
 ]
 
 VALIDATION_COMMANDS = [
-    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-semantics-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-semantics-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_semantics_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_semantics_receipt_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
@@ -404,7 +404,6 @@ def build_payload(
     prove: bool = False,
     receipt_path: pathlib.Path = RECEIPT_OUT,
     previous_proof_generation_time_ms: float | None = None,
-    previous_verifier_time_ms: float | None = None,
 ) -> dict[str, Any]:
     journal = expected_journal()
     receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
@@ -415,20 +414,26 @@ def build_payload(
         raise AttentionKvRisc0SemanticsReceiptError("receipt artifact size outside allowed bound", layer="receipt_artifact")
     receipt_commitment = blake2b_commitment_bytes(receipt_bytes)
     proof_generation_time_ms = host_summary.get("prove_time_ms")
+    proof_generation_time_source = "current_prove_run"
     if proof_generation_time_ms is None:
         proof_generation_time_ms = previous_proof_generation_time_ms
+        proof_generation_time_source = (
+            "carried_from_existing_evidence_not_remeasured"
+            if proof_generation_time_ms is not None
+            else "not_remeasured_in_verify_existing"
+        )
     verification_summary = host_summary
     if host_summary["mode"] == "prove":
         verification_summary = reverify_receipt_artifact(receipt_path)
     verifier_time_ms = verification_summary["verify_time_ms"]
-    if not prove and verification_summary["mode"] == "verify" and previous_verifier_time_ms is not None:
-        verifier_time_ms = previous_verifier_time_ms
     proof_metrics = {
         "metrics_enabled": True,
         "timing_policy": "single_local_run_engineering_only",
         "proof_size_bytes": len(receipt_bytes),
         "proof_generation_time_ms": proof_generation_time_ms,
+        "proof_generation_time_source": proof_generation_time_source,
         "verifier_time_ms": verifier_time_ms,
+        "verifier_time_source": "current_verify_run",
     }
     payload = {
         "schema": SCHEMA,
@@ -479,7 +484,9 @@ def build_payload(
             "image_id_hex": verification_summary["image_id_hex"],
             "receipt_size_bytes": len(receipt_bytes),
             "proof_generation_time_ms": proof_generation_time_ms,
+            "proof_generation_time_source": proof_generation_time_source,
             "verifier_time_ms": verifier_time_ms,
+            "verifier_time_source": "current_verify_run",
             "journal_commitment": journal_commitment(journal),
             "receipt_commitment": receipt_commitment,
         },
@@ -668,26 +675,54 @@ def validate_core_payload(payload: dict[str, Any], *, strict_receipt: bool = Fal
     expect_equal(components.get("cargo-risczero"), RISC0_ZKVM_VERSION, "cargo-risczero component", layer="toolchain_probe")
     expect_equal(components.get("r0vm"), RISC0_ZKVM_VERSION, "r0vm component", layer="toolchain_probe")
     metrics = require_object(payload["proof_metrics"], "proof metrics", layer="proof_metrics")
-    expect_keys(metrics, {"metrics_enabled", "timing_policy", "proof_size_bytes", "proof_generation_time_ms", "verifier_time_ms"}, "proof metrics", layer="proof_metrics")
+    expect_keys(
+        metrics,
+        {
+            "metrics_enabled", "timing_policy", "proof_size_bytes",
+            "proof_generation_time_ms", "proof_generation_time_source",
+            "verifier_time_ms", "verifier_time_source",
+        },
+        "proof metrics",
+        layer="proof_metrics",
+    )
     expect_equal(metrics["metrics_enabled"], True, "metrics enabled", layer="proof_metrics")
     expect_equal(metrics["timing_policy"], "single_local_run_engineering_only", "timing policy", layer="proof_metrics")
     expect_equal(metrics["proof_size_bytes"], len(receipt_bytes), "proof size", layer="proof_metrics")
-    if not isinstance(metrics["proof_generation_time_ms"], (int, float)) or metrics["proof_generation_time_ms"] <= 0:
+    if metrics["proof_generation_time_source"] not in {
+        "current_prove_run",
+        "carried_from_existing_evidence_not_remeasured",
+        "not_remeasured_in_verify_existing",
+    }:
+        raise AttentionKvRisc0SemanticsReceiptError("proof_generation_time_source mismatch", layer="proof_metrics")
+    if metrics["proof_generation_time_source"] == "not_remeasured_in_verify_existing":
+        expect_equal(metrics["proof_generation_time_ms"], None, "proof generation time unavailable", layer="proof_metrics")
+    elif not isinstance(metrics["proof_generation_time_ms"], (int, float)) or metrics["proof_generation_time_ms"] <= 0:
         raise AttentionKvRisc0SemanticsReceiptError("proof_generation_time_ms must be positive", layer="proof_metrics")
     if not isinstance(metrics["verifier_time_ms"], (int, float)) or metrics["verifier_time_ms"] <= 0:
         raise AttentionKvRisc0SemanticsReceiptError("verifier_time_ms must be positive", layer="proof_metrics")
+    expect_equal(metrics["verifier_time_source"], "current_verify_run", "verifier time source", layer="proof_metrics")
     expect_equal(payload["go_criterion"], GO_CRITERION, "go criterion")
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
     summary = require_object(payload["summary"], "summary")
-    expect_keys(summary, {"selected_position", "attention_output", "next_kv_items", "image_id_hex", "receipt_size_bytes", "proof_generation_time_ms", "verifier_time_ms", "journal_commitment", "receipt_commitment"}, "summary")
+    expect_keys(
+        summary,
+        {
+            "selected_position", "attention_output", "next_kv_items", "image_id_hex",
+            "receipt_size_bytes", "proof_generation_time_ms", "proof_generation_time_source",
+            "verifier_time_ms", "verifier_time_source", "journal_commitment", "receipt_commitment",
+        },
+        "summary",
+    )
     expect_equal(summary["selected_position"], journal["selected_position"], "summary selected position")
     expect_equal(summary["attention_output"], journal["attention_output"], "summary output")
     expect_equal(summary["next_kv_items"], len(journal["next_kv_cache"]), "summary next KV")
     expect_equal(summary["image_id_hex"], verification["image_id_hex"], "summary image id")
     expect_equal(summary["receipt_size_bytes"], len(receipt_bytes), "summary receipt size")
     expect_equal(summary["proof_generation_time_ms"], metrics["proof_generation_time_ms"], "summary proof time", layer="proof_metrics")
+    expect_equal(summary["proof_generation_time_source"], metrics["proof_generation_time_source"], "summary proof time source", layer="proof_metrics")
     expect_equal(summary["verifier_time_ms"], metrics["verifier_time_ms"], "summary verify time", layer="proof_metrics")
+    expect_equal(summary["verifier_time_source"], metrics["verifier_time_source"], "summary verify time source", layer="proof_metrics")
     expect_equal(summary["journal_commitment"], payload["journal_commitment"], "summary journal")
     expect_equal(summary["receipt_commitment"], payload["receipt_commitment"], "summary receipt")
 
@@ -747,9 +782,12 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 def write_text_checked(path: pathlib.Path, text: str) -> None:
     resolved = path.resolve()
-    root = EVIDENCE_DIR.resolve()
-    if resolved != root and root not in resolved.parents:
-        raise AttentionKvRisc0SemanticsReceiptError(f"output path must stay under {EVIDENCE_DIR}", layer="output_path")
+    allowed_roots = (EVIDENCE_DIR.resolve(), (ROOT / "target").resolve())
+    if not any(resolved == root or root in resolved.parents for root in allowed_roots):
+        raise AttentionKvRisc0SemanticsReceiptError(
+            f"output path must stay under {EVIDENCE_DIR} or {ROOT / 'target'}",
+            layer="output_path",
+        )
     if resolved.exists() and resolved.is_dir():
         raise AttentionKvRisc0SemanticsReceiptError("output path must be a file, not a directory", layer="output_path")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -787,27 +825,25 @@ def main() -> int:
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
     previous_proof_generation_time_ms = None
-    previous_verifier_time_ms = None
     if args.verify_existing:
         if json_path is None:
             raise AttentionKvRisc0SemanticsReceiptError(
                 "--verify-existing requires --write-json pointing at existing RISC Zero evidence",
                 layer="output_path",
             )
-        if not json_path.is_file():
+        previous_json_path = json_path if json_path.is_file() else JSON_OUT
+        if not previous_json_path.is_file():
             raise AttentionKvRisc0SemanticsReceiptError(
-                "--verify-existing requires an existing attention/KV RISC Zero evidence JSON; use --prove first or provide --write-json",
+                "--verify-existing requires existing checked attention/KV RISC Zero evidence JSON; use --prove first",
                 layer="output_path",
             )
-        previous = require_object(load_json(json_path), "previous attention/KV RISC Zero evidence")
+        previous = require_object(load_json(previous_json_path), "previous attention/KV RISC Zero evidence")
         metrics = require_object(previous.get("proof_metrics"), "previous proof metrics")
         previous_proof_generation_time_ms = metrics.get("proof_generation_time_ms")
-        previous_verifier_time_ms = metrics.get("verifier_time_ms")
     payload = build_payload(
         prove=args.prove,
         receipt_path=receipt_path,
         previous_proof_generation_time_ms=previous_proof_generation_time_ms,
-        previous_verifier_time_ms=previous_verifier_time_ms,
     )
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)

@@ -873,7 +873,7 @@ the same tiny attention/KV fixture, appends the new KV row, recomputes integer
 dot-product scores under masking policy `none`, selects the lowest-position
 maximum, emits attention output `[2, 1]`, and commits the next three-row KV
 cache in the receipt journal. The
-checked receipt is `221842` bytes, verifies locally in `14.353 ms` under a
+checked receipt is `221842` bytes, verifies locally in `14.938 ms` under a
 single-run engineering timing policy, and rejects `22 / 22` journal,
 source-contract, receipt-metadata, metric-smuggling, native-Stwo-claim,
 Softmax-claim, non-claim, validation-command, and parser/schema mutations. This
@@ -886,7 +886,7 @@ recursion or PCD. It is anchored to
 The route selector is updated accordingly: it records
 `GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV`, while
 local Stwo attention arithmetic and Softmax attention remain bounded
-non-results. It rejects `17 / 17`
+non-results. It rejects `20 / 20`
 route-removal, receipt-drift, fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This leaves the stronger-venue bridge precise:
 preserve the same prior-state/input/output/next-state public fields and replace

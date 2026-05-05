@@ -164,17 +164,6 @@ class ZkAiAttentionKvRisc0SemanticsReceiptGateTests(unittest.TestCase):
             ]
             with self.assertRaisesRegex(GATE.AttentionKvRisc0SemanticsReceiptError, "requires --write-json"):
                 GATE.main()
-
-            sys.argv = [
-                str(SCRIPT_PATH),
-                "--verify-existing",
-                "--receipt",
-                str(GATE.RECEIPT_OUT),
-                "--write-json",
-                "target/missing-attention-kv-risc0-semantics-receipt.json",
-            ]
-            with self.assertRaisesRegex(GATE.AttentionKvRisc0SemanticsReceiptError, "requires an existing attention/KV RISC Zero evidence JSON"):
-                GATE.main()
         finally:
             sys.argv = old_argv
 
