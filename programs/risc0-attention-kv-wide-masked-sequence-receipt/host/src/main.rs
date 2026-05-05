@@ -433,8 +433,36 @@ fn normalize_output_path(path: &PathBuf) -> PathBuf {
     normalized
 }
 
+fn canonical_or_normalized_output_path(path: &PathBuf) -> PathBuf {
+    if let Ok(canonical) = fs::canonicalize(path) {
+        return canonical;
+    }
+    let normalized = normalize_output_path(path);
+    let Some(file_name) = path.file_name() else {
+        return normalized;
+    };
+    let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    else {
+        return normalized;
+    };
+    let joined_parent = if parent.is_absolute() {
+        parent.to_path_buf()
+    } else {
+        env::current_dir()
+            .expect("resolve current directory")
+            .join(parent)
+    };
+    match fs::canonicalize(joined_parent) {
+        Ok(canonical_parent) => canonical_parent.join(file_name),
+        Err(_) => normalized,
+    }
+}
+
 fn output_paths_overlap(receipt_path: &PathBuf, summary_path: &PathBuf) -> bool {
-    normalize_output_path(receipt_path) == normalize_output_path(summary_path)
+    canonical_or_normalized_output_path(receipt_path)
+        == canonical_or_normalized_output_path(summary_path)
 }
 
 fn output_paths_alias_input(
@@ -442,9 +470,7 @@ fn output_paths_alias_input(
     receipt_path: &PathBuf,
     summary_path: &PathBuf,
 ) -> bool {
-    let normalized_input = normalize_output_path(input_path);
-    normalized_input == normalize_output_path(receipt_path)
-        || normalized_input == normalize_output_path(summary_path)
+    output_paths_overlap(input_path, receipt_path) || output_paths_overlap(input_path, summary_path)
 }
 
 fn main() {
@@ -648,6 +674,29 @@ mod tests {
             .join("input.json");
 
         assert!(output_paths_alias_input(&input, &receipt, &summary));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn output_paths_alias_input_rejects_symlinked_receipt_alias() {
+        use std::os::unix::fs::symlink;
+
+        let root = std::env::temp_dir().join(format!(
+            "ptvm-risc0-wide-masked-sequence-symlink-test-{}",
+            std::process::id()
+        ));
+        let input = root.join("input.json");
+        let receipt = root.join("receipt.bin");
+        let summary = root.join("summary.json");
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("remove stale test directory");
+        }
+        fs::create_dir_all(&root).expect("create test directory");
+        fs::write(&input, b"{}").expect("write input fixture");
+        symlink(&input, &receipt).expect("create symlinked receipt");
+
+        assert!(output_paths_alias_input(&input, &receipt, &summary));
+        fs::remove_dir_all(root).expect("cleanup test directory");
     }
 
     #[test]
