@@ -21,6 +21,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_gate_records_external_snark_go_and_source_contract_go(self) -> None:
         payload = GATE.build_payload()
 
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 15)
         self.assertEqual(payload["decision"], "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT")
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
@@ -112,6 +113,20 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             mutated = GATE.mutate_payload(payload, name)
             with self.assertRaises(GATE.AttentionKvRouteSelectorError):
                 GATE.validate_payload(mutated, allow_missing_mutation_summary=True)
+
+    def test_route_mutations_are_route_id_based(self) -> None:
+        payload = GATE.build_payload()
+        payload["route_candidates"] = list(reversed(payload["route_candidates"]))
+
+        snark_removed = GATE.mutate_payload(payload, "external_snark_route_removed")
+        snark_route = GATE.route_candidate_by_id(snark_removed["route_candidates"], GATE.EXTERNAL_SNARK_ROUTE_ID)
+        self.assertFalse(snark_route["usable_today"])
+        self.assertFalse(snark_route["proof_backed"])
+
+        zkvm_relabel = GATE.mutate_payload(payload, "external_zkvm_route_relabel_go")
+        zkvm_route = GATE.route_candidate_by_id(zkvm_relabel["route_candidates"], GATE.EXTERNAL_ZKVM_ROUTE_ID)
+        self.assertTrue(zkvm_route["usable_today"])
+        self.assertTrue(zkvm_route["proof_backed"])
 
 
 if __name__ == "__main__":

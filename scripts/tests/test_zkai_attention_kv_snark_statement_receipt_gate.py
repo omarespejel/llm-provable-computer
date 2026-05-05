@@ -42,6 +42,7 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
     def test_gate_records_go_and_rejects_full_mutation_inventory(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
 
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_INVENTORY), 39)
         self.assertEqual(payload["decision"], GATE.DECISION)
         self.assertEqual(payload["result"], "GO")
         self.assertTrue(payload["all_mutations_rejected"])
