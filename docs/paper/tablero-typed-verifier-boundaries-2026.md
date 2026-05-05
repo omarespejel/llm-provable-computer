@@ -868,14 +868,29 @@ SNARK recomputes attention arithmetic. It is anchored to
 `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`.
 
+A RISC Zero follow-up then moves one step closer to semantics. The guest reads
+the same tiny attention/KV fixture, appends the new KV row, recomputes integer
+dot-product scores, selects the lowest-position maximum, emits attention output
+`[2, 1]`, and commits the next three-row KV cache in the receipt journal. The
+checked receipt is `221802` bytes, verifies locally in `15.344 ms` under a
+single-run engineering timing policy, and rejects `22 / 22` journal,
+source-contract, receipt-metadata, metric-smuggling, native-Stwo-claim,
+Softmax-claim, non-claim, validation-command, and parser/schema mutations. This
+is a zkVM semantics receipt for a tiny integer-argmax transition. It is not a
+native Stwo attention AIR/proof, not Softmax, not full inference, and not
+recursion or PCD. It is anchored to
+`docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md` and
+`docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`.
+
 The route selector is updated accordingly: it records
-`GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT`, while
-local Stwo attention arithmetic, external zkVM attention/KV receipts, and
-Softmax attention remain bounded non-results. It rejects `15 / 15`
+`GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV`, while
+local Stwo attention arithmetic and Softmax attention remain bounded
+non-results. It rejects `17 / 17`
 route-removal, receipt-drift, fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This leaves the stronger-venue bridge precise:
 preserve the same prior-state/input/output/next-state public fields and replace
-the source contract with a native proof of the chosen attention semantics. It
+the source contract or zkVM re-execution with a native proof of the chosen
+attention semantics, or scale the zkVM route to a carried KV sequence. It
 is anchored to `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 and `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 

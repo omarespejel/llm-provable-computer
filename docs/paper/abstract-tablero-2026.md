@@ -67,9 +67,10 @@ domain before a higher-level receipt or settlement layer accepts it. We keep the
 weaker source-backed receipts labeled separately: the attention/KV transition
 gate binds source-origin and state-transition metadata, while a follow-up
 `snarkjs/Groth16` statement receipt binds that source contract into a real proof
-object. This is proof-backed statement binding for carried state, not a proof of
-attention arithmetic or Softmax semantics. The updated route selector records
-that local Stwo attention proving, external zkVM attention receipts, and Softmax
-routes remain bounded non-results. The extension therefore treats nested-proof
+object, and a RISC Zero receipt computes the tiny integer-argmax transition
+semantics in a zkVM guest. This is proof-backed carried-state evidence, not a
+native Stwo proof of attention arithmetic, not Softmax, and not full inference.
+The updated route selector records that local Stwo attention proving and
+Softmax routes remain bounded non-results. The extension therefore treats nested-proof
 verification, commitment binding, resource bounds, and publication-versus-
 experimental drift as validation risks rather than established facts.

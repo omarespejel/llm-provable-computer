@@ -1,0 +1,613 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 22,
+  "cases": [
+    {
+      "error": "journal mismatch",
+      "mutation": "prior_kv_cache_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "input_query_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "attention_output_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "next_kv_cache_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "score_trace_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "selected_position_relabeling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "journal_semantics"
+    },
+    {
+      "error": "source statement fields mismatch",
+      "mutation": "source_model_config_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_statement_contract",
+      "surface": "source_statement_contract"
+    },
+    {
+      "error": "source statement fields mismatch",
+      "mutation": "source_public_instance_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_statement_contract",
+      "surface": "source_statement_contract"
+    },
+    {
+      "error": "source statement fields mismatch",
+      "mutation": "source_statement_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "source_statement_contract",
+      "surface": "source_statement_contract"
+    },
+    {
+      "error": "route id mismatch",
+      "mutation": "route_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "system mismatch",
+      "mutation": "system_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "summary image id mismatch",
+      "mutation": "image_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "receipt commitment mismatch",
+      "mutation": "receipt_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "strict receipt reverified mismatch",
+      "mutation": "strict_reverification_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "proof size mismatch",
+      "mutation": "receipt_size_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary proof time mismatch",
+      "mutation": "proof_generation_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary verify time mismatch",
+      "mutation": "verifier_time_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "claim boundary mismatch",
+      "mutation": "native_stwo_claim_smuggling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "softmax_claim_smuggling",
+      "rejected": true,
+      "rejection_layer": "journal_semantics",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "validation commands mismatch",
+      "mutation": "validation_command_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "payload keys mismatch: missing=[] extra=['unknown']",
+      "mutation": "unknown_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "RISC0_RECEIPT_PROVES_TINY_INTEGER_ARGMAX_ATTENTION_KV_SEMANTICS_NOT_STWO_OR_SOFTMAX",
+  "decision": "GO_ATTENTION_KV_RISC0_SEMANTICS_RECEIPT_FOR_TINY_INTEGER_ARGMAX_TRANSITION",
+  "fixture": {
+    "case_id": "tiny_single_head_argmax_kv_transition_v1",
+    "input_step": {
+      "new_key": [
+        1,
+        -1
+      ],
+      "new_value": [
+        4,
+        2
+      ],
+      "query": [
+        1,
+        1
+      ],
+      "token_position": 2
+    },
+    "model_config": {
+      "attention_mode": "integer_argmax_attention",
+      "head_count": 1,
+      "key_width": 2,
+      "tie_break": "lowest_position",
+      "value_width": 2
+    },
+    "prior_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      }
+    ]
+  },
+  "go_criterion": "RISC Zero host proves or verifies a receipt whose guest-computed journal matches the checked tiny integer-argmax attention/KV transition semantics and rejects relabeling of bound fields",
+  "issue": 441,
+  "journal": {
+    "attention_output": [
+      2,
+      1
+    ],
+    "input_step": {
+      "new_key": [
+        1,
+        -1
+      ],
+      "new_value": [
+        4,
+        2
+      ],
+      "query": [
+        1,
+        1
+      ],
+      "token_position": 2
+    },
+    "next_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "key": [
+          1,
+          -1
+        ],
+        "position": 2,
+        "value": [
+          4,
+          2
+        ]
+      }
+    ],
+    "prior_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      }
+    ],
+    "schema": "zkai-attention-kv-risc0-semantics-journal-v1",
+    "scores": [
+      {
+        "position": 0,
+        "score": 1,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "position": 1,
+        "score": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "position": 2,
+        "score": 0,
+        "value": [
+          4,
+          2
+        ]
+      }
+    ],
+    "selected_position": 0,
+    "semantics": "tiny-single-head-integer-argmax-attention-v1"
+  },
+  "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+  "mutation_inventory": [
+    {
+      "mutation": "prior_kv_cache_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "input_query_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "attention_output_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "next_kv_cache_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "score_trace_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "selected_position_relabeling",
+      "surface": "journal_semantics"
+    },
+    {
+      "mutation": "source_model_config_commitment_relabeling",
+      "surface": "source_statement_contract"
+    },
+    {
+      "mutation": "source_public_instance_commitment_relabeling",
+      "surface": "source_statement_contract"
+    },
+    {
+      "mutation": "source_statement_commitment_relabeling",
+      "surface": "source_statement_contract"
+    },
+    {
+      "mutation": "route_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "system_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "image_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_commitment_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "strict_reverification_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_size_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "proof_generation_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "verifier_time_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "native_stwo_claim_smuggling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "softmax_claim_smuggling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claim_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not a native Stwo attention/KV AIR or proof",
+    "not a Softmax attention proof",
+    "not full transformer inference",
+    "not recursive verification or PCD",
+    "not agent correctness",
+    "not a public zkML benchmark row",
+    "not a Starknet deployment result"
+  ],
+  "proof_metrics": {
+    "metrics_enabled": true,
+    "proof_generation_time_ms": 14883.002208,
+    "proof_size_bytes": 221802,
+    "timing_policy": "single_local_run_engineering_only",
+    "verifier_time_ms": 15.3445
+  },
+  "receipt_artifact": {
+    "commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+    "path": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.bincode",
+    "sha256": "6728048b10200fd0ac4e5b17b856073762184791f0eec106b40e6ee723d33f5a",
+    "size_bytes": 221802
+  },
+  "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+  "receipt_verification": {
+    "decoded_journal_matches_expected": true,
+    "host_summary_mode": "verify",
+    "host_summary_schema": "zkai-attention-kv-risc0-host-summary-v1",
+    "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
+    "journal_sha256": "89e2c41764aa87933b5324584da9dbc7ca76dc65befac6eea71db344377ba039",
+    "receipt_sha256": "6728048b10200fd0ac4e5b17b856073762184791f0eec106b40e6ee723d33f5a",
+    "receipt_verified": true,
+    "risc0_zkvm_version": "3.0.5",
+    "strict_receipt_reverified": true,
+    "verifier_executed": true
+  },
+  "result": "GO",
+  "route_id": "risc0_attention_kv_transition_semantics_receipt",
+  "schema": "zkai-attention-kv-risc0-semantics-receipt-gate-v1",
+  "source_issue": 336,
+  "source_statement_fields": {
+    "attention_output_commitment": "blake2b-256:9eafffd7f77779875b0acaaf0d0e2c5110c3352eaadabd11d474bfffe6ff2da2",
+    "input_commitment": "blake2b-256:28562ad70ff397530bd55bda21f1db236e50d4628bea4165de737495d61a57aa",
+    "model_config_commitment": "blake2b-256:d0fef913475fa3bf837a67c26935c699b26c7f9d04f61c7c80731b36635254e0",
+    "next_kv_cache_commitment": "blake2b-256:964e70b971ec7f351b2ee988c46171b68dbddb82ce8aecb3e431398c3e9a77d1",
+    "prior_kv_cache_commitment": "blake2b-256:087d6f9a00e307ee9c8dbf89a8e290d3e3eab95b0403b8d9bf6834076463fa6f",
+    "proof_commitment": "not-applicable:source-backed-kv-transition-receipt",
+    "proof_status": "SOURCE_BACKED_RECEIPT_NOT_PROVEN",
+    "public_instance_commitment": "blake2b-256:30ddb3a156a5f61ff490a10a21ecc85d5be5d4ad6b6ef161aef652a77f64487f",
+    "score_trace_commitment": "blake2b-256:0dabcfbacd90d76f9e6a0cae73a296b46d693d97150c8c997ff5223f5d1c6df6",
+    "selected_position": 0,
+    "statement_commitment": "blake2b-256:cae23e35f988f1465a817f3564ee1987675aabd99b21840c38aabd10ccf3854c",
+    "verifier_domain": "ptvm:zkai:attention-kv-transition:v1"
+  },
+  "source_transition": {
+    "attention_output": [
+      2,
+      1
+    ],
+    "next_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "key": [
+          1,
+          -1
+        ],
+        "position": 2,
+        "value": [
+          4,
+          2
+        ]
+      }
+    ],
+    "scores": [
+      {
+        "position": 0,
+        "score": 1,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "position": 1,
+        "score": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "position": 2,
+        "score": 0,
+        "value": [
+          4,
+          2
+        ]
+      }
+    ],
+    "selected_position": 0
+  },
+  "summary": {
+    "attention_output": [
+      2,
+      1
+    ],
+    "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
+    "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+    "next_kv_items": 3,
+    "proof_generation_time_ms": 14883.002208,
+    "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+    "receipt_size_bytes": 221802,
+    "selected_position": 0,
+    "verifier_time_ms": 15.3445
+  },
+  "system": "RISC Zero",
+  "toolchain_probe": {
+    "commands": {
+      "cargo": {
+        "available": true,
+        "command": [
+          "cargo",
+          "--version"
+        ],
+        "command_id": "cargo",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo 1.92.0 (344c4567c 2025-10-21)"
+      },
+      "cargo-risczero": {
+        "available": true,
+        "command": [
+          "cargo",
+          "risczero",
+          "--version"
+        ],
+        "command_id": "cargo-risczero",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo-risczero 3.0.5"
+      },
+      "rustc": {
+        "available": true,
+        "command": [
+          "rustc",
+          "--version"
+        ],
+        "command_id": "rustc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
+      },
+      "rzup": {
+        "available": true,
+        "command": [
+          "rzup",
+          "--version"
+        ],
+        "command_id": "rzup",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rzup 0.5.0"
+      }
+    },
+    "host_os": "darwin",
+    "probe_scope": "local_risc0_attention_kv_semantics_receipt_generation_and_verification",
+    "rzup_components": {
+      "cargo-risczero": "3.0.5",
+      "cpp": "2024.1.5",
+      "r0vm": "3.0.5",
+      "rust": "1.94.1"
+    }
+  },
+  "validation_commands": [
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py --verify-existing --write-json docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_semantics_receipt_gate",
+    "python3 -m py_compile scripts/zkai_attention_kv_risc0_semantics_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_semantics_receipt_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check"
+  ]
+}
