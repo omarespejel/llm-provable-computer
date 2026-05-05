@@ -180,6 +180,8 @@ class ZkAiAttentionKvRisc0SemanticsReceiptGateTests(unittest.TestCase):
 
     def test_tsv_contains_stable_risc0_semantics_row(self) -> None:
         text = GATE.to_tsv(self.fresh_payload())
+        self.assertTrue(GATE.TSV_OUT.is_file())
+        self.assertEqual(GATE.TSV_OUT.read_text(encoding="utf-8"), text)
         lines = text.splitlines()
 
         self.assertEqual(lines[0].split("\t"), list(GATE.TSV_COLUMNS))

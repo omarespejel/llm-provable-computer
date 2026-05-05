@@ -417,8 +417,11 @@ def build_payload(
     proof_generation_time_ms = host_summary.get("prove_time_ms")
     if proof_generation_time_ms is None:
         proof_generation_time_ms = previous_proof_generation_time_ms
-    verifier_time_ms = host_summary["verify_time_ms"]
-    if host_summary["mode"] == "verify" and previous_verifier_time_ms is not None:
+    verification_summary = host_summary
+    if host_summary["mode"] == "prove":
+        verification_summary = reverify_receipt_artifact(receipt_path)
+    verifier_time_ms = verification_summary["verify_time_ms"]
+    if not prove and verification_summary["mode"] == "verify" and previous_verifier_time_ms is not None:
         verifier_time_ms = previous_verifier_time_ms
     proof_metrics = {
         "metrics_enabled": True,
@@ -449,16 +452,16 @@ def build_payload(
             "commitment": receipt_commitment,
         },
         "receipt_verification": {
-            "host_summary_schema": host_summary["schema"],
-            "host_summary_mode": "verify",
+            "host_summary_schema": verification_summary["schema"],
+            "host_summary_mode": verification_summary["mode"],
             "strict_receipt_reverified": True,
             "verifier_executed": True,
             "receipt_verified": True,
             "decoded_journal_matches_expected": True,
-            "image_id_hex": host_summary["image_id_hex"],
-            "journal_sha256": host_summary["journal_sha256"],
-            "receipt_sha256": host_summary["receipt_sha256"],
-            "risc0_zkvm_version": host_summary["risc0_zkvm_version"],
+            "image_id_hex": verification_summary["image_id_hex"],
+            "journal_sha256": verification_summary["journal_sha256"],
+            "receipt_sha256": verification_summary["receipt_sha256"],
+            "risc0_zkvm_version": verification_summary["risc0_zkvm_version"],
         },
         "toolchain_probe": toolchain,
         "proof_metrics": proof_metrics,
@@ -473,7 +476,7 @@ def build_payload(
             "selected_position": journal["selected_position"],
             "attention_output": journal["attention_output"],
             "next_kv_items": len(journal["next_kv_cache"]),
-            "image_id_hex": host_summary["image_id_hex"],
+            "image_id_hex": verification_summary["image_id_hex"],
             "receipt_size_bytes": len(receipt_bytes),
             "proof_generation_time_ms": proof_generation_time_ms,
             "verifier_time_ms": verifier_time_ms,
@@ -484,6 +487,10 @@ def build_payload(
     expect_equal(host_summary["journal"], journal, "host journal", layer="risc0_host")
     expect_equal(host_summary["journal_sha256"], sha256_bytes(host_json_bytes(journal)), "host journal sha256", layer="risc0_host")
     expect_equal(host_summary["receipt_sha256"], sha256_bytes(receipt_bytes), "host receipt sha256", layer="risc0_host")
+    expect_equal(verification_summary["mode"], "verify", "verification summary mode", layer="risc0_host")
+    expect_equal(verification_summary["journal"], journal, "verification journal", layer="risc0_host")
+    expect_equal(verification_summary["journal_sha256"], sha256_bytes(host_json_bytes(journal)), "verification journal sha256", layer="risc0_host")
+    expect_equal(verification_summary["receipt_sha256"], sha256_bytes(receipt_bytes), "verification receipt sha256", layer="risc0_host")
     payload["cases"] = mutation_cases(payload)
     payload["case_count"] = len(payload["cases"])
     payload["all_mutations_rejected"] = all(case["rejected"] for case in payload["cases"])
