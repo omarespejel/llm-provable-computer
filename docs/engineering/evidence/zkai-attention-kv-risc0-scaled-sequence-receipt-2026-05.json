@@ -2292,10 +2292,10 @@
   "proof_metrics": {
     "metrics_enabled": true,
     "proof_generation_time_ms": 68652.80408300001,
-    "proof_generation_time_source": "current_prove_run",
+    "proof_generation_time_source": "carried_from_existing_evidence_not_remeasured",
     "proof_size_bytes": 264146,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 21.833042,
+    "verifier_time_ms": 27.273667000000003,
     "verifier_time_source": "current_verify_run"
   },
   "receipt_artifact": {
@@ -2544,7 +2544,7 @@
     "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
     "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
     "proof_generation_time_ms": 68652.80408300001,
-    "proof_generation_time_source": "current_prove_run",
+    "proof_generation_time_source": "carried_from_existing_evidence_not_remeasured",
     "receipt_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
     "receipt_size_bytes": 264146,
     "selected_positions": [
@@ -2560,7 +2560,7 @@
     "sequence_length": 8,
     "statement_commitment": "blake2b-256:ddad8aa06858797e66bc40943dc62000063d20574c78a44279e0c8238cdd643a",
     "transition_rows": 8,
-    "verifier_time_ms": 21.833042,
+    "verifier_time_ms": 27.273667000000003,
     "verifier_time_source": "current_verify_run"
   },
   "system": "RISC Zero",
@@ -2633,6 +2633,7 @@
   ],
   "validation_commands": [
     "just gate-fast",
+    "CARGO_TARGET_DIR=target/risc0-attention-kv-scaled-sequence-receipt cargo test --manifest-path programs/risc0-attention-kv-scaled-sequence-receipt/Cargo.toml",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py",
