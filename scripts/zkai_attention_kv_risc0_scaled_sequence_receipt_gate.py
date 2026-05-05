@@ -337,10 +337,10 @@ def risc0_env() -> dict[str, str]:
     if env.get("PATH"):
         path_entries.append(env["PATH"])
     env["PATH"] = os.pathsep.join(path_entries)
-    # Reuse the already pinned attention/KV RISC0 target cache; the workspace
-    # path still fingerprints local source, while shared dependencies avoid
-    # duplicating multi-GB RISC Zero artifacts for one fixed scaling probe.
-    env.setdefault("CARGO_TARGET_DIR", str(ROOT / "target" / "risc0-attention-kv-sequence-receipt"))
+    # Keep this workspace isolated from the three-step sequence receipt. Both
+    # workspaces build a `host` binary, so sharing a target dir risks executing
+    # the wrong last-built host binary.
+    env.setdefault("CARGO_TARGET_DIR", str(ROOT / "target" / "risc0-attention-kv-scaled-sequence-receipt"))
     env["RISC0_DEV_MODE"] = "0"
     return env
 

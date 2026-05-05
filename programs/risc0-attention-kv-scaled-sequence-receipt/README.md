@@ -29,7 +29,7 @@ Pinned local toolchain:
 Typical commands:
 
 ```bash
-CARGO_TARGET_DIR=target/risc0-attention-kv-sequence-receipt \
+CARGO_TARGET_DIR=target/risc0-attention-kv-scaled-sequence-receipt \
   cargo test --manifest-path programs/risc0-attention-kv-scaled-sequence-receipt/Cargo.toml
 PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" \
   python3 scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py --prove \
