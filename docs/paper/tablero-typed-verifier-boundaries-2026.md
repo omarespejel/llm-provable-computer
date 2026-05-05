@@ -1070,7 +1070,7 @@ commitment. The compressed artifact commitment is
 `blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4`
 and the verifier-handle commitment is
 `blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641`.
-The gate rejects `34 / 34` binding, relabeling, compression-metric,
+The gate rejects `35 / 35` binding, relabeling, compression-metric,
 verifier-handle, recursive-claim, and parser/schema mutations. This is a useful
 small-object result for the verifier-facing transcript surface, but it is not a
 cryptographic outer proof, not recursive aggregation, not PCD, and not timing
@@ -1133,7 +1133,7 @@ The issue `#386` gate binds the issue `#379` d64 nested-verifier contract
 commitment
 `blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a`,
 maps `21` contract fields into `22` Groth16 public signals, and verifies an
-`806` byte proof. Its statement envelope rejects `34 / 34` relabeling,
+`806` byte proof. Its statement envelope rejects `35 / 35` relabeling,
 artifact-binding, setup-binding, metric-smuggling, and parser/schema mutations.
 This is not a stronger recursion claim. It is a stronger boundary claim: even
 when the source result remains a bounded no-go for a local nested-verifier proof

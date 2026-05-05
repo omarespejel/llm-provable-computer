@@ -128,6 +128,13 @@ class D64ExternalRecursionAdapterGateTests(unittest.TestCase):
             with self.assertRaises(GATE.D64ExternalRecursionAdapterError):
                 GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
 
+    def test_statement_receipt_rejects_embedded_proof_and_vk_swap(self) -> None:
+        _surface, receipt = GATE.mutated_receipts()["embedded_proof_and_verification_key_payload_relabeling"]
+
+        with self.assertRaisesRegex(GATE.D64ExternalRecursionAdapterError, "proof artifact payload mismatch") as err:
+            GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+        self.assertEqual(err.exception.layer, "artifact_binding")
+
     def test_payload_validation_rejects_forged_summary(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
         forged = copy.deepcopy(payload)
