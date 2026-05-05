@@ -100,11 +100,22 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
             "proof_size_metric_smuggled",
             "verifier_time_metric_smuggled",
             "proof_generation_time_metric_smuggled",
+            "unknown_statement_field_added",
             "unknown_top_level_field_added",
         ):
             _surface, receipt = GATE.mutated_receipts()[name]
             with self.assertRaises(GATE.AttentionKvSnarkReceiptError):
                 GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+
+    def test_unknown_statement_field_with_refreshed_commitments_is_rejected(self) -> None:
+        _surface, receipt = GATE.mutated_receipts()["unknown_statement_field_added"]
+
+        self.assertEqual(receipt["statement_commitment"], GATE.statement_commitment(receipt["statement"]))
+        self.assertEqual(receipt["receipt_commitment"], GATE.receipt_commitment(receipt))
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "statement keys mismatch") as err:
+            GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+
+        self.assertEqual(err.exception.layer, "parser_or_schema")
 
     def test_payload_validation_rejects_forged_summary(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
