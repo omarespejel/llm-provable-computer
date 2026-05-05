@@ -21,7 +21,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_regression_issue_441_442_records_external_snark_and_risc0_go_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 39)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 40)
         self.assertEqual(
             payload["decision"],
             "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_SCALED_AND_WIDE_MASKED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV",
@@ -67,6 +67,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             payload["external_risc0_wide_masked_sequence_receipt"]["masking_policy"],
             "causal_prefix_position_lte_query_token",
         )
+        self.assertEqual(payload["external_risc0_wide_masked_sequence_receipt"]["tie_break"], "lowest_position")
         self.assertEqual(
             payload["external_risc0_wide_masked_sequence_receipt"]["selected_positions"],
             [0, 2, 3, 3, 5, 5, 7, 9],

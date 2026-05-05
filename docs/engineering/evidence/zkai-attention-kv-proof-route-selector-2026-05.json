@@ -302,6 +302,7 @@
     ],
     "sequence_length": 8,
     "statement_commitment": "blake2b-256:448b05401d057818157ff23639e9a215d26ab61b420a793e1fb0fc06685f9a6c",
+    "tie_break": "lowest_position",
     "timing_policy": "single_local_run_engineering_only",
     "transition_commitments": [
       "blake2b-256:6f56cb0c9a86fb15af8d80dbc7c846d2d69fa20d7d73ddc62d2194a1413aa1b6",
@@ -338,7 +339,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "357517510dcd31217600cd121dced66b9bb01b10",
+  "git_commit": "6d89ac634be088877a41064c07a821ab2db63c1a",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
@@ -511,6 +512,11 @@
       "rejected": true
     },
     {
+      "name": "external_zkvm_wide_masked_sequence_tie_break_drift",
+      "reason": "external RISC Zero wide masked sequence receipt drift",
+      "rejected": true
+    },
+    {
       "name": "external_zkvm_wide_masked_sequence_intermediate_state_drift",
       "reason": "external RISC Zero wide masked sequence receipt drift",
       "rejected": true
@@ -556,8 +562,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 39,
-  "mutations_rejected": 39,
+  "mutations_checked": 40,
+  "mutations_rejected": 40,
   "next_go_criteria": [
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
@@ -682,6 +688,7 @@
       "sequence_length": 8,
       "statement_commitment": "blake2b-256:448b05401d057818157ff23639e9a215d26ab61b420a793e1fb0fc06685f9a6c",
       "status": "GO_RISC0_ATTENTION_KV_WIDE_MASKED_SEQUENCE_SEMANTICS_RECEIPT",
+      "tie_break": "lowest_position",
       "transition_rows": 8,
       "usable_today": true,
       "value_width": 8
@@ -695,7 +702,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:8008f87cec3499d9268b6def142b8ee433dbfcdc1acc3f87cfa7d77430fa157f",
+  "selector_commitment": "blake2b-256:12c62254bdadf16169e2b080e07d30df221fdfe97fbcc044e6f8e7e6828c2142",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

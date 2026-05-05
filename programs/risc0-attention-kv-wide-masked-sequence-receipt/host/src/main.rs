@@ -235,7 +235,10 @@ fn read_input(path: &PathBuf) -> AttentionSequenceInput {
 }
 
 fn create_parent_dir(path: &PathBuf) {
-    if let Some(parent) = path.parent() {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
         fs::create_dir_all(parent).expect("create output parent directory");
     }
 }
@@ -510,6 +513,11 @@ mod tests {
 
         assert!(out.parent().expect("parent").is_dir());
         fs::remove_dir_all(root).expect("cleanup test directory");
+    }
+
+    #[test]
+    fn create_parent_dir_allows_bare_output_filename() {
+        create_parent_dir(&PathBuf::from("receipt.bin"));
     }
 
     #[test]
