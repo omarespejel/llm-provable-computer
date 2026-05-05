@@ -49,6 +49,7 @@ ROUTE_ID = "risc0_attention_kv_transition_semantics_receipt"
 SYSTEM = "RISC Zero"
 JOURNAL_SCHEMA = "zkai-attention-kv-risc0-semantics-journal-v1"
 SEMANTICS = "tiny-single-head-integer-argmax-attention-v1"
+MASKING_POLICY = "none"
 RISC0_ZKVM_VERSION = "3.0.5"
 MAX_RECEIPT_BYTES = 2_000_000
 REQUIRED_COMMANDS = ("rzup", "cargo-risczero", "cargo", "rustc")
@@ -224,6 +225,7 @@ def expected_journal() -> dict[str, Any]:
     return {
         "schema": JOURNAL_SCHEMA,
         "semantics": SEMANTICS,
+        "masking_policy": MASKING_POLICY,
         "prior_kv_cache": fixture["prior_kv_cache"],
         "input_step": fixture["input_step"],
         "scores": transition["scores"],
@@ -375,6 +377,7 @@ def build_payload(
     prove: bool = False,
     receipt_path: pathlib.Path = RECEIPT_OUT,
     previous_proof_generation_time_ms: float | None = None,
+    previous_verifier_time_ms: float | None = None,
 ) -> dict[str, Any]:
     journal = expected_journal()
     receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
@@ -386,12 +389,15 @@ def build_payload(
     proof_generation_time_ms = host_summary.get("prove_time_ms")
     if proof_generation_time_ms is None:
         proof_generation_time_ms = previous_proof_generation_time_ms
+    verifier_time_ms = host_summary["verify_time_ms"]
+    if host_summary["mode"] == "verify" and previous_verifier_time_ms is not None:
+        verifier_time_ms = previous_verifier_time_ms
     proof_metrics = {
         "metrics_enabled": True,
         "timing_policy": "single_local_run_engineering_only",
         "proof_size_bytes": len(receipt_bytes),
         "proof_generation_time_ms": proof_generation_time_ms,
-        "verifier_time_ms": host_summary["verify_time_ms"],
+        "verifier_time_ms": verifier_time_ms,
     }
     payload = {
         "schema": SCHEMA,
@@ -416,7 +422,7 @@ def build_payload(
         },
         "receipt_verification": {
             "host_summary_schema": host_summary["schema"],
-            "host_summary_mode": host_summary["mode"],
+            "host_summary_mode": "verify",
             "strict_receipt_reverified": True,
             "verifier_executed": True,
             "receipt_verified": True,
@@ -442,7 +448,7 @@ def build_payload(
             "image_id_hex": host_summary["image_id_hex"],
             "receipt_size_bytes": len(receipt_bytes),
             "proof_generation_time_ms": proof_generation_time_ms,
-            "verifier_time_ms": host_summary["verify_time_ms"],
+            "verifier_time_ms": verifier_time_ms,
             "journal_commitment": journal_commitment(journal),
             "receipt_commitment": receipt_commitment,
         },
@@ -746,6 +752,7 @@ def main() -> int:
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
     previous_proof_generation_time_ms = None
+    previous_verifier_time_ms = None
     if args.verify_existing:
         if json_path is None:
             raise AttentionKvRisc0SemanticsReceiptError(
@@ -760,10 +767,12 @@ def main() -> int:
         previous = require_object(load_json(json_path), "previous attention/KV RISC Zero evidence")
         metrics = require_object(previous.get("proof_metrics"), "previous proof metrics")
         previous_proof_generation_time_ms = metrics.get("proof_generation_time_ms")
+        previous_verifier_time_ms = metrics.get("verifier_time_ms")
     payload = build_payload(
         prove=args.prove,
         receipt_path=receipt_path,
         previous_proof_generation_time_ms=previous_proof_generation_time_ms,
+        previous_verifier_time_ms=previous_verifier_time_ms,
     )
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)

@@ -73,10 +73,11 @@ This repository currently has three live lanes.
     proving; see
     `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`.
   - The attention/KV lane now also has a real RISC Zero semantics receipt for
-    issue `#441`: the guest computes the tiny integer-argmax transition, emits
+    issue `#441`: the guest computes the tiny integer-argmax transition under
+    masking policy `none`, emits
     selected position `0`, attention output `[2, 1]`, and a three-row next KV
-    cache. The checked receipt is `221802` bytes, verifies locally in
-    `15.344 ms` under a single-run engineering timing policy, and rejects
+    cache. The checked receipt is `221842` bytes, verifies locally in
+    `14.353 ms` under a single-run engineering timing policy, and rejects
     `22 / 22` journal/source/receipt/metric/claim-boundary mutations. This is a
     zkVM semantics receipt, not native Stwo, not Softmax, not full inference,
     and not recursion/PCD; see

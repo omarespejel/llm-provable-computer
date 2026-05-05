@@ -11,9 +11,10 @@ precomputed source contract?
 GO, with a narrow claim boundary.
 
 The checked RISC Zero guest reads the tiny single-head attention/KV fixture,
-appends the new KV row, recomputes integer dot-product attention scores,
-selects the maximum score with the lowest-position tie break, emits the
-attention output, and commits the next KV cache in the receipt journal.
+appends the new KV row, recomputes integer dot-product attention scores under
+an explicit no-mask policy, selects the maximum score with the lowest-position
+tie break, emits the attention output, and commits the next KV cache in the
+receipt journal.
 
 Decision:
 
@@ -43,13 +44,14 @@ proof-carrying data.
 | --- | ---: |
 | Proof system | `RISC Zero` |
 | `risc0-zkvm` version | `3.0.5` |
-| Receipt size | `221802` bytes |
-| Image ID | `83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7` |
+| Receipt size | `221842` bytes |
+| Image ID | `9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454` |
 | Selected position | `0` |
 | Attention output | `[2, 1]` |
+| Masking policy | `none` |
 | Next KV rows | `3` |
-| Single local proof-generation time | `14883.002 ms` |
-| Single local verification time | `15.344 ms` |
+| Single local proof-generation time | `14259.279 ms` |
+| Single local verification time | `14.353 ms` |
 | Mutations checked | `22` |
 | Mutations rejected | `22` |
 

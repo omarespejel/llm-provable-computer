@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 use risc0_zkvm::guest::env;
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +27,7 @@ struct AttentionInput {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 struct ScoreRow {
     position: i32,
-    score: i32,
+    score: i64,
     value: [i32; 2],
 }
 
@@ -33,6 +35,7 @@ struct ScoreRow {
 struct AttentionJournal {
     schema: String,
     semantics: String,
+    masking_policy: String,
     prior_kv_cache: Vec<KvEntry>,
     input_step: InputStep,
     scores: Vec<ScoreRow>,
@@ -41,8 +44,15 @@ struct AttentionJournal {
     next_kv_cache: Vec<KvEntry>,
 }
 
-fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i32 {
-    lhs[0] * rhs[0] + lhs[1] * rhs[1]
+fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i64 {
+    i64::from(lhs[0]) * i64::from(rhs[0]) + i64::from(lhs[1]) * i64::from(rhs[1])
+}
+
+fn attention_order(lhs: &ScoreRow, rhs: &ScoreRow) -> Ordering {
+    match lhs.score.cmp(&rhs.score) {
+        Ordering::Equal => rhs.position.cmp(&lhs.position),
+        order => order,
+    }
 }
 
 fn main() {
@@ -71,7 +81,7 @@ fn main() {
 
     let selected = scores
         .iter()
-        .max_by_key(|row| (row.score, -row.position))
+        .max_by(|left, right| attention_order(left, right))
         .expect("non-empty score trace");
     let selected_position = selected.position;
     let attention_output = selected.value;
@@ -79,6 +89,7 @@ fn main() {
     let journal = AttentionJournal {
         schema: "zkai-attention-kv-risc0-semantics-journal-v1".to_string(),
         semantics: "tiny-single-head-integer-argmax-attention-v1".to_string(),
+        masking_policy: "none".to_string(),
         prior_kv_cache: input.prior_kv_cache,
         input_step: input.input_step,
         scores,

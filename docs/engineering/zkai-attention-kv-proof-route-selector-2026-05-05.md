@@ -12,7 +12,7 @@ GO for two narrow proof-backed routes:
 1. an external `snarkjs/Groth16/BN128` statement receipt over the
    source-backed attention/KV transition contract;
 2. a RISC Zero receipt whose guest computes the tiny integer-argmax
-   attention/KV transition semantics.
+   attention/KV transition semantics under an explicit no-mask policy.
 
 The existing attention/KV receipt contract remains a useful GO result: it binds prior
 KV state, input/query state, attention output, next KV state, model config, verifier
@@ -24,7 +24,7 @@ tiny transition semantics in the guest and commits the resulting journal.
 The important boundary remains strict: neither route is a native Stwo
 attention/KV AIR or Softmax proof. The SNARK route proves statement binding for
 the source contract; the RISC Zero route proves the tiny integer-argmax
-transition semantics inside a zkVM.
+transition semantics with masking policy `none` inside a zkVM.
 
 Decision:
 
@@ -67,8 +67,8 @@ Claim boundary:
 | Required public fields | 10 |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
-| RISC Zero receipt size | `221802` bytes |
-| RISC Zero verifier time | `15.344 ms` |
+| RISC Zero receipt size | `221842` bytes |
+| RISC Zero verifier time | `14.353 ms` |
 | Mutations checked | 17 |
 | Mutations rejected | 17 |
 

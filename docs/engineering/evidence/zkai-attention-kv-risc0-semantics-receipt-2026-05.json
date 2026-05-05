@@ -230,6 +230,7 @@
       ],
       "token_position": 2
     },
+    "masking_policy": "none",
     "next_kv_cache": [
       {
         "key": [
@@ -319,7 +320,7 @@
     "selected_position": 0,
     "semantics": "tiny-single-head-integer-argmax-attention-v1"
   },
-  "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+  "journal_commitment": "blake2b-256:eddb5811f49a5d1cc32694404107cea6351b7dbf5d06b5c2e198bff1bf2d8872",
   "mutation_inventory": [
     {
       "mutation": "prior_kv_cache_relabeling",
@@ -421,25 +422,25 @@
   ],
   "proof_metrics": {
     "metrics_enabled": true,
-    "proof_generation_time_ms": 14883.002208,
-    "proof_size_bytes": 221802,
+    "proof_generation_time_ms": 14259.2785,
+    "proof_size_bytes": 221842,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 15.3445
+    "verifier_time_ms": 14.353209
   },
   "receipt_artifact": {
-    "commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+    "commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
     "path": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.bincode",
-    "sha256": "6728048b10200fd0ac4e5b17b856073762184791f0eec106b40e6ee723d33f5a",
-    "size_bytes": 221802
+    "sha256": "65853082f674abef74e72fd71593c1b6ac41c7655088e37718239924ef1beb9a",
+    "size_bytes": 221842
   },
-  "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+  "receipt_commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
   "receipt_verification": {
     "decoded_journal_matches_expected": true,
     "host_summary_mode": "verify",
     "host_summary_schema": "zkai-attention-kv-risc0-host-summary-v1",
-    "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
-    "journal_sha256": "89e2c41764aa87933b5324584da9dbc7ca76dc65befac6eea71db344377ba039",
-    "receipt_sha256": "6728048b10200fd0ac4e5b17b856073762184791f0eec106b40e6ee723d33f5a",
+    "image_id_hex": "9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454",
+    "journal_sha256": "8d281d56dd01454426db29df5cb361356cf63a0581107e29bb2a6a7984410cab",
+    "receipt_sha256": "65853082f674abef74e72fd71593c1b6ac41c7655088e37718239924ef1beb9a",
     "receipt_verified": true,
     "risc0_zkvm_version": "3.0.5",
     "strict_receipt_reverified": true,
@@ -536,14 +537,14 @@
       2,
       1
     ],
-    "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
-    "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+    "image_id_hex": "9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454",
+    "journal_commitment": "blake2b-256:eddb5811f49a5d1cc32694404107cea6351b7dbf5d06b5c2e198bff1bf2d8872",
     "next_kv_items": 3,
-    "proof_generation_time_ms": 14883.002208,
-    "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
-    "receipt_size_bytes": 221802,
+    "proof_generation_time_ms": 14259.2785,
+    "receipt_commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
+    "receipt_size_bytes": 221842,
     "selected_position": 0,
-    "verifier_time_ms": 15.3445
+    "verifier_time_ms": 14.353209
   },
   "system": "RISC Zero",
   "toolchain_probe": {

@@ -2,9 +2,9 @@
 
 This fixture proves the tiny attention/KV transition semantics used by the
 checked attention/KV statement surface. The guest reads a concrete prior KV
-cache and input/query step, recomputes integer dot-product scores, selects the
-maximum score with lowest-position tie break, emits the attention output, and
-emits the next KV cache.
+cache and input/query step, recomputes integer dot-product scores under masking
+policy `none`, selects the maximum score with lowest-position tie break, emits
+the attention output, and emits the next KV cache.
 
 This is a zkVM receipt for the tiny integer-argmax transition semantics. It is
 not a native Stwo attention AIR, not Softmax, not full autoregressive inference,

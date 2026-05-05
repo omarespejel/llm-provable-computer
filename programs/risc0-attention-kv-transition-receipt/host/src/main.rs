@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{
+    cmp::Ordering,
     env,
     fs::{self, File},
     io::Read,
@@ -39,7 +40,7 @@ struct AttentionInput {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 struct ScoreRow {
     position: i32,
-    score: i32,
+    score: i64,
     value: [i32; 2],
 }
 
@@ -47,6 +48,7 @@ struct ScoreRow {
 struct AttentionJournal {
     schema: String,
     semantics: String,
+    masking_policy: String,
     prior_kv_cache: Vec<KvEntry>,
     input_step: InputStep,
     scores: Vec<ScoreRow>,
@@ -66,8 +68,15 @@ fn image_id_hex() -> String {
         .collect()
 }
 
-fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i32 {
-    lhs[0] * rhs[0] + lhs[1] * rhs[1]
+fn dot(lhs: [i32; 2], rhs: [i32; 2]) -> i64 {
+    i64::from(lhs[0]) * i64::from(rhs[0]) + i64::from(lhs[1]) * i64::from(rhs[1])
+}
+
+fn attention_order(lhs: &ScoreRow, rhs: &ScoreRow) -> Ordering {
+    match lhs.score.cmp(&rhs.score) {
+        Ordering::Equal => rhs.position.cmp(&lhs.position),
+        order => order,
+    }
 }
 
 fn expected_journal(input: &AttentionInput) -> AttentionJournal {
@@ -92,13 +101,14 @@ fn expected_journal(input: &AttentionInput) -> AttentionJournal {
         .collect();
     let selected = scores
         .iter()
-        .max_by_key(|row| (row.score, -row.position))
+        .max_by(|left, right| attention_order(left, right))
         .expect("non-empty score trace");
     let selected_position = selected.position;
     let attention_output = selected.value;
     AttentionJournal {
         schema: JOURNAL_SCHEMA.to_string(),
         semantics: SEMANTICS.to_string(),
+        masking_policy: "none".to_string(),
         prior_kv_cache: input.prior_kv_cache.clone(),
         input_step: input.input_step.clone(),
         scores,
@@ -293,6 +303,53 @@ mod tests {
         assert_eq!(journal.selected_position, 0);
         assert_eq!(journal.attention_output, [2, 1]);
         assert_eq!(journal.next_kv_cache.len(), 3);
+    }
+
+    #[test]
+    fn expected_journal_tie_break_avoids_position_negation_overflow() {
+        let input = AttentionInput {
+            prior_kv_cache: vec![
+                KvEntry {
+                    position: i32::MIN,
+                    key: [0, 0],
+                    value: [7, 8],
+                },
+                KvEntry {
+                    position: 0,
+                    key: [0, 0],
+                    value: [2, 1],
+                },
+            ],
+            input_step: InputStep {
+                token_position: 1,
+                query: [0, 0],
+                new_key: [0, 0],
+                new_value: [4, 2],
+            },
+        };
+        let journal = expected_journal(&input);
+        assert_eq!(journal.selected_position, i32::MIN);
+        assert_eq!(journal.attention_output, [7, 8]);
+    }
+
+    #[test]
+    fn expected_journal_uses_i64_scores() {
+        let input = AttentionInput {
+            prior_kv_cache: vec![KvEntry {
+                position: 0,
+                key: [50_000, 50_000],
+                value: [2, 1],
+            }],
+            input_step: InputStep {
+                token_position: 1,
+                query: [50_000, 50_000],
+                new_key: [1, 0],
+                new_value: [4, 2],
+            },
+        };
+        let journal = expected_journal(&input);
+        assert_eq!(journal.scores[0].score, 5_000_000_000);
+        assert_eq!(journal.selected_position, 0);
     }
 
     #[test]
