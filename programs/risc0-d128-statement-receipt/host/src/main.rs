@@ -2,7 +2,13 @@ use methods::{D128_STATEMENT_RECEIPT_ELF, D128_STATEMENT_RECEIPT_ID};
 use risc0_zkvm::{default_prover, ExecutorEnv, Receipt};
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::{env, fs, path::PathBuf, time::Instant};
+use std::{
+    env,
+    fs::{self, File},
+    io::Read,
+    path::PathBuf,
+    time::Instant,
+};
 
 const MAX_RECEIPT_BYTES: usize = 2_000_000;
 
@@ -96,10 +102,25 @@ fn prove(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
 
 fn verify(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let journal_bytes = read_expected_journal(&journal_path);
-    let receipt_bytes = fs::read(&receipt_path).expect("read receipt artifact");
-    if receipt_bytes.is_empty() || receipt_bytes.len() > MAX_RECEIPT_BYTES {
+    let receipt_file = File::open(&receipt_path).expect("open receipt artifact");
+    let receipt_len = receipt_file
+        .metadata()
+        .expect("stat opened receipt artifact")
+        .len();
+    if receipt_len == 0 || receipt_len > MAX_RECEIPT_BYTES as u64 {
         panic!(
             "receipt artifact size outside allowed bound: {} bytes",
+            receipt_len
+        );
+    }
+    let mut receipt_bytes = Vec::with_capacity(receipt_len as usize);
+    let mut limited_reader = receipt_file.take(MAX_RECEIPT_BYTES as u64 + 1);
+    limited_reader
+        .read_to_end(&mut receipt_bytes)
+        .expect("read receipt artifact");
+    if receipt_bytes.is_empty() || receipt_bytes.len() > MAX_RECEIPT_BYTES {
+        panic!(
+            "receipt artifact size outside allowed bound after read: {} bytes",
             receipt_bytes.len()
         );
     }

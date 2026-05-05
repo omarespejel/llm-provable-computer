@@ -1,6 +1,6 @@
 # d128 Cryptographic Backend Gate
 
-Date: 2026-05-05
+Date: 2026-05-04
 
 ## Decision
 
@@ -155,9 +155,9 @@ python3 scripts/zkai_d128_cryptographic_backend_gate.py \
 python3 -m unittest \
   scripts.tests.test_zkai_d128_risc0_statement_receipt_gate \
   scripts.tests.test_zkai_d128_cryptographic_backend_gate
-python3 -m py_compile scripts/zkai_d128_cryptographic_backend_gate.py \
-  scripts/zkai_d128_risc0_statement_receipt_gate.py \
+python3 -m py_compile scripts/zkai_d128_risc0_statement_receipt_gate.py \
   scripts/tests/test_zkai_d128_risc0_statement_receipt_gate.py \
+  scripts/zkai_d128_cryptographic_backend_gate.py \
   scripts/tests/test_zkai_d128_cryptographic_backend_gate.py
 python3 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
