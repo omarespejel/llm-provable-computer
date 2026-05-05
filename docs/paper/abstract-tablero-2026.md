@@ -68,9 +68,11 @@ weaker source-backed receipts labeled separately: the attention/KV transition
 gate binds source-origin and state-transition metadata, while a follow-up
 `snarkjs/Groth16` statement receipt binds that source contract into a real proof
 object, and a RISC Zero receipt computes the tiny integer-argmax transition
-semantics in a zkVM guest. This is proof-backed carried-state evidence, not a
-native Stwo proof of attention arithmetic, not Softmax, and not full inference.
-The updated route selector records that local Stwo attention proving and
-Softmax routes remain bounded non-results. The extension therefore treats nested-proof
+semantics in a zkVM guest. A second RISC Zero receipt then computes a tiny
+three-step carried KV-cache sequence and rejects deletion, reordering, and
+intermediate-state relabeling. This is proof-backed carried-state evidence, not
+a native Stwo proof of attention arithmetic, not Softmax, and not full
+inference. The updated route selector records that local Stwo attention proving
+and Softmax routes remain bounded non-results. The extension therefore treats nested-proof
 verification, commitment binding, resource bounds, and publication-versus-
 experimental drift as validation risks rather than established facts.

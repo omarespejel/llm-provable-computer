@@ -60,7 +60,7 @@ The current paper package supports these checked claims:
 - Do not say this proves full transformer inference.
 - Do not say the external adapters show EZKL, snarkjs, JSTprove, RISC Zero, or Stwo are unsound.
 - Do not say the attention/KV SNARK statement receipt proves attention arithmetic or Softmax semantics.
-- Do not say the attention/KV RISC Zero semantics receipt is a native Stwo proof, Softmax proof, full inference proof, or recursive/PCD result.
+- Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
 
 ## Validation Gate
 
@@ -80,7 +80,9 @@ git diff --check
 The attention/KV lane now has proof-backed statement binding via an external
 `snarkjs/Groth16` receipt over the source-backed transition contract, plus a
 RISC Zero receipt whose guest computes the tiny integer-argmax transition
-semantics. The next research result should be native attention/KV proving or a
+semantics. A follow-up RISC Zero receipt now computes a three-step carried
+KV-cache sequence and rejects deletion, reordering, and intermediate-state
+relabeling. The next research result should be native attention/KV proving or a
 larger carried-state zkVM sequence:
 
 1. Preserve the source-backed receipt contract that already binds prior KV, input,
@@ -89,8 +91,8 @@ larger carried-state zkVM sequence:
    statement-binding control.
 3. Replace the source contract or zkVM re-execution with a native Stwo proof
    that actually verifies the chosen attention arithmetic over the same public fields.
-4. In parallel, scale the RISC Zero route from one tiny transition to a short
-   carried KV sequence if native Stwo attention remains blocked.
+4. In parallel, scale the RISC Zero route beyond the tiny three-step/two-wide
+   sequence only if it remains useful as carried-state evidence.
 5. Keep Softmax out of scope unless the proof actually covers the chosen attention
    semantics.
 6. Report GO only when the same relabeling surfaces reject after proof serialization.

@@ -174,10 +174,19 @@ Tablero boundary.
   zkVM semantics receipt, not native Stwo, not Softmax, not full inference, and
   not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md`.
+- Issue `#442` extends that RISC Zero route to a three-step carried KV-cache
+  sequence: selected positions `[0, 2, 3]`, outputs `[[2, 1], [4, 2], [5, -2]]`,
+  final KV rows `5`, receipt size `246730` bytes, local verifier time
+  `17.630 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
+  metric/claim-boundary mutations rejected. This is proof-backed carried-state
+  sequence evidence in a zkVM, still not native Stwo attention arithmetic,
+  Softmax, long-context inference, recursion, or PCD; see
+  `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`.
 - The attention/KV proof-route selector records a narrow
-  `GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV` for the
-  external SNARK statement-receipt route and the RISC Zero semantics-receipt
-  route while keeping local Stwo attention arithmetic and Softmax as bounded
+  `GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
+  for the external SNARK statement-receipt route, the RISC Zero transition
+  semantics route, and the RISC Zero sequence semantics route while keeping
+  local Stwo attention arithmetic and Softmax as bounded
   non-results; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
