@@ -151,7 +151,7 @@ Tablero boundary.
 - The d64 nested-verifier backend contract now has a real external
   `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
   `806` bytes, binds `21` contract fields into `22` public signals, and rejects
-  `34 / 34` relabeling, artifact-binding, setup-binding, metric-smuggling, and
+  `35 / 35` relabeling, artifact-binding, setup-binding, metric-smuggling, and
   parser/schema mutations. This is an external SNARK statement receipt over the
   d64 nested-verifier contract, not Stwo-native recursion or verification of the
   underlying Stwo slice verifiers inside Groth16; see
@@ -240,7 +240,7 @@ Tablero boundary.
   `blake2b-256:cca7656213e2439236b6ec2fefb7aa57daf6411fc6b3e9dedd27cd4fa7b428c4`
   and verifier-handle commitment
   `blake2b-256:704d117c500f82b109cee00370436af47f487e33e3c95368d0170fd0a31d6641`;
-  it rejects `34 / 34` binding, relabeling, compression-metric,
+  it rejects `35 / 35` binding, relabeling, compression-metric,
   verifier-handle, recursive-claim, and parser/schema mutations. This is
   transcript/public-input compression only, not recursion or PCD; see
   `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`.

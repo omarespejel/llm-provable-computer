@@ -63,7 +63,7 @@ the underlying Stwo slice proofs.
 
 ## Mutation Coverage
 
-The gate rejects `34 / 34` receipt mutations, including:
+The gate rejects `35 / 35` receipt mutations, including:
 
 - nested-verifier contract commitment relabeling;
 - source aggregation target, input block receipt, statement, public-instance,
@@ -73,7 +73,8 @@ The gate rejects `34 / 34` receipt mutations, including:
   and source payload hash relabeling;
 - public-signal, public-signal hash, field-entry label/value, proof hash,
   verification-key hash, verification-key file hash, circuit hash, input hash,
-  setup commitment, statement commitment, and receipt commitment drift;
+  embedded proof / verification-key payload drift, setup commitment, statement
+  commitment, and receipt commitment drift;
 - proof-size, verifier-time, and proof-generation-time metric smuggling; and
 - non-claim removal, validation-command drift, and unknown top-level field
   injection.

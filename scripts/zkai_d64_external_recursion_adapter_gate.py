@@ -142,6 +142,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("verification_key_file_hash_relabeling", "artifact_binding"),
     ("circuit_artifact_hash_relabeling", "artifact_binding"),
     ("input_artifact_hash_relabeling", "artifact_binding"),
+    ("embedded_proof_and_verification_key_payload_relabeling", "artifact_binding"),
     ("setup_commitment_relabeling", "setup_binding"),
     ("proof_size_metric_smuggled", "receipt_metrics"),
     ("verifier_time_metric_smuggled", "receipt_metrics"),
@@ -530,6 +531,13 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
         expect_equal(statement.get(key), expected_statement[key], key, layer=layer)
     metadata = require_object(load_json(artifact_path("metadata")), "metadata", layer="artifact_binding")
     artifact_hashes = require_object(metadata.get("artifacts"), "metadata artifacts", layer="artifact_binding")
+    canonical_input = require_object(load_json(artifact_path("input")), "input artifact", layer="artifact_binding")
+    canonical_proof = require_object(load_json(artifact_path("proof")), "proof artifact", layer="artifact_binding")
+    canonical_verification_key = require_object(load_json(artifact_path("verification_key")), "verification key artifact", layer="artifact_binding")
+    expect_equal(receipt.get("artifacts"), ARTIFACTS, "artifacts", layer="artifact_binding")
+    expect_equal(require_object(receipt.get("input"), "input", layer="artifact_binding"), canonical_input, "input artifact payload", layer="artifact_binding")
+    expect_equal(proof, canonical_proof, "proof artifact payload", layer="artifact_binding")
+    expect_equal(verification_key, canonical_verification_key, "verification key artifact payload", layer="artifact_binding")
     artifact_checks = {
         "circuit_artifact_sha256": ("circuit", "d64_external_recursion_adapter.circom"),
         "input_artifact_sha256": ("input", "input.json"),
@@ -539,13 +547,13 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
         actual = sha256_file(artifact_path(artifact_key))
         expect_equal(actual, statement.get(statement_key), statement_key, layer="artifact_binding")
         expect_equal(actual, artifact_hashes.get(metadata_name), f"metadata {metadata_name}", layer="artifact_binding")
-    expect_equal(verification_key_sha256(verification_key), statement.get("verification_key_sha256"), "verification key canonical hash", layer="artifact_binding")
-    expect_equal(proof_sha256(proof), statement.get("proof_sha256"), "proof hash", layer="artifact_binding")
+    expect_equal(verification_key_sha256(canonical_verification_key), statement.get("verification_key_sha256"), "verification key canonical hash", layer="artifact_binding")
+    expect_equal(proof_sha256(canonical_proof), statement.get("proof_sha256"), "proof hash", layer="artifact_binding")
     expect_equal(public_signals_sha256(public_signals), statement.get("public_signals_sha256"), "public signals hash", layer="public_signal_binding")
     expect_equal(public_signals, expected_public_signals(statement["public_signal_field_entries"]), "public signals", layer="public_signal_binding")
     expect_equal(public_signals_sha256(public_signals), statement.get("expected_public_signals_sha256"), "expected public signals digest", layer="public_signal_binding")
     expect_equal(statement.get("setup_commitment"), artifact_hashes.get("verification_key.json"), "setup commitment", layer="setup_binding")
-    external_verify(proof, public_signals, verification_key)
+    external_verify(canonical_proof, public_signals, canonical_verification_key)
 
 
 def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
@@ -562,6 +570,14 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
 
     def nested(r: dict[str, Any]) -> dict[str, Any]:
         return r["statement"]["source_contract"]["nested_verifier_contract"]
+
+    def forge_embedded_proof_and_verification_key(r: dict[str, Any]) -> None:
+        forged_proof = {"forged": "proof"}
+        forged_verification_key = {"forged": "verification_key"}
+        r["snarkjs_proof"] = forged_proof
+        r["verification_key"] = forged_verification_key
+        r["statement"]["proof_sha256"] = proof_sha256(forged_proof)
+        r["statement"]["verification_key_sha256"] = verification_key_sha256(forged_verification_key)
 
     mutate("nested_verifier_contract_commitment_relabeling", "statement_policy", lambda r: r["statement"]["source_contract"].__setitem__("nested_verifier_contract_commitment", "blake2b-256:" + "00" * 32))
     mutate("source_aggregation_target_relabeling", "statement_policy", lambda r: nested(r).__setitem__("source_aggregation_target_commitment", "blake2b-256:" + "11" * 32))
@@ -588,6 +604,11 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
     mutate("verification_key_file_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("verification_key_file_sha256", "10" * 32))
     mutate("circuit_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("circuit_artifact_sha256", "20" * 32))
     mutate("input_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("input_artifact_sha256", "30" * 32))
+    mutate(
+        "embedded_proof_and_verification_key_payload_relabeling",
+        "artifact_binding",
+        forge_embedded_proof_and_verification_key,
+    )
     mutate("setup_commitment_relabeling", "setup_binding", lambda r: r["statement"].__setitem__("setup_commitment", "40" * 32))
     mutate("proof_size_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("proof_size_bytes", 1))
     mutate("verifier_time_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("verifier_time_ms", 0.001))

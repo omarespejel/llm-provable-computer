@@ -26,7 +26,7 @@
     "public_signals": "docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05/public.json",
     "verification_key": "docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05/verification_key.json"
   },
-  "case_count": 34,
+  "case_count": 35,
   "cases": [
     {
       "baseline_accepted": true,
@@ -39,6 +39,21 @@
       "mutated_statement_commitment": "blake2b-256:4c4314bd5dd418159a51e4cbffd66e3d4395cc28b83d5151fd5a7594d6b80e5c",
       "mutated_statement_sha256": "76d4015a4ee78e44883e99f238163089690cd6ae65dad71caf6cb9b85d223eee",
       "mutation": "circuit_artifact_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "baseline_accepted": true,
+      "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
+      "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
+      "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
+      "error": "proof artifact payload mismatch",
+      "mutated_accepted": false,
+      "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
+      "mutated_statement_commitment": "blake2b-256:6a375a6d5667e38c5d6041060f96e235e87feb6b9b63b07fae9dc35f94d7647d",
+      "mutated_statement_sha256": "1132f9d98597a6011bcb0e122e2dc16eee1ff975bfb64a21fd24d6fec6efe05a",
+      "mutation": "embedded_proof_and_verification_key_payload_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding",
       "surface": "artifact_binding"
@@ -650,6 +665,10 @@
       "surface": "artifact_binding"
     },
     {
+      "mutation": "embedded_proof_and_verification_key_payload_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
       "mutation": "setup_commitment_relabeling",
       "surface": "setup_binding"
     },
@@ -718,7 +737,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_d64_external_recursion_adapter_gate.py --write-json docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.tsv",
-    "git_commit": "a0a6336a9f166ec52019b6b0f2aed5fdee98ad36"
+    "git_commit": "bab17b8c8f0612d33038012de52deec972d52988"
   },
   "result": "GO",
   "schema": "zkai-d64-external-recursion-adapter-gate-v1",
