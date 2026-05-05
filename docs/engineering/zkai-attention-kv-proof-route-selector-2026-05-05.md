@@ -125,6 +125,8 @@ python3 -m py_compile \
   scripts/tests/test_zkai_attention_kv_snark_statement_receipt_gate.py \
   scripts/zkai_attention_kv_proof_route_selector_gate.py \
   scripts/tests/test_zkai_attention_kv_proof_route_selector_gate.py
+git diff --check
+just gate
 ```
 
 ## Next GO Criterion

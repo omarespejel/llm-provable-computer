@@ -815,7 +815,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_attention_kv_snark_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.tsv",
-    "git_commit": "8aba989661aff1061ecab1bd0f62dc31d2a40090"
+    "git_commit": "00b01ba09fe8b28b5a20fbcdec4f35a5369489a7"
   },
   "result": "GO",
   "schema": "zkai-attention-kv-snark-statement-receipt-gate-v1",

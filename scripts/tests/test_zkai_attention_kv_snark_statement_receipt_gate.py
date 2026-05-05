@@ -147,6 +147,22 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "not all SNARK receipt mutations rejected"):
             GATE.validate_payload(forged)
 
+    def test_payload_validation_rejects_forged_rejection_layer(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged = copy.deepcopy(payload)
+        forged["cases"][0]["rejection_layer"] = "accepted"
+
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "rejection_layer"):
+            GATE.validate_payload(forged)
+
+    def test_payload_validation_rejects_forged_case_hashes(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged = copy.deepcopy(payload)
+        forged["cases"][0]["mutated_statement_sha256"] = "0" * 64
+
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "mutated_statement_sha256"):
+            GATE.validate_payload(forged)
+
     def test_payload_validation_rederives_verifier_facing_fields(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
         forged = copy.deepcopy(payload)
