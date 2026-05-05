@@ -75,6 +75,7 @@ NON_CLAIMS = [
     "not agent correctness",
     "not a public zkML benchmark row",
     "not a Starknet deployment result",
+    "not a widened d>2 or masked attention surface; width and masking remain follow-up issue #446",
 ]
 VALIDATION_COMMANDS = [
     "just gate-fast",

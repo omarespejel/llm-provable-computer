@@ -63,6 +63,11 @@ The timings are engineering-only single local runs. They are useful for local
 regression checks on this artifact, not public benchmark claims against other
 systems.
 
+The scale axis here is sequence length only: `8` carried transitions over a
+fixed `d=2` integer-argmax surface with masking policy `none`. Width expansion
+and explicit masking are tracked separately in issue `#446`; they are not claimed
+by this artifact.
+
 ## Mutation Surface
 
 The gate rejects:
