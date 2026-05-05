@@ -83,7 +83,7 @@
     "decision": "GO_ATTENTION_KV_RISC0_SEQUENCE_RECEIPT_FOR_CARRIED_KV_STATE",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-sequence-receipt-2026-05.json",
     "final_kv_items": 5,
-    "image_id_hex": "8147ef0f439424ac2deb93343c367106b4ac290b793325cd9910df7a19156b3f",
+    "image_id_hex": "1d880cde15cfaacc937daabae5443a4d8213b5ea17801ef9d000c164d21f6a2b",
     "journal_commitment": "blake2b-256:47987c67fae1fd4641d097197c86f73cd14c736d33259496e78eb324c6f4ef55",
     "mutations_checked": 27,
     "mutations_rejected": 27,
@@ -91,7 +91,7 @@
     "proof_size_bytes": 246730,
     "proof_system": "RISC Zero",
     "proof_system_version": "3.0.5",
-    "receipt_commitment": "blake2b-256:f237baef9e9ec157b0ffbe5b005b939d079f59a8b7aaa98d212e5489a1e1f5e0",
+    "receipt_commitment": "blake2b-256:08e23e0c20bc577ca22b9c87c7fdfaa4a4989985441354d3c83059795561136d",
     "result": "GO",
     "schema": "zkai-attention-kv-risc0-sequence-receipt-gate-v1",
     "selected_positions": [
@@ -100,7 +100,7 @@
       3
     ],
     "sequence_length": 3,
-    "statement_commitment": "blake2b-256:ec94af8f9b890aade754d0c3c2fd118dcc59318d641c427e541fe16c3b1cfe72",
+    "statement_commitment": "blake2b-256:42d44525bc64eb2dffb716f32cfbc99451e6d57defeb2581b3c5707202abf5f4",
     "timing_policy": "single_local_run_engineering_only",
     "transition_commitments": [
       "blake2b-256:1f8ce96875458f18dd080d948f70a142464034a24c58f0b03040760c200b7c03",
@@ -108,7 +108,7 @@
       "blake2b-256:031757672c3011e2d007fd611c3f4bf1684bada6bd32fc76796c2d600f3029fd"
     ],
     "transition_rows": 3,
-    "verifier_time_ms": 17.629958000000002,
+    "verifier_time_ms": 21.224832999999997,
     "verifier_time_source": "current_verify_run"
   },
   "external_snark_receipt": {
@@ -131,12 +131,12 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "16b68b6a72f303982fef396f9d9585356ba69597",
+  "git_commit": "b3f0b8da70d7526125f9b509f7bc325577acbaf5",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
     "risc0_sequence_receipt_size_bytes": 246730,
-    "risc0_sequence_verifier_time_ms": 17.629958000000002,
+    "risc0_sequence_verifier_time_ms": 21.224832999999997,
     "risc0_sequence_verifier_time_source": "current_verify_run",
     "risc0_timing_policy": "single_local_run_engineering_only",
     "risc0_verifier_time_ms": 14.937917,
@@ -351,16 +351,16 @@
       "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-sequence-receipt-2026-05.json",
       "final_kv_items": 5,
-      "image_id_hex": "8147ef0f439424ac2deb93343c367106b4ac290b793325cd9910df7a19156b3f",
+      "image_id_hex": "1d880cde15cfaacc937daabae5443a4d8213b5ea17801ef9d000c164d21f6a2b",
       "journal_commitment": "blake2b-256:47987c67fae1fd4641d097197c86f73cd14c736d33259496e78eb324c6f4ef55",
       "proof_backed": true,
       "proof_size_bytes": 246730,
       "proof_system": "RISC Zero",
       "proof_system_version": "3.0.5",
-      "receipt_commitment": "blake2b-256:f237baef9e9ec157b0ffbe5b005b939d079f59a8b7aaa98d212e5489a1e1f5e0",
+      "receipt_commitment": "blake2b-256:08e23e0c20bc577ca22b9c87c7fdfaa4a4989985441354d3c83059795561136d",
       "route_id": "external_zkvm_attention_kv_sequence_semantics_receipt",
       "sequence_length": 3,
-      "statement_commitment": "blake2b-256:ec94af8f9b890aade754d0c3c2fd118dcc59318d641c427e541fe16c3b1cfe72",
+      "statement_commitment": "blake2b-256:42d44525bc64eb2dffb716f32cfbc99451e6d57defeb2581b3c5707202abf5f4",
       "status": "GO_RISC0_ATTENTION_KV_SEQUENCE_SEMANTICS_RECEIPT",
       "transition_rows": 3,
       "usable_today": true
@@ -374,7 +374,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:aa0154aa143205e14fcee0ff11e1f311713eb74a7f8fd18b40d9f1bfb6fb6d0a",
+  "selector_commitment": "blake2b-256:40e43b8a5d5cf37ed3812a39003104a35032e738567490a649fd1c744dbff1a4",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

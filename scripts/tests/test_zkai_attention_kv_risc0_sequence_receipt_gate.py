@@ -24,7 +24,7 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
         if not GATE.JSON_OUT.exists():
             raise AssertionError(f"required attention/KV RISC Zero sequence receipt evidence is missing: {GATE.JSON_OUT}")
         cls.payload = json.loads(GATE.JSON_OUT.read_text(encoding="utf-8"))
-        GATE.validate_payload(cls.payload)
+        GATE.validate_payload(cls.payload, strict_receipt=True)
 
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
