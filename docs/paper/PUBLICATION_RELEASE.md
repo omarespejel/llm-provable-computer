@@ -37,8 +37,9 @@ It supports the following presentation posture:
   adapters, native Stwo proof receipts for their own bounded claims,
   range-disciplined activation receipts, attention/KV transition statement
   receipts, one external RISC Zero tiny integer-argmax attention/KV transition
-  receipt, and one external RISC Zero three-step carried KV sequence receipt
-  (not native Stwo attention arithmetic, Softmax, long-context inference, or
+  receipt, one external RISC Zero three-step carried KV sequence receipt, and
+  one external RISC Zero fixed eight-step carried KV sequence receipt (not
+  native Stwo attention arithmetic, Softmax, long-context inference, or
   recursion) show that proof validity, statement binding, numeric range
   assumptions, and state transitions must remain separate verifier layers,
 - the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
