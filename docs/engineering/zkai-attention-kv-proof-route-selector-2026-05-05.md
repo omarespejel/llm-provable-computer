@@ -100,6 +100,8 @@ with a native proof of the chosen attention semantics.
 - This is not a Softmax proof.
 - This is not full autoregressive inference.
 - This is not agent correctness.
+- This is not a zkVM receipt.
+- This is not recursive or proof-carrying data.
 - This is not a benchmark row.
 
 ## Reproduce

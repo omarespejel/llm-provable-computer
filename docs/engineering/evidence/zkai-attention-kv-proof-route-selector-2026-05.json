@@ -22,7 +22,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "60ceac6a0076f57387818d01a8fb20394076bb55",
+  "git_commit": "8aba989661aff1061ecab1bd0f62dc31d2a40090",
   "metrics": {
     "proof_generation_time_ms": null,
     "proof_size_bytes": 802,
