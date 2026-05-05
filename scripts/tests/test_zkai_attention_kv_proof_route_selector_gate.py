@@ -21,7 +21,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_gate_records_external_snark_and_risc0_go_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 17)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 19)
         self.assertEqual(payload["decision"], "GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV")
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
@@ -34,6 +34,9 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         )
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
+        self.assertEqual(payload["external_risc0_receipt"]["next_kv_items"], 3)
+        self.assertEqual(len(payload["external_risc0_receipt"]["next_kv_cache"]), 3)
+        self.assertEqual(payload["non_claims"], list(GATE.EXPECTED_NON_CLAIMS))
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["mutations_checked"], len(GATE.EXPECTED_MUTATION_NAMES))
