@@ -70,11 +70,13 @@ NON_CLAIMS = [
     "not a Starknet deployment result",
 ]
 VALIDATION_COMMANDS = [
+    "just gate-fast",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-sequence-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_sequence_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_sequence_receipt_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
+    "just gate",
 ]
 TSV_COLUMNS = (
     "route_id",
@@ -461,7 +463,22 @@ def reverify_receipt_artifact(receipt_path: pathlib.Path) -> dict[str, Any]:
         return run_host("verify", input_path, receipt_path, summary_path)
 
 
-def build_payload(*, prove: bool = False, receipt_path: pathlib.Path = RECEIPT_OUT, previous_proof_generation_time_ms: float | None = None) -> dict[str, Any]:
+def carried_proof_generation_time(previous_evidence: dict[str, Any] | None, receipt_bytes: bytes) -> float | None:
+    if previous_evidence is None:
+        return None
+    previous_artifact = require_object(previous_evidence.get("receipt_artifact"), "previous receipt artifact", layer="proof_metrics")
+    expect_equal(previous_artifact.get("sha256"), sha256_bytes(receipt_bytes), "previous receipt sha256", layer="proof_metrics")
+    expect_equal(
+        previous_artifact.get("commitment"),
+        blake2b_commitment_bytes(receipt_bytes),
+        "previous receipt commitment",
+        layer="proof_metrics",
+    )
+    previous_metrics = require_object(previous_evidence.get("proof_metrics"), "previous proof metrics", layer="proof_metrics")
+    return previous_metrics.get("proof_generation_time_ms")
+
+
+def build_payload(*, prove: bool = False, receipt_path: pathlib.Path = RECEIPT_OUT, previous_evidence: dict[str, Any] | None = None) -> dict[str, Any]:
     journal = expected_journal()
     receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
     toolchain = require_available_toolchain()
@@ -473,7 +490,7 @@ def build_payload(*, prove: bool = False, receipt_path: pathlib.Path = RECEIPT_O
     proof_generation_time_ms = host_summary.get("prove_time_ms")
     proof_generation_time_source = "current_prove_run"
     if proof_generation_time_ms is None:
-        proof_generation_time_ms = previous_proof_generation_time_ms
+        proof_generation_time_ms = carried_proof_generation_time(previous_evidence, receipt_bytes)
         proof_generation_time_source = "carried_from_existing_evidence_not_remeasured" if proof_generation_time_ms is not None else "not_remeasured_in_verify_existing"
     verification_summary = host_summary
     if host_summary["mode"] == "prove":
@@ -855,7 +872,7 @@ def main() -> int:
     receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
-    previous_proof_generation_time_ms = None
+    previous_evidence = None
     if args.verify_existing:
         if json_path is None:
             raise AttentionKvRisc0SequenceReceiptError(
@@ -868,13 +885,11 @@ def main() -> int:
                 "--verify-existing requires existing checked attention/KV sequence RISC Zero evidence JSON; use --prove first",
                 layer="output_path",
             )
-        previous = require_object(load_json(previous_json_path), "previous attention/KV sequence RISC Zero evidence")
-        metrics = require_object(previous.get("proof_metrics"), "previous proof metrics")
-        previous_proof_generation_time_ms = metrics.get("proof_generation_time_ms")
+        previous_evidence = require_object(load_json(previous_json_path), "previous attention/KV sequence RISC Zero evidence")
     payload = build_payload(
         prove=args.prove,
         receipt_path=receipt_path,
-        previous_proof_generation_time_ms=previous_proof_generation_time_ms,
+        previous_evidence=previous_evidence,
     )
     json_text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tsv_text = to_tsv(payload)

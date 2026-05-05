@@ -888,7 +888,7 @@ Zero guest from one transition to a three-step carried KV sequence. The checked
 journal records every intermediate transition row; selected positions are
 `0`, `2`, and `3`, attention outputs are `(2, 1)`, `(4, 2)`, and `(5, -2)`, and the final KV
 cache contains five rows. The receipt is `246730` bytes, verifies locally in
-`21.225 ms` under the same single-run engineering timing policy, and rejects
+`15.981 ms` under the same single-run engineering timing policy, and rejects
 `27 / 27` deletion, reordering, intermediate-state relabeling, statement,
 receipt-metadata, metric-smuggling, native-Stwo, Softmax, recursion, non-claim,
 validation-command, and parser/schema mutations. This is still a tiny integer

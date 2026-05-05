@@ -872,10 +872,10 @@
   "proof_metrics": {
     "metrics_enabled": true,
     "proof_generation_time_ms": 13568.944249999999,
-    "proof_generation_time_source": "current_prove_run",
+    "proof_generation_time_source": "carried_from_existing_evidence_not_remeasured",
     "proof_size_bytes": 246730,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 21.224832999999997,
+    "verifier_time_ms": 15.980917000000002,
     "verifier_time_source": "current_verify_run"
   },
   "receipt_artifact": {
@@ -1024,7 +1024,7 @@
     "image_id_hex": "1d880cde15cfaacc937daabae5443a4d8213b5ea17801ef9d000c164d21f6a2b",
     "journal_commitment": "blake2b-256:47987c67fae1fd4641d097197c86f73cd14c736d33259496e78eb324c6f4ef55",
     "proof_generation_time_ms": 13568.944249999999,
-    "proof_generation_time_source": "current_prove_run",
+    "proof_generation_time_source": "carried_from_existing_evidence_not_remeasured",
     "receipt_commitment": "blake2b-256:08e23e0c20bc577ca22b9c87c7fdfaa4a4989985441354d3c83059795561136d",
     "receipt_size_bytes": 246730,
     "selected_positions": [
@@ -1035,7 +1035,7 @@
     "sequence_length": 3,
     "statement_commitment": "blake2b-256:42d44525bc64eb2dffb716f32cfbc99451e6d57defeb2581b3c5707202abf5f4",
     "transition_rows": 3,
-    "verifier_time_ms": 21.224832999999997,
+    "verifier_time_ms": 15.980917000000002,
     "verifier_time_source": "current_verify_run"
   },
   "system": "RISC Zero",
@@ -1102,10 +1102,12 @@
     "blake2b-256:031757672c3011e2d007fd611c3f4bf1684bada6bd32fc76796c2d600f3029fd"
   ],
   "validation_commands": [
+    "just gate-fast",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-sequence-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_sequence_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_sequence_receipt_gate.py",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
-    "git diff --check"
+    "git diff --check",
+    "just gate"
   ]
 }

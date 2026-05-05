@@ -87,7 +87,7 @@
     "journal_commitment": "blake2b-256:47987c67fae1fd4641d097197c86f73cd14c736d33259496e78eb324c6f4ef55",
     "mutations_checked": 27,
     "mutations_rejected": 27,
-    "proof_generation_time_source": "current_prove_run",
+    "proof_generation_time_source": "carried_from_existing_evidence_not_remeasured",
     "proof_size_bytes": 246730,
     "proof_system": "RISC Zero",
     "proof_system_version": "3.0.5",
@@ -108,7 +108,7 @@
       "blake2b-256:031757672c3011e2d007fd611c3f4bf1684bada6bd32fc76796c2d600f3029fd"
     ],
     "transition_rows": 3,
-    "verifier_time_ms": 21.224832999999997,
+    "verifier_time_ms": 15.980917000000002,
     "verifier_time_source": "current_verify_run"
   },
   "external_snark_receipt": {
@@ -131,12 +131,12 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "b3f0b8da70d7526125f9b509f7bc325577acbaf5",
+  "git_commit": "31a7a0a2bbc3e694e3a159a3502c2be1e3751735",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
     "risc0_sequence_receipt_size_bytes": 246730,
-    "risc0_sequence_verifier_time_ms": 21.224832999999997,
+    "risc0_sequence_verifier_time_ms": 15.980917000000002,
     "risc0_sequence_verifier_time_source": "current_verify_run",
     "risc0_timing_policy": "single_local_run_engineering_only",
     "risc0_verifier_time_ms": 14.937917,
@@ -374,7 +374,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:40e43b8a5d5cf37ed3812a39003104a35032e738567490a649fd1c744dbff1a4",
+  "selector_commitment": "blake2b-256:c77afeaee867c4dd68971e0418c2d33117986fceeeca86f56c2543cdefba2fdf",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

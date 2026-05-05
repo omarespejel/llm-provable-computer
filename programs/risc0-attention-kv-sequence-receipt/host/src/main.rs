@@ -303,6 +303,20 @@ fn usage() -> ! {
     std::process::exit(2);
 }
 
+fn normalize_output_path(path: &PathBuf) -> PathBuf {
+    if path.is_absolute() {
+        path.clone()
+    } else {
+        env::current_dir()
+            .expect("resolve current directory")
+            .join(path)
+    }
+}
+
+fn output_paths_overlap(receipt_path: &PathBuf, summary_path: &PathBuf) -> bool {
+    normalize_output_path(receipt_path) == normalize_output_path(summary_path)
+}
+
 fn main() {
     let mut args = env::args().skip(1);
     let Some(command) = args.next() else { usage() };
@@ -317,6 +331,10 @@ fn main() {
     };
     if args.next().is_some() {
         usage()
+    }
+    if output_paths_overlap(&receipt_path, &summary_path) {
+        eprintln!("receipt path and summary path must be different");
+        std::process::exit(2);
     }
     match command.as_str() {
         "prove" => prove(input_path, receipt_path, summary_path),
@@ -379,6 +397,14 @@ mod tests {
 
         assert!(out.parent().expect("parent").is_dir());
         fs::remove_dir_all(root).expect("cleanup test directory");
+    }
+
+    #[test]
+    fn output_paths_overlap_rejects_same_relative_path() {
+        let receipt = PathBuf::from("target/shared-output");
+        let summary = PathBuf::from("target").join("shared-output");
+
+        assert!(output_paths_overlap(&receipt, &summary));
     }
 
     #[test]

@@ -113,6 +113,17 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
         self.assertGreater(metrics["proof_generation_time_ms"], 0)
         self.assertGreater(metrics["verifier_time_ms"], 0)
 
+    def test_carried_prove_time_requires_same_receipt_artifact(self) -> None:
+        payload = self.fresh_payload()
+        receipt_path = GATE.ROOT / payload["receipt_artifact"]["path"]
+        previous = copy.deepcopy(payload)
+        previous["receipt_artifact"]["sha256"] = "00" * 32
+
+        with self.assertRaisesRegex(GATE.AttentionKvRisc0SequenceReceiptError, "previous receipt sha256") as err:
+            GATE.carried_proof_generation_time(previous, receipt_path.read_bytes())
+
+        self.assertEqual(err.exception.layer, "proof_metrics")
+
     def test_rejects_transition_deletion(self) -> None:
         payload = self.fresh_payload()
         payload["journal"]["transitions"].pop(1)

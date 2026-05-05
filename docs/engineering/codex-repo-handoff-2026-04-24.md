@@ -177,7 +177,7 @@ Tablero boundary.
 - Issue `#442` extends that RISC Zero route to a three-step carried KV-cache
   sequence: selected positions `[0, 2, 3]`, outputs `[[2, 1], [4, 2], [5, -2]]`,
   final KV rows `5`, receipt size `246730` bytes, local verifier time
-  `21.225 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
+  `15.981 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
   metric/claim-boundary mutations rejected. This is proof-backed carried-state
   sequence evidence in a zkVM, still not native Stwo attention arithmetic,
   Softmax, long-context inference, recursion, or PCD; see
