@@ -149,6 +149,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("proof_generation_time_metric_smuggled", "receipt_metrics"),
     ("statement_commitment_relabeling", "statement_commitment"),
     ("receipt_commitment_relabeling", "receipt_commitment"),
+    ("unknown_statement_field_added", "statement_policy"),
     ("non_claims_removed", "parser_or_schema"),
     ("validation_command_drift", "parser_or_schema"),
     ("unknown_top_level_field_added", "parser_or_schema"),
@@ -386,6 +387,7 @@ def baseline_receipt() -> dict[str, Any]:
         "public_signals": public_signals,
         "verification_key": verification_key,
         "input": input_json,
+        "receipt_metrics": expected_receipt_metrics(),
         "non_claims": list(NON_CLAIMS),
     }
     receipt["receipt_commitment"] = receipt_commitment(receipt)
@@ -498,6 +500,7 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
             "non_claims",
             "public_signals",
             "receipt_commitment",
+            "receipt_metrics",
             "schema",
             "snarkjs_proof",
             "statement",
@@ -510,11 +513,12 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
     expect_equal(receipt.get("non_claims"), NON_CLAIMS, "non claims")
     proof, public_signals, verification_key = _snarkjs_payloads(receipt)
     statement = require_object(receipt.get("statement"), "statement")
+    expected_statement = baseline_receipt()["statement"]
+    expect_keys(statement, set(expected_statement), "statement", layer="statement_policy")
     if receipt.get("statement_commitment") != statement_commitment(statement):
         raise D64ExternalRecursionAdapterError("statement_commitment mismatch", layer="statement_commitment")
     if receipt.get("receipt_commitment") != receipt_commitment(receipt):
         raise D64ExternalRecursionAdapterError("receipt_commitment mismatch", layer="receipt_commitment")
-    expected_statement = baseline_receipt()["statement"]
     for key in (
         "schema",
         "issue",
@@ -533,6 +537,7 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
     artifact_hashes = require_object(metadata.get("artifacts"), "metadata artifacts", layer="artifact_binding")
     canonical_input = require_object(load_json(artifact_path("input")), "input artifact", layer="artifact_binding")
     canonical_proof = require_object(load_json(artifact_path("proof")), "proof artifact", layer="artifact_binding")
+    canonical_public_signals = require_list(load_json(artifact_path("public_signals")), "public signals artifact", layer="artifact_binding")
     canonical_verification_key = require_object(load_json(artifact_path("verification_key")), "verification key artifact", layer="artifact_binding")
     expect_equal(receipt.get("artifacts"), ARTIFACTS, "artifacts", layer="artifact_binding")
     expect_equal(require_object(receipt.get("input"), "input", layer="artifact_binding"), canonical_input, "input artifact payload", layer="artifact_binding")
@@ -552,8 +557,10 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
     expect_equal(public_signals_sha256(public_signals), statement.get("public_signals_sha256"), "public signals hash", layer="public_signal_binding")
     expect_equal(public_signals, expected_public_signals(statement["public_signal_field_entries"]), "public signals", layer="public_signal_binding")
     expect_equal(public_signals_sha256(public_signals), statement.get("expected_public_signals_sha256"), "expected public signals digest", layer="public_signal_binding")
+    expect_equal(public_signals, canonical_public_signals, "public signals artifact payload", layer="artifact_binding")
     expect_equal(statement.get("setup_commitment"), artifact_hashes.get("verification_key.json"), "setup commitment", layer="setup_binding")
-    external_verify(canonical_proof, public_signals, canonical_verification_key)
+    expect_equal(require_object(receipt.get("receipt_metrics"), "receipt metrics", layer="receipt_metrics"), expected_receipt_metrics(), "receipt metrics", layer="receipt_metrics")
+    external_verify(canonical_proof, canonical_public_signals, canonical_verification_key)
 
 
 def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
@@ -615,6 +622,7 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
     mutate("proof_generation_time_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("proof_generation_time_ms", 0.001))
     mutate("statement_commitment_relabeling", "statement_commitment", lambda r: r.__setitem__("statement_commitment", "blake2b-256:" + "50" * 32), refresh=False)
     mutate("receipt_commitment_relabeling", "receipt_commitment", lambda r: r.__setitem__("receipt_commitment", "blake2b-256:" + "60" * 32), refresh=False)
+    mutate("unknown_statement_field_added", "statement_policy", lambda r: r["statement"].__setitem__("unexpected", True))
     mutate("non_claims_removed", "parser_or_schema", lambda r: r.__setitem__("non_claims", r["non_claims"][:-1]))
     mutate("validation_command_drift", "parser_or_schema", lambda r: r.__setitem__("validation_commands", ["echo fake"]))
     mutate("unknown_top_level_field_added", "parser_or_schema", lambda r: r.__setitem__("unexpected", True))

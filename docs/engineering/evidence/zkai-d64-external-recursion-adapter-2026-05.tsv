@@ -11,10 +11,10 @@ nested_statement_commitment_relabeling	statement_policy	True	False	True	statemen
 nested_verifier_contract_commitment_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
 non_claims_removed	parser_or_schema	True	False	True	parser_or_schema	non claims mismatch
 output_activation_commitment_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
-proof_generation_time_metric_smuggled	receipt_metrics	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['receipt_metrics']
+proof_generation_time_metric_smuggled	receipt_metrics	True	False	True	receipt_metrics	receipt metrics mismatch
 proof_hash_relabeling	artifact_binding	True	False	True	artifact_binding	proof hash mismatch
 proof_native_parameter_commitment_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
-proof_size_metric_smuggled	receipt_metrics	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['receipt_metrics']
+proof_size_metric_smuggled	receipt_metrics	True	False	True	receipt_metrics	receipt metrics mismatch
 public_instance_commitment_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
 public_signal_hash_relabeling	public_signal_binding	True	False	True	public_signal_binding	public signals hash mismatch
 public_signal_relabeling	public_signal_binding	True	False	True	public_signal_binding	public signals hash mismatch
@@ -28,9 +28,10 @@ setup_commitment_relabeling	setup_binding	True	False	True	setup_binding	setup co
 slice_chain_commitment_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
 source_aggregation_target_relabeling	statement_policy	True	False	True	statement_policy	source_contract mismatch
 statement_commitment_relabeling	statement_commitment	True	False	True	statement_commitment	statement_commitment mismatch
+unknown_statement_field_added	statement_policy	True	False	True	statement_policy	statement keys mismatch: missing=[] extra=['unexpected']
 unknown_top_level_field_added	parser_or_schema	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['unexpected']
 validation_command_drift	parser_or_schema	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['validation_commands']
 verification_key_file_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification_key_file_sha256 mismatch
 verification_key_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification key canonical hash mismatch
 verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	verifier_domain mismatch
-verifier_time_metric_smuggled	receipt_metrics	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['receipt_metrics']
+verifier_time_metric_smuggled	receipt_metrics	True	False	True	receipt_metrics	receipt metrics mismatch

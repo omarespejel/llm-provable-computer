@@ -63,7 +63,7 @@ the underlying Stwo slice proofs.
 
 ## Mutation Coverage
 
-The gate rejects `35 / 35` receipt mutations, including:
+The gate rejects `36 / 36` receipt mutations, including:
 
 - nested-verifier contract commitment relabeling;
 - source aggregation target, input block receipt, statement, public-instance,
@@ -76,8 +76,8 @@ The gate rejects `35 / 35` receipt mutations, including:
   embedded proof / verification-key payload drift, setup commitment, statement
   commitment, and receipt commitment drift;
 - proof-size, verifier-time, and proof-generation-time metric smuggling; and
-- non-claim removal, validation-command drift, and unknown top-level field
-  injection.
+- non-claim removal, validation-command drift, and unknown nested-statement /
+  top-level field injection.
 
 A separate raw proof-verifier check mutates the public signals directly and
 `snarkjs groth16 verify` rejects it. This distinguishes two layers:
