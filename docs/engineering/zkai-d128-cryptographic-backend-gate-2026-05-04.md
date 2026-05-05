@@ -142,7 +142,12 @@ This gate does not claim:
 ## Reproduce
 
 ```bash
-PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" \
+export PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH"
+rzup --version          # must print 0.5.0 for this checked fixture
+rzup show               # must list cargo-risczero 3.0.5 and r0vm 3.0.5
+cargo risczero --version  # must print cargo-risczero 3.0.5
+rustc +1.92.0 --version   # must print rustc 1.92.0
+
 python3 scripts/zkai_d128_risc0_statement_receipt_gate.py \
   --verify-existing \
   --write-json docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json \
