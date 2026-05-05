@@ -122,6 +122,7 @@ TABLERO_CLAIM_EVIDENCE_REQUIRED_LISTS = (
 # false precision rather than a stronger evidence ledger.
 TABLERO_CLAIM_EVIDENCE_PATH_KEYS = (
     "paper_locations",
+    "implementation",
     "specs",
     "evidence_files",
 )
