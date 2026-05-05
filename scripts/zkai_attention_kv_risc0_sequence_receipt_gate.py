@@ -400,7 +400,7 @@ def require_available_toolchain() -> dict[str, Any]:
 def local_risc0_toolchain_available() -> tuple[bool, str]:
     try:
         require_available_toolchain()
-    except AttentionKvRisc0SequenceReceiptError as err:
+    except (AttentionKvRisc0SequenceReceiptError, OSError, subprocess.SubprocessError) as err:
         return False, str(err)
     return True, ""
 
