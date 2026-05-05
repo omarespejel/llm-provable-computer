@@ -32,10 +32,12 @@ It supports the following presentation posture:
 - the empirical lab is one transformer-shaped STARK-zkML stack,
 - the main positive evidence is replay avoidance across three layout families,
 - the supporting positive evidence is a second typed boundary on a distinct emitted-source surface with a modest verifier-side gain on the conservative publication row (checked point `2`, `1.22x`, timing policy `median_of_5_runs_from_microsecond_capture`; evidence: [TSV](evidence/phase43-source-root-feasibility-publication-2026-04.tsv), [JSON](evidence/phase43-source-root-feasibility-publication-2026-04.json)),
-- the supporting zkAI evidence is a statement-binding extension: external
-  adapters, native Stwo proof receipts, a range-disciplined activation receipt,
-  an attention/KV transition receipt, and a RISC Zero attention/KV semantics
-  receipt show that proof validity, statement
+- the supporting zkAI evidence is a statement-binding extension across distinct
+  verifier layers and routes: external adapters, native Stwo proof receipts for
+  their own bounded claims, a range-disciplined activation receipt, an
+  attention/KV transition receipt, and an external RISC Zero tiny
+  integer-argmax attention/KV semantics receipt (not native Stwo attention
+  arithmetic or Softmax) show that proof validity, statement
   binding, numeric range assumptions, and state transitions must remain separate
   verifier layers,
 - the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
