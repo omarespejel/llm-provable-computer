@@ -645,6 +645,20 @@ class PaperPreflightTests(unittest.TestCase):
 
             self.assertEqual(findings.errors, [])
 
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
+                "phase38_composition_continuity",
+                "schemas",
+                "Not applicable:",
+                findings,
+            )
+            self.assertTrue(
+                any("empty `Not applicable:` note" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_claim_evidence_path_anchor_rejects_non_applicable_for_required_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
