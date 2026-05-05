@@ -15,6 +15,42 @@
     "journal_commitment": "blake2b-256:eddb5811f49a5d1cc32694404107cea6351b7dbf5d06b5c2e198bff1bf2d8872",
     "mutations_checked": 22,
     "mutations_rejected": 22,
+    "next_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "key": [
+          1,
+          -1
+        ],
+        "position": 2,
+        "value": [
+          4,
+          2
+        ]
+      }
+    ],
+    "next_kv_items": 3,
     "proof_size_bytes": 221842,
     "proof_system": "RISC Zero",
     "proof_system_version": "3.0.5",
@@ -45,7 +81,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "34c9661a2ab0288ca32fba3fde910d625a700999",
+  "git_commit": "a3805771ac56e1cc9f95a0e2d35a2e9e5754258b",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
@@ -113,6 +149,11 @@
       "rejected": true
     },
     {
+      "name": "external_zkvm_receipt_next_kv_items_drift",
+      "reason": "external RISC Zero receipt drift",
+      "rejected": true
+    },
+    {
       "name": "fake_verifier_time_metric",
       "reason": "metric smuggling",
       "rejected": true
@@ -125,6 +166,11 @@
     {
       "name": "next_go_criteria_weakened",
       "reason": "next-go criteria drift",
+      "rejected": true
+    },
+    {
+      "name": "non_claims_weakened",
+      "reason": "non-claim drift",
       "rejected": true
     },
     {
@@ -143,8 +189,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 17,
-  "mutations_rejected": 17,
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
   "next_go_criteria": [
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
     "a larger fixture proves multiple carried KV-cache transitions instead of one tiny transition",
@@ -199,6 +245,7 @@
       "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json",
       "image_id_hex": "9a79a03bc2c29f53dc61327fbc567ccc037e7b697302b84cccb922b8d19d9454",
       "journal_commitment": "blake2b-256:eddb5811f49a5d1cc32694404107cea6351b7dbf5d06b5c2e198bff1bf2d8872",
+      "next_kv_items": 3,
       "proof_backed": true,
       "proof_size_bytes": 221842,
       "proof_system": "RISC Zero",
@@ -218,7 +265,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:65b5cbfcf18c63938a32c40f5c8f8d670f54fbff526258533bb34643e36199c2",
+  "selector_commitment": "blake2b-256:ec3dc090d2c8eaf645b6f8c38b7a6e8b637e8aa69be0c5fd481a0ee8c4f0b200",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

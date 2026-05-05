@@ -132,9 +132,11 @@ EXPECTED_MUTATION_NAMES = (
     "external_zkvm_route_removed",
     "external_zkvm_receipt_decision_drift",
     "external_zkvm_receipt_mutation_rejections_drift",
+    "external_zkvm_receipt_next_kv_items_drift",
     "fake_verifier_time_metric",
     "fake_proof_size_metric",
     "next_go_criteria_weakened",
+    "non_claims_weakened",
     "claim_boundary_weakened",
     "first_blocker_removed",
     "unknown_field_injection",
@@ -145,6 +147,17 @@ EXPECTED_NEXT_GO_CRITERIA = (
     "a larger fixture proves multiple carried KV-cache transitions instead of one tiny transition",
     "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics",
+)
+
+EXPECTED_NON_CLAIMS = (
+    "not a native attention arithmetic proof",
+    "not a Stwo proof",
+    "not a Softmax proof",
+    "not full autoregressive inference",
+    "not agent correctness",
+    "not native Stwo proving",
+    "not recursive or proof-carrying data",
+    "not a benchmark row",
 )
 
 
@@ -309,6 +322,8 @@ def risc0_receipt_summary(risc0_payload: dict[str, Any]) -> dict[str, Any]:
         "image_id_hex": risc0_payload["receipt_verification"]["image_id_hex"],
         "selected_position": journal["selected_position"],
         "attention_output": journal["attention_output"],
+        "next_kv_items": risc0_payload["summary"]["next_kv_items"],
+        "next_kv_cache": journal["next_kv_cache"],
         "mutations_checked": risc0_payload["case_count"],
         "mutations_rejected": sum(1 for case in risc0_payload["cases"] if case["rejected"] is True),
         "all_mutations_rejected": risc0_payload["all_mutations_rejected"],
@@ -338,6 +353,7 @@ def route_inventory() -> list[dict[str, Any]]:
     zkvm_route["receipt_commitment"] = risc0["receipt_commitment"]
     zkvm_route["image_id_hex"] = risc0["image_id_hex"]
     zkvm_route["selected_position"] = risc0["selected_position"]
+    zkvm_route["next_kv_items"] = risc0["next_kv_items"]
     return routes
 
 
@@ -409,16 +425,7 @@ def build_payload() -> dict[str, Any]:
             "risc0_timing_policy": risc0_summary["timing_policy"],
         },
         "next_go_criteria": list(EXPECTED_NEXT_GO_CRITERIA),
-        "non_claims": [
-            "not a native attention arithmetic proof",
-            "not a Stwo proof",
-            "not a Softmax proof",
-            "not full autoregressive inference",
-            "not agent correctness",
-            "not native Stwo proving",
-            "not recursive or proof-carrying data",
-            "not a benchmark row",
-        ],
+        "non_claims": list(EXPECTED_NON_CLAIMS),
     }
     payload["selector_commitment"] = blake2b_commitment(
         {
@@ -487,12 +494,16 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["external_risc0_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SEMANTICS_RECEIPT"
     elif name == "external_zkvm_receipt_mutation_rejections_drift":
         out["external_risc0_receipt"]["mutations_rejected"] -= 1
+    elif name == "external_zkvm_receipt_next_kv_items_drift":
+        out["external_risc0_receipt"]["next_kv_items"] -= 1
     elif name == "fake_verifier_time_metric":
         out["metrics"]["verifier_time_ms"] = 7.5
     elif name == "fake_proof_size_metric":
         out["metrics"]["snark_proof_size_bytes"] = 1024
     elif name == "next_go_criteria_weakened":
         out["next_go_criteria"] = ["any zkVM receipt wraps the source-backed contract"]
+    elif name == "non_claims_weakened":
+        out["non_claims"] = [claim for claim in out["non_claims"] if claim != "not native Stwo proving"]
     elif name == "claim_boundary_weakened":
         out["claim_boundary"] = "PROOF_BACKED_ATTENTION_KV_RECEIPT"
     elif name == "first_blocker_removed":
@@ -594,6 +605,8 @@ def validate_risc0_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero proof metric drift")
     if summary["selected_position"] != 0 or summary["attention_output"] != [2, 1]:
         raise AttentionKvRouteSelectorError("external RISC Zero semantics drift")
+    if summary["next_kv_items"] != 3 or len(summary["next_kv_cache"]) != summary["next_kv_items"]:
+        raise AttentionKvRouteSelectorError("external RISC Zero KV update drift")
 
 
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
@@ -660,7 +673,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     if tuple(next_go_criteria) != EXPECTED_NEXT_GO_CRITERIA:
         raise AttentionKvRouteSelectorError("next-go criteria drift")
     non_claims = payload.get("non_claims")
-    if not isinstance(non_claims, list) or any("not " not in str(item) for item in non_claims):
+    if tuple(non_claims or ()) != EXPECTED_NON_CLAIMS:
         raise AttentionKvRouteSelectorError("non-claim drift")
     expected_commitment = blake2b_commitment(
         {
