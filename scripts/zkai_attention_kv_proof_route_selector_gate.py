@@ -67,7 +67,7 @@ REQUIRED_PUBLIC_FIELDS = (
 SOURCE_ROUTE_ID = "source_backed_attention_kv_receipt_contract"
 LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_transition_proof"
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
-EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_statement_receipt"
+EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 SOFTMAX_ROUTE_ID = "softmax_attention_kv_claim"
 
 BASE_ROUTES = (
@@ -639,7 +639,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_routes(payload.get("route_candidates"))
     if payload.get("proof_backed_routes_available") != [
         "external_snark_attention_kv_statement_receipt",
-        "external_zkvm_attention_kv_statement_receipt",
+        "external_zkvm_attention_kv_semantics_receipt",
     ]:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
     expected_metrics = {

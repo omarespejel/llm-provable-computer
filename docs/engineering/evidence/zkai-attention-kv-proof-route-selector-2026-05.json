@@ -45,7 +45,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "d7aa7f94acda74347f8f9c90b07337b12dbe70c4",
+  "git_commit": "34c9661a2ab0288ca32fba3fde910d625a700999",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
@@ -163,7 +163,7 @@
   ],
   "proof_backed_routes_available": [
     "external_snark_attention_kv_statement_receipt",
-    "external_zkvm_attention_kv_statement_receipt"
+    "external_zkvm_attention_kv_semantics_receipt"
   ],
   "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
   "route_candidates": [
@@ -204,7 +204,7 @@
       "proof_system": "RISC Zero",
       "proof_system_version": "3.0.5",
       "receipt_commitment": "blake2b-256:75946c9d5628bf4ad5c4680f7ffdbde55812ecd068be5ed9af024e0d6d35e9c7",
-      "route_id": "external_zkvm_attention_kv_statement_receipt",
+      "route_id": "external_zkvm_attention_kv_semantics_receipt",
       "selected_position": 0,
       "status": "GO_RISC0_ATTENTION_KV_TRANSITION_SEMANTICS_RECEIPT",
       "usable_today": true
@@ -218,7 +218,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:45e15e9640ffebd1f7475416c304d297dde03902f1f4d7d0668228757f534b9f",
+  "selector_commitment": "blake2b-256:65b5cbfcf18c63938a32c40f5c8f8d670f54fbff526258533bb34643e36199c2",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",
