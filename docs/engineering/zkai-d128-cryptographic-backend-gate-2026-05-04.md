@@ -88,14 +88,17 @@ receipt. `DEFERRED_UNTIL_A_PROOF_OBJECT_EXISTS` still applies only to the
 Starknet settlement adapter, because no settlement-shaped adapter exists for
 these proof objects yet.
 
-The route table may report the SNARK proof size (`802` bytes) and the RISC Zero
+The route table reports the SNARK proof size (`802` bytes) and the RISC Zero
 receipt size (`310234` bytes) plus its single local engineering verifier/prover
-times. Do not promote those single-run RISC Zero times into public benchmark
-claims or cross-system comparisons.
+times as route-scoped metrics. The backend decision keeps a
+`proof_metrics_by_route` map so the SNARK and RISC Zero measurements are not
+collapsed into one unlabeled backend-wide metric block. Do not promote those
+single-run RISC Zero times into public benchmark claims or cross-system
+comparisons.
 
 ## Mutation Coverage
 
-The gate rejects `35 / 35` mutation cases, including:
+The gate rejects `37 / 37` mutation cases, including:
 
 - source file-hash, payload-hash, result, compression-result, recursive-result,
   and claim-boundary drift;
@@ -107,8 +110,8 @@ The gate rejects `35 / 35` mutation cases, including:
 - fake local nested-verifier, local PCD/IVC, stale external zkVM, or stale
   external SNARK/IVC route relabeling;
 - route blocker removal and route-level metric smuggling;
-- decision-level proof-size, verifier-time, and proof-generation-time metric
-  smuggling; and
+- decision-level proof-size, verifier-time, proof-generation-time,
+  route-scoped metric, and metric-source relabeling; and
 - parser-level non-claim removal, validation-command drift, and unknown-field
   injection.
 

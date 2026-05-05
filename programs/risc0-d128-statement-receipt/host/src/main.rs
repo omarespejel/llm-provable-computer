@@ -56,7 +56,6 @@ fn verify_receipt(receipt: &Receipt, journal_bytes: &[u8]) -> f64 {
     receipt
         .verify(D128_STATEMENT_RECEIPT_ID)
         .expect("receipt verifies against image id");
-    let verify_time_ms = verify_started.elapsed().as_secs_f64() * 1000.0;
     let decoded: Vec<u8> = receipt
         .journal
         .decode()
@@ -65,7 +64,7 @@ fn verify_receipt(receipt: &Receipt, journal_bytes: &[u8]) -> f64 {
         decoded, journal_bytes,
         "receipt journal does not match expected contract bytes"
     );
-    verify_time_ms
+    verify_started.elapsed().as_secs_f64() * 1000.0
 }
 
 fn prove(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
