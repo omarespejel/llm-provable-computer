@@ -648,21 +648,45 @@ class PaperPreflightTests(unittest.TestCase):
     def test_claim_evidence_path_anchor_rejects_non_applicable_for_required_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
+
+            for key, entry in (
+                ("implementation", "Not applicable: implementation exists only in prose."),
+                ("artifact_files", "Not applicable: no standalone artifact file."),
+            ):
+                findings = MOD.Findings()
+                MOD.check_claim_evidence_path_anchor(
+                    repo,
+                    repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
+                    "phase38_composition_continuity",
+                    key,
+                    entry,
+                    findings,
+                )
+
+                self.assertTrue(
+                    any("repo-relative path is required" in msg for msg in findings.errors),
+                    findings.errors,
+                )
+
+    def test_experimental_boundary_ignores_paper_location_fragments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            evidence_path = repo / MOD.TABLERO_CLAIM_EVIDENCE_FILE
+            record = {
+                "claim": "The theorem has a boundary section.",
+                "paper_locations": [
+                    "docs/paper/tablero-typed-verifier-boundaries-2026.md#Experimental-backend scope"
+                ],
+                "evidence_files": ["docs/paper/appendix-tablero-claim-boundary.md"],
+                "non_claims": ["Does not claim recursive proof compression."],
+            }
             findings = MOD.Findings()
 
-            MOD.check_claim_evidence_path_anchor(
-                repo,
-                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
-                "phase38_composition_continuity",
-                "implementation",
-                "Not applicable: implementation exists only in prose.",
-                findings,
+            MOD.check_experimental_evidence_boundary(
+                evidence_path, "tablero_statement_preservation_theorem", record, findings
             )
 
-            self.assertTrue(
-                any("repo-relative path is required" in msg for msg in findings.errors),
-                findings.errors,
-            )
+            self.assertEqual(findings.errors, [])
 
     def test_experimental_evidence_boundary_requires_scope_and_non_default_note(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -125,9 +125,8 @@ TABLERO_CLAIM_EVIDENCE_PATH_KEYS = (
     "specs",
     "evidence_files",
 )
-NON_PATH_EVIDENCE_NOTE_PATH_KEYS = frozenset(("schemas", "artifact_files"))
+NON_PATH_EVIDENCE_NOTE_PATH_KEYS = frozenset(("schemas",))
 EXPERIMENTAL_EVIDENCE_PATH_KEYS = (
-    "paper_locations",
     "implementation",
     "specs",
     "schemas",
