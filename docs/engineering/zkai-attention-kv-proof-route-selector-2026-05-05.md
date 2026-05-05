@@ -93,7 +93,7 @@ Claim boundary:
 | RISC Zero sequence length | `3` transitions |
 | RISC Zero sequence final KV rows | `5` |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
-| RISC Zero scaled sequence verifier time | `18.056 ms` engineering-only single local run |
+| RISC Zero scaled sequence verifier time | `21.833 ms` engineering-only single local run |
 | RISC Zero scaled sequence length | `8` transitions |
 | RISC Zero scaled sequence final KV rows | `10` |
 | Mutations checked | 32 |

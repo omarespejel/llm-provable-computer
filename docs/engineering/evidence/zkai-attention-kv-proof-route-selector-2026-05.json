@@ -99,11 +99,11 @@
         4
       ]
     ],
-    "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_OR_SOFTMAX",
+    "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_NOT_SOFTMAX_NOT_RECURSION_OR_PCD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_AGENT_CORRECTNESS",
     "decision": "GO_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT_FOR_CARRIED_KV_STATE",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json",
     "final_kv_items": 10,
-    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
     "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
     "mutations_checked": 27,
     "mutations_rejected": 27,
@@ -111,7 +111,7 @@
     "proof_size_bytes": 264146,
     "proof_system": "RISC Zero",
     "proof_system_version": "3.0.5",
-    "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "receipt_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
     "result": "GO",
     "schema": "zkai-attention-kv-risc0-scaled-sequence-receipt-gate-v1",
     "selected_positions": [
@@ -125,7 +125,7 @@
       6
     ],
     "sequence_length": 8,
-    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "statement_commitment": "blake2b-256:ddad8aa06858797e66bc40943dc62000063d20574c78a44279e0c8238cdd643a",
     "timing_policy": "single_local_run_engineering_only",
     "transition_commitments": [
       "blake2b-256:8b2c053e7c22602fddd21ce904c3f62470f2308ff56a270b9d4aa5e62a72d031",
@@ -138,7 +138,7 @@
       "blake2b-256:05b47ab6f8aca5db84b2d4ce0b35a311862d0a3398e643d5bee5909713289c6f"
     ],
     "transition_rows": 8,
-    "verifier_time_ms": 18.056459,
+    "verifier_time_ms": 21.833042,
     "verifier_time_source": "current_verify_run"
   },
   "external_risc0_sequence_receipt": {
@@ -209,12 +209,12 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "779190a1a80a4493550d74f7934469644089d828",
+  "git_commit": "c9882865c91f64e0c300973f98be669efb4f26ce",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
     "risc0_scaled_sequence_receipt_size_bytes": 264146,
-    "risc0_scaled_sequence_verifier_time_ms": 18.056459,
+    "risc0_scaled_sequence_verifier_time_ms": 21.833042,
     "risc0_scaled_sequence_verifier_time_source": "current_verify_run",
     "risc0_sequence_receipt_size_bytes": 246730,
     "risc0_sequence_verifier_time_ms": 15.980917000000002,
@@ -395,6 +395,7 @@
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
     "the carried KV-cache sequence scales beyond a fixed eight-step two-wide integer-argmax fixture",
     "a wider d=8 or d=16 fixture preserves the same intermediate-state binding guarantees",
+    "explicit causal masking or an explicitly declared no-mask axis is validated as a next honest scaling target",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics"
   ],
@@ -482,16 +483,16 @@
       "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json",
       "final_kv_items": 10,
-      "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+      "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
       "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
       "proof_backed": true,
       "proof_size_bytes": 264146,
       "proof_system": "RISC Zero",
       "proof_system_version": "3.0.5",
-      "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+      "receipt_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
       "route_id": "external_zkvm_attention_kv_scaled_sequence_semantics_receipt",
       "sequence_length": 8,
-      "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+      "statement_commitment": "blake2b-256:ddad8aa06858797e66bc40943dc62000063d20574c78a44279e0c8238cdd643a",
       "status": "GO_RISC0_ATTENTION_KV_SCALED_SEQUENCE_SEMANTICS_RECEIPT",
       "transition_rows": 8,
       "usable_today": true
@@ -505,7 +506,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:545c63b63e3e55083dc0f9fdf0bcc730063992a17abd1430c204491680894e9a",
+  "selector_commitment": "blake2b-256:c59616a606dab443383cad472a21f515a65a58a2ee6320805d5b25c05ecaf930",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

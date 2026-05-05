@@ -186,6 +186,7 @@ EXPECTED_NEXT_GO_CRITERIA = (
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
     "the carried KV-cache sequence scales beyond a fixed eight-step two-wide integer-argmax fixture",
     "a wider d=8 or d=16 fixture preserves the same intermediate-state binding guarantees",
+    "explicit causal masking or an explicitly declared no-mask axis is validated as a next honest scaling target",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics",
 )

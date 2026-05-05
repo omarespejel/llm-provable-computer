@@ -167,8 +167,8 @@ public contract.
    receipts now prove tiny integer-argmax semantics and carried-state ordering
    in a zkVM. The next step is native attention arithmetic proving, wider/masked
    carried-state scaling, or an explicit no-go for that same stateful public
-   surface. Tracked in issue `#336`, follow-up issue `#442`, and scaled-sequence
-   issue `#444`.
+   surface. Tracked in issue `#336`, follow-up issue `#442`, and
+   wider/masked scaled-sequence issue `#446`.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers

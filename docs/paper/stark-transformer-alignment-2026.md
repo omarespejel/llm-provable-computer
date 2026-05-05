@@ -1300,8 +1300,8 @@ output binding alone is not enough if prior and next state can be relabeled. A
 follow-up RISC Zero receipt computes one tiny integer-argmax KV transition
 inside a zkVM guest. A later RISC Zero sequence receipt carries that state across
 three transitions, and a scaled follow-up carries the same discipline across a
-fixed eight-step sequence ending in a ten-row KV cache. Both reject deletion,
-reordering, and intermediate-state relabeling. That strengthens the carried-state
+fixed eight-step/two-wide integer-argmax sequence ending in a ten-row KV cache.
+Both reject deletion, reordering, and intermediate-state relabeling. That strengthens the carried-state
 claim without promoting it to native Stwo attention proving, Softmax,
 long-context inference, or full inference. These are not performance rows. They
 are the statement-semantics work that prevents future performance rows from
