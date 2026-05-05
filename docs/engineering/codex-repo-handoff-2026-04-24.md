@@ -32,8 +32,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 21. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
 22. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
 23. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
-24. `docs/engineering/reproducibility.md`
-24. `git status --short --branch`
+24. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
+25. `docs/engineering/reproducibility.md`
+26. `git status --short --branch`
 
 ## Current lane split
 
@@ -147,6 +148,14 @@ Tablero boundary.
   adds divisor/remainder evidence and verifier drift checks for that statement
   surface; see
   `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
+- The d64 nested-verifier backend contract now has a real external
+  `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
+  `806` bytes, binds `21` contract fields into `22` public signals, and rejects
+  `34 / 34` relabeling, artifact-binding, setup-binding, metric-smuggling, and
+  parser/schema mutations. This is an external SNARK statement receipt over the
+  d64 nested-verifier contract, not Stwo-native recursion or verification of the
+  underlying Stwo slice verifiers inside Groth16; see
+  `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
   PCD outer proof backend exists. The d128 two-slice lane now has a
   non-recursive verifier-facing accumulator, but that is not recursive proof

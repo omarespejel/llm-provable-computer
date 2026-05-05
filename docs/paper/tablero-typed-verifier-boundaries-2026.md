@@ -1127,6 +1127,21 @@ for the statement-receipt discipline. It is anchored to
 `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md` and
 `docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json`.
 
+A d64 follow-up repeats the same external-control question on the older
+nested-verifier contract surface rather than on the d128 proof-native contract.
+The issue `#386` gate binds the issue `#379` d64 nested-verifier contract
+commitment
+`blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a`,
+maps `21` contract fields into `22` Groth16 public signals, and verifies an
+`806` byte proof. Its statement envelope rejects `34 / 34` relabeling,
+artifact-binding, setup-binding, metric-smuggling, and parser/schema mutations.
+This is not a stronger recursion claim. It is a stronger boundary claim: even
+when the source result remains a bounded no-go for a local nested-verifier proof
+artifact, the public contract can be carried into an external SNARK receipt
+without permitting semantic relabeling. It is anchored to
+`docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md` and
+`docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.json`.
+
 The timing/setup hardening follow-up regenerates the same statement-receipt
 circuit under a local throwaway Groth16 setup, proves it five times, and
 verifies it five times. The checked medians are `364.647 ms` for proof
@@ -1241,6 +1256,10 @@ The d64 recursive/PCD feasibility and nested-verifier contract gates strengthen
 this non-claim rather than weakening it: they say the receipt is the right
 aggregation input and define the first public-input contract, while still
 recording that the missing work is a real executable nested-verifier backend.
+The d64 external-recursion adapter then shows that this public-input contract
+can be bound by a real external SNARK statement receipt, but it keeps the same
+non-claim: a statement receipt around the contract is not recursive verification
+of the underlying Stwo slice verifiers.
 The d128 two-slice accumulator gate similarly strengthens the boundary: it
 provides a real verifier-facing accumulator for the first two checked slice
 statements, but keeps recursive proof compression and recursive metrics in the

@@ -26,8 +26,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 20. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
 21. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
 22. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
-23. `docs/engineering/reproducibility.md`
-24. `git status --short --branch`
+23. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
+24. `docs/engineering/reproducibility.md`
+25. `git status --short --branch`
 
 ## What this repository is now
 
@@ -49,6 +50,15 @@ This repository currently has three live lanes.
      quotient scale divisors and remainder hashes are now checked in the
      evidence and verifiers; see
      `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
+   - The d64 nested-verifier backend contract now has a real external
+     `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
+     `806` bytes, binds `21` contract fields into `22` public signals, and
+     rejects `34 / 34` relabeling, artifact-binding, setup-binding,
+     metric-smuggling, and parser/schema mutations. This is an external SNARK
+     statement receipt over the d64 nested-verifier contract, not Stwo-native
+     recursion or verification of the underlying Stwo slice verifiers inside
+     Groth16; see
+     `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
      down-projection, and a source-bound native residual-add slice. The residual
