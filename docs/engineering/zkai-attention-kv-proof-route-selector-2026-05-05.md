@@ -45,7 +45,7 @@ Claim boundary:
 | Source-backed attention/KV receipt contract | GO for contract only; not proof-backed |
 | Local Stwo attention/KV transition proof | NO-GO; no executable native attention/KV proof artifact |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
-| External zkVM attention/KV statement receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
+| External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | Softmax attention/KV claim | NO-GO; current fixture is integer argmax attention, not Softmax |
 
 ## Evidence

@@ -316,6 +316,33 @@ def toolchain_probe() -> dict[str, Any]:
     }
 
 
+def require_available_toolchain() -> dict[str, Any]:
+    probe = toolchain_probe()
+    commands = require_object(probe.get("commands"), "toolchain commands", layer="toolchain_probe")
+    missing = []
+    for command_id in REQUIRED_COMMANDS:
+        entry = commands.get(command_id)
+        if not isinstance(entry, dict) or entry.get("available") is not True:
+            missing.append(command_id)
+    if missing:
+        raise AttentionKvRisc0SemanticsReceiptError(
+            f"required RISC Zero toolchain commands unavailable before host run: {', '.join(missing)}",
+            layer="toolchain_probe",
+        )
+    components = require_object(probe.get("rzup_components"), "rzup components", layer="toolchain_probe")
+    mismatched_components = [
+        component
+        for component in ("cargo-risczero", "r0vm")
+        if components.get(component) != RISC0_ZKVM_VERSION
+    ]
+    if mismatched_components:
+        raise AttentionKvRisc0SemanticsReceiptError(
+            "required RISC Zero components have unexpected versions: " + ", ".join(mismatched_components),
+            layer="toolchain_probe",
+        )
+    return probe
+
+
 def run_host(mode: str, input_path: pathlib.Path, receipt_path: pathlib.Path, summary_path: pathlib.Path) -> dict[str, Any]:
     env = os.environ.copy()
     env["PATH"] = f"{os.environ.get('HOME', '')}/.risc0/bin:{os.environ.get('HOME', '')}/.cargo/bin:" + env.get("PATH", "")
@@ -381,6 +408,7 @@ def build_payload(
 ) -> dict[str, Any]:
     journal = expected_journal()
     receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
+    toolchain = require_available_toolchain()
     host_summary = generate_or_verify_receipt(prove=prove, receipt_path=receipt_path)
     receipt_bytes = receipt_path.read_bytes()
     if not receipt_bytes or len(receipt_bytes) > MAX_RECEIPT_BYTES:
@@ -432,7 +460,7 @@ def build_payload(
             "receipt_sha256": host_summary["receipt_sha256"],
             "risc0_zkvm_version": host_summary["risc0_zkvm_version"],
         },
-        "toolchain_probe": toolchain_probe(),
+        "toolchain_probe": toolchain,
         "proof_metrics": proof_metrics,
         "go_criterion": GO_CRITERION,
         "non_claims": list(NON_CLAIMS),
