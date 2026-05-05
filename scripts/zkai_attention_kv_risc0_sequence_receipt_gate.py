@@ -397,6 +397,14 @@ def require_available_toolchain() -> dict[str, Any]:
     return probe
 
 
+def local_risc0_toolchain_available() -> tuple[bool, str]:
+    try:
+        require_available_toolchain()
+    except AttentionKvRisc0SequenceReceiptError as err:
+        return False, str(err)
+    return True, ""
+
+
 def run_host(mode: str, input_path: pathlib.Path, receipt_path: pathlib.Path, summary_path: pathlib.Path) -> dict[str, Any]:
     env = os.environ.copy()
     env["PATH"] = f"{os.environ.get('HOME', '')}/.risc0/bin:{os.environ.get('HOME', '')}/.cargo/bin:" + env.get("PATH", "")

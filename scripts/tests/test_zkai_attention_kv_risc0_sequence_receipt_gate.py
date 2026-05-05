@@ -24,10 +24,17 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
         if not GATE.JSON_OUT.exists():
             raise AssertionError(f"required attention/KV RISC Zero sequence receipt evidence is missing: {GATE.JSON_OUT}")
         cls.payload = json.loads(GATE.JSON_OUT.read_text(encoding="utf-8"))
-        GATE.validate_payload(cls.payload, strict_receipt=True)
+        GATE.validate_payload(cls.payload)
 
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
+
+    def test_checked_receipt_reverifies_with_local_risc0_toolchain(self) -> None:
+        available, reason = GATE.local_risc0_toolchain_available()
+        if not available:
+            self.skipTest(f"RISC Zero toolchain unavailable for strict receipt re-verification: {reason}")
+
+        GATE.validate_payload(self.fresh_payload(), strict_receipt=True)
 
     def test_checked_payload_records_carried_sequence_go(self) -> None:
         payload = self.fresh_payload()
