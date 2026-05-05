@@ -86,6 +86,7 @@ fn image_id_hex() -> String {
         .collect()
 }
 
+/// Computes the d=8 dot product and rejects inputs outside the signed i64 score semantics.
 fn dot(lhs: [i32; 8], rhs: [i32; 8]) -> i64 {
     let score: i128 = lhs
         .iter()
