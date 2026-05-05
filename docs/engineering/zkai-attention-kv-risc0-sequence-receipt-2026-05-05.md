@@ -100,6 +100,8 @@ sequence length and key/value width under the same mutation discipline.
 ## Reproduce
 
 ```bash
+just gate-fast
+
 cargo test --manifest-path programs/risc0-attention-kv-sequence-receipt/Cargo.toml
 
 PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 \
@@ -114,4 +116,10 @@ PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 -m unittest \
 python3 -m py_compile \
   scripts/zkai_attention_kv_risc0_sequence_receipt_gate.py \
   scripts/tests/test_zkai_attention_kv_risc0_sequence_receipt_gate.py
+
+python3 scripts/paper/paper_preflight.py --repo-root .
+
+git diff --check
+
+just gate
 ```
