@@ -18,7 +18,7 @@ SPEC.loader.exec_module(GATE)
 
 
 class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
-    def test_gate_records_external_snark_and_risc0_go_routes(self) -> None:
+    def test_regression_issue_441_records_external_snark_and_risc0_go_routes(self) -> None:
         payload = GATE.build_payload()
 
         self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 20)
@@ -69,6 +69,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
 
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "metric smuggling"):
             GATE.validate_payload(payload, allow_missing_mutation_summary=True)
+
+    def test_risc0_receipt_summary_accepts_verify_existing_proof_time_sources(self) -> None:
+        payload = GATE.build_payload()
+        for source in (
+            "current_prove_run",
+            "carried_from_existing_evidence_not_remeasured",
+            "not_remeasured_in_verify_existing",
+        ):
+            summary = copy.deepcopy(payload["external_risc0_receipt"])
+            summary["proof_generation_time_source"] = source
+            GATE.validate_risc0_receipt(summary)
 
     def test_gate_rejects_missing_required_public_field(self) -> None:
         payload = GATE.build_payload()

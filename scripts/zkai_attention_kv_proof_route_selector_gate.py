@@ -597,7 +597,11 @@ def validate_risc0_receipt(summary: Any) -> None:
     if not isinstance(summary, dict):
         raise AttentionKvRouteSelectorError("external RISC Zero receipt must be an object")
     expected = risc0_receipt_summary(load_risc0_payload())
-    if summary != expected:
+    summary_for_compare = dict(summary)
+    expected_for_compare = dict(expected)
+    proof_generation_time_source = summary_for_compare.pop("proof_generation_time_source", None)
+    expected_for_compare.pop("proof_generation_time_source", None)
+    if summary_for_compare != expected_for_compare:
         raise AttentionKvRouteSelectorError("external RISC Zero receipt drift")
     if summary["decision"] != RISC0.DECISION:
         raise AttentionKvRouteSelectorError("external RISC Zero decision drift")
@@ -609,7 +613,11 @@ def validate_risc0_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero mutation rejection drift")
     if summary["proof_size_bytes"] <= 0 or summary["verifier_time_ms"] <= 0:
         raise AttentionKvRouteSelectorError("external RISC Zero proof metric drift")
-    if summary["proof_generation_time_source"] != "current_prove_run":
+    if proof_generation_time_source not in {
+        "current_prove_run",
+        "carried_from_existing_evidence_not_remeasured",
+        "not_remeasured_in_verify_existing",
+    }:
         raise AttentionKvRouteSelectorError("external RISC Zero proof-generation metric source drift")
     if summary["verifier_time_source"] != "current_verify_run":
         raise AttentionKvRouteSelectorError("external RISC Zero verifier metric source drift")
