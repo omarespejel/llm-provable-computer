@@ -1295,8 +1295,11 @@ summary at `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv`.
 The third priority is to make state and numeric policy first-class. The d128 result
 shows that a global q8 rule that happens to hold for a d64 fixture is not a safe
 statement rule at larger width; tensor identity and range policy must be bound together.
-The attention/KV receipt shows the same principle for autoregressive state: output
-binding alone is not enough if prior and next state can be relabeled. These are not
+The attention/KV receipt shows the same principle for autoregressive state:
+output binding alone is not enough if prior and next state can be relabeled. A
+follow-up RISC Zero receipt now computes one tiny integer-argmax KV transition
+inside a zkVM guest, which strengthens the carried-state claim without promoting
+it to native Stwo attention proving, Softmax, or full inference. These are not
 performance rows. They are the statement-semantics work that prevents future
 performance rows from being meaningless.
 
@@ -1304,8 +1307,9 @@ The credible sequencing is therefore: first build or cleanly no-go the two-slice
 recursive/PCD backend; second measure proof size and verifier time only after that
 artifact exists; third add matched external rows only when public proof artifacts and
 verifier inputs make baseline verification and metadata mutation reproducible; fourth
-widen toward proof-backed attention/KV and nonlinear policy receipts. That keeps the
-next contribution technically attributable and prevents the paper from comparing
+widen from a one-step attention/KV receipt toward native or sequence-level
+carried-state proofs and nonlinear policy receipts. That keeps the next
+contribution technically attributable and prevents the paper from comparing
 unlike objects.
 
 ______________________________________________________________________

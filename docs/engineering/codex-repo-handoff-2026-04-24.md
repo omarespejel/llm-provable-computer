@@ -162,12 +162,22 @@ Tablero boundary.
   signals, and rejects `39 / 39` relabeling, artifact-binding, setup-binding,
   metric-smuggling, and parser/schema mutations. This is proof-backed statement
   binding for the source contract, not native attention arithmetic, not Softmax,
-  not Stwo-native proving, and not a zkVM receipt; see
+  and not Stwo-native proving; see
   `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`.
+- The attention/KV lane now also has a real RISC Zero semantics receipt for
+  issue `#441`: the guest computes the tiny integer-argmax transition, emits
+  selected position `0`, attention output `[2, 1]`, and a three-row next KV
+  cache. The checked receipt is `221802` bytes, verifies locally in
+  `15.344 ms` under a single-run engineering timing policy, and rejects
+  `22 / 22` journal/source/receipt/metric/claim-boundary mutations. This is a
+  zkVM semantics receipt, not native Stwo, not Softmax, not full inference, and
+  not recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md`.
 - The attention/KV proof-route selector records a narrow
-  `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT` for
-  that external SNARK route while keeping local Stwo attention arithmetic,
-  external zkVM, and Softmax routes as bounded non-results; see
+  `GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV` for the
+  external SNARK statement-receipt route and the RISC Zero semantics-receipt
+  route while keeping local Stwo attention arithmetic and Softmax as bounded
+  non-results; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
   PCD outer proof backend exists. The d128 two-slice lane now has a

@@ -1,7 +1,30 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "EXTERNAL_SNARK_STATEMENT_RECEIPT_PROOF_BACKED_NOT_ATTENTION_ARITHMETIC_PROOF",
-  "decision": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT",
+  "claim_boundary": "EXTERNAL_SNARK_STATEMENT_RECEIPT_AND_RISC0_SEMANTICS_RECEIPT_PROOF_BACKED_NOT_NATIVE_STWO_OR_SOFTMAX",
+  "decision": "GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV",
+  "external_risc0_receipt": {
+    "all_mutations_rejected": true,
+    "attention_output": [
+      2,
+      1
+    ],
+    "claim_boundary": "RISC0_RECEIPT_PROVES_TINY_INTEGER_ARGMAX_ATTENTION_KV_SEMANTICS_NOT_STWO_OR_SOFTMAX",
+    "decision": "GO_ATTENTION_KV_RISC0_SEMANTICS_RECEIPT_FOR_TINY_INTEGER_ARGMAX_TRANSITION",
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json",
+    "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
+    "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+    "mutations_checked": 22,
+    "mutations_rejected": 22,
+    "proof_size_bytes": 221802,
+    "proof_system": "RISC Zero",
+    "proof_system_version": "3.0.5",
+    "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
+    "result": "GO",
+    "schema": "zkai-attention-kv-risc0-semantics-receipt-gate-v1",
+    "selected_position": 0,
+    "timing_policy": "single_local_run_engineering_only",
+    "verifier_time_ms": 15.3445
+  },
   "external_snark_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_ATTENTION_KV_SOURCE_CONTRACT_NOT_ATTENTION_ARITHMETIC_PROOF",
@@ -22,11 +45,14 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "00b01ba09fe8b28b5a20fbcdec4f35a5369489a7",
+  "git_commit": "b050fab24d949dec9e14e795fdd799b11819d9b7",
   "metrics": {
     "proof_generation_time_ms": null,
-    "proof_size_bytes": 802,
-    "public_signal_count": 18,
+    "risc0_receipt_size_bytes": 221802,
+    "risc0_timing_policy": "single_local_run_engineering_only",
+    "risc0_verifier_time_ms": 15.3445,
+    "snark_proof_size_bytes": 802,
+    "snark_public_signal_count": 18,
     "timing_policy": "not_measured_in_this_gate",
     "verifier_time_ms": null
   },
@@ -72,8 +98,18 @@
       "rejected": true
     },
     {
-      "name": "external_zkvm_route_relabel_go",
+      "name": "external_zkvm_route_removed",
       "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_receipt_decision_drift",
+      "reason": "external RISC Zero receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_receipt_mutation_rejections_drift",
+      "reason": "external RISC Zero receipt drift",
       "rejected": true
     },
     {
@@ -107,11 +143,11 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 15,
-  "mutations_rejected": 15,
+  "mutations_checked": 17,
+  "mutations_rejected": 17,
   "next_go_criteria": [
-    "native Stwo proof or zkVM receipt verifies the same public-instance fields",
-    "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
+    "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
+    "a larger fixture proves multiple carried KV-cache transitions instead of one tiny transition",
     "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics"
   ],
@@ -121,12 +157,13 @@
     "not a Softmax proof",
     "not full autoregressive inference",
     "not agent correctness",
-    "not a zkVM receipt",
+    "not native Stwo proving",
     "not recursive or proof-carrying data",
     "not a benchmark row"
   ],
   "proof_backed_routes_available": [
-    "external_snark_attention_kv_statement_receipt"
+    "external_snark_attention_kv_statement_receipt",
+    "external_zkvm_attention_kv_statement_receipt"
   ],
   "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
   "route_candidates": [
@@ -158,11 +195,19 @@
       "usable_today": true
     },
     {
-      "blocker": "NO_ATTENTION_KV_ZKVM_JOURNAL_OR_RECEIPT_FOR_THIS_PUBLIC_INSTANCE",
-      "proof_backed": false,
+      "blocker": null,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json",
+      "image_id_hex": "83cfcb1bd05bcc36ab61f6260a4e7ed88eee421eb80b075ab426f5a9f13f17c7",
+      "journal_commitment": "blake2b-256:8d1331d3dc28f8448e573a95f3021829f6009f1b8f23d5a2aa9387942030e9c3",
+      "proof_backed": true,
+      "proof_size_bytes": 221802,
+      "proof_system": "RISC Zero",
+      "proof_system_version": "3.0.5",
+      "receipt_commitment": "blake2b-256:4ef1aa5d10bf6782e9720a2fce1b9f04a615d2ba4e48fe1eaae713728aea2fbb",
       "route_id": "external_zkvm_attention_kv_statement_receipt",
-      "status": "NO_GO_MISSING_ATTENTION_KV_JOURNAL_AND_RECEIPT_ARTIFACT",
-      "usable_today": false
+      "selected_position": 0,
+      "status": "GO_RISC0_ATTENTION_KV_TRANSITION_SEMANTICS_RECEIPT",
+      "usable_today": true
     },
     {
       "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
@@ -173,7 +218,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:6ee7cbe2173770deed195096b932f0d4fdb66898657ccf7d4705c1e8eedc4e12",
+  "selector_commitment": "blake2b-256:ef4bd0343360d1460f0daef56fdf482cdb8877144dcbcd2ae4ddd6f875c511d6",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",
