@@ -7,7 +7,7 @@ contract to any proof-backed receipt today?
 
 ## Result
 
-GO for four narrow proof-backed routes:
+GO for five narrow proof-backed routes:
 
 1. an external `snarkjs/Groth16/BN128` statement receipt over the
    source-backed attention/KV transition contract;
@@ -16,28 +16,27 @@ GO for four narrow proof-backed routes:
 3. a RISC Zero receipt whose guest computes a three-step carried KV-cache
    sequence and commits every intermediate transition row;
 4. a RISC Zero receipt whose guest computes a fixed eight-step carried KV-cache
-   sequence and commits every intermediate transition row.
+   sequence and commits every intermediate transition row;
+5. a RISC Zero receipt whose guest computes a fixed eight-step `d=8`
+   causal-prefix masked sequence and commits every intermediate transition row.
 
-The existing attention/KV receipt contract remains a useful GO result: it binds prior
-KV state, input/query state, attention output, next KV state, model config, verifier
-domain, and proof status, and it rejects all checked relabeling mutations. This gate
-now has four proof-backed routes for the same state surface. The SNARK statement
-receipt binds the source contract fields. The RISC Zero receipt computes the
-tiny transition semantics in the guest and commits the resulting journal. The
-RISC Zero sequence receipt carries that same idea over three KV-cache updates and
-rejects deletion, reordering, or relabeling of intermediate state. The scaled
-RISC Zero sequence receipt preserves the same mutation discipline over eight
-carried updates and a ten-row final KV cache.
+The existing attention/KV receipt contract remains a useful GO result: it binds
+prior KV state, input/query state, attention output, next KV state, model config,
+verifier domain, and proof status, and it rejects all checked relabeling
+mutations. This gate now has five proof-backed routes for the same state surface.
+The newest route answers the prior width/masking gap: it proves a small
+transformer-shaped carried-state loop with eight-wide vectors and explicit
+`causal_prefix_position_lte_query_token` masking inside a zkVM.
 
-The important boundary remains strict: neither route is a native Stwo
+The important boundary remains strict: none of these routes is a native Stwo
 attention/KV AIR or Softmax proof. The SNARK route proves statement binding for
 the source contract; the RISC Zero routes prove tiny integer-argmax transition,
-three-step carried-state, and eight-step carried-state semantics with masking
-policy `none` inside a zkVM.
+three-step carried-state, eight-step carried-state, and eight-step `d=8`
+causal-prefix carried-state semantics inside a zkVM.
 
 Decision:
 
-`GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
+`GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_SCALED_AND_WIDE_MASKED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
 
 First blocker:
 
@@ -45,7 +44,7 @@ First blocker:
 
 Claim boundary:
 
-`EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_NOT_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
+`EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_WIDE_MASKED_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_NOT_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
 
 ## Checked Routes
 
@@ -57,6 +56,7 @@ Claim boundary:
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
 | External zkVM attention/KV scaled sequence semantics receipt | GO; real RISC Zero receipt computes eight carried integer-argmax KV transitions |
+| External zkVM attention/KV wide masked sequence semantics receipt | GO; real RISC Zero receipt computes eight `d=8` causal-prefix masked integer-argmax KV transitions |
 | Softmax attention/KV claim | NO-GO; current fixture is integer argmax attention, not Softmax |
 
 ## Evidence
@@ -74,6 +74,9 @@ Claim boundary:
 - External RISC Zero scaled sequence receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json`
 - External RISC Zero scaled sequence receipt TSV: `docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.tsv`
 - External RISC Zero scaled sequence receipt artifact: `docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.bincode`
+- External RISC Zero wide masked sequence receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.json`
+- External RISC Zero wide masked sequence receipt TSV: `docs/engineering/evidence/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.tsv`
+- External RISC Zero wide masked sequence receipt artifact: `docs/engineering/evidence/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.bincode`
 - Generator: `scripts/zkai_attention_kv_proof_route_selector_gate.py`
 - Tests: `scripts/tests/test_zkai_attention_kv_proof_route_selector_gate.py`
 
@@ -81,8 +84,8 @@ Claim boundary:
 
 | Surface | Result |
 | --- | ---: |
-| Proof-backed routes available | 4 |
-| Routes checked | 7 |
+| Proof-backed routes available | 5 |
+| Routes checked | 8 |
 | Required public fields | 10 |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
@@ -96,8 +99,14 @@ Claim boundary:
 | RISC Zero scaled sequence verifier time | `27.274 ms` engineering-only single local run |
 | RISC Zero scaled sequence length | `8` transitions |
 | RISC Zero scaled sequence final KV rows | `10` |
-| Mutations checked | 32 |
-| Mutations rejected | 32 |
+| RISC Zero wide masked sequence receipt size | `305266` bytes |
+| RISC Zero wide masked sequence verifier time | `19.193 ms` engineering-only single local run |
+| RISC Zero wide masked sequence length | `8` transitions |
+| RISC Zero wide masked sequence key/value width | `8` / `8` |
+| RISC Zero wide masked sequence masking policy | `causal_prefix_position_lte_query_token` |
+| RISC Zero wide masked sequence final KV rows | `10` |
+| Mutations checked | 39 |
+| Mutations rejected | 39 |
 
 The mutation suite rejects:
 
@@ -126,6 +135,13 @@ The mutation suite rejects:
 - external RISC Zero scaled sequence-length drift,
 - external RISC Zero scaled sequence intermediate-state drift,
 - external RISC Zero scaled sequence timing-source drift,
+- external RISC Zero wide masked sequence route removal,
+- external RISC Zero wide masked sequence receipt decision drift,
+- external RISC Zero wide masked sequence mutation-count drift,
+- external RISC Zero wide masked sequence-length drift,
+- external RISC Zero wide masked sequence width/masking drift,
+- external RISC Zero wide masked sequence intermediate-state drift,
+- external RISC Zero wide masked sequence timing-source drift,
 - fake verifier-time metric,
 - fake proof-size metric,
 - next-go criteria weakening,
@@ -138,14 +154,17 @@ The mutation suite rejects:
 
 This gate updates the prior blocker into a more precise result. The current
 attention/KV receipt now has proof-backed statement binding, a zkVM transition
-semantics receipt, a zkVM three-step carried-state receipt, and a zkVM eight-step
-carried-state receipt, so it is no longer merely a source-backed contract. But
-the native proving problem remains: no local Stwo attention/KV proof or Softmax
-proof currently proves the transition arithmetic for this public instance.
+semantics receipt, a zkVM three-step carried-state receipt, a zkVM eight-step
+carried-state receipt, and a zkVM eight-step `d=8` causal-prefix carried-state
+receipt. So the attention/KV lane is no longer merely source-backed, and the
+external-control route now covers width and masking axes that were previously
+open.
 
-The stronger-venue research task is now narrower: keep the same prior-state,
-input, output, next-state, and domain fields, then replace the source contract
-with a native proof of the chosen attention semantics.
+The native proving problem remains: no local Stwo attention/KV proof or Softmax
+proof currently proves the transition arithmetic for this public instance. The
+stronger-venue research task is now narrower: keep the same prior-state, input,
+output, next-state, masking-policy, and domain fields, then replace the external
+zkVM control with a native proof of the chosen attention semantics.
 
 ## Non-Claims
 
@@ -186,6 +205,12 @@ PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 \
   --write-json target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.json \
   --write-tsv target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.tsv
 
+PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" python3 \
+  scripts/zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py \
+  --verify-existing \
+  --write-json target/zkai-attention-kv-risc0-wide-masked-sequence-receipt-verify.json \
+  --write-tsv target/zkai-attention-kv-risc0-wide-masked-sequence-receipt-verify.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
@@ -195,6 +220,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_risc0_semantics_receipt_gate \
   scripts.tests.test_zkai_attention_kv_risc0_sequence_receipt_gate \
   scripts.tests.test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate \
+  scripts.tests.test_zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 python3 -m py_compile \
   scripts/zkai_attention_kv_snark_statement_receipt_gate.py \
@@ -205,6 +231,8 @@ python3 -m py_compile \
   scripts/tests/test_zkai_attention_kv_risc0_sequence_receipt_gate.py \
   scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py \
   scripts/tests/test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py \
+  scripts/zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py \
+  scripts/tests/test_zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py \
   scripts/zkai_attention_kv_proof_route_selector_gate.py \
   scripts/tests/test_zkai_attention_kv_proof_route_selector_gate.py
 git diff --check
@@ -214,10 +242,9 @@ just gate
 ## Next GO Criterion
 
 Produce one native Stwo proof that explicitly verifies the chosen attention
-transition semantics while preserving the same public-instance fields and
-rejecting the same state-relabeling surfaces after proof serialization. In
-parallel, treat the eight-step/two-wide RISC Zero receipt as the current scaled
-zkVM carried-state control. The next honest scaling result is tracked in issue `#446`: a wider
-`d=8` or `d=16` fixture, explicit causal masking, or a native Stwo proof. Do not
-promote Softmax, model-scale inference, or agent correctness until the proof
-actually covers those semantics.
+transition semantics while preserving the same public-instance fields,
+intermediate-state commitments, causal masking policy, and state-relabeling
+rejections after proof serialization. This is tracked in issue `#448`. If native
+Stwo remains blocked, the next external-control stressor is `d=16`, multi-head,
+or longer-context carried-state evidence with the same fail-closed mutation
+discipline.

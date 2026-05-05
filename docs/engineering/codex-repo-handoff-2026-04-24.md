@@ -35,9 +35,10 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 24. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
 25. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
 26. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
-27. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-28. `docs/engineering/reproducibility.md`
-29. `git status --short --branch`
+27. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
+28. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+29. `docs/engineering/reproducibility.md`
+30. `git status --short --branch`
 
 ## Current lane split
 
@@ -195,12 +196,21 @@ Tablero boundary.
   carried-state evidence in a zkVM, still not native Stwo attention arithmetic,
   Softmax, long-context inference, recursion, or PCD; see
   `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`.
+- Issue `#446` extends the carried-state zkVM route to a fixed eight-step `d=8`
+  causal-prefix masked sequence: selected positions `[0, 2, 3, 3, 5, 5, 7, 9]`,
+  a ten-row final KV cache, receipt size `305266` bytes, local verifier time
+  `19.193 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
+  metric/claim-boundary mutations rejected. This is the external-control
+  width/masking GO for attention/KV state binding, still not native Stwo
+  attention arithmetic, Softmax, long-context inference, recursion, or PCD; see
+  `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`.
 - The attention/KV proof-route selector records a narrow
-  `GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
-  for the external SNARK statement-receipt route, the RISC Zero transition
-  semantics route, the RISC Zero three-step sequence semantics route, and the
-  RISC Zero fixed eight-step sequence semantics route while keeping local Stwo
-  attention arithmetic and Softmax as bounded
+  `GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_SCALED_AND_WIDE_MASKED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
+  for five proof-backed routes: the external SNARK statement-receipt route, the
+  RISC Zero transition semantics route, the RISC Zero three-step sequence
+  semantics route, the RISC Zero fixed eight-step sequence semantics route, and
+  the RISC Zero fixed eight-step `d=8` causal-prefix masked sequence route while
+  keeping local Stwo attention arithmetic and Softmax as bounded
   non-results; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
