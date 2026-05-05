@@ -75,12 +75,22 @@ LOCAL_REPOS = {
 }
 
 PAPER3_CLAIM_EVIDENCE_FILE = "docs/engineering/paper3-claim-evidence.yml"
+TABLERO_CLAIM_EVIDENCE_FILE = "docs/engineering/tablero-claim-evidence.yml"
 
 REQUIRED_PAPER3_CLAIM_IDS = {
     "phase38_source_validated_receipt_binding",
     "phase38_composition_continuity",
     "phase38_shared_lookup_source_chain_and_template_identity",
     "phase38_packaging_baseline",
+}
+
+REQUIRED_TABLERO_CLAIM_IDS = {
+    "tablero_statement_preservation_theorem",
+    "tablero_cross_family_replay_avoidance",
+    "tablero_scaling_law_fit",
+    "tablero_optimized_replay_redteam",
+    "tablero_second_boundary_and_compactness_no_go",
+    "tablero_statement_binding_extension",
 }
 
 CLAIM_EVIDENCE_REQUIRED_SCALARS = ("id", "claim")
@@ -98,6 +108,18 @@ PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS = CLAIM_EVIDENCE_REQUIRED_LISTS + (
     "artifact_files",
     "artifact_hashes",
     "fuzz_or_formal",
+)
+TABLERO_CLAIM_EVIDENCE_REQUIRED_LISTS = (
+    "paper_locations",
+    "specs",
+    "evidence_files",
+    "evidence_commands",
+    "non_claims",
+)
+TABLERO_CLAIM_EVIDENCE_PATH_KEYS = (
+    "paper_locations",
+    "specs",
+    "evidence_files",
 )
 
 CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -740,6 +762,7 @@ def check_claim_evidence_matrix_file(
     required_claim_ids: set[str],
     paper_label: str,
     required_lists: tuple[str, ...] = CLAIM_EVIDENCE_REQUIRED_LISTS,
+    path_keys: tuple[str, ...] = ("paper_locations", "implementation", "specs"),
 ) -> None:
     evidence_path = repo_root / evidence_file
     if not evidence_path.exists():
@@ -790,7 +813,7 @@ def check_claim_evidence_matrix_file(
                     f"{evidence_path}: claim `{claim_id}` `{key}` contains unresolved placeholder text."
                 )
 
-        for key in ("paper_locations", "implementation", "specs"):
+        for key in path_keys:
             for entry in list_field(record, key):
                 check_claim_evidence_path_anchor(
                     repo_root, evidence_path, claim_id, key, entry, findings
@@ -831,6 +854,18 @@ def check_paper3_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findin
         REQUIRED_PAPER3_CLAIM_IDS,
         "paper-3",
         PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS,
+    )
+
+
+def check_tablero_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
+    check_claim_evidence_matrix_file(
+        repo_root,
+        findings,
+        TABLERO_CLAIM_EVIDENCE_FILE,
+        REQUIRED_TABLERO_CLAIM_IDS,
+        "Tablero",
+        TABLERO_CLAIM_EVIDENCE_REQUIRED_LISTS,
+        TABLERO_CLAIM_EVIDENCE_PATH_KEYS,
     )
 
 
@@ -1559,6 +1594,7 @@ def main() -> int:
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
+    check_tablero_claim_evidence_matrix(repo_root, findings)
     check_paper3_claim_evidence_matrix(repo_root, findings)
     check_paper_claim_language(repo_root, findings)
 

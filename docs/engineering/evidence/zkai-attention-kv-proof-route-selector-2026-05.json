@@ -1,0 +1,166 @@
+{
+  "all_mutations_rejected": true,
+  "claim_boundary": "SOURCE_BACKED_KV_TRANSITION_CONTRACT_NOT_PROOF_BACKED_RECEIPT",
+  "decision": "NO_GO_PROOF_BACKED_ATTENTION_KV_RECEIPT_BACKEND_MISSING",
+  "first_blocker": "MISSING_PROOF_BACKED_ATTENTION_KV_TRANSITION_BACKEND",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "9e795380996f7c64d31af690843de7c3ae1c65bf",
+  "metrics": {
+    "proof_generation_time_ms": null,
+    "proof_size_bytes": null,
+    "verifier_time_ms": null
+  },
+  "mutation_cases": [
+    {
+      "name": "source_contract_decision_drift",
+      "reason": "source decision drift",
+      "rejected": true
+    },
+    {
+      "name": "source_contract_proof_status_overclaim",
+      "reason": "source proof status overclaim",
+      "rejected": true
+    },
+    {
+      "name": "source_contract_mutation_rejections_drift",
+      "reason": "source mutation rejection drift",
+      "rejected": true
+    },
+    {
+      "name": "missing_required_public_field",
+      "reason": "present public field list drift",
+      "rejected": true
+    },
+    {
+      "name": "local_stwo_route_relabel_go",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "external_snark_route_relabel_go",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_route_relabel_go",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "fake_verifier_time_metric",
+      "reason": "metric smuggling",
+      "rejected": true
+    },
+    {
+      "name": "fake_proof_size_metric",
+      "reason": "metric smuggling",
+      "rejected": true
+    },
+    {
+      "name": "claim_boundary_weakened",
+      "reason": "claim boundary drift",
+      "rejected": true
+    },
+    {
+      "name": "first_blocker_removed",
+      "reason": "first blocker drift",
+      "rejected": true
+    },
+    {
+      "name": "unknown_field_injection",
+      "reason": "unknown top-level field",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 12,
+  "mutations_rejected": 12,
+  "next_go_criteria": [
+    "native Stwo proof, SNARK receipt, or zkVM receipt verifies the same public-instance fields",
+    "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
+    "Softmax is kept out of scope unless the proof covers Softmax semantics"
+  ],
+  "non_claims": [
+    "not a proof-backed attention/KV receipt",
+    "not a Stwo proof",
+    "not a Softmax proof",
+    "not full autoregressive inference",
+    "not agent correctness",
+    "not a benchmark row"
+  ],
+  "proof_backed_routes_available": [],
+  "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
+  "route_candidates": [
+    {
+      "blocker": "NOT_PROOF_BACKED",
+      "proof_backed": false,
+      "route_id": "source_backed_attention_kv_receipt_contract",
+      "status": "GO_SOURCE_CONTRACT_ONLY",
+      "usable_today": true
+    },
+    {
+      "blocker": "NO_EXECUTABLE_NATIVE_ATTENTION_KV_PROOF_SURFACE",
+      "proof_backed": false,
+      "route_id": "local_stwo_attention_kv_transition_proof",
+      "status": "NO_GO_MISSING_NATIVE_ATTENTION_KV_PROOF_ARTIFACT",
+      "usable_today": false
+    },
+    {
+      "blocker": "NO_ATTENTION_KV_SNARK_CIRCUIT_OR_PROOF_FOR_THIS_PUBLIC_INSTANCE",
+      "proof_backed": false,
+      "route_id": "external_snark_attention_kv_statement_receipt",
+      "status": "NO_GO_MISSING_ATTENTION_KV_CIRCUIT_AND_PROOF_ARTIFACT",
+      "usable_today": false
+    },
+    {
+      "blocker": "NO_ATTENTION_KV_ZKVM_JOURNAL_OR_RECEIPT_FOR_THIS_PUBLIC_INSTANCE",
+      "proof_backed": false,
+      "route_id": "external_zkvm_attention_kv_statement_receipt",
+      "status": "NO_GO_MISSING_ATTENTION_KV_JOURNAL_AND_RECEIPT_ARTIFACT",
+      "usable_today": false
+    },
+    {
+      "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
+      "proof_backed": false,
+      "route_id": "softmax_attention_kv_claim",
+      "status": "NO_GO_OUT_OF_SCOPE_FOR_INTEGER_ARGMAX_FIXTURE",
+      "usable_today": false
+    }
+  ],
+  "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
+  "selector_commitment": "blake2b-256:80c429038f44a5ab33d57e80d19e95c2b1da67a7a55a3929774ef6a72025cdae",
+  "source_contract": {
+    "present_public_fields": [
+      "model_config_commitment",
+      "prior_kv_cache_commitment",
+      "input_commitment",
+      "attention_output_commitment",
+      "next_kv_cache_commitment",
+      "public_instance_commitment",
+      "proof_commitment",
+      "proof_status",
+      "verifier_domain",
+      "statement_commitment"
+    ],
+    "required_public_fields": [
+      "model_config_commitment",
+      "prior_kv_cache_commitment",
+      "input_commitment",
+      "attention_output_commitment",
+      "next_kv_cache_commitment",
+      "public_instance_commitment",
+      "proof_commitment",
+      "proof_status",
+      "verifier_domain",
+      "statement_commitment"
+    ],
+    "source_all_mutations_rejected": true,
+    "source_decision": "GO_KV_TRANSITION_RECEIPT_CONTRACT_NOT_PROOF",
+    "source_evidence": "docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json",
+    "source_mutations_checked": 8,
+    "source_mutations_rejected": 8,
+    "source_proof_status": "SOURCE_BACKED_RECEIPT_NOT_PROVEN",
+    "source_schema": "zkai-attention-kv-transition-receipt-probe-v1",
+    "source_statement_commitment": "blake2b-256:cae23e35f988f1465a817f3564ee1987675aabd99b21840c38aabd10ccf3854c",
+    "source_verifier_domain": "ptvm:zkai:attention-kv-transition:v1"
+  }
+}

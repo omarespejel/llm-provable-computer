@@ -66,7 +66,9 @@ model, input, output, configuration, setup or verifier identity, and verifier
 domain before a higher-level receipt or settlement layer accepts it. We keep the
 weaker source-backed receipts labeled separately: the attention/KV transition
 gate binds source-origin and state-transition metadata, but does not itself bind
-prover setup, verifying keys, or nested proof checks. The extension therefore
+prover setup, verifying keys, or nested proof checks. A follow-up route selector
+records that no proof-backed attention/KV route exists yet across the checked
+local Stwo, external SNARK, and external zkVM candidates. The extension therefore
 treats nested-proof verification, commitment binding, resource bounds, and
 publication-versus-experimental drift as validation risks rather than established
 facts.

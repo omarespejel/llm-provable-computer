@@ -11,6 +11,7 @@ Primary presentation files:
 - `appendix-tablero-claim-boundary.md`
 - `appendix-methodology-and-reproducibility.md`
 - `appendix-system-comparison.md`
+- `tablero-circulation-packet-2026-05-05.md`
 - `PUBLICATION_RELEASE.md`
 
 Supporting publication assets:
@@ -29,6 +30,10 @@ Core paper-facing generated assets:
 - `evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`
 - `evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
 
+Claim/evidence guardrail:
+
+- `../engineering/tablero-claim-evidence.yml`
+
 Recommended presentation order:
 
 1. `abstract-tablero-2026.md`
@@ -36,6 +41,7 @@ Recommended presentation order:
 3. `appendix-tablero-claim-boundary.md`
 4. `appendix-methodology-and-reproducibility.md`
 5. `appendix-system-comparison.md`
+6. `tablero-circulation-packet-2026-05-05.md`
 
 Package posture:
 
@@ -49,6 +55,9 @@ Package posture:
 - The package keeps external language in the paper and appendices even when the tracked
   evidence files and artifact directories retain older internal names for checksum and
   provenance stability.
+- Every primary Tablero claim is mirrored in
+  `docs/engineering/tablero-claim-evidence.yml` and cited in the paper by an
+  `evidence:<claim_id>` anchor checked by `scripts/paper/paper_preflight.py`.
 
 Archived earlier drafts remain in this directory for provenance, but they are not the
 primary presentation path.

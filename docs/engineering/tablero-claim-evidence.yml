@@ -1,0 +1,129 @@
+# Machine-readable evidence ledger for the Tablero presentation paper.
+# `scripts/paper/paper_preflight.py` validates that every listed claim has
+# paper anchors, source specs, checked evidence files, reproduction commands,
+# and explicit non-claims. This ledger is intentionally paper-facing: it does
+# not invent code-level proof obligations for claims that are theorem,
+# measurement, or claim-boundary claims.
+
+- id: tablero_statement_preservation_theorem
+  claim: "Tablero preserves the replay verifier's accepted statement set when the compact proof is sound, commitments bind, and the source emits all public facts needed by the boundary predicate."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#4. Statement Preservation
+    - docs/paper/appendix-tablero-claim-boundary.md
+  specs:
+    - docs/engineering/tablero-soundness-note-2026-04-25.md
+    - docs/engineering/tablero-hardening-packet-2026-04-25.md
+  evidence_files:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md
+    - docs/paper/appendix-tablero-claim-boundary.md
+  evidence_commands:
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+    - scripts/run_tablero_formal_contract_suite.sh
+  non_claims:
+    - "Does not claim a new STARK soundness theorem."
+    - "Does not claim recursive proof compression."
+
+- id: tablero_cross_family_replay_avoidance
+  claim: "The main typed-boundary path reproduces across three checked layout families with large replay-avoidance ratios at the 1024-step checked frontier."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.2 Cross-family transferability
+    - docs/paper/appendix-methodology-and-reproducibility.md#5. What the cross-family result means
+  specs:
+    - docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md
+    - docs/engineering/phase44d-carry-aware-2x2-constant-surface-note-2026-04-25.md
+  evidence_files:
+    - docs/paper/evidence/tablero-results-overview-2026-04.tsv
+    - docs/paper/evidence/tablero-results-overview-2026-04.json
+    - docs/paper/figures/tablero-results-overview-2026-04.svg
+    - docs/engineering/evidence/phase44d-carry-aware-experimental-family-matrix-2026-04.tsv
+    - docs/engineering/evidence/phase44d-carry-aware-family-constant-surface-2026-04.tsv
+  evidence_commands:
+    - python3 scripts/paper/generate_tablero_results_overview.py
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+  non_claims:
+    - "Does not claim faster FRI verification."
+    - "Does not claim family-invariant verifier time."
+    - "Does not claim a matched external benchmark win."
+
+- id: tablero_scaling_law_fit
+  claim: "The checked grids show near-linear replay-baseline growth and substantially lower typed-path growth, so the replay-avoidance ratio grows with N in the measured regime."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.3 Checked scaling-law fit
+    - docs/paper/abstract-tablero-2026.md
+  specs:
+    - docs/paper/appendix-methodology-and-reproducibility.md#4. What the scaling-law fit means
+  evidence_files:
+    - docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv
+    - docs/paper/evidence/tablero-carry-aware-experimental-scaling-law-2026-04.json
+    - docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg
+  evidence_commands:
+    - python3 scripts/paper/generate_tablero_scaling_law.py
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+  non_claims:
+    - "Does not claim an unbounded asymptotic theorem."
+    - "Does not claim default-backend behavior."
+
+- id: tablero_optimized_replay_redteam
+  claim: "An honestly optimized replay verifier tightens the frontier ratio to a host-noise-sensitive 261x-330x band while preserving a large residual replay-work component."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.6 Red-teaming the constant: an honestly-optimized replay verifier
+    - docs/paper/appendix-methodology-and-reproducibility.md#2. Timing policy
+  specs:
+    - docs/engineering/tablero-optimized-replay-redteam-gate-2026-04-27.md
+    - docs/engineering/optimized-replay-variance-investigation-2026-04-27.md
+  evidence_files:
+    - docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.tsv
+    - docs/engineering/evidence/tablero-replay-baseline-breakdown-optimized-2026-04.json
+  evidence_commands:
+    - BENCH_RUNS=9 CAPTURE_TIMINGS=1 scripts/engineering/generate_tablero_replay_breakdown_optimized_benchmark.sh
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+  non_claims:
+    - "Does not claim the original 917x-1066x ratios are implementation-invariant constants."
+    - "Does not claim the optimized replay verifier is a recursive proof."
+
+- id: tablero_second_boundary_and_compactness_no_go
+  claim: "A distinct emitted-source boundary clears as supporting evidence on the conservative row, while a narrower compact handoff remains a compactness no-go for replay avoidance."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.7 Supporting second boundary on a distinct source surface
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.8 Bounded compactness no-go
+    - docs/paper/appendix-tablero-claim-boundary.md
+  specs:
+    - docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md
+    - docs/engineering/design/phase44d-final-boundary-acceptance.md
+  evidence_files:
+    - docs/paper/evidence/phase43-source-root-feasibility-publication-2026-04.tsv
+    - docs/paper/evidence/phase43-source-root-feasibility-publication-2026-04.json
+    - docs/engineering/evidence/phase43-source-root-feasibility-experimental-2026-04.tsv
+    - docs/engineering/evidence/phase43-source-root-feasibility-experimental-2026-04.json
+  evidence_commands:
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+  non_claims:
+    - "Does not claim every smaller handoff object removes replay."
+    - "Does not claim universal Tablero applicability."
+
+- id: tablero_statement_binding_extension
+  claim: "External adapters, native proof receipts, and source-backed receipt gates support the broader boundary lesson that proof validity and statement validity are separate verifier layers."
+  paper_locations:
+    - docs/paper/tablero-typed-verifier-boundaries-2026.md#7.1 Statement-binding adapters
+    - docs/paper/appendix-tablero-claim-boundary.md
+  specs:
+    - docs/engineering/zkai-sota-artifact-watchlist-2026-05-03.md
+    - docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md
+    - docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md
+  evidence_files:
+    - docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json
+    - docs/engineering/evidence/zkai-snarkjs-statement-envelope-benchmark-2026-04.json
+    - docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.json
+    - docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json
+    - docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json
+    - docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json
+    - docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json
+    - docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json
+  evidence_commands:
+    - python3 scripts/zkai_attention_kv_transition_receipt_probe.py --write-json docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.tsv
+    - python3 scripts/zkai_attention_kv_proof_route_selector_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
+    - python3 scripts/paper/paper_preflight.py --repo-root .
+  non_claims:
+    - "Does not claim external proof systems are unsound."
+    - "Does not claim end-to-end verifiable intelligence."
+    - "Does not claim source-backed receipts are proof-backed receipts."

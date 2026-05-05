@@ -269,6 +269,8 @@ an honest no-go.
 
 ## 4. Statement Preservation
 
+<!-- evidence:tablero_statement_preservation_theorem -->
+
 The formal question is now precise: under what assumptions does replacing replay with a
 typed boundary preserve the same accepted statement set?
 
@@ -393,6 +395,8 @@ The important interpretation rule is simple:
 
 ### 6.2 Cross-family transferability
 
+<!-- evidence:tablero_cross_family_replay_avoidance -->
+
 The main positive result is not a single large ratio. It is that the same mechanism
 reproduces across three layout families with the same growing-in-`N` shape.
 
@@ -442,6 +446,8 @@ families. The frontier artifact size stays in a narrow band, while verifier cost
 family dependent.
 
 ### 6.3 Checked scaling-law fit
+
+<!-- evidence:tablero_scaling_law_fit -->
 
 The frontier table is intentionally not the whole argument. We also fit the full checked
 curves in log-log space for each family. This is an explicitly labeled carry-aware
@@ -538,6 +544,8 @@ cryptographic verification itself.
 
 ### 6.6 Red-teaming the constant: an honestly-optimized replay verifier
 
+<!-- evidence:tablero_optimized_replay_redteam -->
+
 The frontier ratios in Section 6.2 are measured against the current ordered
 manifest-replay implementation. A natural reviewer objection is that the
 headline value reads partly as "how much work the typed boundary avoids" and
@@ -630,6 +638,8 @@ measurement-quality limitation of the present study, not as an
 instability in the structural claim of Section 6.3.
 
 ### 6.7 Supporting second boundary on a distinct source surface
+
+<!-- evidence:tablero_second_boundary_and_compactness_no_go -->
 
 The paper should not rely on only one replay-avoidance surface. The current empirical
 lab also includes a second typed boundary on a distinct emitted-source surface.
@@ -762,6 +772,8 @@ proof size and verifier time reported only after the proof object exists.
 
 ### 7.1 Statement-binding adapters
 
+<!-- evidence:tablero_statement_binding_extension -->
+
 Separate engineering adapters apply the same boundary discipline to three external
 proof stacks, one native Stwo primitive, and one bounded native Stwo
 transformer-block receipt: EZKL [7], Circom/snarkjs Groth16 [8],
@@ -842,6 +854,16 @@ with carried state, output binding alone is insufficient because stale prior or
 next state can change what the claim means. It is anchored to
 `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md` and
 `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`.
+A follow-up route selector makes the current blocker explicit rather than
+implicit: it records
+`NO_GO_PROOF_BACKED_ATTENTION_KV_RECEIPT_BACKEND_MISSING`, with zero
+proof-backed routes available across the local Stwo, external SNARK, and
+external zkVM candidates, and rejects `12 / 12` promotion, fake-metric, and
+claim-boundary mutations. This is now the stronger-venue bridge: preserve the
+same prior-state/input/output/next-state public fields and replace the
+source-backed proof status with a real proof-backed receipt. It is anchored to
+`docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
+`docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
