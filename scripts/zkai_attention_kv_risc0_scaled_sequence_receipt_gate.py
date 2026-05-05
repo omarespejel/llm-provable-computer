@@ -78,7 +78,7 @@ NON_CLAIMS = [
 ]
 VALIDATION_COMMANDS = [
     "just gate-fast",
-    "CARGO_TARGET_DIR=target/risc0-attention-kv-scaled-sequence-receipt cargo test --manifest-path programs/risc0-attention-kv-scaled-sequence-receipt/Cargo.toml",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" CARGO_TARGET_DIR=target/risc0-attention-kv-scaled-sequence-receipt cargo test --manifest-path programs/risc0-attention-kv-scaled-sequence-receipt/Cargo.toml",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py",
@@ -512,12 +512,7 @@ def carried_proof_generation_time(previous_evidence: dict[str, Any] | None, rece
     expected_commitment = blake2b_commitment_bytes(receipt_bytes)
     previous_artifact = require_object(previous_evidence.get("receipt_artifact"), "previous receipt artifact", layer="proof_metrics")
     if previous_artifact.get("sha256") != expected_sha256 or previous_artifact.get("commitment") != expected_commitment:
-        previous_artifact = {
-            "path": "provided-alternate-receipt",
-            "size_bytes": len(receipt_bytes),
-            "sha256": expected_sha256,
-            "commitment": expected_commitment,
-        }
+        return None
     require_object(previous_artifact, "effective receipt artifact", layer="proof_metrics")
     previous_metrics = require_object(previous_evidence.get("proof_metrics"), "previous proof metrics", layer="proof_metrics")
     return previous_metrics.get("proof_generation_time_ms")
