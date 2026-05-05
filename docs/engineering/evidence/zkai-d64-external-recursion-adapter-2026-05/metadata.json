@@ -1,0 +1,18 @@
+{
+  "artifacts": {
+    "d64_external_recursion_adapter.circom": "2d5cb6643396d42b7440c0c5589c352875bc422be056046ae3269ffaad0c0aa5",
+    "input.json": "64be0b9ef190d8e1118c806dd3ec7cf2f674bc9fcf55542ccb45060077db1c2e",
+    "proof.json": "57d55c3ff3fee2e54cdd5e77b45789eda9688d0ac9b50fc60501876e28b238b4",
+    "public.json": "289f6bf61f21318f5ee43511add31f1ba0c235e46012787b2e68ac0f1957ec67",
+    "verification_key.json": "812ba08bc1a1aed240ab6ffda54c76e9631fddd2312598a97b140ac4fa71c81e"
+  },
+  "circom_version": "circom compiler 2.0.9",
+  "circuit_id": "urn:ptvm:zkai:d64-nested-verifier-contract-statement-receipt:v1",
+  "generation_note": "Generated locally with circom and npx -y snarkjs@0.7.6; verifier-facing artifacts are checked in, proving key and ceremony transcript are intentionally not checked in.",
+  "issue": 386,
+  "proof_system": "snarkjs/Groth16/BN128",
+  "schema": "zkai-d64-external-recursion-adapter-artifact-metadata-v1",
+  "snarkjs_version": "0.7.6",
+  "source_issue": 379,
+  "trusted_setup_note": "Local throwaway Groth16 setup for statement-receipt research only; not a production trusted setup or security endorsement."
+}

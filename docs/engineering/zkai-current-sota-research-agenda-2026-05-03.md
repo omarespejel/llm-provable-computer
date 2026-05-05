@@ -74,6 +74,16 @@ Issue `#433` now proves that journal with a real RISC Zero receipt. The local
 nested-verifier route and local PCD/IVC route therefore remain the hard missing
 backend routes; external SNARK and external zkVM statement receipts both exist.
 
+Issue `#386` adds the corresponding d64 transfer result for the older
+nested-verifier contract surface: a real `snarkjs/Groth16` statement receipt now
+binds the issue `#379` nested-verifier contract commitment
+`blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a`,
+maps `21` contract fields into `22` public signals, verifies an `806` byte
+proof, and rejects `34 / 34` relabeling / artifact-binding / setup-binding /
+metric-smuggling / parser mutations. This is useful external-control evidence,
+but it is still not Stwo-native recursion and not verification of the underlying
+Stwo slice verifiers inside Groth16.
+
 ## What Would Be a Real Next Breakthrough
 
 The next high-value result is not another receipt wrapper and not another
@@ -102,6 +112,11 @@ RISC Zero zkVM today. The remaining hard blocker is local recursion / PCD over
 the same contract. The SNARK and RISC Zero routes have only adapter-scoped
 timings under their local policies; they are not recursive proof-object metrics
 and not public zkML benchmark rows.
+
+The same read now holds for the d64 nested-verifier contract: the contract can
+be statement-receipted by an external SNARK, so a future recursion claim must
+show a local nested-verifier proof object, not merely another wrapper around the
+public contract.
 
 ## What Not To Do
 
