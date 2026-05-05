@@ -78,6 +78,7 @@ NON_CLAIMS = [
 ]
 VALIDATION_COMMANDS = [
     "just gate-fast",
+    "CARGO_TARGET_DIR=target/risc0-attention-kv-scaled-sequence-receipt cargo test --manifest-path programs/risc0-attention-kv-scaled-sequence-receipt/Cargo.toml",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.tsv",
     "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate",
     "python3 -m py_compile scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py",

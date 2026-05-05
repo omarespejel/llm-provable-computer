@@ -189,7 +189,8 @@ Tablero boundary.
   carried KV-cache sequence: selected positions `[0, 2, 3, 4, 5, 4, 5, 6]`,
   outputs `[[2, 1], [4, 2], [5, -2], [0, 6], [7, 1], [0, 6], [7, 1], [-3, 4]]`,
   final KV rows `10`, receipt size `264146` bytes, local verifier time
-  `21.833 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
+  `27.274 ms` in the checked evidence bundle (`single_local_run_engineering_only`,
+  run count `1`), and `27 / 27` deletion/reordering/intermediate-state/metadata/
   metric/claim-boundary mutations rejected. This is scaled fixed-fixture
   carried-state evidence in a zkVM, still not native Stwo attention arithmetic,
   Softmax, long-context inference, recursion, or PCD; see
