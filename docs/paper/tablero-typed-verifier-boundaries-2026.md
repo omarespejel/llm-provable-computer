@@ -861,8 +861,8 @@ adapter route for that same stateful surface. The checked receipt is a real
 contract's model/config, prior KV state, input/query state, attention output,
 next KV state, public-instance commitment, score-trace commitment, source proof
 status, source verifier domain, model id, and statement kind. It rejects
-`36 / 36` source-state, public-signal, artifact-hash, setup, metric-smuggling,
-non-claim, validation-command, and unknown-field mutations. This is
+`37 / 37` source-state, public-signal, artifact-hash, setup, metric-smuggling,
+non-claim, validation-command, statement-schema, and unknown-field mutations. This is
 proof-backed statement binding for the source contract, not a proof that the
 SNARK recomputes attention arithmetic. It is anchored to
 `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md` and

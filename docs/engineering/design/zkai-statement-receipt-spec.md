@@ -649,7 +649,7 @@ single-head integer-attention fixture binds prior KV state, input/query state,
 attention output, next KV state, model config, verifier domain, and proof
 status, then rejects `8 / 8` checked relabeling mutations. A follow-up
 `snarkjs/Groth16` statement receipt binds that source contract into a real proof
-object with an `802`-byte proof, `18` public signals, and `36 / 36` checked
+object with an `802`-byte proof, `18` public signals, and `37 / 37` checked
 mutation rejections. This is proof-backed statement binding for the source
 contract, not a native attention arithmetic or Softmax proof. It keeps the
 agent/autoregressive claim boundary explicit: an output commitment is not enough

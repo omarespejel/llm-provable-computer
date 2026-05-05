@@ -65,7 +65,7 @@ This repository currently has three live lanes.
   - The attention/KV state-binding lane now has a proof-backed external
     `snarkjs/Groth16` statement receipt over the source-backed attention/KV
     transition contract: the checked proof is `802` bytes, binds `17` contract
-    fields into `18` public signals, and rejects `36 / 36` relabeling,
+    fields into `18` public signals, and rejects `37 / 37` relabeling,
     artifact-binding, setup-binding, metric-smuggling, and parser/schema
     mutations. This is a statement receipt over the source contract, not a
     native attention arithmetic proof, not Softmax, and not Stwo-native

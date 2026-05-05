@@ -148,6 +148,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("statement_commitment_relabeling", "statement_commitment"),
     ("receipt_commitment_relabeling", "receipt_commitment"),
     ("non_claims_removed", "parser_or_schema"),
+    ("unknown_statement_field_added", "parser_or_schema"),
     ("validation_command_drift", "parser_or_schema"),
     ("unknown_top_level_field_added", "parser_or_schema"),
 )
@@ -349,6 +350,11 @@ def statement_payload_sha256(receipt: dict[str, Any]) -> str:
 
 
 def baseline_receipt() -> dict[str, Any]:
+    return copy.deepcopy(_baseline_receipt_cached())
+
+
+@functools.lru_cache(maxsize=1)
+def _baseline_receipt_cached() -> dict[str, Any]:
     metadata = require_object(load_json(artifact_path("metadata")), "metadata", layer="artifact_binding")
     proof = require_object(load_json(artifact_path("proof")), "proof", layer="artifact_binding")
     public_signals = require_list(load_json(artifact_path("public_signals")), "public signals", layer="artifact_binding")
@@ -509,6 +515,7 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
     if receipt.get("receipt_commitment") != receipt_commitment(receipt):
         raise AttentionKvSnarkReceiptError("receipt_commitment mismatch", layer="receipt_commitment")
     expected_statement = baseline_receipt()["statement"]
+    expect_keys(statement, set(expected_statement), "statement", layer="parser_or_schema")
     for key in (
         "schema",
         "issue",
@@ -596,6 +603,7 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
         refresh=False,
     )
     mutate("non_claims_removed", "parser_or_schema", lambda r: r.__setitem__("non_claims", r["non_claims"][:-1]))
+    mutate("unknown_statement_field_added", "parser_or_schema", lambda r: r["statement"].__setitem__("unexpected", True))
     mutate("validation_command_drift", "parser_or_schema", lambda r: r.__setitem__("validation_commands", ["echo fake"]))
     mutate("unknown_top_level_field_added", "parser_or_schema", lambda r: r.__setitem__("unexpected", True))
     return out

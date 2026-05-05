@@ -7,8 +7,8 @@
     "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_ATTENTION_KV_SOURCE_CONTRACT_NOT_ATTENTION_ARITHMETIC_PROOF",
     "decision": "GO_ATTENTION_KV_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_BACKED_TRANSITION_CONTRACT",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
-    "mutations_checked": 36,
-    "mutations_rejected": 36,
+    "mutations_checked": 37,
+    "mutations_rejected": 37,
     "proof_size_bytes": 802,
     "proof_system": "snarkjs/Groth16/BN128",
     "proof_system_version": "0.7.6",
@@ -22,7 +22,7 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "b6b93eed8cbc377dfb6541360aecd2baf9ee8bd2",
+  "git_commit": "ffe100ac279874e43e33eacd0ee58a5051520fa4",
   "metrics": {
     "proof_generation_time_ms": null,
     "proof_size_bytes": 802,
@@ -168,7 +168,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:13d683727f6904ed5ea5d7d2d74adb009803caf5d4d9a41c6e646950ff88dfe7",
+  "selector_commitment": "blake2b-256:bdd71857d7b7368b6712479489ba19c9c32006d167a76dd6c6b64bcd9e8cfe5d",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

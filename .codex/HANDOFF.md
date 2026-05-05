@@ -117,7 +117,7 @@ Tablero boundary.
 - The attention/KV state-binding lane now has a real external `snarkjs/Groth16`
   statement receipt over the source-backed attention/KV transition contract:
   the checked proof is `802` bytes, binds `17` contract fields into `18` public
-  signals, and rejects `36 / 36` relabeling, artifact-binding, setup-binding,
+  signals, and rejects `37 / 37` relabeling, artifact-binding, setup-binding,
   metric-smuggling, and parser/schema mutations. This is proof-backed statement
   binding for the source contract, not native attention arithmetic, not Softmax,
   not Stwo-native proving, and not a zkVM receipt; see
