@@ -37,6 +37,10 @@ zkVM system, is not bound to the current journal commitment, or lacks a valid
 candidate exists but verifier execution and public-values binding are still not
 implemented. A GO still requires the gate to run the route verifier and check
 that the public journal / public-values bind the exact statement contract below.
+The receipt probe records the configured byte cap and whether the cap was
+exceeded; it intentionally does not record the artifact's exact byte length, so
+local timing-field churn in downstream receipt evidence does not force this
+adapter evidence to be regenerated.
 
 ## Checked Result
 
@@ -53,7 +57,7 @@ that the public journal / public-values bind the exact statement contract below.
 | RISC Zero route | candidate artifact present; adapter gate stops before verifier execution |
 | SP1 route | missing `sp1up`, `cargo-prove`; no receipt artifact |
 | Proof metrics | disabled in this adapter gate; issue `#433` carries the RISC Zero receipt metrics |
-| Mutation coverage | `21 / 21` rejected |
+| Mutation coverage | `23 / 23` rejected |
 
 ## What This Means
 
@@ -74,7 +78,7 @@ of pretending to be the route verifier.
 
 ## Mutation Coverage
 
-The gate rejects `21 / 21` mutations across:
+The gate rejects `23 / 23` mutations across:
 
 - source #424 decision, claim-boundary, and target commitment relabeling;
 - journal schema, policy, action, verifier-domain, source-hash, and commitment
@@ -82,6 +86,7 @@ The gate rejects `21 / 21` mutations across:
 - RISC Zero and SP1 toolchain availability relabeling;
 - route relabeling from NO-GO to GO;
 - fake receipt-artifact presence;
+- receipt-probe byte-bound removal and byte-limit drift;
 - proof-size, verifier-time, and proof-generation metric smuggling;
 - top-level decision relabeling;
 - non-claim removal;

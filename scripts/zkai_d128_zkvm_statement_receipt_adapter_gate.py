@@ -130,6 +130,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("risc0_route_relabeling_to_go", "route_decisions"),
     ("sp1_route_relabeling_to_go", "route_decisions"),
     ("receipt_artifact_smuggled", "route_decisions"),
+    ("receipt_probe_size_bound_removed", "route_decisions"),
+    ("receipt_probe_size_limit_changed", "route_decisions"),
     ("proof_size_metric_smuggled", "backend_decision"),
     ("verifier_time_metric_smuggled", "backend_decision"),
     ("proof_generation_time_metric_smuggled", "backend_decision"),
@@ -350,35 +352,125 @@ def command_probe() -> dict[str, Any]:
     return json.loads(_command_probe_cached())
 
 
+def receipt_probe_result(
+    *,
+    exists: bool,
+    candidate_valid: bool,
+    reason: str,
+    size_bound_exceeded: bool = False,
+) -> dict[str, Any]:
+    # Keep this probe stable across harmless receipt-evidence rewrites. The
+    # exact artifact byte length is checked only for the cap decision; it is not
+    # recorded because downstream timing-field churn can otherwise invalidate
+    # this adapter gate without changing the statement boundary.
+    return {
+        "exists": exists,
+        "candidate_valid": candidate_valid,
+        "reason": reason,
+        "max_size_bytes": MAX_RECEIPT_CANDIDATE_BYTES,
+        "size_bound_exceeded": size_bound_exceeded,
+    }
+
+
+def read_receipt_candidate_text(path: pathlib.Path) -> tuple[str | None, dict[str, Any] | None]:
+    try:
+        with path.open("rb") as handle:
+            data = handle.read(MAX_RECEIPT_CANDIDATE_BYTES + 1)
+    except OSError:
+        return None, receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="unreadable_receipt_artifact",
+        )
+    if not data:
+        return None, receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="empty_receipt_artifact",
+        )
+    if len(data) > MAX_RECEIPT_CANDIDATE_BYTES:
+        return None, receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="oversized_receipt_artifact",
+            size_bound_exceeded=True,
+        )
+    try:
+        return data.decode("utf-8"), None
+    except UnicodeDecodeError:
+        return None, receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="unparseable_receipt_artifact",
+        )
+
+
 def receipt_candidate_probe(path: pathlib.Path, route: dict[str, Any], journal: dict[str, Any]) -> dict[str, Any]:
     if not path.is_file():
-        return {"exists": False, "candidate_valid": False, "size_bytes": None, "reason": "missing_receipt_artifact"}
+        return receipt_probe_result(
+            exists=False,
+            candidate_valid=False,
+            reason="missing_receipt_artifact",
+        )
+    text, error_probe = read_receipt_candidate_text(path)
+    if error_probe is not None:
+        return error_probe
+    if text is None:
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="unreadable_receipt_artifact",
+        )
     try:
-        size = path.stat().st_size
-    except OSError:
-        return {"exists": True, "candidate_valid": False, "size_bytes": None, "reason": "unreadable_receipt_artifact"}
-    if size <= 0:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "empty_receipt_artifact"}
-    if size > MAX_RECEIPT_CANDIDATE_BYTES:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "oversized_receipt_artifact"}
-    try:
-        candidate = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "unparseable_receipt_artifact"}
+        candidate = json.loads(text)
+    except json.JSONDecodeError:
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="unparseable_receipt_artifact",
+        )
     if not isinstance(candidate, dict):
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_not_object"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_not_object",
+        )
     if candidate.get("schema") != RECEIPT_CANDIDATE_SCHEMA:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_schema_mismatch"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_schema_mismatch",
+        )
     if candidate.get("route_id") != route["route_id"]:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_route_mismatch"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_route_mismatch",
+        )
     if candidate.get("system") != route["system"]:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_system_mismatch"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_system_mismatch",
+        )
     if candidate.get("journal_commitment") != journal["journal_commitment"]:
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_journal_mismatch"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_journal_mismatch",
+        )
     receipt_commitment = candidate.get("receipt_commitment")
     if not isinstance(receipt_commitment, str) or not receipt_commitment.startswith("blake2b-256:"):
-        return {"exists": True, "candidate_valid": False, "size_bytes": size, "reason": "receipt_candidate_commitment_missing"}
-    return {"exists": True, "candidate_valid": True, "size_bytes": size, "reason": "receipt_candidate_parseable"}
+        return receipt_probe_result(
+            exists=True,
+            candidate_valid=False,
+            reason="receipt_candidate_commitment_missing",
+        )
+    return receipt_probe_result(
+        exists=True,
+        candidate_valid=True,
+        reason="receipt_candidate_parseable",
+    )
 
 
 def route_decisions(probe: dict[str, Any]) -> list[dict[str, Any]]:
@@ -537,6 +629,8 @@ def mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
         add("risc0_route_relabeling_to_go", "route_decisions", lambda p: p["route_decisions"][0].update({"status": "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE", "usable_today": True, "first_blocker": "none"})),
         add("sp1_route_relabeling_to_go", "route_decisions", lambda p: p["route_decisions"][1].update({"status": "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE", "usable_today": True, "first_blocker": "none"})),
         add("receipt_artifact_smuggled", "route_decisions", lambda p: p["route_decisions"][0].__setitem__("receipt_artifact_exists", not p["route_decisions"][0]["receipt_artifact_exists"])),
+        add("receipt_probe_size_bound_removed", "route_decisions", lambda p: p["route_decisions"][0]["receipt_artifact_probe"].pop("size_bound_exceeded", None)),
+        add("receipt_probe_size_limit_changed", "route_decisions", lambda p: p["route_decisions"][0]["receipt_artifact_probe"].__setitem__("max_size_bytes", 1)),
         add("proof_size_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_size_bytes", 1)),
         add("verifier_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("verifier_time_ms", 1.0)),
         add("proof_generation_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_generation_time_ms", 1.0)),
