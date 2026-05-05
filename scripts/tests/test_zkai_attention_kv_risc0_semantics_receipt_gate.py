@@ -50,6 +50,7 @@ class ZkAiAttentionKvRisc0SemanticsReceiptGateTests(unittest.TestCase):
         self.assertEqual(journal, GATE.expected_journal())
         self.assertEqual(journal["schema"], GATE.JOURNAL_SCHEMA)
         self.assertEqual(journal["semantics"], GATE.SEMANTICS)
+        self.assertEqual(journal["masking_policy"], GATE.MASKING_POLICY)
         self.assertEqual(journal["selected_position"], 0)
         self.assertEqual(journal["attention_output"], [2, 1])
         self.assertEqual(len(journal["next_kv_cache"]), 3)

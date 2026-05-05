@@ -870,9 +870,10 @@ SNARK recomputes attention arithmetic. It is anchored to
 
 A RISC Zero follow-up then moves one step closer to semantics. The guest reads
 the same tiny attention/KV fixture, appends the new KV row, recomputes integer
-dot-product scores, selects the lowest-position maximum, emits attention output
-`[2, 1]`, and commits the next three-row KV cache in the receipt journal. The
-checked receipt is `221802` bytes, verifies locally in `15.344 ms` under a
+dot-product scores under masking policy `none`, selects the lowest-position
+maximum, emits attention output `[2, 1]`, and commits the next three-row KV
+cache in the receipt journal. The
+checked receipt is `221842` bytes, verifies locally in `14.353 ms` under a
 single-run engineering timing policy, and rejects `22 / 22` journal,
 source-contract, receipt-metadata, metric-smuggling, native-Stwo-claim,
 Softmax-claim, non-claim, validation-command, and parser/schema mutations. This
