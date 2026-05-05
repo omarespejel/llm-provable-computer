@@ -196,6 +196,7 @@ EXPECTED_MUTATION_NAMES = (
     "external_zkvm_wide_masked_sequence_receipt_mutation_rejections_drift",
     "external_zkvm_wide_masked_sequence_length_drift",
     "external_zkvm_wide_masked_sequence_width_or_masking_drift",
+    "external_zkvm_wide_masked_sequence_tie_break_drift",
     "external_zkvm_wide_masked_sequence_intermediate_state_drift",
     "external_zkvm_wide_masked_sequence_metric_source_drift",
     "fake_verifier_time_metric",
@@ -574,6 +575,7 @@ def risc0_wide_masked_sequence_receipt_summary(sequence_payload: dict[str, Any])
         "key_width": journal["key_width"],
         "value_width": journal["value_width"],
         "masking_policy": journal["masking_policy"],
+        "tie_break": journal["tie_break"],
         "selected_positions": summary["selected_positions"],
         "attention_outputs": summary["attention_outputs"],
         "final_kv_items": summary["final_kv_items"],
@@ -649,6 +651,7 @@ def route_inventory() -> list[dict[str, Any]]:
     wide_masked_sequence_route["key_width"] = risc0_wide_masked_sequence["key_width"]
     wide_masked_sequence_route["value_width"] = risc0_wide_masked_sequence["value_width"]
     wide_masked_sequence_route["masking_policy"] = risc0_wide_masked_sequence["masking_policy"]
+    wide_masked_sequence_route["tie_break"] = risc0_wide_masked_sequence["tie_break"]
     wide_masked_sequence_route["final_kv_items"] = risc0_wide_masked_sequence["final_kv_items"]
     return routes
 
@@ -873,6 +876,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["external_risc0_wide_masked_sequence_receipt"]["sequence_length"] = 3
     elif name == "external_zkvm_wide_masked_sequence_width_or_masking_drift":
         out["external_risc0_wide_masked_sequence_receipt"]["masking_policy"] = "none"
+    elif name == "external_zkvm_wide_masked_sequence_tie_break_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["tie_break"] = "highest_position"
     elif name == "external_zkvm_wide_masked_sequence_intermediate_state_drift":
         out["external_risc0_wide_masked_sequence_receipt"]["selected_positions"][3] = 99
     elif name == "external_zkvm_wide_masked_sequence_metric_source_drift":
@@ -1122,6 +1127,8 @@ def validate_risc0_wide_masked_sequence_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence width drift")
     if summary["masking_policy"] != "causal_prefix_position_lte_query_token":
         raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence masking drift")
+    if summary["tie_break"] != "lowest_position":
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence tie-break drift")
     if summary["selected_positions"] != [0, 2, 3, 3, 5, 5, 7, 9]:
         raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence intermediate state drift")
     if summary["attention_outputs"] != [

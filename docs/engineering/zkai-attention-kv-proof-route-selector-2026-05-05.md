@@ -89,8 +89,8 @@ Claim boundary:
 | Required public fields | 10 |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
-| RISC Zero receipt size | `221842` bytes |
-| RISC Zero verifier time | `14.938 ms` |
+| RISC Zero transition semantics receipt size | `221842` bytes |
+| RISC Zero transition semantics verifier time | `14.938 ms` engineering-only single local run |
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero sequence verifier time | `15.981 ms` engineering-only single local run |
 | RISC Zero sequence length | `3` transitions |
@@ -105,8 +105,8 @@ Claim boundary:
 | RISC Zero wide masked sequence key/value width | `8` / `8` |
 | RISC Zero wide masked sequence masking policy | `causal_prefix_position_lte_query_token` |
 | RISC Zero wide masked sequence final KV rows | `10` |
-| Mutations checked | 39 |
-| Mutations rejected | 39 |
+| Mutations checked | 40 |
+| Mutations rejected | 40 |
 
 The mutation suite rejects:
 

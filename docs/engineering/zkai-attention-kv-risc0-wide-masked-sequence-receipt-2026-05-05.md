@@ -106,6 +106,7 @@ statement-bound carried-state surface and narrows the next native Stwo target.
 ```bash
 just gate-fast
 
+PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH" \
 CARGO_TARGET_DIR=target/risc0-attention-kv-wide-masked-sequence-receipt \
   cargo test --manifest-path programs/risc0-attention-kv-wide-masked-sequence-receipt/Cargo.toml
 
