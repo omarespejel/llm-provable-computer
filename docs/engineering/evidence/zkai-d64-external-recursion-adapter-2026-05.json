@@ -471,8 +471,8 @@
       "error": "statement keys mismatch: missing=[] extra=['unexpected']",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
-      "mutated_statement_commitment": "blake2b-256:c3acb61fddd77b2404fea6413d0d116cc24ec24901907303a41b1ca3864b0d0e",
-      "mutated_statement_sha256": "0ab5825eae80a4d2b709c7d3696f01948eca73528efe84c32f5210859dc1c2ba",
+      "mutated_statement_commitment": "blake2b-256:651f579a423b52d760411c6c7d64458802d206e9d0a7f1bbf068cbfd558ef4e2",
+      "mutated_statement_sha256": "a3eabb02e01afd7d15ce96dbfa35ce54f750470d81d0d97e55ffec6be805116f",
       "mutation": "unknown_statement_field_added",
       "rejected": true,
       "rejection_layer": "statement_policy",
@@ -498,7 +498,7 @@
       "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
-      "error": "receipt keys mismatch: missing=[] extra=['validation_commands']",
+      "error": "validation commands mismatch",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "mutated_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
@@ -756,7 +756,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_d64_external_recursion_adapter_gate.py --write-json docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.tsv",
-    "git_commit": "cc7ad5cc1271ae982fde5ef1eadb0863ad9df881"
+    "git_commit": "245ba60933ddff876ac44965db469d8b03486c7d"
   },
   "result": "GO",
   "schema": "zkai-d64-external-recursion-adapter-gate-v1",
