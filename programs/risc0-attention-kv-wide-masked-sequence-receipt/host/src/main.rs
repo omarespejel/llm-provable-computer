@@ -288,6 +288,25 @@ fn receipt_len_or_exit(receipt_len: u64) {
     }
 }
 
+fn receipt_file_len_checked(path: &PathBuf) -> Result<u64, String> {
+    let metadata =
+        fs::metadata(path).map_err(|err| format!("read receipt artifact metadata: {err}"))?;
+    if !metadata.is_file() {
+        return Err("receipt artifact path must be a file".to_string());
+    }
+    Ok(metadata.len())
+}
+
+fn receipt_file_len_or_exit(path: &PathBuf) -> u64 {
+    match receipt_file_len_checked(path) {
+        Ok(receipt_len) => receipt_len,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(2);
+        }
+    }
+}
+
 fn write_summary(
     out_path: &PathBuf,
     mode: &str,
@@ -374,12 +393,9 @@ fn prove(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
 fn verify(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let input = read_input(&input_path);
     let expected = expected_journal_or_exit(&input);
-    let receipt_file = File::open(&receipt_path).expect("open receipt artifact");
-    let receipt_len = receipt_file
-        .metadata()
-        .expect("stat opened receipt artifact")
-        .len();
+    let receipt_len = receipt_file_len_or_exit(&receipt_path);
     receipt_len_or_exit(receipt_len);
+    let receipt_file = File::open(&receipt_path).expect("open receipt artifact");
     let mut receipt_bytes = Vec::with_capacity(receipt_len as usize);
     let mut limited_reader = receipt_file.take(MAX_RECEIPT_BYTES as u64 + 1);
     limited_reader
@@ -704,6 +720,23 @@ mod tests {
         assert!(receipt_len_within_cap(0).is_err());
         assert!(receipt_len_within_cap(MAX_RECEIPT_BYTES as u64 + 1).is_err());
         assert!(receipt_len_within_cap(MAX_RECEIPT_BYTES as u64).is_ok());
+    }
+
+    #[test]
+    fn receipt_file_len_checked_rejects_non_regular_receipt_path() {
+        let root = std::env::temp_dir().join(format!(
+            "ptvm-risc0-wide-masked-sequence-receipt-dir-test-{}",
+            std::process::id()
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("remove stale test directory");
+        }
+        fs::create_dir_all(&root).expect("create test directory");
+
+        let err = receipt_file_len_checked(&root).expect_err("receipt directory rejects");
+
+        assert!(err.contains("must be a file"), "{err}");
+        fs::remove_dir_all(root).expect("cleanup test directory");
     }
 
     #[test]
