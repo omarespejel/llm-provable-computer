@@ -872,9 +872,7 @@ A RISC Zero follow-up then moves one step closer to semantics. The guest reads
 the same tiny attention/KV fixture, appends the new KV row, recomputes integer
 dot-product scores under masking policy `none`, selects the lowest-position
 maximum, emits attention output `[2, 1]`, and commits the next three-row KV
-cache in the receipt journal. The
-checked receipt is `221842` bytes, verifies locally in `14.938 ms` under a
-single-run engineering timing policy, and rejects `22 / 22` journal,
+cache in the receipt journal. The checked receipt is `221842` bytes and rejects `22 / 22` journal,
 source-contract, receipt-metadata, metric-smuggling, native-Stwo-claim,
 Softmax-claim, non-claim, validation-command, and parser/schema mutations. This
 is a zkVM semantics receipt for a tiny integer-argmax transition. It is not a
@@ -887,8 +885,7 @@ The next follow-up makes the stateful claim harder to fake. It extends the RISC
 Zero guest from one transition to a three-step carried KV sequence. The checked
 journal records every intermediate transition row; selected positions are
 `0`, `2`, and `3`, attention outputs are `(2, 1)`, `(4, 2)`, and `(5, -2)`, and the final KV
-cache contains five rows. The receipt is `246730` bytes, verifies locally in
-`15.981 ms` under the same single-run engineering timing policy, and rejects
+cache contains five rows. The receipt is `246730` bytes and rejects
 `27 / 27` deletion, reordering, intermediate-state relabeling, statement,
 receipt-metadata, metric-smuggling, native-Stwo, Softmax, recursion, non-claim,
 validation-command, and parser/schema mutations. This is still a tiny integer

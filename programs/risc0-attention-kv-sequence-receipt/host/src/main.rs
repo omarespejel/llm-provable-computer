@@ -9,7 +9,7 @@ use std::{
     env,
     fs::{self, File},
     io::Read,
-    path::PathBuf,
+    path::{Component, PathBuf},
     time::Instant,
 };
 
@@ -304,13 +304,24 @@ fn usage() -> ! {
 }
 
 fn normalize_output_path(path: &PathBuf) -> PathBuf {
-    if path.is_absolute() {
+    let joined = if path.is_absolute() {
         path.clone()
     } else {
         env::current_dir()
             .expect("resolve current directory")
             .join(path)
+    };
+    let mut normalized = PathBuf::new();
+    for component in joined.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                normalized.pop();
+            }
+            other => normalized.push(other.as_os_str()),
+        }
     }
+    normalized
 }
 
 fn output_paths_overlap(receipt_path: &PathBuf, summary_path: &PathBuf) -> bool {
@@ -402,7 +413,11 @@ mod tests {
     #[test]
     fn output_paths_overlap_rejects_same_relative_path() {
         let receipt = PathBuf::from("target/shared-output");
-        let summary = PathBuf::from("target").join("shared-output");
+        let summary = PathBuf::from(".")
+            .join("target")
+            .join("nested")
+            .join("..")
+            .join("shared-output");
 
         assert!(output_paths_overlap(&receipt, &summary));
     }
