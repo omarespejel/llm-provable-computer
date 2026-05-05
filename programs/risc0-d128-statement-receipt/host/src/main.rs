@@ -96,16 +96,13 @@ fn prove(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
 
 fn verify(journal_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let journal_bytes = read_expected_journal(&journal_path);
-    let receipt_len = fs::metadata(&receipt_path)
-        .expect("read receipt artifact metadata")
-        .len();
-    if receipt_len == 0 || receipt_len > MAX_RECEIPT_BYTES as u64 {
+    let receipt_bytes = fs::read(&receipt_path).expect("read receipt artifact");
+    if receipt_bytes.is_empty() || receipt_bytes.len() > MAX_RECEIPT_BYTES {
         panic!(
             "receipt artifact size outside allowed bound: {} bytes",
-            receipt_len
+            receipt_bytes.len()
         );
     }
-    let receipt_bytes = fs::read(&receipt_path).expect("read receipt artifact");
     let receipt: Receipt =
         bincode::deserialize(&receipt_bytes).expect("deserialize RISC Zero receipt");
     let verify_time_ms = verify_receipt(&receipt, &journal_bytes);

@@ -96,6 +96,13 @@ collapsed into one unlabeled backend-wide metric block. Do not promote those
 single-run RISC Zero times into public benchmark claims or cross-system
 comparisons.
 
+The dedicated RISC Zero receipt gate remains the canonical strict verifier for
+the receipt artifact. This aggregate backend gate validates the checked RISC
+Zero evidence by default without re-running the local RISC Zero host toolchain,
+so route classification can run in environments that only need to check pinned
+evidence. Use `--strict-risc0-reverify` when the local RISC Zero toolchain is
+available and the aggregate gate should also re-run the host verifier.
+
 ## Mutation Coverage
 
 The gate rejects `37 / 37` mutation cases, including:

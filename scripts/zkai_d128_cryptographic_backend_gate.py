@@ -582,12 +582,12 @@ def load_checked_zkvm_receipt_adapter(path: pathlib.Path = ZKVM_RECEIPT_ADAPTER_
     return copy.deepcopy(_load_checked_zkvm_receipt_adapter_cached(path.as_posix()))
 
 
-@functools.lru_cache(maxsize=1)
-def _load_checked_risc0_receipt_cached(path_text: str) -> dict[str, Any]:
+@functools.lru_cache(maxsize=2)
+def _load_checked_risc0_receipt_cached(path_text: str, strict_receipt: bool) -> dict[str, Any]:
     path = pathlib.Path(path_text)
     payload = load_json(path, layer="external_risc0_receipt", field="RISC Zero receipt evidence")
     try:
-        RISC0_RECEIPT.validate_payload(payload, strict_receipt=True)
+        RISC0_RECEIPT.validate_payload(payload, strict_receipt=strict_receipt)
     except Exception as err:  # noqa: BLE001 - normalize imported validator failures.
         raise D128CryptographicBackendGateError(f"RISC Zero receipt validation failed: {err}", layer="external_risc0_receipt") from err
     expect_equal(payload.get("schema"), EXPECTED_RISC0_RECEIPT_SCHEMA, "RISC Zero receipt schema", layer="external_risc0_receipt")
@@ -616,8 +616,8 @@ def _load_checked_risc0_receipt_cached(path_text: str) -> dict[str, Any]:
     return payload
 
 
-def load_checked_risc0_receipt(path: pathlib.Path = RISC0_RECEIPT_EVIDENCE) -> dict[str, Any]:
-    return copy.deepcopy(_load_checked_risc0_receipt_cached(path.as_posix()))
+def load_checked_risc0_receipt(path: pathlib.Path = RISC0_RECEIPT_EVIDENCE, *, strict_receipt: bool = False) -> dict[str, Any]:
+    return copy.deepcopy(_load_checked_risc0_receipt_cached(path.as_posix(), strict_receipt))
 
 
 def snark_receipt_route_metrics(receipt: dict[str, Any]) -> dict[str, Any]:
@@ -732,7 +732,7 @@ def _artifact_exists(probe: dict[str, Any], artifact_id: str) -> bool:
     raise D128CryptographicBackendGateError(f"unknown artifact id {artifact_id}", layer="backend_probe")
 
 
-def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
+def backend_routes(probe: dict[str, Any], *, strict_risc0_reverify: bool = False) -> list[dict[str, Any]]:
     allowed_inventory_paths = {relative_path(SNARK_RECEIPT_EVIDENCE)}
     if ZKVM_RECEIPT_ADAPTER_EVIDENCE.exists():
         allowed_inventory_paths.add(relative_path(ZKVM_RECEIPT_ADAPTER_EVIDENCE))
@@ -763,7 +763,7 @@ def backend_routes(probe: dict[str, Any]) -> list[dict[str, Any]]:
     zkvm_adapter_exists = _artifact_exists(probe, "external_zkvm_statement_receipt_artifact")
     zkvm_adapter = load_checked_zkvm_receipt_adapter() if zkvm_adapter_exists else None
     risc0_receipt_exists = _artifact_exists(probe, "external_risc0_statement_receipt_artifact")
-    risc0_receipt = load_checked_risc0_receipt() if risc0_receipt_exists else None
+    risc0_receipt = load_checked_risc0_receipt(strict_receipt=strict_risc0_reverify) if risc0_receipt_exists else None
     risc0_metrics = risc0_receipt_route_metrics(risc0_receipt) if risc0_receipt is not None else {
         "proof_size_bytes": None,
         "verifier_time_ms": None,
@@ -991,11 +991,11 @@ def expected_mutation_inventory() -> list[dict[str, Any]]:
     ]
 
 
-def build_core_payload() -> dict[str, Any]:
+def build_core_payload(*, strict_risc0_reverify: bool = False) -> dict[str, Any]:
     source = load_checked_proof_native()
     source_contract = source_proof_native_contract(source)
     probe = backend_probe()
-    routes = backend_routes(probe)
+    routes = backend_routes(probe, strict_risc0_reverify=strict_risc0_reverify)
     decision = backend_decision(routes)
     payload = {
         "schema": SCHEMA,
@@ -1386,8 +1386,8 @@ def mutation_cases(baseline: dict[str, Any] | None = None) -> list[dict[str, Any
     return cases
 
 
-def build_gate_result() -> dict[str, Any]:
-    payload = build_core_payload()
+def build_gate_result(*, strict_risc0_reverify: bool = False) -> dict[str, Any]:
+    payload = build_core_payload(strict_risc0_reverify=strict_risc0_reverify)
     cases = mutation_cases(payload)
     payload["mutation_inventory"] = expected_mutation_inventory()
     payload["cases"] = cases
@@ -1494,8 +1494,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--write-json", type=pathlib.Path, default=None)
     parser.add_argument("--write-tsv", type=pathlib.Path, default=None)
+    parser.add_argument(
+        "--strict-risc0-reverify",
+        action="store_true",
+        help=(
+            "also re-run the RISC Zero host verifier while aggregating backend evidence; "
+            "the dedicated RISC Zero receipt gate remains the canonical strict receipt verifier"
+        ),
+    )
     args = parser.parse_args(argv)
-    payload = build_gate_result()
+    payload = build_gate_result(strict_risc0_reverify=args.strict_risc0_reverify)
     write_outputs(payload, args.write_json, args.write_tsv)
     if args.write_json is None and args.write_tsv is None:
         print(json.dumps(payload, indent=2, sort_keys=True))
