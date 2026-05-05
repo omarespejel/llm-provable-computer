@@ -3,14 +3,15 @@
 
 This gate consumes the existing source-backed attention/KV transition receipt
 and asks whether the repository currently has a proof-backed route for the same
-public statement fields. The current answer has four narrow GO routes: an
+public statement fields. The current answer has five narrow GO routes: an
 external snarkjs/Groth16 statement receipt over the source-backed attention/KV
 contract, and a RISC Zero receipt whose guest computes the tiny integer-argmax
 attention/KV transition semantics, and a second RISC Zero receipt whose guest
 computes a three-step carried KV-cache sequence, and a third RISC Zero receipt
-whose guest computes a fixed eight-step carried KV-cache sequence. Native Stwo
-attention arithmetic, Softmax, and recursion remain explicitly outside the
-current proof route.
+whose guest computes a fixed eight-step carried KV-cache sequence, and a fourth
+RISC Zero receipt whose guest computes a fixed eight-step d=8 causal-prefix
+masked sequence. Native Stwo attention arithmetic, Softmax, and recursion
+remain explicitly outside the current proof route.
 """
 
 from __future__ import annotations
@@ -34,6 +35,9 @@ SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_snark_statement_rec
 RISC0_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_risc0_semantics_receipt_gate.py"
 RISC0_SEQUENCE_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_risc0_sequence_receipt_gate.py"
 RISC0_SCALED_SEQUENCE_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py"
+RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py"
+)
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
 )
@@ -49,6 +53,9 @@ RISC0_SEQUENCE_RECEIPT_JSON = (
 RISC0_SCALED_SEQUENCE_RECEIPT_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json"
 )
+RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_JSON = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.json"
+)
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -57,10 +64,10 @@ TSV_OUT = (
 )
 
 SCHEMA = "zkai-attention-kv-proof-route-selector-gate-v1"
-DECISION = "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV"
+DECISION = "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_SCALED_AND_WIDE_MASKED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV"
 FIRST_BLOCKER = "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND"
 CLAIM_BOUNDARY = (
-    "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_RECEIPTS_PROOF_BACKED_"
+    "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_WIDE_MASKED_SEQUENCE_RECEIPTS_PROOF_BACKED_"
     "NOT_NATIVE_STWO_NOT_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
 )
 SOURCE_DATE_EPOCH_DEFAULT = 0
@@ -84,6 +91,7 @@ EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_sequence_semantics_receipt"
 EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_scaled_sequence_semantics_receipt"
+EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt"
 SOFTMAX_ROUTE_ID = "softmax_attention_kv_claim"
 
 BASE_ROUTES = (
@@ -125,6 +133,13 @@ BASE_ROUTES = (
     {
         "route_id": EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
         "status": "GO_RISC0_ATTENTION_KV_SCALED_SEQUENCE_SEMANTICS_RECEIPT",
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
+    },
+    {
+        "route_id": EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
+        "status": "GO_RISC0_ATTENTION_KV_WIDE_MASKED_SEQUENCE_SEMANTICS_RECEIPT",
         "blocker": None,
         "usable_today": True,
         "proof_backed": True,
@@ -176,6 +191,13 @@ EXPECTED_MUTATION_NAMES = (
     "external_zkvm_scaled_sequence_length_drift",
     "external_zkvm_scaled_sequence_intermediate_state_drift",
     "external_zkvm_scaled_sequence_metric_source_drift",
+    "external_zkvm_wide_masked_sequence_route_removed",
+    "external_zkvm_wide_masked_sequence_receipt_decision_drift",
+    "external_zkvm_wide_masked_sequence_receipt_mutation_rejections_drift",
+    "external_zkvm_wide_masked_sequence_length_drift",
+    "external_zkvm_wide_masked_sequence_width_or_masking_drift",
+    "external_zkvm_wide_masked_sequence_intermediate_state_drift",
+    "external_zkvm_wide_masked_sequence_metric_source_drift",
     "fake_verifier_time_metric",
     "fake_proof_size_metric",
     "next_go_criteria_weakened",
@@ -187,9 +209,9 @@ EXPECTED_MUTATION_NAMES = (
 
 EXPECTED_NEXT_GO_CRITERIA = (
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
-    "the carried KV-cache sequence scales beyond a fixed eight-step two-wide integer-argmax fixture",
-    "a wider d=8 or d=16 fixture preserves the same intermediate-state binding guarantees",
-    "explicit causal masking or an explicitly declared no-mask axis is validated as a next honest scaling target",
+    "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
+    "a d=16 or multi-head fixture preserves the same width, masking, and intermediate-state binding guarantees",
+    "the explicit causal-prefix masking axis remains statement data in any native route",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics",
 )
@@ -271,11 +293,28 @@ def _load_risc0_scaled_sequence_module():
     return module
 
 
+def _load_risc0_wide_masked_sequence_module():
+    """Load the RISC Zero wide/masked sequence receipt gate without package assumptions."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate",
+        RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(
+            f"failed to load RISC Zero wide masked sequence receipt script: {RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_SCRIPT}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
 SNARK = _load_snark_module()
 RISC0 = _load_risc0_module()
 RISC0_SEQUENCE = _load_risc0_sequence_module()
 RISC0_SCALED_SEQUENCE = _load_risc0_scaled_sequence_module()
+RISC0_WIDE_MASKED_SEQUENCE = _load_risc0_wide_masked_sequence_module()
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -369,6 +408,16 @@ def load_risc0_scaled_sequence_payload(path: pathlib.Path = RISC0_SCALED_SEQUENC
         raise AttentionKvRouteSelectorError(f"missing RISC Zero scaled sequence receipt evidence: {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     RISC0_SCALED_SEQUENCE.validate_payload(payload)
+    return payload
+
+
+def load_risc0_wide_masked_sequence_payload(path: pathlib.Path = RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_JSON) -> dict[str, Any]:
+    """Load and validate the RISC Zero wide/masked sequence receipt payload."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing RISC Zero wide masked sequence receipt evidence: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    RISC0_WIDE_MASKED_SEQUENCE.validate_payload(payload)
     return payload
 
 
@@ -498,6 +547,44 @@ def risc0_scaled_sequence_receipt_summary(sequence_payload: dict[str, Any]) -> d
     }
 
 
+def risc0_wide_masked_sequence_receipt_summary(sequence_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the RISC Zero d=8 causal-prefix carried-sequence route fields."""
+
+    metrics = sequence_payload["proof_metrics"]
+    journal = sequence_payload["journal"]
+    summary = sequence_payload["summary"]
+    return {
+        "schema": sequence_payload["schema"],
+        "decision": sequence_payload["decision"],
+        "result": sequence_payload["result"],
+        "claim_boundary": sequence_payload["claim_boundary"],
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.json",
+        "proof_system": sequence_payload["system"],
+        "proof_system_version": sequence_payload["receipt_verification"]["risc0_zkvm_version"],
+        "proof_size_bytes": metrics["proof_size_bytes"],
+        "verifier_time_ms": metrics["verifier_time_ms"],
+        "proof_generation_time_source": metrics["proof_generation_time_source"],
+        "verifier_time_source": metrics["verifier_time_source"],
+        "journal_commitment": sequence_payload["journal_commitment"],
+        "statement_commitment": sequence_payload["statement_fields"]["statement_commitment"],
+        "receipt_commitment": sequence_payload["receipt_commitment"],
+        "image_id_hex": sequence_payload["receipt_verification"]["image_id_hex"],
+        "sequence_length": journal["sequence_length"],
+        "transition_rows": len(journal["transitions"]),
+        "key_width": journal["key_width"],
+        "value_width": journal["value_width"],
+        "masking_policy": journal["masking_policy"],
+        "selected_positions": summary["selected_positions"],
+        "attention_outputs": summary["attention_outputs"],
+        "final_kv_items": summary["final_kv_items"],
+        "transition_commitments": sequence_payload["transition_commitments"],
+        "mutations_checked": sequence_payload["case_count"],
+        "mutations_rejected": sum(1 for case in sequence_payload["cases"] if case["rejected"] is True),
+        "all_mutations_rejected": sequence_payload["all_mutations_rejected"],
+        "timing_policy": metrics["timing_policy"],
+    }
+
+
 def route_inventory() -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
@@ -505,6 +592,7 @@ def route_inventory() -> list[dict[str, Any]]:
     risc0 = risc0_receipt_summary(load_risc0_payload())
     risc0_sequence = risc0_sequence_receipt_summary(load_risc0_sequence_payload())
     risc0_scaled_sequence = risc0_scaled_sequence_receipt_summary(load_risc0_scaled_sequence_payload())
+    risc0_wide_masked_sequence = risc0_wide_masked_sequence_receipt_summary(load_risc0_wide_masked_sequence_payload())
     routes = [dict(route) for route in BASE_ROUTES]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
@@ -547,6 +635,21 @@ def route_inventory() -> list[dict[str, Any]]:
     scaled_sequence_route["sequence_length"] = risc0_scaled_sequence["sequence_length"]
     scaled_sequence_route["transition_rows"] = risc0_scaled_sequence["transition_rows"]
     scaled_sequence_route["final_kv_items"] = risc0_scaled_sequence["final_kv_items"]
+    wide_masked_sequence_route = route_candidate_by_id(routes, EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID)
+    wide_masked_sequence_route["evidence"] = risc0_wide_masked_sequence["evidence"]
+    wide_masked_sequence_route["proof_system"] = risc0_wide_masked_sequence["proof_system"]
+    wide_masked_sequence_route["proof_system_version"] = risc0_wide_masked_sequence["proof_system_version"]
+    wide_masked_sequence_route["proof_size_bytes"] = risc0_wide_masked_sequence["proof_size_bytes"]
+    wide_masked_sequence_route["journal_commitment"] = risc0_wide_masked_sequence["journal_commitment"]
+    wide_masked_sequence_route["statement_commitment"] = risc0_wide_masked_sequence["statement_commitment"]
+    wide_masked_sequence_route["receipt_commitment"] = risc0_wide_masked_sequence["receipt_commitment"]
+    wide_masked_sequence_route["image_id_hex"] = risc0_wide_masked_sequence["image_id_hex"]
+    wide_masked_sequence_route["sequence_length"] = risc0_wide_masked_sequence["sequence_length"]
+    wide_masked_sequence_route["transition_rows"] = risc0_wide_masked_sequence["transition_rows"]
+    wide_masked_sequence_route["key_width"] = risc0_wide_masked_sequence["key_width"]
+    wide_masked_sequence_route["value_width"] = risc0_wide_masked_sequence["value_width"]
+    wide_masked_sequence_route["masking_policy"] = risc0_wide_masked_sequence["masking_policy"]
+    wide_masked_sequence_route["final_kv_items"] = risc0_wide_masked_sequence["final_kv_items"]
     return routes
 
 
@@ -584,11 +687,13 @@ def build_payload() -> dict[str, Any]:
     risc0_payload = load_risc0_payload()
     risc0_sequence_payload = load_risc0_sequence_payload()
     risc0_scaled_sequence_payload = load_risc0_scaled_sequence_payload()
+    risc0_wide_masked_sequence_payload = load_risc0_wide_masked_sequence_payload()
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
     risc0_sequence_summary = risc0_sequence_receipt_summary(risc0_sequence_payload)
     risc0_scaled_sequence_summary = risc0_scaled_sequence_receipt_summary(risc0_scaled_sequence_payload)
+    risc0_wide_masked_sequence_summary = risc0_wide_masked_sequence_receipt_summary(risc0_wide_masked_sequence_payload)
     routes = route_inventory()
     proof_backed_routes_available = [
         route["route_id"]
@@ -611,6 +716,7 @@ def build_payload() -> dict[str, Any]:
         "external_risc0_receipt": risc0_summary,
         "external_risc0_sequence_receipt": risc0_sequence_summary,
         "external_risc0_scaled_sequence_receipt": risc0_scaled_sequence_summary,
+        "external_risc0_wide_masked_sequence_receipt": risc0_wide_masked_sequence_summary,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
@@ -625,6 +731,9 @@ def build_payload() -> dict[str, Any]:
             "risc0_scaled_sequence_receipt_size_bytes": risc0_scaled_sequence_summary["proof_size_bytes"],
             "risc0_scaled_sequence_verifier_time_ms": risc0_scaled_sequence_summary["verifier_time_ms"],
             "risc0_scaled_sequence_verifier_time_source": risc0_scaled_sequence_summary["verifier_time_source"],
+            "risc0_wide_masked_sequence_receipt_size_bytes": risc0_wide_masked_sequence_summary["proof_size_bytes"],
+            "risc0_wide_masked_sequence_verifier_time_ms": risc0_wide_masked_sequence_summary["verifier_time_ms"],
+            "risc0_wide_masked_sequence_verifier_time_source": risc0_wide_masked_sequence_summary["verifier_time_source"],
             "proof_generation_time_ms": None,
             "verifier_time_ms": None,
             "timing_policy": snark_summary["timing_policy"],
@@ -644,6 +753,7 @@ def build_payload() -> dict[str, Any]:
             "external_risc0_receipt": payload["external_risc0_receipt"],
             "external_risc0_sequence_receipt": payload["external_risc0_sequence_receipt"],
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
+            "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -742,6 +852,31 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["external_risc0_scaled_sequence_receipt"]["selected_positions"][4] = 99
     elif name == "external_zkvm_scaled_sequence_metric_source_drift":
         out["external_risc0_scaled_sequence_receipt"]["verifier_time_source"] = "carried_from_existing_evidence_not_remeasured"
+    elif name == "external_zkvm_wide_masked_sequence_route_removed":
+        wide_masked_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID)
+        wide_masked_route["status"] = "NO_GO_MISSING_ATTENTION_KV_WIDE_MASKED_SEQUENCE_ZKVM_RECEIPT"
+        wide_masked_route["usable_today"] = False
+        wide_masked_route["proof_backed"] = False
+        out["proof_backed_routes_available"] = [
+            EXTERNAL_SNARK_ROUTE_ID,
+            EXTERNAL_ZKVM_ROUTE_ID,
+            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+        ]
+    elif name == "external_zkvm_wide_masked_sequence_receipt_decision_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["decision"] = (
+            "NO_GO_MISSING_ATTENTION_KV_RISC0_WIDE_MASKED_SEQUENCE_RECEIPT"
+        )
+    elif name == "external_zkvm_wide_masked_sequence_receipt_mutation_rejections_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["mutations_rejected"] -= 1
+    elif name == "external_zkvm_wide_masked_sequence_length_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["sequence_length"] = 3
+    elif name == "external_zkvm_wide_masked_sequence_width_or_masking_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["masking_policy"] = "none"
+    elif name == "external_zkvm_wide_masked_sequence_intermediate_state_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["selected_positions"][3] = 99
+    elif name == "external_zkvm_wide_masked_sequence_metric_source_drift":
+        out["external_risc0_wide_masked_sequence_receipt"]["verifier_time_source"] = "carried_from_existing_evidence_not_remeasured"
     elif name == "fake_verifier_time_metric":
         out["metrics"]["verifier_time_ms"] = 7.5
     elif name == "fake_proof_size_metric":
@@ -951,6 +1086,61 @@ def validate_risc0_scaled_sequence_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero scaled sequence transition commitment drift")
 
 
+def validate_risc0_wide_masked_sequence_receipt(summary: Any) -> None:
+    """Validate the proof-backed RISC Zero d=8 causal-prefix sequence receipt summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence receipt must be an object")
+    expected = risc0_wide_masked_sequence_receipt_summary(load_risc0_wide_masked_sequence_payload())
+    summary_for_compare = dict(summary)
+    expected_for_compare = dict(expected)
+    proof_generation_time_source = summary_for_compare.pop("proof_generation_time_source", None)
+    expected_for_compare.pop("proof_generation_time_source", None)
+    if summary_for_compare != expected_for_compare:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence receipt drift")
+    if summary["decision"] != RISC0_WIDE_MASKED_SEQUENCE.DECISION:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence decision drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence result drift")
+    if summary["all_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence fail-closed drift")
+    if summary["mutations_checked"] != summary["mutations_rejected"]:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence mutation rejection drift")
+    if summary["proof_size_bytes"] <= 0 or summary["verifier_time_ms"] <= 0:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence proof metric drift")
+    if proof_generation_time_source not in {
+        "current_prove_run",
+        "carried_from_existing_evidence_not_remeasured",
+        "not_remeasured_in_verify_existing",
+    }:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence proof-generation metric source drift")
+    if summary["verifier_time_source"] != "current_verify_run":
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence verifier metric source drift")
+    if summary["sequence_length"] != 8 or summary["transition_rows"] != 8:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence length drift")
+    if summary["key_width"] != 8 or summary["value_width"] != 8:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence width drift")
+    if summary["masking_policy"] != "causal_prefix_position_lte_query_token":
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence masking drift")
+    if summary["selected_positions"] != [0, 2, 3, 3, 5, 5, 7, 9]:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence intermediate state drift")
+    if summary["attention_outputs"] != [
+        [2, 1, 0, -1, 3, 0, 1, 2],
+        [4, 2, 1, 0, -1, 3, 2, 1],
+        [5, -2, 0, 3, 1, 1, -1, 2],
+        [5, -2, 0, 3, 1, 1, -1, 2],
+        [7, 1, 2, -2, 0, 5, -3, 1],
+        [7, 1, 2, -2, 0, 5, -3, 1],
+        [6, 6, -2, 0, 2, 1, 3, -1],
+        [-5, 5, 1, -3, 4, 2, -2, 0],
+    ]:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence output drift")
+    if summary["final_kv_items"] != 10:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence final KV drift")
+    if len(summary["transition_commitments"]) != summary["transition_rows"]:
+        raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence transition commitment drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -969,6 +1159,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "external_risc0_receipt",
         "external_risc0_sequence_receipt",
         "external_risc0_scaled_sequence_receipt",
+        "external_risc0_wide_masked_sequence_receipt",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -995,12 +1186,14 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_risc0_receipt(payload.get("external_risc0_receipt"))
     validate_risc0_sequence_receipt(payload.get("external_risc0_sequence_receipt"))
     validate_risc0_scaled_sequence_receipt(payload.get("external_risc0_scaled_sequence_receipt"))
+    validate_risc0_wide_masked_sequence_receipt(payload.get("external_risc0_wide_masked_sequence_receipt"))
     validate_routes(payload.get("route_candidates"))
     if payload.get("proof_backed_routes_available") != [
         "external_snark_attention_kv_statement_receipt",
         "external_zkvm_attention_kv_semantics_receipt",
         "external_zkvm_attention_kv_sequence_semantics_receipt",
         "external_zkvm_attention_kv_scaled_sequence_semantics_receipt",
+        "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt",
     ]:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
     expected_metrics = {
@@ -1015,6 +1208,9 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "risc0_scaled_sequence_receipt_size_bytes": payload["external_risc0_scaled_sequence_receipt"]["proof_size_bytes"],
         "risc0_scaled_sequence_verifier_time_ms": payload["external_risc0_scaled_sequence_receipt"]["verifier_time_ms"],
         "risc0_scaled_sequence_verifier_time_source": payload["external_risc0_scaled_sequence_receipt"]["verifier_time_source"],
+        "risc0_wide_masked_sequence_receipt_size_bytes": payload["external_risc0_wide_masked_sequence_receipt"]["proof_size_bytes"],
+        "risc0_wide_masked_sequence_verifier_time_ms": payload["external_risc0_wide_masked_sequence_receipt"]["verifier_time_ms"],
+        "risc0_wide_masked_sequence_verifier_time_source": payload["external_risc0_wide_masked_sequence_receipt"]["verifier_time_source"],
         "proof_generation_time_ms": None,
         "verifier_time_ms": None,
         "timing_policy": payload["external_snark_receipt"]["timing_policy"],
@@ -1041,6 +1237,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "external_risc0_receipt": payload["external_risc0_receipt"],
             "external_risc0_sequence_receipt": payload["external_risc0_sequence_receipt"],
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
+            "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],

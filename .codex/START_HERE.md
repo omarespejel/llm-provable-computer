@@ -32,9 +32,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 26. `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md`
 27. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
 28. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
-29. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-30. `docs/engineering/reproducibility.md`
-31. `git status --short --branch`
+29. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
+30. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+31. `docs/engineering/reproducibility.md`
+32. `git status --short --branch`
 
 ## What this repository is now
 
@@ -92,10 +93,18 @@ This repository currently has three live lanes.
     sequence with selected positions `[0, 2, 3, 4, 5, 4, 5, 6]`, a ten-row final
     KV cache, a `264146`-byte receipt, and `27 / 27` mutation rejections; see
     `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`.
-  - The attention/KV proof-route selector is now a narrow GO for the external
-    SNARK statement-receipt route, RISC Zero transition receipt, RISC Zero
-    three-step sequence receipt, and RISC Zero fixed eight-step sequence receipt,
-    while remaining a no-go for local Stwo attention arithmetic and Softmax; see
+  - Issue `#446` extends the same carried-state zkVM route to a fixed eight-step
+    `d=8` causal-prefix masked sequence with selected positions
+    `[0, 2, 3, 3, 5, 5, 7, 9]`, a ten-row final KV cache, a `305266`-byte
+    receipt, local verifier time `19.193 ms`, and `27 / 27` mutation rejections;
+    see
+    `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`.
+  - The attention/KV proof-route selector is now a narrow GO for five
+    proof-backed routes: the external SNARK statement-receipt route, RISC Zero
+    transition receipt, RISC Zero three-step sequence receipt, RISC Zero fixed
+    eight-step sequence receipt, and RISC Zero fixed eight-step `d=8`
+    causal-prefix masked sequence receipt. It still remains a no-go for local
+    Stwo attention arithmetic and Softmax; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
