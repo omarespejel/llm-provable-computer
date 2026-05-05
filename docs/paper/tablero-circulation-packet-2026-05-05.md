@@ -63,7 +63,7 @@ python3 scripts/paper/generate_tablero_results_overview.py
 python3 scripts/paper/generate_tablero_scaling_law.py
 python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 git diff --check
 ```
 
