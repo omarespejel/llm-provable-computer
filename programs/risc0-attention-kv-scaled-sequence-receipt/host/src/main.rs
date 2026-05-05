@@ -132,6 +132,24 @@ fn apply_step(
     }
 }
 
+fn assert_append_only_positions(input: &AttentionSequenceInput) {
+    let mut previous_position: Option<i32> = None;
+    for position in input
+        .initial_kv_cache
+        .iter()
+        .map(|entry| entry.position)
+        .chain(input.input_steps.iter().map(|step| step.token_position))
+    {
+        if let Some(previous) = previous_position {
+            assert!(
+                position > previous,
+                "attention KV positions must be strictly increasing for append-only tamper rules"
+            );
+        }
+        previous_position = Some(position);
+    }
+}
+
 fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal {
     assert!(
         !input.initial_kv_cache.is_empty(),
@@ -141,6 +159,7 @@ fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal 
         input.input_steps.len() == EXACT_SEQUENCE_LENGTH,
         "scaled sequence fixture requires exactly eight carried KV transitions"
     );
+    assert_append_only_positions(input);
     let mut current_kv_cache = input.initial_kv_cache.clone();
     let mut transitions = Vec::with_capacity(input.input_steps.len());
     for (step_index, input_step) in input.input_steps.iter().enumerate() {
@@ -489,6 +508,14 @@ mod tests {
     fn expected_journal_requires_a_real_sequence() {
         let mut input = sample_input();
         input.input_steps.truncate(1);
+        expected_journal(&input);
+    }
+
+    #[test]
+    #[should_panic(expected = "attention KV positions must be strictly increasing for append-only tamper rules")]
+    fn expected_journal_rejects_non_append_only_positions() {
+        let mut input = sample_input();
+        input.input_steps[1].token_position = input.input_steps[0].token_position;
         expected_journal(&input);
     }
 

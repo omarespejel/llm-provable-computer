@@ -192,7 +192,7 @@
       "surface": "parser_or_schema"
     }
   ],
-  "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_OR_SOFTMAX",
+  "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_NOT_SOFTMAX_NOT_RECURSION_OR_PCD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_AGENT_CORRECTNESS",
   "decision": "GO_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT_FOR_CARRIED_KV_STATE",
   "go_criterion": "RISC Zero host proves or verifies a receipt whose guest-computed journal binds an eight-step carried integer-argmax attention/KV sequence and rejects deletion, reordering, or relabeling of intermediate state",
   "issue": 444,
@@ -2291,27 +2291,27 @@
   ],
   "proof_metrics": {
     "metrics_enabled": true,
-    "proof_generation_time_ms": 29761.523624999998,
+    "proof_generation_time_ms": 68652.80408300001,
     "proof_generation_time_source": "current_prove_run",
     "proof_size_bytes": 264146,
     "timing_policy": "single_local_run_engineering_only",
-    "verifier_time_ms": 18.056459,
+    "verifier_time_ms": 21.833042,
     "verifier_time_source": "current_verify_run"
   },
   "receipt_artifact": {
-    "commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
     "path": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.bincode",
-    "sha256": "03b04e0b61a120185d60893f940d4525d1f72fabe736213f8092fc3b769fb0be",
+    "sha256": "e29f84fbaae6dfbd300c89579f96b2f7d671a7323a33ce878f16861f24db3b67",
     "size_bytes": 264146
   },
-  "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+  "receipt_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
   "receipt_verification": {
     "decoded_journal_matches_expected": true,
     "host_summary_mode": "verify",
     "host_summary_schema": "zkai-attention-kv-risc0-scaled-sequence-host-summary-v1",
-    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
     "journal_sha256": "0c25c3c6c44d110a151c6eba88e79640c70bf4894bdb2a1c3792171a996f5fed",
-    "receipt_sha256": "03b04e0b61a120185d60893f940d4525d1f72fabe736213f8092fc3b769fb0be",
+    "receipt_sha256": "e29f84fbaae6dfbd300c89579f96b2f7d671a7323a33ce878f16861f24db3b67",
     "receipt_verified": true,
     "risc0_zkvm_version": "3.0.5",
     "strict_receipt_reverified": true,
@@ -2480,17 +2480,17 @@
   "source_issue": 442,
   "statement_fields": {
     "final_kv_cache_commitment": "blake2b-256:e9f580e0c77919ba0bdd81c8bc492cb2efdbaef2eb03a44d8d4776f5f1852e44",
-    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
     "initial_kv_cache_commitment": "blake2b-256:f68ac8d3e8c30efa79f8185f75ba1bc790869e44b117b41536e779eb7106acb8",
     "input_steps_commitment": "blake2b-256:ac4c5c06120a4b46dde31cee801fd745ac80851330cf6423bc779ead02da7c6b",
     "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
     "model_config_commitment": "blake2b-256:195d3ee9572bde832503a8879ea959650801e0b4bfb6be6977e7e414e5941241",
     "outputs_commitment": "blake2b-256:c6055d585a6a65499fe7400750b9d36389b9f015f473638152f6ab445323c03b",
-    "proof_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "proof_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
     "proof_status": "PROVEN_BY_RISC_ZERO_SEMANTICS_RECEIPT",
-    "public_instance_commitment": "blake2b-256:86613464b4f8dbb0b977b0224f9ec2e113e542abdc531a170400555cdfc791e3",
+    "public_instance_commitment": "blake2b-256:75e4523e3fe23a40d14edddbd0d13af92ec0d1849e2a1ad52a941742d59eada8",
     "route_id": "risc0_attention_kv_scaled_sequence_semantics_receipt",
-    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "statement_commitment": "blake2b-256:ddad8aa06858797e66bc40943dc62000063d20574c78a44279e0c8238cdd643a",
     "statement_kind": "attention-kv-cache-scaled-sequence",
     "transition_commitments": [
       "blake2b-256:8b2c053e7c22602fddd21ce904c3f62470f2308ff56a270b9d4aa5e62a72d031",
@@ -2541,11 +2541,11 @@
       ]
     ],
     "final_kv_items": 10,
-    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "image_id_hex": "35cdde2ae2f1f1604a4539585a699a2cffc06d6a7dbe8f8afe75e91874fb4857",
     "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
-    "proof_generation_time_ms": 29761.523624999998,
+    "proof_generation_time_ms": 68652.80408300001,
     "proof_generation_time_source": "current_prove_run",
-    "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "receipt_commitment": "blake2b-256:bfd842facea73a759987c7738434f8c394eac7c3b63489db75784702c2c949c9",
     "receipt_size_bytes": 264146,
     "selected_positions": [
       0,
@@ -2558,9 +2558,9 @@
       6
     ],
     "sequence_length": 8,
-    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "statement_commitment": "blake2b-256:ddad8aa06858797e66bc40943dc62000063d20574c78a44279e0c8238cdd643a",
     "transition_rows": 8,
-    "verifier_time_ms": 18.056459,
+    "verifier_time_ms": 21.833042,
     "verifier_time_source": "current_verify_run"
   },
   "system": "RISC Zero",

@@ -30,7 +30,7 @@ Decision:
 
 Claim boundary:
 
-`RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_OR_SOFTMAX`
+`RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_NOT_SOFTMAX_NOT_RECURSION_OR_PCD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_AGENT_CORRECTNESS`
 
 ## Evidence
 
@@ -52,9 +52,9 @@ Claim boundary:
 | Masking policy | `none` |
 | Tie break | `lowest_position` |
 | Receipt size | `264146` bytes |
-| Proof generation time | `29761.524 ms` |
+| Proof generation time | `68652.804 ms` |
 | Proof generation time source | `current_prove_run` |
-| Verifier time | `18.056 ms` |
+| Verifier time | `21.833 ms` |
 | Timing policy | `single_local_run_engineering_only` |
 | Mutations checked | `27` |
 | Mutations rejected | `27` |

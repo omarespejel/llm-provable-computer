@@ -105,6 +105,24 @@ fn apply_step(step_index: usize, prior_kv_cache: &[KvEntry], input_step: &InputS
     }
 }
 
+fn assert_append_only_positions(input: &AttentionSequenceInput) {
+    let mut previous_position: Option<i32> = None;
+    for position in input
+        .initial_kv_cache
+        .iter()
+        .map(|entry| entry.position)
+        .chain(input.input_steps.iter().map(|step| step.token_position))
+    {
+        if let Some(previous) = previous_position {
+            assert!(
+                position > previous,
+                "attention KV positions must be strictly increasing for append-only tamper rules"
+            );
+        }
+        previous_position = Some(position);
+    }
+}
+
 fn main() {
     let input: AttentionSequenceInput = env::read();
     assert!(
@@ -115,6 +133,7 @@ fn main() {
         input.input_steps.len() == 8,
         "scaled sequence fixture requires exactly eight carried KV transitions"
     );
+    assert_append_only_positions(&input);
 
     let mut current_kv_cache = input.initial_kv_cache.clone();
     let mut transitions = Vec::with_capacity(input.input_steps.len());
