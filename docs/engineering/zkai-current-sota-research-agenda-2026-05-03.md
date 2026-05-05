@@ -162,9 +162,12 @@ public contract.
    `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv`.
 3. **Stateful transformer track.** The source-backed attention/KV receipt now
    has an external `snarkjs/Groth16` statement receipt, so carried-state
-   metadata is proof-bound to the source contract rather than merely narrated.
-   The next step is a native attention arithmetic proof, zkVM receipt, or
-   explicit no-go for that same stateful public surface. Tracked in issue `#336`.
+   metadata is proof-bound to the source contract rather than merely narrated;
+   the RISC Zero transition and three-step sequence receipts now prove tiny
+   integer-argmax semantics and carried-state ordering in a zkVM. The next step
+   is native attention arithmetic proving, larger carried-state scaling, or an
+   explicit no-go for that same stateful public surface. Tracked in issue `#336`
+   and follow-up issue `#442`.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers

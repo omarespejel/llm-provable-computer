@@ -18,11 +18,11 @@ SPEC.loader.exec_module(GATE)
 
 
 class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
-    def test_regression_issue_441_records_external_snark_and_risc0_go_routes(self) -> None:
+    def test_regression_issue_441_442_records_external_snark_and_risc0_go_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 20)
-        self.assertEqual(payload["decision"], "GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV")
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 26)
+        self.assertEqual(payload["decision"], "GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV")
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
         self.assertEqual(payload["source_contract"]["source_decision"], GATE.SOURCE.DECISION)
@@ -30,17 +30,32 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["source_contract"]["present_public_fields"], list(GATE.REQUIRED_PUBLIC_FIELDS))
         self.assertEqual(
             payload["proof_backed_routes_available"],
-            ["external_snark_attention_kv_statement_receipt", "external_zkvm_attention_kv_semantics_receipt"],
+            [
+                "external_snark_attention_kv_statement_receipt",
+                "external_zkvm_attention_kv_semantics_receipt",
+                "external_zkvm_attention_kv_sequence_semantics_receipt",
+            ],
         )
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["next_kv_items"], 3)
         self.assertEqual(len(payload["external_risc0_receipt"]["next_kv_cache"]), 3)
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["decision"], GATE.RISC0_SEQUENCE.DECISION)
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["sequence_length"], 3)
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["transition_rows"], 3)
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["selected_positions"], [0, 2, 3])
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["final_kv_items"], 5)
         self.assertEqual(payload["external_risc0_receipt"]["proof_generation_time_source"], "current_prove_run")
         self.assertEqual(payload["external_risc0_receipt"]["verifier_time_source"], "current_verify_run")
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["proof_generation_time_source"], "current_prove_run")
+        self.assertEqual(payload["external_risc0_sequence_receipt"]["verifier_time_source"], "current_verify_run")
         self.assertEqual(payload["non_claims"], list(GATE.EXPECTED_NON_CLAIMS))
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])
+        self.assertEqual(
+            payload["metrics"]["risc0_sequence_receipt_size_bytes"],
+            payload["external_risc0_sequence_receipt"]["proof_size_bytes"],
+        )
         self.assertEqual(payload["mutations_checked"], len(GATE.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(GATE.EXPECTED_MUTATION_NAMES))
         self.assertTrue(payload["all_mutations_rejected"])
@@ -80,6 +95,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             summary = copy.deepcopy(payload["external_risc0_receipt"])
             summary["proof_generation_time_source"] = source
             GATE.validate_risc0_receipt(summary)
+
+    def test_risc0_sequence_receipt_summary_accepts_verify_existing_proof_time_sources(self) -> None:
+        payload = GATE.build_payload()
+        for source in (
+            "current_prove_run",
+            "carried_from_existing_evidence_not_remeasured",
+            "not_remeasured_in_verify_existing",
+        ):
+            summary = copy.deepcopy(payload["external_risc0_sequence_receipt"])
+            summary["proof_generation_time_source"] = source
+            GATE.validate_risc0_sequence_receipt(summary)
 
     def test_gate_rejects_missing_required_public_field(self) -> None:
         payload = GATE.build_payload()
@@ -148,6 +174,13 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         zkvm_route = GATE.route_candidate_by_id(zkvm_removed["route_candidates"], GATE.EXTERNAL_ZKVM_ROUTE_ID)
         self.assertFalse(zkvm_route["usable_today"])
         self.assertFalse(zkvm_route["proof_backed"])
+
+        sequence_removed = GATE.mutate_payload(payload, "external_zkvm_sequence_route_removed")
+        sequence_route = GATE.route_candidate_by_id(
+            sequence_removed["route_candidates"], GATE.EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID
+        )
+        self.assertFalse(sequence_route["usable_today"])
+        self.assertFalse(sequence_route["proof_backed"])
 
 
 if __name__ == "__main__":

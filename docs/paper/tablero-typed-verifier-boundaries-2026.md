@@ -883,15 +883,32 @@ recursion or PCD. It is anchored to
 `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`.
 
+The next follow-up makes the stateful claim harder to fake. It extends the RISC
+Zero guest from one transition to a three-step carried KV sequence. The checked
+journal records every intermediate transition row; selected positions are
+`0`, `2`, and `3`, attention outputs are `(2, 1)`, `(4, 2)`, and `(5, -2)`, and the final KV
+cache contains five rows. The receipt is `246730` bytes, verifies locally in
+`17.630 ms` under the same single-run engineering timing policy, and rejects
+`27 / 27` deletion, reordering, intermediate-state relabeling, statement,
+receipt-metadata, metric-smuggling, native-Stwo, Softmax, recursion, non-claim,
+validation-command, and parser/schema mutations. This is still a tiny integer
+argmax fixture, not native Stwo attention proving and not long-context
+inference. But it closes the specific carried-state gap: the proof-backed route
+now checks an ordered state sequence, not only an isolated state update. It is
+anchored to
+`docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md` and
+`docs/engineering/evidence/zkai-attention-kv-risc0-sequence-receipt-2026-05.json`.
+
 The route selector is updated accordingly: it records
-`GO_EXTERNAL_SNARK_AND_RISC0_SEMANTICS_RECEIPTS_FOR_ATTENTION_KV`, while
+`GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`, while
 local Stwo attention arithmetic and Softmax attention remain bounded
-non-results. It rejects `20 / 20`
-route-removal, receipt-drift, fake-metric, next-go weakening, missing-field, blocker-removal, and
-claim-boundary mutations. This leaves the stronger-venue bridge precise:
-preserve the same prior-state/input/output/next-state public fields and replace
+non-results. It rejects `26 / 26`
+route-removal, receipt-drift, sequence-drift, fake-metric, next-go weakening,
+missing-field, blocker-removal, and claim-boundary mutations. This leaves the
+stronger-venue bridge precise: preserve the same
+prior-state/input/output/intermediate-state/next-state public fields and replace
 the source contract or zkVM re-execution with a native proof of the chosen
-attention semantics, or scale the zkVM route to a carried KV sequence. It
+attention semantics. It
 is anchored to `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 and `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
