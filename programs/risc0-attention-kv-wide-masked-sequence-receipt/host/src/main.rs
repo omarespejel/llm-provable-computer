@@ -16,6 +16,7 @@ use std::{
 };
 
 const MAX_RECEIPT_BYTES: usize = 2_500_000;
+const MAX_INPUT_BYTES: u64 = 64 * 1024;
 const JOURNAL_SCHEMA: &str = "zkai-attention-kv-risc0-wide-masked-sequence-journal-v1";
 const SEMANTICS: &str = "tiny-single-head-integer-argmax-attention-wide-masked-sequence-v1";
 const EXACT_SEQUENCE_LENGTH: usize = 8;
@@ -189,9 +190,48 @@ fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal 
     }
 }
 
+fn read_input_checked(path: &PathBuf) -> Result<AttentionSequenceInput, String> {
+    let metadata = fs::metadata(path)
+        .map_err(|err| format!("read attention sequence input metadata: {err}"))?;
+    if !metadata.is_file() {
+        return Err("attention sequence input path must be a file".to_string());
+    }
+    let declared_len = metadata.len();
+    if declared_len == 0 {
+        return Err("attention sequence input must not be empty".to_string());
+    }
+    if declared_len > MAX_INPUT_BYTES {
+        return Err(format!(
+            "attention sequence input is too large: {declared_len} bytes > {MAX_INPUT_BYTES} byte limit"
+        ));
+    }
+    let file =
+        File::open(path).map_err(|err| format!("open attention sequence input JSON: {err}"))?;
+    let mut limited = file.take(MAX_INPUT_BYTES + 1);
+    let mut bytes = Vec::with_capacity(declared_len as usize);
+    limited
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("read attention sequence input JSON: {err}"))?;
+    if bytes.is_empty() {
+        return Err("attention sequence input must not be empty".to_string());
+    }
+    if bytes.len() as u64 > MAX_INPUT_BYTES {
+        return Err(format!(
+            "attention sequence input exceeded {MAX_INPUT_BYTES} byte limit while reading"
+        ));
+    }
+    serde_json::from_slice(&bytes)
+        .map_err(|err| format!("decode attention sequence input JSON: {err}"))
+}
+
 fn read_input(path: &PathBuf) -> AttentionSequenceInput {
-    let bytes = fs::read(path).expect("read attention sequence input JSON");
-    serde_json::from_slice(&bytes).expect("decode attention sequence input JSON")
+    match read_input_checked(path) {
+        Ok(input) => input,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(2);
+        }
+    }
 }
 
 fn create_parent_dir(path: &PathBuf) {
@@ -469,6 +509,48 @@ mod tests {
         create_parent_dir(&out);
 
         assert!(out.parent().expect("parent").is_dir());
+        fs::remove_dir_all(root).expect("cleanup test directory");
+    }
+
+    #[test]
+    fn read_input_checked_rejects_oversized_input_before_parse() {
+        let root = std::env::temp_dir().join(format!(
+            "ptvm-risc0-wide-masked-sequence-oversized-test-{}",
+            std::process::id()
+        ));
+        let input = root.join("input.json");
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("remove stale test directory");
+        }
+        fs::create_dir_all(&root).expect("create test directory");
+        fs::write(&input, vec![b' '; (MAX_INPUT_BYTES + 1) as usize])
+            .expect("write oversized input");
+
+        let err = read_input_checked(&input).expect_err("oversized input rejects");
+
+        assert!(err.contains("too large"), "{err}");
+        fs::remove_dir_all(root).expect("cleanup test directory");
+    }
+
+    #[test]
+    fn read_input_checked_rejects_malformed_json_without_panic() {
+        let root = std::env::temp_dir().join(format!(
+            "ptvm-risc0-wide-masked-sequence-malformed-test-{}",
+            std::process::id()
+        ));
+        let input = root.join("input.json");
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("remove stale test directory");
+        }
+        fs::create_dir_all(&root).expect("create test directory");
+        fs::write(&input, b"{not json").expect("write malformed input");
+
+        let err = read_input_checked(&input).expect_err("malformed input rejects");
+
+        assert!(
+            err.contains("decode attention sequence input JSON"),
+            "{err}"
+        );
         fs::remove_dir_all(root).expect("cleanup test directory");
     }
 
