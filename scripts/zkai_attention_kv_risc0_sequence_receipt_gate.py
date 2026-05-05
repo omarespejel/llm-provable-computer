@@ -327,7 +327,11 @@ def statement_fields(journal: dict[str, Any], receipt_commitment: str, image_id_
 
 def risc0_env() -> dict[str, str]:
     env = os.environ.copy()
-    env["PATH"] = f"{os.environ.get('HOME', '')}/.risc0/bin:{os.environ.get('HOME', '')}/.cargo/bin:" + env.get("PATH", "")
+    home = os.environ.get("HOME", "")
+    path_entries = [str(pathlib.Path(home) / ".risc0" / "bin"), str(pathlib.Path(home) / ".cargo" / "bin")]
+    if env.get("PATH"):
+        path_entries.append(env["PATH"])
+    env["PATH"] = os.pathsep.join(path_entries)
     env.setdefault("CARGO_TARGET_DIR", str(ROOT / "target" / "risc0-attention-kv-sequence-receipt"))
     env["RISC0_DEV_MODE"] = "0"
     return env

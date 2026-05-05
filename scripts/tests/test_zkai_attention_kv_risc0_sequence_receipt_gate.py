@@ -3,9 +3,11 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -28,6 +30,12 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
 
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
+
+    def test_risc0_env_does_not_add_empty_path_entry(self) -> None:
+        with mock.patch.dict(os.environ, {"HOME": "/tmp/risc0-test-home", "PATH": ""}):
+            env = GATE.risc0_env()
+
+        self.assertNotIn("", env["PATH"].split(os.pathsep))
 
     def test_checked_receipt_reverifies_with_local_risc0_toolchain(self) -> None:
         available, reason = GATE.local_risc0_toolchain_available()
