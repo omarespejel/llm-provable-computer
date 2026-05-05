@@ -1,8 +1,12 @@
-# Tablero Circulation Packet - 2026-05-05
+# Tablero Technical Review Packet - 2026-05-05
 
-This is the paper-facing circulation checklist for:
+This is the internal technical-review checklist for:
 
 `Tablero: Typed Verifier Boundaries for Layered STARK Systems, with Evidence from STARK-zkML`
+
+This packet is not a publication/default-lane release packet. It includes
+explicitly labeled experimental evidence so trusted reviewers can inspect the
+upside result without confusing it for default-backend behavior.
 
 ## What To Send
 
@@ -18,11 +22,14 @@ Evidence ledger:
 
 - `docs/engineering/tablero-claim-evidence.yml`
 
-Core figures:
+Publication-safe core figures:
 
 - `docs/paper/figures/tablero-results-overview-2026-04.svg`
-- `docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
 - `docs/paper/figures/tablero-replay-baseline-breakdown-2026-04.svg`
+
+Experimental review figure:
+
+- `docs/paper/figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
 
 ## Safe Summary
 
@@ -38,8 +45,8 @@ The current paper package supports these checked claims:
 | Claim | Evidence posture |
 | --- | --- |
 | Statement preservation | Theorem under compact-proof soundness, commitment binding, and source-emission completeness. |
-| Cross-family replay avoidance | Three checked layout families through `1024` steps. |
-| Measured scaling law | Replay baseline near-linear over the checked grids; typed path grows more slowly in the measured regime. |
+| Cross-family replay avoidance | Three checked layout families through `1024` steps on the explicitly labeled carry-aware experimental backend. |
+| Measured scaling law | Experimental review evidence only: replay baseline near-linear over the checked grids; typed path grows more slowly in the measured regime. |
 | Optimized replay red-team | Median-of-nine optimized replay verifier tightens the frontier ratio to a host-noise-sensitive `~261x`-`~330x` band. |
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
