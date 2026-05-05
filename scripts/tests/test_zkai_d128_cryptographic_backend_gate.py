@@ -196,6 +196,14 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         receipt = GATE.load_checked_snark_receipt()
         receipt["statement_receipt"]["proof_sha256"] = "0" * 64
         GATE._load_checked_snark_receipt_cached.cache_clear()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp) / "tampered-snark-receipt.json"
+            tmp.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
+            with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "SNARK receipt validation failed") as err:
+                GATE.load_checked_snark_receipt(tmp)
+
+        self.assertEqual(err.exception.layer, "external_snark_receipt")
+        GATE._load_checked_snark_receipt_cached.cache_clear()
 
     def test_checked_risc0_receipt_runs_full_receipt_validator(self) -> None:
         receipt = GATE.load_checked_risc0_receipt()
@@ -209,14 +217,6 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "external_risc0_receipt")
         GATE._load_checked_risc0_receipt_cached.cache_clear()
-        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
-            tmp = pathlib.Path(raw_tmp) / "tampered-snark-receipt.json"
-            tmp.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
-            with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "SNARK receipt validation failed") as err:
-                GATE.load_checked_snark_receipt(tmp)
-
-        self.assertEqual(err.exception.layer, "external_snark_receipt")
-        GATE._load_checked_snark_receipt_cached.cache_clear()
 
     def test_aggregate_risc0_strict_reverify_is_explicit_opt_in(self) -> None:
         calls: list[bool] = []
