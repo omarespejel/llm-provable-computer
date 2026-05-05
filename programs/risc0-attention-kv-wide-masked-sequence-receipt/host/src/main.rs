@@ -441,7 +441,12 @@ fn normalize_output_path(path: &PathBuf) -> PathBuf {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
-                normalized.pop();
+                if normalized
+                    .components()
+                    .any(|component| matches!(component, Component::Normal(_)))
+                {
+                    normalized.pop();
+                }
             }
             other => normalized.push(other.as_os_str()),
         }
@@ -663,6 +668,22 @@ mod tests {
             .join("..")
             .join("shared-output");
 
+        assert!(output_paths_overlap(&receipt, &summary));
+    }
+
+    #[test]
+    fn output_paths_overlap_preserves_root_for_parent_dir_components() {
+        let missing_root = format!(
+            "ptvm-risc0-wide-masked-sequence-missing-{}",
+            std::process::id()
+        );
+        let receipt = PathBuf::from("/").join(&missing_root).join("out.json");
+        let summary = PathBuf::from("/")
+            .join("..")
+            .join(&missing_root)
+            .join("out.json");
+
+        assert!(!receipt.exists());
         assert!(output_paths_overlap(&receipt, &summary));
     }
 
