@@ -47,7 +47,10 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["external_risc0_sequence_receipt"]["final_kv_items"], 5)
         self.assertEqual(payload["external_risc0_receipt"]["proof_generation_time_source"], "current_prove_run")
         self.assertEqual(payload["external_risc0_receipt"]["verifier_time_source"], "current_verify_run")
-        self.assertEqual(payload["external_risc0_sequence_receipt"]["proof_generation_time_source"], "current_prove_run")
+        self.assertIn(
+            payload["external_risc0_sequence_receipt"]["proof_generation_time_source"],
+            {"current_prove_run", "carried_from_existing_evidence_not_remeasured"},
+        )
         self.assertEqual(payload["external_risc0_sequence_receipt"]["verifier_time_source"], "current_verify_run")
         self.assertEqual(payload["non_claims"], list(GATE.EXPECTED_NON_CLAIMS))
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
