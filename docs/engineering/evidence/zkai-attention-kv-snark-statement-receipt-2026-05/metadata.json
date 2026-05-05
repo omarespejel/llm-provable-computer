@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "attention_kv_statement_receipt.circom": "69dd8ef79d3c1ea112e3b354f6d7f6a71593a5e4e3e3ea1e3e921cc391e890cf",
+    "input.json": "9aa21f7c7768cbc7b2426ed37a3e0564a4b537f21d390ba5ea6099680b0f08be",
+    "proof.json": "c327dea9f0c08bc3c88dbdada7e309d675bde20f979e733b6a7fd2a2d5b1f70d",
+    "public.json": "693589b5ddd7d893c76ebb6f569433d5e756d2529dad95d8935b16bee392d817",
+    "verification_key.json": "f21756b147b657d29bfd8c0a03806530af3837d52a994eddf2e2a8590c63d2fe"
+  },
+  "circom_version": "2.0.9",
+  "circuit_id": "urn:ptvm:zkai:attention-kv-statement-receipt:v1",
+  "generation_note": "Generated locally with circom 2.0.9 and repo-pinned snarkjs 0.7.6; verifier-facing artifacts are checked in, proving key and ceremony transcript are intentionally not checked in.",
+  "issue": 336,
+  "proof_system": "snarkjs/Groth16/BN128",
+  "schema": "zkai-attention-kv-snark-statement-receipt-artifact-metadata-v1",
+  "snarkjs_version": "0.7.6",
+  "trusted_setup_note": "Local throwaway Groth16 setup for attention/KV statement-receipt research only; not a production trusted setup or security endorsement."
+}

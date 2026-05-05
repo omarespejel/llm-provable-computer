@@ -114,6 +114,19 @@ Tablero boundary.
   d64 nested-verifier contract, not Stwo-native recursion or verification of the
   underlying Stwo slice verifiers inside Groth16; see
   `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`.
+- The attention/KV state-binding lane now has a real external `snarkjs/Groth16`
+  statement receipt over the source-backed attention/KV transition contract:
+  the checked proof is `802` bytes, binds `17` contract fields into `18` public
+  signals, and rejects `36 / 36` relabeling, artifact-binding, setup-binding,
+  metric-smuggling, and parser/schema mutations. This is proof-backed statement
+  binding for the source contract, not native attention arithmetic, not Softmax,
+  not Stwo-native proving, and not a zkVM receipt; see
+  `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`.
+- The attention/KV proof-route selector records a narrow
+  `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT` for
+  that external SNARK route while keeping local Stwo attention arithmetic,
+  external zkVM, and Softmax routes as bounded non-results; see
+  `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
   PCD outer proof backend exists. The d128 two-slice lane now has a
   non-recursive verifier-facing accumulator, but that is not recursive proof

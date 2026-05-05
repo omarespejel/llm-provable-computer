@@ -65,10 +65,11 @@ shows why a typed proof-backed receipt must bind a valid proof to the claimed
 model, input, output, configuration, setup or verifier identity, and verifier
 domain before a higher-level receipt or settlement layer accepts it. We keep the
 weaker source-backed receipts labeled separately: the attention/KV transition
-gate binds source-origin and state-transition metadata, but does not itself bind
-prover setup, verifying keys, or nested proof checks. A follow-up route selector
-records that no proof-backed attention/KV route exists yet across the checked
-local Stwo, external SNARK, and external zkVM candidates. The extension therefore
-treats nested-proof verification, commitment binding, resource bounds, and
-publication-versus-experimental drift as validation risks rather than established
-facts.
+gate binds source-origin and state-transition metadata, while a follow-up
+`snarkjs/Groth16` statement receipt binds that source contract into a real proof
+object. This is proof-backed statement binding for carried state, not a proof of
+attention arithmetic or Softmax semantics. The updated route selector records
+that local Stwo attention proving, external zkVM attention receipts, and Softmax
+routes remain bounded non-results. The extension therefore treats nested-proof
+verification, commitment binding, resource bounds, and publication-versus-
+experimental drift as validation risks rather than established facts.

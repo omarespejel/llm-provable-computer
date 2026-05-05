@@ -27,8 +27,11 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 21. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
 22. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
 23. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
-24. `docs/engineering/reproducibility.md`
-25. `git status --short --branch`
+24. `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
+25. `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`
+26. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+27. `docs/engineering/reproducibility.md`
+28. `git status --short --branch`
 
 ## What this repository is now
 
@@ -50,15 +53,28 @@ This repository currently has three live lanes.
      quotient scale divisors and remainder hashes are now checked in the
      evidence and verifiers; see
      `docs/engineering/zkai-d64-projection-scaling-semantics-audit-2026-05-03.md`.
-   - The d64 nested-verifier backend contract now has a real external
-     `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
-     `806` bytes, binds `21` contract fields into `22` public signals, and
+  - The d64 nested-verifier backend contract now has a real external
+    `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
+    `806` bytes, binds `21` contract fields into `22` public signals, and
      rejects `36 / 36` relabeling, artifact-binding, setup-binding,
      metric-smuggling, and parser/schema mutations. This is an external SNARK
-     statement receipt over the d64 nested-verifier contract, not Stwo-native
-     recursion or verification of the underlying Stwo slice verifiers inside
-     Groth16; see
-     `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`.
+    statement receipt over the d64 nested-verifier contract, not Stwo-native
+    recursion or verification of the underlying Stwo slice verifiers inside
+    Groth16; see
+    `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`.
+  - The attention/KV state-binding lane now has a proof-backed external
+    `snarkjs/Groth16` statement receipt over the source-backed attention/KV
+    transition contract: the checked proof is `802` bytes, binds `17` contract
+    fields into `18` public signals, and rejects `36 / 36` relabeling,
+    artifact-binding, setup-binding, metric-smuggling, and parser/schema
+    mutations. This is a statement receipt over the source contract, not a
+    native attention arithmetic proof, not Softmax, and not Stwo-native
+    proving; see
+    `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`.
+  - The attention/KV proof-route selector is now a narrow GO for that external
+    SNARK statement-receipt route and remains a no-go for local Stwo attention
+    arithmetic, external zkVM, and Softmax routes; see
+    `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
      down-projection, and a source-bound native residual-add slice. The residual

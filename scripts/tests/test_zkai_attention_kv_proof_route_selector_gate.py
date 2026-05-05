@@ -18,7 +18,7 @@ SPEC.loader.exec_module(GATE)
 
 
 class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
-    def test_gate_records_bounded_no_go_and_source_contract_go(self) -> None:
+    def test_gate_records_external_snark_go_and_source_contract_go(self) -> None:
         payload = GATE.build_payload()
 
         self.assertEqual(payload["decision"], GATE.DECISION)
@@ -27,7 +27,9 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["source_contract"]["source_decision"], GATE.SOURCE.DECISION)
         self.assertEqual(payload["source_contract"]["source_proof_status"], "SOURCE_BACKED_RECEIPT_NOT_PROVEN")
         self.assertEqual(payload["source_contract"]["present_public_fields"], list(GATE.REQUIRED_PUBLIC_FIELDS))
-        self.assertEqual(payload["proof_backed_routes_available"], [])
+        self.assertEqual(payload["proof_backed_routes_available"], ["external_snark_attention_kv_statement_receipt"])
+        self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
+        self.assertEqual(payload["metrics"]["proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["mutations_checked"], len(GATE.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(GATE.EXPECTED_MUTATION_NAMES))
         self.assertTrue(payload["all_mutations_rejected"])
