@@ -122,11 +122,32 @@ class D64ExternalRecursionAdapterGateTests(unittest.TestCase):
             "proof_size_metric_smuggled",
             "verifier_time_metric_smuggled",
             "proof_generation_time_metric_smuggled",
+        ):
+            _surface, receipt = GATE.mutated_receipts()[name]
+            with self.assertRaises(GATE.D64ExternalRecursionAdapterError) as err:
+                GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+            self.assertEqual(err.exception.layer, "receipt_metrics")
+
+        for name in (
             "unknown_top_level_field_added",
         ):
             _surface, receipt = GATE.mutated_receipts()[name]
             with self.assertRaises(GATE.D64ExternalRecursionAdapterError):
                 GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+
+    def test_statement_receipt_rejects_unknown_statement_field(self) -> None:
+        _surface, receipt = GATE.mutated_receipts()["unknown_statement_field_added"]
+
+        with self.assertRaisesRegex(GATE.D64ExternalRecursionAdapterError, "statement keys mismatch") as err:
+            GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+        self.assertEqual(err.exception.layer, "statement_policy")
+
+    def test_statement_receipt_binds_public_signals_artifact(self) -> None:
+        _surface, receipt = GATE.mutated_receipts()["public_signal_relabeling"]
+
+        with self.assertRaises(GATE.D64ExternalRecursionAdapterError) as err:
+            GATE.verify_statement_receipt(receipt, external_verify=fake_external_verify)
+        self.assertIn(err.exception.layer, {"public_signal_binding", "artifact_binding"})
 
     def test_statement_receipt_rejects_embedded_proof_and_vk_swap(self) -> None:
         _surface, receipt = GATE.mutated_receipts()["embedded_proof_and_verification_key_payload_relabeling"]

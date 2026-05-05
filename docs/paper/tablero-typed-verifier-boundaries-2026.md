@@ -1133,7 +1133,7 @@ The issue `#386` gate binds the issue `#379` d64 nested-verifier contract
 commitment
 `blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a`,
 maps `21` contract fields into `22` Groth16 public signals, and verifies an
-`806` byte proof. Its statement envelope rejects `35 / 35` relabeling,
+`806` byte proof. Its statement envelope rejects `36 / 36` relabeling,
 artifact-binding, setup-binding, metric-smuggling, and parser/schema mutations.
 This is not a stronger recursion claim. It is a stronger boundary claim: even
 when the source result remains a bounded no-go for a local nested-verifier proof

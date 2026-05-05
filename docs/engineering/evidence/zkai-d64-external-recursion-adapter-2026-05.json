@@ -26,7 +26,7 @@
     "public_signals": "docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05/public.json",
     "verification_key": "docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05/verification_key.json"
   },
-  "case_count": 35,
+  "case_count": 36,
   "cases": [
     {
       "baseline_accepted": true,
@@ -213,14 +213,14 @@
       "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
-      "error": "receipt keys mismatch: missing=[] extra=['receipt_metrics']",
+      "error": "receipt metrics mismatch",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "mutated_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "mutated_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
       "mutation": "proof_generation_time_metric_smuggled",
       "rejected": true,
-      "rejection_layer": "parser_or_schema",
+      "rejection_layer": "receipt_metrics",
       "surface": "receipt_metrics"
     },
     {
@@ -258,14 +258,14 @@
       "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
-      "error": "receipt keys mismatch: missing=[] extra=['receipt_metrics']",
+      "error": "receipt metrics mismatch",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "mutated_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "mutated_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
       "mutation": "proof_size_metric_smuggled",
       "rejected": true,
-      "rejection_layer": "parser_or_schema",
+      "rejection_layer": "receipt_metrics",
       "surface": "receipt_metrics"
     },
     {
@@ -468,6 +468,21 @@
       "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
+      "error": "statement keys mismatch: missing=[] extra=['unexpected']",
+      "mutated_accepted": false,
+      "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
+      "mutated_statement_commitment": "blake2b-256:c3acb61fddd77b2404fea6413d0d116cc24ec24901907303a41b1ca3864b0d0e",
+      "mutated_statement_sha256": "0ab5825eae80a4d2b709c7d3696f01948eca73528efe84c32f5210859dc1c2ba",
+      "mutation": "unknown_statement_field_added",
+      "rejected": true,
+      "rejection_layer": "statement_policy",
+      "surface": "statement_policy"
+    },
+    {
+      "baseline_accepted": true,
+      "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
+      "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
+      "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
       "error": "receipt keys mismatch: missing=[] extra=['unexpected']",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
@@ -543,14 +558,14 @@
       "baseline_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "baseline_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "baseline_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
-      "error": "receipt keys mismatch: missing=[] extra=['receipt_metrics']",
+      "error": "receipt metrics mismatch",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "cb49dad6e9bf6b875f967e69f97216c6ab0d96305a3f93ac485294fd3a344d3b",
       "mutated_statement_commitment": "blake2b-256:6402b1e4e4bcba56c11e93f9b960458cc24caa2a643a1f63e0305267abc3b4f8",
       "mutated_statement_sha256": "1f4f9ec33a65f1c61a7f60b983b524d04caab5fd93932808c8508740cc4db574",
       "mutation": "verifier_time_metric_smuggled",
       "rejected": true,
-      "rejection_layer": "parser_or_schema",
+      "rejection_layer": "receipt_metrics",
       "surface": "receipt_metrics"
     }
   ],
@@ -693,6 +708,10 @@
       "surface": "receipt_commitment"
     },
     {
+      "mutation": "unknown_statement_field_added",
+      "surface": "statement_policy"
+    },
+    {
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
@@ -737,7 +756,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_d64_external_recursion_adapter_gate.py --write-json docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.tsv",
-    "git_commit": "bab17b8c8f0612d33038012de52deec972d52988"
+    "git_commit": "cc7ad5cc1271ae982fde5ef1eadb0863ad9df881"
   },
   "result": "GO",
   "schema": "zkai-d64-external-recursion-adapter-gate-v1",

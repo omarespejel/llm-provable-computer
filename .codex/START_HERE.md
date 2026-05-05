@@ -53,7 +53,7 @@ This repository currently has three live lanes.
    - The d64 nested-verifier backend contract now has a real external
      `snarkjs/Groth16` statement receipt over issue `#386`: the checked proof is
      `806` bytes, binds `21` contract fields into `22` public signals, and
-     rejects `35 / 35` relabeling, artifact-binding, setup-binding,
+     rejects `36 / 36` relabeling, artifact-binding, setup-binding,
      metric-smuggling, and parser/schema mutations. This is an external SNARK
      statement receipt over the d64 nested-verifier contract, not Stwo-native
      recursion or verification of the underlying Stwo slice verifiers inside

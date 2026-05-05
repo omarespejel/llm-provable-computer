@@ -79,7 +79,7 @@ nested-verifier contract surface: a real `snarkjs/Groth16` statement receipt now
 binds the issue `#379` nested-verifier contract commitment
 `blake2b-256:d2aadb57aa5f0ab996fe740dc8e6b8fca12c30149de4208d2e9dab2828232d3a`,
 maps `21` contract fields into `22` public signals, verifies an `806` byte
-proof, and rejects `35 / 35` relabeling / artifact-binding / setup-binding /
+proof, and rejects `36 / 36` relabeling / artifact-binding / setup-binding /
 metric-smuggling / parser mutations. This is useful external-control evidence,
 but it is still not Stwo-native recursion and not verification of the underlying
 Stwo slice verifiers inside Groth16.
