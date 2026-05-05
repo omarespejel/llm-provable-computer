@@ -77,6 +77,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "mutation rejection"):
             GATE.validate_payload(payload)
 
+    def test_gate_rejects_malformed_next_go_criteria_as_gate_error(self) -> None:
+        payload = GATE.build_payload()
+        payload.pop("mutation_cases")
+        payload.pop("mutations_checked")
+        payload.pop("mutations_rejected")
+        payload.pop("all_mutations_rejected")
+        payload["next_go_criteria"] = None
+
+        with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "next-go criteria drift"):
+            GATE.validate_payload(payload, allow_missing_mutation_summary=True)
+
     def test_tsv_columns_are_stable(self) -> None:
         payload = GATE.build_payload()
 

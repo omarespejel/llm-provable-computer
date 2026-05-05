@@ -540,7 +540,10 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     }
     if payload.get("metrics") != expected_metrics:
         raise AttentionKvRouteSelectorError("metric smuggling")
-    if tuple(payload.get("next_go_criteria", ())) != EXPECTED_NEXT_GO_CRITERIA:
+    next_go_criteria = payload.get("next_go_criteria")
+    if not isinstance(next_go_criteria, list) or any(not isinstance(item, str) for item in next_go_criteria):
+        raise AttentionKvRouteSelectorError("next-go criteria drift")
+    if tuple(next_go_criteria) != EXPECTED_NEXT_GO_CRITERIA:
         raise AttentionKvRouteSelectorError("next-go criteria drift")
     non_claims = payload.get("non_claims")
     if not isinstance(non_claims, list) or any("not " not in str(item) for item in non_claims):
