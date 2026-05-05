@@ -629,6 +629,22 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_evidence_path_anchor_allows_explicit_non_applicable_entries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            findings = MOD.Findings()
+
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
+                "phase38_composition_continuity",
+                "schemas",
+                "Not applicable: no standalone schema.",
+                findings,
+            )
+
+            self.assertEqual(findings.errors, [])
+
     def test_claim_evidence_path_anchor_reports_resolution_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)

@@ -116,6 +116,10 @@ TABLERO_CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "evidence_commands",
     "non_claims",
 )
+# Tablero claims span theorem statements, measured results, red-team checks, and
+# explicit no-go boundaries. Implementation/test keys are optional and still
+# validated when present; forcing them onto theorem-only claims would create
+# false precision rather than a stronger evidence ledger.
 TABLERO_CLAIM_EVIDENCE_PATH_KEYS = (
     "paper_locations",
     "specs",
@@ -564,6 +568,10 @@ def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
     return rel_path, anchor or fragment or None
 
 
+def is_explicit_non_applicable_entry(entry: str) -> bool:
+    return entry.strip().lower().startswith("not applicable:")
+
+
 def resolve_repo_relative_path(
     repo_root: pathlib.Path, rel_path: str
 ) -> tuple[pathlib.Path | None, str | None]:
@@ -597,6 +605,9 @@ def check_claim_evidence_path_anchor(
     entry: str,
     findings: Findings,
 ) -> None:
+    if is_explicit_non_applicable_entry(entry):
+        return
+
     rel_path, anchor = split_evidence_path_anchor(entry)
     target, path_error = resolve_repo_relative_path(repo_root, rel_path)
     if target is None:
@@ -762,7 +773,13 @@ def check_claim_evidence_matrix_file(
     required_claim_ids: set[str],
     paper_label: str,
     required_lists: tuple[str, ...] = CLAIM_EVIDENCE_REQUIRED_LISTS,
-    path_keys: tuple[str, ...] = ("paper_locations", "implementation", "specs"),
+    path_keys: tuple[str, ...] = (
+        "paper_locations",
+        "implementation",
+        "specs",
+        "schemas",
+        "artifact_files",
+    ),
 ) -> None:
     evidence_path = repo_root / evidence_file
     if not evidence_path.exists():

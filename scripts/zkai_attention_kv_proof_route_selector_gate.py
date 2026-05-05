@@ -125,6 +125,8 @@ class AttentionKvRouteSelectorError(ValueError):
 
 
 def _load_source_module():
+    """Load the source-backed attention/KV probe without package assumptions."""
+
     spec = importlib.util.spec_from_file_location("zkai_attention_kv_transition_receipt_probe", SOURCE_SCRIPT)
     if spec is None or spec.loader is None:
         raise AttentionKvRouteSelectorError(f"failed to load source script: {SOURCE_SCRIPT}")
@@ -137,10 +139,14 @@ SOURCE = _load_source_module()
 
 
 def canonical_json_bytes(value: Any) -> bytes:
+    """Serialize payload fragments deterministically before hashing."""
+
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def blake2b_commitment(value: Any, domain: str) -> str:
+    """Commit to a typed payload fragment under an explicit domain string."""
+
     digest = hashlib.blake2b(digest_size=32)
     digest.update(domain.encode("utf-8"))
     digest.update(b"\0")
@@ -149,6 +155,8 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 
 
 def _git_commit() -> str:
+    """Return the current repository commit, or an explicit unavailable marker."""
+
     try:
         completed = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
@@ -163,6 +171,8 @@ def _git_commit() -> str:
 
 
 def _generated_at() -> str:
+    """Return a reproducible generation timestamp from SOURCE_DATE_EPOCH."""
+
     raw = os.environ.get("SOURCE_DATE_EPOCH", str(SOURCE_DATE_EPOCH_DEFAULT))
     try:
         timestamp = int(raw)
@@ -172,6 +182,8 @@ def _generated_at() -> str:
 
 
 def load_source_payload(path: pathlib.Path = SOURCE_EVIDENCE_JSON) -> dict[str, Any]:
+    """Load and validate the source-backed receipt payload used as input."""
+
     if path.exists():
         payload = json.loads(path.read_text(encoding="utf-8"))
     else:
@@ -181,10 +193,14 @@ def load_source_payload(path: pathlib.Path = SOURCE_EVIDENCE_JSON) -> dict[str, 
 
 
 def route_inventory() -> list[dict[str, Any]]:
+    """Return the checked route candidates as fresh dictionaries."""
+
     return [dict(route) for route in EXPECTED_ROUTES]
 
 
 def source_contract_summary(source_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the source-backed receipt fields relevant to route selection."""
+
     receipt = source_payload["receipt"]
     return {
         "source_schema": source_payload["schema"],
@@ -202,6 +218,8 @@ def source_contract_summary(source_payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_payload() -> dict[str, Any]:
+    """Build and self-validate the proof-route selector decision payload."""
+
     source_payload = load_source_payload()
     summary = source_contract_summary(source_payload)
     routes = route_inventory()
@@ -266,6 +284,8 @@ def build_payload() -> dict[str, Any]:
 
 
 def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
+    """Apply one deterministic mutation that the selector must reject."""
+
     out = copy.deepcopy(payload)
     out.pop("mutation_cases", None)
     out.pop("mutations_checked", None)
@@ -310,6 +330,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
 
 
 def run_mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Run every expected mutation and record whether validation rejects it."""
+
     cases = []
     for name in EXPECTED_MUTATION_NAMES:
         mutated = mutate_payload(payload, name)
@@ -323,6 +345,8 @@ def run_mutation_cases(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def validate_source_contract(summary: Any) -> None:
+    """Validate that the source-backed receipt contract has not drifted."""
+
     if not isinstance(summary, dict):
         raise AttentionKvRouteSelectorError("source contract must be an object")
     if summary.get("source_schema") != SOURCE.SCHEMA:
@@ -349,11 +373,15 @@ def validate_source_contract(summary: Any) -> None:
 
 
 def validate_routes(routes: Any) -> None:
+    """Reject route inventory edits that would silently change the gate question."""
+
     if routes != route_inventory():
         raise AttentionKvRouteSelectorError("route inventory drift")
 
 
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
+    """Validate selector shape, commitments, non-claims, and fail-closed cases."""
+
     if not isinstance(payload, dict):
         raise AttentionKvRouteSelectorError("payload must be an object")
     allowed_keys = {
@@ -433,6 +461,8 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
 
 
 def to_tsv(payload: dict[str, Any]) -> str:
+    """Render the selector result as a stable one-row TSV summary."""
+
     rows: list[str] = []
     writer = csv.DictWriter(_ListWriter(rows), fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
@@ -454,14 +484,20 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 class _ListWriter:
     def __init__(self, rows: list[str]) -> None:
+        """Create a minimal file-like adapter for csv.DictWriter."""
+
         self.rows = rows
 
     def write(self, value: str) -> int:
+        """Append one CSV chunk and report the written byte count."""
+
         self.rows.append(value)
         return len(value)
 
 
 def write_outputs(payload: dict[str, Any], json_out: pathlib.Path, tsv_out: pathlib.Path) -> None:
+    """Validate and write the JSON/TSV evidence artifacts."""
+
     validate_payload(payload)
     json_out.parent.mkdir(parents=True, exist_ok=True)
     tsv_out.parent.mkdir(parents=True, exist_ok=True)
@@ -470,6 +506,8 @@ def write_outputs(payload: dict[str, Any], json_out: pathlib.Path, tsv_out: path
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line flags for stdout and checked-in evidence output."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="print JSON to stdout")
     parser.add_argument("--write-json", type=pathlib.Path, default=JSON_OUT)
@@ -479,6 +517,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """CLI entrypoint."""
+
     args = parse_args()
     payload = build_payload()
     if args.json:
