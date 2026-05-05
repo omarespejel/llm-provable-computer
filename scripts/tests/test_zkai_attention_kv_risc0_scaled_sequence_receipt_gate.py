@@ -121,16 +121,22 @@ class ZkAiAttentionKvRisc0SequenceReceiptGateTests(unittest.TestCase):
         self.assertGreater(metrics["proof_generation_time_ms"], 0)
         self.assertGreater(metrics["verifier_time_ms"], 0)
 
-    def test_carried_prove_time_accepts_alternate_receipt_artifact(self) -> None:
+    def test_carried_prove_time_accepts_matching_receipt_artifact(self) -> None:
+        payload = self.fresh_payload()
+        receipt_path = GATE.ROOT / payload["receipt_artifact"]["path"]
+
+        self.assertEqual(
+            GATE.carried_proof_generation_time(payload, receipt_path.read_bytes()),
+            payload["proof_metrics"]["proof_generation_time_ms"],
+        )
+
+    def test_carried_prove_time_does_not_cross_receipt_artifacts(self) -> None:
         payload = self.fresh_payload()
         receipt_path = GATE.ROOT / payload["receipt_artifact"]["path"]
         previous = copy.deepcopy(payload)
         previous["receipt_artifact"]["sha256"] = "00" * 32
 
-        self.assertEqual(
-            GATE.carried_proof_generation_time(previous, receipt_path.read_bytes()),
-            payload["proof_metrics"]["proof_generation_time_ms"],
-        )
+        self.assertIsNone(GATE.carried_proof_generation_time(previous, receipt_path.read_bytes()))
 
     def test_receipt_path_rejects_source_tree_outputs(self) -> None:
         source_path = GATE.ROOT / "scripts" / "zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py"
