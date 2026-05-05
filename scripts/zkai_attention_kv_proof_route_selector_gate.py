@@ -259,12 +259,22 @@ def route_inventory() -> list[dict[str, Any]]:
 
     snark = snark_receipt_summary(load_snark_payload())
     routes = [dict(route) for route in BASE_ROUTES]
-    routes[2]["evidence"] = snark["evidence"]
-    routes[2]["proof_system"] = snark["proof_system"]
-    routes[2]["proof_size_bytes"] = snark["proof_size_bytes"]
-    routes[2]["public_signal_count"] = snark["public_signal_count"]
-    routes[2]["statement_commitment"] = snark["statement_commitment"]
-    routes[2]["receipt_commitment"] = snark["receipt_commitment"]
+    snark_route = next(
+        (
+            route
+            for route in routes
+            if route.get("route_id") == "external_snark_attention_kv_statement_receipt"
+        ),
+        None,
+    )
+    if snark_route is None:
+        raise AttentionKvRouteSelectorError("missing external SNARK route candidate")
+    snark_route["evidence"] = snark["evidence"]
+    snark_route["proof_system"] = snark["proof_system"]
+    snark_route["proof_size_bytes"] = snark["proof_size_bytes"]
+    snark_route["public_signal_count"] = snark["public_signal_count"]
+    snark_route["statement_commitment"] = snark["statement_commitment"]
+    snark_route["receipt_commitment"] = snark["receipt_commitment"]
     return routes
 
 

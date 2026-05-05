@@ -567,6 +567,18 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
         out[name] = (surface, receipt)
 
     out: dict[str, tuple[str, dict[str, Any]]] = {}
+
+    def relabel_embedded_input(receipt: dict[str, Any]) -> None:
+        receipt_input = require_object(receipt.get("input"), "receipt input")
+        contract = receipt_input.get("contract")
+        if not isinstance(contract, list) or not contract:
+            raise AttentionKvSnarkReceiptError("receipt input contract must be a non-empty list", "parser_or_schema")
+        contract[0] = "12345"
+
+    def relabel_embedded_artifact_map(receipt: dict[str, Any]) -> None:
+        artifacts = require_object(receipt.get("artifacts"), "receipt artifacts")
+        artifacts["proof"] = "other-proof.json"
+
     mutate("source_statement_commitment_relabeling", "statement_policy", lambda r: r["statement"]["source_contract"]["receipt"].__setitem__("statement_commitment", "blake2b-256:" + "00" * 32))
     mutate("model_config_commitment_relabeling", "statement_policy", lambda r: r["statement"]["source_contract"]["receipt"].__setitem__("model_config_commitment", "blake2b-256:" + "11" * 32))
     mutate("prior_kv_cache_commitment_relabeling", "statement_policy", lambda r: r["statement"]["source_contract"]["receipt"].__setitem__("prior_kv_cache_commitment", "blake2b-256:" + "22" * 32))
@@ -594,8 +606,8 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
     mutate("verification_key_file_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("verification_key_file_sha256", "dd" * 32))
     mutate("circuit_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("circuit_artifact_sha256", "ee" * 32))
     mutate("input_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("input_artifact_sha256", "ff" * 32))
-    mutate("embedded_input_relabeling", "artifact_binding", lambda r: r["input"]["contract"].__setitem__(0, "12345"))
-    mutate("embedded_artifact_map_relabeling", "artifact_binding", lambda r: r["artifacts"].__setitem__("proof", "other-proof.json"))
+    mutate("embedded_input_relabeling", "artifact_binding", relabel_embedded_input)
+    mutate("embedded_artifact_map_relabeling", "artifact_binding", relabel_embedded_artifact_map)
     mutate("setup_commitment_relabeling", "setup_binding", lambda r: r["statement"].__setitem__("setup_commitment", "00" * 32))
     mutate("proof_size_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("proof_size_bytes", 1))
     mutate("verifier_time_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("verifier_time_ms", 0.001))
