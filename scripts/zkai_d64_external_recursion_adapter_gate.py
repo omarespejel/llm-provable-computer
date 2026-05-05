@@ -23,6 +23,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -75,6 +76,7 @@ EXTERNAL_SYSTEM = {
 TIMING_POLICY = "not_measured_in_this_gate"
 BN128_FIELD_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
 ARTIFACTS = {
     "circuit": "d64_external_recursion_adapter.circom",
@@ -397,7 +399,10 @@ def _refresh_statement_commitment(receipt: dict[str, Any]) -> None:
 def snarkjs_command() -> tuple[str, ...]:
     configured = os.environ.get(SNARKJS_ENV)
     if configured:
-        return (configured,)
+        command = tuple(shlex.split(configured))
+        if not command:
+            raise D64ExternalRecursionAdapterError(f"{SNARKJS_ENV} is set but empty", layer="external_proof_verifier")
+        return command
     return (str(SNARKJS_BINARY),)
 
 
@@ -417,7 +422,7 @@ def assert_snarkjs_version(command: tuple[str, ...]) -> None:
     except OSError as err:
         command_text = " ".join(command)
         raise D64ExternalRecursionAdapterError(
-            f"failed to launch snarkjs command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to snarkjs {SNARKJS_VERSION}: {err}",
+            f"failed to launch snarkjs command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to a snarkjs {SNARKJS_VERSION} path or command: {err}",
             layer="external_proof_verifier",
         ) from err
     output = ANSI_ESCAPE_RE.sub("", "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part))
@@ -461,7 +466,7 @@ def _snarkjs_verify_cached(cache_key: str, proof_bytes: bytes, public_bytes: byt
         except OSError as err:
             command_text = " ".join([*command, "groth16", "verify"])
             raise D64ExternalRecursionAdapterError(
-                f"failed to launch snarkjs verifier command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to snarkjs {SNARKJS_VERSION}: {err}",
+                f"failed to launch snarkjs verifier command `{command_text}`; run `npm ci --prefix scripts` or set {SNARKJS_ENV} to a snarkjs {SNARKJS_VERSION} path or command: {err}",
                 layer="external_proof_verifier",
             ) from err
     output = ANSI_ESCAPE_RE.sub("", "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part))
@@ -554,7 +559,10 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
         out[name] = (surface, receipt)
 
     out: dict[str, tuple[str, dict[str, Any]]] = {}
-    nested = lambda r: r["statement"]["source_contract"]["nested_verifier_contract"]
+
+    def nested(r: dict[str, Any]) -> dict[str, Any]:
+        return r["statement"]["source_contract"]["nested_verifier_contract"]
+
     mutate("nested_verifier_contract_commitment_relabeling", "statement_policy", lambda r: r["statement"]["source_contract"].__setitem__("nested_verifier_contract_commitment", "blake2b-256:" + "00" * 32))
     mutate("source_aggregation_target_relabeling", "statement_policy", lambda r: nested(r).__setitem__("source_aggregation_target_commitment", "blake2b-256:" + "11" * 32))
     mutate("input_block_receipt_commitment_relabeling", "statement_policy", lambda r: nested(r).__setitem__("input_block_receipt_commitment", "blake2b-256:" + "22" * 32))
@@ -734,7 +742,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
     expect_equal(payload["summary"], SUMMARY, "summary")
-    require_object(payload["repro"], "repro")
+    repro = require_object(payload["repro"], "repro")
+    expect_keys(repro, {"git_commit", "command"}, "repro")
+    expect_equal(repro.get("command"), GATE_COMMAND, "repro command")
+    git_commit = repro.get("git_commit")
+    if not isinstance(git_commit, str) or (git_commit != "unknown" and GIT_COMMIT_RE.fullmatch(git_commit) is None):
+        raise D64ExternalRecursionAdapterError("repro git_commit must be `unknown` or a 40-hex git commit", layer="parser_or_schema")
     inventory = require_list(payload["mutation_inventory"], "mutation inventory")
     expect_equal(tuple((item.get("mutation"), item.get("surface")) for item in inventory), EXPECTED_MUTATION_INVENTORY, "mutation inventory")
     cases = require_list(payload["cases"], "cases")

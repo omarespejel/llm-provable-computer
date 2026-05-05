@@ -57,11 +57,28 @@ class D64ExternalRecursionAdapterGateTests(unittest.TestCase):
         )
 
     def test_repro_git_commit_ignores_environment_override(self) -> None:
+        actual_commit = "a" * 40
         with mock.patch.dict(GATE.os.environ, {"ZKAI_D64_EXTERNAL_ADAPTER_GIT_COMMIT": "spoofed"}, clear=False):
-            with mock.patch.object(GATE, "_git_commit", return_value="actual-commit"):
+            with mock.patch.object(GATE, "_git_commit", return_value=actual_commit):
                 payload = GATE.run_gate(external_verify=fake_external_verify)
 
-        self.assertEqual(payload["repro"]["git_commit"], "actual-commit")
+        self.assertEqual(payload["repro"]["git_commit"], actual_commit)
+
+    def test_snarkjs_path_supports_command_with_args(self) -> None:
+        GATE.assert_snarkjs_version.cache_clear()
+        GATE._snarkjs_verify_cached.cache_clear()
+        responses = [
+            GATE.subprocess.CompletedProcess(["npx", "-y", "snarkjs@0.7.6", "--version"], 0, stdout="snarkjs@0.7.6\n", stderr=""),
+            GATE.subprocess.CompletedProcess(["npx", "-y", "snarkjs@0.7.6", "groth16", "verify"], 0, stdout="[INFO]  snarkJS: OK!\n", stderr=""),
+        ]
+        with mock.patch.dict(GATE.os.environ, {GATE.SNARKJS_ENV: "npx -y snarkjs@0.7.6"}, clear=False):
+            command = GATE.snarkjs_command()
+            with mock.patch.object(GATE.subprocess, "run", side_effect=responses) as run:
+                GATE._snarkjs_verify_cached("snarkjs-path-args-test", b"{}", b"[]", b"{}", command)
+
+        self.assertEqual(command, ("npx", "-y", "snarkjs@0.7.6"))
+        self.assertEqual(run.call_args_list[0].args[0], ["npx", "-y", "snarkjs@0.7.6", "--version"])
+        self.assertEqual(run.call_args_list[1].args[0][:5], ["npx", "-y", "snarkjs@0.7.6", "groth16", "verify"])
 
     def test_snarkjs_launch_failure_is_layered(self) -> None:
         GATE.assert_snarkjs_version.cache_clear()
@@ -120,6 +137,20 @@ class D64ExternalRecursionAdapterGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.D64ExternalRecursionAdapterError, "not all d64 external adapter mutations rejected") as err:
             GATE.validate_payload(forged)
         self.assertEqual(err.exception.layer, "mutation_suite")
+
+    def test_payload_validation_rejects_forged_repro(self) -> None:
+        payload = GATE.run_gate(external_verify=fake_external_verify)
+        forged_command = copy.deepcopy(payload)
+        forged_command["repro"]["command"] = "python3 scripts/fake_gate.py"
+        with self.assertRaisesRegex(GATE.D64ExternalRecursionAdapterError, "repro command mismatch") as command_err:
+            GATE.validate_payload(forged_command)
+        self.assertEqual(command_err.exception.layer, "parser_or_schema")
+
+        forged_commit = copy.deepcopy(payload)
+        forged_commit["repro"]["git_commit"] = "not-a-git-sha"
+        with self.assertRaisesRegex(GATE.D64ExternalRecursionAdapterError, "repro git_commit must be") as commit_err:
+            GATE.validate_payload(forged_commit)
+        self.assertEqual(commit_err.exception.layer, "parser_or_schema")
 
     def test_payload_validation_rederives_statement_receipt(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
