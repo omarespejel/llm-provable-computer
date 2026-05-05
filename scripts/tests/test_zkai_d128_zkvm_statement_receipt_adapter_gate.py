@@ -123,6 +123,9 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
             self.assertEqual(route["status"], "NO_GO_ZKVM_RECEIPT_VERIFICATION_NOT_IMPLEMENTED")
             self.assertEqual(route["first_blocker"], "missing_receipt_verification_and_public_values_binding")
             self.assertTrue(route["receipt_artifact_candidate_valid"])
+            self.assertEqual(route["receipt_artifact_probe"]["max_size_bytes"], GATE.MAX_RECEIPT_CANDIDATE_BYTES)
+            self.assertFalse(route["receipt_artifact_probe"]["size_bound_exceeded"])
+            self.assertNotIn("size_bytes", route["receipt_artifact_probe"])
 
     def test_backend_blocker_prefers_toolchain_ready_route(self) -> None:
         probe = self.fixture_probe()
@@ -162,6 +165,8 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
         self.assertEqual(route["first_blocker"], "missing_or_unreadable_receipt_artifact")
         self.assertFalse(route["receipt_artifact_candidate_valid"])
         self.assertEqual(route["receipt_artifact_probe"]["reason"], "empty_receipt_artifact")
+        self.assertFalse(route["receipt_artifact_probe"]["size_bound_exceeded"])
+        self.assertNotIn("size_bytes", route["receipt_artifact_probe"])
         self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER)
         self.assertEqual(payload["summary"], GATE.SUMMARY_BY_BLOCKER[GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER])
 
@@ -189,7 +194,9 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
 
         route = payload["route_decisions"][1]
         self.assertEqual(route["receipt_artifact_probe"]["reason"], "oversized_receipt_artifact")
-        self.assertGreater(route["receipt_artifact_probe"]["size_bytes"], GATE.MAX_RECEIPT_CANDIDATE_BYTES)
+        self.assertEqual(route["receipt_artifact_probe"]["max_size_bytes"], GATE.MAX_RECEIPT_CANDIDATE_BYTES)
+        self.assertTrue(route["receipt_artifact_probe"]["size_bound_exceeded"])
+        self.assertNotIn("size_bytes", route["receipt_artifact_probe"])
         self.assertEqual(payload["backend_decision"]["first_blocker"], GATE.UNREADABLE_RECEIPT_ARTIFACT_BLOCKER)
 
     def test_backend_blocker_prefers_route_with_receipt_artifact(self) -> None:
@@ -235,6 +242,20 @@ class D128ZkvmStatementReceiptAdapterGateTests(unittest.TestCase):
         core["route_decisions"][0]["usable_today"] = True
         core["route_decisions"][0]["status"] = "GO_ZKVM_STATEMENT_RECEIPT_AVAILABLE"
         core["route_decisions"][0]["first_blocker"] = "none"
+        with self.assertRaisesRegex(GATE.D128ZkvmStatementReceiptAdapterError, "route decisions mismatch") as err:
+            GATE.validate_core_payload(core)
+        self.assertEqual(err.exception.layer, "route_decisions")
+
+    def test_rejects_receipt_probe_bound_drift(self) -> None:
+        payload = self.payload()
+        core = GATE._core_payload(payload)
+        del core["route_decisions"][0]["receipt_artifact_probe"]["size_bound_exceeded"]
+        with self.assertRaisesRegex(GATE.D128ZkvmStatementReceiptAdapterError, "route decisions mismatch") as err:
+            GATE.validate_core_payload(core)
+        self.assertEqual(err.exception.layer, "route_decisions")
+
+        core = GATE._core_payload(payload)
+        core["route_decisions"][0]["receipt_artifact_probe"]["max_size_bytes"] = 1
         with self.assertRaisesRegex(GATE.D128ZkvmStatementReceiptAdapterError, "route decisions mismatch") as err:
             GATE.validate_core_payload(core)
         self.assertEqual(err.exception.layer, "route_decisions")

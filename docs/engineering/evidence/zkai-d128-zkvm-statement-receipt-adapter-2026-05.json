@@ -19,7 +19,7 @@
     "result": "NO_GO",
     "usable_route_ids": []
   },
-  "case_count": 21,
+  "case_count": 23,
   "cases": [
     {
       "error": "source contract mismatch",
@@ -115,6 +115,20 @@
     {
       "error": "route decisions mismatch",
       "mutation": "receipt_artifact_smuggled",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "route_decisions"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "receipt_probe_size_bound_removed",
+      "rejected": true,
+      "rejection_layer": "route_decisions",
+      "surface": "route_decisions"
+    },
+    {
+      "error": "route decisions mismatch",
+      "mutation": "receipt_probe_size_limit_changed",
       "rejected": true,
       "rejection_layer": "route_decisions",
       "surface": "route_decisions"
@@ -311,6 +325,14 @@
       "surface": "route_decisions"
     },
     {
+      "mutation": "receipt_probe_size_bound_removed",
+      "surface": "route_decisions"
+    },
+    {
+      "mutation": "receipt_probe_size_limit_changed",
+      "surface": "route_decisions"
+    },
+    {
       "mutation": "proof_size_metric_smuggled",
       "surface": "backend_decision"
     },
@@ -367,8 +389,9 @@
       "receipt_artifact_probe": {
         "candidate_valid": true,
         "exists": true,
+        "max_size_bytes": 1048576,
         "reason": "receipt_candidate_parseable",
-        "size_bytes": 15573
+        "size_bound_exceeded": false
       },
       "required_commands": [
         "rzup",
@@ -397,8 +420,9 @@
       "receipt_artifact_probe": {
         "candidate_valid": false,
         "exists": false,
+        "max_size_bytes": 1048576,
         "reason": "missing_receipt_artifact",
-        "size_bytes": null
+        "size_bound_exceeded": false
       },
       "required_commands": [
         "sp1up",
