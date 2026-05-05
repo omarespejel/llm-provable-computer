@@ -388,6 +388,7 @@ def baseline_receipt() -> dict[str, Any]:
         "verification_key": verification_key,
         "input": input_json,
         "receipt_metrics": expected_receipt_metrics(),
+        "validation_commands": list(VALIDATION_COMMANDS),
         "non_claims": list(NON_CLAIMS),
     }
     receipt["receipt_commitment"] = receipt_commitment(receipt)
@@ -505,12 +506,14 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
             "snarkjs_proof",
             "statement",
             "statement_commitment",
+            "validation_commands",
             "verification_key",
         },
         "receipt",
     )
     expect_equal(receipt.get("schema"), RECEIPT_SCHEMA, "receipt schema")
     expect_equal(receipt.get("non_claims"), NON_CLAIMS, "non claims")
+    expect_equal(receipt.get("validation_commands"), VALIDATION_COMMANDS, "validation commands")
     proof, public_signals, verification_key = _snarkjs_payloads(receipt)
     statement = require_object(receipt.get("statement"), "statement")
     expected_statement = baseline_receipt()["statement"]
@@ -622,10 +625,10 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
     mutate("proof_generation_time_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("proof_generation_time_ms", 0.001))
     mutate("statement_commitment_relabeling", "statement_commitment", lambda r: r.__setitem__("statement_commitment", "blake2b-256:" + "50" * 32), refresh=False)
     mutate("receipt_commitment_relabeling", "receipt_commitment", lambda r: r.__setitem__("receipt_commitment", "blake2b-256:" + "60" * 32), refresh=False)
-    mutate("unknown_statement_field_added", "statement_policy", lambda r: r["statement"].__setitem__("unexpected", True))
+    mutate("unknown_statement_field_added", "statement_policy", lambda r: r["statement"].__setitem__("unexpected", "yes"))
     mutate("non_claims_removed", "parser_or_schema", lambda r: r.__setitem__("non_claims", r["non_claims"][:-1]))
     mutate("validation_command_drift", "parser_or_schema", lambda r: r.__setitem__("validation_commands", ["echo fake"]))
-    mutate("unknown_top_level_field_added", "parser_or_schema", lambda r: r.__setitem__("unexpected", True))
+    mutate("unknown_top_level_field_added", "parser_or_schema", lambda r: r.__setitem__("unexpected", "yes"))
     return out
 
 

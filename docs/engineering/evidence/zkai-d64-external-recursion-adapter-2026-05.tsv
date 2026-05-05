@@ -30,7 +30,7 @@ source_aggregation_target_relabeling	statement_policy	True	False	True	statement_
 statement_commitment_relabeling	statement_commitment	True	False	True	statement_commitment	statement_commitment mismatch
 unknown_statement_field_added	statement_policy	True	False	True	statement_policy	statement keys mismatch: missing=[] extra=['unexpected']
 unknown_top_level_field_added	parser_or_schema	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['unexpected']
-validation_command_drift	parser_or_schema	True	False	True	parser_or_schema	receipt keys mismatch: missing=[] extra=['validation_commands']
+validation_command_drift	parser_or_schema	True	False	True	parser_or_schema	validation commands mismatch
 verification_key_file_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification_key_file_sha256 mismatch
 verification_key_hash_relabeling	artifact_binding	True	False	True	artifact_binding	verification key canonical hash mismatch
 verifier_domain_relabeling	domain_or_version_allowlist	True	False	True	domain_or_version_allowlist	verifier_domain mismatch
