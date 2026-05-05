@@ -119,6 +119,24 @@ class AttentionKvSnarkStatementReceiptGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "parser_or_schema")
 
+    def test_embedded_input_mutation_guard_fails_closed(self) -> None:
+        receipt = GATE.baseline_receipt()
+        receipt["input"]["contract"] = None
+
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "receipt input contract") as err:
+            GATE._relabel_embedded_input(receipt)
+
+        self.assertEqual(err.exception.layer, "parser_or_schema")
+
+    def test_embedded_artifact_map_mutation_guard_fails_closed(self) -> None:
+        receipt = GATE.baseline_receipt()
+        receipt["artifacts"] = None
+
+        with self.assertRaisesRegex(GATE.AttentionKvSnarkReceiptError, "receipt artifacts") as err:
+            GATE._relabel_embedded_artifact_map(receipt)
+
+        self.assertEqual(err.exception.layer, "parser_or_schema")
+
     def test_payload_validation_rejects_forged_summary(self) -> None:
         payload = GATE.run_gate(external_verify=fake_external_verify)
         forged = copy.deepcopy(payload)
