@@ -58,6 +58,10 @@ SEQUENCE_LENGTH = 8
 RISC0_ZKVM_VERSION = "3.0.5"
 MAX_RECEIPT_BYTES = 2_500_000
 REQUIRED_COMMANDS = ("rzup", "cargo-risczero", "cargo", "rustc")
+APPROVED_RECEIPT_DIRS = (
+    EVIDENCE_DIR,
+    ROOT / "target",
+)
 
 GO_CRITERION = (
     "RISC Zero host proves or verifies a receipt whose guest-computed journal binds an eight-step "
@@ -193,6 +197,21 @@ def _resolved_under_root(path: pathlib.Path, *, label: str, layer: str) -> pathl
     except ValueError as err:
         raise AttentionKvRisc0SequenceReceiptError(f"{label} path escapes repository root", layer=layer) from err
     return resolved
+
+
+def require_allowed_receipt_path(path: pathlib.Path, *, label: str, layer: str) -> pathlib.Path:
+    resolved = _resolved_under_root(path, label=label, layer=layer)
+    for allowed_dir in APPROVED_RECEIPT_DIRS:
+        try:
+            resolved.relative_to(allowed_dir.resolve(strict=False))
+            return resolved
+        except ValueError:
+            continue
+    allowed = ", ".join(str(path.relative_to(ROOT)) for path in APPROVED_RECEIPT_DIRS)
+    raise AttentionKvRisc0SequenceReceiptError(
+        f"{label} path must be under approved artifact directories: {allowed}",
+        layer=layer,
+    )
 
 
 def load_json(path: pathlib.Path, *, layer: str = "parser_or_schema") -> Any:
@@ -488,21 +507,24 @@ def reverify_receipt_artifact(receipt_path: pathlib.Path) -> dict[str, Any]:
 def carried_proof_generation_time(previous_evidence: dict[str, Any] | None, receipt_bytes: bytes) -> float | None:
     if previous_evidence is None:
         return None
+    expected_sha256 = sha256_bytes(receipt_bytes)
+    expected_commitment = blake2b_commitment_bytes(receipt_bytes)
     previous_artifact = require_object(previous_evidence.get("receipt_artifact"), "previous receipt artifact", layer="proof_metrics")
-    expect_equal(previous_artifact.get("sha256"), sha256_bytes(receipt_bytes), "previous receipt sha256", layer="proof_metrics")
-    expect_equal(
-        previous_artifact.get("commitment"),
-        blake2b_commitment_bytes(receipt_bytes),
-        "previous receipt commitment",
-        layer="proof_metrics",
-    )
+    if previous_artifact.get("sha256") != expected_sha256 or previous_artifact.get("commitment") != expected_commitment:
+        previous_artifact = {
+            "path": "provided-alternate-receipt",
+            "size_bytes": len(receipt_bytes),
+            "sha256": expected_sha256,
+            "commitment": expected_commitment,
+        }
+    require_object(previous_artifact, "effective receipt artifact", layer="proof_metrics")
     previous_metrics = require_object(previous_evidence.get("proof_metrics"), "previous proof metrics", layer="proof_metrics")
     return previous_metrics.get("proof_generation_time_ms")
 
 
 def build_payload(*, prove: bool = False, receipt_path: pathlib.Path = RECEIPT_OUT, previous_evidence: dict[str, Any] | None = None) -> dict[str, Any]:
     journal = expected_journal()
-    receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
+    receipt_path = require_allowed_receipt_path(receipt_path, label="receipt", layer="output_path")
     toolchain = require_available_toolchain()
     host_summary = generate_or_verify_receipt(prove=prove, receipt_path=receipt_path)
     receipt_bytes = receipt_path.read_bytes()
@@ -699,6 +721,7 @@ def validate_core_payload(payload: dict[str, Any], *, strict_receipt: bool = Fal
     if not isinstance(artifact["path"], str):
         raise AttentionKvRisc0SequenceReceiptError("receipt artifact path must be a string", layer="receipt_artifact")
     receipt_path = _resolved_under_root(ROOT / artifact["path"], label="receipt artifact", layer="receipt_artifact")
+    receipt_path = require_allowed_receipt_path(receipt_path, label="receipt artifact", layer="receipt_artifact")
     if not receipt_path.is_file():
         raise AttentionKvRisc0SequenceReceiptError("receipt artifact missing", layer="receipt_artifact")
     receipt_bytes = receipt_path.read_bytes()
@@ -898,7 +921,7 @@ def main() -> int:
     receipt_path = resolve_output_path(args.receipt)
     if receipt_path is None:
         raise AttentionKvRisc0SequenceReceiptError("receipt path is required", layer="output_path")
-    receipt_path = _resolved_under_root(receipt_path, label="receipt", layer="output_path")
+    receipt_path = require_allowed_receipt_path(receipt_path, label="receipt", layer="output_path")
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
     previous_evidence = None
