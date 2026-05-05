@@ -30,7 +30,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["source_contract"]["present_public_fields"], list(GATE.REQUIRED_PUBLIC_FIELDS))
         self.assertEqual(
             payload["proof_backed_routes_available"],
-            ["external_snark_attention_kv_statement_receipt", "external_zkvm_attention_kv_statement_receipt"],
+            ["external_snark_attention_kv_statement_receipt", "external_zkvm_attention_kv_semantics_receipt"],
         )
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
