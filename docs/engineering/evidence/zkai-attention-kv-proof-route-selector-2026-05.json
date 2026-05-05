@@ -1,7 +1,7 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_OR_SOFTMAX",
-  "decision": "GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV",
+  "claim_boundary": "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_RECEIPTS_PROOF_BACKED_NOT_NATIVE_STWO_OR_SOFTMAX",
+  "decision": "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
     "attention_output": [
@@ -61,6 +61,84 @@
     "selected_position": 0,
     "timing_policy": "single_local_run_engineering_only",
     "verifier_time_ms": 14.937917,
+    "verifier_time_source": "current_verify_run"
+  },
+  "external_risc0_scaled_sequence_receipt": {
+    "all_mutations_rejected": true,
+    "attention_outputs": [
+      [
+        2,
+        1
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        5,
+        -2
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        -3,
+        4
+      ]
+    ],
+    "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_OR_SOFTMAX",
+    "decision": "GO_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT_FOR_CARRIED_KV_STATE",
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json",
+    "final_kv_items": 10,
+    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
+    "mutations_checked": 27,
+    "mutations_rejected": 27,
+    "proof_generation_time_source": "current_prove_run",
+    "proof_size_bytes": 264146,
+    "proof_system": "RISC Zero",
+    "proof_system_version": "3.0.5",
+    "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "result": "GO",
+    "schema": "zkai-attention-kv-risc0-scaled-sequence-receipt-gate-v1",
+    "selected_positions": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      4,
+      5,
+      6
+    ],
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "timing_policy": "single_local_run_engineering_only",
+    "transition_commitments": [
+      "blake2b-256:8b2c053e7c22602fddd21ce904c3f62470f2308ff56a270b9d4aa5e62a72d031",
+      "blake2b-256:03725d3c67a236eb6b463e36f6c893ff08506e609953448a6ef55f11ae984070",
+      "blake2b-256:0321e0a9516b759d1843770151e69dcf9677ca4864e4ed91c349c1ddc624de6b",
+      "blake2b-256:33f195f146e55eea0c2b1c359875452647c971d320330400a9495506e4082876",
+      "blake2b-256:a15007d50be410c877195640198d0a7c57906416b98ec7ac58f317db2cbdbaef",
+      "blake2b-256:f44355d66b11039c405ff4ccb614478cde50eec7d6164bdb7df4995a552534f4",
+      "blake2b-256:479fb934ae6f30110faba1e61b5058fedee759c2f3cb8e1d7f1f007ebb2df8d6",
+      "blake2b-256:05b47ab6f8aca5db84b2d4ce0b35a311862d0a3398e643d5bee5909713289c6f"
+    ],
+    "transition_rows": 8,
+    "verifier_time_ms": 18.056459,
     "verifier_time_source": "current_verify_run"
   },
   "external_risc0_sequence_receipt": {
@@ -131,10 +209,13 @@
   },
   "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "31a7a0a2bbc3e694e3a159a3502c2be1e3751735",
+  "git_commit": "779190a1a80a4493550d74f7934469644089d828",
   "metrics": {
     "proof_generation_time_ms": null,
     "risc0_receipt_size_bytes": 221842,
+    "risc0_scaled_sequence_receipt_size_bytes": 264146,
+    "risc0_scaled_sequence_verifier_time_ms": 18.056459,
+    "risc0_scaled_sequence_verifier_time_source": "current_verify_run",
     "risc0_sequence_receipt_size_bytes": 246730,
     "risc0_sequence_verifier_time_ms": 15.980917000000002,
     "risc0_sequence_verifier_time_source": "current_verify_run",
@@ -243,6 +324,36 @@
       "rejected": true
     },
     {
+      "name": "external_zkvm_scaled_sequence_route_removed",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_scaled_sequence_receipt_decision_drift",
+      "reason": "external RISC Zero scaled sequence receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_scaled_sequence_receipt_mutation_rejections_drift",
+      "reason": "external RISC Zero scaled sequence receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_scaled_sequence_length_drift",
+      "reason": "external RISC Zero scaled sequence receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_scaled_sequence_intermediate_state_drift",
+      "reason": "external RISC Zero scaled sequence receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_zkvm_scaled_sequence_metric_source_drift",
+      "reason": "external RISC Zero scaled sequence receipt drift",
+      "rejected": true
+    },
+    {
       "name": "fake_verifier_time_metric",
       "reason": "metric smuggling",
       "rejected": true
@@ -278,11 +389,12 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 26,
-  "mutations_rejected": 26,
+  "mutations_checked": 32,
+  "mutations_rejected": 32,
   "next_go_criteria": [
     "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
-    "the carried KV-cache sequence scales beyond a tiny three-step two-wide integer-argmax fixture",
+    "the carried KV-cache sequence scales beyond a fixed eight-step two-wide integer-argmax fixture",
+    "a wider d=8 or d=16 fixture preserves the same intermediate-state binding guarantees",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics"
   ],
@@ -300,7 +412,8 @@
   "proof_backed_routes_available": [
     "external_snark_attention_kv_statement_receipt",
     "external_zkvm_attention_kv_semantics_receipt",
-    "external_zkvm_attention_kv_sequence_semantics_receipt"
+    "external_zkvm_attention_kv_sequence_semantics_receipt",
+    "external_zkvm_attention_kv_scaled_sequence_semantics_receipt"
   ],
   "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
   "route_candidates": [
@@ -366,6 +479,24 @@
       "usable_today": true
     },
     {
+      "blocker": null,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json",
+      "final_kv_items": 10,
+      "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+      "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
+      "proof_backed": true,
+      "proof_size_bytes": 264146,
+      "proof_system": "RISC Zero",
+      "proof_system_version": "3.0.5",
+      "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+      "route_id": "external_zkvm_attention_kv_scaled_sequence_semantics_receipt",
+      "sequence_length": 8,
+      "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+      "status": "GO_RISC0_ATTENTION_KV_SCALED_SEQUENCE_SEMANTICS_RECEIPT",
+      "transition_rows": 8,
+      "usable_today": true
+    },
+    {
       "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
       "proof_backed": false,
       "route_id": "softmax_attention_kv_claim",
@@ -374,7 +505,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:c77afeaee867c4dd68971e0418c2d33117986fceeeca86f56c2543cdefba2fdf",
+  "selector_commitment": "blake2b-256:545c63b63e3e55083dc0f9fdf0bcc730063992a17abd1430c204491680894e9a",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

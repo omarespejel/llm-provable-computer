@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `68fa36b66788a702f5e310303ace3931ece62d5e` (matches
+**Mainline tip at last refresh:** `779190a1a80a4493550d74f7934469644089d828` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -33,8 +33,11 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 22. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
 23. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
 24. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
-25. `docs/engineering/reproducibility.md`
-26. `git status --short --branch`
+25. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
+26. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
+27. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+28. `docs/engineering/reproducibility.md`
+29. `git status --short --branch`
 
 ## Current lane split
 
@@ -182,11 +185,21 @@ Tablero boundary.
   sequence evidence in a zkVM, still not native Stwo attention arithmetic,
   Softmax, long-context inference, recursion, or PCD; see
   `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`.
+- Issue `#444` extends the same carried-state zkVM route to a fixed eight-step
+  carried KV-cache sequence: selected positions `[0, 2, 3, 4, 5, 4, 5, 6]`,
+  outputs `[[2, 1], [4, 2], [5, -2], [0, 6], [7, 1], [0, 6], [7, 1], [-3, 4]]`,
+  final KV rows `10`, receipt size `264146` bytes, local verifier time
+  `18.056 ms`, and `27 / 27` deletion/reordering/intermediate-state/metadata/
+  metric/claim-boundary mutations rejected. This is scaled fixed-fixture
+  carried-state evidence in a zkVM, still not native Stwo attention arithmetic,
+  Softmax, long-context inference, recursion, or PCD; see
+  `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`.
 - The attention/KV proof-route selector records a narrow
-  `GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
+  `GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`
   for the external SNARK statement-receipt route, the RISC Zero transition
-  semantics route, and the RISC Zero sequence semantics route while keeping
-  local Stwo attention arithmetic and Softmax as bounded
+  semantics route, the RISC Zero three-step sequence semantics route, and the
+  RISC Zero fixed eight-step sequence semantics route while keeping local Stwo
+  attention arithmetic and Softmax as bounded
   non-results; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or

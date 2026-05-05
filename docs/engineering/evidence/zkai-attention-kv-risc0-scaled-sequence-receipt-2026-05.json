@@ -1,0 +1,2643 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 27,
+  "cases": [
+    {
+      "error": "journal mismatch",
+      "mutation": "transition_deleted",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "transition_reordered",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "intermediate_prior_kv_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "intermediate_next_kv_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "intermediate_input_query_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "intermediate_attention_output_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "intermediate_score_trace_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "initial_kv_cache_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "final_kv_cache_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "input_steps_reordered",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "sequence_length_relabeling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "sequence_journal"
+    },
+    {
+      "error": "transition commitments mismatch",
+      "mutation": "transition_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_contract",
+      "surface": "statement_contract"
+    },
+    {
+      "error": "statement fields mismatch",
+      "mutation": "statement_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_contract",
+      "surface": "statement_contract"
+    },
+    {
+      "error": "route id mismatch",
+      "mutation": "route_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "system mismatch",
+      "mutation": "system_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "statement fields mismatch",
+      "mutation": "image_id_relabeling",
+      "rejected": true,
+      "rejection_layer": "statement_contract",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "receipt commitment mismatch",
+      "mutation": "receipt_commitment_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "strict receipt reverified mismatch",
+      "mutation": "strict_reverification_relabeling",
+      "rejected": true,
+      "rejection_layer": "receipt_metadata",
+      "surface": "receipt_metadata"
+    },
+    {
+      "error": "proof size mismatch",
+      "mutation": "receipt_size_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary proof time mismatch",
+      "mutation": "proof_generation_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "summary verify time mismatch",
+      "mutation": "verifier_time_metric_smuggling",
+      "rejected": true,
+      "rejection_layer": "proof_metrics",
+      "surface": "proof_metrics"
+    },
+    {
+      "error": "claim boundary mismatch",
+      "mutation": "native_stwo_claim_smuggling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "journal mismatch",
+      "mutation": "softmax_claim_smuggling",
+      "rejected": true,
+      "rejection_layer": "sequence_journal",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "recursion_claim_smuggling",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "non claims mismatch",
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "validation commands mismatch",
+      "mutation": "validation_command_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "error": "payload keys mismatch: missing=[] extra=['unknown']",
+      "mutation": "unknown_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "RISC0_RECEIPT_PROVES_EIGHT_STEP_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_NOT_STWO_OR_SOFTMAX",
+  "decision": "GO_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT_FOR_CARRIED_KV_STATE",
+  "go_criterion": "RISC Zero host proves or verifies a receipt whose guest-computed journal binds an eight-step carried integer-argmax attention/KV sequence and rejects deletion, reordering, or relabeling of intermediate state",
+  "issue": 444,
+  "journal": {
+    "final_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      },
+      {
+        "key": [
+          1,
+          -1
+        ],
+        "position": 2,
+        "value": [
+          4,
+          2
+        ]
+      },
+      {
+        "key": [
+          0,
+          2
+        ],
+        "position": 3,
+        "value": [
+          5,
+          -2
+        ]
+      },
+      {
+        "key": [
+          2,
+          1
+        ],
+        "position": 4,
+        "value": [
+          0,
+          6
+        ]
+      },
+      {
+        "key": [
+          -1,
+          3
+        ],
+        "position": 5,
+        "value": [
+          7,
+          1
+        ]
+      },
+      {
+        "key": [
+          3,
+          -2
+        ],
+        "position": 6,
+        "value": [
+          -3,
+          4
+        ]
+      },
+      {
+        "key": [
+          -2,
+          -1
+        ],
+        "position": 7,
+        "value": [
+          6,
+          6
+        ]
+      },
+      {
+        "key": [
+          1,
+          3
+        ],
+        "position": 8,
+        "value": [
+          8,
+          -1
+        ]
+      },
+      {
+        "key": [
+          2,
+          -2
+        ],
+        "position": 9,
+        "value": [
+          -5,
+          5
+        ]
+      }
+    ],
+    "initial_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      }
+    ],
+    "input_steps": [
+      {
+        "new_key": [
+          1,
+          -1
+        ],
+        "new_value": [
+          4,
+          2
+        ],
+        "query": [
+          1,
+          1
+        ],
+        "token_position": 2
+      },
+      {
+        "new_key": [
+          0,
+          2
+        ],
+        "new_value": [
+          5,
+          -2
+        ],
+        "query": [
+          2,
+          -1
+        ],
+        "token_position": 3
+      },
+      {
+        "new_key": [
+          2,
+          1
+        ],
+        "new_value": [
+          0,
+          6
+        ],
+        "query": [
+          -1,
+          2
+        ],
+        "token_position": 4
+      },
+      {
+        "new_key": [
+          -1,
+          3
+        ],
+        "new_value": [
+          7,
+          1
+        ],
+        "query": [
+          3,
+          0
+        ],
+        "token_position": 5
+      },
+      {
+        "new_key": [
+          3,
+          -2
+        ],
+        "new_value": [
+          -3,
+          4
+        ],
+        "query": [
+          0,
+          3
+        ],
+        "token_position": 6
+      },
+      {
+        "new_key": [
+          -2,
+          -1
+        ],
+        "new_value": [
+          6,
+          6
+        ],
+        "query": [
+          2,
+          2
+        ],
+        "token_position": 7
+      },
+      {
+        "new_key": [
+          1,
+          3
+        ],
+        "new_value": [
+          8,
+          -1
+        ],
+        "query": [
+          -2,
+          1
+        ],
+        "token_position": 8
+      },
+      {
+        "new_key": [
+          2,
+          -2
+        ],
+        "new_value": [
+          -5,
+          5
+        ],
+        "query": [
+          1,
+          -3
+        ],
+        "token_position": 9
+      }
+    ],
+    "key_width": 2,
+    "masking_policy": "none",
+    "schema": "zkai-attention-kv-risc0-scaled-sequence-journal-v1",
+    "semantics": "tiny-single-head-integer-argmax-attention-scaled-sequence-v1",
+    "sequence_length": 8,
+    "tie_break": "lowest_position",
+    "transitions": [
+      {
+        "attention_output": [
+          2,
+          1
+        ],
+        "input_step": {
+          "new_key": [
+            1,
+            -1
+          ],
+          "new_value": [
+            4,
+            2
+          ],
+          "query": [
+            1,
+            1
+          ],
+          "token_position": 2
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 1,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": 0,
+            "value": [
+              4,
+              2
+            ]
+          }
+        ],
+        "selected_position": 0,
+        "step_index": 0
+      },
+      {
+        "attention_output": [
+          4,
+          2
+        ],
+        "input_step": {
+          "new_key": [
+            0,
+            2
+          ],
+          "new_value": [
+            5,
+            -2
+          ],
+          "query": [
+            2,
+            -1
+          ],
+          "token_position": 3
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 2,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": -1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": 3,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": -2,
+            "value": [
+              5,
+              -2
+            ]
+          }
+        ],
+        "selected_position": 2,
+        "step_index": 1
+      },
+      {
+        "attention_output": [
+          5,
+          -2
+        ],
+        "input_step": {
+          "new_key": [
+            2,
+            1
+          ],
+          "new_value": [
+            0,
+            6
+          ],
+          "query": [
+            -1,
+            2
+          ],
+          "token_position": 4
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": -1,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 2,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": -3,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": 4,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": 0,
+            "value": [
+              0,
+              6
+            ]
+          }
+        ],
+        "selected_position": 3,
+        "step_index": 2
+      },
+      {
+        "attention_output": [
+          0,
+          6
+        ],
+        "input_step": {
+          "new_key": [
+            -1,
+            3
+          ],
+          "new_value": [
+            7,
+            1
+          ],
+          "query": [
+            3,
+            0
+          ],
+          "token_position": 5
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 3,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 0,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": 3,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": 0,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": 6,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "position": 5,
+            "score": -3,
+            "value": [
+              7,
+              1
+            ]
+          }
+        ],
+        "selected_position": 4,
+        "step_index": 3
+      },
+      {
+        "attention_output": [
+          7,
+          1
+        ],
+        "input_step": {
+          "new_key": [
+            3,
+            -2
+          ],
+          "new_value": [
+            -3,
+            4
+          ],
+          "query": [
+            0,
+            3
+          ],
+          "token_position": 6
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 3,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": -3,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": 6,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": 3,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "position": 5,
+            "score": 9,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "position": 6,
+            "score": -6,
+            "value": [
+              -3,
+              4
+            ]
+          }
+        ],
+        "selected_position": 5,
+        "step_index": 4
+      },
+      {
+        "attention_output": [
+          0,
+          6
+        ],
+        "input_step": {
+          "new_key": [
+            -2,
+            -1
+          ],
+          "new_value": [
+            6,
+            6
+          ],
+          "query": [
+            2,
+            2
+          ],
+          "token_position": 7
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "key": [
+              -2,
+              -1
+            ],
+            "position": 7,
+            "value": [
+              6,
+              6
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 2,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 2,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": 0,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": 4,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": 6,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "position": 5,
+            "score": 4,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "position": 6,
+            "score": 2,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "position": 7,
+            "score": -6,
+            "value": [
+              6,
+              6
+            ]
+          }
+        ],
+        "selected_position": 4,
+        "step_index": 5
+      },
+      {
+        "attention_output": [
+          7,
+          1
+        ],
+        "input_step": {
+          "new_key": [
+            1,
+            3
+          ],
+          "new_value": [
+            8,
+            -1
+          ],
+          "query": [
+            -2,
+            1
+          ],
+          "token_position": 8
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "key": [
+              -2,
+              -1
+            ],
+            "position": 7,
+            "value": [
+              6,
+              6
+            ]
+          },
+          {
+            "key": [
+              1,
+              3
+            ],
+            "position": 8,
+            "value": [
+              8,
+              -1
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "key": [
+              -2,
+              -1
+            ],
+            "position": 7,
+            "value": [
+              6,
+              6
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": -2,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": -3,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": 2,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": -3,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "position": 5,
+            "score": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "position": 6,
+            "score": -8,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "position": 7,
+            "score": 3,
+            "value": [
+              6,
+              6
+            ]
+          },
+          {
+            "position": 8,
+            "score": 1,
+            "value": [
+              8,
+              -1
+            ]
+          }
+        ],
+        "selected_position": 5,
+        "step_index": 6
+      },
+      {
+        "attention_output": [
+          -3,
+          4
+        ],
+        "input_step": {
+          "new_key": [
+            2,
+            -2
+          ],
+          "new_value": [
+            -5,
+            5
+          ],
+          "query": [
+            1,
+            -3
+          ],
+          "token_position": 9
+        },
+        "next_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "key": [
+              -2,
+              -1
+            ],
+            "position": 7,
+            "value": [
+              6,
+              6
+            ]
+          },
+          {
+            "key": [
+              1,
+              3
+            ],
+            "position": 8,
+            "value": [
+              8,
+              -1
+            ]
+          },
+          {
+            "key": [
+              2,
+              -2
+            ],
+            "position": 9,
+            "value": [
+              -5,
+              5
+            ]
+          }
+        ],
+        "prior_kv_cache": [
+          {
+            "key": [
+              1,
+              0
+            ],
+            "position": 0,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "key": [
+              0,
+              1
+            ],
+            "position": 1,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "key": [
+              1,
+              -1
+            ],
+            "position": 2,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "key": [
+              0,
+              2
+            ],
+            "position": 3,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "key": [
+              2,
+              1
+            ],
+            "position": 4,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "key": [
+              -1,
+              3
+            ],
+            "position": 5,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "key": [
+              3,
+              -2
+            ],
+            "position": 6,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "key": [
+              -2,
+              -1
+            ],
+            "position": 7,
+            "value": [
+              6,
+              6
+            ]
+          },
+          {
+            "key": [
+              1,
+              3
+            ],
+            "position": 8,
+            "value": [
+              8,
+              -1
+            ]
+          }
+        ],
+        "scores": [
+          {
+            "position": 0,
+            "score": 1,
+            "value": [
+              2,
+              1
+            ]
+          },
+          {
+            "position": 1,
+            "score": -3,
+            "value": [
+              -1,
+              3
+            ]
+          },
+          {
+            "position": 2,
+            "score": 4,
+            "value": [
+              4,
+              2
+            ]
+          },
+          {
+            "position": 3,
+            "score": -6,
+            "value": [
+              5,
+              -2
+            ]
+          },
+          {
+            "position": 4,
+            "score": -1,
+            "value": [
+              0,
+              6
+            ]
+          },
+          {
+            "position": 5,
+            "score": -10,
+            "value": [
+              7,
+              1
+            ]
+          },
+          {
+            "position": 6,
+            "score": 9,
+            "value": [
+              -3,
+              4
+            ]
+          },
+          {
+            "position": 7,
+            "score": 1,
+            "value": [
+              6,
+              6
+            ]
+          },
+          {
+            "position": 8,
+            "score": -8,
+            "value": [
+              8,
+              -1
+            ]
+          },
+          {
+            "position": 9,
+            "score": 8,
+            "value": [
+              -5,
+              5
+            ]
+          }
+        ],
+        "selected_position": 6,
+        "step_index": 7
+      }
+    ],
+    "value_width": 2
+  },
+  "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
+  "mutation_inventory": [
+    {
+      "mutation": "transition_deleted",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "transition_reordered",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "intermediate_prior_kv_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "intermediate_next_kv_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "intermediate_input_query_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "intermediate_attention_output_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "intermediate_score_trace_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "initial_kv_cache_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "final_kv_cache_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "input_steps_reordered",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "sequence_length_relabeling",
+      "surface": "sequence_journal"
+    },
+    {
+      "mutation": "transition_commitment_relabeling",
+      "surface": "statement_contract"
+    },
+    {
+      "mutation": "statement_commitment_relabeling",
+      "surface": "statement_contract"
+    },
+    {
+      "mutation": "route_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "system_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "image_id_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_commitment_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "strict_reverification_relabeling",
+      "surface": "receipt_metadata"
+    },
+    {
+      "mutation": "receipt_size_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "proof_generation_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "verifier_time_metric_smuggling",
+      "surface": "proof_metrics"
+    },
+    {
+      "mutation": "native_stwo_claim_smuggling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "softmax_claim_smuggling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "recursion_claim_smuggling",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "non_claim_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "validation_command_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "mutation": "unknown_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "non_claims": [
+    "not a native Stwo attention/KV AIR or proof",
+    "not a Softmax attention proof",
+    "not full transformer inference",
+    "not recursive verification or PCD",
+    "not agent correctness",
+    "not a public zkML benchmark row",
+    "not a Starknet deployment result"
+  ],
+  "proof_metrics": {
+    "metrics_enabled": true,
+    "proof_generation_time_ms": 29761.523624999998,
+    "proof_generation_time_source": "current_prove_run",
+    "proof_size_bytes": 264146,
+    "timing_policy": "single_local_run_engineering_only",
+    "verifier_time_ms": 18.056459,
+    "verifier_time_source": "current_verify_run"
+  },
+  "receipt_artifact": {
+    "commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "path": "docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.bincode",
+    "sha256": "03b04e0b61a120185d60893f940d4525d1f72fabe736213f8092fc3b769fb0be",
+    "size_bytes": 264146
+  },
+  "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+  "receipt_verification": {
+    "decoded_journal_matches_expected": true,
+    "host_summary_mode": "verify",
+    "host_summary_schema": "zkai-attention-kv-risc0-scaled-sequence-host-summary-v1",
+    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "journal_sha256": "0c25c3c6c44d110a151c6eba88e79640c70bf4894bdb2a1c3792171a996f5fed",
+    "receipt_sha256": "03b04e0b61a120185d60893f940d4525d1f72fabe736213f8092fc3b769fb0be",
+    "receipt_verified": true,
+    "risc0_zkvm_version": "3.0.5",
+    "strict_receipt_reverified": true,
+    "verifier_executed": true
+  },
+  "result": "GO",
+  "route_id": "risc0_attention_kv_scaled_sequence_semantics_receipt",
+  "schema": "zkai-attention-kv-risc0-scaled-sequence-receipt-gate-v1",
+  "sequence_fixture": {
+    "case_id": "tiny_single_head_argmax_kv_scaled_sequence_v1",
+    "initial_kv_cache": [
+      {
+        "key": [
+          1,
+          0
+        ],
+        "position": 0,
+        "value": [
+          2,
+          1
+        ]
+      },
+      {
+        "key": [
+          0,
+          1
+        ],
+        "position": 1,
+        "value": [
+          -1,
+          3
+        ]
+      }
+    ],
+    "input_steps": [
+      {
+        "new_key": [
+          1,
+          -1
+        ],
+        "new_value": [
+          4,
+          2
+        ],
+        "query": [
+          1,
+          1
+        ],
+        "token_position": 2
+      },
+      {
+        "new_key": [
+          0,
+          2
+        ],
+        "new_value": [
+          5,
+          -2
+        ],
+        "query": [
+          2,
+          -1
+        ],
+        "token_position": 3
+      },
+      {
+        "new_key": [
+          2,
+          1
+        ],
+        "new_value": [
+          0,
+          6
+        ],
+        "query": [
+          -1,
+          2
+        ],
+        "token_position": 4
+      },
+      {
+        "new_key": [
+          -1,
+          3
+        ],
+        "new_value": [
+          7,
+          1
+        ],
+        "query": [
+          3,
+          0
+        ],
+        "token_position": 5
+      },
+      {
+        "new_key": [
+          3,
+          -2
+        ],
+        "new_value": [
+          -3,
+          4
+        ],
+        "query": [
+          0,
+          3
+        ],
+        "token_position": 6
+      },
+      {
+        "new_key": [
+          -2,
+          -1
+        ],
+        "new_value": [
+          6,
+          6
+        ],
+        "query": [
+          2,
+          2
+        ],
+        "token_position": 7
+      },
+      {
+        "new_key": [
+          1,
+          3
+        ],
+        "new_value": [
+          8,
+          -1
+        ],
+        "query": [
+          -2,
+          1
+        ],
+        "token_position": 8
+      },
+      {
+        "new_key": [
+          2,
+          -2
+        ],
+        "new_value": [
+          -5,
+          5
+        ],
+        "query": [
+          1,
+          -3
+        ],
+        "token_position": 9
+      }
+    ],
+    "model_config": {
+      "attention_mode": "integer_argmax_attention",
+      "head_count": 1,
+      "key_width": 2,
+      "masking_policy": "none",
+      "tie_break": "lowest_position",
+      "value_width": 2
+    }
+  },
+  "source_issue": 442,
+  "statement_fields": {
+    "final_kv_cache_commitment": "blake2b-256:e9f580e0c77919ba0bdd81c8bc492cb2efdbaef2eb03a44d8d4776f5f1852e44",
+    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "initial_kv_cache_commitment": "blake2b-256:f68ac8d3e8c30efa79f8185f75ba1bc790869e44b117b41536e779eb7106acb8",
+    "input_steps_commitment": "blake2b-256:ac4c5c06120a4b46dde31cee801fd745ac80851330cf6423bc779ead02da7c6b",
+    "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
+    "model_config_commitment": "blake2b-256:195d3ee9572bde832503a8879ea959650801e0b4bfb6be6977e7e414e5941241",
+    "outputs_commitment": "blake2b-256:c6055d585a6a65499fe7400750b9d36389b9f015f473638152f6ab445323c03b",
+    "proof_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "proof_status": "PROVEN_BY_RISC_ZERO_SEMANTICS_RECEIPT",
+    "public_instance_commitment": "blake2b-256:86613464b4f8dbb0b977b0224f9ec2e113e542abdc531a170400555cdfc791e3",
+    "route_id": "risc0_attention_kv_scaled_sequence_semantics_receipt",
+    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "statement_kind": "attention-kv-cache-scaled-sequence",
+    "transition_commitments": [
+      "blake2b-256:8b2c053e7c22602fddd21ce904c3f62470f2308ff56a270b9d4aa5e62a72d031",
+      "blake2b-256:03725d3c67a236eb6b463e36f6c893ff08506e609953448a6ef55f11ae984070",
+      "blake2b-256:0321e0a9516b759d1843770151e69dcf9677ca4864e4ed91c349c1ddc624de6b",
+      "blake2b-256:33f195f146e55eea0c2b1c359875452647c971d320330400a9495506e4082876",
+      "blake2b-256:a15007d50be410c877195640198d0a7c57906416b98ec7ac58f317db2cbdbaef",
+      "blake2b-256:f44355d66b11039c405ff4ccb614478cde50eec7d6164bdb7df4995a552534f4",
+      "blake2b-256:479fb934ae6f30110faba1e61b5058fedee759c2f3cb8e1d7f1f007ebb2df8d6",
+      "blake2b-256:05b47ab6f8aca5db84b2d4ce0b35a311862d0a3398e643d5bee5909713289c6f"
+    ],
+    "transition_rows_commitment": "blake2b-256:c225b1418a5715c76d4dd428b17ba9c30248e6bbd60b3ed46ef2809a927cf440",
+    "verifier_domain": "ptvm:zkai:attention-kv-scaled-sequence:risc0:v1"
+  },
+  "summary": {
+    "attention_outputs": [
+      [
+        2,
+        1
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        5,
+        -2
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        -3,
+        4
+      ]
+    ],
+    "final_kv_items": 10,
+    "image_id_hex": "62ff277241f8c89d6a0a208719d7052186a45b8ff62c1fa2c66ca6e4fe60204a",
+    "journal_commitment": "blake2b-256:47bfc132b2b097eb1718f0afbb235b3a0fc164c860599bd037e28a7949e5d777",
+    "proof_generation_time_ms": 29761.523624999998,
+    "proof_generation_time_source": "current_prove_run",
+    "receipt_commitment": "blake2b-256:e7144ebd655f1d23f1385c72aaba46e726bbfe78d3b0df48001445686ee5206f",
+    "receipt_size_bytes": 264146,
+    "selected_positions": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      4,
+      5,
+      6
+    ],
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:4ca5dedac45a22ed413ffc6bbdf6d066ea4288039f66198c69580fe34b314402",
+    "transition_rows": 8,
+    "verifier_time_ms": 18.056459,
+    "verifier_time_source": "current_verify_run"
+  },
+  "system": "RISC Zero",
+  "toolchain_probe": {
+    "commands": {
+      "cargo": {
+        "available": true,
+        "command": [
+          "cargo",
+          "--version"
+        ],
+        "command_id": "cargo",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo 1.92.0 (344c4567c 2025-10-21)"
+      },
+      "cargo-risczero": {
+        "available": true,
+        "command": [
+          "cargo",
+          "risczero",
+          "--version"
+        ],
+        "command_id": "cargo-risczero",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo-risczero 3.0.5"
+      },
+      "rustc": {
+        "available": true,
+        "command": [
+          "rustc",
+          "--version"
+        ],
+        "command_id": "rustc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rustc 1.92.0 (ded5c06cf 2025-12-08)"
+      },
+      "rzup": {
+        "available": true,
+        "command": [
+          "rzup",
+          "--version"
+        ],
+        "command_id": "rzup",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rzup 0.5.0"
+      }
+    },
+    "host_os": "darwin",
+    "probe_scope": "local_risc0_attention_kv_scaled_sequence_receipt_generation_and_verification",
+    "rzup_components": {
+      "cargo-risczero": "3.0.5",
+      "cpp": "2024.1.5",
+      "r0vm": "3.0.5",
+      "rust": "1.94.1"
+    }
+  },
+  "transition_commitments": [
+    "blake2b-256:8b2c053e7c22602fddd21ce904c3f62470f2308ff56a270b9d4aa5e62a72d031",
+    "blake2b-256:03725d3c67a236eb6b463e36f6c893ff08506e609953448a6ef55f11ae984070",
+    "blake2b-256:0321e0a9516b759d1843770151e69dcf9677ca4864e4ed91c349c1ddc624de6b",
+    "blake2b-256:33f195f146e55eea0c2b1c359875452647c971d320330400a9495506e4082876",
+    "blake2b-256:a15007d50be410c877195640198d0a7c57906416b98ec7ac58f317db2cbdbaef",
+    "blake2b-256:f44355d66b11039c405ff4ccb614478cde50eec7d6164bdb7df4995a552534f4",
+    "blake2b-256:479fb934ae6f30110faba1e61b5058fedee759c2f3cb8e1d7f1f007ebb2df8d6",
+    "blake2b-256:05b47ab6f8aca5db84b2d4ce0b35a311862d0a3398e643d5bee5909713289c6f"
+  ],
+  "validation_commands": [
+    "just gate-fast",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py --verify-existing --write-json target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.json --write-tsv target/zkai-attention-kv-risc0-scaled-sequence-receipt-verify.tsv",
+    "PATH=\"$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH\" python3 -m unittest scripts.tests.test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate",
+    "python3 -m py_compile scripts/zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py scripts/tests/test_zkai_attention_kv_risc0_scaled_sequence_receipt_gate.py",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate"
+  ]
+}

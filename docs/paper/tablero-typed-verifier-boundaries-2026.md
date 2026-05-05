@@ -896,13 +896,31 @@ anchored to
 `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-risc0-sequence-receipt-2026-05.json`.
 
+Issue `#444` then checks whether this carried-state discipline survives a
+larger fixed fixture rather than merely wrapping the three-step result. The
+scaled RISC Zero guest computes eight two-wide integer-argmax attention/KV
+updates, commits every intermediate transition row, and ends with a ten-row KV
+cache. The checked journal records selected positions `0`, `2`, `3`, `4`, `5`,
+`4`, `5`, and `6`, with attention outputs `(2, 1)`, `(4, 2)`, `(5, -2)`,
+`(0, 6)`, `(7, 1)`, `(0, 6)`, `(7, 1)`, and `(-3, 4)`. The receipt is
+`264146` bytes and rejects `27 / 27` deletion, reordering, intermediate-state
+relabeling, statement, receipt-metadata, metric-smuggling, native-Stwo, Softmax,
+recursion, non-claim, validation-command, and parser/schema mutations. This
+does not turn the result into long-context inference, Softmax, native Stwo
+attention proving, recursion, or PCD. It does show that the proof-backed
+carried-state receipt pattern is not limited to the smallest three-update toy
+sequence. It is anchored to
+`docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
+and
+`docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json`.
+
 The route selector is updated accordingly: it records
-`GO_EXTERNAL_SNARK_RISC0_TRANSITION_AND_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`, while
-local Stwo attention arithmetic and Softmax attention remain bounded
-non-results. It rejects `26 / 26`
-route-removal, receipt-drift, sequence-drift, fake-metric, next-go weakening,
-missing-field, blocker-removal, and claim-boundary mutations. This leaves the
-stronger-venue bridge precise: preserve the same
+`GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`,
+while local Stwo attention arithmetic and Softmax attention remain bounded
+non-results. It rejects `32 / 32` route-removal, receipt-drift, sequence-drift,
+scaled-sequence-drift, fake-metric, next-go weakening, missing-field,
+blocker-removal, and claim-boundary mutations. This leaves the stronger-venue
+bridge precise: preserve the same
 prior-state/input/output/intermediate-state/next-state public fields and replace
 the source contract or zkVM re-execution with a native proof of the chosen
 attention semantics. It

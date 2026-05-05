@@ -30,9 +30,11 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 24. `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
 25. `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`
 26. `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md`
-27. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-28. `docs/engineering/reproducibility.md`
-29. `git status --short --branch`
+27. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
+28. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
+29. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+30. `docs/engineering/reproducibility.md`
+31. `git status --short --branch`
 
 ## What this repository is now
 
@@ -82,8 +84,17 @@ This repository currently has three live lanes.
     zkVM semantics receipt, not native Stwo, not Softmax, not full inference,
     and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md`.
+  - Issue `#442` extends that route to a real three-step carried KV-cache
+    sequence receipt with selected positions `[0, 2, 3]`, a five-row final KV
+    cache, and `27 / 27` mutation rejections; see
+    `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`.
+  - Issue `#444` extends the same carried-state zkVM route to a fixed eight-step
+    sequence with selected positions `[0, 2, 3, 4, 5, 4, 5, 6]`, a ten-row final
+    KV cache, a `264146`-byte receipt, and `27 / 27` mutation rejections; see
+    `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`.
   - The attention/KV proof-route selector is now a narrow GO for the external
-    SNARK statement-receipt route and the RISC Zero semantics-receipt route,
+    SNARK statement-receipt route, RISC Zero transition receipt, RISC Zero
+    three-step sequence receipt, and RISC Zero fixed eight-step sequence receipt,
     while remaining a no-go for local Stwo attention arithmetic and Softmax; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,

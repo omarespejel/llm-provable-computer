@@ -80,10 +80,10 @@ git diff --check
 The attention/KV lane now has proof-backed statement binding via an external
 `snarkjs/Groth16` receipt over the source-backed transition contract, plus a
 RISC Zero receipt whose guest computes the tiny integer-argmax transition
-semantics. A follow-up RISC Zero receipt now computes a three-step carried
-KV-cache sequence and rejects deletion, reordering, and intermediate-state
-relabeling. The next research result should be native attention/KV proving or a
-larger carried-state zkVM sequence:
+semantics. Follow-up RISC Zero receipts now compute fixed three-step and
+eight-step carried KV-cache sequences and reject deletion, reordering, and
+intermediate-state relabeling. The next research result should be native
+attention/KV proving or a wider/masked carried-state zkVM sequence:
 
 1. Preserve the source-backed receipt contract that already binds prior KV, input,
    output, next KV, model config, verifier domain, and proof status.
@@ -91,8 +91,8 @@ larger carried-state zkVM sequence:
    statement-binding control.
 3. Replace the source contract or zkVM re-execution with a native Stwo proof
    that actually verifies the chosen attention arithmetic over the same public fields.
-4. In parallel, scale the RISC Zero route beyond the tiny three-step/two-wide
-   sequence only if it remains useful as carried-state evidence.
+4. In parallel, treat the eight-step/two-wide sequence as the current scaled
+   zkVM control and only widen further if it remains useful as carried-state evidence.
 5. Keep Softmax out of scope unless the proof actually covers the chosen attention
    semantics.
 6. Report GO only when the same relabeling surfaces reject after proof serialization.

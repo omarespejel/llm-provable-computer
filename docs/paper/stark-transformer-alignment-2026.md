@@ -1299,18 +1299,20 @@ The attention/KV receipt shows the same principle for autoregressive state:
 output binding alone is not enough if prior and next state can be relabeled. A
 follow-up RISC Zero receipt computes one tiny integer-argmax KV transition
 inside a zkVM guest. A later RISC Zero sequence receipt carries that state across
-three transitions and rejects deletion, reordering, and intermediate-state
-relabeling. That strengthens the carried-state claim without promoting it to
-native Stwo attention proving, Softmax, long-context inference, or full
-inference. These are not performance rows. They are the statement-semantics work
-that prevents future performance rows from being meaningless.
+three transitions, and a scaled follow-up carries the same discipline across a
+fixed eight-step sequence ending in a ten-row KV cache. Both reject deletion,
+reordering, and intermediate-state relabeling. That strengthens the carried-state
+claim without promoting it to native Stwo attention proving, Softmax,
+long-context inference, or full inference. These are not performance rows. They
+are the statement-semantics work that prevents future performance rows from
+being meaningless.
 
 The credible sequencing is therefore: first build or cleanly no-go the two-slice
 recursive/PCD backend; second measure proof size and verifier time only after that
 artifact exists; third add matched external rows only when public proof artifacts and
 verifier inputs make baseline verification and metadata mutation reproducible; fourth
-widen from a three-step attention/KV sequence receipt toward native attention
-proofs, larger carried-state proofs, and nonlinear policy receipts. That keeps the next
+widen from an eight-step/two-wide attention/KV sequence receipt toward native
+attention proofs, wider carried-state proofs, and nonlinear policy receipts. That keeps the next
 contribution technically attributable and prevents the paper from comparing
 unlike objects.
 

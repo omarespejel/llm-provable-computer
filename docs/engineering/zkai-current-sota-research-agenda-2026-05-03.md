@@ -163,11 +163,12 @@ public contract.
 3. **Stateful transformer track.** The source-backed attention/KV receipt now
    has an external `snarkjs/Groth16` statement receipt, so carried-state
    metadata is proof-bound to the source contract rather than merely narrated;
-   the RISC Zero transition and three-step sequence receipts now prove tiny
-   integer-argmax semantics and carried-state ordering in a zkVM. The next step
-   is native attention arithmetic proving, larger carried-state scaling, or an
-   explicit no-go for that same stateful public surface. Tracked in issue `#336`
-   and follow-up issue `#442`.
+   the RISC Zero transition, three-step sequence, and fixed eight-step sequence
+   receipts now prove tiny integer-argmax semantics and carried-state ordering
+   in a zkVM. The next step is native attention arithmetic proving, wider/masked
+   carried-state scaling, or an explicit no-go for that same stateful public
+   surface. Tracked in issue `#336`, follow-up issue `#442`, and scaled-sequence
+   issue `#444`.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers
