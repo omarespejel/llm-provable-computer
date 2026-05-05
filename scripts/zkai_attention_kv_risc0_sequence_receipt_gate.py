@@ -325,12 +325,21 @@ def statement_fields(journal: dict[str, Any], receipt_commitment: str, image_id_
     return fields
 
 
+def risc0_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env["PATH"] = f"{os.environ.get('HOME', '')}/.risc0/bin:{os.environ.get('HOME', '')}/.cargo/bin:" + env.get("PATH", "")
+    env.setdefault("CARGO_TARGET_DIR", str(ROOT / "target" / "risc0-attention-kv-sequence-receipt"))
+    env["RISC0_DEV_MODE"] = "0"
+    return env
+
+
 def command_entry(command_id: str, command: tuple[str, ...]) -> dict[str, Any]:
-    executable = shutil.which(command[0])
+    env = risc0_env()
+    executable = shutil.which(command[0], path=env.get("PATH"))
     entry = {"command_id": command_id, "command": list(command), "available": executable is not None, "returncode": None, "stdout": "", "stderr": ""}
     if executable is not None:
         try:
-            result = subprocess.run(list(command), check=False, text=True, capture_output=True, timeout=20, cwd=ROOT)
+            result = subprocess.run(list(command), check=False, text=True, capture_output=True, timeout=20, cwd=ROOT, env=env)
             entry["returncode"] = result.returncode
             entry["stdout"] = result.stdout.strip()
             entry["stderr"] = result.stderr.strip()
@@ -343,9 +352,10 @@ def command_entry(command_id: str, command: tuple[str, ...]) -> dict[str, Any]:
 
 
 def rzup_components() -> dict[str, str]:
-    if shutil.which("rzup") is None:
+    env = risc0_env()
+    if shutil.which("rzup", path=env.get("PATH")) is None:
         return {}
-    result = subprocess.run(["rzup", "show"], check=False, text=True, capture_output=True, timeout=20, cwd=ROOT)
+    result = subprocess.run(["rzup", "show"], check=False, text=True, capture_output=True, timeout=20, cwd=ROOT, env=env)
     components: dict[str, str] = {}
     current_name: str | None = None
     for raw_line in result.stdout.splitlines():
@@ -408,10 +418,7 @@ def local_risc0_toolchain_available() -> tuple[bool, str]:
 
 
 def run_host(mode: str, input_path: pathlib.Path, receipt_path: pathlib.Path, summary_path: pathlib.Path) -> dict[str, Any]:
-    env = os.environ.copy()
-    env["PATH"] = f"{os.environ.get('HOME', '')}/.risc0/bin:{os.environ.get('HOME', '')}/.cargo/bin:" + env.get("PATH", "")
-    env.setdefault("CARGO_TARGET_DIR", str(ROOT / "target" / "risc0-attention-kv-sequence-receipt"))
-    env["RISC0_DEV_MODE"] = "0"
+    env = risc0_env()
     command = [
         "cargo",
         "run",
