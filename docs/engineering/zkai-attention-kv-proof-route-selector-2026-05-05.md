@@ -55,6 +55,8 @@ Claim boundary:
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
+- External RISC Zero semantics receipt TSV: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.tsv`
+- External RISC Zero receipt artifact: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.bincode`
 - Generator: `scripts/zkai_attention_kv_proof_route_selector_gate.py`
 - Tests: `scripts/tests/test_zkai_attention_kv_proof_route_selector_gate.py`
 
