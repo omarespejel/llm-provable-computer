@@ -21,7 +21,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_gate_records_external_snark_go_and_source_contract_go(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(payload["decision"], GATE.DECISION)
+        self.assertEqual(payload["decision"], "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT")
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
         self.assertEqual(payload["source_contract"]["source_decision"], GATE.SOURCE.DECISION)

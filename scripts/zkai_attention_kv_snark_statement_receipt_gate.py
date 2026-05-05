@@ -71,6 +71,7 @@ EXTERNAL_SYSTEM = {
 TIMING_POLICY = "not_measured_in_this_gate"
 BN128_FIELD_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
 ARTIFACTS = {
     "circuit": "attention_kv_statement_receipt.circom",
@@ -141,6 +142,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("verification_key_file_hash_relabeling", "artifact_binding"),
     ("circuit_artifact_hash_relabeling", "artifact_binding"),
     ("input_artifact_hash_relabeling", "artifact_binding"),
+    ("embedded_input_relabeling", "artifact_binding"),
+    ("embedded_artifact_map_relabeling", "artifact_binding"),
     ("setup_commitment_relabeling", "setup_binding"),
     ("proof_size_metric_smuggled", "receipt_metrics"),
     ("verifier_time_metric_smuggled", "receipt_metrics"),
@@ -509,6 +512,11 @@ def verify_statement_receipt(receipt: dict[str, Any], *, external_verify: Callab
     expect_equal(receipt.get("schema"), RECEIPT_SCHEMA, "receipt schema")
     expect_equal(receipt.get("non_claims"), NON_CLAIMS, "non claims")
     proof, public_signals, verification_key = _snarkjs_payloads(receipt)
+    expect_equal(receipt.get("artifacts"), ARTIFACTS, "receipt artifacts", layer="artifact_binding")
+    expect_equal(receipt.get("input"), load_json(artifact_path("input")), "receipt input", layer="artifact_binding")
+    expect_equal(proof, load_json(artifact_path("proof")), "receipt proof", layer="artifact_binding")
+    expect_equal(public_signals, load_json(artifact_path("public_signals")), "receipt public signals", layer="artifact_binding")
+    expect_equal(verification_key, load_json(artifact_path("verification_key")), "receipt verification key", layer="artifact_binding")
     statement = require_object(receipt.get("statement"), "statement")
     if receipt.get("statement_commitment") != statement_commitment(statement):
         raise AttentionKvSnarkReceiptError("statement_commitment mismatch", layer="statement_commitment")
@@ -586,6 +594,8 @@ def mutated_receipts() -> dict[str, tuple[str, dict[str, Any]]]:
     mutate("verification_key_file_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("verification_key_file_sha256", "dd" * 32))
     mutate("circuit_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("circuit_artifact_sha256", "ee" * 32))
     mutate("input_artifact_hash_relabeling", "artifact_binding", lambda r: r["statement"].__setitem__("input_artifact_sha256", "ff" * 32))
+    mutate("embedded_input_relabeling", "artifact_binding", lambda r: r["input"]["contract"].__setitem__(0, "12345"))
+    mutate("embedded_artifact_map_relabeling", "artifact_binding", lambda r: r["artifacts"].__setitem__("proof", "other-proof.json"))
     mutate("setup_commitment_relabeling", "setup_binding", lambda r: r["statement"].__setitem__("setup_commitment", "00" * 32))
     mutate("proof_size_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("proof_size_bytes", 1))
     mutate("verifier_time_metric_smuggled", "receipt_metrics", lambda r: r.setdefault("receipt_metrics", {}).__setitem__("verifier_time_ms", 0.001))
@@ -761,7 +771,12 @@ def validate_payload(payload: dict[str, Any]) -> None:
     expect_equal(payload["non_claims"], NON_CLAIMS, "non claims")
     expect_equal(payload["validation_commands"], VALIDATION_COMMANDS, "validation commands")
     expect_equal(payload["summary"], SUMMARY, "summary")
-    require_object(payload["repro"], "repro")
+    repro = require_object(payload["repro"], "repro")
+    expect_keys(repro, {"command", "git_commit"}, "repro")
+    expect_equal(repro.get("command"), GATE_COMMAND, "repro command")
+    git_commit = repro.get("git_commit")
+    if not isinstance(git_commit, str) or (git_commit != "unknown" and GIT_COMMIT_RE.fullmatch(git_commit) is None):
+        raise AttentionKvSnarkReceiptError("repro git_commit must be a 40-character hex SHA or unknown", layer="parser_or_schema")
     inventory = require_list(payload["mutation_inventory"], "mutation inventory")
     expect_equal(tuple((item.get("mutation"), item.get("surface")) for item in inventory), EXPECTED_MUTATION_INVENTORY, "mutation inventory")
     cases = require_list(payload["cases"], "cases")

@@ -121,9 +121,17 @@ EXPECTED_MUTATION_NAMES = (
     "external_zkvm_route_relabel_go",
     "fake_verifier_time_metric",
     "fake_proof_size_metric",
+    "next_go_criteria_weakened",
     "claim_boundary_weakened",
     "first_blocker_removed",
     "unknown_field_injection",
+)
+
+EXPECTED_NEXT_GO_CRITERIA = (
+    "native Stwo proof or zkVM receipt verifies the same public-instance fields",
+    "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
+    "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
+    "Softmax is kept out of scope unless the proof covers Softmax semantics",
 )
 
 
@@ -314,12 +322,7 @@ def build_payload() -> dict[str, Any]:
             "verifier_time_ms": None,
             "timing_policy": snark_summary["timing_policy"],
         },
-        "next_go_criteria": [
-            "native Stwo proof or zkVM receipt verifies the same public-instance fields",
-            "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
-            "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
-            "Softmax is kept out of scope unless the proof covers Softmax semantics",
-        ],
+        "next_go_criteria": list(EXPECTED_NEXT_GO_CRITERIA),
         "non_claims": [
             "not a native attention arithmetic proof",
             "not a Stwo proof",
@@ -342,6 +345,7 @@ def build_payload() -> dict[str, Any]:
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
+            "next_go_criteria": payload["next_go_criteria"],
             "non_claims": payload["non_claims"],
         },
         "ptvm:zkai:attention-kv-proof-route-selector:v1",
@@ -393,6 +397,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["metrics"]["verifier_time_ms"] = 7.5
     elif name == "fake_proof_size_metric":
         out["metrics"]["proof_size_bytes"] = 1024
+    elif name == "next_go_criteria_weakened":
+        out["next_go_criteria"] = ["any zkVM receipt wraps the source-backed contract"]
     elif name == "claim_boundary_weakened":
         out["claim_boundary"] = "PROOF_BACKED_ATTENTION_KV_RECEIPT"
     elif name == "first_blocker_removed":
@@ -524,6 +530,8 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     }
     if payload.get("metrics") != expected_metrics:
         raise AttentionKvRouteSelectorError("metric smuggling")
+    if tuple(payload.get("next_go_criteria", ())) != EXPECTED_NEXT_GO_CRITERIA:
+        raise AttentionKvRouteSelectorError("next-go criteria drift")
     non_claims = payload.get("non_claims")
     if not isinstance(non_claims, list) or any("not " not in str(item) for item in non_claims):
         raise AttentionKvRouteSelectorError("non-claim drift")
@@ -538,6 +546,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
+            "next_go_criteria": payload["next_go_criteria"],
             "non_claims": payload["non_claims"],
         },
         "ptvm:zkai:attention-kv-proof-route-selector:v1",

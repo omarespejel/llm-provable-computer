@@ -861,8 +861,8 @@ adapter route for that same stateful surface. The checked receipt is a real
 contract's model/config, prior KV state, input/query state, attention output,
 next KV state, public-instance commitment, score-trace commitment, source proof
 status, source verifier domain, model id, and statement kind. It rejects
-`37 / 37` source-state, public-signal, artifact-hash, setup, metric-smuggling,
-non-claim, validation-command, statement-schema, and unknown-field mutations. This is
+`39 / 39` source-state, public-signal, embedded-artifact, artifact-hash, setup,
+metric-smuggling, non-claim, validation-command, statement-schema, and unknown-field mutations. This is
 proof-backed statement binding for the source contract, not a proof that the
 SNARK recomputes attention arithmetic. It is anchored to
 `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md` and
@@ -871,8 +871,8 @@ SNARK recomputes attention arithmetic. It is anchored to
 The route selector is updated accordingly: it records
 `GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT`, while
 local Stwo attention arithmetic, external zkVM attention/KV receipts, and
-Softmax attention remain bounded non-results. It rejects `14 / 14`
-route-removal, receipt-drift, fake-metric, missing-field, blocker-removal, and
+Softmax attention remain bounded non-results. It rejects `15 / 15`
+route-removal, receipt-drift, fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This leaves the stronger-venue bridge precise:
 preserve the same prior-state/input/output/next-state public fields and replace
 the source contract with a native proof of the chosen attention semantics. It

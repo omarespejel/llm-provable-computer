@@ -60,8 +60,8 @@ Claim boundary:
 | Required public fields | 10 |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
-| Mutations checked | 14 |
-| Mutations rejected | 14 |
+| Mutations checked | 15 |
+| Mutations rejected | 15 |
 
 The mutation suite rejects:
 
@@ -76,6 +76,7 @@ The mutation suite rejects:
 - fake external zkVM proof-backed route,
 - fake verifier-time metric,
 - fake proof-size metric,
+- next-go criteria weakening,
 - claim-boundary weakening,
 - first-blocker removal,
 - unknown top-level fields.
@@ -124,7 +125,8 @@ python3 -m py_compile \
 
 ## Next GO Criterion
 
-Produce one native Stwo proof or zkVM receipt that verifies the same public-instance
-fields and rejects the same state-relabeling surfaces after proof serialization.
-Do not promote Softmax, model-scale inference, or agent correctness until the
-proof actually covers those semantics.
+Produce one native Stwo proof or zkVM receipt that explicitly verifies the
+chosen attention transition semantics while preserving the same public-instance
+fields and rejecting the same state-relabeling surfaces after proof
+serialization. Do not promote Softmax, model-scale inference, or agent
+correctness until the proof actually covers those semantics.

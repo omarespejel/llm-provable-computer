@@ -25,7 +25,7 @@
     "public_signals": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05/public.json",
     "verification_key": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05/verification_key.json"
   },
-  "case_count": 37,
+  "case_count": 39,
   "cases": [
     {
       "baseline_accepted": true,
@@ -53,6 +53,36 @@
       "mutated_statement_commitment": "blake2b-256:19730361b7b5713fe055cc70b4928df6a84cc0427af2ecdae1e82ab46d529eb0",
       "mutated_statement_sha256": "2128e8481a840963802b16ab69e68dcf901463da0a2fb598f1f816efd810131a",
       "mutation": "circuit_artifact_hash_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "baseline_accepted": true,
+      "baseline_public_signals_sha256": "4dc0d239c0c63be85a1bb6b7d5d728613f3de7ebfb3edd32be1066484a4813cc",
+      "baseline_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+      "baseline_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
+      "error": "receipt artifacts mismatch",
+      "mutated_accepted": false,
+      "mutated_public_signals_sha256": "4dc0d239c0c63be85a1bb6b7d5d728613f3de7ebfb3edd32be1066484a4813cc",
+      "mutated_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+      "mutated_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
+      "mutation": "embedded_artifact_map_relabeling",
+      "rejected": true,
+      "rejection_layer": "artifact_binding",
+      "surface": "artifact_binding"
+    },
+    {
+      "baseline_accepted": true,
+      "baseline_public_signals_sha256": "4dc0d239c0c63be85a1bb6b7d5d728613f3de7ebfb3edd32be1066484a4813cc",
+      "baseline_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+      "baseline_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
+      "error": "receipt input mismatch",
+      "mutated_accepted": false,
+      "mutated_public_signals_sha256": "4dc0d239c0c63be85a1bb6b7d5d728613f3de7ebfb3edd32be1066484a4813cc",
+      "mutated_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+      "mutated_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
+      "mutation": "embedded_input_relabeling",
       "rejected": true,
       "rejection_layer": "artifact_binding",
       "surface": "artifact_binding"
@@ -287,14 +317,14 @@
       "baseline_public_signals_sha256": "4dc0d239c0c63be85a1bb6b7d5d728613f3de7ebfb3edd32be1066484a4813cc",
       "baseline_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
       "baseline_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
-      "error": "public signals hash mismatch",
+      "error": "receipt public signals mismatch",
       "mutated_accepted": false,
       "mutated_public_signals_sha256": "2eec3f89673dc39bba8b7c6819b6ae2bff749542dca283e58f0a0e285d39c9d4",
       "mutated_statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
       "mutated_statement_sha256": "1fe9998cc9a6386be8b7a49070777c4909c47f7876c661d85f2c607397a8821f",
       "mutation": "public_signal_relabeling",
       "rejected": true,
-      "rejection_layer": "public_signal_binding",
+      "rejection_layer": "artifact_binding",
       "surface": "public_signal_binding"
     },
     {
@@ -702,6 +732,14 @@
       "surface": "artifact_binding"
     },
     {
+      "mutation": "embedded_input_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
+      "mutation": "embedded_artifact_map_relabeling",
+      "surface": "artifact_binding"
+    },
+    {
       "mutation": "setup_commitment_relabeling",
       "surface": "setup_binding"
     },
@@ -777,7 +815,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_attention_kv_snark_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.tsv",
-    "git_commit": "ffe100ac279874e43e33eacd0ee58a5051520fa4"
+    "git_commit": "77d926b57178be358205deae664ffc93a1b5b02f"
   },
   "result": "GO",
   "schema": "zkai-attention-kv-snark-statement-receipt-gate-v1",
