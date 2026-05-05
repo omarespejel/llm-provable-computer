@@ -125,6 +125,23 @@ TABLERO_CLAIM_EVIDENCE_PATH_KEYS = (
     "specs",
     "evidence_files",
 )
+NON_PATH_EVIDENCE_NOTE_PATH_KEYS = frozenset(("schemas", "artifact_files"))
+EXPERIMENTAL_EVIDENCE_PATH_KEYS = (
+    "paper_locations",
+    "implementation",
+    "specs",
+    "schemas",
+    "artifact_files",
+    "evidence_files",
+)
+EXPERIMENTAL_NON_DEFAULT_TOKENS = (
+    "does not claim default",
+    "does not claim publication-default",
+    "not default",
+    "not a default",
+    "non-default",
+    "publication-default",
+)
 
 CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -606,6 +623,16 @@ def check_claim_evidence_path_anchor(
     findings: Findings,
 ) -> None:
     if is_explicit_non_applicable_entry(entry):
+        if key not in NON_PATH_EVIDENCE_NOTE_PATH_KEYS:
+            findings.error(
+                f"{evidence_path}: claim `{claim_id}` `{key}` uses `Not applicable:` "
+                "where a repo-relative path is required"
+            )
+            return
+        if not entry.partition(":")[2].strip():
+            findings.error(
+                f"{evidence_path}: claim `{claim_id}` `{key}` has empty `Not applicable:` note"
+            )
         return
 
     rel_path, anchor = split_evidence_path_anchor(entry)
@@ -641,6 +668,36 @@ def list_field(record: dict[str, object], key: str) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value]
     return []
+
+
+def check_experimental_evidence_boundary(
+    evidence_path: pathlib.Path,
+    claim_id: str,
+    record: dict[str, object],
+    findings: Findings,
+) -> None:
+    experimental_entries = [
+        entry
+        for key in EXPERIMENTAL_EVIDENCE_PATH_KEYS
+        for entry in list_field(record, key)
+        if "experimental" in entry.lower()
+    ]
+    if not experimental_entries:
+        return
+
+    boundary_text = " ".join(
+        [str(record.get("claim", "")), *list_field(record, "non_claims")]
+    ).lower()
+    if "experimental" not in boundary_text:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` references experimental evidence "
+            "without saying the claim is experimental-scoped"
+        )
+    if not any(token in boundary_text for token in EXPERIMENTAL_NON_DEFAULT_TOKENS):
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` references experimental evidence "
+            "without an explicit non-default/non-publication boundary"
+        )
 
 
 def fragment_scoped_search_text(text: str, anchor_offset: int) -> str | None:
@@ -849,6 +906,7 @@ def check_claim_evidence_matrix_file(
                 findings.error(
                     f"{evidence_path}: claim `{claim_id}` non-claim must explicitly negate an overclaim: {non_claim}"
                 )
+        check_experimental_evidence_boundary(evidence_path, claim_id, record, findings)
 
     missing_ids = sorted(required_claim_ids - seen_ids)
     extra_ids = sorted(seen_ids - required_claim_ids)

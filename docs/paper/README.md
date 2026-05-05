@@ -1,6 +1,6 @@
 # Paper Package
 
-This directory contains the presentation-facing paper package for:
+This directory contains the technical-review paper package for:
 
 `Tablero: Typed Verifier Boundaries for Layered STARK Systems, with Evidence from STARK-zkML`
 
@@ -21,14 +21,17 @@ Supporting publication assets:
 - `artifacts/`
 - `submission-v4-2026-04-11/`
 
-Core paper-facing generated assets:
+Core publication-safe generated assets:
 
 - `figures/tablero-results-overview-2026-04.svg`
-- `figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
 - `figures/tablero-replay-baseline-breakdown-2026-04.svg`
 - `evidence/tablero-results-overview-2026-04.tsv`
-- `evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`
 - `evidence/tablero-replay-baseline-breakdown-2026-04.tsv`
+
+Explicit experimental-review assets:
+
+- `figures/tablero-carry-aware-experimental-scaling-law-2026-04.svg`
+- `evidence/tablero-carry-aware-experimental-scaling-law-2026-04.tsv`
 
 Claim/evidence guardrail:
 

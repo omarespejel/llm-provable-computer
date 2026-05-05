@@ -645,6 +645,49 @@ class PaperPreflightTests(unittest.TestCase):
 
             self.assertEqual(findings.errors, [])
 
+    def test_claim_evidence_path_anchor_rejects_non_applicable_for_required_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            findings = MOD.Findings()
+
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE,
+                "phase38_composition_continuity",
+                "implementation",
+                "Not applicable: implementation exists only in prose.",
+                findings,
+            )
+
+            self.assertTrue(
+                any("repo-relative path is required" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_experimental_evidence_boundary_requires_scope_and_non_default_note(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            evidence_path = repo / MOD.TABLERO_CLAIM_EVIDENCE_FILE
+            record = {
+                "claim": "The checked grid has a growing ratio.",
+                "evidence_files": ["docs/paper/evidence/example-experimental.tsv"],
+                "non_claims": ["Does not claim an asymptotic theorem."],
+            }
+            findings = MOD.Findings()
+
+            MOD.check_experimental_evidence_boundary(
+                evidence_path, "tablero_scaling_law_fit", record, findings
+            )
+
+            self.assertTrue(
+                any("experimental-scoped" in msg for msg in findings.errors),
+                findings.errors,
+            )
+            self.assertTrue(
+                any("non-default/non-publication" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_claim_evidence_path_anchor_reports_resolution_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)

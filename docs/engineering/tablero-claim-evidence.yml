@@ -1,9 +1,9 @@
-# Machine-readable evidence ledger for the Tablero presentation paper.
+# Machine-readable evidence ledger for the Tablero technical-review package.
 # `scripts/paper/paper_preflight.py` validates that every listed claim has
 # paper anchors, source specs, checked evidence files, reproduction commands,
-# and explicit non-claims. This ledger is intentionally paper-facing: it does
-# not invent code-level proof obligations for claims that are theorem,
-# measurement, or claim-boundary claims.
+# and explicit non-claims. This is not a publication/default-lane promotion
+# manifest: explicitly experimental evidence keeps its experimental path names,
+# and preflight requires the claim boundary to say so.
 
 - id: tablero_statement_preservation_theorem
   claim: "Tablero preserves the replay verifier's accepted statement set when the compact proof is sound, commitments bind, and the source emits all public facts needed by the boundary predicate."
@@ -24,7 +24,7 @@
     - "Does not claim recursive proof compression."
 
 - id: tablero_cross_family_replay_avoidance
-  claim: "The main typed-boundary path reproduces across three checked layout families with large replay-avoidance ratios at the 1024-step checked frontier."
+  claim: "On the explicitly labeled carry-aware experimental backend, the main typed-boundary path reproduces across three checked layout families with large replay-avoidance ratios at the 1024-step checked frontier."
   paper_locations:
     - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.2 Cross-family transferability
     - docs/paper/appendix-methodology-and-reproducibility.md#5. What the cross-family result means
@@ -44,9 +44,10 @@
     - "Does not claim faster FRI verification."
     - "Does not claim family-invariant verifier time."
     - "Does not claim a matched external benchmark win."
+    - "Does not claim publication-default backend behavior."
 
 - id: tablero_scaling_law_fit
-  claim: "The checked grids show near-linear replay-baseline growth and substantially lower typed-path growth, so the replay-avoidance ratio grows with N in the measured regime."
+  claim: "On the explicitly labeled carry-aware experimental backend, the checked grids show near-linear replay-baseline growth and substantially lower typed-path growth, so the replay-avoidance ratio grows with N in the measured regime."
   paper_locations:
     - docs/paper/tablero-typed-verifier-boundaries-2026.md#6.3 Checked scaling-law fit
     - docs/paper/abstract-tablero-2026.md
@@ -62,6 +63,7 @@
   non_claims:
     - "Does not claim an unbounded asymptotic theorem."
     - "Does not claim default-backend behavior."
+    - "Does not claim publication-default backend behavior."
 
 - id: tablero_optimized_replay_redteam
   claim: "An honestly optimized replay verifier tightens the frontier ratio to a host-noise-sensitive 261x-330x band while preserving a large residual replay-work component."
@@ -100,6 +102,7 @@
   non_claims:
     - "Does not claim every smaller handoff object removes replay."
     - "Does not claim universal Tablero applicability."
+    - "Does not claim the broader experimental sweep is publication-default evidence."
 
 - id: tablero_statement_binding_extension
   claim: "External adapters, native proof receipts, and source-backed receipt gates support the broader boundary lesson that proof validity and statement validity are separate verifier layers."
