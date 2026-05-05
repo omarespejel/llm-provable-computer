@@ -59,37 +59,43 @@ REQUIRED_PUBLIC_FIELDS = (
     "statement_commitment",
 )
 
+SOURCE_ROUTE_ID = "source_backed_attention_kv_receipt_contract"
+LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_transition_proof"
+EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
+EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_statement_receipt"
+SOFTMAX_ROUTE_ID = "softmax_attention_kv_claim"
+
 BASE_ROUTES = (
     {
-        "route_id": "source_backed_attention_kv_receipt_contract",
+        "route_id": SOURCE_ROUTE_ID,
         "status": "GO_SOURCE_CONTRACT_ONLY",
         "blocker": "NOT_PROOF_BACKED",
         "usable_today": True,
         "proof_backed": False,
     },
     {
-        "route_id": "local_stwo_attention_kv_transition_proof",
+        "route_id": LOCAL_STWO_ROUTE_ID,
         "status": "NO_GO_MISSING_NATIVE_ATTENTION_KV_PROOF_ARTIFACT",
         "blocker": "NO_EXECUTABLE_NATIVE_ATTENTION_KV_PROOF_SURFACE",
         "usable_today": False,
         "proof_backed": False,
     },
     {
-        "route_id": "external_snark_attention_kv_statement_receipt",
+        "route_id": EXTERNAL_SNARK_ROUTE_ID,
         "status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_CONTRACT",
         "blocker": None,
         "usable_today": True,
         "proof_backed": True,
     },
     {
-        "route_id": "external_zkvm_attention_kv_statement_receipt",
+        "route_id": EXTERNAL_ZKVM_ROUTE_ID,
         "status": "NO_GO_MISSING_ATTENTION_KV_JOURNAL_AND_RECEIPT_ARTIFACT",
         "blocker": "NO_ATTENTION_KV_ZKVM_JOURNAL_OR_RECEIPT_FOR_THIS_PUBLIC_INSTANCE",
         "usable_today": False,
         "proof_backed": False,
     },
     {
-        "route_id": "softmax_attention_kv_claim",
+        "route_id": SOFTMAX_ROUTE_ID,
         "status": "NO_GO_OUT_OF_SCOPE_FOR_INTEGER_ARGMAX_FIXTURE",
         "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
         "usable_today": False,
@@ -259,16 +265,7 @@ def route_inventory() -> list[dict[str, Any]]:
 
     snark = snark_receipt_summary(load_snark_payload())
     routes = [dict(route) for route in BASE_ROUTES]
-    snark_route = next(
-        (
-            route
-            for route in routes
-            if route.get("route_id") == "external_snark_attention_kv_statement_receipt"
-        ),
-        None,
-    )
-    if snark_route is None:
-        raise AttentionKvRouteSelectorError("missing external SNARK route candidate")
+    snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
     snark_route["proof_system"] = snark["proof_system"]
     snark_route["proof_size_bytes"] = snark["proof_size_bytes"]
@@ -276,6 +273,13 @@ def route_inventory() -> list[dict[str, Any]]:
     snark_route["statement_commitment"] = snark["statement_commitment"]
     snark_route["receipt_commitment"] = snark["receipt_commitment"]
     return routes
+
+
+def route_candidate_by_id(routes: list[dict[str, Any]], route_id: str) -> dict[str, Any]:
+    for route in routes:
+        if route.get("route_id") == route_id:
+            return route
+    raise AttentionKvRouteSelectorError(f"missing route candidate: {route_id}")
 
 
 def source_contract_summary(source_payload: dict[str, Any]) -> dict[str, Any]:
@@ -385,24 +389,27 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "missing_required_public_field":
         out["source_contract"]["present_public_fields"].remove("next_kv_cache_commitment")
     elif name == "local_stwo_route_relabel_go":
-        out["route_candidates"][1]["status"] = "GO_NATIVE_STWO_ATTENTION_KV_PROOF"
-        out["route_candidates"][1]["usable_today"] = True
-        out["route_candidates"][1]["proof_backed"] = True
-        out["proof_backed_routes_available"] = ["local_stwo_attention_kv_transition_proof"]
+        local_stwo_route = route_candidate_by_id(out["route_candidates"], LOCAL_STWO_ROUTE_ID)
+        local_stwo_route["status"] = "GO_NATIVE_STWO_ATTENTION_KV_PROOF"
+        local_stwo_route["usable_today"] = True
+        local_stwo_route["proof_backed"] = True
+        out["proof_backed_routes_available"] = [LOCAL_STWO_ROUTE_ID]
     elif name == "external_snark_route_removed":
-        out["route_candidates"][2]["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
-        out["route_candidates"][2]["usable_today"] = False
-        out["route_candidates"][2]["proof_backed"] = False
+        snark_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_SNARK_ROUTE_ID)
+        snark_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
+        snark_route["usable_today"] = False
+        snark_route["proof_backed"] = False
         out["proof_backed_routes_available"] = []
     elif name == "external_snark_receipt_decision_drift":
         out["external_snark_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
     elif name == "external_snark_receipt_mutation_rejections_drift":
         out["external_snark_receipt"]["mutations_rejected"] -= 1
     elif name == "external_zkvm_route_relabel_go":
-        out["route_candidates"][3]["status"] = "GO_ZKVM_ATTENTION_KV_STATEMENT_RECEIPT"
-        out["route_candidates"][3]["usable_today"] = True
-        out["route_candidates"][3]["proof_backed"] = True
-        out["proof_backed_routes_available"] = ["external_zkvm_attention_kv_statement_receipt"]
+        zkvm_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_ZKVM_ROUTE_ID)
+        zkvm_route["status"] = "GO_ZKVM_ATTENTION_KV_STATEMENT_RECEIPT"
+        zkvm_route["usable_today"] = True
+        zkvm_route["proof_backed"] = True
+        out["proof_backed_routes_available"] = [EXTERNAL_ZKVM_ROUTE_ID]
     elif name == "fake_verifier_time_metric":
         out["metrics"]["verifier_time_ms"] = 7.5
     elif name == "fake_proof_size_metric":
