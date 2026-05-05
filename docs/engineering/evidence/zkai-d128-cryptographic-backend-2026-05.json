@@ -15,7 +15,7 @@
       "metrics_enabled": true,
       "proof_generation_time_ms": 178636.324583,
       "proof_size_bytes": 310234,
-      "verifier_time_ms": 25.972458
+      "verifier_time_ms": 19.055166
     },
     "proof_metrics_by_route": {
       "external_snark_or_ivc_statement_receipt_backend": {
@@ -26,7 +26,7 @@
       "external_zkvm_statement_receipt_backend": {
         "proof_generation_time_ms": 178636.324583,
         "proof_size_bytes": 310234,
-        "verifier_time_ms": 25.972458
+        "verifier_time_ms": 19.055166
       }
     },
     "source_issue": 424,
@@ -162,7 +162,7 @@
       "proof_metrics": {
         "proof_generation_time_ms": 178636.324583,
         "proof_size_bytes": 310234,
-        "verifier_time_ms": 25.972458
+        "verifier_time_ms": 19.055166
       },
       "route_id": "external_zkvm_statement_receipt_backend",
       "route_kind": "external_zkvm_statement_receipt",

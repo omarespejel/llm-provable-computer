@@ -218,6 +218,26 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertEqual(err.exception.layer, "external_snark_receipt")
         GATE._load_checked_snark_receipt_cached.cache_clear()
 
+    def test_aggregate_risc0_strict_reverify_is_explicit_opt_in(self) -> None:
+        calls: list[bool] = []
+        original = GATE.RISC0_RECEIPT.validate_payload
+
+        def recording_validator(payload: object, *, strict_receipt: bool = False) -> None:
+            calls.append(strict_receipt)
+            original(payload, strict_receipt=False)
+
+        GATE._load_checked_risc0_receipt_cached.cache_clear()
+        GATE.RISC0_RECEIPT.validate_payload = recording_validator
+        try:
+            GATE.load_checked_risc0_receipt()
+            GATE._load_checked_risc0_receipt_cached.cache_clear()
+            GATE.load_checked_risc0_receipt(strict_receipt=True)
+        finally:
+            GATE.RISC0_RECEIPT.validate_payload = original
+            GATE._load_checked_risc0_receipt_cached.cache_clear()
+
+        self.assertEqual(calls, [False, True])
+
     def test_cargo_dependency_probe_finds_nested_aliases(self) -> None:
         cargo_toml = {
             "dev-dependencies": {"sp1-sdk": "1"},
