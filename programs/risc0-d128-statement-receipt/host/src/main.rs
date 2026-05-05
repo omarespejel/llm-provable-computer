@@ -164,3 +164,36 @@ fn main() {
         _ => usage(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_dir(name: &str) -> PathBuf {
+        let dir = env::temp_dir().join(format!("risc0-d128-host-{name}"));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("create test directory");
+        dir
+    }
+
+    #[test]
+    fn verify_rejects_oversized_receipt_before_deserialize() {
+        let dir = test_dir("oversized-receipt");
+        let journal_path = dir.join("journal.json");
+        let receipt_path = dir.join("receipt.bincode");
+        let summary_path = dir.join("summary.json");
+        fs::write(&journal_path, b"[]").expect("write journal fixture");
+        fs::write(&receipt_path, vec![0u8; MAX_RECEIPT_BYTES + 1])
+            .expect("write oversized receipt fixture");
+
+        let summary_for_check = summary_path.clone();
+        let result = std::panic::catch_unwind(|| verify(journal_path, receipt_path, summary_path));
+
+        assert!(result.is_err(), "oversized receipt must be rejected");
+        assert!(
+            !summary_for_check.exists(),
+            "rejected receipt must not write a verification summary"
+        );
+        fs::remove_dir_all(&dir).expect("remove test directory");
+    }
+}
