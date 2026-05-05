@@ -105,6 +105,8 @@ with a native proof of the chosen attention semantics.
 ## Reproduce
 
 ```bash
+just gate-fast
+
 python3 scripts/zkai_attention_kv_snark_statement_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.tsv
