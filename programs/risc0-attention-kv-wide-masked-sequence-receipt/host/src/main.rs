@@ -271,6 +271,23 @@ fn create_parent_dir(path: &PathBuf) {
     }
 }
 
+fn receipt_len_within_cap(receipt_len: u64) -> Result<(), String> {
+    if receipt_len == 0 || receipt_len > MAX_RECEIPT_BYTES as u64 {
+        Err(format!(
+            "receipt artifact size outside allowed bound: {receipt_len} bytes"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn receipt_len_or_exit(receipt_len: u64) {
+    if let Err(err) = receipt_len_within_cap(receipt_len) {
+        eprintln!("{err}");
+        std::process::exit(2);
+    }
+}
+
 fn write_summary(
     out_path: &PathBuf,
     mode: &str,
@@ -341,6 +358,7 @@ fn prove(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let receipt = prove_info.receipt;
     let (decoded, verify_time_ms) = verify_receipt(&receipt, &expected);
     let receipt_bytes = bincode::serialize(&receipt).expect("serialize receipt");
+    receipt_len_or_exit(u64::try_from(receipt_bytes.len()).unwrap_or(u64::MAX));
     create_parent_dir(&receipt_path);
     fs::write(&receipt_path, &receipt_bytes).expect("write receipt artifact");
     write_summary(
@@ -361,23 +379,13 @@ fn verify(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
         .metadata()
         .expect("stat opened receipt artifact")
         .len();
-    if receipt_len == 0 || receipt_len > MAX_RECEIPT_BYTES as u64 {
-        panic!(
-            "receipt artifact size outside allowed bound: {} bytes",
-            receipt_len
-        );
-    }
+    receipt_len_or_exit(receipt_len);
     let mut receipt_bytes = Vec::with_capacity(receipt_len as usize);
     let mut limited_reader = receipt_file.take(MAX_RECEIPT_BYTES as u64 + 1);
     limited_reader
         .read_to_end(&mut receipt_bytes)
         .expect("read receipt artifact");
-    if receipt_bytes.is_empty() || receipt_bytes.len() > MAX_RECEIPT_BYTES {
-        panic!(
-            "receipt artifact size outside allowed bound after read: {} bytes",
-            receipt_bytes.len()
-        );
-    }
+    receipt_len_or_exit(u64::try_from(receipt_bytes.len()).unwrap_or(u64::MAX));
     let receipt: Receipt = bincode::DefaultOptions::new()
         .with_fixint_encoding()
         .with_limit(MAX_RECEIPT_BYTES as u64)
@@ -429,6 +437,16 @@ fn output_paths_overlap(receipt_path: &PathBuf, summary_path: &PathBuf) -> bool 
     normalize_output_path(receipt_path) == normalize_output_path(summary_path)
 }
 
+fn output_paths_alias_input(
+    input_path: &PathBuf,
+    receipt_path: &PathBuf,
+    summary_path: &PathBuf,
+) -> bool {
+    let normalized_input = normalize_output_path(input_path);
+    normalized_input == normalize_output_path(receipt_path)
+        || normalized_input == normalize_output_path(summary_path)
+}
+
 fn main() {
     let mut args = env::args().skip(1);
     let Some(command) = args.next() else { usage() };
@@ -446,6 +464,10 @@ fn main() {
     }
     if output_paths_overlap(&receipt_path, &summary_path) {
         eprintln!("receipt path and summary path must be different");
+        std::process::exit(2);
+    }
+    if output_paths_alias_input(&input_path, &receipt_path, &summary_path) {
+        eprintln!("output path must not be the same as input fixture");
         std::process::exit(2);
     }
     match command.as_str() {
@@ -600,6 +622,39 @@ mod tests {
             .join("shared-output");
 
         assert!(output_paths_overlap(&receipt, &summary));
+    }
+
+    #[test]
+    fn output_paths_alias_input_rejects_receipt_input_alias() {
+        let input = PathBuf::from("fixtures/input.json");
+        let receipt = PathBuf::from(".")
+            .join("fixtures")
+            .join("nested")
+            .join("..")
+            .join("input.json");
+        let summary = PathBuf::from("target/summary.json");
+
+        assert!(output_paths_alias_input(&input, &receipt, &summary));
+    }
+
+    #[test]
+    fn output_paths_alias_input_rejects_summary_input_alias() {
+        let input = PathBuf::from("fixtures/input.json");
+        let receipt = PathBuf::from("target/receipt.bin");
+        let summary = PathBuf::from(".")
+            .join("fixtures")
+            .join("nested")
+            .join("..")
+            .join("input.json");
+
+        assert!(output_paths_alias_input(&input, &receipt, &summary));
+    }
+
+    #[test]
+    fn receipt_len_within_cap_rejects_empty_and_oversized_artifacts() {
+        assert!(receipt_len_within_cap(0).is_err());
+        assert!(receipt_len_within_cap(MAX_RECEIPT_BYTES as u64 + 1).is_err());
+        assert!(receipt_len_within_cap(MAX_RECEIPT_BYTES as u64).is_ok());
     }
 
     #[test]
