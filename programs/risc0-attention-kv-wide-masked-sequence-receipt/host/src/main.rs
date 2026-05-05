@@ -87,13 +87,13 @@ fn image_id_hex() -> String {
 }
 
 /// Computes the d=8 dot product and rejects inputs outside the signed i64 score semantics.
-fn dot(lhs: [i32; 8], rhs: [i32; 8]) -> i64 {
+fn dot(lhs: [i32; 8], rhs: [i32; 8]) -> Result<i64, String> {
     let score: i128 = lhs
         .iter()
         .zip(rhs.iter())
         .map(|(left, right)| i128::from(*left) * i128::from(*right))
         .sum();
-    i64::try_from(score).expect("attention score outside i64 semantics bound")
+    i64::try_from(score).map_err(|_| "attention score outside i64 semantics bound".to_string())
 }
 
 fn attention_order(lhs: &ScoreRow, rhs: &ScoreRow) -> Ordering {
@@ -107,7 +107,7 @@ fn apply_step(
     step_index: usize,
     prior_kv_cache: &[KvEntry],
     input_step: &InputStep,
-) -> TransitionRow {
+) -> Result<TransitionRow, String> {
     let next_item = KvEntry {
         position: input_step.token_position,
         key: input_step.new_key,
@@ -118,19 +118,26 @@ fn apply_step(
     let scores: Vec<ScoreRow> = next_kv_cache
         .iter()
         .filter(|item| item.position <= input_step.token_position)
-        .map(|item| ScoreRow {
-            position: item.position,
-            score: dot(input_step.query, item.key),
-            value: item.value,
+        .map(|item| {
+            Ok(ScoreRow {
+                position: item.position,
+                score: dot(input_step.query, item.key).map_err(|err| {
+                    format!(
+                        "step {step_index} score for KV position {} is outside accepted bounds: {err}",
+                        item.position
+                    )
+                })?,
+                value: item.value,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, String>>()?;
     let selected = scores
         .iter()
         .max_by(|left, right| attention_order(left, right))
-        .expect("non-empty score trace");
+        .ok_or_else(|| "attention score trace must not be empty".to_string())?;
     let selected_position = selected.position;
     let attention_output = selected.value;
-    TransitionRow {
+    Ok(TransitionRow {
         step_index,
         prior_kv_cache: prior_kv_cache.to_vec(),
         input_step: input_step.clone(),
@@ -138,10 +145,10 @@ fn apply_step(
         selected_position,
         attention_output,
         next_kv_cache,
-    }
+    })
 }
 
-fn assert_append_only_positions(input: &AttentionSequenceInput) {
+fn validate_append_only_positions(input: &AttentionSequenceInput) -> Result<(), String> {
     let mut previous_position: Option<i32> = None;
     for position in input
         .initial_kv_cache
@@ -150,33 +157,39 @@ fn assert_append_only_positions(input: &AttentionSequenceInput) {
         .chain(input.input_steps.iter().map(|step| step.token_position))
     {
         if let Some(previous) = previous_position {
-            assert!(
-                position > previous,
-                "attention KV positions must be strictly increasing for append-only tamper rules"
-            );
+            if position <= previous {
+                return Err(
+                    "attention KV positions must be strictly increasing for append-only tamper rules"
+                        .to_string(),
+                );
+            }
         }
         previous_position = Some(position);
     }
+    Ok(())
 }
 
-fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal {
-    assert!(
-        !input.initial_kv_cache.is_empty(),
-        "attention fixture needs at least one initial KV row"
-    );
-    assert!(
-        input.input_steps.len() == EXACT_SEQUENCE_LENGTH,
-        "wide masked sequence fixture requires exactly eight carried KV transitions"
-    );
-    assert_append_only_positions(input);
+fn expected_journal_checked(
+    input: &AttentionSequenceInput,
+) -> Result<AttentionSequenceJournal, String> {
+    if input.initial_kv_cache.is_empty() {
+        return Err("attention fixture needs at least one initial KV row".to_string());
+    }
+    if input.input_steps.len() != EXACT_SEQUENCE_LENGTH {
+        return Err(
+            "wide masked sequence fixture requires exactly eight carried KV transitions"
+                .to_string(),
+        );
+    }
+    validate_append_only_positions(input)?;
     let mut current_kv_cache = input.initial_kv_cache.clone();
     let mut transitions = Vec::with_capacity(input.input_steps.len());
     for (step_index, input_step) in input.input_steps.iter().enumerate() {
-        let row = apply_step(step_index, &current_kv_cache, input_step);
+        let row = apply_step(step_index, &current_kv_cache, input_step)?;
         current_kv_cache = row.next_kv_cache.clone();
         transitions.push(row);
     }
-    AttentionSequenceJournal {
+    Ok(AttentionSequenceJournal {
         schema: JOURNAL_SCHEMA.to_string(),
         semantics: SEMANTICS.to_string(),
         masking_policy: "causal_prefix_position_lte_query_token".to_string(),
@@ -188,7 +201,11 @@ fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal 
         input_steps: input.input_steps.clone(),
         transitions,
         final_kv_cache: current_kv_cache,
-    }
+    })
+}
+
+fn expected_journal(input: &AttentionSequenceInput) -> AttentionSequenceJournal {
+    expected_journal_checked(input).expect("valid attention sequence input")
 }
 
 fn read_input_checked(path: &PathBuf) -> Result<AttentionSequenceInput, String> {
@@ -228,6 +245,16 @@ fn read_input_checked(path: &PathBuf) -> Result<AttentionSequenceInput, String> 
 fn read_input(path: &PathBuf) -> AttentionSequenceInput {
     match read_input_checked(path) {
         Ok(input) => input,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(2);
+        }
+    }
+}
+
+fn expected_journal_or_exit(input: &AttentionSequenceInput) -> AttentionSequenceJournal {
+    match expected_journal_checked(input) {
+        Ok(journal) => journal,
         Err(err) => {
             eprintln!("{err}");
             std::process::exit(2);
@@ -299,7 +326,7 @@ fn verify_receipt(
 
 fn prove(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let input = read_input(&input_path);
-    let expected = expected_journal(&input);
+    let expected = expected_journal_or_exit(&input);
     let env = ExecutorEnv::builder()
         .write(&input)
         .expect("write attention sequence input")
@@ -328,7 +355,7 @@ fn prove(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
 
 fn verify(input_path: PathBuf, receipt_path: PathBuf, summary_path: PathBuf) {
     let input = read_input(&input_path);
-    let expected = expected_journal(&input);
+    let expected = expected_journal_or_exit(&input);
     let receipt_file = File::open(&receipt_path).expect("open receipt artifact");
     let receipt_len = receipt_file
         .metadata()
@@ -638,8 +665,25 @@ mod tests {
 
     #[test]
     fn dot_bound_is_inside_i64_for_eight_wide_fixture_range() {
-        let score = dot([1_000_000; 8], [1_000_000; 8]);
+        let score = dot([1_000_000; 8], [1_000_000; 8]).expect("fixture score fits i64");
         assert_eq!(score, 8_000_000_000_000);
         assert!(score < i64::MAX);
+    }
+
+    #[test]
+    fn dot_rejects_scores_outside_i64_bounds() {
+        let err = dot([i32::MAX; 8], [i32::MAX; 8]).expect_err("score overflow rejects");
+        assert!(err.contains("outside i64 semantics bound"), "{err}");
+    }
+
+    #[test]
+    fn expected_journal_checked_rejects_score_overflow_without_panic() {
+        let mut input = sample_input();
+        input.input_steps[0].query = [i32::MAX; 8];
+        input.initial_kv_cache[0].key = [i32::MAX; 8];
+
+        let err = expected_journal_checked(&input).expect_err("overflow rejects before proving");
+
+        assert!(err.contains("outside accepted bounds"), "{err}");
     }
 }
