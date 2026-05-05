@@ -160,9 +160,11 @@ public contract.
    evidence at
    `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json` and
    `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.tsv`.
-3. **Stateful transformer track.** Turn the source-backed attention/KV receipt
-   into a proof-backed receipt so autoregressive state is bound, not narrated.
-   Tracked in issue `#336`.
+3. **Stateful transformer track.** The source-backed attention/KV receipt now
+   has an external `snarkjs/Groth16` statement receipt, so carried-state
+   metadata is proof-bound to the source contract rather than merely narrated.
+   The next step is a native attention arithmetic proof, zkVM receipt, or
+   explicit no-go for that same stateful public surface. Tracked in issue `#336`.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers

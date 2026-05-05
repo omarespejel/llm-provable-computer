@@ -1,13 +1,33 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "SOURCE_BACKED_KV_TRANSITION_CONTRACT_NOT_PROOF_BACKED_RECEIPT",
-  "decision": "NO_GO_PROOF_BACKED_ATTENTION_KV_RECEIPT_BACKEND_MISSING",
-  "first_blocker": "MISSING_PROOF_BACKED_ATTENTION_KV_TRANSITION_BACKEND",
+  "claim_boundary": "EXTERNAL_SNARK_STATEMENT_RECEIPT_PROOF_BACKED_NOT_ATTENTION_ARITHMETIC_PROOF",
+  "decision": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT",
+  "external_snark_receipt": {
+    "all_mutations_rejected": true,
+    "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_ATTENTION_KV_SOURCE_CONTRACT_NOT_ATTENTION_ARITHMETIC_PROOF",
+    "decision": "GO_ATTENTION_KV_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_BACKED_TRANSITION_CONTRACT",
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
+    "mutations_checked": 36,
+    "mutations_rejected": 36,
+    "proof_size_bytes": 802,
+    "proof_system": "snarkjs/Groth16/BN128",
+    "proof_system_version": "0.7.6",
+    "public_signal_count": 18,
+    "public_signal_field_count": 17,
+    "receipt_commitment": "blake2b-256:0ac3e9e8897cf11bc1e71c13b8b384a71c86f4278254a38a1c3ccfda0ad3fe78",
+    "result": "GO",
+    "schema": "zkai-attention-kv-snark-statement-receipt-gate-v1",
+    "statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+    "timing_policy": "not_measured_in_this_gate"
+  },
+  "first_blocker": "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "9e795380996f7c64d31af690843de7c3ae1c65bf",
+  "git_commit": "b6b93eed8cbc377dfb6541360aecd2baf9ee8bd2",
   "metrics": {
     "proof_generation_time_ms": null,
-    "proof_size_bytes": null,
+    "proof_size_bytes": 802,
+    "public_signal_count": 18,
+    "timing_policy": "not_measured_in_this_gate",
     "verifier_time_ms": null
   },
   "mutation_cases": [
@@ -37,8 +57,18 @@
       "rejected": true
     },
     {
-      "name": "external_snark_route_relabel_go",
+      "name": "external_snark_route_removed",
       "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "external_snark_receipt_decision_drift",
+      "reason": "external SNARK receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "external_snark_receipt_mutation_rejections_drift",
+      "reason": "external SNARK receipt drift",
       "rejected": true
     },
     {
@@ -72,22 +102,27 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 12,
-  "mutations_rejected": 12,
+  "mutations_checked": 14,
+  "mutations_rejected": 14,
   "next_go_criteria": [
-    "native Stwo proof, SNARK receipt, or zkVM receipt verifies the same public-instance fields",
+    "native Stwo proof or zkVM receipt verifies the same public-instance fields",
+    "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
     "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "Softmax is kept out of scope unless the proof covers Softmax semantics"
   ],
   "non_claims": [
-    "not a proof-backed attention/KV receipt",
+    "not a native attention arithmetic proof",
     "not a Stwo proof",
     "not a Softmax proof",
     "not full autoregressive inference",
     "not agent correctness",
+    "not a zkVM receipt",
+    "not recursive or proof-carrying data",
     "not a benchmark row"
   ],
-  "proof_backed_routes_available": [],
+  "proof_backed_routes_available": [
+    "external_snark_attention_kv_statement_receipt"
+  ],
   "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
   "route_candidates": [
     {
@@ -105,11 +140,17 @@
       "usable_today": false
     },
     {
-      "blocker": "NO_ATTENTION_KV_SNARK_CIRCUIT_OR_PROOF_FOR_THIS_PUBLIC_INSTANCE",
-      "proof_backed": false,
+      "blocker": null,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
+      "proof_backed": true,
+      "proof_size_bytes": 802,
+      "proof_system": "snarkjs/Groth16/BN128",
+      "public_signal_count": 18,
+      "receipt_commitment": "blake2b-256:0ac3e9e8897cf11bc1e71c13b8b384a71c86f4278254a38a1c3ccfda0ad3fe78",
       "route_id": "external_snark_attention_kv_statement_receipt",
-      "status": "NO_GO_MISSING_ATTENTION_KV_CIRCUIT_AND_PROOF_ARTIFACT",
-      "usable_today": false
+      "statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
+      "status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_CONTRACT",
+      "usable_today": true
     },
     {
       "blocker": "NO_ATTENTION_KV_ZKVM_JOURNAL_OR_RECEIPT_FOR_THIS_PUBLIC_INSTANCE",
@@ -127,7 +168,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:80c429038f44a5ab33d57e80d19e95c2b1da67a7a55a3929774ef6a72025cdae",
+  "selector_commitment": "blake2b-256:13d683727f6904ed5ea5d7d2d74adb009803caf5d4d9a41c6e646950ff88dfe7",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

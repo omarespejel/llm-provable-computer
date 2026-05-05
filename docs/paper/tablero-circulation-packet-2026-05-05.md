@@ -59,7 +59,7 @@ The current paper package supports these checked claims:
 - Do not say this is recursive proof compression.
 - Do not say this proves full transformer inference.
 - Do not say the external adapters show EZKL, snarkjs, JSTprove, RISC Zero, or Stwo are unsound.
-- Do not say the source-backed attention/KV receipt is proof-backed.
+- Do not say the attention/KV SNARK statement receipt proves attention arithmetic or Softmax semantics.
 
 ## Validation Gate
 
@@ -70,20 +70,24 @@ python3 scripts/paper/generate_tablero_results_overview.py
 python3 scripts/paper/generate_tablero_scaling_law.py
 python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 git diff --check
 ```
 
 ## Current Stronger-Venue Follow-Up
 
-The next research result should be proof-backed attention/KV state binding:
+The attention/KV lane now has proof-backed statement binding via an external
+`snarkjs/Groth16` receipt over the source-backed transition contract. The next
+research result should be native attention/KV proving:
 
 1. Preserve the source-backed receipt contract that already binds prior KV, input,
    output, next KV, model config, verifier domain, and proof status.
-2. Replace the source-backed proof status with a real proof-backed adapter or native
-   Stwo proof over the same public fields.
-3. Keep Softmax out of scope unless the proof actually covers the chosen attention
+2. Keep the external SNARK statement receipt as a proof-system-independent
+   statement-binding control.
+3. Replace the source contract with a native Stwo proof or zkVM receipt that
+   actually verifies the chosen attention arithmetic over the same public fields.
+4. Keep Softmax out of scope unless the proof actually covers the chosen attention
    semantics.
-4. Report GO only when the same relabeling surfaces reject after proof serialization.
-5. Report NO-GO if the route collapses into a stateless block, metadata-only receipt, or
+5. Report GO only when the same relabeling surfaces reject after proof serialization.
+6. Report NO-GO if the route collapses into a stateless block, metadata-only receipt, or
    missing backend.

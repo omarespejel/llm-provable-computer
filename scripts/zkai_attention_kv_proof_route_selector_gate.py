@@ -3,9 +3,10 @@
 
 This gate consumes the existing source-backed attention/KV transition receipt
 and asks whether the repository currently has a proof-backed route for the same
-public statement fields. The current answer is deliberately a bounded NO-GO:
-the receipt contract is real, but no native Stwo proof, SNARK receipt, or zkVM
-receipt yet proves the attention/KV transition.
+public statement fields. The current answer is a narrow GO for one route: an
+external snarkjs/Groth16 statement receipt over the source-backed attention/KV
+contract. Native attention arithmetic, Softmax, zkVM, and recursion remain
+explicitly outside the current proof route.
 """
 
 from __future__ import annotations
@@ -25,8 +26,12 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SOURCE_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_transition_receipt_probe.py"
+SNARK_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_snark_statement_receipt_gate.py"
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
+)
+SNARK_RECEIPT_JSON = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-snark-statement-receipt-2026-05.json"
 )
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
@@ -36,9 +41,9 @@ TSV_OUT = (
 )
 
 SCHEMA = "zkai-attention-kv-proof-route-selector-gate-v1"
-DECISION = "NO_GO_PROOF_BACKED_ATTENTION_KV_RECEIPT_BACKEND_MISSING"
-FIRST_BLOCKER = "MISSING_PROOF_BACKED_ATTENTION_KV_TRANSITION_BACKEND"
-CLAIM_BOUNDARY = "SOURCE_BACKED_KV_TRANSITION_CONTRACT_NOT_PROOF_BACKED_RECEIPT"
+DECISION = "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_ATTENTION_KV_SOURCE_CONTRACT"
+FIRST_BLOCKER = "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND"
+CLAIM_BOUNDARY = "EXTERNAL_SNARK_STATEMENT_RECEIPT_PROOF_BACKED_NOT_ATTENTION_ARITHMETIC_PROOF"
 SOURCE_DATE_EPOCH_DEFAULT = 0
 
 REQUIRED_PUBLIC_FIELDS = (
@@ -54,7 +59,7 @@ REQUIRED_PUBLIC_FIELDS = (
     "statement_commitment",
 )
 
-EXPECTED_ROUTES = (
+BASE_ROUTES = (
     {
         "route_id": "source_backed_attention_kv_receipt_contract",
         "status": "GO_SOURCE_CONTRACT_ONLY",
@@ -71,10 +76,10 @@ EXPECTED_ROUTES = (
     },
     {
         "route_id": "external_snark_attention_kv_statement_receipt",
-        "status": "NO_GO_MISSING_ATTENTION_KV_CIRCUIT_AND_PROOF_ARTIFACT",
-        "blocker": "NO_ATTENTION_KV_SNARK_CIRCUIT_OR_PROOF_FOR_THIS_PUBLIC_INSTANCE",
-        "usable_today": False,
-        "proof_backed": False,
+        "status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_CONTRACT",
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
     },
     {
         "route_id": "external_zkvm_attention_kv_statement_receipt",
@@ -110,7 +115,9 @@ EXPECTED_MUTATION_NAMES = (
     "source_contract_mutation_rejections_drift",
     "missing_required_public_field",
     "local_stwo_route_relabel_go",
-    "external_snark_route_relabel_go",
+    "external_snark_route_removed",
+    "external_snark_receipt_decision_drift",
+    "external_snark_receipt_mutation_rejections_drift",
     "external_zkvm_route_relabel_go",
     "fake_verifier_time_metric",
     "fake_proof_size_metric",
@@ -135,7 +142,19 @@ def _load_source_module():
     return module
 
 
+def _load_snark_module():
+    """Load the external SNARK statement-receipt gate without package assumptions."""
+
+    spec = importlib.util.spec_from_file_location("zkai_attention_kv_snark_statement_receipt_gate", SNARK_RECEIPT_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(f"failed to load SNARK receipt script: {SNARK_RECEIPT_SCRIPT}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
+SNARK = _load_snark_module()
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -192,10 +211,53 @@ def load_source_payload(path: pathlib.Path = SOURCE_EVIDENCE_JSON) -> dict[str, 
     return payload
 
 
+def load_snark_payload(path: pathlib.Path = SNARK_RECEIPT_JSON) -> dict[str, Any]:
+    """Load and validate the external SNARK statement-receipt payload."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing SNARK receipt evidence: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    SNARK.validate_payload(payload)
+    return payload
+
+
+def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the proof-backed route fields the selector depends on."""
+
+    metrics = snark_payload["receipt_metrics"]
+    statement = snark_payload["statement_receipt"]
+    return {
+        "schema": snark_payload["schema"],
+        "decision": snark_payload["decision"],
+        "result": snark_payload["result"],
+        "claim_boundary": snark_payload["claim_boundary"],
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
+        "proof_system": snark_payload["external_system"]["proof_system"],
+        "proof_system_version": snark_payload["external_system"]["version"],
+        "proof_size_bytes": metrics["proof_size_bytes"],
+        "public_signal_count": metrics["public_signal_count"],
+        "public_signal_field_count": statement["public_signal_field_count"],
+        "statement_commitment": statement["statement_commitment"],
+        "receipt_commitment": statement["receipt_commitment"],
+        "mutations_checked": snark_payload["case_count"],
+        "mutations_rejected": sum(1 for case in snark_payload["cases"] if case["rejected"] is True),
+        "all_mutations_rejected": snark_payload["all_mutations_rejected"],
+        "timing_policy": metrics["timing_policy"],
+    }
+
+
 def route_inventory() -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
-    return [dict(route) for route in EXPECTED_ROUTES]
+    snark = snark_receipt_summary(load_snark_payload())
+    routes = [dict(route) for route in BASE_ROUTES]
+    routes[2]["evidence"] = snark["evidence"]
+    routes[2]["proof_system"] = snark["proof_system"]
+    routes[2]["proof_size_bytes"] = snark["proof_size_bytes"]
+    routes[2]["public_signal_count"] = snark["public_signal_count"]
+    routes[2]["statement_commitment"] = snark["statement_commitment"]
+    routes[2]["receipt_commitment"] = snark["receipt_commitment"]
+    return routes
 
 
 def source_contract_summary(source_payload: dict[str, Any]) -> dict[str, Any]:
@@ -221,7 +283,9 @@ def build_payload() -> dict[str, Any]:
     """Build and self-validate the proof-route selector decision payload."""
 
     source_payload = load_source_payload()
+    snark_payload = load_snark_payload()
     summary = source_contract_summary(source_payload)
+    snark_summary = snark_receipt_summary(snark_payload)
     routes = route_inventory()
     proof_backed_routes_available = [
         route["route_id"]
@@ -240,24 +304,30 @@ def build_payload() -> dict[str, Any]:
             "contract to a proof-backed receipt today?"
         ),
         "source_contract": summary,
+        "external_snark_receipt": snark_summary,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
-            "proof_size_bytes": None,
+            "proof_size_bytes": snark_summary["proof_size_bytes"],
+            "public_signal_count": snark_summary["public_signal_count"],
             "proof_generation_time_ms": None,
             "verifier_time_ms": None,
+            "timing_policy": snark_summary["timing_policy"],
         },
         "next_go_criteria": [
-            "native Stwo proof, SNARK receipt, or zkVM receipt verifies the same public-instance fields",
+            "native Stwo proof or zkVM receipt verifies the same public-instance fields",
+            "a native proof checks the attention arithmetic instead of only wrapping the source-backed contract",
             "prior KV, input/query, attention output, next KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
             "Softmax is kept out of scope unless the proof covers Softmax semantics",
         ],
         "non_claims": [
-            "not a proof-backed attention/KV receipt",
+            "not a native attention arithmetic proof",
             "not a Stwo proof",
             "not a Softmax proof",
             "not full autoregressive inference",
             "not agent correctness",
+            "not a zkVM receipt",
+            "not recursive or proof-carrying data",
             "not a benchmark row",
         ],
     }
@@ -268,6 +338,7 @@ def build_payload() -> dict[str, Any]:
             "claim_boundary": payload["claim_boundary"],
             "first_blocker": payload["first_blocker"],
             "source_contract": payload["source_contract"],
+            "external_snark_receipt": payload["external_snark_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -304,11 +375,15 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["route_candidates"][1]["usable_today"] = True
         out["route_candidates"][1]["proof_backed"] = True
         out["proof_backed_routes_available"] = ["local_stwo_attention_kv_transition_proof"]
-    elif name == "external_snark_route_relabel_go":
-        out["route_candidates"][2]["status"] = "GO_SNARK_ATTENTION_KV_STATEMENT_RECEIPT"
-        out["route_candidates"][2]["usable_today"] = True
-        out["route_candidates"][2]["proof_backed"] = True
-        out["proof_backed_routes_available"] = ["external_snark_attention_kv_statement_receipt"]
+    elif name == "external_snark_route_removed":
+        out["route_candidates"][2]["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
+        out["route_candidates"][2]["usable_today"] = False
+        out["route_candidates"][2]["proof_backed"] = False
+        out["proof_backed_routes_available"] = []
+    elif name == "external_snark_receipt_decision_drift":
+        out["external_snark_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
+    elif name == "external_snark_receipt_mutation_rejections_drift":
+        out["external_snark_receipt"]["mutations_rejected"] -= 1
     elif name == "external_zkvm_route_relabel_go":
         out["route_candidates"][3]["status"] = "GO_ZKVM_ATTENTION_KV_STATEMENT_RECEIPT"
         out["route_candidates"][3]["usable_today"] = True
@@ -379,6 +454,26 @@ def validate_routes(routes: Any) -> None:
         raise AttentionKvRouteSelectorError("route inventory drift")
 
 
+def validate_snark_receipt(summary: Any) -> None:
+    """Validate the proof-backed external SNARK receipt summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("external SNARK receipt must be an object")
+    expected = snark_receipt_summary(load_snark_payload())
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("external SNARK receipt drift")
+    if summary["decision"] != SNARK.DECISION:
+        raise AttentionKvRouteSelectorError("external SNARK decision drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("external SNARK result drift")
+    if summary["all_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("external SNARK fail-closed drift")
+    if summary["mutations_checked"] != summary["mutations_rejected"]:
+        raise AttentionKvRouteSelectorError("external SNARK mutation rejection drift")
+    if summary["proof_size_bytes"] <= 0 or summary["public_signal_count"] <= 0:
+        raise AttentionKvRouteSelectorError("external SNARK proof metric drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -393,6 +488,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "git_commit",
         "question",
         "source_contract",
+        "external_snark_receipt",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -415,14 +511,18 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     if payload.get("first_blocker") != FIRST_BLOCKER:
         raise AttentionKvRouteSelectorError("first blocker drift")
     validate_source_contract(payload.get("source_contract"))
+    validate_snark_receipt(payload.get("external_snark_receipt"))
     validate_routes(payload.get("route_candidates"))
-    if payload.get("proof_backed_routes_available") != []:
+    if payload.get("proof_backed_routes_available") != ["external_snark_attention_kv_statement_receipt"]:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
-    if payload.get("metrics") != {
-        "proof_size_bytes": None,
+    expected_metrics = {
+        "proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
+        "public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
         "proof_generation_time_ms": None,
         "verifier_time_ms": None,
-    }:
+        "timing_policy": payload["external_snark_receipt"]["timing_policy"],
+    }
+    if payload.get("metrics") != expected_metrics:
         raise AttentionKvRouteSelectorError("metric smuggling")
     non_claims = payload.get("non_claims")
     if not isinstance(non_claims, list) or any("not " not in str(item) for item in non_claims):
@@ -434,6 +534,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "claim_boundary": payload["claim_boundary"],
             "first_blocker": payload["first_blocker"],
             "source_contract": payload["source_contract"],
+            "external_snark_receipt": payload["external_snark_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],

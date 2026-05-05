@@ -112,6 +112,7 @@
   specs:
     - docs/engineering/zkai-sota-artifact-watchlist-2026-05-03.md
     - docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md
+    - docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md
     - docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md
   evidence_files:
     - docs/engineering/evidence/zkai-ezkl-statement-envelope-benchmark-2026-04.json
@@ -119,14 +120,16 @@
     - docs/engineering/evidence/zkai-jstprove-statement-envelope-benchmark-2026-05.json
     - docs/engineering/evidence/zkai-stwo-statement-envelope-benchmark-2026-04.json
     - docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json
+    - docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json
     - docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json
     - docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json
     - docs/engineering/evidence/zkai-d128-risc0-statement-receipt-2026-05.json
   evidence_commands:
     - python3 scripts/zkai_attention_kv_transition_receipt_probe.py --write-json docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.tsv
+    - python3 scripts/zkai_attention_kv_snark_statement_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.tsv
     - python3 scripts/zkai_attention_kv_proof_route_selector_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
     - python3 scripts/paper/paper_preflight.py --repo-root .
   non_claims:
     - "Does not claim external proof systems are unsound."
     - "Does not claim end-to-end verifiable intelligence."
-    - "Does not claim source-backed receipts are proof-backed receipts."
+    - "Does not claim a SNARK statement receipt over a source-backed contract proves native attention arithmetic."

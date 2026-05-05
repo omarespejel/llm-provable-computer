@@ -638,11 +638,19 @@ receipt-composition result, not a recursive compression claim.
 The attention/KV transition receipt adds the first stateful receipt seam:
 
 - `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md`
+- `docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md`
 - `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.tsv`
+- `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.tsv`
 
-It is source-backed, not proof-backed. The tiny single-head integer-attention
-fixture binds prior KV state, input/query state, attention output, next KV
-state, model config, verifier domain, and proof status, then rejects `8 / 8`
-checked relabeling mutations. This keeps the agent/autoregressive claim boundary
-explicit: an output commitment is not enough when the model carries state.
+The base transition contract is source-backed, not proof-backed. The tiny
+single-head integer-attention fixture binds prior KV state, input/query state,
+attention output, next KV state, model config, verifier domain, and proof
+status, then rejects `8 / 8` checked relabeling mutations. A follow-up
+`snarkjs/Groth16` statement receipt binds that source contract into a real proof
+object with an `802`-byte proof, `18` public signals, and `36 / 36` checked
+mutation rejections. This is proof-backed statement binding for the source
+contract, not a native attention arithmetic or Softmax proof. It keeps the
+agent/autoregressive claim boundary explicit: an output commitment is not enough
+when the model carries state.
