@@ -158,6 +158,53 @@ EXPECTED_MUTATION_INVENTORY = (
 EXPECTED_MUTATION_NAMES = tuple(name for name, _surface in EXPECTED_MUTATION_INVENTORY)
 EXPECTED_MUTATION_SET = frozenset(EXPECTED_MUTATION_NAMES)
 TSV_COLUMNS = ("mutation", "surface", "baseline_accepted", "mutated_accepted", "rejected", "rejection_layer", "error")
+CASE_KEYS = {
+    "mutation", "surface", "baseline_accepted", "mutated_accepted", "rejected", "rejection_layer", "error",
+    "baseline_statement_sha256", "mutated_statement_sha256",
+    "baseline_statement_commitment", "mutated_statement_commitment",
+    "baseline_public_signals_sha256", "mutated_public_signals_sha256",
+}
+EXPECTED_REJECTION_LAYERS = {
+    "source_statement_commitment_relabeling": "statement_policy",
+    "model_config_commitment_relabeling": "statement_policy",
+    "prior_kv_cache_commitment_relabeling": "statement_policy",
+    "input_commitment_relabeling": "statement_policy",
+    "attention_output_commitment_relabeling": "statement_policy",
+    "next_kv_cache_commitment_relabeling": "statement_policy",
+    "public_instance_commitment_relabeling": "statement_policy",
+    "score_trace_commitment_relabeling": "statement_policy",
+    "proof_commitment_relabeling": "statement_policy",
+    "proof_status_relabeling": "statement_policy",
+    "selected_position_relabeling": "statement_policy",
+    "source_file_hash_relabeling": "statement_policy",
+    "source_payload_hash_relabeling": "statement_policy",
+    "verifier_domain_relabeling": "domain_or_version_allowlist",
+    "source_verifier_domain_relabeling": "statement_policy",
+    "source_proof_system_version_relabeling": "statement_policy",
+    "source_model_id_relabeling": "statement_policy",
+    "source_statement_kind_relabeling": "statement_policy",
+    "public_signal_relabeling": "artifact_binding",
+    "public_signal_hash_relabeling": "public_signal_binding",
+    "field_entry_value_relabeling": "statement_policy",
+    "field_entry_label_relabeling": "statement_policy",
+    "proof_hash_relabeling": "artifact_binding",
+    "verification_key_hash_relabeling": "artifact_binding",
+    "verification_key_file_hash_relabeling": "artifact_binding",
+    "circuit_artifact_hash_relabeling": "artifact_binding",
+    "input_artifact_hash_relabeling": "artifact_binding",
+    "embedded_input_relabeling": "artifact_binding",
+    "embedded_artifact_map_relabeling": "artifact_binding",
+    "setup_commitment_relabeling": "setup_binding",
+    "proof_size_metric_smuggled": "parser_or_schema",
+    "verifier_time_metric_smuggled": "parser_or_schema",
+    "proof_generation_time_metric_smuggled": "parser_or_schema",
+    "statement_commitment_relabeling": "statement_commitment",
+    "receipt_commitment_relabeling": "receipt_commitment",
+    "non_claims_removed": "parser_or_schema",
+    "unknown_statement_field_added": "parser_or_schema",
+    "validation_command_drift": "parser_or_schema",
+    "unknown_top_level_field_added": "parser_or_schema",
+}
 
 
 class AttentionKvSnarkReceiptError(ValueError):
@@ -803,11 +850,63 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise AttentionKvSnarkReceiptError("not all SNARK receipt mutations rejected", layer="mutation_suite")
     by_name = {case.get("mutation"): case for case in cases}
     expect_equal(set(by_name), EXPECTED_MUTATION_SET, "case mutation set")
+    expect_equal(set(EXPECTED_REJECTION_LAYERS), EXPECTED_MUTATION_SET, "expected rejection layer set")
+    expected_mutations = mutated_receipts()
+    baseline_statement_hash = statement_payload_sha256(receipt)
+    baseline_public_signal_hash = public_signals_sha256(receipt["public_signals"])
     for mutation, surface in EXPECTED_MUTATION_INVENTORY:
-        case = by_name[mutation]
+        case = require_object(by_name[mutation], f"case {mutation}")
+        expect_keys(case, CASE_KEYS, f"case {mutation}", layer="mutation_suite")
         expect_equal(case.get("surface"), surface, f"surface for {mutation}")
-        if case.get("mutated_accepted") is True:
-            raise AttentionKvSnarkReceiptError(f"mutation accepted: {mutation}", layer="mutation_suite")
+        expect_equal(case.get("baseline_accepted"), True, f"baseline_accepted for {mutation}", layer="mutation_suite")
+        expect_equal(case.get("mutated_accepted"), False, f"mutated_accepted for {mutation}", layer="mutation_suite")
+        expect_equal(case.get("rejected"), True, f"rejected for {mutation}", layer="mutation_suite")
+        expect_equal(
+            case.get("rejection_layer"),
+            EXPECTED_REJECTION_LAYERS[mutation],
+            f"rejection_layer for {mutation}",
+            layer="mutation_suite",
+        )
+        error = case.get("error")
+        if not isinstance(error, str) or not error:
+            raise AttentionKvSnarkReceiptError(f"error for {mutation} must be a non-empty string", layer="mutation_suite")
+        mutated_receipt = expected_mutations[mutation][1]
+        expect_equal(
+            case.get("baseline_statement_sha256"),
+            baseline_statement_hash,
+            f"baseline_statement_sha256 for {mutation}",
+            layer="mutation_suite",
+        )
+        expect_equal(
+            case.get("mutated_statement_sha256"),
+            statement_payload_sha256(mutated_receipt),
+            f"mutated_statement_sha256 for {mutation}",
+            layer="mutation_suite",
+        )
+        expect_equal(
+            case.get("baseline_statement_commitment"),
+            receipt.get("statement_commitment", ""),
+            f"baseline_statement_commitment for {mutation}",
+            layer="mutation_suite",
+        )
+        expect_equal(
+            case.get("mutated_statement_commitment"),
+            mutated_receipt.get("statement_commitment", ""),
+            f"mutated_statement_commitment for {mutation}",
+            layer="mutation_suite",
+        )
+        expect_equal(
+            case.get("baseline_public_signals_sha256"),
+            baseline_public_signal_hash,
+            f"baseline_public_signals_sha256 for {mutation}",
+            layer="mutation_suite",
+        )
+        expect_equal(
+            case.get("mutated_public_signals_sha256"),
+            public_signals_sha256(mutated_receipt.get("public_signals", [])),
+            f"mutated_public_signals_sha256 for {mutation}",
+            layer="mutation_suite",
+        )
     expect_equal(
         require_object(payload["receipt_metrics"], "receipt metrics"),
         expected_receipt_metrics(),
