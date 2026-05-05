@@ -2287,7 +2287,8 @@
     "not recursive verification or PCD",
     "not agent correctness",
     "not a public zkML benchmark row",
-    "not a Starknet deployment result"
+    "not a Starknet deployment result",
+    "not a widened d>2 or masked attention surface; width and masking remain follow-up issue #446"
   ],
   "proof_metrics": {
     "metrics_enabled": true,
