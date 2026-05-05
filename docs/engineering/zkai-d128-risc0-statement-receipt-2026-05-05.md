@@ -36,7 +36,7 @@ rows and not cross-system performance comparisons.
 |---|---:|
 | Receipt size | `310234` bytes |
 | Proof generation time | `178636.325 ms` |
-| Receipt verification time | `19.422 ms` |
+| Receipt verification time | `25.972 ms` |
 | Timing policy | `single_local_run_engineering_only` |
 
 The proof-generation time is preserved from the original `--prove` run when the
@@ -71,6 +71,7 @@ Toolchain pin for a fresh environment:
 ```bash
 curl -L https://risczero.com/install | bash
 export PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH"
+rzup --version  # must print 0.5.0 for this checked fixture
 rzup install cargo-risczero 3.0.5
 rzup install r0vm 3.0.5
 rustup toolchain install 1.92.0 --component rustfmt --component rust-src

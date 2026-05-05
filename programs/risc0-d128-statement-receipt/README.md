@@ -23,6 +23,7 @@ Fresh environment setup:
 ```bash
 curl -L https://risczero.com/install | bash
 export PATH="$HOME/.risc0/bin:$HOME/.cargo/bin:$PATH"
+rzup --version  # must print 0.5.0 for this checked fixture
 rzup install cargo-risczero 3.0.5
 rzup install r0vm 3.0.5
 rustup toolchain install 1.92.0 --component rustfmt --component rust-src

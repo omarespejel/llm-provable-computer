@@ -208,6 +208,8 @@ EXPECTED_MUTATION_INVENTORY = (
     ("proof_size_metric_smuggled", "backend_decision"),
     ("verifier_time_metric_smuggled", "backend_decision"),
     ("proof_generation_time_metric_smuggled", "backend_decision"),
+    ("route_scoped_metric_smuggled", "backend_decision"),
+    ("metric_source_route_relabeling", "backend_decision"),
     ("next_route_changed_to_settlement", "backend_decision"),
     ("non_claims_removed", "parser_or_schema"),
     ("validation_command_drift", "parser_or_schema"),
@@ -299,9 +301,11 @@ BACKEND_DECISION_KEYS = {
     "candidate_route_ids",
     "first_missing_object",
     "go_criterion",
+    "metric_source_route_id",
     "next_route",
     "primary_blocker",
     "proof_metrics",
+    "proof_metrics_by_route",
     "source_issue",
     "usable_cryptographic_backend_route_ids",
 }
@@ -954,6 +958,11 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
         if route["cryptographic_backend"] is True and route["usable_today"] is False
     ]
     usable_route = next((route for route in routes if route["route_id"] in usable_crypto), None)
+    proof_metrics_by_route = {
+        route["route_id"]: copy.deepcopy(route["proof_metrics"])
+        for route in routes
+        if route["route_id"] in usable_crypto
+    }
     proof_metrics = {
         "metrics_enabled": bool(usable_route),
         "proof_size_bytes": usable_route["proof_metrics"]["proof_size_bytes"] if usable_route else None,
@@ -969,7 +978,9 @@ def backend_decision(routes: list[dict[str, Any]]) -> dict[str, Any]:
         "usable_cryptographic_backend_route_ids": usable_crypto,
         "candidate_route_ids": candidate_routes,
         "blocked_before_metrics": not bool(usable_crypto),
+        "metric_source_route_id": usable_route["route_id"] if usable_route else None,
         "proof_metrics": proof_metrics,
+        "proof_metrics_by_route": proof_metrics_by_route,
     }
 
 
@@ -1137,6 +1148,7 @@ def validate_backend_decision(value: Any, routes: list[dict[str, Any]]) -> dict[
     expect_keys(decision, BACKEND_DECISION_KEYS, "backend decision", layer="backend_decision")
     metrics = require_object(decision["proof_metrics"], "backend decision proof metrics", layer="backend_decision")
     expect_keys(metrics, BACKEND_DECISION_METRIC_KEYS, "backend decision proof metrics", layer="backend_decision")
+    metrics_by_route = require_object(decision["proof_metrics_by_route"], "route-scoped backend decision proof metrics", layer="backend_decision")
     expect_equal(decision["primary_blocker"], PRIMARY_BLOCKER, "primary blocker", layer="backend_decision")
     expect_equal(decision["first_missing_object"], FIRST_MISSING_OBJECT, "first missing object", layer="backend_decision")
     expect_equal(decision["go_criterion"], GO_CRITERION, "go criterion", layer="backend_decision")
@@ -1147,17 +1159,25 @@ def validate_backend_decision(value: Any, routes: list[dict[str, Any]]) -> dict[
     ]
     expect_equal(decision["blocked_before_metrics"], not bool(usable_crypto), "blocked before metrics", layer="backend_decision")
     expect_equal(metrics["metrics_enabled"], bool(usable_crypto), "metrics enabled", layer="backend_decision")
+    expect_equal(set(metrics_by_route), {route["route_id"] for route in usable_crypto}, "route-scoped metric ids", layer="backend_decision")
+    for route in usable_crypto:
+        route_metrics = require_object(metrics_by_route.get(route["route_id"]), f"route-scoped metrics {route['route_id']}", layer="backend_decision")
+        expect_keys(route_metrics, ROUTE_METRIC_KEYS, "route-scoped proof metrics", layer="backend_decision")
+        expect_equal(route_metrics, route["proof_metrics"], f"route-scoped proof metrics {route['route_id']}", layer="backend_decision")
     if usable_crypto:
         if usable_crypto[0]["route_id"] not in {
             "external_zkvm_statement_receipt_backend",
             "external_snark_or_ivc_statement_receipt_backend",
         }:
             raise D128CryptographicBackendGateError("unexpected usable cryptographic route", layer="backend_decision")
+        expect_equal(decision["metric_source_route_id"], usable_crypto[0]["route_id"], "metric source route", layer="backend_decision")
         expect_equal(metrics["proof_size_bytes"], usable_crypto[0]["proof_metrics"]["proof_size_bytes"], "decision proof size", layer="backend_decision")
         expect_equal(metrics["verifier_time_ms"], usable_crypto[0]["proof_metrics"]["verifier_time_ms"], "decision verifier time", layer="backend_decision")
         expect_equal(metrics["proof_generation_time_ms"], usable_crypto[0]["proof_metrics"]["proof_generation_time_ms"], "decision proof generation time", layer="backend_decision")
     elif any(metrics[key] is not None for key in ("proof_size_bytes", "verifier_time_ms", "proof_generation_time_ms")):
         raise D128CryptographicBackendGateError("backend decision smuggles proof metrics before backend exists", layer="backend_decision")
+    else:
+        expect_equal(decision["metric_source_route_id"], None, "metric source route", layer="backend_decision")
     expected = backend_decision(routes)
     expect_equal(decision, expected, "backend decision", layer="backend_decision")
     return decision
@@ -1319,6 +1339,18 @@ def _mutated_cases(baseline: dict[str, Any]) -> list[tuple[str, str, dict[str, A
     add("proof_size_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_size_bytes", 1024))
     add("verifier_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("verifier_time_ms", 1.0))
     add("proof_generation_time_metric_smuggled", "backend_decision", lambda p: p["backend_decision"]["proof_metrics"].__setitem__("proof_generation_time_ms", 1.0))
+    add(
+        "route_scoped_metric_smuggled",
+        "backend_decision",
+        lambda p: p["backend_decision"]["proof_metrics_by_route"]["external_snark_or_ivc_statement_receipt_backend"].__setitem__(
+            "proof_size_bytes", 1024
+        ),
+    )
+    add(
+        "metric_source_route_relabeling",
+        "backend_decision",
+        lambda p: p["backend_decision"].__setitem__("metric_source_route_id", "external_snark_or_ivc_statement_receipt_backend"),
+    )
     add("next_route_changed_to_settlement", "backend_decision", lambda p: p["backend_decision"].__setitem__("next_route", "STARKNET_SETTLEMENT_NOW"))
     add("non_claims_removed", "parser_or_schema", lambda p: p.__setitem__("non_claims", p["non_claims"][:-1]))
     add("validation_command_drift", "parser_or_schema", lambda p: p["validation_commands"].append("echo unsafe"))

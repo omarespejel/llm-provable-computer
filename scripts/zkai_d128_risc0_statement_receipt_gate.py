@@ -631,7 +631,17 @@ def main() -> int:
     json_path = resolve_output_path(args.write_json)
     tsv_path = resolve_output_path(args.write_tsv)
     previous_proof_generation_time_ms = None
-    if args.verify_existing and json_path is not None and json_path.is_file():
+    if args.verify_existing:
+        if json_path is None:
+            raise D128Risc0StatementReceiptError(
+                "--verify-existing requires --write-json pointing at existing RISC Zero evidence",
+                layer="output_path",
+            )
+        if not json_path.is_file():
+            raise D128Risc0StatementReceiptError(
+                "--verify-existing requires an existing RISC Zero evidence JSON; use --prove first or provide --write-json",
+                layer="output_path",
+            )
         previous = require_object(load_json(json_path), "previous RISC Zero evidence")
         metrics = require_object(previous.get("proof_metrics"), "previous proof metrics")
         previous_proof_generation_time_ms = metrics.get("proof_generation_time_ms")

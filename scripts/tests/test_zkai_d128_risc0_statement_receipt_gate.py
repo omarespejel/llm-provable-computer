@@ -127,6 +127,31 @@ class ZkAiD128Risc0StatementReceiptGateTests(unittest.TestCase):
 
         self.assertEqual(err.exception.layer, "receipt_artifact")
 
+    def test_verify_existing_requires_existing_json_for_prove_time(self) -> None:
+        old_argv = sys.argv[:]
+        try:
+            sys.argv = [
+                str(SCRIPT_PATH),
+                "--verify-existing",
+                "--receipt",
+                str(GATE.RECEIPT_OUT),
+            ]
+            with self.assertRaisesRegex(GATE.D128Risc0StatementReceiptError, "requires --write-json"):
+                GATE.main()
+
+            sys.argv = [
+                str(SCRIPT_PATH),
+                "--verify-existing",
+                "--receipt",
+                str(GATE.RECEIPT_OUT),
+                "--write-json",
+                "target/missing-risc0-statement-receipt.json",
+            ]
+            with self.assertRaisesRegex(GATE.D128Risc0StatementReceiptError, "requires an existing RISC Zero evidence JSON"):
+                GATE.main()
+        finally:
+            sys.argv = old_argv
+
     def test_tsv_contains_stable_risc0_row(self) -> None:
         text = GATE.to_tsv(self.fresh_payload())
         lines = text.splitlines()

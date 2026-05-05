@@ -45,11 +45,22 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         self.assertFalse(payload["backend_decision"]["blocked_before_metrics"])
         metrics = payload["backend_decision"]["proof_metrics"]
         self.assertTrue(metrics["metrics_enabled"])
+        self.assertEqual(payload["backend_decision"]["metric_source_route_id"], "external_zkvm_statement_receipt_backend")
         self.assertEqual(metrics["proof_size_bytes"], 310234)
         self.assertGreater(metrics["proof_generation_time_ms"], 0)
         self.assertGreater(metrics["verifier_time_ms"], 0)
+        metrics_by_route = payload["backend_decision"]["proof_metrics_by_route"]
+        self.assertEqual(
+            set(metrics_by_route),
+            {"external_zkvm_statement_receipt_backend", "external_snark_or_ivc_statement_receipt_backend"},
+        )
+        expected_zkvm_metrics = dict(metrics)
+        expected_zkvm_metrics.pop("metrics_enabled")
+        self.assertEqual(metrics_by_route["external_zkvm_statement_receipt_backend"], expected_zkvm_metrics)
+        self.assertEqual(metrics_by_route["external_snark_or_ivc_statement_receipt_backend"]["proof_size_bytes"], 802)
+        self.assertIsNone(metrics_by_route["external_snark_or_ivc_statement_receipt_backend"]["verifier_time_ms"])
         for key, value in payload["backend_decision"].items():
-            if key not in {"blocked_before_metrics", "proof_metrics"} and key.endswith(("_bytes", "_ms", "_count")):
+            if key not in {"blocked_before_metrics", "proof_metrics", "proof_metrics_by_route"} and key.endswith(("_bytes", "_ms", "_count")):
                 self.assertIsNone(value)
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertEqual(payload["case_count"], len(GATE.EXPECTED_MUTATION_INVENTORY))
@@ -259,6 +270,11 @@ class ZkAiD128CryptographicBackendGateTests(unittest.TestCase):
         core = GATE._core_payload_for_case_replay(self.fresh_payload())
         core["backend_decision"]["proof_metrics"]["proof_size_bytes"] = 1024
         with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "decision proof size"):
+            GATE.validate_core_payload(core)
+
+        core = GATE._core_payload_for_case_replay(self.fresh_payload())
+        core["backend_decision"]["proof_metrics_by_route"]["external_snark_or_ivc_statement_receipt_backend"]["proof_size_bytes"] = 1024
+        with self.assertRaisesRegex(GATE.D128CryptographicBackendGateError, "route-scoped proof metrics"):
             GATE.validate_core_payload(core)
 
         core = GATE._core_payload_for_case_replay(self.fresh_payload())

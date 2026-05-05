@@ -8,13 +8,26 @@
     ],
     "first_missing_object": "local nested verifier AIR/circuit and local PCD/IVC backend remain missing; external SNARK and RISC Zero statement receipts now prove or receipt the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
+    "metric_source_route_id": "external_zkvm_statement_receipt_backend",
     "next_route": "LOCAL_RECURSIVE_OR_PCD_BACKEND_OR_COMPARATIVE_EXTERNAL_RECEIPT_CONTROL",
     "primary_blocker": "NONE_FOR_EXTERNAL_STATEMENT_RECEIPT_ROUTES",
     "proof_metrics": {
       "metrics_enabled": true,
       "proof_generation_time_ms": 178636.324583,
       "proof_size_bytes": 310234,
-      "verifier_time_ms": 19.421834
+      "verifier_time_ms": 25.972458
+    },
+    "proof_metrics_by_route": {
+      "external_snark_or_ivc_statement_receipt_backend": {
+        "proof_generation_time_ms": null,
+        "proof_size_bytes": 802,
+        "verifier_time_ms": null
+      },
+      "external_zkvm_statement_receipt_backend": {
+        "proof_generation_time_ms": 178636.324583,
+        "proof_size_bytes": 310234,
+        "verifier_time_ms": 25.972458
+      }
     },
     "source_issue": 424,
     "usable_cryptographic_backend_route_ids": [
@@ -149,7 +162,7 @@
       "proof_metrics": {
         "proof_generation_time_ms": 178636.324583,
         "proof_size_bytes": 310234,
-        "verifier_time_ms": 19.421834
+        "verifier_time_ms": 25.972458
       },
       "route_id": "external_zkvm_statement_receipt_backend",
       "route_kind": "external_zkvm_statement_receipt",
@@ -200,7 +213,7 @@
       "usable_today": false
     }
   ],
-  "case_count": 35,
+  "case_count": 37,
   "cases": [
     {
       "baseline_result": "GO",
@@ -483,6 +496,24 @@
     },
     {
       "baseline_result": "GO",
+      "error_code": "route_scoped_metric_smuggled",
+      "mutated_accepted": false,
+      "mutation": "route_scoped_metric_smuggled",
+      "rejected": true,
+      "rejection_layer": "backend_decision",
+      "surface": "backend_decision"
+    },
+    {
+      "baseline_result": "GO",
+      "error_code": "metric_source_route_relabeling",
+      "mutated_accepted": false,
+      "mutation": "metric_source_route_relabeling",
+      "rejected": true,
+      "rejection_layer": "backend_decision",
+      "surface": "backend_decision"
+    },
+    {
+      "baseline_result": "GO",
       "error_code": "next_route_changed_to_settlement",
       "mutated_accepted": false,
       "mutation": "next_route_changed_to_settlement",
@@ -679,21 +710,31 @@
     },
     {
       "index": 31,
-      "mutation": "next_route_changed_to_settlement",
+      "mutation": "route_scoped_metric_smuggled",
       "surface": "backend_decision"
     },
     {
       "index": 32,
+      "mutation": "metric_source_route_relabeling",
+      "surface": "backend_decision"
+    },
+    {
+      "index": 33,
+      "mutation": "next_route_changed_to_settlement",
+      "surface": "backend_decision"
+    },
+    {
+      "index": 34,
       "mutation": "non_claims_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 33,
+      "index": 35,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     },
     {
-      "index": 34,
+      "index": 36,
       "mutation": "unknown_top_level_field_added",
       "surface": "parser_or_schema"
     }
@@ -809,8 +850,8 @@
     "compressed_artifact_serialized_bytes": 4435,
     "first_missing_object": "local nested verifier AIR/circuit and local PCD/IVC backend remain missing; external SNARK and RISC Zero statement receipts now prove or receipt the #424 public-input contract",
     "go_criterion": "a real executable proof, PCD, zkVM, SNARK/IVC, or recursive-verifier artifact exists; a verifier handle accepts it; and its public inputs or receipt journal bind the #424 two_slice_target_commitment, selected statement commitments, source evidence hashes, public-instance commitments, proof-native parameter commitments, verifier domain, backend version, source accumulator commitment, and source verifier-handle commitment",
-    "mutation_cases": 35,
-    "mutations_rejected": 35,
+    "mutation_cases": 37,
+    "mutations_rejected": 37,
     "primary_blocker": "NONE_FOR_EXTERNAL_STATEMENT_RECEIPT_ROUTES",
     "result": "GO",
     "selected_checked_rows": 256,
