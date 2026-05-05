@@ -718,7 +718,7 @@
   },
   "repro": {
     "command": "python3 scripts/zkai_d64_external_recursion_adapter_gate.py --write-json docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-d64-external-recursion-adapter-2026-05.tsv",
-    "git_commit": "5cd242a977139cb72cebc29da6ffbb2ec972c5a7"
+    "git_commit": "a0a6336a9f166ec52019b6b0f2aed5fdee98ad36"
   },
   "result": "GO",
   "schema": "zkai-d64-external-recursion-adapter-gate-v1",
