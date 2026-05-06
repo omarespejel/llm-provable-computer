@@ -1325,14 +1325,18 @@ The first scale follow-up now exists along the sequence axis. The same native
 Stwo verifier accepts a sixteen-step `d=8` causal-prefix masked sequence with
 `168` public score rows, a `256`-row trace, eighteen final KV rows, selected
 positions `0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16`, a `32444`-byte
-proof, a `464320`-byte checked envelope, and `16 / 16` scale-gate mutation
+proof, a `464338`-byte checked envelope, and `16 / 16` scale-gate mutation
 rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json`.
-This is sequence-length scaling, not width scaling: it keeps `d=8`, integer
-argmax, causal masking, and public score rows fixed. Its value is that the native
-STARK surface is no longer only one tiny eight-step point; it survives a larger
+The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`.
+Backend identity is `stwo-attention-kv-d8-causal-mask-seq16-v1`, proof version
+is `stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1`, and timings remain
+single-run local engineering measurements rather than benchmark rows. This is
+sequence-length scaling, not width scaling: it keeps `d=8`, integer argmax,
+causal masking, and public score rows fixed. Its value is that the native STARK
+surface is no longer only one tiny eight-step point; it survives a larger
 carried-state trace under the same statement-binding rules.
 
 The credible sequencing is therefore: first scale this native attention/KV AIR

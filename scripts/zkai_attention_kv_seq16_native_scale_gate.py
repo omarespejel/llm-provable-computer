@@ -84,6 +84,7 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_seq16_native_scale_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate",
+    "just lib",
     "just gate-fast",
     "just gate",
 )
