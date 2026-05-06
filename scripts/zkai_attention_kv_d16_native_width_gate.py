@@ -482,7 +482,13 @@ def validate_receipt_summary(
         raise AttentionKvD16NativeWidthGateError("row count drift")
     if summary["final_kv_items"] != 10:
         raise AttentionKvD16NativeWidthGateError("final KV item count drift")
-    if summary["selected_positions"] != list(selected_positions):
+    positions = summary["selected_positions"]
+    if (
+        not isinstance(positions, list)
+        or any(not isinstance(item, int) or isinstance(item, bool) for item in positions)
+    ):
+        raise AttentionKvD16NativeWidthGateError("selected positions malformed")
+    if positions != list(selected_positions):
         raise AttentionKvD16NativeWidthGateError("selected positions drift")
     if summary["timing_policy"] != TIMING_POLICY:
         raise AttentionKvD16NativeWidthGateError("timing policy drift")
@@ -559,7 +565,11 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         raise AttentionKvD16NativeWidthGateError("scale gate commitment drift")
     if not allow_missing_mutation_summary:
         cases = payload["mutation_cases"]
-        if not isinstance(cases, list) or [case.get("name") for case in cases] != list(EXPECTED_MUTATION_NAMES):
+        if (
+            not isinstance(cases, list)
+            or any(not isinstance(case, dict) for case in cases)
+            or [case.get("name") for case in cases] != list(EXPECTED_MUTATION_NAMES)
+        ):
             raise AttentionKvD16NativeWidthGateError("mutation case drift")
         if any(case.get("rejected") is not True for case in cases):
             raise AttentionKvD16NativeWidthGateError("mutation rejection drift")
