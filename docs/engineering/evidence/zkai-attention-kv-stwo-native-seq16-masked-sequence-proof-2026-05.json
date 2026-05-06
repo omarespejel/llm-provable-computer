@@ -1165,7 +1165,7 @@
   "issue": 450,
   "key_width": 8,
   "masking_policy": "causal_prefix_position_lte_query_token",
-  "next_backend_step": "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface",
+  "next_backend_step": "scale the native Stwo attention/KV proof surface to d=16 width, multi-head, or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface",
   "non_claims": [
     "not Softmax attention",
     "not full transformer inference",

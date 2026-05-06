@@ -12320,7 +12320,7 @@
       "bounded envelope JSON before deserialization and bounded proof bytes before proof parsing",
       "commitment-vector length check before commitment indexing"
     ],
-    "next_backend_step": "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface",
+    "next_backend_step": "scale the native Stwo attention/KV proof surface to d=16 width, multi-head, or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface",
     "validation_commands": [
       "python3 scripts/zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.tsv",
       "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input",
