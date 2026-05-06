@@ -168,9 +168,13 @@ public contract.
    in a zkVM. Issue `#448` adds the first native Stwo proof for this stateful
    surface: fixed eight-step `d=8` causal-prefix masked integer-argmax
    attention/KV, `52` score rows, `64` trace rows, and a `24394`-byte proof. The
-   next step is to scale one native Stwo axis at a time (`d=16`, multi-head,
-   longer fixed sequence, or bounded Softmax-like approximation) while keeping
-   the external SNARK/RISC0 rows as controls rather than headlines.
+   later native scale gates now cover sequence length, width, head multiplicity,
+   and a bounded weighted-attention semantics path. Issue `#460` is the newest
+   GO: the bounded weighted policy survives at the same `d=8`, eight-step shape
+   as the native masked-sequence fixture, with `52` score rows, a `36769`-byte
+   proof, and `15 / 15` checked mutations rejected. The next step is to combine
+   that weighted policy with head multiplicity, while keeping the external
+   SNARK/RISC0 rows as controls rather than headlines.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers

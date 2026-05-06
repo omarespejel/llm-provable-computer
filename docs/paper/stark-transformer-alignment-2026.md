@@ -1377,9 +1377,33 @@ not recursion/PCD. Its value is that the native STARK surface now covers the
 three basic attention axes one notch at a time: sequence length, vector width,
 and head multiplicity.
 
+The fourth follow-up moves from hard argmax selection to bounded weighted
+attention at the same `d=8` carried-state shape as the first native attention
+proof. The verifier recomputes candidate scores, max scores, monotone
+score-derived weights
+`weight = 2 ** (4 - min(max_score - score, 4))`, denominators, weighted
+numerators, floor outputs, and remainders. The AIR checks dot-product rows,
+score and causal gap bit decompositions, weight-value products, and
+quotient/remainder relations. The checked fixture has `52` public score/weight
+rows over a `64`-row trace, ten final KV rows, eight weighted output vectors, a
+`36769`-byte proof, a `386078`-byte checked envelope, and `15 / 15` mutation
+rejections. Evidence is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`.
+Backend identity is `stwo-attention-kv-d8-causal-mask-bounded-weighted-v1`, proof
+version is `stwo-attention-kv-d8-causal-mask-bounded-weighted-air-proof-v1`, and
+timings remain single-run local engineering measurements rather than benchmark
+rows. This is bounded weighted attention, not exact Softmax, not exp/div
+semantics, not full inference, not long-context evidence, and not recursion/PCD.
+Its value is that attention-like weighted reads from carried KV state are now
+native to the STARK trace at the same width as the first native attention/KV
+fixture.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time (next, a bounded Softmax-like approximation or a larger
-per-head frontier);
+one notch at a time (next, combine the bounded weighted policy with the
+two-head carried-state shape);
 second measure proof size and verifier time only after the proof object exists;
 third keep matched external rows only when public
 proof artifacts and verifier inputs make baseline verification and metadata

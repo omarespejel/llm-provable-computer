@@ -205,14 +205,25 @@ Tablero boundary.
   This is bounded weighted attention, not exact Softmax, not exp/div semantics,
   not full inference, not long-context evidence, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`.
+- Issue `#460` scales bounded weighted attention to the existing native `d=8`
+  causal-prefix masked sequence shape: a real Stwo AIR proof checks `52` score
+  rows, a `64`-row trace, eight weighted output vectors, a `36769`-byte proof,
+  and a `386078`-byte checked envelope. It rejects `15 / 15` checked mutations
+  and preserves verifier recomputation of append-only KV carry, max scores,
+  bounded weights, denominators, weighted numerators, floor outputs, and
+  remainders. This is still bounded weighted attention, not exact Softmax, not
+  exp/div semantics, not full inference, not long-context evidence, and not
+  recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`.
+
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
   for six proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
   external SNARK statement-receipt route, the RISC Zero transition semantics
   route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
-  causal-prefix masked sequence route. The native seq16, d16, two-head, and
-  bounded weighted proofs are separate native scale/semantics gates for the
+  causal-prefix masked sequence route. The native seq16, d16, two-head, bounded weighted, and d8 bounded
+  weighted proofs are separate native scale/semantics gates for the
   first route family. It rejects `42 / 42` selector mutations and keeps exact
   Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see

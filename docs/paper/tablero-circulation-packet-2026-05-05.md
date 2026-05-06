@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, and a bounded weighted policy gate; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4 bounded weighted semantics, and d8 bounded weighted semantics; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -77,9 +77,11 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_na
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
 cargo +nightly-2025-07-14 test attention_kv_native_bounded_weighted_proof --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate
+cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof --lib --features stwo-backend
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate
 git diff --check
 just gate-fast
 just lib
@@ -123,6 +125,16 @@ score/weight, output, quotient/remainder, final-KV, metric, parser, and
 exact-Softmax-overclaim mutations. This is not exact Softmax; the useful result
 is that the approximation policy is proof-bound instead of narrative-only.
 
+That semantics result now also survives at `d=8`: the native Stwo d8 bounded
+weighted profile checks `52` score/weight rows over a `64`-row trace, ten final
+KV rows, eight weighted output vectors, quotient/remainder rows for floor
+division, a `36769`-byte proof, and a `386078`-byte checked envelope. Its gate
+rejects `15 / 15` statement, weight-policy, score/weight, output,
+quotient/remainder, final-KV, metric, parser, and exact-Softmax-overclaim
+mutations. This is the relevant transformer-paper bridge: the bounded weighted
+attention policy is no longer only a tiny d4 curiosity, but it is still not
+exact Softmax or a benchmark row.
+
 The next research result should keep scaling the native Stwo surface, not add
 another metadata adapter:
 
@@ -130,8 +142,8 @@ another metadata adapter:
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Scale the native Stwo proof by one axis only: d8 bounded weighted attention
-   or two-head bounded weighted attention.
+3. Scale the native Stwo proof by one axis only: two-head bounded weighted
+   attention is now the next synthesis target after the d8 bounded weighted GO.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 5. Keep exact Softmax out of scope unless the native proof actually covers the
