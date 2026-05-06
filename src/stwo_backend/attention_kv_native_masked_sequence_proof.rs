@@ -44,6 +44,18 @@ pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION: &st
     "stwo-attention-kv-d8-causal-mask-sequence-v1";
 pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN: &str =
     "ptvm:zkai:attention-kv-stwo-native-masked-sequence:v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_PROOF_VERSION: &str =
+    "stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_STATEMENT_VERSION: &str =
+    "zkai-attention-kv-stwo-native-masked-sequence-seq16-statement-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_SEMANTIC_SCOPE: &str =
+    "d8_integer_argmax_attention_kv_causal_mask_seq16_rows_bound_to_statement_receipt";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_TARGET_ID: &str =
+    "attention-kv-d8-causal-mask-seq16-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_REQUIRED_BACKEND_VERSION: &str =
+    "stwo-attention-kv-d8-causal-mask-seq16-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_VERIFIER_DOMAIN: &str =
+    "ptvm:zkai:attention-kv-stwo-native-masked-sequence-seq16:v1";
 
 const SEMANTICS: &str = "integer_argmax_attention";
 const MASKING_POLICY: &str = "causal_prefix_position_lte_query_token";
@@ -51,11 +63,16 @@ const TIE_BREAK: &str = "lowest_position";
 const KEY_WIDTH: usize = 8;
 const VALUE_WIDTH: usize = 8;
 const SEQUENCE_LENGTH: usize = 8;
+const SEQUENCE_LENGTH_SEQ16: usize = 16;
 const INITIAL_KV_ITEMS: usize = 2;
 const FINAL_KV_ITEMS: usize = 10;
+const FINAL_KV_ITEMS_SEQ16: usize = 18;
 const SCORE_ROW_COUNT: usize = 52;
+const SCORE_ROW_COUNT_SEQ16: usize = 168;
 const TRACE_ROW_COUNT: usize = 64;
+const TRACE_ROW_COUNT_SEQ16: usize = 256;
 const LOG_SIZE: u32 = 6;
+const LOG_SIZE_SEQ16: u32 = 8;
 const SCORE_GAP_BITS: usize = 16;
 const CAUSAL_GAP_BITS: usize = 16;
 const TIE_GAP_BITS: usize = 16;
@@ -76,6 +93,7 @@ const PUBLIC_INSTANCE_DOMAIN: &str = "ptvm:zkai:attention-kv-stwo-native-public-
 const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:attention-kv-stwo-native-proof-parameters:v1";
 
+#[cfg(test)]
 const EXPECTED_SELECTED_POSITIONS: [usize; SEQUENCE_LENGTH] = [0, 2, 3, 3, 5, 5, 7, 9];
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
@@ -114,16 +132,89 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate",
 ];
 
+const EXPECTED_VALIDATION_COMMANDS_SEQ16: &[&str] = &[
+    "python3 scripts/zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_seq16_native_scale_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate",
+    "just gate-fast",
+    "just gate",
+];
+
+const NEXT_BACKEND_STEP_SEQ16: &str = "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface";
+
+#[derive(Debug, Clone, Copy)]
+struct AttentionKvNativeMaskedSequenceProfile {
+    issue: usize,
+    source_issue: usize,
+    target_id: &'static str,
+    required_backend_version: &'static str,
+    proof_version: &'static str,
+    statement_version: &'static str,
+    semantic_scope: &'static str,
+    verifier_domain: &'static str,
+    sequence_length: usize,
+    final_kv_items: usize,
+    score_row_count: usize,
+    trace_row_count: usize,
+    log_size: u32,
+    next_backend_step: &'static str,
+    validation_commands: &'static [&'static str],
+}
+
+const PROFILE_D8: AttentionKvNativeMaskedSequenceProfile = AttentionKvNativeMaskedSequenceProfile {
+    issue: 448,
+    source_issue: 446,
+    target_id: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID,
+    required_backend_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION,
+    proof_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION,
+    statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION,
+    semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE,
+    verifier_domain: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN,
+    sequence_length: SEQUENCE_LENGTH,
+    final_kv_items: FINAL_KV_ITEMS,
+    score_row_count: SCORE_ROW_COUNT,
+    trace_row_count: TRACE_ROW_COUNT,
+    log_size: LOG_SIZE,
+    next_backend_step: NEXT_BACKEND_STEP,
+    validation_commands: EXPECTED_VALIDATION_COMMANDS,
+};
+
+const PROFILE_SEQ16: AttentionKvNativeMaskedSequenceProfile =
+    AttentionKvNativeMaskedSequenceProfile {
+        issue: 450,
+        source_issue: 448,
+        target_id: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_TARGET_ID,
+        required_backend_version:
+            ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_REQUIRED_BACKEND_VERSION,
+        proof_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_PROOF_VERSION,
+        statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_STATEMENT_VERSION,
+        semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_SEMANTIC_SCOPE,
+        verifier_domain: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_VERIFIER_DOMAIN,
+        sequence_length: SEQUENCE_LENGTH_SEQ16,
+        final_kv_items: FINAL_KV_ITEMS_SEQ16,
+        score_row_count: SCORE_ROW_COUNT_SEQ16,
+        trace_row_count: TRACE_ROW_COUNT_SEQ16,
+        log_size: LOG_SIZE_SEQ16,
+        next_backend_step: NEXT_BACKEND_STEP_SEQ16,
+        validation_commands: EXPECTED_VALIDATION_COMMANDS_SEQ16,
+    };
+
 #[derive(Debug, Clone)]
-struct AttentionKvNativeMaskedSequenceEval;
+struct AttentionKvNativeMaskedSequenceEval {
+    log_size: u32,
+}
 
 impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
     fn log_size(&self) -> u32 {
-        LOG_SIZE
+        self.log_size
     }
 
     fn max_constraint_log_degree_bound(&self) -> u32 {
-        LOG_SIZE.saturating_add(1)
+        self.log_size.saturating_add(1)
     }
 
     fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
@@ -391,13 +482,12 @@ pub fn zkai_attention_kv_native_masked_sequence_input_from_json_str(
 pub fn prove_zkai_attention_kv_native_masked_sequence_envelope(
     input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
 ) -> Result<ZkAiAttentionKvNativeMaskedSequenceEnvelope> {
-    validate_input(input)?;
+    let profile = validate_input(input)?;
     Ok(ZkAiAttentionKvNativeMaskedSequenceEnvelope {
         proof_backend: StarkProofBackend::Stwo,
-        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION
-            .to_string(),
-        statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION.to_string(),
-        semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE.to_string(),
+        proof_backend_version: profile.required_backend_version.to_string(),
+        statement_version: profile.statement_version.to_string(),
+        semantic_scope: profile.semantic_scope.to_string(),
         decision: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_DECISION.to_string(),
         input: input.clone(),
         proof: prove_rows(input)?,
@@ -428,22 +518,23 @@ pub fn verify_zkai_attention_kv_native_masked_sequence_envelope(
 }
 
 fn validate_envelope(envelope: &ZkAiAttentionKvNativeMaskedSequenceEnvelope) -> Result<()> {
+    let profile = validate_input(&envelope.input)?;
     if envelope.proof_backend != StarkProofBackend::Stwo {
         return Err(attention_error("proof backend is not Stwo"));
     }
     expect_eq(
         &envelope.proof_backend_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION,
+        profile.required_backend_version,
         "proof backend version",
     )?;
     expect_eq(
         &envelope.statement_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION,
+        profile.statement_version,
         "statement version",
     )?;
     expect_eq(
         &envelope.semantic_scope,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE,
+        profile.semantic_scope,
         "semantic scope",
     )?;
     expect_eq(
@@ -461,10 +552,12 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeMaskedSequenceEnvelope) -> 
             ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_PROOF_BYTES
         )));
     }
-    validate_input(&envelope.input)
+    Ok(())
 }
 
-fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Result<()> {
+fn validate_input(
+    input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+) -> Result<&'static AttentionKvNativeMaskedSequenceProfile> {
     expect_eq(
         &input.schema,
         ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_INPUT_SCHEMA,
@@ -475,36 +568,29 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
         ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_INPUT_DECISION,
         "input decision",
     )?;
-    expect_usize(input.issue, 448, "issue")?;
-    expect_usize(input.source_issue, 446, "source issue")?;
-    expect_eq(
-        &input.target_id,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID,
-        "target id",
-    )?;
+    let profile = profile_for_input(input)?;
+    expect_usize(input.issue, profile.issue, "issue")?;
+    expect_usize(input.source_issue, profile.source_issue, "source issue")?;
+    expect_eq(&input.target_id, profile.target_id, "target id")?;
     expect_eq(
         &input.required_backend_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION,
+        profile.required_backend_version,
         "required backend version",
     )?;
-    expect_eq(
-        &input.proof_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION,
-        "proof version",
-    )?;
+    expect_eq(&input.proof_version, profile.proof_version, "proof version")?;
     expect_eq(
         &input.statement_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION,
+        profile.statement_version,
         "statement version",
     )?;
     expect_eq(
         &input.semantic_scope,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE,
+        profile.semantic_scope,
         "semantic scope",
     )?;
     expect_eq(
         &input.verifier_domain,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN,
+        profile.verifier_domain,
         "verifier domain",
     )?;
     expect_eq(&input.semantics, SEMANTICS, "semantics")?;
@@ -512,16 +598,32 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
     expect_eq(&input.tie_break, TIE_BREAK, "tie break")?;
     expect_usize(input.key_width, KEY_WIDTH, "key width")?;
     expect_usize(input.value_width, VALUE_WIDTH, "value width")?;
-    expect_usize(input.sequence_length, SEQUENCE_LENGTH, "sequence length")?;
+    expect_usize(
+        input.sequence_length,
+        profile.sequence_length,
+        "sequence length",
+    )?;
     expect_usize(input.initial_kv_items, INITIAL_KV_ITEMS, "initial KV items")?;
-    expect_usize(input.final_kv_items, FINAL_KV_ITEMS, "final KV items")?;
-    expect_usize(input.score_row_count, SCORE_ROW_COUNT, "score row count")?;
-    expect_usize(input.trace_row_count, TRACE_ROW_COUNT, "trace row count")?;
+    expect_usize(
+        input.final_kv_items,
+        profile.final_kv_items,
+        "final KV items",
+    )?;
+    expect_usize(
+        input.score_row_count,
+        profile.score_row_count,
+        "score row count",
+    )?;
+    expect_usize(
+        input.trace_row_count,
+        profile.trace_row_count,
+        "trace row count",
+    )?;
     expect_usize(input.score_gap_bits, SCORE_GAP_BITS, "score gap bits")?;
     expect_usize(input.causal_gap_bits, CAUSAL_GAP_BITS, "causal gap bits")?;
     expect_usize(input.tie_gap_bits, TIE_GAP_BITS, "tie gap bits")?;
-    if input.selected_positions != EXPECTED_SELECTED_POSITIONS {
-        return Err(attention_error("selected positions drift"));
+    if input.selected_positions.len() != profile.sequence_length {
+        return Err(attention_error("selected positions length drift"));
     }
     expect_str_list_eq(&input.non_claims, EXPECTED_NON_CLAIMS, "non claims")?;
     expect_str_list_eq(
@@ -531,15 +633,15 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
     )?;
     expect_str_list_eq(
         &input.validation_commands,
-        EXPECTED_VALIDATION_COMMANDS,
+        profile.validation_commands,
         "validation commands",
     )?;
     expect_eq(
         &input.next_backend_step,
-        NEXT_BACKEND_STEP,
+        profile.next_backend_step,
         "next backend step",
     )?;
-    validate_sequence(input)?;
+    validate_sequence(input, profile)?;
     expect_eq(
         &kv_commitment(&input.initial_kv_cache, INITIAL_KV_DOMAIN)?,
         &input.initial_kv_cache_commitment,
@@ -566,7 +668,7 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
         "outputs commitment",
     )?;
     expect_eq(
-        &proof_native_parameter_commitment()?,
+        &proof_native_parameter_commitment(input)?,
         &input.proof_native_parameter_commitment,
         "proof-native parameter commitment",
     )?;
@@ -576,35 +678,52 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
         "statement commitment",
     )?;
     expect_eq(
-        &public_instance_commitment(&input.statement_commitment)?,
+        &public_instance_commitment(input)?,
         &input.public_instance_commitment,
         "public instance commitment",
     )?;
-    Ok(())
+    Ok(profile)
 }
 
-fn validate_sequence(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Result<()> {
+fn profile_for_input(
+    input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+) -> Result<&'static AttentionKvNativeMaskedSequenceProfile> {
+    match (input.target_id.as_str(), input.sequence_length) {
+        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID, SEQUENCE_LENGTH) => Ok(&PROFILE_D8),
+        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_TARGET_ID, SEQUENCE_LENGTH_SEQ16) => {
+            Ok(&PROFILE_SEQ16)
+        }
+        _ => Err(attention_error(
+            "unsupported native masked sequence profile",
+        )),
+    }
+}
+
+fn validate_sequence(
+    input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<()> {
     if input.initial_kv_cache.len() != INITIAL_KV_ITEMS {
         return Err(attention_error("initial KV cache length drift"));
     }
-    if input.input_steps.len() != SEQUENCE_LENGTH {
+    if input.input_steps.len() != profile.sequence_length {
         return Err(attention_error("input steps length drift"));
     }
-    if input.final_kv_cache.len() != FINAL_KV_ITEMS {
+    if input.final_kv_cache.len() != profile.final_kv_items {
         return Err(attention_error("final KV cache length drift"));
     }
-    if input.attention_outputs.len() != SEQUENCE_LENGTH {
+    if input.attention_outputs.len() != profile.sequence_length {
         return Err(attention_error("attention output length drift"));
     }
-    if input.score_rows.len() != SCORE_ROW_COUNT {
+    if input.score_rows.len() != profile.score_row_count {
         return Err(attention_error("score row length drift"));
     }
 
     let mut current = input.initial_kv_cache.clone();
-    let mut expected_rows = Vec::with_capacity(SCORE_ROW_COUNT);
-    let mut selected_counts = vec![0usize; SEQUENCE_LENGTH];
+    let mut expected_rows = Vec::with_capacity(profile.score_row_count);
+    let mut selected_counts = vec![0usize; profile.sequence_length];
     for (step_index, step) in input.input_steps.iter().enumerate() {
-        validate_input_step(step, step_index)?;
+        validate_input_step(step, step_index, profile)?;
         let next_item = AttentionKvEntry {
             position: step.token_position,
             key: step.new_key,
@@ -688,12 +807,16 @@ fn validate_sequence(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> R
         return Err(attention_error("score rows recomputation drift"));
     }
     for (index, row) in input.score_rows.iter().enumerate() {
-        validate_score_row(row, index)?;
+        validate_score_row(row, index, profile)?;
     }
     Ok(())
 }
 
-fn validate_input_step(step: &AttentionKvInputStep, step_index: usize) -> Result<()> {
+fn validate_input_step(
+    step: &AttentionKvInputStep,
+    step_index: usize,
+    _profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<()> {
     expect_usize(
         step.token_position,
         INITIAL_KV_ITEMS + step_index,
@@ -710,9 +833,13 @@ fn validate_input_step(step: &AttentionKvInputStep, step_index: usize) -> Result
     Ok(())
 }
 
-fn validate_score_row(row: &AttentionKvNativeScoreRow, expected_index: usize) -> Result<()> {
+fn validate_score_row(
+    row: &AttentionKvNativeScoreRow,
+    expected_index: usize,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<()> {
     expect_usize(row.row_index, expected_index, "score row index")?;
-    if row.step_index >= SEQUENCE_LENGTH {
+    if row.step_index >= profile.sequence_length {
         return Err(attention_error("score row step index out of range"));
     }
     if row.mask_allowed != 1 {
@@ -772,7 +899,8 @@ fn validate_score_row(row: &AttentionKvNativeScoreRow, expected_index: usize) ->
 }
 
 fn prove_rows(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Result<Vec<u8>> {
-    let component = attention_component();
+    let profile = validate_input(input)?;
+    let component = attention_component(profile);
     let config = attention_pcs_config();
     let twiddles = SimdBackend::precompute_twiddles(
         CanonicCoset::new(
@@ -787,11 +915,11 @@ fn prove_rows(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Result<V
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(attention_trace(input, profile));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(attention_trace(input, profile));
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -809,11 +937,12 @@ fn verify_rows(
     input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
     proof: &[u8],
 ) -> Result<bool> {
+    let profile = validate_input(input)?;
     let payload: AttentionKvNativeMaskedSequenceProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     let stark_proof = payload.stark_proof;
     let config = validate_pcs_config(stark_proof.config)?;
-    let component = attention_component();
+    let component = attention_component(profile);
     let sizes = component.trace_log_degree_bounds();
     if sizes.len() != EXPECTED_TRACE_COMMITMENTS {
         return Err(attention_error(format!(
@@ -829,7 +958,7 @@ fn verify_rows(
             EXPECTED_PROOF_COMMITMENTS
         )));
     }
-    let expected_roots = attention_commitment_roots(input, config);
+    let expected_roots = attention_commitment_roots(input, config, profile);
     if stark_proof.commitments[0] != expected_roots[0] {
         return Err(attention_error(
             "preprocessed row commitment does not match checked attention/KV rows",
@@ -869,10 +998,11 @@ fn attention_pcs_config() -> PcsConfig {
 fn attention_commitment_roots(
     input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
     config: PcsConfig,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
 ) -> stwo::core::pcs::TreeVec<
     <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
 > {
-    let component = attention_component();
+    let component = attention_component(profile);
     let twiddles = SimdBackend::precompute_twiddles(
         CanonicCoset::new(
             component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
@@ -886,36 +1016,41 @@ fn attention_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(attention_trace(input, profile));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(attention_trace(input, profile));
     tree_builder.commit(channel);
 
     commitment_scheme.roots()
 }
 
-fn attention_component() -> FrameworkComponent<AttentionKvNativeMaskedSequenceEval> {
+fn attention_component(
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> FrameworkComponent<AttentionKvNativeMaskedSequenceEval> {
     FrameworkComponent::new(
         &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids()),
-        AttentionKvNativeMaskedSequenceEval,
+        AttentionKvNativeMaskedSequenceEval {
+            log_size: profile.log_size,
+        },
         SecureField::zero(),
     )
 }
 
 fn attention_trace(
     input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
-    let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
+    let domain = CanonicCoset::new(profile.log_size).circle_domain();
     let mut rows = input.score_rows.clone();
-    while rows.len() < TRACE_ROW_COUNT {
+    while rows.len() < profile.trace_row_count {
         rows.push(padding_row(rows.len()));
     }
     let mut columns: Vec<Vec<BaseField>> =
-        vec![Vec::with_capacity(TRACE_ROW_COUNT); column_ids().len()];
+        vec![Vec::with_capacity(profile.trace_row_count); column_ids().len()];
     for (real_index, row) in rows.iter().enumerate() {
-        let enabled = usize::from(real_index < SCORE_ROW_COUNT);
+        let enabled = usize::from(real_index < profile.score_row_count);
         let mut values = vec![
             field_usize(enabled),
             field_usize(row.row_index),
@@ -1206,15 +1341,17 @@ fn outputs_commitment(outputs: &[[i64; VALUE_WIDTH]]) -> Result<String> {
     )
 }
 
-fn proof_native_parameter_commitment() -> Result<String> {
+fn proof_native_parameter_commitment(
+    input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+) -> Result<String> {
     commitment_from_parts(
         &[
-            ("key_width", KEY_WIDTH.to_string()),
-            ("masking_policy", json_string(MASKING_POLICY)?),
-            ("semantics", json_string(SEMANTICS)?),
-            ("sequence_length", SEQUENCE_LENGTH.to_string()),
-            ("tie_break", json_string(TIE_BREAK)?),
-            ("value_width", VALUE_WIDTH.to_string()),
+            ("key_width", input.key_width.to_string()),
+            ("masking_policy", json_string(&input.masking_policy)?),
+            ("semantics", json_string(&input.semantics)?),
+            ("sequence_length", input.sequence_length.to_string()),
+            ("tie_break", json_string(&input.tie_break)?),
+            ("value_width", input.value_width.to_string()),
         ],
         PROOF_NATIVE_PARAMETER_DOMAIN,
     )
@@ -1260,22 +1397,21 @@ fn statement_commitment(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -
             ("value_width", input.value_width.to_string()),
             ("verifier_domain", json_string(&input.verifier_domain)?),
         ],
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN,
+        &input.verifier_domain,
     )
 }
 
-fn public_instance_commitment(statement: &str) -> Result<String> {
+fn public_instance_commitment(
+    input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
+) -> Result<String> {
     commitment_from_parts(
         &[
-            ("statement_commitment", json_string(statement)?),
             (
-                "target_id",
-                json_string(ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID)?,
+                "statement_commitment",
+                json_string(&input.statement_commitment)?,
             ),
-            (
-                "proof_version",
-                json_string(ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION)?,
-            ),
+            ("target_id", json_string(&input.target_id)?),
+            ("proof_version", json_string(&input.proof_version)?),
         ],
         PUBLIC_INSTANCE_DOMAIN,
     )
@@ -1391,10 +1527,18 @@ mod tests {
     const INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json"
     );
+    const SEQ16_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiAttentionKvNativeMaskedSequenceProofInput {
         zkai_attention_kv_native_masked_sequence_input_from_json_str(INPUT_JSON)
             .expect("attention input")
+    }
+
+    fn seq16_input() -> ZkAiAttentionKvNativeMaskedSequenceProofInput {
+        zkai_attention_kv_native_masked_sequence_input_from_json_str(SEQ16_INPUT_JSON)
+            .expect("attention seq16 input")
     }
 
     #[test]
@@ -1417,6 +1561,42 @@ mod tests {
         assert!(
             verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).expect("verify")
         );
+    }
+
+    #[test]
+    fn attention_kv_native_seq16_air_proof_round_trips() {
+        let input = seq16_input();
+        assert_eq!(input.sequence_length, SEQUENCE_LENGTH_SEQ16);
+        assert_eq!(input.score_rows.len(), SCORE_ROW_COUNT_SEQ16);
+        assert_eq!(input.trace_row_count, TRACE_ROW_COUNT_SEQ16);
+        assert_eq!(input.final_kv_cache.len(), FINAL_KV_ITEMS_SEQ16);
+
+        let envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention seq16 proof");
+        assert!(!envelope.proof.is_empty());
+        assert!(
+            verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).expect("verify")
+        );
+    }
+
+    #[test]
+    fn attention_kv_native_seq16_rejects_proof_byte_tamper() {
+        let input = seq16_input();
+        let mut envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention seq16 proof");
+        let last = envelope.proof.last_mut().expect("proof byte");
+        *last ^= 1;
+        assert!(verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).is_err());
+    }
+
+    #[test]
+    fn attention_kv_native_seq16_rejects_sequence_length_relabeling() {
+        let mut input = seq16_input();
+        input.sequence_length = SEQUENCE_LENGTH;
+        let error = prove_zkai_attention_kv_native_masked_sequence_envelope(&input).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("unsupported native masked sequence profile"));
     }
 
     #[test]

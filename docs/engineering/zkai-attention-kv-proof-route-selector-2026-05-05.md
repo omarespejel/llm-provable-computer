@@ -28,6 +28,13 @@ same transformer-shaped carried-state loop used by the widest external zkVM
 control: `d=8`, eight decode steps, causal-prefix masking, lowest-position
 integer-argmax tie break, ten final KV rows, and explicit statement commitments.
 
+Issue `#450` adds a separate sequence-length scale gate for the same native Stwo
+surface: a sixteen-step `d=8` profile with `168` score rows, a `256`-row trace,
+a `32444`-byte proof, and `16 / 16` scale-gate mutation rejections. That result
+is recorded separately so this route selector remains the inventory of the first
+proof-backed attention/KV routes, while the scale gate answers whether the native
+surface survives a larger carried-state trace.
+
 The boundary remains strict. This is not Softmax, not multi-head attention, not
 long-context inference, not a full transformer block, and not recursion/PCD. The
 external SNARK and RISC Zero routes remain useful controls, not the headline

@@ -90,15 +90,23 @@ proof-backed routes and rejects `42 / 42` checked mutations. External
 `snarkjs/Groth16` and RISC Zero receipts remain useful controls for
 statement-binding and zkVM semantic transfer, but they are not the headline.
 
-The next research result should scale the native Stwo surface, not add another
-metadata adapter:
+The first native Stwo scale follow-up now also exists: a sequence-length-16
+profile keeps the same `d=8`, integer-argmax, causal-prefix, public-row
+discipline, but checks `168` score rows over a `256`-row trace with a
+`32444`-byte proof and a `464320`-byte checked envelope. The scale gate rejects
+`16 / 16` checked sequence, statement, route, metric, non-claim, and parser
+mutations. This is sequence-length scaling only, not `d=16`, Softmax, multi-head,
+long-context inference, or recursion/PCD.
+
+The next research result should keep scaling the native Stwo surface, not add
+another metadata adapter:
 
 1. Preserve the source-backed receipt contract that already binds prior KV, input,
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Scale the native Stwo proof by one axis only: `d=16`, multi-head, longer fixed
-   sequence, or a bounded Softmax-like approximation.
+3. Scale the native Stwo proof by one axis only: `d=16`, multi-head, or a
+   bounded Softmax-like approximation.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 5. Keep Softmax out of scope unless the native proof actually covers the chosen attention
