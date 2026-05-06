@@ -42,7 +42,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
                 "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt",
             ],
         )
-        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["decision"], GATE.STWO_NATIVE_MASKED_SEQUENCE.DECISION)
+        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["decision"], GATE.LOCAL_STWO_PROOF_DECISION)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_system"], "Stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_backend"], "stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_size_bytes"], 24394)
@@ -279,7 +279,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         finally:
             GATE.load_stwo_native_masked_sequence_payload = original_loader
 
-        self.assertEqual(envelope["decision"], "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF")
+        self.assertEqual(envelope["decision"], GATE.LOCAL_STWO_PROOF_DECISION)
 
     def test_stwo_native_envelope_wraps_embedded_input_validation_errors(self) -> None:
         envelope = json.loads(GATE.STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON.read_text(encoding="utf-8"))
@@ -291,6 +291,19 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
 
             with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "embedded input drift"):
                 GATE.load_stwo_native_masked_sequence_envelope(path)
+
+    def test_stwo_native_payload_wrapper_normalizes_unexpected_validator_errors(self) -> None:
+        def raise_type_error(_payload):
+            raise TypeError("synthetic malformed payload")
+
+        original_validator = GATE.STWO_NATIVE_MASKED_SEQUENCE.validate_payload
+        try:
+            GATE.STWO_NATIVE_MASKED_SEQUENCE.validate_payload = raise_type_error
+
+            with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "synthetic malformed payload"):
+                GATE.validate_stwo_native_masked_sequence_payload({}, "synthetic native payload")
+        finally:
+            GATE.STWO_NATIVE_MASKED_SEQUENCE.validate_payload = original_validator
 
     def test_individual_mutations_reject(self) -> None:
         payload = GATE.build_payload()

@@ -63,7 +63,7 @@ const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const MAX_ABS_VALUE: i64 = 1_000_000;
 const EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const EXPECTED_PROOF_COMMITMENTS: usize = 3;
-const MAX_JSON_BYTES: usize = 1_048_576;
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_PROOF_BYTES: usize = 8_388_608;
 
@@ -101,6 +101,18 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
 ];
 
 const NEXT_BACKEND_STEP: &str = "scale the native Stwo attention/KV proof surface to d16 or multi-head only after preserving the same carry, mask, and selected-output rejection surface";
+
+const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_proof_route_selector_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_proof_route_selector_gate",
+    "just gate-fast",
+    "just gate",
+];
 
 #[derive(Debug, Clone)]
 struct AttentionKvNativeMaskedSequenceEval;
@@ -363,11 +375,11 @@ struct AttentionKvNativeMaskedSequenceProofPayload {
 pub fn zkai_attention_kv_native_masked_sequence_input_from_json_str(
     raw_json: &str,
 ) -> Result<ZkAiAttentionKvNativeMaskedSequenceProofInput> {
-    if raw_json.len() > MAX_JSON_BYTES {
+    if raw_json.len() > ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES {
         return Err(attention_error(format!(
             "input JSON exceeds max size: got {} bytes, limit {} bytes",
             raw_json.len(),
-            MAX_JSON_BYTES
+            ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES
         )));
     }
     let input: ZkAiAttentionKvNativeMaskedSequenceProofInput = serde_json::from_str(raw_json)
@@ -511,15 +523,16 @@ fn validate_input(input: &ZkAiAttentionKvNativeMaskedSequenceProofInput) -> Resu
     if input.selected_positions != EXPECTED_SELECTED_POSITIONS {
         return Err(attention_error("selected positions drift"));
     }
-    expect_str_set_eq(
-        input.non_claims.iter().map(String::as_str),
-        EXPECTED_NON_CLAIMS,
-        "non claims",
-    )?;
-    expect_str_set_eq(
-        input.proof_verifier_hardening.iter().map(String::as_str),
+    expect_str_list_eq(&input.non_claims, EXPECTED_NON_CLAIMS, "non claims")?;
+    expect_str_list_eq(
+        &input.proof_verifier_hardening,
         EXPECTED_PROOF_VERIFIER_HARDENING,
         "proof verifier hardening",
+    )?;
+    expect_str_list_eq(
+        &input.validation_commands,
+        EXPECTED_VALIDATION_COMMANDS,
+        "validation commands",
     )?;
     expect_eq(
         &input.next_backend_step,
@@ -1350,16 +1363,14 @@ fn expect_bounded_i64(value: i64, label: &str) -> Result<()> {
     Ok(())
 }
 
-fn expect_str_set_eq<'a>(
-    actual: impl Iterator<Item = &'a str>,
-    expected: &[&str],
-    label: &str,
-) -> Result<()> {
-    let mut actual_values = actual.collect::<Vec<_>>();
-    let mut expected_values = expected.to_vec();
-    actual_values.sort_unstable();
-    expected_values.sort_unstable();
-    if actual_values != expected_values {
+fn expect_str_list_eq(actual: &[String], expected: &[&str], label: &str) -> Result<()> {
+    if actual.len() != expected.len()
+        || actual
+            .iter()
+            .map(String::as_str)
+            .zip(expected.iter().copied())
+            .any(|(actual, expected)| actual != expected)
+    {
         return Err(attention_error(format!("{label} mismatch")));
     }
     Ok(())
@@ -1439,6 +1450,41 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("score row commitment"));
+    }
+
+    #[test]
+    fn attention_kv_native_rejects_metadata_order_and_command_drift() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["non_claims"]
+            .as_array_mut()
+            .expect("non claims")
+            .swap(0, 1);
+        let error = zkai_attention_kv_native_masked_sequence_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("non claims mismatch"));
+
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["proof_verifier_hardening"]
+            .as_array_mut()
+            .expect("proof verifier hardening")
+            .swap(0, 1);
+        let error = zkai_attention_kv_native_masked_sequence_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("proof verifier hardening mismatch"));
+
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["validation_commands"][0] = Value::String("tampered command".to_string());
+        let error = zkai_attention_kv_native_masked_sequence_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("validation commands mismatch"));
     }
 
     #[test]
