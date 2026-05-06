@@ -36,9 +36,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 30. `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`
 31. `docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`
 32. `docs/engineering/zkai-attention-kv-stwo-native-d16-width-gate-2026-05-06.md`
-33. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-34. `docs/engineering/reproducibility.md`
-35. `git status --short --branch`
+33. `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`
+34. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+35. `docs/engineering/reproducibility.md`
+36. `git status --short --branch`
 
 ## What this repository is now
 
@@ -129,14 +130,24 @@ This repository currently has three live lanes.
     multi-head attention, not long-context inference, not a full transformer block,
     and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-stwo-native-d16-width-gate-2026-05-06.md`.
+  - Issue `#455` scales that native Stwo surface along head multiplicity: a real
+    Stwo AIR proof checks a fixed two-head, eight-step-per-head `d=8`
+    causal-prefix masked integer-argmax attention/KV sequence with `104` score
+    rows, a `128`-row trace, selected positions
+    `[1, 1, 1, 1, 0, 2, 2, 4, 0, 0, 7, 2, 2, 5, 6, 2]`, twenty final KV rows, a
+    `25453`-byte proof, and a `343719`-byte checked envelope. The two-head gate
+    rejects `18 / 18` checked mutations. This is explicit multi-head state
+    binding only, not Softmax, not long-context inference, not a full transformer
+    block, not proof aggregation across heads, and not recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`.
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
-    receipt. The native seq16 and d16 proofs are separate native scale gates for
-    the first route family. Softmax, multi-head, long-context inference, full
-    inference, and recursion/PCD remain out of scope; see
+    receipt. The native seq16, d16, and two-head proofs are separate native
+    scale gates for the first route family. Softmax, long-context inference,
+    full inference, and recursion/PCD remain out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,

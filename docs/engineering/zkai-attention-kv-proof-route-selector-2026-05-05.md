@@ -42,10 +42,19 @@ surface: an eight-step `d=16` profile with `52` score rows, a `64`-row trace, a
 result is also recorded separately so this selector keeps counting route
 families, not every checked native scale variant.
 
-The boundary remains strict. This is not Softmax, not multi-head attention, not
-long-context inference, not a full transformer block, and not recursion/PCD. The
-external SNARK and RISC Zero routes remain useful controls, not the headline
-result.
+Issue `#455` adds the matching head-axis scale gate for the same native Stwo
+surface: a two-head, eight-step-per-head `d=8` profile with `104` score rows, a
+`128`-row trace, a `25453`-byte proof, a `343719`-byte checked envelope,
+selected positions `[1, 1, 1, 1, 0, 2, 2, 4, 0, 0, 7, 2, 2, 5, 6, 2]`, and
+`18 / 18` two-head gate mutation rejections. That result is also recorded
+separately so this selector keeps counting route families, not every checked
+native scale variant.
+
+The boundary remains strict. The selector is not Softmax, not long-context
+inference, not a full transformer block, and not recursion/PCD. The later
+two-head gate discharges one bounded multi-head fixture, not general multi-head
+attention. The external SNARK and RISC Zero routes remain useful controls, not
+the headline result.
 
 Decision:
 
@@ -154,7 +163,8 @@ remain a checked GO/NO-GO gate with exact blockers if it fails.
 ## Non-Claims
 
 - This is not a Softmax proof.
-- This is not multi-head attention.
+- This is not general multi-head attention; issue `#455` separately checks one
+  bounded two-head fixture.
 - This is not full autoregressive inference.
 - This is not agent correctness.
 - This is not recursive or proof-carrying data.

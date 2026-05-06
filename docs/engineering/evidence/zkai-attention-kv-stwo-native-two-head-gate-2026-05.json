@@ -1,0 +1,218 @@
+{
+  "all_mutations_rejected": true,
+  "baseline_receipt": {
+    "envelope_size_bytes": 265791,
+    "final_kv_cache_commitment": "blake2b-256:74038853585ec88f7211e615910923d194d5731af74197c370daaf906d0be1e2",
+    "final_kv_items": 10,
+    "head_count": 1,
+    "initial_kv_items": 2,
+    "input_steps": 8,
+    "key_width": 8,
+    "outputs_commitment": "blake2b-256:a39a6d6e90b4fa06d443807d4fe9110c0986a67c930d9ceff4e0bc4bbce9c083",
+    "proof_size_bytes": 24394,
+    "proof_version": "stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1",
+    "public_instance_commitment": "blake2b-256:3c5a7c1aaf6b7ececf3d729935b0548b0b947ce3c649f0370dd44fc687227631",
+    "required_backend_version": "stwo-attention-kv-d8-causal-mask-sequence-v1",
+    "route_id": "local_stwo_attention_kv_d8_masked_sequence_proof",
+    "score_row_commitment": "blake2b-256:8348dc0d9c052050c77bc56a4c08896c283ca710ab2caca30f1bab60d8451337",
+    "score_rows": 52,
+    "selected_positions": [
+      0,
+      2,
+      3,
+      3,
+      5,
+      5,
+      7,
+      9
+    ],
+    "semantic_scope": "d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt",
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232",
+    "statement_version": "zkai-attention-kv-stwo-native-masked-sequence-statement-v1",
+    "target_id": "attention-kv-d8-causal-mask-sequence-v1",
+    "timing_policy": "single_local_dev_profile_engineering_only_not_public_benchmark",
+    "trace_rows": 64,
+    "value_width": 8,
+    "verifier_domain": "ptvm:zkai:attention-kv-stwo-native-masked-sequence:v1"
+  },
+  "claim_boundary": "NATIVE_STWO_TWO_HEAD_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_PROOF_NOT_SOFTMAX_NOT_LONG_CONTEXT_NOT_FULL_INFERENCE_NOT_RECURSION_OR_PCD",
+  "decision": "GO_NATIVE_STWO_ATTENTION_KV_TWO_HEAD_D8_MASKED_SEQUENCE",
+  "first_blocker": "NO_SOFTMAX_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF_YET",
+  "issue": 455,
+  "multi_head_axis_result": {
+    "baseline_head_count": 1,
+    "envelope_size_ratio_vs_d8": 1.293193,
+    "input_steps_doubled": true,
+    "proof_size_ratio_vs_d8": 1.043412,
+    "same_key_width": true,
+    "same_sequence_length_per_head": true,
+    "same_value_width": true,
+    "scaled_head_count": 2,
+    "score_rows_doubled": true,
+    "selected_positions_changed": true,
+    "trace_rows_doubled": true
+  },
+  "mutation_cases": [
+    {
+      "error": "statement_commitment drift",
+      "name": "two_head_statement_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "public_instance_commitment drift",
+      "name": "two_head_public_instance_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "head_count drift",
+      "name": "two_head_head_count_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "input_steps drift",
+      "name": "two_head_input_step_head_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "score_row_commitment drift",
+      "name": "two_head_score_row_head_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "selected_positions drift",
+      "name": "two_head_selected_position_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "final_kv_cache_commitment drift",
+      "name": "two_head_final_kv_head_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "outputs_commitment drift",
+      "name": "two_head_output_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "target_id drift",
+      "name": "two_head_target_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "required_backend_version drift",
+      "name": "two_head_backend_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "proof-size scale drift",
+      "name": "two_head_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "envelope-size scale drift",
+      "name": "two_head_envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "statement_commitment drift",
+      "name": "d8_baseline_statement_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "payload field set mismatch",
+      "name": "route_removed",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first_blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "non-claim drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field set mismatch",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
+  "non_claims": [
+    "not a Softmax proof",
+    "not full autoregressive inference",
+    "not recursive verification or PCD",
+    "not a long-context benchmark",
+    "not a public performance benchmark row",
+    "not a Starknet deployment result",
+    "not proof aggregation across heads"
+  ],
+  "schema": "zkai-attention-kv-stwo-native-two-head-gate-v1",
+  "source_issue": 453,
+  "two_head_gate_commitment": "blake2b-256:beccb080a360815eb37f30ce9d5d1b95cf9934f9637a9750a891a279b3833d73",
+  "two_head_receipt": {
+    "envelope_size_bytes": 343719,
+    "final_kv_cache_commitment": "blake2b-256:1b4289832e620201afaf25aba2a816e4f34cadf352accf163fe40a6431ca6bc5",
+    "final_kv_items": 20,
+    "head_count": 2,
+    "initial_kv_items": 4,
+    "input_steps": 16,
+    "key_width": 8,
+    "outputs_commitment": "blake2b-256:03f3b934ae0148d5db3de1313ad6d93604fc7509df30e386d20e1e91d59421fd",
+    "proof_size_bytes": 25453,
+    "proof_version": "stwo-attention-kv-d8-causal-mask-two-head-air-proof-v1",
+    "public_instance_commitment": "blake2b-256:9e037276f313dd05838b2d64f9c04a8ebc096bb171213cf439423f39e0e6d91f",
+    "required_backend_version": "stwo-attention-kv-d8-causal-mask-two-head-v1",
+    "route_id": "local_stwo_attention_kv_d8_two_head_masked_sequence_proof",
+    "score_row_commitment": "blake2b-256:ce21110487f94644359707df3dac02bc1cf40c9a748d29dd8f45581904683167",
+    "score_rows": 104,
+    "selected_positions": [
+      1,
+      1,
+      1,
+      1,
+      0,
+      2,
+      2,
+      4,
+      0,
+      0,
+      7,
+      2,
+      2,
+      5,
+      6,
+      2
+    ],
+    "semantic_scope": "two_head_d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt",
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:718f31a22d372cf1a334791b116a535317a230503350b616d42bdd7dc3fe4aab",
+    "statement_version": "zkai-attention-kv-stwo-native-masked-sequence-two-head-statement-v1",
+    "target_id": "attention-kv-d8-causal-mask-two-head-v1",
+    "timing_policy": "single_local_dev_profile_engineering_only_not_public_benchmark",
+    "trace_rows": 128,
+    "value_width": 8,
+    "verifier_domain": "ptvm:zkai:attention-kv-stwo-native-masked-sequence-two-head:v1"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_native_two_head_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_two_head_masked_sequence_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_two_head_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_native_gate",
+    "just lib",
+    "just gate-fast",
+    "just gate"
+  ]
+}

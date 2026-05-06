@@ -38,10 +38,12 @@ It supports the following presentation posture:
   range-disciplined activation receipts, attention/KV transition statement
   receipts, one external RISC Zero tiny integer-argmax attention/KV transition
   receipt, one external RISC Zero three-step carried KV sequence receipt, and
-  one external RISC Zero fixed eight-step carried KV sequence receipt (not
-  native Stwo attention arithmetic, Softmax, long-context inference, or
-  recursion) show that proof validity, statement binding, numeric range
-  assumptions, and state transitions must remain separate verifier layers,
+  one external RISC Zero fixed eight-step carried KV sequence receipt, plus
+  narrow native Stwo attention/KV proofs for single-head, seq16, d16, and
+  two-head integer-argmax carried-state fixtures (not Softmax, long-context
+  inference, full inference, proof aggregation across heads, or recursion) show
+  that proof validity, statement binding, numeric range assumptions, and state
+  transitions must remain separate verifier layers,
 - the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
 - the main negative evidence is one bounded compactness no-go on a narrower handoff object,
 - the external calibration is source-backed but not presented as a matched verifier race.
