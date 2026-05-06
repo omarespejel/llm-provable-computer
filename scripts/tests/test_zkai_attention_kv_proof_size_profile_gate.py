@@ -40,6 +40,10 @@ class AttentionKvProofSizeProfileGateTests(unittest.TestCase):
         self.assertEqual(diagnostics["proof_section_payload_delta_bytes"], 4406)
         self.assertEqual(diagnostics["proof_json_wrapper_delta_bytes"], 0)
         self.assertEqual(scaled["proof_section_bytes"]["fri_proof"], 8031)
+        self.assertEqual(scaled["proof_config"], gate.PROOF_CONFIG)
+        self.assertEqual(scaled["structural_breakdown"], gate.STRUCTURAL_BREAKDOWN)
+        self.assertEqual(payload["controlled_grid_coverage"], gate.CONTROLLED_GRID_COVERAGE)
+        self.assertEqual(payload["structural_breakdown_status"], gate.STRUCTURAL_BREAKDOWN_STATUS)
         self.assertEqual(diagnostics["proof_component_byte_breakdown_status"], gate.PROOF_COMPONENT_BYTE_BREAKDOWN_STATUS)
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
@@ -81,6 +85,26 @@ class AttentionKvProofSizeProfileGateTests(unittest.TestCase):
         payload = self.strip_mutation_summary(gate.build_payload())
         payload["profile_rows"][1]["proof_section_bytes"]["fri_proof"] += 1
         self.assert_rejects(payload, "proof_section_bytes drift")
+
+    def test_rejects_integer_diagnostics_encoded_as_floats(self):
+        payload = self.strip_mutation_summary(gate.build_payload())
+        payload["scaling_diagnostics"]["proof_size_delta_bytes"] = 4406.0
+        self.assert_rejects(payload, "proof_size_delta_bytes must be an integer")
+
+    def test_rejects_fraction_integers_encoded_as_floats(self):
+        payload = self.strip_mutation_summary(gate.build_payload())
+        payload["scaling_diagnostics"]["score_rows_ratio_fraction"]["numerator"] = 104.0
+        self.assert_rejects(payload, "score_rows_ratio_fraction numerator must be an integer")
+
+    def test_rejects_grid_status_overclaim(self):
+        payload = self.strip_mutation_summary(gate.build_payload())
+        payload["controlled_grid_coverage"]["status"] = "FULL_GRID_COVERED"
+        self.assert_rejects(payload, "controlled_grid_coverage drift")
+
+    def test_rejects_column_breakdown_overclaim(self):
+        payload = self.strip_mutation_summary(gate.build_payload())
+        payload["profile_rows"][1]["structural_breakdown"]["base_trace_columns"] = 12
+        self.assert_rejects(payload, "structural_breakdown drift")
 
     def test_rejects_source_gate_commitment_relabeling(self):
         payload = self.strip_mutation_summary(gate.build_payload())

@@ -54,6 +54,36 @@ The proof-byte delta is exactly accounted for by top-level proof sections:
 `36,769 -> 41,175` is `+4,406` bytes, and the top-level section payload delta is
 also `+4,406` bytes while wrapper overhead stays constant.
 
+The checked proof configuration is the same in both artifacts:
+
+```json
+{
+  "fri_config": {
+    "fold_step": 1,
+    "log_blowup_factor": 1,
+    "log_last_layer_degree_bound": 0,
+    "n_queries": 3
+  },
+  "lifting_log_size": null,
+  "pow_bits": 10
+}
+```
+
+The gate records missing structural fields explicitly rather than inferring
+them:
+
+| Field | Status |
+| --- | --- |
+| Preprocessed columns | not exposed by current native gate |
+| Base trace columns | not exposed by current native gate |
+| Extension columns | not exposed by current native gate |
+| Prover time | not measured by this profile |
+| Verifier time | not measured by this profile |
+
+The controlled-grid status is also explicit: this profile covers only
+`head_count in {1, 2}` at `sequence_length_per_head = 8`; sequence lengths `4`
+and `16`, plus a possible `4`-head fixture, remain open under issue `#467`.
+
 ## Interpretation
 
 This is positive for the STARK-transformer research lane, but it must stay
@@ -64,6 +94,8 @@ bounded:
 - The result does not prove a general sublinear proof-size law.
 - The profile decomposes top-level JSON proof sections, but not binary
   PCS/FRI internals or a deep Merkle/query accounting.
+- The profile records proof configuration, but the current native gate does not
+  expose preprocessed, base, or extension column counts.
 - The profile includes no new timing data.
 
 The right paper-safe sentence is:
@@ -86,6 +118,8 @@ The profile gate rejects all checked mutation classes:
 - row-ratio metric smuggling;
 - proof-ratio metric smuggling;
 - FRI-section metric smuggling;
+- controlled-grid status overclaim;
+- column-breakdown overclaim;
 - source gate commitment relabeling;
 - statement commitment relabeling;
 - scaling-law overclaim drift;
@@ -96,14 +130,14 @@ The profile gate rejects all checked mutation classes:
 - non-claim removal;
 - unknown-field injection.
 
-All `16 / 16` mutation cases reject.
+All `18 / 18` mutation cases reject.
 
 ## Evidence
 
 - JSON: `docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.json`
 - TSV: `docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.tsv`
 - Gate commitment:
-  `blake2b-256:19fe1449460453074f052ab09c05fe5caae50337293649fc8cd8c42237e7fd4b`
+  `blake2b-256:361c252d0bea7c042a78dbeb8512c4c8ae5af4115b8c34cdbf1e37b04c452311`
 
 ## Reproduction
 

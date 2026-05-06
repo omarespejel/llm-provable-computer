@@ -1,6 +1,55 @@
 {
   "all_mutations_rejected": true,
   "claim_boundary": "TWO_POINT_NATIVE_STWO_D8_BOUNDED_WEIGHTED_ATTENTION_KV_PROOF_SIZE_PROFILE_NOT_SCALING_LAW_NOT_TIMING_BENCHMARK_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE",
+  "controlled_grid_coverage": {
+    "covered_points": [
+      {
+        "head_count": 1,
+        "key_width": 8,
+        "sequence_length_per_head": 8,
+        "value_width": 8
+      },
+      {
+        "head_count": 2,
+        "key_width": 8,
+        "sequence_length_per_head": 8,
+        "value_width": 8
+      }
+    ],
+    "missing_points": [
+      {
+        "head_count": 1,
+        "key_width": 8,
+        "sequence_length_per_head": 4,
+        "value_width": 8
+      },
+      {
+        "head_count": 1,
+        "key_width": 8,
+        "sequence_length_per_head": 16,
+        "value_width": 8
+      },
+      {
+        "head_count": 2,
+        "key_width": 8,
+        "sequence_length_per_head": 4,
+        "value_width": 8
+      },
+      {
+        "head_count": 2,
+        "key_width": 8,
+        "sequence_length_per_head": 16,
+        "value_width": 8
+      },
+      {
+        "head_count": 4,
+        "key_width": 8,
+        "sequence_length_per_head": 8,
+        "value_width": 8
+      }
+    ],
+    "status": "PARTIAL_SEQ8_ONLY_GRID_SEQ4_SEQ16_AND_4_HEAD_MISSING"
+  },
   "decision": "GO_TWO_POINT_NATIVE_STWO_ATTENTION_KV_PROOF_SIZE_PROFILE_ENGINEERING_ONLY",
   "first_blocker": "CONTROLLED_HEAD_SEQUENCE_GRID_AND_BINARY_PROOF_COMPONENT_ACCOUNTING_MISSING",
   "issue": 467,
@@ -38,6 +87,16 @@
     {
       "error": "profile row proof_section_bytes drift",
       "name": "fri_section_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "controlled_grid_coverage drift",
+      "name": "grid_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "profile row structural_breakdown drift",
+      "name": "column_breakdown_overclaim",
       "rejected": true
     },
     {
@@ -86,8 +145,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 16,
-  "mutations_rejected": 16,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "non_claims": [
     "not a scaling law",
     "not a public performance benchmark row",
@@ -96,9 +155,10 @@
     "not full autoregressive inference",
     "not long-context evidence",
     "not proof aggregation or recursion",
-    "not a claim that binary PCS/FRI internals have been decomposed"
+    "not a claim that binary PCS/FRI internals have been decomposed",
+    "not full controlled-grid coverage"
   ],
-  "profile_gate_commitment": "blake2b-256:19fe1449460453074f052ab09c05fe5caae50337293649fc8cd8c42237e7fd4b",
+  "profile_gate_commitment": "blake2b-256:361c252d0bea7c042a78dbeb8512c4c8ae5af4115b8c34cdbf1e37b04c452311",
   "profile_rows": [
     {
       "envelope_size_bytes": 386078,
@@ -107,6 +167,16 @@
       "key_width": 8,
       "label": "single_head_d8_seq8_bounded_weighted",
       "proof_backend": "stwo",
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
       "proof_json_wrapper_bytes": 125,
       "proof_section_bytes": {
         "commitments": 335,
@@ -126,6 +196,23 @@
       "sequence_length_per_head": 8,
       "source_issue": 460,
       "statement_commitment": "blake2b-256:9f5d0a15b4a5f5a8481f39ffad44df58824b773375163f2f0908b847082e7b5a",
+      "structural_breakdown": {
+        "base_trace_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "extension_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "pcs_fri_config": {
+          "fri_config": {
+            "fold_step": 1,
+            "log_blowup_factor": 1,
+            "log_last_layer_degree_bound": 0,
+            "n_queries": 3
+          },
+          "lifting_log_size": null,
+          "pow_bits": 10
+        },
+        "preprocessed_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "prover_time_ms": "NOT_MEASURED_BY_THIS_PROFILE_TIMING_POLICY_REQUIRES_SEPARATE_MEDIAN_RUN",
+        "verifier_time_ms": "NOT_MEASURED_BY_THIS_PROFILE_TIMING_POLICY_REQUIRES_SEPARATE_MEDIAN_RUN"
+      },
       "trace_rows": 64,
       "value_width": 8,
       "weight_policy": "power2_gap_clipped_4_floor_division"
@@ -137,6 +224,16 @@
       "key_width": 8,
       "label": "two_head_d8_seq8_bounded_weighted",
       "proof_backend": "stwo",
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
       "proof_json_wrapper_bytes": 125,
       "proof_section_bytes": {
         "commitments": 345,
@@ -156,6 +253,23 @@
       "sequence_length_per_head": 8,
       "source_issue": 461,
       "statement_commitment": "blake2b-256:57bbf22000a70ea241a43bcf3ecd79a723b497827ca5782d39577d8bb242810b",
+      "structural_breakdown": {
+        "base_trace_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "extension_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "pcs_fri_config": {
+          "fri_config": {
+            "fold_step": 1,
+            "log_blowup_factor": 1,
+            "log_last_layer_degree_bound": 0,
+            "n_queries": 3
+          },
+          "lifting_log_size": null,
+          "pow_bits": 10
+        },
+        "preprocessed_columns": "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE",
+        "prover_time_ms": "NOT_MEASURED_BY_THIS_PROFILE_TIMING_POLICY_REQUIRES_SEPARATE_MEDIAN_RUN",
+        "verifier_time_ms": "NOT_MEASURED_BY_THIS_PROFILE_TIMING_POLICY_REQUIRES_SEPARATE_MEDIAN_RUN"
+      },
       "trace_rows": 128,
       "value_width": 8,
       "weight_policy": "power2_gap_clipped_4_floor_division"
@@ -229,6 +343,7 @@
     460,
     461
   ],
+  "structural_breakdown_status": "ROW_COUNTS_AND_TOP_LEVEL_PROOF_SECTIONS_AVAILABLE_COLUMNS_NOT_EXPOSED_BY_CURRENT_GATE",
   "timing_policy": "no_new_timing_two_point_engineering_profile_only",
   "validation_commands": [
     "python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.tsv",

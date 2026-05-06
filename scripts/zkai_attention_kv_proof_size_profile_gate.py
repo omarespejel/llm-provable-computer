@@ -41,6 +41,42 @@ PROFILE_INTERPRETATION = (
     "but_not_a_scaling_law"
 )
 PROOF_COMPONENT_BYTE_BREAKDOWN_STATUS = "TOP_LEVEL_STARK_PROOF_JSON_SECTION_BYTES_AVAILABLE_NOT_BINARY_PCS_FRI_INNER_ACCOUNTING"
+STRUCTURAL_BREAKDOWN_STATUS = "ROW_COUNTS_AND_TOP_LEVEL_PROOF_SECTIONS_AVAILABLE_COLUMNS_NOT_EXPOSED_BY_CURRENT_GATE"
+CONTROLLED_GRID_STATUS = "PARTIAL_SEQ8_ONLY_GRID_SEQ4_SEQ16_AND_4_HEAD_MISSING"
+MISSING_TIMING_STATUS = "NOT_MEASURED_BY_THIS_PROFILE_TIMING_POLICY_REQUIRES_SEPARATE_MEDIAN_RUN"
+MISSING_COLUMN_STATUS = "NOT_EXPOSED_BY_CURRENT_NATIVE_GATE"
+PROOF_CONFIG = {
+    "fri_config": {
+        "fold_step": 1,
+        "log_blowup_factor": 1,
+        "log_last_layer_degree_bound": 0,
+        "n_queries": 3,
+    },
+    "lifting_log_size": None,
+    "pow_bits": 10,
+}
+STRUCTURAL_BREAKDOWN = {
+    "preprocessed_columns": MISSING_COLUMN_STATUS,
+    "base_trace_columns": MISSING_COLUMN_STATUS,
+    "extension_columns": MISSING_COLUMN_STATUS,
+    "pcs_fri_config": PROOF_CONFIG,
+    "prover_time_ms": MISSING_TIMING_STATUS,
+    "verifier_time_ms": MISSING_TIMING_STATUS,
+}
+CONTROLLED_GRID_COVERAGE = {
+    "status": CONTROLLED_GRID_STATUS,
+    "covered_points": [
+        {"head_count": 1, "sequence_length_per_head": 8, "key_width": 8, "value_width": 8},
+        {"head_count": 2, "sequence_length_per_head": 8, "key_width": 8, "value_width": 8},
+    ],
+    "missing_points": [
+        {"head_count": 1, "sequence_length_per_head": 4, "key_width": 8, "value_width": 8},
+        {"head_count": 1, "sequence_length_per_head": 16, "key_width": 8, "value_width": 8},
+        {"head_count": 2, "sequence_length_per_head": 4, "key_width": 8, "value_width": 8},
+        {"head_count": 2, "sequence_length_per_head": 16, "key_width": 8, "value_width": 8},
+        {"head_count": 4, "sequence_length_per_head": 8, "key_width": 8, "value_width": 8},
+    ],
+}
 PROOF_SECTION_KEYS = (
     "config",
     "commitments",
@@ -85,6 +121,8 @@ EXPECTED_SINGLE = {
     },
     "proof_section_payload_bytes_total": 36644,
     "proof_json_wrapper_bytes": 125,
+    "proof_config": PROOF_CONFIG,
+    "structural_breakdown": STRUCTURAL_BREAKDOWN,
 }
 EXPECTED_TWO_HEAD = {
     "label": "two_head_d8_seq8_bounded_weighted",
@@ -111,6 +149,8 @@ EXPECTED_TWO_HEAD = {
     },
     "proof_section_payload_bytes_total": 41050,
     "proof_json_wrapper_bytes": 125,
+    "proof_config": PROOF_CONFIG,
+    "structural_breakdown": STRUCTURAL_BREAKDOWN,
 }
 
 EXPECTED_MUTATION_NAMES = (
@@ -121,6 +161,8 @@ EXPECTED_MUTATION_NAMES = (
     "row_ratio_metric_smuggling",
     "proof_ratio_metric_smuggling",
     "fri_section_metric_smuggling",
+    "grid_status_overclaim",
+    "column_breakdown_overclaim",
     "source_gate_commitment_relabeling",
     "statement_commitment_relabeling",
     "claim_boundary_scaling_law_overclaim",
@@ -141,6 +183,7 @@ NON_CLAIMS = (
     "not long-context evidence",
     "not proof aggregation or recursion",
     "not a claim that binary PCS/FRI internals have been decomposed",
+    "not full controlled-grid coverage",
 )
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.tsv",
@@ -252,6 +295,8 @@ def proof_section_bytes_from_gate_module(gate_module: ModuleType) -> dict[str, A
     stark_proof = proof_payload["stark_proof"]
     if not isinstance(stark_proof, dict) or set(stark_proof) != set(PROOF_SECTION_KEYS):
         raise AttentionKvProofSizeProfileGateError("stark_proof section set drift")
+    if stark_proof["config"] != PROOF_CONFIG:
+        raise AttentionKvProofSizeProfileGateError("proof config drift")
     section_bytes = {key: len(canonical_json_bytes(stark_proof[key])) for key in PROOF_SECTION_KEYS}
     section_total = sum(section_bytes.values())
     wrapper_bytes = len(proof_bytes) - section_total
@@ -261,6 +306,7 @@ def proof_section_bytes_from_gate_module(gate_module: ModuleType) -> dict[str, A
         "proof_section_bytes": section_bytes,
         "proof_section_payload_bytes_total": section_total,
         "proof_json_wrapper_bytes": wrapper_bytes,
+        "proof_config": stark_proof["config"],
     }
 
 
@@ -287,6 +333,7 @@ def source_row_from_gate(gate_payload: dict[str, Any], *, expected: dict[str, An
         "envelope_size_bytes": receipt.get("envelope_size_bytes"),
         "statement_commitment": receipt.get("statement_commitment"),
         "gate_commitment": gate_payload.get("gate_commitment"),
+        "structural_breakdown": copy.deepcopy(STRUCTURAL_BREAKDOWN),
         **section_accounting,
     }
     validate_profile_row(row, expected=expected)
@@ -317,6 +364,8 @@ def validate_profile_row(row: Any, *, expected: dict[str, Any]) -> None:
         "proof_section_bytes",
         "proof_section_payload_bytes_total",
         "proof_json_wrapper_bytes",
+        "proof_config",
+        "structural_breakdown",
     }
     if set(row) != expected_keys:
         raise AttentionKvProofSizeProfileGateError("profile row field drift")
@@ -456,12 +505,74 @@ def validate_scaling_diagnostics(axis: Any, single: dict[str, Any], two_head: di
     }
     if set(axis) != expected_keys:
         raise AttentionKvProofSizeProfileGateError("scaling diagnostics field drift")
+    validate_scaling_diagnostic_types(axis)
     expected = build_expected_scaling_diagnostics(single, two_head)
     if axis != expected:
         raise AttentionKvProofSizeProfileGateError("scaling diagnostics drift")
 
 
-def build_expected_scaling_diagnostics(single: dict[str, Any], two_head: dict[str, Any]) -> dict[str, Any]:
+def validate_ratio_fraction(value: Any, label: str) -> None:
+    if not isinstance(value, dict) or set(value) != {"numerator", "denominator"}:
+        raise AttentionKvProofSizeProfileGateError(f"{label} fraction field drift")
+    require_exact_int(value.get("numerator"), f"{label} numerator")
+    require_exact_int(value.get("denominator"), f"{label} denominator")
+
+
+def require_float(value: Any, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, float):
+        raise AttentionKvProofSizeProfileGateError(f"{label} must be a float")
+    return value
+
+
+def validate_scaling_diagnostic_types(axis: dict[str, Any]) -> None:
+    for key in ("score_rows_ratio_fraction", "trace_rows_ratio_fraction", "proof_size_ratio_fraction", "envelope_size_ratio_fraction"):
+        validate_ratio_fraction(axis.get(key), key)
+    for key in (
+        "baseline_head_count",
+        "scaled_head_count",
+        "proof_size_delta_bytes",
+        "envelope_size_delta_bytes",
+        "proof_section_payload_delta_bytes",
+        "proof_json_wrapper_delta_bytes",
+        "fri_proof_delta_bytes",
+        "decommitments_delta_bytes",
+    ):
+        require_exact_int(axis.get(key), key)
+    section_delta = axis.get("proof_section_delta_bytes")
+    if not isinstance(section_delta, dict) or set(section_delta) != set(PROOF_SECTION_KEYS):
+        raise AttentionKvProofSizeProfileGateError("proof section delta field drift")
+    for key in PROOF_SECTION_KEYS:
+        require_exact_int(section_delta.get(key), f"proof section delta {key}")
+    section_growth = axis.get("proof_section_growth_ratios")
+    if not isinstance(section_growth, dict) or set(section_growth) != set(PROOF_SECTION_KEYS):
+        raise AttentionKvProofSizeProfileGateError("proof section growth field drift")
+    for key in PROOF_SECTION_KEYS:
+        require_float(section_growth.get(key), f"proof section growth {key}")
+    for key in (
+        "score_rows_ratio",
+        "trace_rows_ratio",
+        "proof_size_ratio",
+        "envelope_size_ratio",
+        "proof_growth_vs_score_growth",
+        "envelope_growth_vs_score_growth",
+        "baseline_proof_bytes_per_score_row",
+        "scaled_proof_bytes_per_score_row",
+        "baseline_envelope_bytes_per_score_row",
+        "scaled_envelope_bytes_per_score_row",
+    ):
+        require_float(axis.get(key), key)
+    for key in (
+        "key_width_held_constant",
+        "value_width_held_constant",
+        "sequence_length_per_head_held_constant",
+        "semantics_held_constant",
+        "weight_policy_held_constant",
+    ):
+        if not isinstance(axis.get(key), bool):
+            raise AttentionKvProofSizeProfileGateError(f"{key} must be bool")
+
+
+def build_expected_scaling_diagnostics(_single: dict[str, Any], _two_head: dict[str, Any]) -> dict[str, Any]:
     return {
         "axes_compared": "head_count_1_to_2_same_d8_same_sequence_length_per_head_same_bounded_weight_policy",
         "baseline_head_count": 1,
@@ -533,6 +644,8 @@ def build_payload() -> dict[str, Any]:
         "timing_policy": TIMING_POLICY,
         "profile_rows": [single, two_head],
         "scaling_diagnostics": diagnostics,
+        "controlled_grid_coverage": copy.deepcopy(CONTROLLED_GRID_COVERAGE),
+        "structural_breakdown_status": STRUCTURAL_BREAKDOWN_STATUS,
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
     }
@@ -580,6 +693,10 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         mutated["scaling_diagnostics"]["proof_size_ratio"] = 1.0
     elif name == "fri_section_metric_smuggling":
         mutated["profile_rows"][1]["proof_section_bytes"]["fri_proof"] += 1
+    elif name == "grid_status_overclaim":
+        mutated["controlled_grid_coverage"]["status"] = "FULL_GRID_COVERED"
+    elif name == "column_breakdown_overclaim":
+        mutated["profile_rows"][1]["structural_breakdown"]["base_trace_columns"] = 12
     elif name == "source_gate_commitment_relabeling":
         mutated["profile_rows"][1]["gate_commitment"] = "blake2b-256:" + "55" * 32
     elif name == "statement_commitment_relabeling":
@@ -629,6 +746,8 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "timing_policy",
         "profile_rows",
         "scaling_diagnostics",
+        "controlled_grid_coverage",
+        "structural_breakdown_status",
         "non_claims",
         "validation_commands",
         "profile_gate_commitment",
@@ -647,6 +766,8 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "claim_boundary": CLAIM_BOUNDARY,
         "first_blocker": FIRST_BLOCKER,
         "timing_policy": TIMING_POLICY,
+        "controlled_grid_coverage": CONTROLLED_GRID_COVERAGE,
+        "structural_breakdown_status": STRUCTURAL_BREAKDOWN_STATUS,
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
     }
