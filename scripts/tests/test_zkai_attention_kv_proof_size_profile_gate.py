@@ -1,4 +1,5 @@
 import copy
+import tempfile
 import unittest
 
 from scripts import zkai_attention_kv_proof_size_profile_gate as gate
@@ -137,6 +138,22 @@ class AttentionKvProofSizeProfileGateTests(unittest.TestCase):
                 gate.mutation_cases_for(payload)
         finally:
             gate.validate_payload = original_validate_payload
+
+    def test_rejects_mutation_spec_count_drift(self):
+        original_names = gate.EXPECTED_MUTATION_NAMES
+        try:
+            gate.EXPECTED_MUTATION_NAMES = original_names[:-1]
+            with self.assertRaisesRegex(gate.AttentionKvProofSizeProfileGateError, "mutation spec count drift"):
+                gate.validate_mutation_spec()
+        finally:
+            gate.EXPECTED_MUTATION_NAMES = original_names
+
+    def test_write_json_validates_before_writing(self):
+        payload = gate.build_payload()
+        payload["scaling_diagnostics"]["proof_size_delta_bytes"] = 4406.0
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(gate.AttentionKvProofSizeProfileGateError, "proof_size_delta_bytes"):
+                gate.write_json(payload, gate.pathlib.Path(tmp) / "bad.json")
 
 
 if __name__ == "__main__":

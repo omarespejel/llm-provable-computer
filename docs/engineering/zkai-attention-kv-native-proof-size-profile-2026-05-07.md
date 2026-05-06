@@ -152,6 +152,8 @@ python3 scripts/zkai_attention_kv_proof_size_profile_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_attention_kv_proof_size_profile_gate
+just gate-fast
+just gate
 ```
 
 ## Next Research Lead

@@ -173,6 +173,7 @@ EXPECTED_MUTATION_NAMES = (
     "non_claim_removed",
     "unknown_field_injection",
 )
+EXPECTED_MUTATION_COUNT = 18
 MUTATION_CASE_KEYS = {"name", "rejected", "error"}
 NON_CLAIMS = (
     "not a scaling law",
@@ -225,6 +226,11 @@ TSV_COLUMNS = (
 
 class AttentionKvProofSizeProfileGateError(ValueError):
     pass
+
+
+def validate_mutation_spec() -> None:
+    if len(EXPECTED_MUTATION_NAMES) != EXPECTED_MUTATION_COUNT:
+        raise AttentionKvProofSizeProfileGateError("mutation spec count drift")
 
 
 def load_script_module(path: pathlib.Path, module_name: str) -> ModuleType:
@@ -721,6 +727,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
 
 
 def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    validate_mutation_spec()
     cases = []
     for name in EXPECTED_MUTATION_NAMES:
         mutated = mutate_payload(payload, name)
@@ -787,8 +794,9 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
 
 
 def validate_mutation_summary(payload: dict[str, Any]) -> None:
+    validate_mutation_spec()
     cases = payload.get("mutation_cases")
-    if not isinstance(cases, list) or len(cases) != len(EXPECTED_MUTATION_NAMES):
+    if not isinstance(cases, list) or len(cases) != EXPECTED_MUTATION_COUNT:
         raise AttentionKvProofSizeProfileGateError("mutation case count drift")
     names = []
     for case in cases:
@@ -799,9 +807,9 @@ def validate_mutation_summary(payload: dict[str, Any]) -> None:
             raise AttentionKvProofSizeProfileGateError("mutation rejection drift")
     if tuple(names) != EXPECTED_MUTATION_NAMES:
         raise AttentionKvProofSizeProfileGateError("mutation names drift")
-    if require_exact_int(payload.get("mutations_checked"), "mutations_checked") != len(EXPECTED_MUTATION_NAMES):
+    if require_exact_int(payload.get("mutations_checked"), "mutations_checked") != EXPECTED_MUTATION_COUNT:
         raise AttentionKvProofSizeProfileGateError("mutation checked count drift")
-    if require_exact_int(payload.get("mutations_rejected"), "mutations_rejected") != len(EXPECTED_MUTATION_NAMES):
+    if require_exact_int(payload.get("mutations_rejected"), "mutations_rejected") != EXPECTED_MUTATION_COUNT:
         raise AttentionKvProofSizeProfileGateError("mutation rejected count drift")
     if payload.get("all_mutations_rejected") is not True:
         raise AttentionKvProofSizeProfileGateError("all mutations rejected drift")
@@ -855,6 +863,7 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def write_json(payload: dict[str, Any], path: pathlib.Path) -> None:
+    validate_payload(payload)
     path = path if path.is_absolute() else ROOT / path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
