@@ -61,7 +61,7 @@
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "selected positions drift",
       "name": "d16_selected_position_relabeling",
       "rejected": true
     },
@@ -71,12 +71,12 @@
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "target id drift",
       "name": "d16_target_id_relabeling",
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "backend version drift",
       "name": "d16_backend_version_relabeling",
       "rejected": true
     },

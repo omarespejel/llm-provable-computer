@@ -15,9 +15,11 @@ import argparse
 import copy
 import csv
 import hashlib
+import importlib.util
 import json
 import pathlib
-from typing import Any
+from types import ModuleType
+from typing import Any, Callable
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
@@ -25,10 +27,17 @@ D8_INPUT_JSON = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-masked-sequence-pr
 D8_ENVELOPE_JSON = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json"
 D16_INPUT_JSON = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.json"
 D16_ENVELOPE_JSON = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json"
+D8_INPUT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_stwo_native_masked_sequence_proof_input.py"
+D16_INPUT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input.py"
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d16-width-gate-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d16-width-gate-2026-05.tsv"
 MAX_INPUT_JSON_BYTES = 1_048_576
 MAX_ENVELOPE_JSON_BYTES = 1_048_576
+
+NATIVE_INPUT_SCHEMA = "zkai-attention-kv-stwo-native-masked-sequence-air-proof-input-v1"
+NATIVE_INPUT_DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF"
+NATIVE_ENVELOPE_DECISION = "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF"
+TIMING_POLICY = "single_local_dev_profile_engineering_only"
 
 SCHEMA = "zkai-attention-kv-stwo-native-d16-width-gate-v1"
 ISSUE = 453
@@ -49,6 +58,8 @@ D8_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-masked-sequence-statement-
 D8_SEMANTIC_SCOPE = "d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt"
 D8_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence:v1"
 D8_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9)
+D8_PROOF_SIZE_BYTES = 24394
+D8_ENVELOPE_SIZE_BYTES = 265791
 D8_COMMITMENTS = {
     "statement_commitment": "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232",
     "public_instance_commitment": "blake2b-256:3c5a7c1aaf6b7ececf3d729935b0548b0b947ce3c649f0370dd44fc687227631",
@@ -64,6 +75,8 @@ D16_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-masked-sequence-d16-state
 D16_SEMANTIC_SCOPE = "d16_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt"
 D16_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence-d16:v1"
 D16_SELECTED_POSITIONS = (1, 1, 3, 1, 5, 3, 1, 3)
+D16_PROOF_SIZE_BYTES = 31621
+D16_ENVELOPE_SIZE_BYTES = 358124
 D16_COMMITMENTS = {
     "statement_commitment": "blake2b-256:9ca216aefb582e0877d46deacf4af936bf61aa3f6c7865b22675d7698ffc3cd6",
     "public_instance_commitment": "blake2b-256:bd7415e074c0699ced0c774f987b6eceae9ca5607cc6df0e0714723db3aa8551",
@@ -129,6 +142,19 @@ class AttentionKvD16NativeWidthGateError(ValueError):
     pass
 
 
+def load_script_module(path: pathlib.Path, module_name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise AttentionKvD16NativeWidthGateError(f"failed to load {module_name}: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+D8_INPUT_MODULE = load_script_module(D8_INPUT_SCRIPT, "zkai_attention_kv_stwo_native_masked_sequence_proof_input")
+D16_INPUT_MODULE = load_script_module(D16_INPUT_SCRIPT, "zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input")
+
+
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
     if not path.is_file():
         raise AttentionKvD16NativeWidthGateError(f"missing {label}: {path}")
@@ -157,6 +183,8 @@ def validate_pair(
     input_payload: Any,
     envelope: Any,
     *,
+    input_validator: Callable[[dict[str, Any]], None],
+    input_label: str,
     target_id: str,
     proof_version: str,
     required_backend_version: str,
@@ -174,6 +202,14 @@ def validate_pair(
 ) -> None:
     if not isinstance(input_payload, dict) or not isinstance(envelope, dict):
         raise AttentionKvD16NativeWidthGateError("input/envelope must be objects")
+    if input_payload.get("schema") != NATIVE_INPUT_SCHEMA:
+        raise AttentionKvD16NativeWidthGateError("input schema drift")
+    if input_payload.get("decision") != NATIVE_INPUT_DECISION:
+        raise AttentionKvD16NativeWidthGateError("input decision drift")
+    try:
+        input_validator(input_payload)
+    except Exception as err:
+        raise AttentionKvD16NativeWidthGateError(f"{input_label} source input validation drift: {err}") from err
     if envelope.get("input") != input_payload:
         raise AttentionKvD16NativeWidthGateError("proof envelope/input split-brain drift")
     if envelope.get("proof_backend") != "stwo":
@@ -184,6 +220,8 @@ def validate_pair(
         raise AttentionKvD16NativeWidthGateError("statement version drift")
     if envelope.get("semantic_scope") != semantic_scope:
         raise AttentionKvD16NativeWidthGateError("semantic scope drift")
+    if envelope.get("decision") != NATIVE_ENVELOPE_DECISION:
+        raise AttentionKvD16NativeWidthGateError("proof envelope decision drift")
     for key, expected in (
         ("target_id", target_id),
         ("proof_version", proof_version),
@@ -239,7 +277,7 @@ def receipt_summary(route_id: str, input_payload: dict[str, Any], envelope: dict
         "score_row_commitment": input_payload["score_row_commitment"],
         "final_kv_cache_commitment": input_payload["final_kv_cache_commitment"],
         "outputs_commitment": input_payload["outputs_commitment"],
-        "timing_policy": "single_local_dev_profile_engineering_only",
+        "timing_policy": TIMING_POLICY,
     }
 
 
@@ -251,6 +289,8 @@ def _validate_source_pairs() -> tuple[dict[str, Any], dict[str, Any], dict[str, 
     validate_pair(
         d8_input,
         d8_envelope,
+        input_validator=D8_INPUT_MODULE.validate_payload,
+        input_label="d8",
         target_id=D8_TARGET_ID,
         proof_version=D8_PROOF_VERSION,
         required_backend_version=D8_REQUIRED_BACKEND_VERSION,
@@ -269,6 +309,8 @@ def _validate_source_pairs() -> tuple[dict[str, Any], dict[str, Any], dict[str, 
     validate_pair(
         d16_input,
         d16_envelope,
+        input_validator=D16_INPUT_MODULE.validate_payload,
+        input_label="d16",
         target_id=D16_TARGET_ID,
         proof_version=D16_PROOF_VERSION,
         required_backend_version=D16_REQUIRED_BACKEND_VERSION,
@@ -394,7 +436,20 @@ def _expected_commitment(payload: dict[str, Any]) -> str:
     )
 
 
-def validate_receipt_summary(summary: Any, *, route_id: str, key_width: int, value_width: int, commitments: dict[str, str]) -> None:
+def validate_receipt_summary(
+    summary: Any,
+    *,
+    route_id: str,
+    target_id: str,
+    proof_version: str,
+    required_backend_version: str,
+    key_width: int,
+    value_width: int,
+    selected_positions: tuple[int, ...],
+    proof_size_bytes: int,
+    envelope_size_bytes: int,
+    commitments: dict[str, str],
+) -> None:
     if not isinstance(summary, dict):
         raise AttentionKvD16NativeWidthGateError("receipt summary must be object")
     required = {
@@ -407,15 +462,27 @@ def validate_receipt_summary(summary: Any, *, route_id: str, key_width: int, val
         raise AttentionKvD16NativeWidthGateError("receipt summary field drift")
     if summary["route_id"] != route_id:
         raise AttentionKvD16NativeWidthGateError("route id drift")
+    if summary["target_id"] != target_id:
+        raise AttentionKvD16NativeWidthGateError("target id drift")
+    if summary["proof_version"] != proof_version:
+        raise AttentionKvD16NativeWidthGateError("proof version drift")
+    if summary["required_backend_version"] != required_backend_version:
+        raise AttentionKvD16NativeWidthGateError("backend version drift")
     if summary["key_width"] != key_width or summary["value_width"] != value_width:
         raise AttentionKvD16NativeWidthGateError("width drift")
     if summary["sequence_length"] != 8:
         raise AttentionKvD16NativeWidthGateError("sequence length drift")
     if summary["score_row_count"] != 52 or summary["trace_row_count"] != 64:
         raise AttentionKvD16NativeWidthGateError("row count drift")
-    if not isinstance(summary["proof_size_bytes"], int) or summary["proof_size_bytes"] <= 1000:
+    if summary["final_kv_items"] != 10:
+        raise AttentionKvD16NativeWidthGateError("final KV item count drift")
+    if summary["selected_positions"] != list(selected_positions):
+        raise AttentionKvD16NativeWidthGateError("selected positions drift")
+    if summary["timing_policy"] != TIMING_POLICY:
+        raise AttentionKvD16NativeWidthGateError("timing policy drift")
+    if summary["proof_size_bytes"] != proof_size_bytes:
         raise AttentionKvD16NativeWidthGateError("proof-size scale drift")
-    if not isinstance(summary["envelope_size_bytes"], int) or summary["envelope_size_bytes"] <= summary["proof_size_bytes"]:
+    if summary["envelope_size_bytes"] != envelope_size_bytes:
         raise AttentionKvD16NativeWidthGateError("envelope-size scale drift")
     for key, expected in commitments.items():
         if summary[key] != expected:
@@ -446,8 +513,32 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         raise AttentionKvD16NativeWidthGateError("non-claim drift")
     if payload["validation_commands"] != list(VALIDATION_COMMANDS):
         raise AttentionKvD16NativeWidthGateError("validation command drift")
-    validate_receipt_summary(payload["baseline_receipt"], route_id=D8_ROUTE_ID, key_width=8, value_width=8, commitments=D8_COMMITMENTS)
-    validate_receipt_summary(payload["scaled_receipt"], route_id=D16_ROUTE_ID, key_width=16, value_width=16, commitments=D16_COMMITMENTS)
+    validate_receipt_summary(
+        payload["baseline_receipt"],
+        route_id=D8_ROUTE_ID,
+        target_id=D8_TARGET_ID,
+        proof_version=D8_PROOF_VERSION,
+        required_backend_version=D8_REQUIRED_BACKEND_VERSION,
+        key_width=8,
+        value_width=8,
+        selected_positions=D8_SELECTED_POSITIONS,
+        proof_size_bytes=D8_PROOF_SIZE_BYTES,
+        envelope_size_bytes=D8_ENVELOPE_SIZE_BYTES,
+        commitments=D8_COMMITMENTS,
+    )
+    validate_receipt_summary(
+        payload["scaled_receipt"],
+        route_id=D16_ROUTE_ID,
+        target_id=D16_TARGET_ID,
+        proof_version=D16_PROOF_VERSION,
+        required_backend_version=D16_REQUIRED_BACKEND_VERSION,
+        key_width=16,
+        value_width=16,
+        selected_positions=D16_SELECTED_POSITIONS,
+        proof_size_bytes=D16_PROOF_SIZE_BYTES,
+        envelope_size_bytes=D16_ENVELOPE_SIZE_BYTES,
+        commitments=D16_COMMITMENTS,
+    )
     expected_axis = {
         "baseline_key_width": 8,
         "scaled_key_width": 16,
