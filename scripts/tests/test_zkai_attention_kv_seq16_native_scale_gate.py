@@ -69,6 +69,31 @@ class AttentionKvSeq16NativeScaleGateTests(unittest.TestCase):
         mutated["scaled_receipt"]["selected_positions"] = list(gate.D8_SELECTED_POSITIONS) + [8] * 8
         self.assert_rejects(mutated, "selected positions drift")
 
+    def test_rejects_source_pair_commitment_relabeling_before_summary(self):
+        input_payload = gate.read_bounded_json(gate.SEQ16_INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "seq16 input")
+        envelope = gate.read_bounded_json(gate.SEQ16_ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "seq16 envelope")
+        mutated_input = copy.deepcopy(input_payload)
+        mutated_input["statement_commitment"] = "blake2b-256:" + "99" * 32
+        mutated_envelope = copy.deepcopy(envelope)
+        mutated_envelope["input"] = mutated_input
+        with self.assertRaisesRegex(gate.AttentionKvSeq16NativeScaleGateError, "statement_commitment commitment drift"):
+            gate.validate_pair(
+                mutated_input,
+                mutated_envelope,
+                target_id=gate.SEQ16_TARGET_ID,
+                proof_version=gate.SEQ16_PROOF_VERSION,
+                required_backend_version=gate.SEQ16_REQUIRED_BACKEND_VERSION,
+                statement_version=gate.SEQ16_STATEMENT_VERSION,
+                semantic_scope=gate.SEQ16_SEMANTIC_SCOPE,
+                verifier_domain=gate.SEQ16_VERIFIER_DOMAIN,
+                sequence_length=16,
+                score_rows=168,
+                trace_rows=256,
+                final_kv_items=18,
+                selected_positions=gate.SEQ16_SELECTED_POSITIONS,
+                commitments=gate.SEQ16_COMMITMENTS,
+            )
+
     def test_rejects_mutation_summary_drift(self):
         payload = gate.build_payload()
         payload["mutation_cases"][0]["rejected"] = False
