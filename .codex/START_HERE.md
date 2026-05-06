@@ -40,9 +40,11 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 34. `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`
 35. `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`
 36. `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`
-37. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-38. `docs/engineering/reproducibility.md`
-39. `git status --short --branch`
+37. `docs/engineering/zkai-attention-kv-native-proof-size-profile-2026-05-07.md`
+38. `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`
+39. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+40. `docs/engineering/reproducibility.md`
+41. `git status --short --branch`
 
 ## What this repository is now
 
@@ -176,6 +178,24 @@ This repository currently has three live lanes.
     fixture, not exact Softmax, not exp/div semantics, not head aggregation, not
     full inference, not long-context evidence, and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`.
+  - Issue `#467` profiles native proof bytes between the single-head and
+    two-head `d=8` bounded weighted routes: score rows double from `52` to
+    `104`, raw proof bytes grow from `36769` to `41175` (`1.119829x`), and the
+    checked envelope grows from `386078` to `512060` (`1.326312x`). The
+    engineering-only profile decomposes the raw proof into top-level
+    `stark_proof` sections and records the missing controlled grid as future
+    work; see
+    `docs/engineering/zkai-attention-kv-native-proof-size-profile-2026-05-07.md`.
+  - Issue `#463` upgrades the native `d=8` weighted-attention surface to a
+    bounded Softmax-table policy: a real Stwo AIR proof checks the same `52`
+    score rows and `64` trace rows while binding an exp-like clipped score-gap
+    table (`0 -> 256`, `1 -> 181`, `2 -> 128`, `3 -> 91`, `4 -> 64`,
+    `5 -> 45`, `6 -> 32`, `7 -> 23`, `8 -> 16`) into the statement. The proof
+    is `44692` bytes, the envelope is `451982` bytes, and the gate rejects
+    `18 / 18` table/scale/clip/relabeling/metric/overclaim mutations. This is
+    a public-row verifier-recomputed table policy, not exact Softmax and not an
+    AIR-private lookup argument; see
+    `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
@@ -183,7 +203,8 @@ This repository currently has three live lanes.
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
     receipt. The native seq16, d16, two-head, bounded weighted, d8 bounded
-    weighted, and two-head bounded weighted proofs are separate native
+    weighted, two-head bounded weighted, proof-size profile, and bounded
+    Softmax-table proofs are separate native
     scale/semantics gates for the first route family. Exact Softmax, long-context inference, full inference, and recursion/PCD remain
     out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
