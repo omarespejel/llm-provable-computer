@@ -86,6 +86,63 @@ class AttentionKvSeq16NativeScaleGateTests(unittest.TestCase):
                 statement_version=gate.SEQ16_STATEMENT_VERSION,
                 semantic_scope=gate.SEQ16_SEMANTIC_SCOPE,
                 verifier_domain=gate.SEQ16_VERIFIER_DOMAIN,
+                key_width=8,
+                value_width=8,
+                sequence_length=16,
+                score_rows=168,
+                trace_rows=256,
+                final_kv_items=18,
+                selected_positions=gate.SEQ16_SELECTED_POSITIONS,
+                commitments=gate.SEQ16_COMMITMENTS,
+            )
+
+    def test_rejects_source_pair_width_relabeling_before_summary(self):
+        input_payload = gate.read_bounded_json(gate.SEQ16_INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "seq16 input")
+        envelope = gate.read_bounded_json(gate.SEQ16_ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "seq16 envelope")
+        mutated_input = copy.deepcopy(input_payload)
+        mutated_input["key_width"] = 16
+        mutated_envelope = copy.deepcopy(envelope)
+        mutated_envelope["input"] = mutated_input
+        with self.assertRaisesRegex(gate.AttentionKvSeq16NativeScaleGateError, "width drift"):
+            gate.validate_pair(
+                mutated_input,
+                mutated_envelope,
+                target_id=gate.SEQ16_TARGET_ID,
+                proof_version=gate.SEQ16_PROOF_VERSION,
+                required_backend_version=gate.SEQ16_REQUIRED_BACKEND_VERSION,
+                statement_version=gate.SEQ16_STATEMENT_VERSION,
+                semantic_scope=gate.SEQ16_SEMANTIC_SCOPE,
+                verifier_domain=gate.SEQ16_VERIFIER_DOMAIN,
+                key_width=8,
+                value_width=8,
+                sequence_length=16,
+                score_rows=168,
+                trace_rows=256,
+                final_kv_items=18,
+                selected_positions=gate.SEQ16_SELECTED_POSITIONS,
+                commitments=gate.SEQ16_COMMITMENTS,
+            )
+
+    def test_rejects_source_pair_malformed_selected_positions_before_summary(self):
+        input_payload = gate.read_bounded_json(gate.SEQ16_INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "seq16 input")
+        envelope = gate.read_bounded_json(gate.SEQ16_ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "seq16 envelope")
+        mutated_input = copy.deepcopy(input_payload)
+        mutated_input["selected_positions"] = list(gate.SEQ16_SELECTED_POSITIONS)
+        mutated_input["selected_positions"][-1] = True
+        mutated_envelope = copy.deepcopy(envelope)
+        mutated_envelope["input"] = mutated_input
+        with self.assertRaisesRegex(gate.AttentionKvSeq16NativeScaleGateError, "selected positions malformed"):
+            gate.validate_pair(
+                mutated_input,
+                mutated_envelope,
+                target_id=gate.SEQ16_TARGET_ID,
+                proof_version=gate.SEQ16_PROOF_VERSION,
+                required_backend_version=gate.SEQ16_REQUIRED_BACKEND_VERSION,
+                statement_version=gate.SEQ16_STATEMENT_VERSION,
+                semantic_scope=gate.SEQ16_SEMANTIC_SCOPE,
+                verifier_domain=gate.SEQ16_VERIFIER_DOMAIN,
+                key_width=8,
+                value_width=8,
                 sequence_length=16,
                 score_rows=168,
                 trace_rows=256,

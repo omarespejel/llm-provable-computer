@@ -160,6 +160,8 @@ def validate_pair(
     statement_version: str,
     semantic_scope: str,
     verifier_domain: str,
+    key_width: int,
+    value_width: int,
     sequence_length: int,
     score_rows: int,
     trace_rows: int,
@@ -189,6 +191,8 @@ def validate_pair(
     ):
         if input_payload.get(key) != expected:
             raise AttentionKvSeq16NativeScaleGateError(f"{key} drift")
+    if input_payload.get("key_width") != key_width or input_payload.get("value_width") != value_width:
+        raise AttentionKvSeq16NativeScaleGateError("width drift")
     if input_payload.get("sequence_length") != sequence_length:
         raise AttentionKvSeq16NativeScaleGateError("sequence length drift")
     if input_payload.get("score_row_count") != score_rows:
@@ -197,7 +201,13 @@ def validate_pair(
         raise AttentionKvSeq16NativeScaleGateError("trace row count drift")
     if input_payload.get("final_kv_items") != final_kv_items:
         raise AttentionKvSeq16NativeScaleGateError("final KV item count drift")
-    if tuple(input_payload.get("selected_positions", [])) != selected_positions:
+    input_positions = input_payload.get("selected_positions")
+    if not isinstance(input_positions, list) or any(
+        not isinstance(item, int) or isinstance(item, bool)
+        for item in input_positions
+    ):
+        raise AttentionKvSeq16NativeScaleGateError("selected positions malformed")
+    if tuple(input_positions) != selected_positions:
         raise AttentionKvSeq16NativeScaleGateError("selected positions drift")
     proof = envelope.get("proof")
     if not isinstance(proof, list) or not proof:
@@ -247,6 +257,8 @@ def build_payload() -> dict[str, Any]:
         statement_version=D8_STATEMENT_VERSION,
         semantic_scope=D8_SEMANTIC_SCOPE,
         verifier_domain=D8_VERIFIER_DOMAIN,
+        key_width=8,
+        value_width=8,
         sequence_length=8,
         score_rows=52,
         trace_rows=64,
@@ -263,6 +275,8 @@ def build_payload() -> dict[str, Any]:
         statement_version=SEQ16_STATEMENT_VERSION,
         semantic_scope=SEQ16_SEMANTIC_SCOPE,
         verifier_domain=SEQ16_VERIFIER_DOMAIN,
+        key_width=8,
+        value_width=8,
         sequence_length=16,
         score_rows=168,
         trace_rows=256,
@@ -332,7 +346,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "seq16_final_kv_relabeling":
         out["scaled_receipt"]["final_kv_cache_commitment"] = "blake2b-256:" + "22" * 32
     elif name == "seq16_target_id_relabeling":
-        out["scaled_receipt"]["target_id"] = D8_ROUTE_ID
+        out["scaled_receipt"]["target_id"] = D8_TARGET_ID
     elif name == "seq16_backend_version_relabeling":
         out["scaled_receipt"]["required_backend_version"] = "tampered"
     elif name == "seq16_proof_size_metric_smuggling":
