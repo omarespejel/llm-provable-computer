@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Tiny checked native AIR for fixed `d=8` causal-prefix integer-argmax attention/KV carried state; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix integer-argmax attention/KV carried state, now with d8 baseline, seq16 sequence scaling, and d16 width scaling; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -75,8 +75,9 @@ python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 just lib
 git diff --check
 ```
@@ -100,6 +101,14 @@ discipline, but checks `168` score rows over a `256`-row trace with a
 mutations. This is sequence-length scaling only, not `d=16`, Softmax, multi-head,
 long-context inference, or recursion/PCD.
 
+The second native Stwo scale follow-up now also exists: a d16 width profile
+keeps sequence length fixed at eight steps while doubling key/value width to
+`16`. It checks `52` score rows over a `64`-row trace with selected positions
+`1, 1, 3, 1, 5, 3, 1, 3`, a `31621`-byte proof, and a `358124`-byte checked
+envelope. The width gate rejects `16 / 16` checked width, statement, route,
+metric, non-claim, and parser mutations. This is width scaling only, not
+Softmax, multi-head, long-context inference, or recursion/PCD.
+
 The next research result should keep scaling the native Stwo surface, not add
 another metadata adapter:
 
@@ -107,8 +116,8 @@ another metadata adapter:
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Scale the native Stwo proof by one axis only: `d=16`, multi-head, or a
-   bounded Softmax-like approximation.
+3. Scale the native Stwo proof by one axis only: multi-head or a bounded
+   Softmax-like approximation.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 5. Keep Softmax out of scope unless the native proof actually covers the chosen attention

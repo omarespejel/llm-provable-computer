@@ -176,15 +176,24 @@ Tablero boundary.
   multi-head attention, not long-context inference, not a full transformer block,
   and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`.
+- Issue `#453` scales that native Stwo surface along width: a real Stwo AIR
+  proof checks a fixed eight-step `d=16` causal-prefix masked integer-argmax
+  attention/KV sequence with `52` score rows, a `64`-row trace, selected
+  positions `[1, 1, 3, 1, 5, 3, 1, 3]`, ten final KV rows, a `31621`-byte proof,
+  and a `358124`-byte checked envelope. The width gate rejects `16 / 16` checked
+  mutations. This is width scaling only, not Softmax, not multi-head attention,
+  not long-context inference, not a full transformer block, and not recursion/PCD;
+  see `docs/engineering/zkai-attention-kv-stwo-native-d16-width-gate-2026-05-06.md`.
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
-  for six proof-backed routes: the native Stwo d8 masked-sequence AIR proof, the
+  for six proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
   external SNARK statement-receipt route, the RISC Zero transition semantics
   route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
-  causal-prefix masked sequence route. It rejects `42 / 42` selector mutations
-  and keeps Softmax, multi-head attention, long-context inference, full
-  inference, and recursion/PCD out of scope; see
+  causal-prefix masked sequence route. The native seq16 and d16 proofs are
+  separate native scale gates for the first route family. It rejects `42 / 42`
+  selector mutations and keeps Softmax, multi-head attention, long-context
+  inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
   PCD outer proof backend exists. The d128 two-slice lane now has a
