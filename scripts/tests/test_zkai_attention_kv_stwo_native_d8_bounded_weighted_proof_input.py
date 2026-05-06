@@ -34,7 +34,7 @@ class AttentionKvBoundedWeightedInputTests(unittest.TestCase):
     def test_rejects_output_relabeling(self):
         payload = gate.build_payload()
         payload["attention_outputs"][0][0] = 99
-        with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, "score rows drift"):
+        with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, "attention outputs drift"):
             gate.validate_payload(payload)
 
     def test_rejects_commitment_relabeling(self):
@@ -52,6 +52,18 @@ class AttentionKvBoundedWeightedInputTests(unittest.TestCase):
 
     def test_build_payload_is_deterministic(self):
         self.assertEqual(gate.build_payload(), copy.deepcopy(gate.build_payload()))
+
+    def test_build_score_rows_decouples_row_and_output_lists(self):
+        rows, _, outputs = gate.build_score_rows(gate.fixture_initial_kv(), gate.fixture_input_steps())
+        original_row_output = list(rows[0]["attention_output"])
+        original_payload_output = list(outputs[0])
+        original_next_row_numerator = list(rows[1]["weighted_numerator"])
+        outputs[0][0] += 99
+        rows[0]["attention_output"][1] += 99
+        rows[0]["weighted_numerator"][0] += 99
+        self.assertEqual(rows[0]["attention_output"][0], original_row_output[0])
+        self.assertEqual(outputs[0][1], original_payload_output[1])
+        self.assertEqual(rows[1]["weighted_numerator"], original_next_row_numerator)
 
     def test_rejects_source_journal_identity_drift(self):
         journal = copy.deepcopy(gate.source_journal())

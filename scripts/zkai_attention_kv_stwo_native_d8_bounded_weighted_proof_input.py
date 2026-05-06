@@ -400,9 +400,10 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
                 numerators[dim] += weight * value
         output = [numerator // denominator for numerator in numerators]
         remainders = [numerator - out * denominator for numerator, out in zip(numerators, output, strict=True)]
-        outputs.append(output)
+        outputs.append(list(output))
         for candidate_index, ((candidate, score), weight) in enumerate(zip(scored, weights, strict=True)):
             products = [left * right for left, right in zip(step["query"], candidate["key"], strict=True)]
+            weighted_value = [weight * value for value in candidate["value"]]
             rows.append({
                 "row_index": len(rows),
                 "step_index": step_index,
@@ -416,14 +417,14 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
                 "causal_gap": step["token_position"] - candidate["position"],
                 "attention_weight": weight,
                 "weight_denominator": denominator,
-                "query": step["query"],
-                "key": candidate["key"],
-                "value": candidate["value"],
-                "products": products,
-                "weighted_value": [weight * value for value in candidate["value"]],
-                "weighted_numerator": numerators,
-                "attention_output": output,
-                "output_remainder": remainders,
+                "query": list(step["query"]),
+                "key": list(candidate["key"]),
+                "value": list(candidate["value"]),
+                "products": list(products),
+                "weighted_value": list(weighted_value),
+                "weighted_numerator": list(numerators),
+                "attention_output": list(output),
+                "output_remainder": list(remainders),
             })
         current = candidates
     return rows, current, outputs
