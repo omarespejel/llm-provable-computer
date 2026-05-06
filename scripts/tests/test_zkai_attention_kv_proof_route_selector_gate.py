@@ -265,6 +265,22 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "proof envelope exceeds max size"):
                 GATE.load_stwo_native_masked_sequence_envelope(path)
 
+    def test_stwo_native_envelope_validates_embedded_input_without_default_payload_read(self) -> None:
+        def fail_default_payload_read(*_args, **_kwargs):
+            raise AssertionError("envelope loader must not read the default input payload")
+
+        original_loader = GATE.load_stwo_native_masked_sequence_payload
+        try:
+            GATE.load_stwo_native_masked_sequence_payload = fail_default_payload_read
+
+            envelope = GATE.load_stwo_native_masked_sequence_envelope(
+                GATE.STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON
+            )
+        finally:
+            GATE.load_stwo_native_masked_sequence_payload = original_loader
+
+        self.assertEqual(envelope["decision"], "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF")
+
     def test_individual_mutations_reject(self) -> None:
         payload = GATE.build_payload()
 
