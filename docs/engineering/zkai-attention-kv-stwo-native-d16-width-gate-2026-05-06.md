@@ -135,6 +135,10 @@ python3 -m unittest \
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
   --lib --features stwo-backend
+
+just lib
+just gate-fast
+just gate
 ```
 
 ## Next GO/NO-GO Targets

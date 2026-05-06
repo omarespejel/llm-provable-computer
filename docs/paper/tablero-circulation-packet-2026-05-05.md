@@ -78,8 +78,10 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_na
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
 python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
-just lib
 git diff --check
+just gate-fast
+just lib
+just gate
 ```
 
 ## Current Stronger-Venue Follow-Up
