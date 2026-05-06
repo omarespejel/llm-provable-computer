@@ -35,6 +35,13 @@ is recorded separately so this route selector remains the inventory of the first
 proof-backed attention/KV routes, while the scale gate answers whether the native
 surface survives a larger carried-state trace.
 
+Issue `#453` adds the matching width-axis scale gate for the same native Stwo
+surface: an eight-step `d=16` profile with `52` score rows, a `64`-row trace, a
+`31621`-byte proof, a `358124`-byte checked envelope, selected positions
+`[1, 1, 3, 1, 5, 3, 1, 3]`, and `16 / 16` width-gate mutation rejections. That
+result is also recorded separately so this selector keeps counting route
+families, not every checked native scale variant.
+
 The boundary remains strict. This is not Softmax, not multi-head attention, not
 long-context inference, not a full transformer block, and not recursion/PCD. The
 external SNARK and RISC Zero routes remain useful controls, not the headline
@@ -140,10 +147,9 @@ The result should be positioned carefully:
   statement binding into actual Stwo-native transformer-shaped arithmetic.
 
 The next breakthrough target is not another metadata wrapper. It is scaling this
-native route to a slightly richer transformer surface: longer fixed sequence,
-`d=16`, multi-head, a native RMSNorm/attention bridge, or a bounded Softmax-like
-approximation. Each should remain a checked GO/NO-GO gate with exact blockers if
-it fails.
+native route to a slightly richer transformer surface: multi-head, a native
+RMSNorm/attention bridge, or a bounded Softmax-like approximation. Each should
+remain a checked GO/NO-GO gate with exact blockers if it fails.
 
 ## Non-Claims
 

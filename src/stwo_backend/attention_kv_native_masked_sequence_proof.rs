@@ -56,12 +56,26 @@ pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_REQUIRED_BACKEND_VERSIO
     "stwo-attention-kv-d8-causal-mask-seq16-v1";
 pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_VERIFIER_DOMAIN: &str =
     "ptvm:zkai:attention-kv-stwo-native-masked-sequence-seq16:v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_PROOF_VERSION: &str =
+    "stwo-attention-kv-d16-causal-mask-sequence-air-proof-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_STATEMENT_VERSION: &str =
+    "zkai-attention-kv-stwo-native-masked-sequence-d16-statement-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_SEMANTIC_SCOPE: &str =
+    "d16_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_TARGET_ID: &str =
+    "attention-kv-d16-causal-mask-sequence-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_REQUIRED_BACKEND_VERSION: &str =
+    "stwo-attention-kv-d16-causal-mask-sequence-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_VERIFIER_DOMAIN: &str =
+    "ptvm:zkai:attention-kv-stwo-native-masked-sequence-d16:v1";
 
 const SEMANTICS: &str = "integer_argmax_attention";
 const MASKING_POLICY: &str = "causal_prefix_position_lte_query_token";
 const TIE_BREAK: &str = "lowest_position";
-const KEY_WIDTH: usize = 8;
-const VALUE_WIDTH: usize = 8;
+const KEY_WIDTH_D8: usize = 8;
+const VALUE_WIDTH_D8: usize = 8;
+const KEY_WIDTH_D16: usize = 16;
+const VALUE_WIDTH_D16: usize = 16;
 const SEQUENCE_LENGTH: usize = 8;
 const SEQUENCE_LENGTH_SEQ16: usize = 16;
 const INITIAL_KV_ITEMS: usize = 2;
@@ -96,6 +110,7 @@ const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
 const EXPECTED_SELECTED_POSITIONS: [usize; SEQUENCE_LENGTH] = [0, 2, 3, 3, 5, 5, 7, 9];
 const EXPECTED_SELECTED_POSITIONS_SEQ16: [usize; SEQUENCE_LENGTH_SEQ16] =
     [0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16];
+const EXPECTED_SELECTED_POSITIONS_D16: [usize; SEQUENCE_LENGTH] = [1, 1, 3, 1, 5, 3, 1, 3];
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not Softmax attention",
@@ -147,6 +162,20 @@ const EXPECTED_VALIDATION_COMMANDS_SEQ16: &[&str] = &[
 ];
 
 const NEXT_BACKEND_STEP_SEQ16: &str = "scale the native Stwo attention/KV proof surface to d=16 width, multi-head, or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface";
+const NEXT_BACKEND_STEP_D16: &str = "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same width, carry, mask, and selected-output rejection surface";
+
+const EXPECTED_VALIDATION_COMMANDS_D16: &[&str] = &[
+    "python3 scripts/zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_d16_native_width_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-width-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-width-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_native_width_gate",
+    "just lib",
+    "just gate-fast",
+    "just gate",
+];
 
 #[derive(Debug, Clone, Copy)]
 struct AttentionKvNativeMaskedSequenceProfile {
@@ -158,6 +187,8 @@ struct AttentionKvNativeMaskedSequenceProfile {
     statement_version: &'static str,
     semantic_scope: &'static str,
     verifier_domain: &'static str,
+    key_width: usize,
+    value_width: usize,
     sequence_length: usize,
     final_kv_items: usize,
     score_row_count: usize,
@@ -177,6 +208,8 @@ const PROFILE_D8: AttentionKvNativeMaskedSequenceProfile = AttentionKvNativeMask
     statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION,
     semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE,
     verifier_domain: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN,
+    key_width: KEY_WIDTH_D8,
+    value_width: VALUE_WIDTH_D8,
     sequence_length: SEQUENCE_LENGTH,
     final_kv_items: FINAL_KV_ITEMS,
     score_row_count: SCORE_ROW_COUNT,
@@ -198,6 +231,8 @@ const PROFILE_SEQ16: AttentionKvNativeMaskedSequenceProfile =
         statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_STATEMENT_VERSION,
         semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_SEMANTIC_SCOPE,
         verifier_domain: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_VERIFIER_DOMAIN,
+        key_width: KEY_WIDTH_D8,
+        value_width: VALUE_WIDTH_D8,
         sequence_length: SEQUENCE_LENGTH_SEQ16,
         final_kv_items: FINAL_KV_ITEMS_SEQ16,
         score_row_count: SCORE_ROW_COUNT_SEQ16,
@@ -208,9 +243,34 @@ const PROFILE_SEQ16: AttentionKvNativeMaskedSequenceProfile =
         validation_commands: EXPECTED_VALIDATION_COMMANDS_SEQ16,
     };
 
+const PROFILE_D16: AttentionKvNativeMaskedSequenceProfile =
+    AttentionKvNativeMaskedSequenceProfile {
+        issue: 453,
+        source_issue: 450,
+        target_id: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_TARGET_ID,
+        required_backend_version:
+            ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_REQUIRED_BACKEND_VERSION,
+        proof_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_PROOF_VERSION,
+        statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_STATEMENT_VERSION,
+        semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_SEMANTIC_SCOPE,
+        verifier_domain: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_VERIFIER_DOMAIN,
+        key_width: KEY_WIDTH_D16,
+        value_width: VALUE_WIDTH_D16,
+        sequence_length: SEQUENCE_LENGTH,
+        final_kv_items: FINAL_KV_ITEMS,
+        score_row_count: SCORE_ROW_COUNT,
+        trace_row_count: TRACE_ROW_COUNT,
+        log_size: LOG_SIZE,
+        expected_selected_positions: &EXPECTED_SELECTED_POSITIONS_D16,
+        next_backend_step: NEXT_BACKEND_STEP_D16,
+        validation_commands: EXPECTED_VALIDATION_COMMANDS_D16,
+    };
+
 #[derive(Debug, Clone)]
 struct AttentionKvNativeMaskedSequenceEval {
     log_size: u32,
+    key_width: usize,
+    value_width: usize,
 }
 
 impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
@@ -239,24 +299,24 @@ impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
         let tie_break_gap = eval.next_trace_mask();
         let causal_gap = eval.next_trace_mask();
 
-        let mut query = Vec::with_capacity(KEY_WIDTH);
-        for _ in 0..KEY_WIDTH {
+        let mut query = Vec::with_capacity(self.key_width);
+        for _ in 0..self.key_width {
             query.push(eval.next_trace_mask());
         }
-        let mut key = Vec::with_capacity(KEY_WIDTH);
-        for _ in 0..KEY_WIDTH {
+        let mut key = Vec::with_capacity(self.key_width);
+        for _ in 0..self.key_width {
             key.push(eval.next_trace_mask());
         }
-        let mut value = Vec::with_capacity(VALUE_WIDTH);
-        for _ in 0..VALUE_WIDTH {
+        let mut value = Vec::with_capacity(self.value_width);
+        for _ in 0..self.value_width {
             value.push(eval.next_trace_mask());
         }
-        let mut products = Vec::with_capacity(KEY_WIDTH);
-        for _ in 0..KEY_WIDTH {
+        let mut products = Vec::with_capacity(self.key_width);
+        for _ in 0..self.key_width {
             products.push(eval.next_trace_mask());
         }
-        let mut attention_output = Vec::with_capacity(VALUE_WIDTH);
-        for _ in 0..VALUE_WIDTH {
+        let mut attention_output = Vec::with_capacity(self.value_width);
+        for _ in 0..self.value_width {
             attention_output.push(eval.next_trace_mask());
         }
 
@@ -308,7 +368,8 @@ impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
             tie_gap_bits = tie_gap_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
         }
 
-        for (column_id, trace_value) in column_ids().iter().zip(trace_values) {
+        let column_ids = column_ids_for_widths(self.key_width, self.value_width);
+        for (column_id, trace_value) in column_ids.iter().zip(trace_values) {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
         }
@@ -320,7 +381,7 @@ impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
         eval.add_constraint(enabled.clone() * (mask_allowed - one.clone()));
 
         let mut score_sum = zero;
-        for index in 0..KEY_WIDTH {
+        for index in 0..self.key_width {
             eval.add_constraint(
                 enabled.clone()
                     * (query[index].clone() * key[index].clone() - products[index].clone()),
@@ -352,7 +413,7 @@ impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
         eval.add_constraint(
             enabled.clone() * selected_flag.clone() * (selected_position - candidate_position),
         );
-        for index in 0..VALUE_WIDTH {
+        for index in 0..self.value_width {
             eval.add_constraint(
                 enabled.clone()
                     * selected_flag.clone()
@@ -367,17 +428,17 @@ impl FrameworkEval for AttentionKvNativeMaskedSequenceEval {
 #[serde(deny_unknown_fields)]
 pub struct AttentionKvEntry {
     pub position: usize,
-    pub key: [i64; KEY_WIDTH],
-    pub value: [i64; VALUE_WIDTH],
+    pub key: Vec<i64>,
+    pub value: Vec<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AttentionKvInputStep {
     pub token_position: usize,
-    pub query: [i64; KEY_WIDTH],
-    pub new_key: [i64; KEY_WIDTH],
-    pub new_value: [i64; VALUE_WIDTH],
+    pub query: Vec<i64>,
+    pub new_key: Vec<i64>,
+    pub new_value: Vec<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -397,11 +458,11 @@ pub struct AttentionKvNativeScoreRow {
     pub score_tied: usize,
     pub tie_break_gap: i64,
     pub causal_gap: i64,
-    pub query: [i64; KEY_WIDTH],
-    pub key: [i64; KEY_WIDTH],
-    pub value: [i64; VALUE_WIDTH],
-    pub products: [i64; KEY_WIDTH],
-    pub attention_output: [i64; VALUE_WIDTH],
+    pub query: Vec<i64>,
+    pub key: Vec<i64>,
+    pub value: Vec<i64>,
+    pub products: Vec<i64>,
+    pub attention_output: Vec<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -434,7 +495,7 @@ pub struct ZkAiAttentionKvNativeMaskedSequenceProofInput {
     pub initial_kv_cache: Vec<AttentionKvEntry>,
     pub input_steps: Vec<AttentionKvInputStep>,
     pub final_kv_cache: Vec<AttentionKvEntry>,
-    pub attention_outputs: Vec<[i64; VALUE_WIDTH]>,
+    pub attention_outputs: Vec<Vec<i64>>,
     pub score_rows: Vec<AttentionKvNativeScoreRow>,
     pub initial_kv_cache_commitment: String,
     pub input_steps_commitment: String,
@@ -601,8 +662,8 @@ fn validate_input(
     expect_eq(&input.semantics, SEMANTICS, "semantics")?;
     expect_eq(&input.masking_policy, MASKING_POLICY, "masking policy")?;
     expect_eq(&input.tie_break, TIE_BREAK, "tie break")?;
-    expect_usize(input.key_width, KEY_WIDTH, "key width")?;
-    expect_usize(input.value_width, VALUE_WIDTH, "value width")?;
+    expect_usize(input.key_width, profile.key_width, "key width")?;
+    expect_usize(input.value_width, profile.value_width, "value width")?;
     expect_usize(
         input.sequence_length,
         profile.sequence_length,
@@ -627,7 +688,7 @@ fn validate_input(
     expect_usize(input.score_gap_bits, SCORE_GAP_BITS, "score gap bits")?;
     expect_usize(input.causal_gap_bits, CAUSAL_GAP_BITS, "causal gap bits")?;
     expect_usize(input.tie_gap_bits, TIE_GAP_BITS, "tie gap bits")?;
-    if input.selected_positions != profile.expected_selected_positions {
+    if input.selected_positions.as_slice() != profile.expected_selected_positions {
         return Err(attention_error("selected positions drift"));
     }
     expect_str_list_eq(&input.non_claims, EXPECTED_NON_CLAIMS, "non claims")?;
@@ -648,27 +709,27 @@ fn validate_input(
     )?;
     validate_sequence(input, profile)?;
     expect_eq(
-        &kv_commitment(&input.initial_kv_cache, INITIAL_KV_DOMAIN)?,
+        &kv_commitment(&input.initial_kv_cache, INITIAL_KV_DOMAIN, profile)?,
         &input.initial_kv_cache_commitment,
         "initial KV commitment",
     )?;
     expect_eq(
-        &input_steps_commitment(&input.input_steps)?,
+        &input_steps_commitment(&input.input_steps, profile)?,
         &input.input_steps_commitment,
         "input steps commitment",
     )?;
     expect_eq(
-        &rows_commitment(&input.score_rows)?,
+        &rows_commitment(&input.score_rows, profile)?,
         &input.score_row_commitment,
         "score row commitment",
     )?;
     expect_eq(
-        &kv_commitment(&input.final_kv_cache, FINAL_KV_DOMAIN)?,
+        &kv_commitment(&input.final_kv_cache, FINAL_KV_DOMAIN, profile)?,
         &input.final_kv_cache_commitment,
         "final KV commitment",
     )?;
     expect_eq(
-        &outputs_commitment(&input.attention_outputs)?,
+        &outputs_commitment(&input.attention_outputs, profile)?,
         &input.outputs_commitment,
         "outputs commitment",
     )?;
@@ -694,9 +755,20 @@ fn profile_for_input(
     input: &ZkAiAttentionKvNativeMaskedSequenceProofInput,
 ) -> Result<&'static AttentionKvNativeMaskedSequenceProfile> {
     match (input.target_id.as_str(), input.sequence_length) {
-        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID, SEQUENCE_LENGTH) => Ok(&PROFILE_D8),
-        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_TARGET_ID, SEQUENCE_LENGTH_SEQ16) => {
+        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID, SEQUENCE_LENGTH)
+            if input.key_width == KEY_WIDTH_D8 && input.value_width == VALUE_WIDTH_D8 =>
+        {
+            Ok(&PROFILE_D8)
+        }
+        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEQ16_TARGET_ID, SEQUENCE_LENGTH_SEQ16)
+            if input.key_width == KEY_WIDTH_D8 && input.value_width == VALUE_WIDTH_D8 =>
+        {
             Ok(&PROFILE_SEQ16)
+        }
+        (ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_D16_TARGET_ID, SEQUENCE_LENGTH)
+            if input.key_width == KEY_WIDTH_D16 && input.value_width == VALUE_WIDTH_D16 =>
+        {
+            Ok(&PROFILE_D16)
         }
         _ => Err(attention_error(
             "unsupported native masked sequence profile",
@@ -723,6 +795,13 @@ fn validate_sequence(
     if input.score_rows.len() != profile.score_row_count {
         return Err(attention_error("score row length drift"));
     }
+    for entry in input
+        .initial_kv_cache
+        .iter()
+        .chain(input.final_kv_cache.iter())
+    {
+        validate_kv_entry(entry, profile)?;
+    }
 
     let mut current = input.initial_kv_cache.clone();
     let mut expected_rows = Vec::with_capacity(profile.score_row_count);
@@ -731,8 +810,8 @@ fn validate_sequence(
         validate_input_step(step, step_index, profile)?;
         let next_item = AttentionKvEntry {
             position: step.token_position,
-            key: step.new_key,
-            value: step.new_value,
+            key: step.new_key.clone(),
+            value: step.new_value.clone(),
         };
         let mut next_cache = current.clone();
         next_cache.push(next_item);
@@ -753,7 +832,8 @@ fn validate_sequence(
             .iter()
             .find(|candidate| candidate.position == selected_position)
             .ok_or_else(|| attention_error("selected KV row missing"))?
-            .value;
+            .value
+            .clone();
         if input.attention_outputs[step_index] != selected_value {
             return Err(attention_error("attention output recomputation drift"));
         }
@@ -793,11 +873,11 @@ fn validate_sequence(
                 score_tied,
                 tie_break_gap,
                 causal_gap: step.token_position as i64 - candidate.position as i64,
-                query: step.query,
-                key: candidate.key,
-                value: candidate.value,
+                query: step.query.clone(),
+                key: candidate.key.clone(),
+                value: candidate.value.clone(),
                 products,
-                attention_output: selected_value,
+                attention_output: selected_value.clone(),
             });
         }
         current = next_cache;
@@ -817,16 +897,31 @@ fn validate_sequence(
     Ok(())
 }
 
+fn validate_kv_entry(
+    entry: &AttentionKvEntry,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<()> {
+    expect_usize(entry.key.len(), profile.key_width, "KV key width")?;
+    expect_usize(entry.value.len(), profile.value_width, "KV value width")?;
+    for value in entry.key.iter().chain(entry.value.iter()) {
+        expect_bounded_i64(*value, "KV entry value")?;
+    }
+    Ok(())
+}
+
 fn validate_input_step(
     step: &AttentionKvInputStep,
     step_index: usize,
-    _profile: &AttentionKvNativeMaskedSequenceProfile,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
 ) -> Result<()> {
     expect_usize(
         step.token_position,
         INITIAL_KV_ITEMS + step_index,
         "token position",
     )?;
+    expect_usize(step.query.len(), profile.key_width, "query width")?;
+    expect_usize(step.new_key.len(), profile.key_width, "new key width")?;
+    expect_usize(step.new_value.len(), profile.value_width, "new value width")?;
     for value in step
         .query
         .iter()
@@ -850,6 +945,23 @@ fn validate_score_row(
     if row.mask_allowed != 1 {
         return Err(attention_error("mask allowed drift"));
     }
+    expect_usize(row.query.len(), profile.key_width, "score row query width")?;
+    expect_usize(row.key.len(), profile.key_width, "score row key width")?;
+    expect_usize(
+        row.products.len(),
+        profile.key_width,
+        "score row products width",
+    )?;
+    expect_usize(
+        row.value.len(),
+        profile.value_width,
+        "score row value width",
+    )?;
+    expect_usize(
+        row.attention_output.len(),
+        profile.value_width,
+        "score row attention output width",
+    )?;
     if row.selected_flag > 1 || row.score_tied > 1 {
         return Err(attention_error("boolean witness drift"));
     }
@@ -1035,9 +1147,13 @@ fn attention_component(
     profile: &AttentionKvNativeMaskedSequenceProfile,
 ) -> FrameworkComponent<AttentionKvNativeMaskedSequenceEval> {
     FrameworkComponent::new(
-        &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids()),
+        &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids(
+            profile,
+        )),
         AttentionKvNativeMaskedSequenceEval {
             log_size: profile.log_size,
+            key_width: profile.key_width,
+            value_width: profile.value_width,
         },
         SecureField::zero(),
     )
@@ -1050,10 +1166,10 @@ fn attention_trace(
     let domain = CanonicCoset::new(profile.log_size).circle_domain();
     let mut rows = input.score_rows.clone();
     while rows.len() < profile.trace_row_count {
-        rows.push(padding_row(rows.len()));
+        rows.push(padding_row(rows.len(), profile));
     }
     let mut columns: Vec<Vec<BaseField>> =
-        vec![Vec::with_capacity(profile.trace_row_count); column_ids().len()];
+        vec![Vec::with_capacity(profile.trace_row_count); column_ids(profile).len()];
     for (real_index, row) in rows.iter().enumerate() {
         let enabled = usize::from(real_index < profile.score_row_count);
         let mut values = vec![
@@ -1110,7 +1226,10 @@ fn attention_trace(
         .collect()
 }
 
-fn padding_row(row_index: usize) -> AttentionKvNativeScoreRow {
+fn padding_row(
+    row_index: usize,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> AttentionKvNativeScoreRow {
     AttentionKvNativeScoreRow {
         row_index,
         step_index: 0,
@@ -1126,15 +1245,19 @@ fn padding_row(row_index: usize) -> AttentionKvNativeScoreRow {
         score_tied: 0,
         tie_break_gap: 0,
         causal_gap: 0,
-        query: [0; KEY_WIDTH],
-        key: [0; KEY_WIDTH],
-        value: [0; VALUE_WIDTH],
-        products: [0; KEY_WIDTH],
-        attention_output: [0; VALUE_WIDTH],
+        query: vec![0; profile.key_width],
+        key: vec![0; profile.key_width],
+        value: vec![0; profile.value_width],
+        products: vec![0; profile.key_width],
+        attention_output: vec![0; profile.value_width],
     }
 }
 
-fn column_ids() -> Vec<String> {
+fn column_ids(profile: &AttentionKvNativeMaskedSequenceProfile) -> Vec<String> {
+    column_ids_for_widths(profile.key_width, profile.value_width)
+}
+
+fn column_ids_for_widths(key_width: usize, value_width: usize) -> Vec<String> {
     let mut ids = vec![
         "enabled",
         "row-index",
@@ -1157,9 +1280,9 @@ fn column_ids() -> Vec<String> {
     .collect::<Vec<_>>();
     for prefix in ["query", "key", "value", "product", "attention-output"] {
         let width = if prefix == "value" || prefix == "attention-output" {
-            VALUE_WIDTH
+            value_width
         } else {
-            KEY_WIDTH
+            key_width
         };
         for index in 0..width {
             ids.push(format!(
@@ -1185,8 +1308,10 @@ fn column_ids() -> Vec<String> {
     ids
 }
 
-fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
-    column_ids()
+fn preprocessed_column_ids(
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Vec<PreProcessedColumnId> {
+    column_ids(profile)
         .iter()
         .map(|id| preprocessed_column_id(id))
         .collect()
@@ -1208,7 +1333,10 @@ fn bits(value: usize, width: usize) -> Vec<usize> {
     (0..width).map(|index| (value >> index) & 1).collect()
 }
 
-fn dot(query: &[i64; KEY_WIDTH], key: &[i64; KEY_WIDTH]) -> Result<i64> {
+fn dot(query: &[i64], key: &[i64]) -> Result<i64> {
+    if query.len() != key.len() {
+        return Err(attention_error("dot-product width mismatch"));
+    }
     let mut acc = 0i64;
     for (left, right) in query.iter().zip(key.iter()) {
         acc = acc
@@ -1221,9 +1349,12 @@ fn dot(query: &[i64; KEY_WIDTH], key: &[i64; KEY_WIDTH]) -> Result<i64> {
     Ok(acc)
 }
 
-fn products(query: &[i64; KEY_WIDTH], key: &[i64; KEY_WIDTH]) -> Result<[i64; KEY_WIDTH]> {
-    let mut out = [0i64; KEY_WIDTH];
-    for index in 0..KEY_WIDTH {
+fn products(query: &[i64], key: &[i64]) -> Result<Vec<i64>> {
+    if query.len() != key.len() {
+        return Err(attention_error("score product width mismatch"));
+    }
+    let mut out = vec![0i64; query.len()];
+    for index in 0..query.len() {
         out[index] = query[index]
             .checked_mul(key[index])
             .ok_or_else(|| attention_error("score product overflow"))?;
@@ -1231,14 +1362,18 @@ fn products(query: &[i64; KEY_WIDTH], key: &[i64; KEY_WIDTH]) -> Result<[i64; KE
     Ok(out)
 }
 
-fn kv_commitment(cache: &[AttentionKvEntry], domain: &str) -> Result<String> {
+fn kv_commitment(
+    cache: &[AttentionKvEntry],
+    domain: &str,
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<String> {
     let material = cache
         .iter()
         .map(|entry| {
-            let mut row = Vec::with_capacity(1 + KEY_WIDTH + VALUE_WIDTH);
+            let mut row = Vec::with_capacity(1 + profile.key_width + profile.value_width);
             row.push(entry.position as i64);
-            row.extend(entry.key);
-            row.extend(entry.value);
+            row.extend(entry.key.iter().copied());
+            row.extend(entry.value.iter().copied());
             row
         })
         .collect::<Vec<_>>();
@@ -1247,7 +1382,10 @@ fn kv_commitment(cache: &[AttentionKvEntry], domain: &str) -> Result<String> {
             ("encoding", json_string("attention_kv_cache_v1")?),
             (
                 "shape",
-                canonical_json_string(&vec![cache.len(), 1 + KEY_WIDTH + VALUE_WIDTH])?,
+                canonical_json_string(&vec![
+                    cache.len(),
+                    1 + profile.key_width + profile.value_width,
+                ])?,
             ),
             (
                 "rows_sha256",
@@ -1258,15 +1396,18 @@ fn kv_commitment(cache: &[AttentionKvEntry], domain: &str) -> Result<String> {
     )
 }
 
-fn input_steps_commitment(steps: &[AttentionKvInputStep]) -> Result<String> {
+fn input_steps_commitment(
+    steps: &[AttentionKvInputStep],
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<String> {
     let material = steps
         .iter()
         .map(|step| {
-            let mut row = Vec::with_capacity(1 + 2 * KEY_WIDTH + VALUE_WIDTH);
+            let mut row = Vec::with_capacity(1 + 2 * profile.key_width + profile.value_width);
             row.push(step.token_position as i64);
-            row.extend(step.query);
-            row.extend(step.new_key);
-            row.extend(step.new_value);
+            row.extend(step.query.iter().copied());
+            row.extend(step.new_key.iter().copied());
+            row.extend(step.new_value.iter().copied());
             row
         })
         .collect::<Vec<_>>();
@@ -1275,7 +1416,10 @@ fn input_steps_commitment(steps: &[AttentionKvInputStep]) -> Result<String> {
             ("encoding", json_string("attention_input_steps_v1")?),
             (
                 "shape",
-                canonical_json_string(&vec![steps.len(), 1 + 2 * KEY_WIDTH + VALUE_WIDTH])?,
+                canonical_json_string(&vec![
+                    steps.len(),
+                    1 + 2 * profile.key_width + profile.value_width,
+                ])?,
             ),
             (
                 "rows_sha256",
@@ -1286,7 +1430,10 @@ fn input_steps_commitment(steps: &[AttentionKvInputStep]) -> Result<String> {
     )
 }
 
-fn rows_commitment(rows: &[AttentionKvNativeScoreRow]) -> Result<String> {
+fn rows_commitment(
+    rows: &[AttentionKvNativeScoreRow],
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<String> {
     let material = rows.iter().map(score_row_material).collect::<Vec<_>>();
     commitment_from_parts(
         &[
@@ -1294,7 +1441,10 @@ fn rows_commitment(rows: &[AttentionKvNativeScoreRow]) -> Result<String> {
                 "encoding",
                 json_string("attention_kv_stwo_native_score_rows_v1")?,
             ),
-            ("shape", canonical_json_string(&vec![rows.len(), 54])?),
+            (
+                "shape",
+                canonical_json_string(&vec![rows.len(), score_row_material_width(profile)])?,
+            ),
             (
                 "rows_sha256",
                 json_string(&sha256_hex(canonical_json_string(&material)?.as_bytes()))?,
@@ -1321,21 +1471,28 @@ fn score_row_material(row: &AttentionKvNativeScoreRow) -> Vec<i64> {
         row.tie_break_gap,
         row.causal_gap,
     ];
-    out.extend(row.query);
-    out.extend(row.key);
-    out.extend(row.value);
-    out.extend(row.products);
-    out.extend(row.attention_output);
+    out.extend(row.query.iter().copied());
+    out.extend(row.key.iter().copied());
+    out.extend(row.value.iter().copied());
+    out.extend(row.products.iter().copied());
+    out.extend(row.attention_output.iter().copied());
     out
 }
 
-fn outputs_commitment(outputs: &[[i64; VALUE_WIDTH]]) -> Result<String> {
+fn score_row_material_width(profile: &AttentionKvNativeMaskedSequenceProfile) -> usize {
+    14 + 3 * profile.key_width + 2 * profile.value_width
+}
+
+fn outputs_commitment(
+    outputs: &[Vec<i64>],
+    profile: &AttentionKvNativeMaskedSequenceProfile,
+) -> Result<String> {
     commitment_from_parts(
         &[
             ("encoding", json_string("attention_outputs_v1")?),
             (
                 "shape",
-                canonical_json_string(&vec![outputs.len(), VALUE_WIDTH])?,
+                canonical_json_string(&vec![outputs.len(), profile.value_width])?,
             ),
             (
                 "rows_sha256",
@@ -1535,6 +1692,9 @@ mod tests {
     const SEQ16_INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json"
     );
+    const D16_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiAttentionKvNativeMaskedSequenceProofInput {
         zkai_attention_kv_native_masked_sequence_input_from_json_str(INPUT_JSON)
@@ -1544,6 +1704,11 @@ mod tests {
     fn seq16_input() -> ZkAiAttentionKvNativeMaskedSequenceProofInput {
         zkai_attention_kv_native_masked_sequence_input_from_json_str(SEQ16_INPUT_JSON)
             .expect("attention seq16 input")
+    }
+
+    fn d16_input() -> ZkAiAttentionKvNativeMaskedSequenceProofInput {
+        zkai_attention_kv_native_masked_sequence_input_from_json_str(D16_INPUT_JSON)
+            .expect("attention d16 input")
     }
 
     #[test]
@@ -1589,6 +1754,45 @@ mod tests {
         let input = seq16_input();
         let mut envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
             .expect("attention seq16 proof");
+        let last = envelope.proof.last_mut().expect("proof byte");
+        *last ^= 1;
+        assert!(verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).is_err());
+    }
+
+    #[test]
+    fn attention_kv_native_d16_air_proof_round_trips() {
+        let input = d16_input();
+        assert_eq!(input.key_width, KEY_WIDTH_D16);
+        assert_eq!(input.value_width, VALUE_WIDTH_D16);
+        assert_eq!(input.sequence_length, SEQUENCE_LENGTH);
+        assert_eq!(input.score_rows.len(), SCORE_ROW_COUNT);
+        assert_eq!(input.trace_row_count, TRACE_ROW_COUNT);
+        assert_eq!(input.final_kv_cache.len(), FINAL_KV_ITEMS);
+        assert_eq!(input.selected_positions, EXPECTED_SELECTED_POSITIONS_D16);
+
+        let envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention d16 proof");
+        assert!(!envelope.proof.is_empty());
+        assert!(
+            verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).expect("verify")
+        );
+    }
+
+    #[test]
+    fn attention_kv_native_d16_rejects_width_relabeling() {
+        let mut input = d16_input();
+        input.key_width = KEY_WIDTH_D8;
+        let error = prove_zkai_attention_kv_native_masked_sequence_envelope(&input).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("unsupported native masked sequence profile"));
+    }
+
+    #[test]
+    fn attention_kv_native_d16_rejects_proof_byte_tamper() {
+        let input = d16_input();
+        let mut envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention d16 proof");
         let last = envelope.proof.last_mut().expect("proof byte");
         *last ^= 1;
         assert!(verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).is_err());

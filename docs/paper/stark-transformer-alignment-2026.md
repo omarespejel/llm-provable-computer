@@ -1339,10 +1339,28 @@ causal masking, and public score rows fixed. Its value is that the native STARK
 surface is no longer only one tiny eight-step point; it survives a larger
 carried-state trace under the same statement-binding rules.
 
+The second scale follow-up now exists along the width axis. Holding sequence
+length fixed at eight steps, the same native Stwo verifier accepts a `d=16`
+causal-prefix masked integer-argmax attention/KV sequence with `52` public score
+rows over a `64`-row trace, ten final KV rows, selected positions
+`1, 1, 3, 1, 5, 3, 1, 3`, a `31621`-byte proof, a `358124`-byte checked
+envelope, and `16 / 16` width-gate mutation rejections. Evidence is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-width-gate-2026-05.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json`.
+Backend identity is `stwo-attention-kv-d16-causal-mask-sequence-v1`, proof
+version is `stwo-attention-kv-d16-causal-mask-sequence-air-proof-v1`, and
+timings remain single-run local engineering measurements rather than benchmark
+rows. This is width scaling, not Softmax, not multi-head attention, not
+long-context inference, not a full transformer block, and not recursion/PCD. Its
+value is that the native STARK surface now survives both a longer carried-state
+trace and a wider vector fixture under the same statement-binding rules.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time (`d=16`, multi-head, or a bounded Softmax-like
-approximation); second measure proof size and verifier time only after the proof
-object exists; third keep matched external rows only when public
+one notch at a time (multi-head, or a bounded Softmax-like approximation);
+second measure proof size and verifier time only after the proof object exists;
+third keep matched external rows only when public
 proof artifacts and verifier inputs make baseline verification and metadata
 mutation reproducible; fourth return to recursive/PCD compression only once the
 small native surfaces are stable. That keeps the next contribution technically
