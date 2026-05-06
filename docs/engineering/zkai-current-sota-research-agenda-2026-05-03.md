@@ -172,8 +172,12 @@ public contract.
    and a bounded weighted-attention semantics path. Issue `#460` is the newest
    GO: the bounded weighted policy survives at the same `d=8`, eight-step shape
    as the native masked-sequence fixture, with `52` score rows, a `36769`-byte
-   proof, and `15 / 15` checked mutations rejected. The next step is to combine
-   that weighted policy with head multiplicity, while keeping the external
+   proof, and `15 / 15` checked mutations rejected. Issue `#461` then combines
+   that weighted policy with head multiplicity: two heads, eight steps per head,
+   `104` score rows, a `128`-row trace, a `41175`-byte proof, a `512060`-byte
+   checked envelope, and `16 / 16` checked mutations rejected. The next step is
+   to profile why proof bytes grow modestly relative to row count and then move
+   toward an explicit approximation-policy surface, while keeping external
    SNARK/RISC0 rows as controls rather than headlines.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.

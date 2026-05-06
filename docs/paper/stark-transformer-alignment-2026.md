@@ -1401,11 +1401,29 @@ Its value is that attention-like weighted reads from carried KV state are now
 native to the STARK trace at the same width as the first native attention/KV
 fixture.
 
+The fifth follow-up now combines the two axes that were previously separate:
+two-head carried state and bounded weighted attention. The native Stwo verifier
+accepts a two-head, eight-step-per-head `d=8` causal-prefix bounded weighted
+attention/KV proof with `104` public score/weight rows over a `128`-row trace,
+twenty final KV rows, sixteen weighted output vectors, a `41175`-byte proof, a
+`512060`-byte checked envelope, and `16 / 16` synthesis-gate mutation rejections.
+Evidence is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`.
+Backend identity is `stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-v1`,
+proof version is
+`stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-air-proof-v1`, and
+timings remain single-run local engineering measurements rather than benchmark
+rows. This is not exact Softmax, not head aggregation, not long-context
+inference, not full transformer inference, and not recursion/PCD. Its value is
+that the native STARK surface now supports multi-head carried KV state and a
+monotone weighted-read policy in the same checked proof object.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time (next, combine the bounded weighted policy with the
-two-head carried-state shape);
-second measure proof size and verifier time only after the proof object exists;
-third keep matched external rows only when public
+one notch at a time; second profile the observed row-count/proof-size behavior
+under a stronger timing policy; third keep matched external rows only when public
 proof artifacts and verifier inputs make baseline verification and metadata
 mutation reproducible; fourth return to recursive/PCD compression only once the
 small native surfaces are stable. That keeps the next contribution technically
