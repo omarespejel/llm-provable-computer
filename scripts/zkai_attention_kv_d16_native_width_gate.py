@@ -101,6 +101,7 @@ EXPECTED_MUTATION_NAMES = (
     "non_claim_removed",
     "unknown_field_injection",
 )
+MUTATION_CASE_KEYS = {"name", "rejected", "error"}
 NON_CLAIMS = (
     "not a Softmax proof",
     "not a multi-head attention proof",
@@ -183,6 +184,12 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
     return f"blake2b-256:{digest.hexdigest()}"
+
+
+def require_exact_int(value: Any, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise AttentionKvD16NativeWidthGateError(f"{label} malformed")
+    return value
 
 
 def validate_pair(
@@ -474,13 +481,19 @@ def validate_receipt_summary(
         raise AttentionKvD16NativeWidthGateError("proof version drift")
     if summary["required_backend_version"] != required_backend_version:
         raise AttentionKvD16NativeWidthGateError("backend version drift")
-    if summary["key_width"] != key_width or summary["value_width"] != value_width:
+    if (
+        require_exact_int(summary["key_width"], "key width") != key_width
+        or require_exact_int(summary["value_width"], "value width") != value_width
+    ):
         raise AttentionKvD16NativeWidthGateError("width drift")
-    if summary["sequence_length"] != 8:
+    if require_exact_int(summary["sequence_length"], "sequence length") != 8:
         raise AttentionKvD16NativeWidthGateError("sequence length drift")
-    if summary["score_row_count"] != 52 or summary["trace_row_count"] != 64:
+    if (
+        require_exact_int(summary["score_row_count"], "score row count") != 52
+        or require_exact_int(summary["trace_row_count"], "trace row count") != 64
+    ):
         raise AttentionKvD16NativeWidthGateError("row count drift")
-    if summary["final_kv_items"] != 10:
+    if require_exact_int(summary["final_kv_items"], "final KV item count") != 10:
         raise AttentionKvD16NativeWidthGateError("final KV item count drift")
     positions = summary["selected_positions"]
     if (
@@ -492,9 +505,9 @@ def validate_receipt_summary(
         raise AttentionKvD16NativeWidthGateError("selected positions drift")
     if summary["timing_policy"] != TIMING_POLICY:
         raise AttentionKvD16NativeWidthGateError("timing policy drift")
-    if summary["proof_size_bytes"] != proof_size_bytes:
+    if require_exact_int(summary["proof_size_bytes"], "proof size bytes") != proof_size_bytes:
         raise AttentionKvD16NativeWidthGateError("proof-size scale drift")
-    if summary["envelope_size_bytes"] != envelope_size_bytes:
+    if require_exact_int(summary["envelope_size_bytes"], "envelope size bytes") != envelope_size_bytes:
         raise AttentionKvD16NativeWidthGateError("envelope-size scale drift")
     for key, expected in commitments.items():
         if summary[key] != expected:
@@ -513,7 +526,12 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         required |= {"mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"}
     if set(payload) != required:
         raise AttentionKvD16NativeWidthGateError("payload field drift")
-    if payload["schema"] != SCHEMA or payload["issue"] != ISSUE or payload["source_issue"] != SOURCE_ISSUE:
+    if payload["schema"] != SCHEMA:
+        raise AttentionKvD16NativeWidthGateError("metadata drift")
+    if (
+        require_exact_int(payload["issue"], "issue") != ISSUE
+        or require_exact_int(payload["source_issue"], "source issue") != SOURCE_ISSUE
+    ):
         raise AttentionKvD16NativeWidthGateError("metadata drift")
     if payload["decision"] != DECISION:
         raise AttentionKvD16NativeWidthGateError("decision drift")
@@ -559,7 +577,17 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "trace_rows_held_constant": 64,
         "selected_positions_changed": True,
     }
-    if payload["width_axis_result"] != expected_axis:
+    axis = payload["width_axis_result"]
+    if not isinstance(axis, dict) or set(axis) != set(expected_axis):
+        raise AttentionKvD16NativeWidthGateError("width-axis result drift")
+    for key, expected in expected_axis.items():
+        value = axis[key]
+        if isinstance(expected, bool):
+            if value is not expected:
+                raise AttentionKvD16NativeWidthGateError("width-axis result drift")
+        elif require_exact_int(value, f"width-axis {key}") != expected:
+            raise AttentionKvD16NativeWidthGateError("width-axis result drift")
+    if axis != expected_axis:
         raise AttentionKvD16NativeWidthGateError("width-axis result drift")
     if payload["scale_gate_commitment"] != _expected_commitment(payload):
         raise AttentionKvD16NativeWidthGateError("scale gate commitment drift")
@@ -568,14 +596,21 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         if (
             not isinstance(cases, list)
             or any(not isinstance(case, dict) for case in cases)
+            or any(set(case) != MUTATION_CASE_KEYS for case in cases)
+            or any(
+                not isinstance(case["name"], str)
+                or not isinstance(case["error"], str)
+                or not isinstance(case["rejected"], bool)
+                for case in cases
+            )
             or [case.get("name") for case in cases] != list(EXPECTED_MUTATION_NAMES)
         ):
             raise AttentionKvD16NativeWidthGateError("mutation case drift")
         if any(case.get("rejected") is not True for case in cases):
             raise AttentionKvD16NativeWidthGateError("mutation rejection drift")
-        if payload["mutations_checked"] != len(EXPECTED_MUTATION_NAMES):
+        if require_exact_int(payload["mutations_checked"], "mutations checked") != len(EXPECTED_MUTATION_NAMES):
             raise AttentionKvD16NativeWidthGateError("mutation count drift")
-        if payload["mutations_rejected"] != len(EXPECTED_MUTATION_NAMES):
+        if require_exact_int(payload["mutations_rejected"], "mutations rejected") != len(EXPECTED_MUTATION_NAMES):
             raise AttentionKvD16NativeWidthGateError("mutation rejected count drift")
         if payload["all_mutations_rejected"] is not True:
             raise AttentionKvD16NativeWidthGateError("all mutations rejected drift")
