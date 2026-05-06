@@ -292,6 +292,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "embedded input drift"):
                 GATE.load_stwo_native_masked_sequence_envelope(path)
 
+    def test_stwo_native_summary_rejects_split_brain_input_and_envelope(self) -> None:
+        payload = GATE.load_stwo_native_masked_sequence_payload()
+        drifted_payload = dict(payload)
+        drifted_payload["statement_commitment"] = f"blake2b-256:{'00' * 32}"
+
+        with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "envelope/input drift"):
+            GATE.stwo_native_masked_sequence_summary(drifted_payload)
+
     def test_stwo_native_payload_wrapper_normalizes_unexpected_validator_errors(self) -> None:
         def raise_type_error(_payload):
             raise TypeError("synthetic malformed payload")

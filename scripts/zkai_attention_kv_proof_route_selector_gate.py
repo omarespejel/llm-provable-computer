@@ -704,9 +704,12 @@ def stwo_native_masked_sequence_summary(native_payload: dict[str, Any]) -> dict[
     """Extract the native Stwo d=8 causal-prefix proof route fields."""
 
     envelope = load_stwo_native_masked_sequence_envelope()
+    envelope_input = envelope["input"]
+    if native_payload != envelope_input:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope/input drift")
     proof = envelope["proof"]
     return {
-        "schema": native_payload["schema"],
+        "schema": envelope_input["schema"],
         "decision": envelope["decision"],
         "result": "GO",
         "claim_boundary": (
@@ -719,25 +722,25 @@ def stwo_native_masked_sequence_summary(native_payload: dict[str, Any]) -> dict[
         ),
         "proof_system": "Stwo",
         "proof_backend": envelope["proof_backend"],
-        "proof_system_version": native_payload["proof_version"],
+        "proof_system_version": envelope_input["proof_version"],
         "proof_size_bytes": len(proof),
         "envelope_size_bytes": STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON.stat().st_size,
-        "statement_commitment": native_payload["statement_commitment"],
-        "public_instance_commitment": native_payload["public_instance_commitment"],
-        "score_row_commitment": native_payload["score_row_commitment"],
-        "final_kv_cache_commitment": native_payload["final_kv_cache_commitment"],
-        "outputs_commitment": native_payload["outputs_commitment"],
-        "sequence_length": native_payload["sequence_length"],
-        "score_row_count": native_payload["score_row_count"],
-        "trace_row_count": native_payload["trace_row_count"],
-        "key_width": native_payload["key_width"],
-        "value_width": native_payload["value_width"],
-        "masking_policy": native_payload["masking_policy"],
-        "tie_break": native_payload["tie_break"],
-        "selected_positions": native_payload["selected_positions"],
-        "attention_outputs": native_payload["attention_outputs"],
-        "initial_kv_items": native_payload["initial_kv_items"],
-        "final_kv_items": native_payload["final_kv_items"],
+        "statement_commitment": envelope_input["statement_commitment"],
+        "public_instance_commitment": envelope_input["public_instance_commitment"],
+        "score_row_commitment": envelope_input["score_row_commitment"],
+        "final_kv_cache_commitment": envelope_input["final_kv_cache_commitment"],
+        "outputs_commitment": envelope_input["outputs_commitment"],
+        "sequence_length": envelope_input["sequence_length"],
+        "score_row_count": envelope_input["score_row_count"],
+        "trace_row_count": envelope_input["trace_row_count"],
+        "key_width": envelope_input["key_width"],
+        "value_width": envelope_input["value_width"],
+        "masking_policy": envelope_input["masking_policy"],
+        "tie_break": envelope_input["tie_break"],
+        "selected_positions": envelope_input["selected_positions"],
+        "attention_outputs": envelope_input["attention_outputs"],
+        "initial_kv_items": envelope_input["initial_kv_items"],
+        "final_kv_items": envelope_input["final_kv_items"],
         "timing_policy": "single_local_dev_profile_engineering_only",
     }
 

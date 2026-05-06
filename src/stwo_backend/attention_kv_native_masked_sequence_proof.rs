@@ -1350,7 +1350,7 @@ fn expect_i64(actual: i64, expected: i64, label: &str) -> Result<()> {
 }
 
 fn expect_bounded_i64(value: i64, label: &str) -> Result<()> {
-    if value.abs() > MAX_ABS_VALUE {
+    if !(-MAX_ABS_VALUE..=MAX_ABS_VALUE).contains(&value) {
         return Err(attention_error(format!(
             "{label} outside bounded fixture range"
         )));
@@ -1450,6 +1450,19 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("score row commitment"));
+    }
+
+    #[test]
+    fn attention_kv_native_rejects_i64_min_without_panic() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["input_steps"][0]["query"][0] = Value::from(i64::MIN);
+        let error = zkai_attention_kv_native_masked_sequence_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("input step value outside bounded fixture range"));
     }
 
     #[test]
