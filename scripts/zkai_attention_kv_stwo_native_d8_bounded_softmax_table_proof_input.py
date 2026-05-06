@@ -369,6 +369,7 @@ def statement_commitment(payload: dict[str, Any]) -> str:
             ("input_steps_commitment", payload["input_steps_commitment"]),
             ("key_width", payload["key_width"]),
             ("masking_policy", payload["masking_policy"]),
+            ("non_claims", payload["non_claims"]),
             ("outputs_commitment", payload["outputs_commitment"]),
             ("proof_native_parameter_commitment", payload["proof_native_parameter_commitment"]),
             ("required_backend_version", payload["required_backend_version"]),
