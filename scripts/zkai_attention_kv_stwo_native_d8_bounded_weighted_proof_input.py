@@ -20,6 +20,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+from collections.abc import Sequence
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -27,6 +28,11 @@ EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 SOURCE_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py"
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.tsv"
+
+SOURCE_SCHEMA = "zkai-attention-kv-risc0-wide-masked-sequence-journal-v1"
+SOURCE_SEMANTICS = "tiny-single-head-integer-argmax-attention-wide-masked-sequence-v1"
+SOURCE_MASKING_POLICY = "causal_prefix_position_lte_query_token"
+SOURCE_JOURNAL_SHA256 = "ee4ee4af9eaeba6e29077eb639244971d18a079ade895fe4f683f22bed3b4824"
 
 SCHEMA = "zkai-attention-kv-stwo-native-d8-bounded-weighted-air-proof-input-v1"
 DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_D8_BOUNDED_WEIGHTED_AIR_PROOF"
@@ -163,6 +169,62 @@ def require_int(value: Any, label: str) -> int:
     return value
 
 
+def require_vector(value: Any, *, width: int, label: str) -> list[int]:
+    if not isinstance(value, list):
+        raise AttentionKvBoundedWeightedInputError(f"{label} must be a list")
+    if len(value) != width:
+        raise AttentionKvBoundedWeightedInputError(f"{label} width drift")
+    return [require_int(item, f"{label}[{index}]") for index, item in enumerate(value)]
+
+
+def require_kv_item(value: Any, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise AttentionKvBoundedWeightedInputError(f"{label} must be an object")
+    return {
+        "position": require_int(value.get("position"), f"{label}.position"),
+        "key": require_vector(value.get("key"), width=KEY_WIDTH, label=f"{label}.key"),
+        "value": require_vector(value.get("value"), width=VALUE_WIDTH, label=f"{label}.value"),
+    }
+
+
+def require_input_step(value: Any, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise AttentionKvBoundedWeightedInputError(f"{label} must be an object")
+    return {
+        "token_position": require_int(value.get("token_position"), f"{label}.token_position"),
+        "query": require_vector(value.get("query"), width=KEY_WIDTH, label=f"{label}.query"),
+        "new_key": require_vector(value.get("new_key"), width=KEY_WIDTH, label=f"{label}.new_key"),
+        "new_value": require_vector(value.get("new_value"), width=VALUE_WIDTH, label=f"{label}.new_value"),
+    }
+
+
+def require_sequence(value: Any, *, label: str) -> Sequence[Any]:
+    if not isinstance(value, list):
+        raise AttentionKvBoundedWeightedInputError(f"{label} must be a list")
+    return value
+
+
+def source_journal() -> dict[str, Any]:
+    journal = SOURCE.expected_journal()
+    if not isinstance(journal, dict):
+        raise AttentionKvBoundedWeightedInputError("source journal must be an object")
+    expected_scalars = {
+        "schema": SOURCE_SCHEMA,
+        "semantics": SOURCE_SEMANTICS,
+        "masking_policy": SOURCE_MASKING_POLICY,
+        "key_width": KEY_WIDTH,
+        "value_width": VALUE_WIDTH,
+        "sequence_length": SEQUENCE_LENGTH,
+    }
+    for key, expected in expected_scalars.items():
+        if journal.get(key) != expected:
+            raise AttentionKvBoundedWeightedInputError(f"source journal {key} drift")
+    observed = sha256_hex_bytes(canonical_json_bytes(journal))
+    if observed != SOURCE_JOURNAL_SHA256:
+        raise AttentionKvBoundedWeightedInputError("source journal commitment drift")
+    return journal
+
+
 def dot(lhs: list[int], rhs: list[int]) -> int:
     if len(lhs) != KEY_WIDTH or len(rhs) != KEY_WIDTH:
         raise AttentionKvBoundedWeightedInputError("dot-product width mismatch")
@@ -290,25 +352,48 @@ def public_instance_commitment(statement: str) -> str:
 
 
 def fixture_initial_kv() -> list[dict[str, Any]]:
-    return SOURCE.expected_journal()["initial_kv_cache"]
+    initial = source_journal().get("initial_kv_cache")
+    items = [require_kv_item(item, label=f"initial_kv[{index}]") for index, item in enumerate(require_sequence(initial, label="initial_kv_cache"))]
+    if len(items) != INITIAL_KV_ITEMS:
+        raise AttentionKvBoundedWeightedInputError("source initial KV length drift")
+    return items
 
 
 def fixture_input_steps() -> list[dict[str, Any]]:
-    return SOURCE.expected_journal()["input_steps"]
+    steps = source_journal().get("input_steps")
+    items = [require_input_step(item, label=f"input_steps[{index}]") for index, item in enumerate(require_sequence(steps, label="input_steps"))]
+    if len(items) != SEQUENCE_LENGTH:
+        raise AttentionKvBoundedWeightedInputError("source input step length drift")
+    return items
 
 
 def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[list[int]]]:
-    current = [dict(item) for item in initial_kv]
+    current = [
+        require_kv_item(item, label=f"initial_kv[{index}]")
+        for index, item in enumerate(require_sequence(initial_kv, label="initial_kv"))
+    ]
+    steps = [
+        require_input_step(step, label=f"input_steps[{index}]")
+        for index, step in enumerate(require_sequence(input_steps, label="input_steps"))
+    ]
     rows: list[dict[str, Any]] = []
     outputs: list[list[int]] = []
-    for step_index, step in enumerate(input_steps):
+    for step_index, step in enumerate(steps):
         next_item = {"position": step["token_position"], "key": step["new_key"], "value": step["new_value"]}
         candidates = current + [next_item]
-        allowed = [candidate for candidate in candidates if candidate["position"] <= step["token_position"]]
+        allowed = [
+            require_kv_item(candidate, label=f"step[{step_index}].candidate[{candidate_index}]")
+            for candidate_index, candidate in enumerate(candidates)
+            if candidate["position"] <= step["token_position"]
+        ]
+        if not allowed:
+            raise AttentionKvBoundedWeightedInputError(f"step[{step_index}] has no allowed candidates")
         scored = [(candidate, dot(step["query"], candidate["key"])) for candidate in allowed]
         selected_score = max(score for _, score in scored)
         weights = [weight_from_gap(selected_score - score) for _, score in scored]
         denominator = sum(weights)
+        if denominator <= 0:
+            raise AttentionKvBoundedWeightedInputError(f"step[{step_index}] has invalid weight denominator")
         numerators = [0 for _ in range(VALUE_WIDTH)]
         for (candidate, _), weight in zip(scored, weights, strict=True):
             for dim, value in enumerate(candidate["value"]):

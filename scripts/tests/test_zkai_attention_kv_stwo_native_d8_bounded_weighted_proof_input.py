@@ -1,5 +1,6 @@
 import copy
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input as gate
 
@@ -51,6 +52,41 @@ class AttentionKvBoundedWeightedInputTests(unittest.TestCase):
 
     def test_build_payload_is_deterministic(self):
         self.assertEqual(gate.build_payload(), copy.deepcopy(gate.build_payload()))
+
+    def test_rejects_source_journal_identity_drift(self):
+        journal = copy.deepcopy(gate.source_journal())
+        journal["sequence_length"] = 7
+        with mock.patch.object(gate.SOURCE, "expected_journal", return_value=journal):
+            with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, "source journal sequence_length drift"):
+                gate.build_payload()
+
+    def test_rejects_source_journal_commitment_drift(self):
+        journal = copy.deepcopy(gate.source_journal())
+        journal["transitions"] = []
+        with mock.patch.object(gate.SOURCE, "expected_journal", return_value=journal):
+            with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, "source journal commitment drift"):
+                gate.build_payload()
+
+    def test_build_score_rows_rejects_malformed_input_step_shape(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        steps[0]["query"] = steps[0]["query"][:-1]
+        with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, r"input_steps\[0\]\.query width drift"):
+            gate.build_score_rows(initial, steps)
+
+    def test_build_score_rows_rejects_malformed_candidate_shape(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        initial[0]["value"] = initial[0]["value"][:-1]
+        with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, r"initial_kv\[0\]\.value width drift"):
+            gate.build_score_rows(initial, steps)
+
+    def test_build_score_rows_rejects_boolean_positions(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        steps[0]["token_position"] = True
+        with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedInputError, r"input_steps\[0\]\.token_position must be an integer"):
+            gate.build_score_rows(initial, steps)
 
 
 if __name__ == "__main__":
