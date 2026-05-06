@@ -2,7 +2,6 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::time::Instant;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
@@ -63,14 +62,10 @@ fn run() -> Result<String, String> {
             })?;
             let input = zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str(raw)
                 .map_err(|error| error.to_string())?;
-            let started = Instant::now();
             let envelope = prove_zkai_attention_kv_native_d8_bounded_softmax_table_envelope(&input)
                 .map_err(|error| error.to_string())?;
-            let prove_time_ms = started.elapsed().as_secs_f64() * 1000.0;
-            let verify_started = Instant::now();
             verify_zkai_attention_kv_native_d8_bounded_softmax_table_envelope(&envelope)
                 .map_err(|error| error.to_string())?;
-            let verify_time_ms = verify_started.elapsed().as_secs_f64() * 1000.0;
             if let Some(parent) = envelope_path.parent() {
                 if !parent.as_os_str().is_empty() {
                     fs::create_dir_all(parent).map_err(|error| {
@@ -105,8 +100,6 @@ fn run() -> Result<String, String> {
                 "envelope_path": envelope_path,
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": envelope_bytes.len(),
-                "prove_time_ms": prove_time_ms,
-                "verify_time_ms": verify_time_ms,
                 "statement_commitment": envelope.input.statement_commitment,
                 "score_row_count": envelope.input.score_row_count,
                 "trace_row_count": envelope.input.trace_row_count,
@@ -126,17 +119,14 @@ fn run() -> Result<String, String> {
             let envelope =
                 zkai_attention_kv_native_d8_bounded_softmax_table_envelope_from_json_slice(&raw)
                     .map_err(|error| error.to_string())?;
-            let verify_started = Instant::now();
             verify_zkai_attention_kv_native_d8_bounded_softmax_table_envelope(&envelope)
                 .map_err(|error| error.to_string())?;
-            let verify_time_ms = verify_started.elapsed().as_secs_f64() * 1000.0;
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-cli-summary-v1",
                 "mode": "verify",
                 "envelope_path": envelope_path,
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": raw.len(),
-                "verify_time_ms": verify_time_ms,
                 "statement_commitment": envelope.input.statement_commitment,
                 "score_row_count": envelope.input.score_row_count,
                 "trace_row_count": envelope.input.trace_row_count,
