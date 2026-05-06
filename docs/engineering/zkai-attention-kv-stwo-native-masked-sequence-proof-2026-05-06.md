@@ -53,7 +53,7 @@ performance benchmark.
 | Masking policy | `causal_prefix_position_lte_query_token` |
 | Tie break | `lowest_position` |
 | Proof size | `24394` bytes |
-| Envelope size | `265759` bytes |
+| Envelope size | `265801` bytes |
 | Single local prove+verify run prove time | `41.107458 ms` |
 | Single local prove+verify run verify time | `29.894042 ms` |
 | Separate single local verify run time | `43.516 ms` |

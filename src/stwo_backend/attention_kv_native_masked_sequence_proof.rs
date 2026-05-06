@@ -64,6 +64,7 @@ const MAX_ABS_VALUE: i64 = 1_000_000;
 const EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const EXPECTED_PROOF_COMMITMENTS: usize = 3;
 const MAX_JSON_BYTES: usize = 1_048_576;
+pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_PROOF_BYTES: usize = 8_388_608;
 
 const ROW_DOMAIN: &str = "ptvm:zkai:attention-kv-stwo-native-score-rows:v1";
@@ -95,7 +96,7 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "verifier recomputes append-only KV carry and lowest-position tie-break before proof verification",
     "score-row, initial-KV, input-step, final-KV, output, public-instance, and statement commitments are recomputed before proof verification",
     "fixed publication-v1 PCS verifier profile before commitment-root recomputation",
-    "bounded proof bytes before JSON deserialization",
+    "bounded envelope JSON before deserialization and bounded proof bytes before proof parsing",
     "commitment-vector length check before commitment indexing",
 ];
 
@@ -342,6 +343,7 @@ pub struct ZkAiAttentionKvNativeMaskedSequenceProofInput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ZkAiAttentionKvNativeMaskedSequenceEnvelope {
     pub proof_backend: StarkProofBackend,
     pub proof_backend_version: String,
@@ -353,6 +355,7 @@ pub struct ZkAiAttentionKvNativeMaskedSequenceEnvelope {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct AttentionKvNativeMaskedSequenceProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
 }
@@ -386,6 +389,22 @@ pub fn prove_zkai_attention_kv_native_masked_sequence_envelope(
         input: input.clone(),
         proof: prove_rows(input)?,
     })
+}
+
+pub fn zkai_attention_kv_native_masked_sequence_envelope_from_json_slice(
+    raw_json: &[u8],
+) -> Result<ZkAiAttentionKvNativeMaskedSequenceEnvelope> {
+    if raw_json.len() > ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES {
+        return Err(attention_error(format!(
+            "envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES
+        )));
+    }
+    let envelope: ZkAiAttentionKvNativeMaskedSequenceEnvelope = serde_json::from_slice(raw_json)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_envelope(&envelope)?;
+    Ok(envelope)
 }
 
 pub fn verify_zkai_attention_kv_native_masked_sequence_envelope(
@@ -1509,5 +1528,39 @@ mod tests {
         assert!(error
             .to_string()
             .contains("proof bytes exceed bounded verifier limit"));
+    }
+
+    #[test]
+    fn attention_kv_native_rejects_unknown_envelope_field() {
+        let input = input();
+        let envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention proof");
+        let mut value = serde_json::to_value(&envelope).expect("envelope json");
+        value["unexpected"] = Value::String("claim smuggling".to_string());
+        let raw = serde_json::to_vec(&value).expect("envelope bytes");
+        let error =
+            zkai_attention_kv_native_masked_sequence_envelope_from_json_slice(&raw).unwrap_err();
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn attention_kv_native_rejects_unknown_proof_payload_field() {
+        let input = input();
+        let mut envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
+            .expect("attention proof");
+        let mut payload: Value = serde_json::from_slice(&envelope.proof).expect("proof payload");
+        payload["unexpected"] = Value::String("proof payload smuggling".to_string());
+        envelope.proof = serde_json::to_vec(&payload).expect("proof json");
+        let error =
+            verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn attention_kv_native_rejects_oversized_envelope_json_before_parse() {
+        let raw = vec![b' '; ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES + 1];
+        let error =
+            zkai_attention_kv_native_masked_sequence_envelope_from_json_slice(&raw).unwrap_err();
+        assert!(error.to_string().contains("envelope JSON exceeds max size"));
     }
 }

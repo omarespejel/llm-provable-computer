@@ -86,7 +86,7 @@ Claim boundary:
 | Routes checked | 8 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
-| Native Stwo proof envelope size | `265759` bytes |
+| Native Stwo proof envelope size | `265801` bytes |
 | Native Stwo score rows | `52` |
 | Native Stwo trace rows | `64` |
 | Native Stwo sequence length | `8` transitions |

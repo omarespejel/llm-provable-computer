@@ -46,7 +46,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_system"], "Stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_backend"], "stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_size_bytes"], 24394)
-        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"], 265759)
+        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"], 265801)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["sequence_length"], 8)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["score_row_count"], 52)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["trace_row_count"], 64)
@@ -245,6 +245,25 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             loaded = json.loads(json_out.read_text(encoding="utf-8"))
             GATE.validate_payload(loaded)
             self.assertTrue(tsv_out.read_text(encoding="utf-8").startswith("decision\t"))
+
+    def test_stwo_native_input_rejects_oversized_json_before_parse(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            path = pathlib.Path(raw_tmp) / "oversized-input.json"
+            path.write_text(" " * (GATE.STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES + 1), encoding="utf-8")
+
+            with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "input evidence exceeds max size"):
+                GATE.load_stwo_native_masked_sequence_payload(path)
+
+    def test_stwo_native_envelope_rejects_oversized_json_before_parse(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            path = pathlib.Path(raw_tmp) / "oversized-envelope.json"
+            path.write_text(
+                " " * (GATE.STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES + 1),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "proof envelope exceeds max size"):
+                GATE.load_stwo_native_masked_sequence_envelope(path)
 
     def test_individual_mutations_reject(self) -> None:
         payload = GATE.build_payload()

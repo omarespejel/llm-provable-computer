@@ -61,6 +61,8 @@ STWO_NATIVE_MASKED_SEQUENCE_JSON = (
 STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json"
 )
+STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES = 1_048_576
+STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES = 1_048_576
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -443,12 +445,28 @@ def load_risc0_wide_masked_sequence_payload(path: pathlib.Path = RISC0_WIDE_MASK
     return payload
 
 
+def read_bounded_text(path: pathlib.Path, max_bytes: int, label: str) -> str:
+    """Read a JSON evidence file only after a cheap file-size cap."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing {label}: {path}")
+    size = path.stat().st_size
+    if size > max_bytes:
+        raise AttentionKvRouteSelectorError(
+            f"{label} exceeds max size: got {size} bytes, limit {max_bytes} bytes"
+        )
+    return path.read_text(encoding="utf-8")
+
+
 def load_stwo_native_masked_sequence_payload(path: pathlib.Path = STWO_NATIVE_MASKED_SEQUENCE_JSON) -> dict[str, Any]:
     """Load and validate the native Stwo masked-sequence proof input payload."""
 
-    if not path.exists():
-        raise AttentionKvRouteSelectorError(f"missing Stwo native masked sequence input evidence: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    raw = read_bounded_text(
+        path,
+        STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES,
+        "Stwo native masked sequence input evidence",
+    )
+    payload = json.loads(raw)
     STWO_NATIVE_MASKED_SEQUENCE.validate_payload(payload)
     return payload
 
@@ -458,9 +476,12 @@ def load_stwo_native_masked_sequence_envelope(
 ) -> dict[str, Any]:
     """Load the checked native Stwo proof envelope and bind it back to the input."""
 
-    if not path.exists():
-        raise AttentionKvRouteSelectorError(f"missing Stwo native masked sequence proof envelope: {path}")
-    envelope = json.loads(path.read_text(encoding="utf-8"))
+    raw = read_bounded_text(
+        path,
+        STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES,
+        "Stwo native masked sequence proof envelope",
+    )
+    envelope = json.loads(raw)
     if not isinstance(envelope, dict):
         raise AttentionKvRouteSelectorError("Stwo native proof envelope must be an object")
     expected_keys = {
