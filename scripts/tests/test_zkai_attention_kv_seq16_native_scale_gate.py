@@ -39,6 +39,36 @@ class AttentionKvSeq16NativeScaleGateTests(unittest.TestCase):
         mutated["scaled_receipt"]["statement_commitment"] = "blake2b-256:" + "55" * 32
         self.assert_rejects(mutated, "scale gate commitment drift")
 
+    def test_rejects_scaled_target_relabeling(self):
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated.pop("mutation_cases")
+        mutated.pop("mutations_checked")
+        mutated.pop("mutations_rejected")
+        mutated.pop("all_mutations_rejected")
+        mutated["scaled_receipt"]["target_id"] = "attention-kv-d8-causal-mask-sequence-v1"
+        self.assert_rejects(mutated, "target id drift")
+
+    def test_rejects_scaled_backend_relabeling(self):
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated.pop("mutation_cases")
+        mutated.pop("mutations_checked")
+        mutated.pop("mutations_rejected")
+        mutated.pop("all_mutations_rejected")
+        mutated["scaled_receipt"]["required_backend_version"] = "stwo-attention-kv-d8-causal-mask-sequence-v1"
+        self.assert_rejects(mutated, "required backend version drift")
+
+    def test_rejects_scaled_selected_position_relabeling(self):
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated.pop("mutation_cases")
+        mutated.pop("mutations_checked")
+        mutated.pop("mutations_rejected")
+        mutated.pop("all_mutations_rejected")
+        mutated["scaled_receipt"]["selected_positions"] = list(gate.D8_SELECTED_POSITIONS) + [8] * 8
+        self.assert_rejects(mutated, "selected positions drift")
+
     def test_rejects_mutation_summary_drift(self):
         payload = gate.build_payload()
         payload["mutation_cases"][0]["rejected"] = False

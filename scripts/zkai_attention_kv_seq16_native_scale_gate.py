@@ -41,6 +41,14 @@ CLAIM_BOUNDARY = (
 FIRST_BLOCKER = "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF_YET"
 SEQ16_ROUTE_ID = "local_stwo_attention_kv_d8_seq16_masked_sequence_proof"
 D8_ROUTE_ID = "local_stwo_attention_kv_d8_masked_sequence_proof"
+D8_TARGET_ID = "attention-kv-d8-causal-mask-sequence-v1"
+D8_PROOF_VERSION = "stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1"
+D8_REQUIRED_BACKEND_VERSION = "stwo-attention-kv-d8-causal-mask-sequence-v1"
+D8_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9)
+SEQ16_TARGET_ID = "attention-kv-d8-causal-mask-seq16-v1"
+SEQ16_PROOF_VERSION = "stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1"
+SEQ16_REQUIRED_BACKEND_VERSION = "stwo-attention-kv-d8-causal-mask-seq16-v1"
+SEQ16_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16)
 EXPECTED_MUTATION_NAMES = (
     "seq16_statement_commitment_relabeling",
     "seq16_public_instance_commitment_relabeling",
@@ -287,7 +295,19 @@ def run_mutations(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return cases
 
 
-def validate_receipt_summary(summary: Any, *, route_id: str, sequence_length: int, score_rows: int, trace_rows: int) -> None:
+def validate_receipt_summary(
+    summary: Any,
+    *,
+    route_id: str,
+    target_id: str,
+    proof_version: str,
+    required_backend_version: str,
+    sequence_length: int,
+    score_rows: int,
+    trace_rows: int,
+    final_kv_items: int,
+    selected_positions: tuple[int, ...],
+) -> None:
     if not isinstance(summary, dict):
         raise AttentionKvSeq16NativeScaleGateError("receipt summary must be an object")
     expected_keys = {
@@ -301,6 +321,12 @@ def validate_receipt_summary(summary: Any, *, route_id: str, sequence_length: in
         raise AttentionKvSeq16NativeScaleGateError("receipt summary field drift")
     if summary["route_id"] != route_id:
         raise AttentionKvSeq16NativeScaleGateError("route id drift")
+    if summary["target_id"] != target_id:
+        raise AttentionKvSeq16NativeScaleGateError("target id drift")
+    if summary["proof_version"] != proof_version:
+        raise AttentionKvSeq16NativeScaleGateError("proof version drift")
+    if summary["required_backend_version"] != required_backend_version:
+        raise AttentionKvSeq16NativeScaleGateError("required backend version drift")
     if summary["sequence_length"] != sequence_length:
         raise AttentionKvSeq16NativeScaleGateError("sequence length drift")
     if summary["score_row_count"] != score_rows:
@@ -309,8 +335,15 @@ def validate_receipt_summary(summary: Any, *, route_id: str, sequence_length: in
         raise AttentionKvSeq16NativeScaleGateError("trace row count drift")
     if summary["key_width"] != 8 or summary["value_width"] != 8:
         raise AttentionKvSeq16NativeScaleGateError("width drift")
-    if len(summary["selected_positions"]) != sequence_length:
-        raise AttentionKvSeq16NativeScaleGateError("selected position count drift")
+    if summary["final_kv_items"] != final_kv_items:
+        raise AttentionKvSeq16NativeScaleGateError("final KV item count drift")
+    if not isinstance(summary["selected_positions"], list) or any(
+        not isinstance(item, int) or isinstance(item, bool)
+        for item in summary["selected_positions"]
+    ):
+        raise AttentionKvSeq16NativeScaleGateError("selected positions malformed")
+    if tuple(summary["selected_positions"]) != selected_positions:
+        raise AttentionKvSeq16NativeScaleGateError("selected positions drift")
     if summary["proof_size_bytes"] <= 0 or summary["envelope_size_bytes"] <= summary["proof_size_bytes"]:
         raise AttentionKvSeq16NativeScaleGateError("proof/envelope metric drift")
     if summary["timing_policy"] != "single_local_dev_profile_engineering_only":
@@ -351,8 +384,30 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         raise AttentionKvSeq16NativeScaleGateError("non-claim drift")
     if tuple(payload["validation_commands"]) != VALIDATION_COMMANDS:
         raise AttentionKvSeq16NativeScaleGateError("validation command drift")
-    validate_receipt_summary(payload["baseline_receipt"], route_id=D8_ROUTE_ID, sequence_length=8, score_rows=52, trace_rows=64)
-    validate_receipt_summary(payload["scaled_receipt"], route_id=SEQ16_ROUTE_ID, sequence_length=16, score_rows=168, trace_rows=256)
+    validate_receipt_summary(
+        payload["baseline_receipt"],
+        route_id=D8_ROUTE_ID,
+        target_id=D8_TARGET_ID,
+        proof_version=D8_PROOF_VERSION,
+        required_backend_version=D8_REQUIRED_BACKEND_VERSION,
+        sequence_length=8,
+        score_rows=52,
+        trace_rows=64,
+        final_kv_items=10,
+        selected_positions=D8_SELECTED_POSITIONS,
+    )
+    validate_receipt_summary(
+        payload["scaled_receipt"],
+        route_id=SEQ16_ROUTE_ID,
+        target_id=SEQ16_TARGET_ID,
+        proof_version=SEQ16_PROOF_VERSION,
+        required_backend_version=SEQ16_REQUIRED_BACKEND_VERSION,
+        sequence_length=16,
+        score_rows=168,
+        trace_rows=256,
+        final_kv_items=18,
+        selected_positions=SEQ16_SELECTED_POSITIONS,
+    )
     if payload["score_row_scale"] != payload["scaled_receipt"]["score_row_count"] / payload["baseline_receipt"]["score_row_count"]:
         raise AttentionKvSeq16NativeScaleGateError("score-row scale drift")
     if payload["trace_row_scale"] != payload["scaled_receipt"]["trace_row_count"] / payload["baseline_receipt"]["trace_row_count"]:

@@ -61,7 +61,7 @@
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "selected positions drift",
       "name": "seq16_selected_position_relabeling",
       "rejected": true
     },
@@ -71,12 +71,12 @@
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "target id drift",
       "name": "seq16_envelope_input_split_brain",
       "rejected": true
     },
     {
-      "error": "scale gate commitment drift",
+      "error": "required backend version drift",
       "name": "seq16_envelope_backend_relabeling",
       "rejected": true
     },
