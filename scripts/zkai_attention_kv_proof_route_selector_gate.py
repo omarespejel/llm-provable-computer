@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """Route selector for proof-backed attention/KV-cache receipts.
 
-This gate consumes the existing source-backed attention/KV transition receipt
-and asks whether the repository currently has a proof-backed route for the same
-public statement fields. The current answer has five narrow GO routes: an
-external snarkjs/Groth16 statement receipt over the source-backed attention/KV
-contract, and a RISC Zero receipt whose guest computes the tiny integer-argmax
-attention/KV transition semantics, and a second RISC Zero receipt whose guest
-computes a three-step carried KV-cache sequence, and a third RISC Zero receipt
-whose guest computes a fixed eight-step carried KV-cache sequence, and a fourth
-RISC Zero receipt whose guest computes a fixed eight-step d=8 causal-prefix
-masked sequence. Native Stwo attention arithmetic, Softmax, and recursion
-remain explicitly outside the current proof route.
+This gate consumes the existing source-backed and external proof-backed
+attention/KV evidence and asks which route is usable today. The current answer
+has six narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
+integer-argmax attention/KV sequence, one external snarkjs/Groth16 statement
+receipt, and four RISC Zero controls that re-execute the transition/sequence
+semantics in a zkVM. Softmax, multi-head attention, long-context benchmarks, and
+recursion/PCD remain explicitly outside the current proof route.
 """
 
 from __future__ import annotations
@@ -38,6 +34,9 @@ RISC0_SCALED_SEQUENCE_RECEIPT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_ris
 RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate.py"
 )
+STWO_NATIVE_MASKED_SEQUENCE_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_stwo_native_masked_sequence_proof_input.py"
+)
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
 )
@@ -56,6 +55,12 @@ RISC0_SCALED_SEQUENCE_RECEIPT_JSON = (
 RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05.json"
 )
+STWO_NATIVE_MASKED_SEQUENCE_JSON = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json"
+)
+STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json"
+)
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -64,11 +69,11 @@ TSV_OUT = (
 )
 
 SCHEMA = "zkai-attention-kv-proof-route-selector-gate-v1"
-DECISION = "GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_SCALED_AND_WIDE_MASKED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV"
-FIRST_BLOCKER = "NO_NATIVE_ATTENTION_ARITHMETIC_PROOF_BACKEND"
+DECISION = "GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS"
+FIRST_BLOCKER = "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF"
 CLAIM_BOUNDARY = (
-    "EXTERNAL_SNARK_AND_RISC0_TRANSITION_SEQUENCE_SCALED_SEQUENCE_WIDE_MASKED_SEQUENCE_RECEIPTS_PROOF_BACKED_"
-    "NOT_NATIVE_STWO_NOT_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
+    "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_"
+    "NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
 )
 SOURCE_DATE_EPOCH_DEFAULT = 0
 
@@ -86,7 +91,7 @@ REQUIRED_PUBLIC_FIELDS = (
 )
 
 SOURCE_ROUTE_ID = "source_backed_attention_kv_receipt_contract"
-LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_transition_proof"
+LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_d8_masked_sequence_proof"
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_sequence_semantics_receipt"
@@ -104,10 +109,10 @@ BASE_ROUTES = (
     },
     {
         "route_id": LOCAL_STWO_ROUTE_ID,
-        "status": "NO_GO_MISSING_NATIVE_ATTENTION_KV_PROOF_ARTIFACT",
-        "blocker": "NO_EXECUTABLE_NATIVE_ATTENTION_KV_PROOF_SURFACE",
-        "usable_today": False,
-        "proof_backed": False,
+        "status": "GO_STWO_NATIVE_ATTENTION_KV_D8_MASKED_SEQUENCE_AIR_PROOF",
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
     },
     {
         "route_id": EXTERNAL_SNARK_ROUTE_ID,
@@ -170,7 +175,9 @@ EXPECTED_MUTATION_NAMES = (
     "source_contract_proof_status_overclaim",
     "source_contract_mutation_rejections_drift",
     "missing_required_public_field",
-    "local_stwo_route_relabel_go",
+    "local_stwo_route_removed",
+    "local_stwo_native_receipt_decision_drift",
+    "local_stwo_native_receipt_statement_drift",
     "external_snark_route_removed",
     "external_snark_receipt_decision_drift",
     "external_snark_receipt_mutation_rejections_drift",
@@ -209,7 +216,7 @@ EXPECTED_MUTATION_NAMES = (
 )
 
 EXPECTED_NEXT_GO_CRITERIA = (
-    "native Stwo proof checks the attention arithmetic instead of wrapping or re-executing the reference transition",
+    "native Stwo proof scales the d8 causal-mask integer-argmax attention arithmetic beyond the fixed eight-step fixture without weakening intermediate-state binding",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
     "a d=16 or multi-head fixture preserves the same width, masking, and intermediate-state binding guarantees",
     "the explicit causal-prefix masking axis remains statement data in any native route",
@@ -218,12 +225,9 @@ EXPECTED_NEXT_GO_CRITERIA = (
 )
 
 EXPECTED_NON_CLAIMS = (
-    "not a native attention arithmetic proof",
-    "not a Stwo proof",
     "not a Softmax proof",
     "not full autoregressive inference",
     "not agent correctness",
-    "not native Stwo proving",
     "not recursive or proof-carrying data",
     "not a long-context KV-cache benchmark",
     "not a benchmark row",
@@ -310,12 +314,29 @@ def _load_risc0_wide_masked_sequence_module():
     return module
 
 
+def _load_stwo_native_masked_sequence_module():
+    """Load the native Stwo masked-sequence input gate without package assumptions."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_stwo_native_masked_sequence_proof_input",
+        STWO_NATIVE_MASKED_SEQUENCE_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(
+            f"failed to load Stwo native masked sequence script: {STWO_NATIVE_MASKED_SEQUENCE_SCRIPT}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
 SNARK = _load_snark_module()
 RISC0 = _load_risc0_module()
 RISC0_SEQUENCE = _load_risc0_sequence_module()
 RISC0_SCALED_SEQUENCE = _load_risc0_scaled_sequence_module()
 RISC0_WIDE_MASKED_SEQUENCE = _load_risc0_wide_masked_sequence_module()
+STWO_NATIVE_MASKED_SEQUENCE = _load_stwo_native_masked_sequence_module()
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -420,6 +441,58 @@ def load_risc0_wide_masked_sequence_payload(path: pathlib.Path = RISC0_WIDE_MASK
     payload = json.loads(path.read_text(encoding="utf-8"))
     RISC0_WIDE_MASKED_SEQUENCE.validate_payload(payload)
     return payload
+
+
+def load_stwo_native_masked_sequence_payload(path: pathlib.Path = STWO_NATIVE_MASKED_SEQUENCE_JSON) -> dict[str, Any]:
+    """Load and validate the native Stwo masked-sequence proof input payload."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing Stwo native masked sequence input evidence: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    STWO_NATIVE_MASKED_SEQUENCE.validate_payload(payload)
+    return payload
+
+
+def load_stwo_native_masked_sequence_envelope(
+    path: pathlib.Path = STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON,
+) -> dict[str, Any]:
+    """Load the checked native Stwo proof envelope and bind it back to the input."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing Stwo native masked sequence proof envelope: {path}")
+    envelope = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(envelope, dict):
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope must be an object")
+    expected_keys = {
+        "decision",
+        "input",
+        "proof",
+        "proof_backend",
+        "proof_backend_version",
+        "semantic_scope",
+        "statement_version",
+    }
+    if set(envelope) != expected_keys:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope schema drift")
+    input_payload = load_stwo_native_masked_sequence_payload()
+    if envelope.get("input") != input_payload:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope input drift")
+    if envelope.get("decision") != "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF":
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope decision drift")
+    if envelope.get("proof_backend") != "stwo":
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope backend drift")
+    if envelope.get("proof_backend_version") != input_payload["proof_version"]:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope backend-version drift")
+    if envelope.get("semantic_scope") != input_payload["semantic_scope"]:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope semantic-scope drift")
+    if envelope.get("statement_version") != input_payload["statement_version"]:
+        raise AttentionKvRouteSelectorError("Stwo native proof envelope statement-version drift")
+    proof = envelope.get("proof")
+    if not isinstance(proof, list) or not proof:
+        raise AttentionKvRouteSelectorError("Stwo native proof bytes missing")
+    if any(not isinstance(item, int) or item < 0 or item > 255 for item in proof):
+        raise AttentionKvRouteSelectorError("Stwo native proof bytes malformed")
+    return envelope
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -587,6 +660,48 @@ def risc0_wide_masked_sequence_receipt_summary(sequence_payload: dict[str, Any])
     }
 
 
+def stwo_native_masked_sequence_summary(native_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the native Stwo d=8 causal-prefix proof route fields."""
+
+    envelope = load_stwo_native_masked_sequence_envelope()
+    proof = envelope["proof"]
+    return {
+        "schema": native_payload["schema"],
+        "decision": native_payload["decision"],
+        "result": "GO",
+        "claim_boundary": (
+            "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_AIR_PROOF_"
+            "NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD"
+        ),
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json",
+        "proof_artifact": (
+            "docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json"
+        ),
+        "proof_system": "Stwo",
+        "proof_backend": envelope["proof_backend"],
+        "proof_system_version": native_payload["proof_version"],
+        "proof_size_bytes": len(proof),
+        "envelope_size_bytes": STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON.stat().st_size,
+        "statement_commitment": native_payload["statement_commitment"],
+        "public_instance_commitment": native_payload["public_instance_commitment"],
+        "score_row_commitment": native_payload["score_row_commitment"],
+        "final_kv_cache_commitment": native_payload["final_kv_cache_commitment"],
+        "outputs_commitment": native_payload["outputs_commitment"],
+        "sequence_length": native_payload["sequence_length"],
+        "score_row_count": native_payload["score_row_count"],
+        "trace_row_count": native_payload["trace_row_count"],
+        "key_width": native_payload["key_width"],
+        "value_width": native_payload["value_width"],
+        "masking_policy": native_payload["masking_policy"],
+        "tie_break": native_payload["tie_break"],
+        "selected_positions": native_payload["selected_positions"],
+        "attention_outputs": native_payload["attention_outputs"],
+        "initial_kv_items": native_payload["initial_kv_items"],
+        "final_kv_items": native_payload["final_kv_items"],
+        "timing_policy": "single_local_dev_profile_engineering_only",
+    }
+
+
 def route_inventory() -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
@@ -595,7 +710,26 @@ def route_inventory() -> list[dict[str, Any]]:
     risc0_sequence = risc0_sequence_receipt_summary(load_risc0_sequence_payload())
     risc0_scaled_sequence = risc0_scaled_sequence_receipt_summary(load_risc0_scaled_sequence_payload())
     risc0_wide_masked_sequence = risc0_wide_masked_sequence_receipt_summary(load_risc0_wide_masked_sequence_payload())
+    stwo_native = stwo_native_masked_sequence_summary(load_stwo_native_masked_sequence_payload())
     routes = [dict(route) for route in BASE_ROUTES]
+    local_stwo_route = route_candidate_by_id(routes, LOCAL_STWO_ROUTE_ID)
+    local_stwo_route["evidence"] = stwo_native["evidence"]
+    local_stwo_route["proof_artifact"] = stwo_native["proof_artifact"]
+    local_stwo_route["proof_system"] = stwo_native["proof_system"]
+    local_stwo_route["proof_system_version"] = stwo_native["proof_system_version"]
+    local_stwo_route["proof_size_bytes"] = stwo_native["proof_size_bytes"]
+    local_stwo_route["envelope_size_bytes"] = stwo_native["envelope_size_bytes"]
+    local_stwo_route["statement_commitment"] = stwo_native["statement_commitment"]
+    local_stwo_route["public_instance_commitment"] = stwo_native["public_instance_commitment"]
+    local_stwo_route["score_row_commitment"] = stwo_native["score_row_commitment"]
+    local_stwo_route["sequence_length"] = stwo_native["sequence_length"]
+    local_stwo_route["score_row_count"] = stwo_native["score_row_count"]
+    local_stwo_route["trace_row_count"] = stwo_native["trace_row_count"]
+    local_stwo_route["key_width"] = stwo_native["key_width"]
+    local_stwo_route["value_width"] = stwo_native["value_width"]
+    local_stwo_route["masking_policy"] = stwo_native["masking_policy"]
+    local_stwo_route["tie_break"] = stwo_native["tie_break"]
+    local_stwo_route["final_kv_items"] = stwo_native["final_kv_items"]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
     snark_route["proof_system"] = snark["proof_system"]
@@ -691,12 +825,14 @@ def build_payload() -> dict[str, Any]:
     risc0_sequence_payload = load_risc0_sequence_payload()
     risc0_scaled_sequence_payload = load_risc0_scaled_sequence_payload()
     risc0_wide_masked_sequence_payload = load_risc0_wide_masked_sequence_payload()
+    stwo_native_masked_sequence_payload = load_stwo_native_masked_sequence_payload()
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
     risc0_sequence_summary = risc0_sequence_receipt_summary(risc0_sequence_payload)
     risc0_scaled_sequence_summary = risc0_scaled_sequence_receipt_summary(risc0_scaled_sequence_payload)
     risc0_wide_masked_sequence_summary = risc0_wide_masked_sequence_receipt_summary(risc0_wide_masked_sequence_payload)
+    stwo_native_masked_sequence_receipt = stwo_native_masked_sequence_summary(stwo_native_masked_sequence_payload)
     routes = route_inventory()
     proof_backed_routes_available = [
         route["route_id"]
@@ -720,9 +856,14 @@ def build_payload() -> dict[str, Any]:
         "external_risc0_sequence_receipt": risc0_sequence_summary,
         "external_risc0_scaled_sequence_receipt": risc0_scaled_sequence_summary,
         "external_risc0_wide_masked_sequence_receipt": risc0_wide_masked_sequence_summary,
+        "native_stwo_masked_sequence_receipt": stwo_native_masked_sequence_receipt,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
+            "native_stwo_proof_size_bytes": stwo_native_masked_sequence_receipt["proof_size_bytes"],
+            "native_stwo_envelope_size_bytes": stwo_native_masked_sequence_receipt["envelope_size_bytes"],
+            "native_stwo_score_row_count": stwo_native_masked_sequence_receipt["score_row_count"],
+            "native_stwo_trace_row_count": stwo_native_masked_sequence_receipt["trace_row_count"],
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
@@ -757,6 +898,7 @@ def build_payload() -> dict[str, Any]:
             "external_risc0_sequence_receipt": payload["external_risc0_sequence_receipt"],
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
             "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
+            "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -789,18 +931,38 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["source_contract"]["source_mutations_rejected"] -= 1
     elif name == "missing_required_public_field":
         out["source_contract"]["present_public_fields"].remove("next_kv_cache_commitment")
-    elif name == "local_stwo_route_relabel_go":
+    elif name == "local_stwo_route_removed":
         local_stwo_route = route_candidate_by_id(out["route_candidates"], LOCAL_STWO_ROUTE_ID)
-        local_stwo_route["status"] = "GO_NATIVE_STWO_ATTENTION_KV_PROOF"
-        local_stwo_route["usable_today"] = True
-        local_stwo_route["proof_backed"] = True
-        out["proof_backed_routes_available"] = [LOCAL_STWO_ROUTE_ID]
+        local_stwo_route["status"] = "NO_GO_MISSING_NATIVE_STWO_ATTENTION_KV_PROOF"
+        local_stwo_route["usable_today"] = False
+        local_stwo_route["proof_backed"] = False
+        out["proof_backed_routes_available"] = [
+            EXTERNAL_SNARK_ROUTE_ID,
+            EXTERNAL_ZKVM_ROUTE_ID,
+            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
+        ]
+    elif name == "local_stwo_native_receipt_decision_drift":
+        out["native_stwo_masked_sequence_receipt"]["decision"] = (
+            "NO_GO_MISSING_NATIVE_STWO_ATTENTION_KV_MASKED_SEQUENCE_PROOF"
+        )
+    elif name == "local_stwo_native_receipt_statement_drift":
+        out["native_stwo_masked_sequence_receipt"]["statement_commitment"] = (
+            "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000"
+        )
     elif name == "external_snark_route_removed":
         snark_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_SNARK_ROUTE_ID)
         snark_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
         snark_route["usable_today"] = False
         snark_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = []
+        out["proof_backed_routes_available"] = [
+            LOCAL_STWO_ROUTE_ID,
+            EXTERNAL_ZKVM_ROUTE_ID,
+            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
+        ]
     elif name == "external_snark_receipt_decision_drift":
         out["external_snark_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
     elif name == "external_snark_receipt_mutation_rejections_drift":
@@ -810,7 +972,13 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         zkvm_route["status"] = "NO_GO_MISSING_ATTENTION_KV_ZKVM_RECEIPT"
         zkvm_route["usable_today"] = False
         zkvm_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [EXTERNAL_SNARK_ROUTE_ID]
+        out["proof_backed_routes_available"] = [
+            LOCAL_STWO_ROUTE_ID,
+            EXTERNAL_SNARK_ROUTE_ID,
+            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
+        ]
     elif name == "external_zkvm_receipt_decision_drift":
         out["external_risc0_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SEMANTICS_RECEIPT"
     elif name == "external_zkvm_receipt_mutation_rejections_drift":
@@ -824,7 +992,13 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         sequence_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SEQUENCE_ZKVM_RECEIPT"
         sequence_route["usable_today"] = False
         sequence_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [EXTERNAL_SNARK_ROUTE_ID, EXTERNAL_ZKVM_ROUTE_ID]
+        out["proof_backed_routes_available"] = [
+            LOCAL_STWO_ROUTE_ID,
+            EXTERNAL_SNARK_ROUTE_ID,
+            EXTERNAL_ZKVM_ROUTE_ID,
+            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
+        ]
     elif name == "external_zkvm_sequence_receipt_decision_drift":
         out["external_risc0_sequence_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SEQUENCE_RECEIPT"
     elif name == "external_zkvm_sequence_receipt_mutation_rejections_drift":
@@ -841,9 +1015,11 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         scaled_route["usable_today"] = False
         scaled_route["proof_backed"] = False
         out["proof_backed_routes_available"] = [
+            LOCAL_STWO_ROUTE_ID,
             EXTERNAL_SNARK_ROUTE_ID,
             EXTERNAL_ZKVM_ROUTE_ID,
             EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
         ]
     elif name == "external_zkvm_scaled_sequence_receipt_decision_drift":
         out["external_risc0_scaled_sequence_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT"
@@ -861,6 +1037,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         wide_masked_route["usable_today"] = False
         wide_masked_route["proof_backed"] = False
         out["proof_backed_routes_available"] = [
+            LOCAL_STWO_ROUTE_ID,
             EXTERNAL_SNARK_ROUTE_ID,
             EXTERNAL_ZKVM_ROUTE_ID,
             EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
@@ -889,7 +1066,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "next_go_criteria_weakened":
         out["next_go_criteria"] = ["any zkVM receipt wraps the source-backed contract"]
     elif name == "non_claims_weakened":
-        out["non_claims"] = [claim for claim in out["non_claims"] if claim != "not native Stwo proving"]
+        out["non_claims"] = [claim for claim in out["non_claims"] if claim != "not a Softmax proof"]
     elif name == "claim_boundary_weakened":
         out["claim_boundary"] = "PROOF_BACKED_ATTENTION_KV_RECEIPT"
     elif name == "first_blocker_removed":
@@ -1148,6 +1325,48 @@ def validate_risc0_wide_masked_sequence_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("external RISC Zero wide masked sequence transition commitment drift")
 
 
+def validate_stwo_native_masked_sequence_receipt(summary: Any) -> None:
+    """Validate the proof-backed native Stwo d=8 causal-prefix sequence receipt summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence receipt must be an object")
+    expected = stwo_native_masked_sequence_summary(load_stwo_native_masked_sequence_payload())
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence receipt drift")
+    if summary["decision"] != STWO_NATIVE_MASKED_SEQUENCE.DECISION:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence decision drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence result drift")
+    if summary["proof_system"] != "Stwo" or summary["proof_backend"] != "stwo":
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence backend drift")
+    if summary["proof_size_bytes"] <= 0 or summary["envelope_size_bytes"] <= summary["proof_size_bytes"]:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence proof metric drift")
+    if summary["sequence_length"] != 8:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence length drift")
+    if summary["score_row_count"] != 52 or summary["trace_row_count"] != 64:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence row-count drift")
+    if summary["key_width"] != 8 or summary["value_width"] != 8:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence width drift")
+    if summary["masking_policy"] != "causal_prefix_position_lte_query_token":
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence masking drift")
+    if summary["tie_break"] != "lowest_position":
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence tie-break drift")
+    if summary["selected_positions"] != [0, 2, 3, 3, 5, 5, 7, 9]:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence selected-position drift")
+    if summary["final_kv_items"] != 10:
+        raise AttentionKvRouteSelectorError("native Stwo masked sequence final KV drift")
+    for key in (
+        "statement_commitment",
+        "public_instance_commitment",
+        "score_row_commitment",
+        "final_kv_cache_commitment",
+        "outputs_commitment",
+    ):
+        commitment = summary.get(key)
+        if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+            raise AttentionKvRouteSelectorError(f"native Stwo masked sequence {key} drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -1167,6 +1386,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "external_risc0_sequence_receipt",
         "external_risc0_scaled_sequence_receipt",
         "external_risc0_wide_masked_sequence_receipt",
+        "native_stwo_masked_sequence_receipt",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -1194,8 +1414,10 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_risc0_sequence_receipt(payload.get("external_risc0_sequence_receipt"))
     validate_risc0_scaled_sequence_receipt(payload.get("external_risc0_scaled_sequence_receipt"))
     validate_risc0_wide_masked_sequence_receipt(payload.get("external_risc0_wide_masked_sequence_receipt"))
+    validate_stwo_native_masked_sequence_receipt(payload.get("native_stwo_masked_sequence_receipt"))
     validate_routes(payload.get("route_candidates"))
     if payload.get("proof_backed_routes_available") != [
+        "local_stwo_attention_kv_d8_masked_sequence_proof",
         "external_snark_attention_kv_statement_receipt",
         "external_zkvm_attention_kv_semantics_receipt",
         "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -1204,6 +1426,10 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     ]:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
     expected_metrics = {
+        "native_stwo_proof_size_bytes": payload["native_stwo_masked_sequence_receipt"]["proof_size_bytes"],
+        "native_stwo_envelope_size_bytes": payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"],
+        "native_stwo_score_row_count": payload["native_stwo_masked_sequence_receipt"]["score_row_count"],
+        "native_stwo_trace_row_count": payload["native_stwo_masked_sequence_receipt"]["trace_row_count"],
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
         "risc0_receipt_size_bytes": payload["external_risc0_receipt"]["proof_size_bytes"],
@@ -1245,6 +1471,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "external_risc0_sequence_receipt": payload["external_risc0_sequence_receipt"],
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
             "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
+            "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],

@@ -65,14 +65,15 @@ shows why a typed proof-backed receipt must bind a valid proof to the claimed
 model, input, output, configuration, setup or verifier identity, and verifier
 domain before a higher-level receipt or settlement layer accepts it. We keep the
 weaker source-backed receipts labeled separately: the attention/KV transition
-gate binds source-origin and state-transition metadata, while a follow-up
+gate binds source-origin and state-transition metadata, a follow-up
 `snarkjs/Groth16` statement receipt binds that source contract into a real proof
-object, and a RISC Zero receipt computes the tiny integer-argmax transition
-semantics in a zkVM guest. Follow-up RISC Zero receipts then compute fixed
-three-step and eight-step carried KV-cache sequences and reject deletion,
-reordering, and intermediate-state relabeling. This is proof-backed carried-state
-evidence, not a native Stwo proof of attention arithmetic, not Softmax, not
-long-context inference, and not full inference. The updated route selector
-records that local Stwo attention proving and Softmax routes remain bounded non-results. The extension therefore treats nested-proof
-verification, commitment binding, resource bounds, and publication-versus-
-experimental drift as validation risks rather than established facts.
+object, and RISC Zero receipts compute integer-argmax transition and sequence
+semantics in a zkVM guest. These external rows are controls, not the headline
+result. The new STARK-native bridge is a tiny Stwo AIR proof for the same
+transformer-shaped surface: a fixed eight-step `d=8` causal-prefix masked
+integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, a
+`24394`-byte proof, and `42 / 42` route-selector mutation rejections. This is
+not Softmax, not multi-head attention, not long-context inference, and not full
+inference. The extension therefore treats nested-proof verification, commitment
+binding, resource bounds, and publication-versus-experimental drift as
+validation risks rather than established facts.

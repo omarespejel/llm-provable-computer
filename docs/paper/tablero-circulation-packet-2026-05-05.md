@@ -51,6 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
+| Native Stwo attention/KV bridge | Tiny checked native AIR for fixed `d=8` causal-prefix integer-argmax attention/KV carried state; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -61,6 +62,7 @@ The current paper package supports these checked claims:
 - Do not say the external adapters show EZKL, snarkjs, JSTprove, RISC Zero, or Stwo are unsound.
 - Do not say the attention/KV SNARK statement receipt proves attention arithmetic or Softmax semantics.
 - Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
+- Do not say the native Stwo attention/KV proof is Softmax, multi-head attention, long-context inference, full inference, a benchmark row, or recursive/PCD.
 
 ## Validation Gate
 
@@ -71,29 +73,33 @@ python3 scripts/paper/generate_tablero_results_overview.py
 python3 scripts/paper/generate_tablero_scaling_law.py
 python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 git diff --check
 ```
 
 ## Current Stronger-Venue Follow-Up
 
-The attention/KV lane now has proof-backed statement binding via an external
-`snarkjs/Groth16` receipt over the source-backed transition contract, plus a
-RISC Zero receipt whose guest computes the tiny integer-argmax transition
-semantics. Follow-up RISC Zero receipts now compute fixed three-step and
-eight-step carried KV-cache sequences and reject deletion, reordering, and
-intermediate-state relabeling. The next research result should be native
-attention/KV proving or a wider/masked carried-state zkVM sequence:
+The attention/KV lane now has a tiny native Stwo AIR proof for the fixed `d=8`
+causal-prefix masked integer-argmax carried-state surface. The proof checks `52`
+score rows over a `64`-row trace, emits selected positions
+`0, 2, 3, 3, 5, 5, 7, 9`, binds ten final KV rows, and has a `24394`-byte proof
+inside a `265759`-byte checked envelope. The route selector now records six
+proof-backed routes and rejects `42 / 42` checked mutations. External
+`snarkjs/Groth16` and RISC Zero receipts remain useful controls for
+statement-binding and zkVM semantic transfer, but they are not the headline.
+
+The next research result should scale the native Stwo surface, not add another
+metadata adapter:
 
 1. Preserve the source-backed receipt contract that already binds prior KV, input,
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Replace the source contract or zkVM re-execution with a native Stwo proof
-   that actually verifies the chosen attention arithmetic over the same public fields.
-4. In parallel, treat the eight-step/two-wide sequence as the current scaled
-   zkVM control and only widen further if it remains useful as carried-state evidence.
-5. Keep Softmax out of scope unless the proof actually covers the chosen attention
+3. Scale the native Stwo proof by one axis only: `d=16`, multi-head, longer fixed
+   sequence, or a bounded Softmax-like approximation.
+4. Treat the external RISC Zero rows as controls and only widen them if they
+   remain useful for cross-proof-system carried-state evidence.
+5. Keep Softmax out of scope unless the native proof actually covers the chosen attention
    semantics.
 6. Report GO only when the same relabeling surfaces reject after proof serialization.
 7. Report NO-GO if the route collapses into a stateless block, metadata-only receipt, or

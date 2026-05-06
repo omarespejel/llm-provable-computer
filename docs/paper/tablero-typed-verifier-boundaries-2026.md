@@ -761,14 +761,20 @@ outputs at `docs/engineering/evidence/zkai-sota-artifact-watchlist-2026-05.json`
 
 The current landscape is therefore best read along axes, not as one leaderboard.
 DeepProve, NANOZK, Jolt Atlas, and zkLLM push model-scale or layerwise proving
-performance. EZKL, snarkjs, JSTprove, and the native Stwo rows test whether a
-valid proof is also bound to the application statement. Obelyzk, Stwo, and
-SNIP-36 point at settlement and recursive/onchain verification. Tablero sits in
-the middle: it is the typed verifier boundary that lets a settlement or receipt
-layer accept a compact object without silently changing the statement. That is
-why the strongest next experiment is not another metadata wrapper. It is an
-executable recursive or PCD backend for the smallest checked d128 target, with
-proof size and verifier time reported only after the proof object exists.
+performance. EZKL, snarkjs, JSTprove, and RISC Zero are useful here as external
+statement-binding controls, not as headline Tablero evidence and not as
+performance comparators. Obelyzk, Stwo, and SNIP-36 point at settlement and
+recursive/onchain verification. Tablero sits in the middle: it is the typed
+verifier boundary that lets a settlement or receipt layer accept a compact
+object without silently changing the statement.
+
+The next STARK-first research direction is separate from those external adapter
+controls: make transformer-shaped state transitions native to the Stwo trace.
+The first checked step on that path is now a tiny native Stwo AIR for an
+attention/KV carried-state receipt. It is not the main Tablero performance
+claim, but it clarifies the larger program: transformer execution can be
+presented as verifier-bound state transitions, and Tablero-style boundaries can
+then bind the receipt facts that move between layers.
 
 ### 7.1 Statement-binding adapters
 
@@ -848,84 +854,47 @@ Second, the attention/KV transition receipt fixes the stateful surface that
 future autoregressive or agentic model receipts must bind. A tiny source-backed
 single-head integer-attention fixture binds prior KV state, input/query state,
 attention output, next KV state, model configuration, verifier domain, and proof
-status, then rejects `8 / 8` checked relabeling mutations. This is not a Stwo
-proof and not a Softmax result. It records the next statement shape: for a model
-with carried state, output binding alone is insufficient because stale prior or
-next state can change what the claim means. It is anchored to
+status, then rejects `8 / 8` checked relabeling mutations. It records the next
+statement shape: for a model with carried state, output binding alone is
+insufficient because stale prior or next state can change what the claim means.
+It is anchored to
 `docs/engineering/zkai-attention-kv-transition-receipt-2026-05-01.md` and
 `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`.
-A follow-up SNARK statement-receipt gate then closes the first proof-backed
-adapter route for that same stateful surface. The checked receipt is a real
-`snarkjs/Groth16/BN128` verifier-facing artifact: an `802`-byte proof, a
-`6040`-byte verification key, and `18` public signals bind the source
-contract's model/config, prior KV state, input/query state, attention output,
-next KV state, public-instance commitment, score-trace commitment, source proof
-status, source verifier domain, model id, and statement kind. It rejects
-`39 / 39` source-state, public-signal, embedded-artifact, artifact-hash, setup,
-metric-smuggling, non-claim, validation-command, statement-schema, and unknown-field mutations. This is
+
+External adapters then act as controls around that stateful surface. A
+`snarkjs/Groth16/BN128` statement receipt gives an `802`-byte verifier-facing
+artifact with `18` public signals and rejects `39 / 39` source-state,
+public-signal, embedded-artifact, setup, metric-smuggling, non-claim,
+validation-command, statement-schema, and unknown-field mutations. This is
 proof-backed statement binding for the source contract, not a proof that the
-SNARK recomputes attention arithmetic. It is anchored to
-`docs/engineering/zkai-attention-kv-snark-statement-receipt-2026-05-05.md` and
-`docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`.
+SNARK recomputes attention arithmetic. A sequence of RISC Zero receipts then
+checks the same integer-argmax semantics inside a zkVM: one transition
+(`221842` bytes), a three-step carried KV sequence (`246730` bytes), an
+eight-step carried sequence (`264146` bytes), and a fixed eight-step `d=8`
+causal-prefix masked sequence (`305266` bytes). These RISC Zero rows are useful
+because they test carried-state semantics and mutation rejection outside this
+repository's native backend; they are not native Stwo proofs, Softmax proofs,
+long-context benchmarks, full inference proofs, or recursion/PCD results.
 
-A RISC Zero follow-up then moves one step closer to semantics. The guest reads
-the same tiny attention/KV fixture, appends the new KV row, recomputes integer
-dot-product scores under masking policy `none`, selects the lowest-position
-maximum, emits attention output `[2, 1]`, and commits the next three-row KV
-cache in the receipt journal. The checked receipt is `221842` bytes and rejects `22 / 22` journal,
-source-contract, receipt-metadata, metric-smuggling, native-Stwo-claim,
-Softmax-claim, non-claim, validation-command, and parser/schema mutations. This
-is a zkVM semantics receipt for a tiny integer-argmax transition. It is not a
-native Stwo attention AIR/proof, not Softmax, not full inference, and not
-recursion or PCD. It is anchored to
-`docs/engineering/zkai-attention-kv-risc0-semantics-receipt-2026-05-05.md` and
-`docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`.
+The new STARK-native follow-up replaces the prior no-go for the chosen narrow
+surface. The native Stwo AIR proof checks the fixed eight-step `d=8`
+causal-prefix masked integer-argmax attention/KV sequence directly: `52` public
+score rows over a `64`-row trace, selected positions
+`0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
+proof envelope of `265759` bytes. The statement commitment is
+`blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
+The route selector records six proof-backed routes and rejects `42 / 42`
+route-removal, native-statement-drift, external-adapter-drift, sequence-drift,
+fake-metric, next-go weakening, missing-field, blocker-removal, and
+claim-boundary mutations. It is anchored to
+`docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
+`docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
-The next follow-up makes the stateful claim harder to fake. It extends the RISC
-Zero guest from one transition to a three-step carried KV sequence. The checked
-journal records every intermediate transition row; selected positions are
-`0`, `2`, and `3`, attention outputs are `(2, 1)`, `(4, 2)`, and `(5, -2)`, and the final KV
-cache contains five rows. The receipt is `246730` bytes and rejects
-`27 / 27` deletion, reordering, intermediate-state relabeling, statement,
-receipt-metadata, metric-smuggling, native-Stwo, Softmax, recursion, non-claim,
-validation-command, and parser/schema mutations. This is still a tiny integer
-argmax fixture, not native Stwo attention proving and not long-context
-inference. But it closes the specific carried-state gap: the proof-backed route
-now checks an ordered state sequence, not only an isolated state update. It is
-anchored to
-`docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md` and
-`docs/engineering/evidence/zkai-attention-kv-risc0-sequence-receipt-2026-05.json`.
-
-Issue `#444` then checks whether this carried-state discipline survives a
-larger fixed fixture rather than merely wrapping the three-step result. The
-scaled RISC Zero guest computes eight two-wide integer-argmax attention/KV
-updates, commits every intermediate transition row, and ends with a ten-row KV
-cache. The checked journal records selected positions `0`, `2`, `3`, `4`, `5`,
-`4`, `5`, and `6`, with attention outputs `(2, 1)`, `(4, 2)`, `(5, -2)`,
-`(0, 6)`, `(7, 1)`, `(0, 6)`, `(7, 1)`, and `(-3, 4)`. The receipt is
-`264146` bytes and rejects `27 / 27` deletion, reordering, intermediate-state
-relabeling, statement, receipt-metadata, metric-smuggling, native-Stwo, Softmax,
-recursion, non-claim, validation-command, and parser/schema mutations. This
-does not turn the result into long-context inference, Softmax, native Stwo
-attention proving, recursion, or PCD. It does show that the proof-backed
-carried-state receipt pattern is not limited to the smallest three-update toy
-sequence. It is anchored to
-`docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
-and
-`docs/engineering/evidence/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05.json`.
-
-The route selector is updated accordingly: it records
-`GO_EXTERNAL_SNARK_RISC0_TRANSITION_SEQUENCE_AND_SCALED_SEQUENCE_RECEIPTS_FOR_ATTENTION_KV`,
-while local Stwo attention arithmetic and Softmax attention remain bounded
-non-results. It rejects `32 / 32` route-removal, receipt-drift, sequence-drift,
-scaled-sequence-drift, fake-metric, next-go weakening, missing-field,
-blocker-removal, and claim-boundary mutations. This leaves the stronger-venue
-bridge precise: preserve the same
-prior-state/input/output/intermediate-state/next-state public fields and replace
-the source contract or zkVM re-execution with a native proof of the chosen
-attention semantics. It
-is anchored to `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-and `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
+This native proof is not the headline Tablero performance result. It is the next
+STARK-first bridge: the same trace-shaped carried-state argument that motivates
+the transformer paper now has a checked Stwo-native attention/KV proof surface,
+while the SNARK and zkVM rows remain appendix/control evidence for the broader
+statement-binding claim.
 
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
