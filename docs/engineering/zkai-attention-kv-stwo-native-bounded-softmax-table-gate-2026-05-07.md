@@ -35,13 +35,15 @@ The table is:
 | 7 | 23 |
 | 8 | 16 |
 
-The table identity, score scale, gap clip, denominator policy, output
-quotient/remainder policy, and non-claims are bound into the statement. The
-verifier recomputes the append-only KV carry, candidate scores, max score,
-clipped score gaps, table-derived weights, denominators, weighted numerators,
-floor-division outputs, and remainders before proof verification. The native AIR
-proves row arithmetic for dot products, nonnegative score and causal gaps,
-table-derived weight-value products, and output quotient/remainder relations.
+The table identity, score scale, gap clip, denominator policy, and output
+quotient/remainder policy are bound into the statement. The non-claims are
+validated by the input and gate artifacts rather than committed as proof
+statement fields. The verifier recomputes the append-only KV carry, candidate
+scores, max score, clipped score gaps, table-derived weights, denominators,
+weighted numerators, floor-division outputs, and remainders before proof
+verification. The native AIR proves row arithmetic for dot products,
+nonnegative score and causal gaps, table-derived weight-value products, and
+output quotient/remainder relations.
 
 This is not exact Softmax. It does not prove exp/div semantics. It is also not
 an AIR-private lookup argument: table membership is verifier-recomputed over the
@@ -58,6 +60,9 @@ public rows and bound into the proof input before native proof verification.
 - Gate: `scripts/zkai_attention_kv_d8_bounded_softmax_table_native_gate.py`
 - Native proof verifier: `src/stwo_backend/attention_kv_native_d8_bounded_softmax_table_proof.rs`
 - Native proof CLI: `src/bin/zkai_attention_kv_native_d8_bounded_softmax_table_proof.rs`
+- Backend version: `stwo-attention-kv-d8-causal-mask-bounded-softmax-table-v1`
+- Proof version: `stwo-attention-kv-d8-causal-mask-bounded-softmax-table-air-proof-v1`
+- Gate timing policy: `single_local_dev_profile_engineering_only_not_public_benchmark`
 
 ## Checked Surface
 
@@ -104,9 +109,10 @@ Checked attention outputs:
 | Weight table | `blake2b-256:8c45ca7eec1032a0ffa5d5a1e842bebd5f6268d75f82d696b29ec7cf9a420e13` |
 
 The proof CLI intentionally emits deterministic JSON summaries and does not
-include wall-clock timing fields. Any future timing row for this route should be
-recorded through the repository timing policy rather than inferred from the
-automation-facing CLI output.
+include wall-clock timing fields. The gate records timing policy
+`single_local_dev_profile_engineering_only_not_public_benchmark`; any future
+timing row for this route should be recorded through the repository timing
+policy rather than inferred from the automation-facing CLI output.
 
 ## Comparison To Prior Native Weighted Route
 
