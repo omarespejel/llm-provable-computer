@@ -139,6 +139,7 @@ class AttentionKvD16NativeWidthGateTests(unittest.TestCase):
             ("proof_version", gate.D8_PROOF_VERSION, "proof version drift"),
             ("required_backend_version", gate.D8_REQUIRED_BACKEND_VERSION, "backend version drift"),
             ("selected_positions", list(gate.D8_SELECTED_POSITIONS), "selected positions drift"),
+            ("selected_positions", [True, 1, 3, 1, 5, 3, 1, 3], "selected positions malformed"),
             ("timing_policy", "benchmark_median_of_5", "timing policy drift"),
             ("envelope_size_bytes", gate.D16_PROOF_SIZE_BYTES + 1, "envelope-size scale drift"),
         ):
@@ -154,6 +155,12 @@ class AttentionKvD16NativeWidthGateTests(unittest.TestCase):
         payload = gate.build_payload()
         payload["mutation_cases"][0]["rejected"] = False
         with self.assertRaisesRegex(gate.AttentionKvD16NativeWidthGateError, "mutation rejection drift"):
+            gate.validate_payload(payload)
+
+    def test_rejects_malformed_mutation_case_entry(self):
+        payload = gate.build_payload()
+        payload["mutation_cases"][0] = "not-a-mapping"
+        with self.assertRaisesRegex(gate.AttentionKvD16NativeWidthGateError, "mutation case drift"):
             gate.validate_payload(payload)
 
     def test_tsv_summary_matches_payload(self):
