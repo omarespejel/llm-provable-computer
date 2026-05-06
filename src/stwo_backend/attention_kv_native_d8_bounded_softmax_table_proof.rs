@@ -1082,25 +1082,39 @@ fn attention_trace(
         values.extend(row.attention_output.iter().map(|value| field_i64(*value)));
         values.extend(row.output_remainder.iter().map(|value| field_i64(*value)));
         values.extend(
-            bits(row.score_gap as usize, SCORE_GAP_BITS)
-                .into_iter()
-                .map(field_usize),
+            bits(
+                usize::try_from(row.score_gap).expect("score_gap is validated non-negative"),
+                SCORE_GAP_BITS,
+            )
+            .into_iter()
+            .map(field_usize),
         );
         values.extend(
-            bits(row.causal_gap as usize, CAUSAL_GAP_BITS)
-                .into_iter()
-                .map(field_usize),
+            bits(
+                usize::try_from(row.causal_gap).expect("causal_gap is validated non-negative"),
+                CAUSAL_GAP_BITS,
+            )
+            .into_iter()
+            .map(field_usize),
         );
         values.extend(
-            bits(row.attention_weight as usize, WEIGHT_BITS)
-                .into_iter()
-                .map(field_usize),
+            bits(
+                usize::try_from(row.attention_weight)
+                    .expect("attention_weight is validated non-negative"),
+                WEIGHT_BITS,
+            )
+            .into_iter()
+            .map(field_usize),
         );
         for remainder in &row.output_remainder {
             values.extend(
-                bits(*remainder as usize, OUTPUT_REMAINDER_BITS)
-                    .into_iter()
-                    .map(field_usize),
+                bits(
+                    usize::try_from(*remainder)
+                        .expect("output_remainder is validated non-negative"),
+                    OUTPUT_REMAINDER_BITS,
+                )
+                .into_iter()
+                .map(field_usize),
             );
         }
         debug_assert_eq!(values.len(), columns.len());

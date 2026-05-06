@@ -297,7 +297,7 @@ def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
         mutated = mutate_payload(payload, name)
         try:
             validate_payload(mutated, allow_missing_mutation_summary=True)
-        except Exception as err:
+        except AttentionKvBoundedSoftmaxTableNativeGateError as err:
             cases.append({"name": name, "rejected": True, "error": str(err)})
         else:
             cases.append({"name": name, "rejected": False, "error": "accepted mutation"})
