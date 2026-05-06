@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -142,6 +143,13 @@ fn run() -> Result<String, String> {
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
     let metadata = fs::metadata(path)
         .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    if !metadata.is_file() {
+        return Err(format!(
+            "{} {} is not a regular file",
+            label,
+            path.display()
+        ));
+    }
     if metadata.len() > max_bytes as u64 {
         return Err(format!(
             "{label} exceeds max size: got {} bytes, limit {} bytes",
@@ -149,5 +157,16 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             max_bytes
         ));
     }
-    fs::read(path).map_err(|error| format!("failed to read {} {}: {error}", label, path.display()))
+    let file = fs::File::open(path)
+        .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
+    let mut raw = Vec::new();
+    file.take(max_bytes.saturating_add(1) as u64)
+        .read_to_end(&mut raw)
+        .map_err(|error| format!("failed to read {} {}: {error}", label, path.display()))?;
+    if raw.len() > max_bytes {
+        return Err(format!(
+            "{label} exceeds max size: got more than {max_bytes} bytes, limit {max_bytes} bytes"
+        ));
+    }
+    Ok(raw)
 }

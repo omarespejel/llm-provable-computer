@@ -446,16 +446,24 @@ def load_risc0_wide_masked_sequence_payload(path: pathlib.Path = RISC0_WIDE_MASK
 
 
 def read_bounded_text(path: pathlib.Path, max_bytes: int, label: str) -> str:
-    """Read a JSON evidence file only after a cheap file-size cap."""
+    """Read a JSON evidence file with an enforced byte cap."""
 
     if not path.exists():
         raise AttentionKvRouteSelectorError(f"missing {label}: {path}")
+    if not path.is_file():
+        raise AttentionKvRouteSelectorError(f"{label} is not a regular file: {path}")
     size = path.stat().st_size
     if size > max_bytes:
         raise AttentionKvRouteSelectorError(
             f"{label} exceeds max size: got {size} bytes, limit {max_bytes} bytes"
         )
-    return path.read_text(encoding="utf-8")
+    with path.open("rb") as handle:
+        raw = handle.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        raise AttentionKvRouteSelectorError(
+            f"{label} exceeds max size: got more than {max_bytes} bytes, limit {max_bytes} bytes"
+        )
+    return raw.decode("utf-8")
 
 
 def load_stwo_native_masked_sequence_payload(path: pathlib.Path = STWO_NATIVE_MASKED_SEQUENCE_JSON) -> dict[str, Any]:
