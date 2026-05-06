@@ -76,7 +76,7 @@ PROOF_VERIFIER_HARDENING = [
     "verifier recomputes append-only KV carry and lowest-position tie-break before proof verification",
     "score-row, initial-KV, input-step, final-KV, output, public-instance, and statement commitments are recomputed before proof verification",
     "fixed publication-v1 PCS verifier profile before commitment-root recomputation",
-    "bounded proof bytes before JSON deserialization",
+    "bounded envelope JSON before deserialization and bounded proof bytes before proof parsing",
     "commitment-vector length check before commitment indexing",
 ]
 

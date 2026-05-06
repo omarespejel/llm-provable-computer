@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
@@ -7,8 +7,9 @@ use std::time::Instant;
 use llm_provable_computer::stwo_backend::{
     prove_zkai_attention_kv_native_masked_sequence_envelope,
     verify_zkai_attention_kv_native_masked_sequence_envelope,
+    zkai_attention_kv_native_masked_sequence_envelope_from_json_slice,
     zkai_attention_kv_native_masked_sequence_input_from_json_str,
-    ZkAiAttentionKvNativeMaskedSequenceEnvelope,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES,
 };
 
 #[cfg(feature = "stwo-backend")]
@@ -73,6 +74,15 @@ fn run() -> Result<String, String> {
             }
             let envelope_bytes = serde_json::to_vec_pretty(&envelope)
                 .map_err(|error| format!("failed to serialize envelope: {error}"))?;
+            if envelope_bytes.len()
+                > ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES
+            {
+                return Err(format!(
+                    "envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+                    envelope_bytes.len(),
+                    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES
+                ));
+            }
             fs::write(&envelope_path, &envelope_bytes).map_err(|error| {
                 format!(
                     "failed to write envelope {}: {error}",
@@ -99,15 +109,13 @@ fn run() -> Result<String, String> {
                 return Err("usage: verify <envelope.json>".to_string());
             }
             let envelope_path = PathBuf::from(&args[0]);
-            let raw = fs::read(&envelope_path).map_err(|error| {
-                format!(
-                    "failed to read envelope {}: {error}",
-                    envelope_path.display()
-                )
-            })?;
-            let envelope: ZkAiAttentionKvNativeMaskedSequenceEnvelope =
-                serde_json::from_slice(&raw)
-                    .map_err(|error| format!("failed to parse envelope: {error}"))?;
+            let raw = read_bounded_file(
+                &envelope_path,
+                ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES,
+                "envelope JSON",
+            )?;
+            let envelope = zkai_attention_kv_native_masked_sequence_envelope_from_json_slice(&raw)
+                .map_err(|error| error.to_string())?;
             let verify_started = Instant::now();
             verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope)
                 .map_err(|error| error.to_string())?;
@@ -128,4 +136,18 @@ fn run() -> Result<String, String> {
         }
         _ => Err(format!("unknown mode: {mode}")),
     }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
+    let metadata = fs::metadata(path)
+        .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    if metadata.len() > max_bytes as u64 {
+        return Err(format!(
+            "{label} exceeds max size: got {} bytes, limit {} bytes",
+            metadata.len(),
+            max_bytes
+        ));
+    }
+    fs::read(path).map_err(|error| format!("failed to read {} {}: {error}", label, path.display()))
 }
