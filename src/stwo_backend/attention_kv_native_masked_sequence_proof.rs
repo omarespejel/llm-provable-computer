@@ -382,7 +382,8 @@ pub fn prove_zkai_attention_kv_native_masked_sequence_envelope(
     validate_input(input)?;
     Ok(ZkAiAttentionKvNativeMaskedSequenceEnvelope {
         proof_backend: StarkProofBackend::Stwo,
-        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION.to_string(),
+        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION
+            .to_string(),
         statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION.to_string(),
         semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE.to_string(),
         decision: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_DECISION.to_string(),
@@ -420,7 +421,7 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeMaskedSequenceEnvelope) -> 
     }
     expect_eq(
         &envelope.proof_backend_version,
-        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION,
+        ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION,
         "proof backend version",
     )?;
     expect_eq(
@@ -1108,7 +1109,7 @@ fn input_steps_commitment(steps: &[AttentionKvInputStep]) -> Result<String> {
     let material = steps
         .iter()
         .map(|step| {
-            let mut row = Vec::with_capacity(1 + KEY_WIDTH * 3);
+            let mut row = Vec::with_capacity(1 + 2 * KEY_WIDTH + VALUE_WIDTH);
             row.push(step.token_position as i64);
             row.extend(step.query);
             row.extend(step.new_key);
@@ -1121,7 +1122,7 @@ fn input_steps_commitment(steps: &[AttentionKvInputStep]) -> Result<String> {
             ("encoding", json_string("attention_input_steps_v1")?),
             (
                 "shape",
-                canonical_json_string(&vec![steps.len(), 1 + KEY_WIDTH * 3])?,
+                canonical_json_string(&vec![steps.len(), 1 + 2 * KEY_WIDTH + VALUE_WIDTH])?,
             ),
             (
                 "rows_sha256",
@@ -1514,8 +1515,8 @@ mod tests {
         let input = input();
         let envelope = ZkAiAttentionKvNativeMaskedSequenceEnvelope {
             proof_backend: StarkProofBackend::Stwo,
-            proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION
-                .to_string(),
+            proof_backend_version:
+                ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION.to_string(),
             statement_version: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION
                 .to_string(),
             semantic_scope: ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE.to_string(),

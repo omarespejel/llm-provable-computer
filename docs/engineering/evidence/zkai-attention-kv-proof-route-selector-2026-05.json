@@ -339,9 +339,9 @@
   },
   "first_blocker": "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "754312ff152610323b0f33413146fac277ba3395",
+  "git_commit": "22e263706cf06d9ba75cb8ca18a025be88cc2d5f",
   "metrics": {
-    "native_stwo_envelope_size_bytes": 265801,
+    "native_stwo_envelope_size_bytes": 265791,
     "native_stwo_proof_size_bytes": 24394,
     "native_stwo_score_row_count": 52,
     "native_stwo_trace_row_count": 64,
@@ -663,7 +663,7 @@
     ],
     "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_AIR_PROOF_NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
     "decision": "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF",
-    "envelope_size_bytes": 265801,
+    "envelope_size_bytes": 265791,
     "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json",
     "final_kv_cache_commitment": "blake2b-256:74038853585ec88f7211e615910923d194d5731af74197c370daaf906d0be1e2",
     "final_kv_items": 10,
@@ -733,7 +733,7 @@
     },
     {
       "blocker": null,
-      "envelope_size_bytes": 265801,
+      "envelope_size_bytes": 265791,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json",
       "final_kv_items": 10,
       "key_width": 8,
@@ -851,7 +851,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:ff18a33f2d648e7491648838e37115e0a791a3cc6710d5828c765360386296dc",
+  "selector_commitment": "blake2b-256:e65439634a6c9e0592a02eb418d5f5868f21ee13ad90d7c117b14ad5c0833197",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

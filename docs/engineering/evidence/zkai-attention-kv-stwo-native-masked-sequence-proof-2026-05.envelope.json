@@ -1,6 +1,6 @@
 {
   "proof_backend": "stwo",
-  "proof_backend_version": "stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1",
+  "proof_backend_version": "stwo-attention-kv-d8-causal-mask-sequence-v1",
   "statement_version": "zkai-attention-kv-stwo-native-masked-sequence-statement-v1",
   "semantic_scope": "d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt",
   "decision": "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF",

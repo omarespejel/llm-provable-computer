@@ -881,7 +881,7 @@ surface. The native Stwo AIR proof checks the fixed eight-step `d=8`
 causal-prefix masked integer-argmax attention/KV sequence directly: `52` public
 score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
-proof envelope of `265801` bytes. The statement commitment is
+proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
 The route selector records six proof-backed routes and rejects `42 / 42`
 route-removal, native-statement-drift, external-adapter-drift, sequence-drift,

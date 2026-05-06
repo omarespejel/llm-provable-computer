@@ -209,7 +209,7 @@ Tablero boundary.
   proof checks a fixed eight-step `d=8` causal-prefix masked integer-argmax
   attention/KV sequence with `52` score rows, a `64`-row trace, selected
   positions `[0, 2, 3, 3, 5, 5, 7, 9]`, ten final KV rows, a `24394`-byte proof,
-  and a `265801`-byte checked envelope. This is a narrow native Stwo proof, not
+  and a `265791`-byte checked envelope. This is a narrow native Stwo proof, not
   Softmax, not multi-head attention, not long-context inference, not a full
   transformer block, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`.

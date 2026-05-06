@@ -39,6 +39,41 @@ class ZkaiAttentionKvStwoNativeMaskedSequenceProofInputTests(unittest.TestCase):
         payload["score_rows"][7]["causal_gap"] += 1
         self.assert_rejects(payload, "score rows drift")
 
+    def test_rejects_score_gap_overflow_in_row_validator(self):
+        payload = gate.build_payload()
+        row = copy.deepcopy(payload["score_rows"][0])
+        row["selected_score"] = row["score"] + (1 << gate.SCORE_GAP_BITS)
+        row["score_gap"] = 1 << gate.SCORE_GAP_BITS
+        row["score_tied"] = 0
+
+        with self.assertRaisesRegex(gate.AttentionKvStwoNativeInputError, "score_gap overflow"):
+            gate.validate_score_row(row, row["row_index"])
+
+    def test_rejects_causal_gap_overflow_in_row_validator(self):
+        payload = gate.build_payload()
+        row = copy.deepcopy(payload["score_rows"][0])
+        row["token_position"] = row["candidate_position"] + (1 << gate.CAUSAL_GAP_BITS)
+        row["causal_gap"] = 1 << gate.CAUSAL_GAP_BITS
+
+        with self.assertRaisesRegex(gate.AttentionKvStwoNativeInputError, "causal_gap overflow"):
+            gate.validate_score_row(row, row["row_index"])
+
+    def test_rejects_tie_break_gap_overflow_in_row_validator(self):
+        payload = gate.build_payload()
+        row = copy.deepcopy(payload["score_rows"][0])
+        row["candidate_position"] = row["selected_position"] + (1 << gate.TIE_GAP_BITS)
+        row["token_position"] = row["candidate_position"]
+        row["causal_gap"] = 0
+        row["tie_break_gap"] = 1 << gate.TIE_GAP_BITS
+
+        with self.assertRaisesRegex(gate.AttentionKvStwoNativeInputError, "tie_break_gap overflow"):
+            gate.validate_score_row(row, row["row_index"])
+
+    def test_rejects_declared_cardinality_drift(self):
+        payload = gate.build_payload()
+        payload["input_steps"] = payload["input_steps"][:-1]
+        self.assert_rejects(payload, "input step count mismatch")
+
     def test_rejects_selected_positions_drift(self):
         payload = gate.build_payload()
         payload["selected_positions"][3] += 1

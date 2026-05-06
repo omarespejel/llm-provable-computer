@@ -502,7 +502,7 @@ def load_stwo_native_masked_sequence_envelope(
         raise AttentionKvRouteSelectorError("Stwo native proof envelope decision drift")
     if envelope.get("proof_backend") != "stwo":
         raise AttentionKvRouteSelectorError("Stwo native proof envelope backend drift")
-    if envelope.get("proof_backend_version") != input_payload["proof_version"]:
+    if envelope.get("proof_backend_version") != input_payload["required_backend_version"]:
         raise AttentionKvRouteSelectorError("Stwo native proof envelope backend-version drift")
     if envelope.get("semantic_scope") != input_payload["semantic_scope"]:
         raise AttentionKvRouteSelectorError("Stwo native proof envelope semantic-scope drift")
