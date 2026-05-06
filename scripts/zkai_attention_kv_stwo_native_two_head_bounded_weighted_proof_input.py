@@ -176,6 +176,19 @@ def require_int(value: Any, label: str) -> int:
     return value
 
 
+def require_nonnegative_bit_bound(value: int, *, bits: int, label: str) -> int:
+    checked = require_int(value, label)
+    if checked < 0 or checked >= (1 << bits):
+        raise AttentionKvTwoHeadBoundedWeightedInputError(f"{label} outside {bits}-bit range")
+    return checked
+
+
+def next_power_of_two(value: int) -> int:
+    if value <= 0:
+        raise AttentionKvTwoHeadBoundedWeightedInputError("trace row count input must be positive")
+    return 1 << (value - 1).bit_length()
+
+
 def require_vector(value: Any, *, width: int, label: str) -> list[int]:
     if not isinstance(value, list):
         raise AttentionKvTwoHeadBoundedWeightedInputError(f"{label} must be a list")
@@ -446,7 +459,32 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
             raise AttentionKvTwoHeadBoundedWeightedInputError(f"input_steps[{global_step_index}] has no allowed candidates")
         scored = [(candidate, dot(step["query"], candidate["key"])) for candidate in allowed]
         selected_score = max(score for _, score in scored)
-        weights = [weight_from_gap(selected_score - score) for _, score in scored]
+        score_gaps = [
+            require_nonnegative_bit_bound(
+                selected_score - score,
+                bits=SCORE_GAP_BITS,
+                label=f"input_steps[{global_step_index}].score_gap[{candidate_index}]",
+            )
+            for candidate_index, (_, score) in enumerate(scored)
+        ]
+        causal_gaps = [
+            require_nonnegative_bit_bound(
+                step["token_position"] - candidate["position"],
+                bits=CAUSAL_GAP_BITS,
+                label=f"input_steps[{global_step_index}].causal_gap[{candidate_index}]",
+            )
+            for candidate_index, (candidate, _) in enumerate(scored)
+        ]
+        weights = [
+            require_nonnegative_bit_bound(
+                weight_from_gap(score_gap),
+                bits=WEIGHT_BITS,
+                label=f"input_steps[{global_step_index}].attention_weight[{candidate_index}]",
+            )
+            for candidate_index, score_gap in enumerate(score_gaps)
+        ]
+        if any(weight <= 0 for weight in weights):
+            raise AttentionKvTwoHeadBoundedWeightedInputError(f"input_steps[{global_step_index}] has zero weight")
         denominator = sum(weights)
         if denominator <= 0:
             raise AttentionKvTwoHeadBoundedWeightedInputError(f"input_steps[{global_step_index}] has invalid weight denominator")
@@ -454,10 +492,25 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
         for (candidate, _), weight in zip(scored, weights, strict=True):
             for dim, value in enumerate(candidate["value"]):
                 numerators[dim] += weight * value
-        output = [numerator // denominator for numerator in numerators]
+        output = [
+            require_int(numerator // denominator, f"input_steps[{global_step_index}].attention_output[{dim}]")
+            for dim, numerator in enumerate(numerators)
+        ]
         remainders = [numerator - out * denominator for numerator, out in zip(numerators, output, strict=True)]
+        for dim, remainder in enumerate(remainders):
+            require_nonnegative_bit_bound(
+                remainder,
+                bits=OUTPUT_REMAINDER_BITS,
+                label=f"input_steps[{global_step_index}].output_remainder[{dim}]",
+            )
+            if remainder >= denominator:
+                raise AttentionKvTwoHeadBoundedWeightedInputError(
+                    f"input_steps[{global_step_index}].output_remainder[{dim}] outside denominator range"
+                )
         outputs.append(list(output))
-        for candidate_index, ((candidate, score), weight) in enumerate(zip(scored, weights, strict=True)):
+        for candidate_index, ((candidate, score), weight, score_gap, causal_gap) in enumerate(
+            zip(scored, weights, score_gaps, causal_gaps, strict=True)
+        ):
             products = [left * right for left, right in zip(step["query"], candidate["key"], strict=True)]
             weighted_value = [weight * value for value in candidate["value"]]
             rows.append({
@@ -470,8 +523,8 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
                 "mask_allowed": 1,
                 "selected_score": selected_score,
                 "score": score,
-                "score_gap": selected_score - score,
-                "causal_gap": step["token_position"] - candidate["position"],
+                "score_gap": score_gap,
+                "causal_gap": causal_gap,
                 "attention_weight": weight,
                 "weight_denominator": denominator,
                 "query": list(step["query"]),
@@ -530,6 +583,14 @@ def validate_payload(payload: dict[str, Any]) -> None:
     initial = fixture_initial_kv()
     steps = fixture_input_steps()
     rows, final_cache, outputs = build_score_rows(initial, steps)
+    if len(initial) != payload.get("initial_kv_items"):
+        raise AttentionKvTwoHeadBoundedWeightedInputError("derived initial KV count drift")
+    if len(final_cache) != payload.get("final_kv_items"):
+        raise AttentionKvTwoHeadBoundedWeightedInputError("derived final KV count drift")
+    if len(rows) != payload.get("score_row_count"):
+        raise AttentionKvTwoHeadBoundedWeightedInputError("derived score row count drift")
+    if next_power_of_two(len(rows)) != payload.get("trace_row_count"):
+        raise AttentionKvTwoHeadBoundedWeightedInputError("derived trace row count drift")
     if payload.get("initial_kv_cache") != initial:
         raise AttentionKvTwoHeadBoundedWeightedInputError("initial KV drift")
     if payload.get("input_steps") != steps:

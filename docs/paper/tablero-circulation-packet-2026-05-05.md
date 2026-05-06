@@ -78,10 +78,12 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_na
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
 cargo +nightly-2025-07-14 test attention_kv_native_bounded_weighted_proof --lib --features stwo-backend
 cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate
+cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_weighted_proof --lib --features stwo-backend
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_two_head_bounded_weighted_native_gate
 git diff --check
 just gate-fast
 just lib
@@ -142,9 +144,9 @@ another metadata adapter:
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Scale the native Stwo proof by one axis only: two-head bounded weighted
-   attention is now checked as a two-head bounded weighted synthesis GO, while
-   exact Softmax and head aggregation remain explicit non-claims.
+3. Treat the new native Stwo result as a bounded two-axis synthesis: it combines
+   head multiplicity with bounded weighted semantics in one fixed fixture. It is
+   not a one-axis scaling claim, not exact Softmax, and not head aggregation.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 5. Keep exact Softmax out of scope unless the native proof actually covers the

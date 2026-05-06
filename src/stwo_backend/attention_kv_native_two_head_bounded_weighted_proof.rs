@@ -649,6 +649,12 @@ fn validate_sequence(input: &ZkAiAttentionKvNativeTwoHeadBoundedWeightedProofInp
     {
         validate_kv_entry(entry)?;
     }
+    for step in &input.input_steps {
+        validate_input_step(step)?;
+    }
+    validate_per_head_strict_positions(&input.initial_kv_cache, "initial KV cache")?;
+    validate_per_head_strict_positions(&input.final_kv_cache, "final KV cache")?;
+    validate_final_kv_append_order(input)?;
     let mut current = input.initial_kv_cache.clone();
     let mut expected_rows = Vec::with_capacity(SCORE_ROW_COUNT);
     let mut expected_outputs = Vec::with_capacity(SEQUENCE_LENGTH * HEAD_COUNT);
@@ -772,6 +778,45 @@ fn validate_sequence(input: &ZkAiAttentionKvNativeTwoHeadBoundedWeightedProofInp
     }
     for (index, row) in input.score_rows.iter().enumerate() {
         validate_score_row(row, index)?;
+    }
+    Ok(())
+}
+
+fn validate_per_head_strict_positions(
+    entries: &[AttentionKvTwoHeadBoundedWeightedEntry],
+    label: &str,
+) -> Result<()> {
+    let mut last_positions = vec![None; HEAD_COUNT];
+    for entry in entries {
+        if entry.head_index >= HEAD_COUNT {
+            return Err(weighted_error(format!("{label} head index out of range")));
+        }
+        if let Some(last_position) = last_positions[entry.head_index] {
+            if entry.position <= last_position {
+                return Err(weighted_error(format!(
+                    "{label} per-head positions not strictly increasing"
+                )));
+            }
+        }
+        last_positions[entry.head_index] = Some(entry.position);
+    }
+    Ok(())
+}
+
+fn validate_final_kv_append_order(
+    input: &ZkAiAttentionKvNativeTwoHeadBoundedWeightedProofInput,
+) -> Result<()> {
+    let mut expected = input.initial_kv_cache.clone();
+    for step in &input.input_steps {
+        expected.push(AttentionKvTwoHeadBoundedWeightedEntry {
+            head_index: step.head_index,
+            position: step.token_position,
+            key: step.new_key.clone(),
+            value: step.new_value.clone(),
+        });
+    }
+    if input.final_kv_cache != expected {
+        return Err(weighted_error("final KV cache append order drift"));
     }
     Ok(())
 }
@@ -1681,7 +1726,11 @@ mod tests {
         )
         .unwrap_err();
         let message = error.to_string();
-        assert!(message.contains("input steps drift") || message.contains("token position"));
+        assert!(
+            message.contains("input steps drift")
+                || message.contains("token position")
+                || message.contains("final KV cache append order drift")
+        );
     }
 
     #[test]
@@ -1706,6 +1755,26 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("score rows recomputation drift"));
+    }
+
+    #[test]
+    fn attention_kv_native_two_head_bounded_weighted_rejects_initial_kv_position_reorder() {
+        let mut input = input();
+        input.initial_kv_cache.swap(0, 1);
+        let error = validate_sequence(&input).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("initial KV cache per-head positions not strictly increasing"));
+    }
+
+    #[test]
+    fn attention_kv_native_two_head_bounded_weighted_rejects_final_kv_append_reorder() {
+        let mut input = input();
+        input.final_kv_cache.swap(4, 5);
+        let error = validate_sequence(&input).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("final KV cache append order drift"));
     }
 
     #[test]
