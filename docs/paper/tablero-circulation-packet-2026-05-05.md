@@ -95,7 +95,7 @@ statement-binding and zkVM semantic transfer, but they are not the headline.
 The first native Stwo scale follow-up now also exists: a sequence-length-16
 profile keeps the same `d=8`, integer-argmax, causal-prefix, public-row
 discipline, but checks `168` score rows over a `256`-row trace with a
-`32444`-byte proof and a `464338`-byte checked envelope. The scale gate rejects
+`32444`-byte proof and a `464351`-byte checked envelope. The scale gate rejects
 `16 / 16` checked sequence, statement, route, metric, non-claim, and parser
 mutations. This is sequence-length scaling only, not `d=16`, Softmax, multi-head,
 long-context inference, or recursion/PCD.

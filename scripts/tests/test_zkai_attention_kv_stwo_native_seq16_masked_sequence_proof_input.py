@@ -50,6 +50,12 @@ class ZkaiAttentionKvStwoNativeSeq16MaskedSequenceProofInputTests(unittest.TestC
         payload["selected_positions"][-1] += 1
         self.assert_rejects(payload, "selected positions drift")
 
+    def test_rejects_base_seq8_drift_before_extending_fixture(self):
+        base = gate.BASE.build_payload()
+        base["selected_positions"][-1] += 1
+        with self.assertRaisesRegex(gate.AttentionKvStwoNativeSeq16InputError, "base seq8 selected positions drift"):
+            gate.validate_base_payload(base)
+
     def test_rejects_statement_commitment_drift(self):
         payload = gate.build_payload()
         payload["statement_commitment"] = "blake2b-256:" + "55" * 32

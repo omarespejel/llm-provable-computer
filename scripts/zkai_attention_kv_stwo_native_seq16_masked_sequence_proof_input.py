@@ -25,6 +25,9 @@ EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 BASE_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_stwo_native_masked_sequence_proof_input.py"
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.tsv"
+BASE_EXPECTED_TARGET_ID = "attention-kv-d8-causal-mask-sequence-v1"
+BASE_EXPECTED_STATEMENT_COMMITMENT = "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232"
+BASE_EXPECTED_SELECTED_POSITIONS = [0, 2, 3, 3, 5, 5, 7, 9]
 
 SCHEMA = "zkai-attention-kv-stwo-native-masked-sequence-air-proof-input-v1"
 DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF"
@@ -81,7 +84,7 @@ PROOF_VERIFIER_HARDENING = [
     "commitment-vector length check before commitment indexing",
 ]
 
-NEXT_BACKEND_STEP = "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface"
+NEXT_BACKEND_STEP = "scale the native Stwo attention/KV proof surface to d=16 width, multi-head, or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface"
 
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.tsv",
@@ -266,8 +269,22 @@ def extra_step(step_index: int) -> dict[str, Any]:
     }
 
 
+def validate_base_payload(base: dict[str, Any]) -> None:
+    if base.get("target_id") != BASE_EXPECTED_TARGET_ID:
+        raise AttentionKvStwoNativeSeq16InputError("base seq8 target id drift")
+    if base.get("statement_commitment") != BASE_EXPECTED_STATEMENT_COMMITMENT:
+        raise AttentionKvStwoNativeSeq16InputError("base seq8 statement commitment drift")
+    if base.get("key_width") != KEY_WIDTH or base.get("value_width") != VALUE_WIDTH:
+        raise AttentionKvStwoNativeSeq16InputError("base seq8 width drift")
+    if base.get("sequence_length") != len(BASE_EXPECTED_SELECTED_POSITIONS):
+        raise AttentionKvStwoNativeSeq16InputError("base seq8 sequence length drift")
+    if base.get("selected_positions") != BASE_EXPECTED_SELECTED_POSITIONS:
+        raise AttentionKvStwoNativeSeq16InputError("base seq8 selected positions drift")
+
+
 def seq16_fixture() -> dict[str, Any]:
     base = BASE.build_payload()
+    validate_base_payload(base)
     input_steps = list(base["input_steps"])
     for step_index in range(len(input_steps), SEQUENCE_LENGTH):
         input_steps.append(extra_step(step_index))

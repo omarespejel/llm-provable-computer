@@ -1325,7 +1325,7 @@ The first scale follow-up now exists along the sequence axis. The same native
 Stwo verifier accepts a sixteen-step `d=8` causal-prefix masked sequence with
 `168` public score rows, a `256`-row trace, eighteen final KV rows, selected
 positions `0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16`, a `32444`-byte
-proof, a `464338`-byte checked envelope, and `16 / 16` scale-gate mutation
+proof, a `464351`-byte checked envelope, and `16 / 16` scale-gate mutation
 rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`
 and

@@ -146,7 +146,7 @@ const EXPECTED_VALIDATION_COMMANDS_SEQ16: &[&str] = &[
     "just gate",
 ];
 
-const NEXT_BACKEND_STEP_SEQ16: &str = "scale the native Stwo attention/KV proof surface to multi-head or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface";
+const NEXT_BACKEND_STEP_SEQ16: &str = "scale the native Stwo attention/KV proof surface to d=16 width, multi-head, or bounded Softmax-like approximation only after preserving the same carry, mask, selected-output, and sequence-length rejection surface";
 
 #[derive(Debug, Clone, Copy)]
 struct AttentionKvNativeMaskedSequenceProfile {

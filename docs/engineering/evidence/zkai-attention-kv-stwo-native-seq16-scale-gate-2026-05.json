@@ -130,9 +130,9 @@
   "proof_size_scale": 1.3299991801262605,
   "result": "GO",
   "scale_axis": "sequence_length_8_to_16_same_d8_width_same_integer_argmax_causal_mask",
-  "scale_gate_commitment": "blake2b-256:54393e508c9e024b0df9f2816ac5c3d530a840bdf314e9e05cca97ff3d9134e4",
+  "scale_gate_commitment": "blake2b-256:60001fce4bd35e16bc2721ca85f96e27a358fdc83e734651ea89e5c361696efc",
   "scaled_receipt": {
-    "envelope_size_bytes": 464338,
+    "envelope_size_bytes": 464351,
     "final_kv_cache_commitment": "blake2b-256:86c882ac29740c92f2ec57eb1775c61a9e4f0e15938ff0ccc45f73e73e98c89f",
     "final_kv_items": 18,
     "key_width": 8,
