@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix integer-argmax attention/KV carried state, now with d8 baseline, seq16 sequence scaling, and d16 width scaling; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, and a bounded weighted policy gate; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -62,7 +62,7 @@ The current paper package supports these checked claims:
 - Do not say the external adapters show EZKL, snarkjs, JSTprove, RISC Zero, or Stwo are unsound.
 - Do not say the attention/KV SNARK statement receipt proves attention arithmetic or Softmax semantics.
 - Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
-- Do not say the native Stwo attention/KV proof is Softmax, multi-head attention, long-context inference, full inference, a benchmark row, or recursive/PCD.
+- Do not say the native Stwo bounded weighted attention/KV proof is exact Softmax, long-context inference, full inference, a benchmark row, or recursive/PCD.
 
 ## Validation Gate
 
@@ -76,8 +76,10 @@ python3 scripts/paper/paper_preflight.py --repo-root .
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+cargo +nightly-2025-07-14 test attention_kv_native_bounded_weighted_proof --lib --features stwo-backend
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate
 git diff --check
 just gate-fast
 just lib
@@ -111,6 +113,16 @@ envelope. The width gate rejects `16 / 16` checked width, statement, route,
 metric, non-claim, and parser mutations. This is width scaling only, not
 Softmax, multi-head, long-context inference, or recursion/PCD.
 
+The next semantics follow-up now also exists: a bounded weighted attention/KV
+profile replaces hard argmax selection with the checked policy
+`power2_gap_clipped_4_floor_division`. It is intentionally small (`d=4`, four
+steps), but it binds `18` score/weight rows over a `64`-row trace, six final KV
+rows, quotient/remainder rows for floor division, a `23952`-byte proof, and a
+`220004`-byte checked envelope. The gate rejects `15 / 15` checked statement,
+score/weight, output, quotient/remainder, final-KV, metric, parser, and
+exact-Softmax-overclaim mutations. This is not exact Softmax; the useful result
+is that the approximation policy is proof-bound instead of narrative-only.
+
 The next research result should keep scaling the native Stwo surface, not add
 another metadata adapter:
 
@@ -118,12 +130,12 @@ another metadata adapter:
    output, next KV, model config, verifier domain, and proof status.
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
-3. Scale the native Stwo proof by one axis only: multi-head or a bounded
-   Softmax-like approximation.
+3. Scale the native Stwo proof by one axis only: d8 bounded weighted attention
+   or two-head bounded weighted attention.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
-5. Keep Softmax out of scope unless the native proof actually covers the chosen attention
-   semantics.
+5. Keep exact Softmax out of scope unless the native proof actually covers the
+   chosen attention semantics.
 6. Report GO only when the same relabeling surfaces reject after proof serialization.
 7. Report NO-GO if the route collapses into a stateless block, metadata-only receipt, or
    missing backend.

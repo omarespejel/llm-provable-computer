@@ -896,6 +896,23 @@ the transformer paper now has a checked Stwo-native attention/KV proof surface,
 while the SNARK and zkVM rows remain appendix/control evidence for the broader
 statement-binding claim.
 
+A subsequent native Stwo follow-up moves one step closer to transformer
+attention semantics without claiming exact Softmax. It replaces integer argmax
+selection with a bounded power-of-two weighted attention policy over a tiny
+`d=4`, four-step causal-prefix carried-KV sequence. The verifier-facing
+statement binds the explicit numeric policy
+`power2_gap_clipped_4_floor_division`, `18` public score/weight rows, `64` trace
+rows, six final KV rows, quotient/remainder rows for floor division, a
+`23952`-byte proof, and a `220004`-byte checked envelope. The gate rejects
+`15 / 15` statement, score/weight, output, quotient/remainder, final-KV,
+metric-smuggling, parser, and exact-Softmax-overclaim mutations. This result is
+not a benchmark row and not a proof of floating-point Softmax, but it is useful
+because the approximation policy itself is now part of the checked statement
+rather than prose around the proof. It is anchored to
+`docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05.json`.
+
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
 a `d=64` or `d=128` RMSNorm-SwiGLU-residual benchmark. The current answer is

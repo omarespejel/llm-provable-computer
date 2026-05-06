@@ -37,9 +37,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 31. `docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`
 32. `docs/engineering/zkai-attention-kv-stwo-native-d16-width-gate-2026-05-06.md`
 33. `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`
-34. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-35. `docs/engineering/reproducibility.md`
-36. `git status --short --branch`
+34. `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`
+35. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+36. `docs/engineering/reproducibility.md`
+37. `git status --short --branch`
 
 ## What this repository is now
 
@@ -140,14 +141,27 @@ This repository currently has three live lanes.
     binding only, not Softmax, not long-context inference, not a full transformer
     block, not proof aggregation across heads, and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`.
+  - Issue `#456` moves the native attention/KV surface beyond selected-row
+    argmax into a bounded weighted-attention policy: a real Stwo AIR proof checks
+    a fixed four-step `d=4` causal-prefix sequence with verifier-recomputed
+    monotone score-derived weights
+    `weight = 2 ** (4 - min(max_score - score, 4))`, weighted numerators, floor
+    quotient outputs, and remainders. The checked surface has `18` score rows, a
+    `64`-row trace, outputs
+    `[[3, 2, 1, 2], [2, 3, 2, 2], [3, 3, 1, 3], [3, 2, 2, 3]]`, a `23952`-byte
+    proof, a `220004`-byte envelope, and rejects `15 / 15` checked mutations.
+    This is bounded weighted attention, not exact Softmax, not exp/div semantics,
+    not full inference, not long-context evidence, and not recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`.
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
-    receipt. The native seq16, d16, and two-head proofs are separate native
-    scale gates for the first route family. Softmax, long-context inference,
-    full inference, and recursion/PCD remain out of scope; see
+    receipt. The native seq16, d16, two-head, and bounded weighted proofs are
+    separate native scale/semantics gates for the first route family. Exact
+    Softmax, long-context inference, full inference, and recursion/PCD remain
+    out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,

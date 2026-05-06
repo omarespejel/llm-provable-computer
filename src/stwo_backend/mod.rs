@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
+mod attention_kv_native_bounded_weighted_proof;
+#[cfg(feature = "stwo-backend")]
 mod attention_kv_native_masked_sequence_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_activation_swiglu_proof;
@@ -98,6 +100,27 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use attention_kv_native_bounded_weighted_proof::{
+    prove_zkai_attention_kv_native_bounded_weighted_envelope,
+    verify_zkai_attention_kv_native_bounded_weighted_envelope,
+    zkai_attention_kv_native_bounded_weighted_envelope_from_json_slice,
+    zkai_attention_kv_native_bounded_weighted_input_from_json_str, AttentionKvBoundedWeightedEntry,
+    AttentionKvBoundedWeightedInputStep, AttentionKvBoundedWeightedScoreRow,
+    ZkAiAttentionKvNativeBoundedWeightedEnvelope, ZkAiAttentionKvNativeBoundedWeightedProofInput,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_INPUT_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_INPUT_SCHEMA,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_MAX_INPUT_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_MAX_PROOF_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_PROOF_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_REQUIRED_BACKEND_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_SEMANTIC_SCOPE,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_STATEMENT_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_TARGET_ID,
+    ZKAI_ATTENTION_KV_NATIVE_BOUNDED_WEIGHTED_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use attention_kv_native_masked_sequence_proof::{
