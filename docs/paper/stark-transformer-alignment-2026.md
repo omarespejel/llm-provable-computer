@@ -1357,8 +1357,29 @@ long-context inference, not a full transformer block, and not recursion/PCD. Its
 value is that the native STARK surface now survives both a longer carried-state
 trace and a wider vector fixture under the same statement-binding rules.
 
+The third scale follow-up now exists along the head axis. Holding per-head width
+and per-head sequence length fixed, the same native Stwo verifier accepts a
+two-head `d=8` causal-prefix masked integer-argmax attention/KV sequence with
+`104` public score rows over a `128`-row trace, twenty final KV rows, selected
+positions `1, 1, 1, 1, 0, 2, 2, 4, 0, 0, 7, 2, 2, 5, 6, 2`, a `25453`-byte
+proof, a `343719`-byte checked envelope, and `18 / 18` two-head gate mutation
+rejections. Evidence is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-gate-2026-05.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json`.
+Backend identity is `stwo-attention-kv-d8-causal-mask-two-head-v1`, proof
+version is `stwo-attention-kv-d8-causal-mask-two-head-air-proof-v1`, and
+timings remain single-run local engineering measurements rather than benchmark
+rows. This is explicit head-state binding, not Softmax, not long-context
+inference, not a full transformer block, not proof aggregation across heads, and
+not recursion/PCD. Its value is that the native STARK surface now covers the
+three basic attention axes one notch at a time: sequence length, vector width,
+and head multiplicity.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time (multi-head, or a bounded Softmax-like approximation);
+one notch at a time (next, a bounded Softmax-like approximation or a larger
+per-head frontier);
 second measure proof size and verifier time only after the proof object exists;
 third keep matched external rows only when public
 proof artifacts and verifier inputs make baseline verification and metadata
