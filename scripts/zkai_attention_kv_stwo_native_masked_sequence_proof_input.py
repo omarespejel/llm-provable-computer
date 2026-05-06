@@ -201,7 +201,7 @@ def kv_commitment(cache: list[dict[str, Any]], domain: str) -> str:
 
 def input_steps_commitment(steps: list[dict[str, Any]]) -> str:
     return commitment_from_parts(
-        [("encoding", "attention_input_steps_v1"), ("shape", [len(steps), 1 + KEY_WIDTH * 3]), ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(input_steps_material(steps))))],
+        [("encoding", "attention_input_steps_v1"), ("shape", [len(steps), 1 + 2 * KEY_WIDTH + VALUE_WIDTH]), ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(input_steps_material(steps))))],
         INPUT_STEPS_DOMAIN,
     )
 
@@ -378,14 +378,20 @@ def validate_score_row(row: Any, expected_index: int) -> None:
         raise AttentionKvStwoNativeInputError("score sum drift")
     if row["score_gap"] != row["selected_score"] - row["score"] or row["score_gap"] < 0:
         raise AttentionKvStwoNativeInputError("selected-score dominance gap drift")
+    if row["score_gap"] >= (1 << SCORE_GAP_BITS):
+        raise AttentionKvStwoNativeInputError("score_gap overflow")
     if row["causal_gap"] != row["token_position"] - row["candidate_position"] or row["causal_gap"] < 0:
         raise AttentionKvStwoNativeInputError("causal-prefix mask gap drift")
+    if row["causal_gap"] >= (1 << CAUSAL_GAP_BITS):
+        raise AttentionKvStwoNativeInputError("causal_gap overflow")
     if row["score_tied"] != int(row["score_gap"] == 0):
         raise AttentionKvStwoNativeInputError("score-tie witness drift")
     if row["tie_break_gap"] != (row["candidate_position"] - row["selected_position"] if row["score_tied"] else 0):
         raise AttentionKvStwoNativeInputError("tie-break gap drift")
     if row["tie_break_gap"] < 0:
         raise AttentionKvStwoNativeInputError("tie-break gap negative")
+    if row["tie_break_gap"] >= (1 << TIE_GAP_BITS):
+        raise AttentionKvStwoNativeInputError("tie_break_gap overflow")
     if row["selected_flag"] not in (0, 1):
         raise AttentionKvStwoNativeInputError("selected flag must be boolean")
     if row["selected_flag"] == 1 and row["value"] != row["attention_output"]:
@@ -440,6 +446,16 @@ def validate_payload(payload: Any) -> None:
         if payload.get(field) != expected:
             raise AttentionKvStwoNativeInputError(f"payload field mismatch: {field}")
     journal = SOURCE.expected_journal()
+    if len(payload["initial_kv_cache"]) != payload["initial_kv_items"]:
+        raise AttentionKvStwoNativeInputError("initial KV count mismatch")
+    if len(payload["input_steps"]) != payload["sequence_length"]:
+        raise AttentionKvStwoNativeInputError("input step count mismatch")
+    if len(payload["final_kv_cache"]) != payload["final_kv_items"]:
+        raise AttentionKvStwoNativeInputError("final KV count mismatch")
+    if len(payload["attention_outputs"]) != len(journal["transitions"]):
+        raise AttentionKvStwoNativeInputError("attention output count mismatch")
+    if len(payload["score_rows"]) != payload["score_row_count"]:
+        raise AttentionKvStwoNativeInputError("score row count mismatch")
     if payload["initial_kv_cache"] != journal["initial_kv_cache"]:
         raise AttentionKvStwoNativeInputError("initial KV cache drift")
     if payload["input_steps"] != journal["input_steps"]:

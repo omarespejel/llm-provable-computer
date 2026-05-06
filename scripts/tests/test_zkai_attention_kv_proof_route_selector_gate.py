@@ -46,7 +46,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_system"], "Stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_backend"], "stwo")
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["proof_size_bytes"], 24394)
-        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"], 265801)
+        self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"], 265791)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["sequence_length"], 8)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["score_row_count"], 52)
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["trace_row_count"], 64)

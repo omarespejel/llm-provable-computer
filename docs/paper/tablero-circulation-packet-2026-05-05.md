@@ -83,7 +83,7 @@ The attention/KV lane now has a tiny native Stwo AIR proof for the fixed `d=8`
 causal-prefix masked integer-argmax carried-state surface. The proof checks `52`
 score rows over a `64`-row trace, emits selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, binds ten final KV rows, and has a `24394`-byte proof
-inside a `265801`-byte checked envelope. The route selector now records six
+inside a `265791`-byte checked envelope. The route selector now records six
 proof-backed routes and rejects `42 / 42` checked mutations. External
 `snarkjs/Groth16` and RISC Zero receipts remain useful controls for
 statement-binding and zkVM semantic transfer, but they are not the headline.

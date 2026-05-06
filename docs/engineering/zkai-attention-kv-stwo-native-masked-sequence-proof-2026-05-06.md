@@ -53,10 +53,10 @@ performance benchmark.
 | Masking policy | `causal_prefix_position_lte_query_token` |
 | Tie break | `lowest_position` |
 | Proof size | `24394` bytes |
-| Envelope size | `265801` bytes |
-| Single local prove+verify run prove time | `41.107458 ms` |
-| Single local prove+verify run verify time | `29.894042 ms` |
-| Separate single local verify run time | `43.516 ms` |
+| Envelope size | `265791` bytes |
+| Single local prove+verify run prove time | `37.995250 ms` (mode: single local engineering run; backend: `stwo-attention-kv-d8-causal-mask-sequence-v1`; proof version: `stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1`; steps: `8`; command: `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`) |
+| Single local prove+verify run verify time | `23.847625 ms` (mode: same prove command as above; backend: `stwo-attention-kv-d8-causal-mask-sequence-v1`; steps: `8`; evidence: `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`) |
+| Separate single local verify run time | `24.972000 ms` (mode: single local engineering run; backend: `stwo-attention-kv-d8-causal-mask-sequence-v1`; steps: `8`; command: `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`) |
 
 Commitments:
 
