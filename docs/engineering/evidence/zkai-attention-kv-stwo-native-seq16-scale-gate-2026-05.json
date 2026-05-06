@@ -72,12 +72,12 @@
     },
     {
       "error": "target id drift",
-      "name": "seq16_envelope_input_split_brain",
+      "name": "seq16_target_id_relabeling",
       "rejected": true
     },
     {
       "error": "required backend version drift",
-      "name": "seq16_envelope_backend_relabeling",
+      "name": "seq16_backend_version_relabeling",
       "rejected": true
     },
     {

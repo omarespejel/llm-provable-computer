@@ -44,11 +44,31 @@ D8_ROUTE_ID = "local_stwo_attention_kv_d8_masked_sequence_proof"
 D8_TARGET_ID = "attention-kv-d8-causal-mask-sequence-v1"
 D8_PROOF_VERSION = "stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1"
 D8_REQUIRED_BACKEND_VERSION = "stwo-attention-kv-d8-causal-mask-sequence-v1"
+D8_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-masked-sequence-statement-v1"
+D8_SEMANTIC_SCOPE = "d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bound_to_statement_receipt"
+D8_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence:v1"
 D8_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9)
+D8_COMMITMENTS = {
+    "statement_commitment": "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232",
+    "public_instance_commitment": "blake2b-256:3c5a7c1aaf6b7ececf3d729935b0548b0b947ce3c649f0370dd44fc687227631",
+    "score_row_commitment": "blake2b-256:8348dc0d9c052050c77bc56a4c08896c283ca710ab2caca30f1bab60d8451337",
+    "final_kv_cache_commitment": "blake2b-256:74038853585ec88f7211e615910923d194d5731af74197c370daaf906d0be1e2",
+    "outputs_commitment": "blake2b-256:a39a6d6e90b4fa06d443807d4fe9110c0986a67c930d9ceff4e0bc4bbce9c083",
+}
 SEQ16_TARGET_ID = "attention-kv-d8-causal-mask-seq16-v1"
 SEQ16_PROOF_VERSION = "stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1"
 SEQ16_REQUIRED_BACKEND_VERSION = "stwo-attention-kv-d8-causal-mask-seq16-v1"
+SEQ16_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-masked-sequence-seq16-statement-v1"
+SEQ16_SEMANTIC_SCOPE = "d8_integer_argmax_attention_kv_causal_mask_seq16_rows_bound_to_statement_receipt"
+SEQ16_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence-seq16:v1"
 SEQ16_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16)
+SEQ16_COMMITMENTS = {
+    "statement_commitment": "blake2b-256:eabc8237a657963661169f4efc072325ee286a1ad676cfd28d31b6a10ed1bdc9",
+    "public_instance_commitment": "blake2b-256:8e270e1992341e7f6d324036cfff0b53f2e1667080d7ea835dbe2c8bdf524bbb",
+    "score_row_commitment": "blake2b-256:787be4bbff96e717903be52573bd3650b175e55763075f5a7a3c9cbcc980d042",
+    "final_kv_cache_commitment": "blake2b-256:86c882ac29740c92f2ec57eb1775c61a9e4f0e15938ff0ccc45f73e73e98c89f",
+    "outputs_commitment": "blake2b-256:dce93ad4386e305734a9fafe2152cdbc65d28af4e90890ed511b9007e15209a3",
+}
 EXPECTED_MUTATION_NAMES = (
     "seq16_statement_commitment_relabeling",
     "seq16_public_instance_commitment_relabeling",
@@ -57,8 +77,8 @@ EXPECTED_MUTATION_NAMES = (
     "seq16_trace_row_count_relabeling",
     "seq16_selected_position_relabeling",
     "seq16_final_kv_relabeling",
-    "seq16_envelope_input_split_brain",
-    "seq16_envelope_backend_relabeling",
+    "seq16_target_id_relabeling",
+    "seq16_backend_version_relabeling",
     "seq16_proof_size_metric_smuggling",
     "d8_baseline_statement_relabeling",
     "route_removed",
@@ -130,41 +150,62 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     return f"blake2b-256:{digest.hexdigest()}"
 
 
-def validate_pair(input_payload: Any, envelope: Any, *, sequence_length: int, score_rows: int, trace_rows: int) -> None:
+def validate_pair(
+    input_payload: Any,
+    envelope: Any,
+    *,
+    target_id: str,
+    proof_version: str,
+    required_backend_version: str,
+    statement_version: str,
+    semantic_scope: str,
+    verifier_domain: str,
+    sequence_length: int,
+    score_rows: int,
+    trace_rows: int,
+    final_kv_items: int,
+    selected_positions: tuple[int, ...],
+    commitments: dict[str, str],
+) -> None:
     if not isinstance(input_payload, dict) or not isinstance(envelope, dict):
         raise AttentionKvSeq16NativeScaleGateError("input/envelope must be objects")
     if envelope.get("input") != input_payload:
         raise AttentionKvSeq16NativeScaleGateError("proof envelope/input split-brain drift")
     if envelope.get("proof_backend") != "stwo":
         raise AttentionKvSeq16NativeScaleGateError("proof backend drift")
-    if envelope.get("proof_backend_version") != input_payload.get("required_backend_version"):
+    if envelope.get("proof_backend_version") != required_backend_version:
         raise AttentionKvSeq16NativeScaleGateError("proof backend version drift")
-    if envelope.get("statement_version") != input_payload.get("statement_version"):
+    if envelope.get("statement_version") != statement_version:
         raise AttentionKvSeq16NativeScaleGateError("statement version drift")
-    if envelope.get("semantic_scope") != input_payload.get("semantic_scope"):
+    if envelope.get("semantic_scope") != semantic_scope:
         raise AttentionKvSeq16NativeScaleGateError("semantic scope drift")
+    for key, expected in (
+        ("target_id", target_id),
+        ("proof_version", proof_version),
+        ("required_backend_version", required_backend_version),
+        ("statement_version", statement_version),
+        ("semantic_scope", semantic_scope),
+        ("verifier_domain", verifier_domain),
+    ):
+        if input_payload.get(key) != expected:
+            raise AttentionKvSeq16NativeScaleGateError(f"{key} drift")
     if input_payload.get("sequence_length") != sequence_length:
         raise AttentionKvSeq16NativeScaleGateError("sequence length drift")
     if input_payload.get("score_row_count") != score_rows:
         raise AttentionKvSeq16NativeScaleGateError("score row count drift")
     if input_payload.get("trace_row_count") != trace_rows:
         raise AttentionKvSeq16NativeScaleGateError("trace row count drift")
-    if len(input_payload.get("selected_positions", [])) != sequence_length:
-        raise AttentionKvSeq16NativeScaleGateError("selected positions length drift")
+    if input_payload.get("final_kv_items") != final_kv_items:
+        raise AttentionKvSeq16NativeScaleGateError("final KV item count drift")
+    if tuple(input_payload.get("selected_positions", [])) != selected_positions:
+        raise AttentionKvSeq16NativeScaleGateError("selected positions drift")
     proof = envelope.get("proof")
     if not isinstance(proof, list) or not proof:
         raise AttentionKvSeq16NativeScaleGateError("proof bytes missing")
     if any(not isinstance(byte, int) or byte < 0 or byte > 255 for byte in proof):
         raise AttentionKvSeq16NativeScaleGateError("proof bytes malformed")
-    for key in (
-        "statement_commitment",
-        "public_instance_commitment",
-        "score_row_commitment",
-        "final_kv_cache_commitment",
-        "outputs_commitment",
-    ):
-        value = input_payload.get(key)
-        if not isinstance(value, str) or not value.startswith("blake2b-256:"):
+    for key, expected in commitments.items():
+        if input_payload.get(key) != expected:
             raise AttentionKvSeq16NativeScaleGateError(f"{key} commitment drift")
 
 
@@ -197,8 +238,38 @@ def build_payload() -> dict[str, Any]:
     d8_envelope = read_bounded_json(D8_ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "d8 envelope")
     seq16_input = read_bounded_json(SEQ16_INPUT_JSON, MAX_INPUT_JSON_BYTES, "seq16 input")
     seq16_envelope = read_bounded_json(SEQ16_ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "seq16 envelope")
-    validate_pair(d8_input, d8_envelope, sequence_length=8, score_rows=52, trace_rows=64)
-    validate_pair(seq16_input, seq16_envelope, sequence_length=16, score_rows=168, trace_rows=256)
+    validate_pair(
+        d8_input,
+        d8_envelope,
+        target_id=D8_TARGET_ID,
+        proof_version=D8_PROOF_VERSION,
+        required_backend_version=D8_REQUIRED_BACKEND_VERSION,
+        statement_version=D8_STATEMENT_VERSION,
+        semantic_scope=D8_SEMANTIC_SCOPE,
+        verifier_domain=D8_VERIFIER_DOMAIN,
+        sequence_length=8,
+        score_rows=52,
+        trace_rows=64,
+        final_kv_items=10,
+        selected_positions=D8_SELECTED_POSITIONS,
+        commitments=D8_COMMITMENTS,
+    )
+    validate_pair(
+        seq16_input,
+        seq16_envelope,
+        target_id=SEQ16_TARGET_ID,
+        proof_version=SEQ16_PROOF_VERSION,
+        required_backend_version=SEQ16_REQUIRED_BACKEND_VERSION,
+        statement_version=SEQ16_STATEMENT_VERSION,
+        semantic_scope=SEQ16_SEMANTIC_SCOPE,
+        verifier_domain=SEQ16_VERIFIER_DOMAIN,
+        sequence_length=16,
+        score_rows=168,
+        trace_rows=256,
+        final_kv_items=18,
+        selected_positions=SEQ16_SELECTED_POSITIONS,
+        commitments=SEQ16_COMMITMENTS,
+    )
     baseline = receipt_summary(D8_ROUTE_ID, d8_input, d8_envelope, D8_ENVELOPE_JSON)
     scaled = receipt_summary(SEQ16_ROUTE_ID, seq16_input, seq16_envelope, SEQ16_ENVELOPE_JSON)
     payload: dict[str, Any] = {
@@ -260,9 +331,9 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["scaled_receipt"]["selected_positions"][-1] += 1
     elif name == "seq16_final_kv_relabeling":
         out["scaled_receipt"]["final_kv_cache_commitment"] = "blake2b-256:" + "22" * 32
-    elif name == "seq16_envelope_input_split_brain":
+    elif name == "seq16_target_id_relabeling":
         out["scaled_receipt"]["target_id"] = D8_ROUTE_ID
-    elif name == "seq16_envelope_backend_relabeling":
+    elif name == "seq16_backend_version_relabeling":
         out["scaled_receipt"]["required_backend_version"] = "tampered"
     elif name == "seq16_proof_size_metric_smuggling":
         out["scaled_receipt"]["proof_size_bytes"] = 1
