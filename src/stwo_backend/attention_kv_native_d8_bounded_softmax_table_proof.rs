@@ -82,7 +82,10 @@ const EXPECTED_PROOF_COMMITMENTS: usize = 3;
 pub const ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES: usize = 1_048_576;
 pub const ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES: usize =
     1_048_576;
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_PROOF_BYTES: usize = 8_388_608;
+// The checked artifact path transports proof bytes as a pretty JSON array
+// inside a 1MiB envelope, so the raw proof cap must stay below the transport
+// ceiling rather than advertising a binary-envelope-sized limit.
+pub const ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_PROOF_BYTES: usize = 65_536;
 
 const ROW_DOMAIN: &str =
     "ptvm:zkai:attention-kv-stwo-native-d8-bounded-softmax-table-score-rows:v1";
@@ -922,12 +925,13 @@ fn prove_rows(input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput) -> R
         CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
     commitment_scheme.set_store_polynomials_coefficients();
 
+    let trace = attention_trace(input);
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(trace.clone());
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -1022,12 +1026,13 @@ fn attention_commitment_roots(
         CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
     commitment_scheme.set_store_polynomials_coefficients();
 
+    let trace = attention_trace(input);
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(trace.clone());
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(attention_trace(input));
+    tree_builder.extend_evals(trace);
     tree_builder.commit(channel);
 
     commitment_scheme.roots()

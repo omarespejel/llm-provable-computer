@@ -103,15 +103,10 @@ Checked attention outputs:
 | Outputs | `blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638` |
 | Weight table | `blake2b-256:8c45ca7eec1032a0ffa5d5a1e842bebd5f6268d75f82d696b29ec7cf9a420e13` |
 
-Single local engineering observations from the proof CLI:
-
-| Command | Prove time | Verify time |
-| --- | ---: | ---: |
-| `prove ...bounded-softmax-table...json ...bounded-softmax-table...envelope.json` | `80.970708 ms` | `52.410459 ms` |
-| `verify ...bounded-softmax-table...envelope.json` | n/a | `67.957250 ms` |
-
-These timings are host-local engineering observations only. They are not public
-benchmark rows.
+The proof CLI intentionally emits deterministic JSON summaries and does not
+include wall-clock timing fields. Any future timing row for this route should be
+recorded through the repository timing policy rather than inferred from the
+automation-facing CLI output.
 
 ## Comparison To Prior Native Weighted Route
 
