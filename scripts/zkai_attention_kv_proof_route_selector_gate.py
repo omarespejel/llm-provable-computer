@@ -94,6 +94,7 @@ REQUIRED_PUBLIC_FIELDS = (
 
 SOURCE_ROUTE_ID = "source_backed_attention_kv_receipt_contract"
 LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_d8_masked_sequence_proof"
+LOCAL_STWO_PROOF_DECISION = "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF"
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_sequence_semantics_receipt"
@@ -348,6 +349,8 @@ def validate_stwo_native_masked_sequence_payload(payload: Any, label: str) -> No
         STWO_NATIVE_MASKED_SEQUENCE.validate_payload(payload)
     except STWO_NATIVE_MASKED_SEQUENCE.AttentionKvStwoNativeInputError as error:
         raise AttentionKvRouteSelectorError(f"{label} drift: {error}") from error
+    except Exception as error:
+        raise AttentionKvRouteSelectorError(f"{label} malformed: {error}") from error
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -514,7 +517,7 @@ def load_stwo_native_masked_sequence_envelope(
         raise AttentionKvRouteSelectorError("Stwo native proof envelope schema drift")
     input_payload = envelope.get("input")
     validate_stwo_native_masked_sequence_payload(input_payload, "Stwo native proof envelope embedded input")
-    if envelope.get("decision") != "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF":
+    if envelope.get("decision") != LOCAL_STWO_PROOF_DECISION:
         raise AttentionKvRouteSelectorError("Stwo native proof envelope decision drift")
     if envelope.get("proof_backend") != "stwo":
         raise AttentionKvRouteSelectorError("Stwo native proof envelope backend drift")
@@ -704,7 +707,7 @@ def stwo_native_masked_sequence_summary(native_payload: dict[str, Any]) -> dict[
     proof = envelope["proof"]
     return {
         "schema": native_payload["schema"],
-        "decision": native_payload["decision"],
+        "decision": envelope["decision"],
         "result": "GO",
         "claim_boundary": (
             "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_AIR_PROOF_"
@@ -1370,7 +1373,7 @@ def validate_stwo_native_masked_sequence_receipt(summary: Any) -> None:
     expected = stwo_native_masked_sequence_summary(load_stwo_native_masked_sequence_payload())
     if summary != expected:
         raise AttentionKvRouteSelectorError("native Stwo masked sequence receipt drift")
-    if summary["decision"] != STWO_NATIVE_MASKED_SEQUENCE.DECISION:
+    if summary["decision"] != LOCAL_STWO_PROOF_DECISION:
         raise AttentionKvRouteSelectorError("native Stwo masked sequence decision drift")
     if summary["result"] != "GO":
         raise AttentionKvRouteSelectorError("native Stwo masked sequence result drift")

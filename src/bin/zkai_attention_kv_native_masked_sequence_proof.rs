@@ -11,6 +11,7 @@ use llm_provable_computer::stwo_backend::{
     zkai_attention_kv_native_masked_sequence_envelope_from_json_slice,
     zkai_attention_kv_native_masked_sequence_input_from_json_str,
     ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES,
 };
 
 #[cfg(feature = "stwo-backend")]
@@ -47,13 +48,18 @@ fn run() -> Result<String, String> {
             }
             let input_path = PathBuf::from(&args[0]);
             let envelope_path = PathBuf::from(&args[1]);
-            let raw = fs::read_to_string(&input_path).map_err(|error| {
+            let raw = read_bounded_file(
+                &input_path,
+                ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES,
+                "input JSON",
+            )?;
+            let raw = std::str::from_utf8(&raw).map_err(|error| {
                 format!(
-                    "failed to read input JSON {}: {error}",
+                    "failed to decode input JSON {}: {error}",
                     input_path.display()
                 )
             })?;
-            let input = zkai_attention_kv_native_masked_sequence_input_from_json_str(&raw)
+            let input = zkai_attention_kv_native_masked_sequence_input_from_json_str(raw)
                 .map_err(|error| error.to_string())?;
             let started = Instant::now();
             let envelope = prove_zkai_attention_kv_native_masked_sequence_envelope(&input)
