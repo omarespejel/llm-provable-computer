@@ -74,8 +74,10 @@ python3 scripts/paper/generate_tablero_scaling_law.py
 python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
 cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+just lib
 git diff --check
 ```
 
@@ -93,7 +95,7 @@ statement-binding and zkVM semantic transfer, but they are not the headline.
 The first native Stwo scale follow-up now also exists: a sequence-length-16
 profile keeps the same `d=8`, integer-argmax, causal-prefix, public-row
 discipline, but checks `168` score rows over a `256`-row trace with a
-`32444`-byte proof and a `464320`-byte checked envelope. The scale gate rejects
+`32444`-byte proof and a `464338`-byte checked envelope. The scale gate rejects
 `16 / 16` checked sequence, statement, route, metric, non-claim, and parser
 mutations. This is sequence-length scaling only, not `d=16`, Softmax, multi-head,
 long-context inference, or recursion/PCD.

@@ -18,6 +18,7 @@ class ZkaiAttentionKvStwoNativeSeq16MaskedSequenceProofInputTests(unittest.TestC
         self.assertEqual(payload["value_width"], 8)
         self.assertEqual(payload["selected_positions"][:8], [0, 2, 3, 3, 5, 5, 7, 9])
         self.assertEqual(len(payload["selected_positions"]), 16)
+        self.assertIn("non_claims", payload)
 
     def assert_rejects(self, payload, msg):
         with self.assertRaises(gate.AttentionKvStwoNativeSeq16InputError) as ctx:

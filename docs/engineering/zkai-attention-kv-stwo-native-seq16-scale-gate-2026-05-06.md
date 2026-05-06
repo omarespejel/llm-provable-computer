@@ -47,7 +47,7 @@ It is a sequence-length scaling result for the native STARK attention/KV surface
 | Score rows | `52` | `168` |
 | Trace rows | `64` | `256` |
 | Proof size | `24394` bytes | `32444` bytes |
-| Envelope size | `265791` bytes | `464320` bytes |
+| Envelope size | `265791` bytes | `464338` bytes |
 | Mutation cases rejected | route selector `42 / 42` | scale gate `16 / 16` |
 
 Seq16 selected positions:
@@ -65,7 +65,7 @@ Seq16 commitments:
 | Score rows | `blake2b-256:787be4bbff96e717903be52573bd3650b175e55763075f5a7a3c9cbcc980d042` |
 | Final KV cache | `blake2b-256:86c882ac29740c92f2ec57eb1775c61a9e4f0e15938ff0ccc45f73e73e98c89f` |
 | Outputs | `blake2b-256:dce93ad4386e305734a9fafe2152cdbc65d28af4e90890ed511b9007e15209a3` |
-| Scale gate | `blake2b-256:fbe95adbb130a1038c493d4c4f37340e0557aa4004e9ac2a290a114a5dce919c` |
+| Scale gate | `blake2b-256:54393e508c9e024b0df9f2816ac5c3d530a840bdf314e9e05cca97ff3d9134e4` |
 
 Single local engineering observations from the proof CLI:
 
