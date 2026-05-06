@@ -503,9 +503,8 @@ def load_stwo_native_masked_sequence_envelope(
     }
     if set(envelope) != expected_keys:
         raise AttentionKvRouteSelectorError("Stwo native proof envelope schema drift")
-    input_payload = load_stwo_native_masked_sequence_payload()
-    if envelope.get("input") != input_payload:
-        raise AttentionKvRouteSelectorError("Stwo native proof envelope input drift")
+    input_payload = envelope.get("input")
+    STWO_NATIVE_MASKED_SEQUENCE.validate_payload(input_payload)
     if envelope.get("decision") != "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF":
         raise AttentionKvRouteSelectorError("Stwo native proof envelope decision drift")
     if envelope.get("proof_backend") != "stwo":
