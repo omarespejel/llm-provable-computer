@@ -241,15 +241,27 @@ Tablero boundary.
   binding only, not Softmax, not long-context inference, not a full transformer
   block, not proof aggregation across heads, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`.
+- Issue `#456` moves the native attention/KV surface beyond selected-row argmax
+  into a bounded weighted-attention policy: a real Stwo AIR proof checks a fixed
+  four-step `d=4` causal-prefix sequence with verifier-recomputed monotone
+  score-derived weights `weight = 2 ** (4 - min(max_score - score, 4))`,
+  weighted numerators, floor quotient outputs, and remainders. The checked
+  surface has `18` score rows, a `64`-row trace, outputs
+  `[[3, 2, 1, 2], [2, 3, 2, 2], [3, 3, 1, 3], [3, 2, 2, 3]]`, a `23952`-byte
+  proof, a `220004`-byte envelope, and rejects `15 / 15` checked mutations.
+  This is bounded weighted attention, not exact Softmax, not exp/div semantics,
+  not full inference, not long-context evidence, and not recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`.
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
   for six proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
   external SNARK statement-receipt route, the RISC Zero transition semantics
   route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
-  causal-prefix masked sequence route. The native seq16, d16, and two-head
-  proofs are separate native scale gates for the first route family. It rejects
-  `42 / 42` selector mutations and keeps Softmax, long-context
+  causal-prefix masked sequence route. The native seq16, d16, two-head, and
+  bounded weighted proofs are separate native scale/semantics gates for the
+  first route family. It rejects `42 / 42` selector mutations and keeps exact
+  Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
