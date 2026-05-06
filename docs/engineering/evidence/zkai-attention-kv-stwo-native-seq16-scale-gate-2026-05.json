@@ -1,0 +1,187 @@
+{
+  "all_mutations_rejected": true,
+  "baseline_receipt": {
+    "envelope_size_bytes": 265791,
+    "final_kv_cache_commitment": "blake2b-256:74038853585ec88f7211e615910923d194d5731af74197c370daaf906d0be1e2",
+    "final_kv_items": 10,
+    "key_width": 8,
+    "outputs_commitment": "blake2b-256:a39a6d6e90b4fa06d443807d4fe9110c0986a67c930d9ceff4e0bc4bbce9c083",
+    "proof_size_bytes": 24394,
+    "proof_version": "stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1",
+    "public_instance_commitment": "blake2b-256:3c5a7c1aaf6b7ececf3d729935b0548b0b947ce3c649f0370dd44fc687227631",
+    "required_backend_version": "stwo-attention-kv-d8-causal-mask-sequence-v1",
+    "route_id": "local_stwo_attention_kv_d8_masked_sequence_proof",
+    "score_row_commitment": "blake2b-256:8348dc0d9c052050c77bc56a4c08896c283ca710ab2caca30f1bab60d8451337",
+    "score_row_count": 52,
+    "selected_positions": [
+      0,
+      2,
+      3,
+      3,
+      5,
+      5,
+      7,
+      9
+    ],
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232",
+    "target_id": "attention-kv-d8-causal-mask-sequence-v1",
+    "timing_policy": "single_local_dev_profile_engineering_only",
+    "trace_row_count": 64,
+    "value_width": 8
+  },
+  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_LENGTH_16_PROOF_NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_NOT_FULL_INFERENCE_NOT_RECURSION_OR_PCD",
+  "decision": "GO_NATIVE_STWO_ATTENTION_KV_SEQ16_SEQUENCE_LENGTH_SCALE",
+  "first_blocker": "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF_YET",
+  "issue": 450,
+  "mutation_cases": [
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_statement_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_public_instance_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "sequence length drift",
+      "name": "seq16_sequence_length_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "score row count drift",
+      "name": "seq16_score_row_count_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "trace row count drift",
+      "name": "seq16_trace_row_count_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_selected_position_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_final_kv_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_envelope_input_split_brain",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "seq16_envelope_backend_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "proof-size scale drift",
+      "name": "seq16_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "scale gate commitment drift",
+      "name": "d8_baseline_statement_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "route id drift",
+      "name": "route_removed",
+      "rejected": true
+    },
+    {
+      "error": "claim boundary drift",
+      "name": "claim_boundary_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "non-claim drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 16,
+  "mutations_rejected": 16,
+  "non_claims": [
+    "not a Softmax proof",
+    "not a multi-head attention proof",
+    "not full autoregressive inference",
+    "not recursive verification or PCD",
+    "not a long-context benchmark",
+    "not a public performance benchmark row",
+    "not a Starknet deployment result"
+  ],
+  "proof_size_scale": 1.3299991801262605,
+  "result": "GO",
+  "scale_axis": "sequence_length_8_to_16_same_d8_width_same_integer_argmax_causal_mask",
+  "scale_gate_commitment": "blake2b-256:fbe95adbb130a1038c493d4c4f37340e0557aa4004e9ac2a290a114a5dce919c",
+  "scaled_receipt": {
+    "envelope_size_bytes": 464320,
+    "final_kv_cache_commitment": "blake2b-256:86c882ac29740c92f2ec57eb1775c61a9e4f0e15938ff0ccc45f73e73e98c89f",
+    "final_kv_items": 18,
+    "key_width": 8,
+    "outputs_commitment": "blake2b-256:dce93ad4386e305734a9fafe2152cdbc65d28af4e90890ed511b9007e15209a3",
+    "proof_size_bytes": 32444,
+    "proof_version": "stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1",
+    "public_instance_commitment": "blake2b-256:8e270e1992341e7f6d324036cfff0b53f2e1667080d7ea835dbe2c8bdf524bbb",
+    "required_backend_version": "stwo-attention-kv-d8-causal-mask-seq16-v1",
+    "route_id": "local_stwo_attention_kv_d8_seq16_masked_sequence_proof",
+    "score_row_commitment": "blake2b-256:787be4bbff96e717903be52573bd3650b175e55763075f5a7a3c9cbcc980d042",
+    "score_row_count": 168,
+    "selected_positions": [
+      0,
+      2,
+      3,
+      3,
+      5,
+      5,
+      7,
+      9,
+      7,
+      3,
+      7,
+      3,
+      7,
+      5,
+      7,
+      16
+    ],
+    "sequence_length": 16,
+    "statement_commitment": "blake2b-256:eabc8237a657963661169f4efc072325ee286a1ad676cfd28d31b6a10ed1bdc9",
+    "target_id": "attention-kv-d8-causal-mask-seq16-v1",
+    "timing_policy": "single_local_dev_profile_engineering_only",
+    "trace_row_count": 256,
+    "value_width": 8
+  },
+  "schema": "zkai-attention-kv-stwo-native-seq16-scale-gate-v1",
+  "score_row_scale": 3.230769230769231,
+  "source_issue": 448,
+  "trace_row_scale": 4.0,
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_seq16_native_scale_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}

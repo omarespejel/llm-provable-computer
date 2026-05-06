@@ -34,9 +34,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 28. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
 29. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
 30. `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`
-31. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-32. `docs/engineering/reproducibility.md`
-33. `git status --short --branch`
+31. `docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`
+32. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+33. `docs/engineering/reproducibility.md`
+34. `git status --short --branch`
 
 ## What this repository is now
 
@@ -108,6 +109,16 @@ This repository currently has three live lanes.
     native Stwo proof, not Softmax, not multi-head, not long-context inference,
     not a full transformer block, and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`.
+  - Issue `#450` scales that native Stwo surface along sequence length: a real
+    Stwo AIR proof checks a fixed sixteen-step `d=8` causal-prefix masked
+    integer-argmax attention/KV sequence with `168` score rows, a `256`-row trace,
+    selected positions `[0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16]`,
+    eighteen final KV rows, a `32444`-byte proof, and a `464320`-byte checked
+    envelope. The scale gate rejects `16 / 16` checked mutations. This is
+    sequence-length scaling only, not `d=16` width scaling, not Softmax, not
+    multi-head attention, not long-context inference, not a full transformer block,
+    and not recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`.
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed routes: the native Stwo d8 masked-sequence AIR proof, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC

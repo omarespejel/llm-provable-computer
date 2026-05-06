@@ -1321,10 +1321,24 @@ controls into the STARK-native lane. It is exactly the kind of evidence this
 paper needs: not a claim that STARKs have already won, but a concrete proof
 surface showing why transformer decode looks like trace-friendly carried state.
 
+The first scale follow-up now exists along the sequence axis. The same native
+Stwo verifier accepts a sixteen-step `d=8` causal-prefix masked sequence with
+`168` public score rows, a `256`-row trace, eighteen final KV rows, selected
+positions `0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16`, a `32444`-byte
+proof, a `464320`-byte checked envelope, and `16 / 16` scale-gate mutation
+rejections. Evidence is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json`.
+This is sequence-length scaling, not width scaling: it keeps `d=8`, integer
+argmax, causal masking, and public score rows fixed. Its value is that the native
+STARK surface is no longer only one tiny eight-step point; it survives a larger
+carried-state trace under the same statement-binding rules.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time (`d=16`, multi-head, longer fixed sequence, or a bounded
-Softmax-like approximation); second measure proof size and verifier time only
-after the proof object exists; third keep matched external rows only when public
+one notch at a time (`d=16`, multi-head, or a bounded Softmax-like
+approximation); second measure proof size and verifier time only after the proof
+object exists; third keep matched external rows only when public
 proof artifacts and verifier inputs make baseline verification and metadata
 mutation reproducible; fourth return to recursive/PCD compression only once the
 small native surfaces are stable. That keeps the next contribution technically

@@ -137,15 +137,19 @@ For the paper program, the roles are now clean:
 
 ## Next GO/NO-GO Targets
 
-The next result should scale one axis at a time. This follow-up is tracked in
-issue `#450`.
+The next result should scale one axis at a time. Issue `#450` now records the
+first such follow-up: sequence-length scaling from the eight-step profile to a
+sixteen-step profile while preserving the same `d=8`, integer-argmax,
+causal-prefix, statement-bound native Stwo surface. See
+`docs/engineering/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05-06.md`.
+
+Remaining useful axes:
 
 1. `d=16` causal-prefix masked integer-argmax attention/KV sequence.
 2. Two-head fixed sequence with explicit head identity in the statement.
-3. Longer fixed sequence with the same public-row and statement-binding rules.
-4. A bounded Softmax-like approximation only if the numeric approximation policy
+3. A bounded Softmax-like approximation only if the numeric approximation policy
    is statement-bound and checked by the verifier.
-5. A bridge from native RMSNorm/block receipt commitments into the attention/KV
+4. A bridge from native RMSNorm/block receipt commitments into the attention/KV
    statement.
 
 ## Reproduce
