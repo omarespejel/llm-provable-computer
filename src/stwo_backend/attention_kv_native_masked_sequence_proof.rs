@@ -93,8 +93,9 @@ const PUBLIC_INSTANCE_DOMAIN: &str = "ptvm:zkai:attention-kv-stwo-native-public-
 const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:attention-kv-stwo-native-proof-parameters:v1";
 
-#[cfg(test)]
 const EXPECTED_SELECTED_POSITIONS: [usize; SEQUENCE_LENGTH] = [0, 2, 3, 3, 5, 5, 7, 9];
+const EXPECTED_SELECTED_POSITIONS_SEQ16: [usize; SEQUENCE_LENGTH_SEQ16] =
+    [0, 2, 3, 3, 5, 5, 7, 9, 7, 3, 7, 3, 7, 5, 7, 16];
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not Softmax attention",
@@ -161,6 +162,7 @@ struct AttentionKvNativeMaskedSequenceProfile {
     score_row_count: usize,
     trace_row_count: usize,
     log_size: u32,
+    expected_selected_positions: &'static [usize],
     next_backend_step: &'static str,
     validation_commands: &'static [&'static str],
 }
@@ -179,6 +181,7 @@ const PROFILE_D8: AttentionKvNativeMaskedSequenceProfile = AttentionKvNativeMask
     score_row_count: SCORE_ROW_COUNT,
     trace_row_count: TRACE_ROW_COUNT,
     log_size: LOG_SIZE,
+    expected_selected_positions: &EXPECTED_SELECTED_POSITIONS,
     next_backend_step: NEXT_BACKEND_STEP,
     validation_commands: EXPECTED_VALIDATION_COMMANDS,
 };
@@ -199,6 +202,7 @@ const PROFILE_SEQ16: AttentionKvNativeMaskedSequenceProfile =
         score_row_count: SCORE_ROW_COUNT_SEQ16,
         trace_row_count: TRACE_ROW_COUNT_SEQ16,
         log_size: LOG_SIZE_SEQ16,
+        expected_selected_positions: &EXPECTED_SELECTED_POSITIONS_SEQ16,
         next_backend_step: NEXT_BACKEND_STEP_SEQ16,
         validation_commands: EXPECTED_VALIDATION_COMMANDS_SEQ16,
     };
@@ -622,8 +626,8 @@ fn validate_input(
     expect_usize(input.score_gap_bits, SCORE_GAP_BITS, "score gap bits")?;
     expect_usize(input.causal_gap_bits, CAUSAL_GAP_BITS, "causal gap bits")?;
     expect_usize(input.tie_gap_bits, TIE_GAP_BITS, "tie gap bits")?;
-    if input.selected_positions.len() != profile.sequence_length {
-        return Err(attention_error("selected positions length drift"));
+    if input.selected_positions != profile.expected_selected_positions {
+        return Err(attention_error("selected positions drift"));
     }
     expect_str_list_eq(&input.non_claims, EXPECTED_NON_CLAIMS, "non claims")?;
     expect_str_list_eq(
