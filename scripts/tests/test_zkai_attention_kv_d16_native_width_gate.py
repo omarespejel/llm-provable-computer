@@ -140,7 +140,7 @@ class AttentionKvD16NativeWidthGateTests(unittest.TestCase):
             ("required_backend_version", gate.D8_REQUIRED_BACKEND_VERSION, "backend version drift"),
             ("selected_positions", list(gate.D8_SELECTED_POSITIONS), "selected positions drift"),
             ("timing_policy", "benchmark_median_of_5", "timing policy drift"),
-            ("envelope_size_bytes", 1, "envelope-size scale drift"),
+            ("envelope_size_bytes", gate.D16_PROOF_SIZE_BYTES + 1, "envelope-size scale drift"),
         ):
             mutated = copy.deepcopy(payload)
             for field in ("mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"):

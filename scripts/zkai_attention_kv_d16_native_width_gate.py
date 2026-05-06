@@ -145,7 +145,10 @@ def load_script_module(path: pathlib.Path, module_name: str) -> ModuleType:
     if spec is None or spec.loader is None:
         raise AttentionKvD16NativeWidthGateError(f"failed to load {module_name}: {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as err:
+        raise ImportError(f"failed to import {module_name} from {path}: {err}") from err
     return module
 
 
@@ -154,15 +157,20 @@ D16_INPUT_MODULE = load_script_module(D16_INPUT_SCRIPT, "zkai_attention_kv_stwo_
 
 
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
-    if not path.is_file():
-        raise AttentionKvD16NativeWidthGateError(f"missing {label}: {path}")
-    size = path.stat().st_size
-    if size > max_bytes:
-        raise AttentionKvD16NativeWidthGateError(f"{label} exceeds max size: got {size}, max {max_bytes}")
+    bounded_file_size(path, max_bytes, label)
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionKvD16NativeWidthGateError(f"failed to read {label}: {err}") from err
+
+
+def bounded_file_size(path: pathlib.Path, max_bytes: int, label: str) -> int:
+    if not path.is_file():
+        raise AttentionKvD16NativeWidthGateError(f"missing {label}: {path}")
+    size = path.stat().st_size
+    if size <= 0 or size > max_bytes:
+        raise AttentionKvD16NativeWidthGateError(f"{label} size drift: got {size}, max {max_bytes}")
+    return size
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -445,6 +453,7 @@ def validate_receipt_summary(
     value_width: int,
     selected_positions: tuple[int, ...],
     proof_size_bytes: int,
+    envelope_size_bytes: int,
     commitments: dict[str, str],
 ) -> None:
     if not isinstance(summary, dict):
@@ -479,12 +488,7 @@ def validate_receipt_summary(
         raise AttentionKvD16NativeWidthGateError("timing policy drift")
     if summary["proof_size_bytes"] != proof_size_bytes:
         raise AttentionKvD16NativeWidthGateError("proof-size scale drift")
-    envelope_size = summary["envelope_size_bytes"]
-    if (
-        not isinstance(envelope_size, int)
-        or envelope_size <= summary["proof_size_bytes"]
-        or envelope_size > MAX_ENVELOPE_JSON_BYTES
-    ):
+    if summary["envelope_size_bytes"] != envelope_size_bytes:
         raise AttentionKvD16NativeWidthGateError("envelope-size scale drift")
     for key, expected in commitments.items():
         if summary[key] != expected:
@@ -525,6 +529,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         value_width=8,
         selected_positions=D8_SELECTED_POSITIONS,
         proof_size_bytes=D8_PROOF_SIZE_BYTES,
+        envelope_size_bytes=bounded_file_size(D8_ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "d8 envelope"),
         commitments=D8_COMMITMENTS,
     )
     validate_receipt_summary(
@@ -537,6 +542,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         value_width=16,
         selected_positions=D16_SELECTED_POSITIONS,
         proof_size_bytes=D16_PROOF_SIZE_BYTES,
+        envelope_size_bytes=bounded_file_size(D16_ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "d16 envelope"),
         commitments=D16_COMMITMENTS,
     )
     expected_axis = {
