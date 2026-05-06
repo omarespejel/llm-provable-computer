@@ -59,6 +59,14 @@ shape: `52` score rows, a `64`-row trace, a `36769`-byte proof, a `386078`-byte
 checked envelope, and `15 / 15` mutation rejections. These results are recorded
 as semantics/scale gates, not new route families and not Softmax claims.
 
+Issue `#461` combines the two previously separate native axes: two-head state
+binding from issue `#455` and bounded weighted semantics from issue `#460`. The
+checked surface is a fixed two-head, eight-step-per-head `d=8` causal-prefix
+bounded weighted-attention proof with `104` score rows, a `128`-row trace, a
+`41175`-byte proof, a `512060`-byte checked envelope, and `16 / 16` mutation
+rejections. This is a synthesis gate, not exact Softmax, not head aggregation,
+not full inference, and not recursion/PCD.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
 two-head gate discharges one bounded multi-head fixture, and the bounded
@@ -85,6 +93,7 @@ Claim boundary:
 | Source-backed attention/KV receipt contract | GO for contract only; not proof-backed |
 | Local Stwo d8 masked attention/KV sequence proof | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked integer-argmax sequence |
 | Local Stwo d8 bounded weighted attention/KV semantics gate | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked bounded weighted sequence, recorded as a semantics gate rather than a new route family |
+| Local Stwo two-head d8 bounded weighted attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded weighted attention semantics |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -101,6 +110,8 @@ Claim boundary:
 - Native Stwo proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`
 - Native d8 bounded weighted gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`
 - Native d8 bounded weighted proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`
+- Native two-head bounded weighted gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`
+- Native two-head bounded weighted proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -176,8 +187,9 @@ remain a checked GO/NO-GO gate with exact blockers if it fails.
 ## Non-Claims
 
 - This is not a Softmax proof.
-- This is not general multi-head attention; issue `#455` separately checks one
-  bounded two-head fixture.
+- This is not general multi-head attention; issue `#455` checks one integer
+  argmax two-head fixture and issue `#461` checks one bounded weighted two-head
+  fixture.
 - This is not full autoregressive inference.
 - This is not agent correctness.
 - This is not recursive or proof-carrying data.

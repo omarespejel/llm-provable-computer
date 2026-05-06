@@ -928,6 +928,21 @@ and
 with the proof envelope at
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`.
 
+The newest native follow-up combines two previously separate axes: two-head
+carried-state binding and bounded weighted attention. The checked Stwo proof
+uses two heads, eight steps per head, `d=8` key/value vectors, `104` public
+score/weight rows over a `128`-row trace, twenty final KV rows, sixteen weighted
+output vectors, a `41175`-byte proof, and a `512060`-byte checked envelope. The
+gate rejects `16 / 16` relabeling, metric-smuggling, parser, head-count,
+weighted-output, and exact-Softmax-overclaim mutations. This is still not exact
+Softmax, not proof aggregation across heads, not long-context inference, not a
+full transformer block, and not recursion/PCD. Its value is narrower and more
+useful: multi-head carried KV state and a monotone weighted-read policy now
+coexist inside one native Stwo proof surface. It is anchored to
+`docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`.
+
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
 a `d=64` or `d=128` RMSNorm-SwiGLU-residual benchmark. The current answer is

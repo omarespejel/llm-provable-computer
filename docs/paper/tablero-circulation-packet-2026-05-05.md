@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4 bounded weighted semantics, and d8 bounded weighted semantics; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, and two-head d8 bounded weighted synthesis; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -143,7 +143,8 @@ another metadata adapter:
 2. Keep the external SNARK statement receipt as a proof-system-independent
    statement-binding control.
 3. Scale the native Stwo proof by one axis only: two-head bounded weighted
-   attention is now the next synthesis target after the d8 bounded weighted GO.
+   attention is now checked as a two-head bounded weighted synthesis GO, while
+   exact Softmax and head aggregation remain explicit non-claims.
 4. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 5. Keep exact Softmax out of scope unless the native proof actually covers the

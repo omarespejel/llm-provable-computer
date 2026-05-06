@@ -215,6 +215,17 @@ Tablero boundary.
   exp/div semantics, not full inference, not long-context evidence, and not
   recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`.
+- Issue `#461` combines the two native attention axes: two-head carried state
+  from issue `#455` and bounded weighted attention from issue `#460`. A real
+  Stwo AIR proof checks a fixed two-head, eight-step-per-head `d=8`
+  causal-prefix bounded weighted attention/KV sequence with `104` score rows, a
+  `128`-row trace, twenty final KV rows, sixteen weighted output vectors, a
+  `41175`-byte proof, and a `512060`-byte checked envelope. The gate rejects
+  `16 / 16` checked mutations and the input generator pins the upstream two-head
+  source payload identity. This is a bounded multi-head weighted fixture, not
+  exact Softmax, not exp/div semantics, not head aggregation, not full inference,
+  not long-context evidence, and not recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -222,8 +233,9 @@ Tablero boundary.
   external SNARK statement-receipt route, the RISC Zero transition semantics
   route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
-  causal-prefix masked sequence route. The native seq16, d16, two-head, bounded weighted, and d8 bounded
-  weighted proofs are separate native scale/semantics gates for the
+  causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
+  weighted, d8 bounded weighted, and two-head bounded weighted proofs are
+  separate native scale/semantics gates for the
   first route family. It rejects `42 / 42` selector mutations and keeps exact
   Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see
