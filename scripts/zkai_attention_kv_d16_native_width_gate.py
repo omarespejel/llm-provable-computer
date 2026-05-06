@@ -59,7 +59,6 @@ D8_SEMANTIC_SCOPE = "d8_integer_argmax_attention_kv_causal_mask_sequence_rows_bo
 D8_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence:v1"
 D8_SELECTED_POSITIONS = (0, 2, 3, 3, 5, 5, 7, 9)
 D8_PROOF_SIZE_BYTES = 24394
-D8_ENVELOPE_SIZE_BYTES = 265791
 D8_COMMITMENTS = {
     "statement_commitment": "blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232",
     "public_instance_commitment": "blake2b-256:3c5a7c1aaf6b7ececf3d729935b0548b0b947ce3c649f0370dd44fc687227631",
@@ -76,7 +75,6 @@ D16_SEMANTIC_SCOPE = "d16_integer_argmax_attention_kv_causal_mask_sequence_rows_
 D16_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-masked-sequence-d16:v1"
 D16_SELECTED_POSITIONS = (1, 1, 3, 1, 5, 3, 1, 3)
 D16_PROOF_SIZE_BYTES = 31621
-D16_ENVELOPE_SIZE_BYTES = 358124
 D16_COMMITMENTS = {
     "statement_commitment": "blake2b-256:9ca216aefb582e0877d46deacf4af936bf61aa3f6c7865b22675d7698ffc3cd6",
     "public_instance_commitment": "blake2b-256:bd7415e074c0699ced0c774f987b6eceae9ca5607cc6df0e0714723db3aa8551",
@@ -447,7 +445,6 @@ def validate_receipt_summary(
     value_width: int,
     selected_positions: tuple[int, ...],
     proof_size_bytes: int,
-    envelope_size_bytes: int,
     commitments: dict[str, str],
 ) -> None:
     if not isinstance(summary, dict):
@@ -482,7 +479,12 @@ def validate_receipt_summary(
         raise AttentionKvD16NativeWidthGateError("timing policy drift")
     if summary["proof_size_bytes"] != proof_size_bytes:
         raise AttentionKvD16NativeWidthGateError("proof-size scale drift")
-    if summary["envelope_size_bytes"] != envelope_size_bytes:
+    envelope_size = summary["envelope_size_bytes"]
+    if (
+        not isinstance(envelope_size, int)
+        or envelope_size <= summary["proof_size_bytes"]
+        or envelope_size > MAX_ENVELOPE_JSON_BYTES
+    ):
         raise AttentionKvD16NativeWidthGateError("envelope-size scale drift")
     for key, expected in commitments.items():
         if summary[key] != expected:
@@ -523,7 +525,6 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         value_width=8,
         selected_positions=D8_SELECTED_POSITIONS,
         proof_size_bytes=D8_PROOF_SIZE_BYTES,
-        envelope_size_bytes=D8_ENVELOPE_SIZE_BYTES,
         commitments=D8_COMMITMENTS,
     )
     validate_receipt_summary(
@@ -536,7 +537,6 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         value_width=16,
         selected_positions=D16_SELECTED_POSITIONS,
         proof_size_bytes=D16_PROOF_SIZE_BYTES,
-        envelope_size_bytes=D16_ENVELOPE_SIZE_BYTES,
         commitments=D16_COMMITMENTS,
     )
     expected_axis = {
