@@ -76,9 +76,9 @@ EXPECTED_MUTATION_NAMES = (
     "weighted_statement_commitment_relabeling",
     "weighted_public_instance_commitment_relabeling",
     "weighted_weight_policy_relabeling",
-    "weighted_score_weight_relabeling",
-    "weighted_output_relabeling",
-    "weighted_quotient_remainder_relabeling",
+    "weighted_attention_outputs_relabeling",
+    "weighted_outputs_commitment_relabeling",
+    "weighted_score_row_count_relabeling",
     "weighted_final_kv_relabeling",
     "weighted_target_id_relabeling",
     "weighted_backend_version_relabeling",
@@ -225,7 +225,7 @@ def validate_source_pair(input_payload: Any, envelope: Any) -> None:
             raise AttentionKvBoundedWeightedNativeGateError(f"{key} drift")
 
 
-def receipt_summary(input_payload: dict[str, Any], envelope: dict[str, Any]) -> dict[str, Any]:
+def receipt_summary(input_payload: dict[str, Any], envelope: dict[str, Any], envelope_size_bytes: int) -> dict[str, Any]:
     validate_source_pair(input_payload, envelope)
     return {
         "route_id": ROUTE_ID,
@@ -249,7 +249,7 @@ def receipt_summary(input_payload: dict[str, Any], envelope: dict[str, Any]) -> 
         "trace_rows": input_payload["trace_row_count"],
         "attention_outputs": input_payload["attention_outputs"],
         "proof_size_bytes": len(envelope["proof"]),
-        "envelope_size_bytes": bounded_file_size(ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope"),
+        "envelope_size_bytes": envelope_size_bytes,
         "statement_commitment": input_payload["statement_commitment"],
         "public_instance_commitment": input_payload["public_instance_commitment"],
         "score_row_commitment": input_payload["score_row_commitment"],
@@ -273,8 +273,9 @@ def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 def build_payload() -> dict[str, Any]:
     input_payload = read_bounded_json(INPUT_JSON, MAX_INPUT_JSON_BYTES, "bounded weighted input")
+    envelope_size_bytes = bounded_file_size(ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
     envelope = read_bounded_json(ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
-    receipt = receipt_summary(input_payload, envelope)
+    receipt = receipt_summary(input_payload, envelope, envelope_size_bytes)
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -317,11 +318,11 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         receipt["public_instance_commitment"] = "blake2b-256:" + "66" * 32
     elif name == "weighted_weight_policy_relabeling":
         receipt["weight_policy"] = "exact_softmax"
-    elif name == "weighted_score_weight_relabeling":
+    elif name == "weighted_attention_outputs_relabeling":
         receipt["attention_outputs"][0][0] += 1
-    elif name == "weighted_output_relabeling":
+    elif name == "weighted_outputs_commitment_relabeling":
         receipt["outputs_commitment"] = "blake2b-256:" + "77" * 32
-    elif name == "weighted_quotient_remainder_relabeling":
+    elif name == "weighted_score_row_count_relabeling":
         receipt["score_rows"] += 1
     elif name == "weighted_final_kv_relabeling":
         receipt["final_kv_cache_commitment"] = "blake2b-256:" + "88" * 32

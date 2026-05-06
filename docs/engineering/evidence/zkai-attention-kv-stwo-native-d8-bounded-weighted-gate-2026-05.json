@@ -133,17 +133,17 @@
     },
     {
       "error": "bounded weighted receipt attention_outputs drift",
-      "name": "weighted_score_weight_relabeling",
+      "name": "weighted_attention_outputs_relabeling",
       "rejected": true
     },
     {
       "error": "bounded weighted receipt outputs_commitment drift",
-      "name": "weighted_output_relabeling",
+      "name": "weighted_outputs_commitment_relabeling",
       "rejected": true
     },
     {
       "error": "bounded weighted receipt score_rows drift",
-      "name": "weighted_quotient_remainder_relabeling",
+      "name": "weighted_score_row_count_relabeling",
       "rejected": true
     },
     {

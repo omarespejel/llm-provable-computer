@@ -68,6 +68,12 @@ class AttentionKvBoundedWeightedNativeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvBoundedWeightedNativeGateError, "source input validation drift"):
             gate.validate_source_pair(mutated_input, mutated_envelope)
 
+    def test_receipt_summary_uses_explicit_envelope_size(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded weighted input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
+        receipt = gate.receipt_summary(input_payload, envelope, envelope_size_bytes=12345)
+        self.assertEqual(receipt["envelope_size_bytes"], 12345)
+
     def test_rejects_mutation_summary_drift(self):
         payload = gate.build_payload()
         payload["mutation_cases"][0]["rejected"] = False
