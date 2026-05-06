@@ -186,6 +186,16 @@ remain a checked GO/NO-GO gate with exact blockers if it fails.
 
 ## Reproduce
 
+The native Stwo d8 masked-sequence route uses backend identity
+`stwo-attention-kv-d8-causal-mask-v1` and proof version
+`stwo-attention-kv-d8-causal-mask-air-proof-v1`, with sequence length `8`,
+width `8`, and single-run engineering timing only. The d8 bounded-weighted
+follow-up uses backend identity
+`stwo-attention-kv-d8-causal-mask-bounded-weighted-v1` and proof version
+`stwo-attention-kv-d8-causal-mask-bounded-weighted-air-proof-v1`, with the same
+sequence length and width and the same single-run engineering timing policy.
+Neither timing is a public benchmark row.
+
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json \
@@ -202,14 +212,38 @@ cargo +nightly-2025-07-14 run --features stwo-backend \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
 
+python3 scripts/zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
 
 python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input \
+  scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input \
+  scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof \
   --lib --features stwo-backend
 ```

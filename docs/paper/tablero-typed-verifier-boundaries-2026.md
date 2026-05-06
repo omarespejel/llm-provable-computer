@@ -924,7 +924,9 @@ at the same width and sequence shape as the first native attention/KV fixture. I
 is anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`
 and
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`.
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`,
+with the proof envelope at
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`.
 
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
