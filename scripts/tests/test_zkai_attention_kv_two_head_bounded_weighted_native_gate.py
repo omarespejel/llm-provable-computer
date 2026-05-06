@@ -87,6 +87,27 @@ class AttentionKvTwoHeadBoundedWeightedNativeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedNativeGateError, "source input validation drift"):
             gate.validate_source_pair(mutated_input, mutated_envelope)
 
+    def test_rejects_source_pair_non_list_proof(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded weighted input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
+        envelope["proof"] = "0" * gate.PROOF_SIZE_BYTES
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedNativeGateError, "proof bytes must be a list"):
+            gate.validate_source_pair(input_payload, envelope)
+
+    def test_rejects_source_pair_non_byte_proof_element(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded weighted input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
+        envelope["proof"][0] = True
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedNativeGateError, r"proof byte\[0\] must be an integer"):
+            gate.validate_source_pair(input_payload, envelope)
+
+    def test_rejects_source_pair_out_of_range_proof_element(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded weighted input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
+        envelope["proof"][0] = 256
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedNativeGateError, r"proof byte\[0\] outside byte range"):
+            gate.validate_source_pair(input_payload, envelope)
+
     def test_receipt_summary_size_is_path_independent_regression(self):
         input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded weighted input")
         envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded weighted envelope")
