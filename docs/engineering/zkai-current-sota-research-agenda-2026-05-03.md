@@ -165,10 +165,12 @@ public contract.
    metadata is proof-bound to the source contract rather than merely narrated;
    the RISC Zero transition, three-step sequence, and fixed eight-step sequence
    receipts now prove tiny integer-argmax semantics and carried-state ordering
-   in a zkVM. The next step is native attention arithmetic proving, wider/masked
-   carried-state scaling, or an explicit no-go for that same stateful public
-   surface. Tracked in issue `#336`, follow-up issue `#442`, and
-   wider/masked scaled-sequence issue `#446`.
+   in a zkVM. Issue `#448` adds the first native Stwo proof for this stateful
+   surface: fixed eight-step `d=8` causal-prefix masked integer-argmax
+   attention/KV, `52` score rows, `64` trace rows, and a `24394`-byte proof. The
+   next step is to scale one native Stwo axis at a time (`d=16`, multi-head,
+   longer fixed sequence, or bounded Softmax-like approximation) while keeping
+   the external SNARK/RISC0 rows as controls rather than headlines.
 4. **Numeric-policy track.** Generalize range-policy receipts to activation,
    Softmax, GELU/SwiGLU, quotient/remainder, and approximation-policy surfaces.
 5. **Agent receipt track.** Continue treating agent/action receipts as consumers

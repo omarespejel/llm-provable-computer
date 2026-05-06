@@ -4,6 +4,8 @@ mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
+mod attention_kv_native_masked_sequence_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_activation_swiglu_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_down_projection_proof;
@@ -96,6 +98,24 @@ pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_p
 pub(crate) use arithmetic_subset_prover::{
     prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
     verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
+};
+#[cfg(feature = "stwo-backend")]
+pub use attention_kv_native_masked_sequence_proof::{
+    prove_zkai_attention_kv_native_masked_sequence_envelope,
+    verify_zkai_attention_kv_native_masked_sequence_envelope,
+    zkai_attention_kv_native_masked_sequence_input_from_json_str, AttentionKvEntry,
+    AttentionKvInputStep, AttentionKvNativeScoreRow, ZkAiAttentionKvNativeMaskedSequenceEnvelope,
+    ZkAiAttentionKvNativeMaskedSequenceProofInput,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_INPUT_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_INPUT_SCHEMA,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_MAX_PROOF_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_PROOF_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_REQUIRED_BACKEND_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_SEMANTIC_SCOPE,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_STATEMENT_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_TARGET_ID,
+    ZKAI_ATTENTION_KV_NATIVE_MASKED_SEQUENCE_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_activation_swiglu_proof::{

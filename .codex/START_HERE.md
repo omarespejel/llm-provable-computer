@@ -33,9 +33,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 27. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
 28. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
 29. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
-30. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-31. `docs/engineering/reproducibility.md`
-32. `git status --short --branch`
+30. `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`
+31. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+32. `docs/engineering/reproducibility.md`
+33. `git status --short --branch`
 
 ## What this repository is now
 
@@ -99,12 +100,21 @@ This repository currently has three live lanes.
     receipt, local verifier time `19.193 ms`, and `27 / 27` mutation rejections;
     see
     `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`.
-  - The attention/KV proof-route selector is now a narrow GO for five
-    proof-backed routes: the external SNARK statement-receipt route, RISC Zero
-    transition receipt, RISC Zero three-step sequence receipt, RISC Zero fixed
-    eight-step sequence receipt, and RISC Zero fixed eight-step `d=8`
-    causal-prefix masked sequence receipt. It still remains a no-go for local
-    Stwo attention arithmetic and Softmax; see
+  - Issue `#448` moves that stateful surface into the native Stwo lane: a real
+    Stwo AIR proof checks a fixed eight-step `d=8` causal-prefix masked
+    integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace,
+    selected positions `[0, 2, 3, 3, 5, 5, 7, 9]`, ten final KV rows, a
+    `24394`-byte proof, and a `265759`-byte checked envelope. This is a narrow
+    native Stwo proof, not Softmax, not multi-head, not long-context inference,
+    not a full transformer block, and not recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`.
+  - The attention/KV proof-route selector is now a narrow GO for six
+    proof-backed routes: the native Stwo d8 masked-sequence AIR proof, the
+    external SNARK statement-receipt route, RISC Zero transition receipt, RISC
+    Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
+    receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
+    receipt. Softmax, multi-head, long-context inference, full inference, and
+    recursion/PCD remain out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,

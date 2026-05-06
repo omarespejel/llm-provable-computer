@@ -1301,21 +1301,29 @@ follow-up RISC Zero receipt computes one tiny integer-argmax KV transition
 inside a zkVM guest. A later RISC Zero sequence receipt carries that state across
 three transitions, and a scaled follow-up carries the same discipline across a
 fixed eight-step/two-wide integer-argmax sequence ending in a ten-row KV cache.
-Both reject deletion, reordering, and intermediate-state relabeling, but do not
-amount to native Stwo attention arithmetic, Softmax, long-context inference,
-recursion/PCD, or agent correctness. These are not performance rows. They are
-the statement-semantics work that prevents future performance rows from being
-meaningless.
+Those zkVM rows reject deletion, reordering, and intermediate-state relabeling,
+but they remain controls: they are not native Stwo attention arithmetic,
+Softmax, long-context inference, recursion/PCD, or agent correctness.
 
-The credible sequencing is therefore: first build or cleanly no-go the two-slice
-recursive/PCD backend; second measure proof size and verifier time only after that
-artifact exists; third add matched external rows only when public proof artifacts and
-verifier inputs make baseline verification and metadata mutation reproducible; fourth
-widen from an eight-step/two-wide attention/KV sequence receipt toward
-wider/masked carried-state scaling and/or native Stwo attention proving
-(`#446`), plus nonlinear policy receipts. That keeps the next
-contribution technically attributable and prevents the paper from comparing
-unlike objects.
+The next step is now no longer just a plan. A native Stwo follow-up proves a
+fixed eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
+directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
+`0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, a `24394`-byte proof, and
+`42 / 42` route-selector mutation rejections. This is still tiny, not Softmax,
+not multi-head, and not a benchmark row. But it is important because it moves
+the carried-state attention result from external controls into the STARK-native
+lane. It is exactly the kind of evidence this paper needs: not a claim that
+STARKs have already won, but a concrete proof surface showing why transformer
+decode looks like trace-friendly carried state.
+
+The credible sequencing is therefore: first scale this native attention/KV AIR
+one notch at a time (`d=16`, multi-head, longer fixed sequence, or a bounded
+Softmax-like approximation); second measure proof size and verifier time only
+after the proof object exists; third keep matched external rows only when public
+proof artifacts and verifier inputs make baseline verification and metadata
+mutation reproducible; fourth return to recursive/PCD compression only once the
+small native surfaces are stable. That keeps the next contribution technically
+attributable and prevents the paper from comparing unlike objects.
 
 ______________________________________________________________________
 
