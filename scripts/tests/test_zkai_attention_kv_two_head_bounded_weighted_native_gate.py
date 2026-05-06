@@ -132,6 +132,20 @@ class AttentionKvTwoHeadBoundedWeightedNativeGateTests(unittest.TestCase):
         self.assertIn(gate.ROUTE_ID, tsv)
         self.assertIn(payload["bounded_weighted_receipt"]["statement_commitment"], tsv)
 
+    def test_mutation_harness_crashes_are_not_counted_as_rejections(self):
+        payload = gate.build_payload()
+        original_validate_payload = gate.validate_payload
+
+        def boom(*_args, **_kwargs):
+            raise RuntimeError("harness crash")
+
+        try:
+            gate.validate_payload = boom
+            with self.assertRaisesRegex(RuntimeError, "harness crash"):
+                gate.mutation_cases_for(payload)
+        finally:
+            gate.validate_payload = original_validate_payload
+
 
 if __name__ == "__main__":
     unittest.main()

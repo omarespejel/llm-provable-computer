@@ -115,6 +115,23 @@ class AttentionKvTwoHeadBoundedWeightedInputTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedInputError, "per-head input step count drift"):
             gate.build_score_rows(initial, steps)
 
+    def test_build_score_rows_rejects_score_gap_bit_overflow(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        initial[0]["key"] = [30 for _ in range(gate.KEY_WIDTH)]
+        initial[1]["key"] = [0 for _ in range(gate.KEY_WIDTH)]
+        steps[0]["query"] = [300 for _ in range(gate.KEY_WIDTH)]
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedInputError, r"score_gap\[1\] outside 16-bit range"):
+            gate.build_score_rows(initial, steps)
+
+    def test_rejects_output_remainder_bit_overflow(self):
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedWeightedInputError, "outside 8-bit range"):
+            gate.require_nonnegative_bit_bound(
+                1 << gate.OUTPUT_REMAINDER_BITS,
+                bits=gate.OUTPUT_REMAINDER_BITS,
+                label="output_remainder",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
