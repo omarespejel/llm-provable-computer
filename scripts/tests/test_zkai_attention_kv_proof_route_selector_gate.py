@@ -281,6 +281,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
 
         self.assertEqual(envelope["decision"], "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF")
 
+    def test_stwo_native_envelope_wraps_embedded_input_validation_errors(self) -> None:
+        envelope = json.loads(GATE.STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        envelope["input"]["statement_version"] = "tampered"
+
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            path = pathlib.Path(raw_tmp) / "tampered-envelope.json"
+            path.write_text(json.dumps(envelope), encoding="utf-8")
+
+            with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "embedded input drift"):
+                GATE.load_stwo_native_masked_sequence_envelope(path)
+
     def test_individual_mutations_reject(self) -> None:
         payload = GATE.build_payload()
 

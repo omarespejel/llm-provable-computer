@@ -341,6 +341,15 @@ RISC0_WIDE_MASKED_SEQUENCE = _load_risc0_wide_masked_sequence_module()
 STWO_NATIVE_MASKED_SEQUENCE = _load_stwo_native_masked_sequence_module()
 
 
+def validate_stwo_native_masked_sequence_payload(payload: Any, label: str) -> None:
+    """Normalize native Stwo input validation failures into this gate's error type."""
+
+    try:
+        STWO_NATIVE_MASKED_SEQUENCE.validate_payload(payload)
+    except STWO_NATIVE_MASKED_SEQUENCE.AttentionKvStwoNativeInputError as error:
+        raise AttentionKvRouteSelectorError(f"{label} drift: {error}") from error
+
+
 def canonical_json_bytes(value: Any) -> bytes:
     """Serialize payload fragments deterministically before hashing."""
 
@@ -475,7 +484,7 @@ def load_stwo_native_masked_sequence_payload(path: pathlib.Path = STWO_NATIVE_MA
         "Stwo native masked sequence input evidence",
     )
     payload = json.loads(raw)
-    STWO_NATIVE_MASKED_SEQUENCE.validate_payload(payload)
+    validate_stwo_native_masked_sequence_payload(payload, "Stwo native masked sequence input evidence")
     return payload
 
 
@@ -504,7 +513,7 @@ def load_stwo_native_masked_sequence_envelope(
     if set(envelope) != expected_keys:
         raise AttentionKvRouteSelectorError("Stwo native proof envelope schema drift")
     input_payload = envelope.get("input")
-    STWO_NATIVE_MASKED_SEQUENCE.validate_payload(input_payload)
+    validate_stwo_native_masked_sequence_payload(input_payload, "Stwo native proof envelope embedded input")
     if envelope.get("decision") != "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF":
         raise AttentionKvRouteSelectorError("Stwo native proof envelope decision drift")
     if envelope.get("proof_backend") != "stwo":
