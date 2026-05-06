@@ -210,7 +210,15 @@ def validate_source_pair(input_payload: Any, envelope: Any) -> None:
         raise AttentionKvTwoHeadBoundedWeightedNativeGateError("semantic scope drift")
     if envelope.get("decision") != NATIVE_ENVELOPE_DECISION:
         raise AttentionKvTwoHeadBoundedWeightedNativeGateError("proof envelope decision drift")
-    if len(envelope.get("proof", [])) != PROOF_SIZE_BYTES:
+    proof = envelope.get("proof")
+    if not isinstance(proof, list):
+        raise AttentionKvTwoHeadBoundedWeightedNativeGateError("proof bytes must be a list")
+    for index, byte in enumerate(proof):
+        if isinstance(byte, bool) or not isinstance(byte, int):
+            raise AttentionKvTwoHeadBoundedWeightedNativeGateError(f"proof byte[{index}] must be an integer")
+        if byte < 0 or byte > 255:
+            raise AttentionKvTwoHeadBoundedWeightedNativeGateError(f"proof byte[{index}] outside byte range")
+    if len(proof) != PROOF_SIZE_BYTES:
         raise AttentionKvTwoHeadBoundedWeightedNativeGateError("proof byte length drift")
     if input_payload.get("target_id") != TARGET_ID:
         raise AttentionKvTwoHeadBoundedWeightedNativeGateError("target_id drift")
