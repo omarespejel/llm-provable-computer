@@ -913,6 +913,19 @@ rather than prose around the proof. It is anchored to
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05.json`.
 
+The same bounded weighted policy now also has a `d=8`, eight-step native Stwo
+surface: `52` public score/weight rows over a `64`-row trace, ten final KV rows,
+eight weighted output vectors, quotient/remainder rows, a `36769`-byte proof,
+and a `386078`-byte checked envelope. The gate rejects `15 / 15` relabeling,
+metric-smuggling, parser, and exact-Softmax-overclaim mutations. This keeps the
+claim narrow but materially strengthens the bridge into the transformer paper:
+the weighted attention policy is no longer only a tiny d4 curiosity; it survives
+at the same width and sequence shape as the first native attention/KV fixture. It
+is anchored to
+`docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`.
+
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as
 a `d=64` or `d=128` RMSNorm-SwiGLU-residual benchmark. The current answer is

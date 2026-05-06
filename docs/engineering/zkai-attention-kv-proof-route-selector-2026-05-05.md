@@ -50,11 +50,21 @@ selected positions `[1, 1, 1, 1, 0, 2, 2, 4, 0, 0, 7, 2, 2, 5, 6, 2]`, and
 separately so this selector keeps counting route families, not every checked
 native scale variant.
 
+Issue `#456` adds the first bounded weighted-attention semantics gate for the
+same native Stwo lane: a fixed four-step `d=4` profile with verifier-recomputed
+score-derived weights, weighted numerators, floor outputs, remainders, a
+`23952`-byte proof, and `15 / 15` mutation rejections. Issue `#460` then scales
+that bounded weighted policy to the existing `d=8`, eight-step masked-sequence
+shape: `52` score rows, a `64`-row trace, a `36769`-byte proof, a `386078`-byte
+checked envelope, and `15 / 15` mutation rejections. These results are recorded
+as semantics/scale gates, not new route families and not Softmax claims.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
-two-head gate discharges one bounded multi-head fixture, not general multi-head
-attention. The external SNARK and RISC Zero routes remain useful controls, not
-the headline result.
+two-head gate discharges one bounded multi-head fixture, and the bounded
+weighted gates discharge deterministic monotone-weight fixtures; neither is
+general multi-head exact Softmax attention. The external SNARK and RISC Zero
+routes remain useful controls, not the headline result.
 
 Decision:
 
@@ -74,6 +84,7 @@ Claim boundary:
 | --- | --- |
 | Source-backed attention/KV receipt contract | GO for contract only; not proof-backed |
 | Local Stwo d8 masked attention/KV sequence proof | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked integer-argmax sequence |
+| Local Stwo d8 bounded weighted attention/KV semantics gate | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked bounded weighted sequence, recorded as a semantics gate rather than a new route family |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -88,6 +99,8 @@ Claim boundary:
 - Native Stwo input evidence: `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json`
 - Native Stwo TSV: `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.tsv`
 - Native Stwo proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`
+- Native d8 bounded weighted gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`
+- Native d8 bounded weighted proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`

@@ -38,9 +38,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 32. `docs/engineering/zkai-attention-kv-stwo-native-d16-width-gate-2026-05-06.md`
 33. `docs/engineering/zkai-attention-kv-stwo-native-two-head-gate-2026-05-06.md`
 34. `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`
-35. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-36. `docs/engineering/reproducibility.md`
-37. `git status --short --branch`
+35. `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`
+36. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+37. `docs/engineering/reproducibility.md`
+38. `git status --short --branch`
 
 ## What this repository is now
 
@@ -153,14 +154,25 @@ This repository currently has three live lanes.
     This is bounded weighted attention, not exact Softmax, not exp/div semantics,
     not full inference, not long-context evidence, and not recursion/PCD; see
     `docs/engineering/zkai-attention-kv-stwo-native-bounded-weighted-gate-2026-05-06.md`.
+  - Issue `#460` scales bounded weighted attention to the existing native `d=8`
+    causal-prefix masked sequence shape: a real Stwo AIR proof checks `52` score
+    rows, a `64`-row trace, eight weighted output vectors, a `36769`-byte proof,
+    and a `386078`-byte checked envelope. It rejects `15 / 15` checked mutations
+    and preserves verifier recomputation of append-only KV carry, max scores,
+    bounded weights, denominators, weighted numerators, floor outputs, and
+    remainders. This is still bounded weighted attention, not exact Softmax, not
+    exp/div semantics, not full inference, not long-context evidence, and not
+    recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05-06.md`.
+
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
-    receipt. The native seq16, d16, two-head, and bounded weighted proofs are
-    separate native scale/semantics gates for the first route family. Exact
-    Softmax, long-context inference, full inference, and recursion/PCD remain
+    receipt. The native seq16, d16, two-head, bounded weighted, and d8 bounded
+    weighted proofs are separate native scale/semantics gates for the first
+    route family. Exact Softmax, long-context inference, full inference, and recursion/PCD remain
     out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
