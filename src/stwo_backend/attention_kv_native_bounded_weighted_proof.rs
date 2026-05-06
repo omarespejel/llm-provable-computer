@@ -675,8 +675,8 @@ fn validate_sequence(input: &ZkAiAttentionKvNativeBoundedWeightedProofInput) -> 
         let mut output = vec![0i64; VALUE_WIDTH];
         let mut remainders = vec![0i64; VALUE_WIDTH];
         for index in 0..VALUE_WIDTH {
-            output[index] = numerators[index] / denominator;
-            remainders[index] = numerators[index] - output[index] * denominator;
+            (output[index], remainders[index]) =
+                quotient_remainder_floor(numerators[index], denominator)?;
             if remainders[index] < 0
                 || remainders[index] >= denominator
                 || remainders[index] >= (1i64 << OUTPUT_REMAINDER_BITS)
@@ -829,6 +829,11 @@ fn validate_score_row(
     if row.attention_weight <= 0 || row.attention_weight >= (1i64 << WEIGHT_BITS) {
         return Err(weighted_error("attention weight outside bit range"));
     }
+    if row.weight_denominator <= 0
+        || row.weight_denominator >= (1i64 << WEIGHT_BITS) * SCORE_ROW_COUNT as i64
+    {
+        return Err(weighted_error("weight denominator outside bounded range"));
+    }
     expect_i64(
         row.causal_gap,
         row.token_position as i64 - row.candidate_position as i64,
@@ -849,6 +854,7 @@ fn validate_score_row(
             "output quotient/remainder relation",
         )?;
         if row.output_remainder[index] < 0
+            || row.output_remainder[index] >= row.weight_denominator
             || row.output_remainder[index] >= (1i64 << OUTPUT_REMAINDER_BITS)
         {
             return Err(weighted_error("output remainder outside bit range"));
@@ -1185,6 +1191,16 @@ fn bounded_weight(score_gap: i64) -> Result<i64> {
     }
     let clipped = std::cmp::min(score_gap, 4) as u32;
     Ok(1i64 << (4 - clipped))
+}
+
+fn quotient_remainder_floor(numerator: i64, denominator: i64) -> Result<(i64, i64)> {
+    if denominator <= 0 {
+        return Err(weighted_error("non-positive quotient denominator"));
+    }
+    Ok((
+        numerator.div_euclid(denominator),
+        numerator.rem_euclid(denominator),
+    ))
 }
 
 fn dot(query: &[i64], key: &[i64]) -> Result<i64> {
@@ -1541,6 +1557,19 @@ mod tests {
         assert_eq!(input.attention_outputs[0], vec![3, 2, 1, 2]);
         assert_eq!(input.score_rows[0].attention_weight, 8);
         assert_eq!(input.score_rows[2].attention_weight, 16);
+    }
+
+    #[test]
+    fn attention_kv_native_bounded_weighted_uses_floor_division_for_negative_numerators() {
+        assert_eq!(
+            quotient_remainder_floor(-1, 16).expect("division"),
+            (-1, 15)
+        );
+        assert_eq!(
+            quotient_remainder_floor(-17, 16).expect("division"),
+            (-2, 15)
+        );
+        assert_eq!(quotient_remainder_floor(17, 16).expect("division"), (1, 1));
     }
 
     #[test]
