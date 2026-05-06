@@ -1,0 +1,241 @@
+{
+  "all_mutations_rejected": true,
+  "claim_boundary": "TWO_POINT_NATIVE_STWO_D8_BOUNDED_WEIGHTED_ATTENTION_KV_PROOF_SIZE_PROFILE_NOT_SCALING_LAW_NOT_TIMING_BENCHMARK_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE",
+  "decision": "GO_TWO_POINT_NATIVE_STWO_ATTENTION_KV_PROOF_SIZE_PROFILE_ENGINEERING_ONLY",
+  "first_blocker": "CONTROLLED_HEAD_SEQUENCE_GRID_AND_BINARY_PROOF_COMPONENT_ACCOUNTING_MISSING",
+  "issue": 467,
+  "mutation_cases": [
+    {
+      "error": "profile row proof_size_bytes drift",
+      "name": "single_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_size_bytes drift",
+      "name": "two_head_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row envelope_size_bytes drift",
+      "name": "single_envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row envelope_size_bytes drift",
+      "name": "two_head_envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "row_ratio_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "proof_ratio_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_section_bytes drift",
+      "name": "fri_section_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row gate_commitment drift",
+      "name": "source_gate_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "profile row statement_commitment drift",
+      "name": "statement_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_scaling_law_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "profile_interpretation_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first_blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "timing_policy drift",
+      "name": "timing_policy_public_benchmark_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "proof_component_breakdown_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field set drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 16,
+  "mutations_rejected": 16,
+  "non_claims": [
+    "not a scaling law",
+    "not a public performance benchmark row",
+    "not a timing benchmark",
+    "not exact Softmax attention",
+    "not full autoregressive inference",
+    "not long-context evidence",
+    "not proof aggregation or recursion",
+    "not a claim that binary PCS/FRI internals have been decomposed"
+  ],
+  "profile_gate_commitment": "blake2b-256:19fe1449460453074f052ab09c05fe5caae50337293649fc8cd8c42237e7fd4b",
+  "profile_rows": [
+    {
+      "envelope_size_bytes": 386078,
+      "gate_commitment": "blake2b-256:35080c62c241d928b091226c09ca95696fffcb68162a77106771e0686c650659",
+      "head_count": 1,
+      "key_width": 8,
+      "label": "single_head_d8_seq8_bounded_weighted",
+      "proof_backend": "stwo",
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 335,
+        "config": 136,
+        "decommitments": 5408,
+        "fri_proof": 5894,
+        "proof_of_work": 4,
+        "queried_values": 9801,
+        "sampled_values": 15066
+      },
+      "proof_section_payload_bytes_total": 36644,
+      "proof_size_bytes": 36769,
+      "proof_system": "Stwo",
+      "route_id": "local_stwo_attention_kv_d8_bounded_weighted_masked_sequence_proof",
+      "score_rows": 52,
+      "semantics": "bounded_power2_weighted_attention",
+      "sequence_length_per_head": 8,
+      "source_issue": 460,
+      "statement_commitment": "blake2b-256:9f5d0a15b4a5f5a8481f39ffad44df58824b773375163f2f0908b847082e7b5a",
+      "trace_rows": 64,
+      "value_width": 8,
+      "weight_policy": "power2_gap_clipped_4_floor_division"
+    },
+    {
+      "envelope_size_bytes": 512060,
+      "gate_commitment": "blake2b-256:b4b46e78a9e6448bc99ae10f2998b01a30f108d1a59f98e1d5d14ec38e606117",
+      "head_count": 2,
+      "key_width": 8,
+      "label": "two_head_d8_seq8_bounded_weighted",
+      "proof_backend": "stwo",
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 345,
+        "config": 136,
+        "decommitments": 6504,
+        "fri_proof": 8031,
+        "proof_of_work": 4,
+        "queried_values": 10329,
+        "sampled_values": 15701
+      },
+      "proof_section_payload_bytes_total": 41050,
+      "proof_size_bytes": 41175,
+      "proof_system": "Stwo",
+      "route_id": "local_stwo_attention_kv_two_head_bounded_weighted_masked_sequence_proof",
+      "score_rows": 104,
+      "semantics": "bounded_power2_weighted_attention",
+      "sequence_length_per_head": 8,
+      "source_issue": 461,
+      "statement_commitment": "blake2b-256:57bbf22000a70ea241a43bcf3ecd79a723b497827ca5782d39577d8bb242810b",
+      "trace_rows": 128,
+      "value_width": 8,
+      "weight_policy": "power2_gap_clipped_4_floor_division"
+    }
+  ],
+  "scaling_diagnostics": {
+    "axes_compared": "head_count_1_to_2_same_d8_same_sequence_length_per_head_same_bounded_weight_policy",
+    "baseline_envelope_bytes_per_score_row": 7424.576923076923,
+    "baseline_head_count": 1,
+    "baseline_proof_bytes_per_score_row": 707.096153846154,
+    "decommitments_delta_bytes": 1096,
+    "envelope_growth_vs_score_growth": 0.663156149794,
+    "envelope_size_delta_bytes": 125982,
+    "envelope_size_ratio": 1.326312299587,
+    "envelope_size_ratio_fraction": {
+      "denominator": 386078,
+      "numerator": 512060
+    },
+    "fri_proof_delta_bytes": 2137,
+    "key_width_held_constant": true,
+    "largest_proof_section_delta": "fri_proof",
+    "profile_interpretation": "proof_bytes_sublinear_on_two_checked_points_likely_fixed_overhead_dominated_but_not_a_scaling_law",
+    "proof_component_byte_breakdown_status": "TOP_LEVEL_STARK_PROOF_JSON_SECTION_BYTES_AVAILABLE_NOT_BINARY_PCS_FRI_INNER_ACCOUNTING",
+    "proof_growth_vs_score_growth": 0.559914601974,
+    "proof_json_wrapper_delta_bytes": 0,
+    "proof_section_delta_bytes": {
+      "commitments": 10,
+      "config": 0,
+      "decommitments": 1096,
+      "fri_proof": 2137,
+      "proof_of_work": 0,
+      "queried_values": 528,
+      "sampled_values": 635
+    },
+    "proof_section_growth_ratios": {
+      "commitments": 1.029850746269,
+      "config": 1.0,
+      "decommitments": 1.202662721893,
+      "fri_proof": 1.362572107228,
+      "proof_of_work": 1.0,
+      "queried_values": 1.053872053872,
+      "sampled_values": 1.04214788265
+    },
+    "proof_section_payload_delta_bytes": 4406,
+    "proof_size_delta_bytes": 4406,
+    "proof_size_ratio": 1.119829203949,
+    "proof_size_ratio_fraction": {
+      "denominator": 36769,
+      "numerator": 41175
+    },
+    "scaled_envelope_bytes_per_score_row": 4923.653846153846,
+    "scaled_head_count": 2,
+    "scaled_proof_bytes_per_score_row": 395.913461538462,
+    "score_rows_ratio": 2.0,
+    "score_rows_ratio_fraction": {
+      "denominator": 52,
+      "numerator": 104
+    },
+    "semantics_held_constant": true,
+    "sequence_length_per_head_held_constant": true,
+    "trace_rows_ratio": 2.0,
+    "trace_rows_ratio_fraction": {
+      "denominator": 64,
+      "numerator": 128
+    },
+    "value_width_held_constant": true,
+    "weight_policy_held_constant": true
+  },
+  "schema": "zkai-attention-kv-native-proof-size-profile-gate-v1",
+  "source_issues": [
+    460,
+    461
+  ],
+  "timing_policy": "no_new_timing_two_point_engineering_profile_only",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.tsv",
+    "python3 scripts/zkai_attention_kv_two_head_bounded_weighted_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.tsv",
+    "python3 scripts/zkai_attention_kv_proof_size_profile_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-native-proof-size-profile-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_proof_size_profile_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}
