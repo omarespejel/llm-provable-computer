@@ -35,15 +35,13 @@ The table is:
 | 7 | 23 |
 | 8 | 16 |
 
-The table identity, score scale, gap clip, denominator policy, and output
-quotient/remainder policy are bound into the statement. The non-claims are
-validated by the input and gate artifacts rather than committed as proof
-statement fields. The verifier recomputes the append-only KV carry, candidate
-scores, max score, clipped score gaps, table-derived weights, denominators,
-weighted numerators, floor-division outputs, and remainders before proof
-verification. The native AIR proves row arithmetic for dot products,
-nonnegative score and causal gaps, table-derived weight-value products, and
-output quotient/remainder relations.
+The table identity, score scale, gap clip, denominator policy, output
+quotient/remainder policy, and non-claims are bound into the statement. The
+verifier recomputes the append-only KV carry, candidate scores, max score,
+clipped score gaps, table-derived weights, denominators, weighted numerators,
+floor-division outputs, and remainders before proof verification. The native AIR
+proves row arithmetic for dot products, nonnegative score and causal gaps,
+table-derived weight-value products, and output quotient/remainder relations.
 
 This is not exact Softmax. It does not prove exp/div semantics. It is also not
 an AIR-private lookup argument: table membership is verifier-recomputed over the
@@ -80,7 +78,7 @@ public rows and bound into the proof input before native proof verification.
 | Output remainder bits | `16` |
 | Proof size | `44692` bytes |
 | Envelope size | `451982` bytes |
-| Mutation cases rejected | `18 / 18` |
+| Mutation cases rejected | `19 / 19` |
 
 Checked attention outputs:
 
@@ -101,8 +99,8 @@ Checked attention outputs:
 
 | Commitment | Value |
 | --- | --- |
-| Statement | `blake2b-256:ce2f67e8009f647cef6282bc687e0346e52a27101d814b9626cd02163b417398` |
-| Public instance | `blake2b-256:384bff181005ababda4e2227b3184382edf8069f4a112b436735886c2b567d31` |
+| Statement | `blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b` |
+| Public instance | `blake2b-256:24007e2e093726eaeabfefc32de4b0633babe0f8ccb80945036dd93579f7d05c` |
 | Score rows | `blake2b-256:1279d23d93288d6ddce174aaae45b895f8c0ba690754c0a3035a84a556efb5ec` |
 | Final KV cache | `blake2b-256:593789678d4a171b53a2a91698d0cba11798c5b9273b9242a1d2e4d694e26873` |
 | Outputs | `blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638` |
@@ -128,7 +126,7 @@ more explicit Softmax-like approximation policy.
 
 ## Mutation Coverage
 
-The gate rejects `18 / 18` checked mutations:
+The gate rejects `19 / 19` checked mutations:
 
 - statement commitment relabeling;
 - public-instance commitment relabeling;
@@ -147,6 +145,7 @@ The gate rejects `18 / 18` checked mutations:
 - exact-Softmax overclaim drift;
 - first-blocker removal;
 - non-claim removal;
+- nested receipt unknown-field injection;
 - unknown-field injection.
 
 ## Claim Boundary
@@ -210,4 +209,8 @@ python3 scripts/zkai_attention_kv_d8_bounded_softmax_table_native_gate.py \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.tsv
 
 python3 -m unittest scripts.tests.test_zkai_attention_kv_d8_bounded_softmax_table_native_gate
+
+just lib
+just gate-fast
+just gate
 ```

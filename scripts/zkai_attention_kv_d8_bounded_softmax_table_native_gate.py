@@ -69,8 +69,8 @@ WEIGHT_TABLE = (
 PROOF_SIZE_BYTES = 44692
 ENVELOPE_SIZE_BYTES = 451982
 COMMITMENTS = {
-    "statement_commitment": "blake2b-256:ce2f67e8009f647cef6282bc687e0346e52a27101d814b9626cd02163b417398",
-    "public_instance_commitment": "blake2b-256:384bff181005ababda4e2227b3184382edf8069f4a112b436735886c2b567d31",
+    "statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+    "public_instance_commitment": "blake2b-256:24007e2e093726eaeabfefc32de4b0633babe0f8ccb80945036dd93579f7d05c",
     "score_row_commitment": "blake2b-256:1279d23d93288d6ddce174aaae45b895f8c0ba690754c0a3035a84a556efb5ec",
     "final_kv_cache_commitment": "blake2b-256:593789678d4a171b53a2a91698d0cba11798c5b9273b9242a1d2e4d694e26873",
     "outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
@@ -104,9 +104,10 @@ EXPECTED_MUTATION_NAMES = (
     "claim_boundary_exact_softmax_overclaim",
     "first_blocker_removed",
     "non_claim_removed",
+    "receipt_unknown_field_injection",
     "unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 18
+EXPECTED_MUTATION_COUNT = 19
 MUTATION_CASE_KEYS = {"name", "rejected", "error"}
 NON_CLAIMS = (
     "not exact Softmax attention",
@@ -201,6 +202,18 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 def validate_source_pair(input_payload: Any, envelope: Any) -> None:
     if not isinstance(input_payload, dict) or not isinstance(envelope, dict):
         raise AttentionKvBoundedSoftmaxTableNativeGateError("input/envelope must be objects")
+    allowed_envelope_keys = {
+        "proof_backend",
+        "proof_backend_version",
+        "statement_version",
+        "semantic_scope",
+        "decision",
+        "input",
+        "proof",
+    }
+    extra_envelope_keys = set(envelope) - allowed_envelope_keys
+    if extra_envelope_keys:
+        raise AttentionKvBoundedSoftmaxTableNativeGateError(f"unknown envelope field(s): {sorted(extra_envelope_keys)}")
     if input_payload.get("schema") != NATIVE_INPUT_SCHEMA:
         raise AttentionKvBoundedSoftmaxTableNativeGateError("input schema drift")
     if input_payload.get("decision") != NATIVE_INPUT_DECISION:
@@ -221,8 +234,11 @@ def validate_source_pair(input_payload: Any, envelope: Any) -> None:
         raise AttentionKvBoundedSoftmaxTableNativeGateError("semantic scope drift")
     if envelope.get("decision") != NATIVE_ENVELOPE_DECISION:
         raise AttentionKvBoundedSoftmaxTableNativeGateError("proof envelope decision drift")
-    if len(envelope.get("proof", [])) != PROOF_SIZE_BYTES:
+    proof = envelope.get("proof")
+    if not isinstance(proof, list) or len(proof) != PROOF_SIZE_BYTES:
         raise AttentionKvBoundedSoftmaxTableNativeGateError("proof byte length drift")
+    if any(not isinstance(byte, int) or isinstance(byte, bool) or byte < 0 or byte > 255 for byte in proof):
+        raise AttentionKvBoundedSoftmaxTableNativeGateError("proof bytes must be uint8 values")
     if input_payload.get("target_id") != TARGET_ID:
         raise AttentionKvBoundedSoftmaxTableNativeGateError("target_id drift")
     if input_payload.get("proof_version") != PROOF_VERSION:
@@ -379,6 +395,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         mutated["first_blocker"] = ""
     elif name == "non_claim_removed":
         mutated["non_claims"].pop(0)
+    elif name == "receipt_unknown_field_injection":
+        receipt["unexpected"] = "nested claim smuggling"
     elif name == "unknown_field_injection":
         mutated["unexpected"] = "claim smuggling"
     else:
@@ -453,6 +471,13 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "proof_size_bytes": PROOF_SIZE_BYTES,
         "envelope_size_bytes": ENVELOPE_SIZE_BYTES,
     }
+    allowed_receipt_keys = set(expected_receipt) | set(COMMITMENTS)
+    if set(receipt) != allowed_receipt_keys:
+        extra = sorted(set(receipt) - allowed_receipt_keys)
+        missing = sorted(allowed_receipt_keys - set(receipt))
+        raise AttentionKvBoundedSoftmaxTableNativeGateError(
+            f"bounded Softmax-table receipt schema drift: extra={extra} missing={missing}"
+        )
     for key, expected_value in expected_receipt.items():
         if receipt.get(key) != expected_value:
             raise AttentionKvBoundedSoftmaxTableNativeGateError(f"bounded Softmax-table receipt {key} drift")

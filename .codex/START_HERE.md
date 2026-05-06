@@ -192,7 +192,7 @@ This repository currently has three live lanes.
     table (`0 -> 256`, `1 -> 181`, `2 -> 128`, `3 -> 91`, `4 -> 64`,
     `5 -> 45`, `6 -> 32`, `7 -> 23`, `8 -> 16`) into the statement. The proof
     is `44692` bytes, the envelope is `451982` bytes, and the gate rejects
-    `18 / 18` table/scale/clip/relabeling/metric/overclaim mutations. This is
+    `19 / 19` table/scale/clip/relabeling/schema/metric/overclaim mutations. This is
     a public-row verifier-recomputed table policy, not exact Softmax and not an
     AIR-private lookup argument; see
     `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`.

@@ -68,6 +68,14 @@ class AttentionKvBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
         mutated["bounded_softmax_table_receipt"]["weight_table_commitment"] = "blake2b-256:" + "99" * 32
         self.assert_rejects(mutated, "weight_table_commitment drift")
 
+    def test_rejects_nested_receipt_unknown_field(self):
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        for key in ("mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"):
+            mutated.pop(key)
+        mutated["bounded_softmax_table_receipt"]["unexpected"] = "claim smuggling"
+        self.assert_rejects(mutated, "bounded Softmax-table receipt schema drift")
+
     def test_mutation_spec_count_is_pinned(self):
         self.assertEqual(len(gate.EXPECTED_MUTATION_NAMES), gate.EXPECTED_MUTATION_COUNT)
 
@@ -80,6 +88,20 @@ class AttentionKvBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
         mutated_envelope["input"] = mutated_input
         with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableNativeGateError, "source input validation drift"):
             gate.validate_source_pair(mutated_input, mutated_envelope)
+
+    def test_rejects_malformed_envelope_proof_shape(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded Softmax-table envelope")
+        envelope["proof"] = "x" * gate.PROOF_SIZE_BYTES
+        with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableNativeGateError, "proof byte length drift"):
+            gate.validate_source_pair(input_payload, envelope)
+
+    def test_rejects_non_uint8_envelope_proof_byte(self):
+        input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
+        envelope = gate.read_bounded_json(gate.ENVELOPE_JSON, gate.MAX_ENVELOPE_JSON_BYTES, "bounded Softmax-table envelope")
+        envelope["proof"][0] = 256
+        with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableNativeGateError, "proof bytes must be uint8"):
+            gate.validate_source_pair(input_payload, envelope)
 
     def test_receipt_summary_size_is_path_independent_regression(self):
         input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")

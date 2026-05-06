@@ -1501,6 +1501,7 @@ fn statement_commitment(
             ),
             ("key_width", input.key_width.to_string()),
             ("masking_policy", json_string(&input.masking_policy)?),
+            ("non_claims", canonical_json_string(&input.non_claims)?),
             (
                 "outputs_commitment",
                 json_string(&input.outputs_commitment)?,

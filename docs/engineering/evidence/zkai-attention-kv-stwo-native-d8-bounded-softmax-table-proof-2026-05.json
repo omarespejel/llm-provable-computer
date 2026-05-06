@@ -665,7 +665,7 @@
     "commitment-vector length check before commitment indexing"
   ],
   "proof_version": "stwo-attention-kv-d8-causal-mask-bounded-softmax-table-air-proof-v1",
-  "public_instance_commitment": "blake2b-256:384bff181005ababda4e2227b3184382edf8069f4a112b436735886c2b567d31",
+  "public_instance_commitment": "blake2b-256:24007e2e093726eaeabfefc32de4b0633babe0f8ccb80945036dd93579f7d05c",
   "required_backend_version": "stwo-attention-kv-d8-causal-mask-bounded-softmax-table-v1",
   "schema": "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-air-proof-input-v1",
   "score_gap_bits": 16,
@@ -5567,7 +5567,7 @@
   "semantics": "bounded_table_softmax_approx_attention",
   "sequence_length": 8,
   "source_issue": 460,
-  "statement_commitment": "blake2b-256:ce2f67e8009f647cef6282bc687e0346e52a27101d814b9626cd02163b417398",
+  "statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
   "statement_version": "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-statement-v1",
   "target_id": "attention-kv-d8-causal-mask-bounded-softmax-table-v1",
   "trace_row_count": 64,
