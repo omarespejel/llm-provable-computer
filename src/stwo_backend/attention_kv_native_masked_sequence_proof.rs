@@ -236,6 +236,20 @@ struct AttentionKvNativeMaskedSequenceProfile {
     validation_commands: &'static [&'static str],
 }
 
+impl AttentionKvNativeMaskedSequenceProfile {
+    fn initial_kv_items_per_head(&self) -> Result<usize> {
+        if self.head_count == 0 {
+            return Err(attention_error("profile head count must be nonzero"));
+        }
+        if self.initial_kv_items % self.head_count != 0 {
+            return Err(attention_error(
+                "profile initial KV item count must divide evenly across heads",
+            ));
+        }
+        Ok(self.initial_kv_items / self.head_count)
+    }
+}
+
 const PROFILE_D8: AttentionKvNativeMaskedSequenceProfile = AttentionKvNativeMaskedSequenceProfile {
     issue: 448,
     source_issue: 446,
@@ -1047,9 +1061,10 @@ fn validate_input_step(
     if step.head_index >= profile.head_count {
         return Err(attention_error("input step head index out of range"));
     }
+    let initial_kv_items_per_head = profile.initial_kv_items_per_head()?;
     expect_usize(
         step.token_position,
-        INITIAL_KV_ITEMS + step_index,
+        initial_kv_items_per_head + step_index,
         "token position",
     )?;
     expect_usize(step.query.len(), profile.key_width, "query width")?;
@@ -2012,6 +2027,25 @@ mod tests {
         let last = envelope.proof.last_mut().expect("proof byte");
         *last ^= 1;
         assert!(verify_zkai_attention_kv_native_masked_sequence_envelope(&envelope).is_err());
+    }
+
+    #[test]
+    fn attention_kv_native_two_head_derives_initial_kv_offset_from_profile() {
+        assert_eq!(
+            PROFILE_TWO_HEAD
+                .initial_kv_items_per_head()
+                .expect("per-head initial KV"),
+            INITIAL_KV_ITEMS
+        );
+
+        let invalid_profile = AttentionKvNativeMaskedSequenceProfile {
+            initial_kv_items: INITIAL_KV_ITEMS_TWO_HEAD + 1,
+            ..PROFILE_TWO_HEAD
+        };
+        let error = invalid_profile.initial_kv_items_per_head().unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("profile initial KV item count must divide evenly across heads"));
     }
 
     #[test]
