@@ -1451,9 +1451,9 @@ rows, and `4` Stwo proof commitments. Evidence paths are
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`.
 The minimal verification command is
-`CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`;
+`CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-four-head-fused-repro}" CARGO_INCREMENTAL=0 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`;
 the gate command is
-`CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv`.
+`CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-four-head-fused-repro}" CARGO_INCREMENTAL=0 python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv`.
 
 The credible sequencing is therefore: first scale this native attention/KV AIR
 one notch at a time; second fuse the lookup-heavy pieces when the arithmetic and
