@@ -24,6 +24,8 @@ mod attention_kv_native_two_head_bounded_softmax_table_proof;
 #[cfg(feature = "stwo-backend")]
 mod attention_kv_native_two_head_bounded_weighted_proof;
 #[cfg(feature = "stwo-backend")]
+mod attention_kv_native_two_head_fused_softmax_table_proof;
+#[cfg(feature = "stwo-backend")]
 mod attention_kv_native_two_head_softmax_table_lookup_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_activation_swiglu_proof;
@@ -328,6 +330,25 @@ pub use attention_kv_native_two_head_bounded_weighted_proof::{
     ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_BOUNDED_WEIGHTED_STATEMENT_VERSION,
     ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_BOUNDED_WEIGHTED_TARGET_ID,
     ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_BOUNDED_WEIGHTED_VERIFIER_DOMAIN,
+};
+#[cfg(feature = "stwo-backend")]
+pub use attention_kv_native_two_head_fused_softmax_table_proof::{
+    prove_zkai_attention_kv_native_two_head_fused_softmax_table_envelope,
+    verify_zkai_attention_kv_native_two_head_fused_softmax_table_envelope,
+    zkai_attention_kv_native_two_head_fused_softmax_table_envelope_from_json_slice,
+    zkai_attention_kv_native_two_head_fused_softmax_table_source_input_from_json_str,
+    AttentionKvTwoHeadFusedSoftmaxTableMultiplicity,
+    ZkAiAttentionKvNativeTwoHeadFusedSoftmaxTableEnvelope,
+    ZkAiAttentionKvNativeTwoHeadFusedSoftmaxTableSummary,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_BACKEND_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_MAX_PROOF_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_PROOF_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_SEMANTIC_SCOPE,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_STATEMENT_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_TARGET_ID,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_FUSED_SOFTMAX_TABLE_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use attention_kv_native_two_head_softmax_table_lookup_proof::{
