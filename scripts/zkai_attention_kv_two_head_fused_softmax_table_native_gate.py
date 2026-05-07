@@ -308,6 +308,17 @@ def assert_fields(mapping: dict[str, Any], expected: dict[str, Any], label: str)
             )
 
 
+def assert_exact_keys(mapping: dict[str, Any], expected_keys: set[str], label: str) -> None:
+    if not isinstance(mapping, dict):
+        raise AttentionKvTwoHeadFusedSoftmaxTableGateError(f"{label} must be an object")
+    extra_keys = set(mapping) - expected_keys
+    missing_keys = expected_keys - set(mapping)
+    if extra_keys or missing_keys:
+        raise AttentionKvTwoHeadFusedSoftmaxTableGateError(
+            f"{label} field set drift: extra={sorted(extra_keys)}, missing={sorted(missing_keys)}"
+        )
+
+
 def verify_envelope_bytes_with_native_cli(
     envelope_bytes: bytes,
     label: str,
@@ -514,6 +525,19 @@ def validate_source_artifacts(
     except Exception as err:
         raise AttentionKvTwoHeadFusedSoftmaxTableGateError(f"source input validation drift: {err}") from err
     validate_source_input_contract(source_input)
+    assert_exact_keys(
+        source_envelope,
+        {
+            "proof_backend",
+            "proof_backend_version",
+            "statement_version",
+            "semantic_scope",
+            "decision",
+            "input",
+            "proof",
+        },
+        "source envelope",
+    )
     if source_envelope.get("input") != source_input:
         raise AttentionKvTwoHeadFusedSoftmaxTableGateError("source envelope/input split-brain drift")
     assert_fields(
@@ -547,6 +571,21 @@ def validate_source_artifacts(
             "score_row_count": SOURCE_SCORE_ROWS,
             "trace_row_count": SOURCE_TRACE_ROWS,
         },
+    )
+    assert_exact_keys(
+        sidecar_envelope,
+        {
+            "proof_backend",
+            "proof_backend_version",
+            "statement_version",
+            "semantic_scope",
+            "decision",
+            "verifier_domain",
+            "source_input",
+            "lookup_summary",
+            "proof",
+        },
+        "sidecar envelope",
     )
     assert_fields(
         sidecar_envelope,
@@ -806,14 +845,7 @@ def run_gate() -> dict[str, Any]:
     validate_fused_envelope(fused_envelope, source_input, run_native=False)
     verify_fused_envelope_bytes_with_native_cli(fused_raw, str(FUSED_ENVELOPE_JSON))
 
-    mutation_results = []
-    for name, mutated, run_native in mutation_cases(fused_envelope):
-        try:
-            validate_fused_envelope(mutated, source_input, run_native=run_native)
-        except Exception as err:  # noqa: BLE001 - gate records exact rejection surface.
-            mutation_results.append({"name": name, "rejected": True, "error": str(err)})
-        else:
-            mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
+    mutation_results = evaluate_mutation_results(fused_envelope, source_input)
     mutation_names = tuple(result["name"] for result in mutation_results)
     if mutation_names != EXPECTED_MUTATION_NAMES:
         raise AttentionKvTwoHeadFusedSoftmaxTableGateError("mutation case order/name drift")
@@ -863,6 +895,18 @@ def run_gate() -> dict[str, Any]:
     }
     validate_result(result)
     return result
+
+
+def evaluate_mutation_results(fused_envelope: dict[str, Any], source_input: dict[str, Any]) -> list[dict[str, Any]]:
+    mutation_results = []
+    for name, mutated, run_native in mutation_cases(fused_envelope):
+        try:
+            validate_fused_envelope(mutated, source_input, run_native=run_native)
+        except AttentionKvTwoHeadFusedSoftmaxTableGateError as err:
+            mutation_results.append({"name": name, "rejected": True, "error": str(err)})
+        else:
+            mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
+    return mutation_results
 
 
 def validate_result(result: dict[str, Any]) -> None:
