@@ -278,6 +278,15 @@ Tablero boundary.
   table evidence, not exact Softmax, not two-head/four-head fusion, and not full
   inference; see
   `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`.
+- Issue `#489` repeats fusion on the two-head bounded Softmax-table route:
+  one native Stwo proof object checks the issue `#471` two-head attention
+  arithmetic and the issue `#477` LogUp table-membership relation for `104`
+  lookup claims. The fused proof is `49508` raw bytes and `585857` checked
+  envelope bytes, rejects `30 / 30` gate mutations, adds only `2404` bytes over
+  the arithmetic-only proof, and saves `15700` raw bytes versus the previous
+  source-plus-sidecar pair (`65208` bytes). This is fused two-head bounded table
+  evidence, not exact Softmax, not four-head fusion, and not full inference; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -288,9 +297,10 @@ Tablero boundary.
   causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
   weighted, d8 bounded weighted, two-head bounded weighted, bounded
   Softmax-table, two-head bounded Softmax-table, four-head bounded
-  Softmax-table, LogUp sidecar, and fused single-head Softmax-table gates are
-  separate native scale/semantics/accounting/fusion gates for the first route
-  family. It rejects `42 / 42` selector mutations and keeps exact exp/div
+  Softmax-table, LogUp sidecar, fused single-head Softmax-table, and fused
+  two-head Softmax-table gates are separate native
+  scale/semantics/accounting/fusion gates for the first route family. It
+  rejects `42 / 42` selector mutations and keeps exact exp/div
   Softmax, long-context inference, full inference, and recursion/PCD out of
   scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.

@@ -672,6 +672,12 @@ fn validate_input(input: &ZkAiAttentionKvNativeTwoHeadBoundedSoftmaxTableProofIn
     Ok(())
 }
 
+pub(crate) fn validate_zkai_attention_kv_native_two_head_bounded_softmax_table_input(
+    input: &ZkAiAttentionKvNativeTwoHeadBoundedSoftmaxTableProofInput,
+) -> Result<()> {
+    validate_input(input)
+}
+
 fn validate_sequence(
     input: &ZkAiAttentionKvNativeTwoHeadBoundedSoftmaxTableProofInput,
 ) -> Result<()> {

@@ -1,6 +1,6 @@
 # Publication Release Package
 
-Snapshot date: **May 1, 2026**
+Snapshot date: **May 7, 2026**
 
 Primary presentation title:
 
@@ -40,11 +40,14 @@ It supports the following presentation posture:
   receipt, one external RISC Zero three-step carried KV sequence receipt, and
   one external RISC Zero fixed eight-step carried KV sequence receipt, plus
   narrow native Stwo attention/KV proofs for single-head, seq16, d16,
-  two-head integer-argmax carried-state fixtures, and a bounded weighted
-  attention policy fixture (not exact Softmax, long-context inference, full
-  inference, proof aggregation across heads, or recursion) show that proof
-  validity, statement binding, numeric range assumptions, approximation
-  policies, and state transitions must remain separate verifier layers,
+  two-head integer-argmax carried-state fixtures, bounded weighted attention,
+  bounded Softmax-table attention, LogUp table-membership sidecars, and fused
+  single-head/two-head bounded Softmax-table-plus-LogUp proof objects (not exact
+  Softmax, implementation-exact model Softmax, long-context inference, full
+  inference, proof aggregation across heads, public benchmark evidence, or
+  recursion) show that proof validity, statement binding, numeric range
+  assumptions, approximation policies, table membership, and state transitions
+  must remain separate verifier layers,
 - the main presentation figures are the cross-family results overview, the explicitly labeled carry-aware experimental scaling-law fit, and the replay-baseline breakdown generated from checked evidence,
 - the main negative evidence is one bounded compactness no-go on a narrower handoff object,
 - the external calibration is source-backed but not presented as a matched verifier race.
@@ -57,6 +60,8 @@ It does **not** support the following claims:
 - full end-to-end transformer benchmarking,
 - onchain deployment of the typed-boundary path.
 - full verifiable-intelligence or full autoregressive-transformer proving.
+- exact exp/div Softmax, implementation-exact quantized Softmax, or public
+  benchmark comparisons for the native attention/KV fixtures.
 
 ## Package hygiene
 
