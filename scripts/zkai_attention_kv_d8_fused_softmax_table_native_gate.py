@@ -619,45 +619,65 @@ def run_gate() -> dict[str, Any]:
 
 
 def validate_result(result: dict[str, Any]) -> None:
-    required = {
-        "schema",
-        "issue",
-        "decision",
-        "route_id",
-        "fusion_status",
-        "source_plus_sidecar_raw_proof_bytes",
-        "fused_proof_size_bytes",
-        "fused_over_source_proof_bytes",
-        "fused_saves_vs_source_plus_sidecar_bytes",
-        "fused_to_source_plus_sidecar_ratio",
-        "mutation_results",
-        "mutations_checked",
-        "mutations_rejected",
+    expected_exact: dict[str, Any] = {
+        "schema": SCHEMA,
+        "issue": ISSUE,
+        "source_issue": SOURCE_ISSUE,
+        "sidecar_issue": SIDECAR_ISSUE,
+        "decision": DECISION,
+        "route_id": ROUTE_ID,
+        "claim_boundary": CLAIM_BOUNDARY,
+        "fusion_status": FUSION_STATUS,
+        "non_fused_status": NON_FUSED_STATUS,
+        "timing_policy": TIMING_POLICY,
+        "source_proof_size_bytes": SOURCE_PROOF_SIZE_BYTES,
+        "source_envelope_size_bytes": SOURCE_ENVELOPE_SIZE_BYTES,
+        "sidecar_proof_size_bytes": SIDECAR_PROOF_SIZE_BYTES,
+        "sidecar_envelope_size_bytes": SIDECAR_ENVELOPE_SIZE_BYTES,
+        "source_plus_sidecar_raw_proof_bytes": SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES,
+        "fused_proof_size_bytes": FUSED_PROOF_SIZE_BYTES,
+        "fused_envelope_size_bytes": FUSED_ENVELOPE_SIZE_BYTES,
+        "fused_over_source_proof_bytes": FUSED_OVER_SOURCE_PROOF_BYTES,
+        "fused_saves_vs_source_plus_sidecar_bytes": FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES,
+        "fused_to_source_plus_sidecar_ratio": FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO,
+        "lookup_claims": SOURCE_SCORE_ROWS,
+        "trace_rows": SOURCE_TRACE_ROWS,
+        "table_rows": SOURCE_TABLE_ROWS,
+        "lookup_relation": LOOKUP_RELATION,
+        "lookup_relation_width": LOOKUP_RELATION_WIDTH,
+        "source_statement_commitment": SOURCE_STATEMENT_COMMITMENT,
+        "source_public_instance_commitment": SOURCE_PUBLIC_INSTANCE_COMMITMENT,
+        "source_score_row_commitment": SOURCE_SCORE_ROW_COMMITMENT,
+        "source_weight_table_commitment": SOURCE_WEIGHT_TABLE_COMMITMENT,
+        "table_multiplicities": list(TABLE_MULTIPLICITIES),
+        "non_claims": list(NON_CLAIMS),
+        "validation_commands": list(VALIDATION_COMMANDS),
+        "mutations_checked": EXPECTED_MUTATION_COUNT,
+        "mutations_rejected": EXPECTED_MUTATION_COUNT,
     }
+    required = set(expected_exact) | {"mutation_results"}
     missing = required - set(result)
     if missing:
         raise AttentionKvD8FusedSoftmaxTableGateError(f"missing result keys: {sorted(missing)}")
-    if result["schema"] != SCHEMA or result["issue"] != ISSUE or result["decision"] != DECISION:
-        raise AttentionKvD8FusedSoftmaxTableGateError("result identity drift")
-    if result["source_plus_sidecar_raw_proof_bytes"] != SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("source+sidecar proof byte drift")
-    if result["fused_proof_size_bytes"] != FUSED_PROOF_SIZE_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("fused proof byte drift")
-    if result.get("source_envelope_size_bytes") != SOURCE_ENVELOPE_SIZE_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("source envelope byte drift")
-    if result.get("sidecar_envelope_size_bytes") != SIDECAR_ENVELOPE_SIZE_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("sidecar envelope byte drift")
-    if result.get("fused_envelope_size_bytes") != FUSED_ENVELOPE_SIZE_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("fused envelope byte drift")
-    if result["fused_over_source_proof_bytes"] != FUSED_OVER_SOURCE_PROOF_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("fused overhead drift")
-    if result["fused_saves_vs_source_plus_sidecar_bytes"] != FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError("fused savings drift")
-    if (
-        result["mutations_checked"] != EXPECTED_MUTATION_COUNT
-        or result["mutations_rejected"] != EXPECTED_MUTATION_COUNT
-    ):
-        raise AttentionKvD8FusedSoftmaxTableGateError("mutation count drift")
+    for key, expected_value in expected_exact.items():
+        if result.get(key) != expected_value:
+            raise AttentionKvD8FusedSoftmaxTableGateError(f"result drift for {key}")
+    mutation_results = result["mutation_results"]
+    if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
+        raise AttentionKvD8FusedSoftmaxTableGateError("mutation result shape drift")
+    mutation_names = tuple(
+        item.get("name") for item in mutation_results if isinstance(item, dict)
+    )
+    if mutation_names != EXPECTED_MUTATION_NAMES:
+        raise AttentionKvD8FusedSoftmaxTableGateError("mutation result name drift")
+    for item in mutation_results:
+        if (
+            not isinstance(item, dict)
+            or item.get("rejected") is not True
+            or not isinstance(item.get("error"), str)
+            or not item["error"]
+        ):
+            raise AttentionKvD8FusedSoftmaxTableGateError("mutation result rejection drift")
 
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
