@@ -106,15 +106,28 @@ claims grow `4.000000x` from single-head while raw sidecar proof bytes grow only
 bytes grow only `1.203215x`. This is still relation-scaling evidence, not a
 public performance benchmark row.
 
+Issue `#478` closes the first fused-component target for the single-head
+bounded Softmax-table route. One native Stwo proof object now carries both the
+issue `#463` attention arithmetic and the issue `#470` LogUp table-membership
+relation for the same `52` lookup claims. The fused proof is `47698` raw bytes:
+only `3006` bytes over the arithmetic-only proof and `11739` bytes smaller than
+the previous source-plus-sidecar raw proof pair (`59437` bytes). The fused gate
+rejects `25 / 25` mutations. This is the first fused attention-arithmetic plus
+table-membership GO, still scoped to the single-head bounded table fixture and
+still not exact Softmax.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
 four-head gate discharges one bounded multi-head fixture, and the bounded
 weighted gates discharge deterministic monotone-weight fixtures; neither is
 general multi-head exact Softmax attention. The bounded Softmax-table gates are
 closer to transformer attention, and the LogUp sidecars now prove table
-membership for the single-head, two-head, and four-head fixtures, but exact exp/div
-Softmax and fused attention-plus-lookup remain open. The external SNARK and
-RISC Zero routes remain useful controls, not the headline result.
+membership for the single-head, two-head, and four-head fixtures. The fused
+single-head route now proves attention arithmetic and table membership in one
+native Stwo proof object. Exact exp/div Softmax, fused two-head/four-head
+membership, and implementation-exact quantized Softmax remain open. The
+external SNARK and RISC Zero routes remain useful controls, not the headline
+result.
 
 Decision:
 
@@ -142,6 +155,7 @@ Claim boundary:
 | Local Stwo two-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the two-head table-membership multiset; `2.0x` lookup claims with `1.227806x` raw proof bytes versus single-head |
 | Local Stwo four-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof scales the bounded Softmax-table source surface to four heads and `208` score rows |
 | Local Stwo four-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the four-head table-membership multiset; `4.0x` lookup claims with `1.477314x` raw proof bytes versus single-head |
+| Local Stwo d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks single-head attention arithmetic and table membership; `47698` raw proof bytes versus `59437` bytes for the previous source-plus-sidecar pair |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -172,6 +186,8 @@ Claim boundary:
 - Native four-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.envelope.json`
 - Native four-head bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05.json`
 - Native four-head bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
+- Native d8 fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05.json`
+- Native d8 fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -192,6 +208,7 @@ Claim boundary:
 | Proof-backed routes available | 6 |
 | Routes checked by selector evidence | 8 |
 | Additional native Softmax-table scale gates summarized | 2 |
+| Additional fused Softmax-table route summarized | 1 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
 | Native Stwo proof envelope size | `265791` bytes |

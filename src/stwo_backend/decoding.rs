@@ -14943,7 +14943,10 @@ mod tests {
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use std::collections::VecDeque;
-    use std::sync::OnceLock;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        OnceLock,
+    };
 
     #[derive(Debug, Clone)]
     struct Phase12ExecutionCarryProvenance {
@@ -19262,10 +19265,7 @@ mod tests {
     #[test]
     fn phase24_save_and_load_round_trip() {
         let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase24-decoding-state-relation-accumulator-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path = unique_temp_json_path("phase24-decoding-state-relation-accumulator-roundtrip");
         save_phase24_decoding_state_relation_accumulator(&manifest, &path).expect("save");
         let loaded = load_phase24_decoding_state_relation_accumulator(&path).expect("load");
         verify_phase24_decoding_state_relation_accumulator(&loaded).expect("verify");
@@ -19283,13 +19283,19 @@ mod tests {
         encoder.finish().expect("finish gzip copy");
     }
 
+    fn unique_temp_json_path(prefix: &str) -> std::path::PathBuf {
+        static COUNTER: AtomicUsize = AtomicUsize::new(0);
+        std::env::temp_dir().join(format!(
+            "{prefix}-{}-{}.json",
+            std::process::id(),
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        ))
+    }
+
     #[test]
     fn phase24_load_accepts_gzip_round_trip() {
         let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase24-decoding-state-relation-accumulator-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path = unique_temp_json_path("phase24-decoding-state-relation-accumulator-roundtrip");
         let gzip_path = path.with_extension("json.gz");
         save_phase24_decoding_state_relation_accumulator(&manifest, &path).expect("save");
         write_test_gzip_copy(&path, &gzip_path);
@@ -19303,10 +19309,7 @@ mod tests {
     #[test]
     fn phase25_save_and_load_round_trip() {
         let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase25-intervalized-decoding-state-relation-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path = unique_temp_json_path("phase25-intervalized-decoding-state-relation-roundtrip");
         save_phase25_intervalized_decoding_state_relation(&manifest, &path).expect("save");
         let loaded = load_phase25_intervalized_decoding_state_relation(&path).expect("load");
         verify_phase25_intervalized_decoding_state_relation(&loaded).expect("verify");
@@ -19317,10 +19320,7 @@ mod tests {
     #[test]
     fn phase25_load_accepts_gzip_round_trip() {
         let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase25-intervalized-decoding-state-relation-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path = unique_temp_json_path("phase25-intervalized-decoding-state-relation-roundtrip");
         let gzip_path = path.with_extension("json.gz");
         save_phase25_intervalized_decoding_state_relation(&manifest, &path).expect("save");
         write_test_gzip_copy(&path, &gzip_path);
@@ -19334,10 +19334,8 @@ mod tests {
     #[test]
     fn phase26_save_and_load_round_trip() {
         let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase26-folded-intervalized-decoding-state-relation-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path =
+            unique_temp_json_path("phase26-folded-intervalized-decoding-state-relation-roundtrip");
         save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path).expect("save");
         let loaded = load_phase26_folded_intervalized_decoding_state_relation(&path).expect("load");
         verify_phase26_folded_intervalized_decoding_state_relation(&loaded).expect("verify");
@@ -19348,10 +19346,8 @@ mod tests {
     #[test]
     fn phase26_load_accepts_gzip_round_trip() {
         let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
-        let path = std::env::temp_dir().join(format!(
-            "phase26-folded-intervalized-decoding-state-relation-roundtrip-{}.json",
-            std::process::id()
-        ));
+        let path =
+            unique_temp_json_path("phase26-folded-intervalized-decoding-state-relation-roundtrip");
         let gzip_path = path.with_extension("json.gz");
         save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path).expect("save");
         write_test_gzip_copy(&path, &gzip_path);

@@ -263,6 +263,21 @@ Tablero boundary.
   single-head sidecar. This is still a sidecar, not fused attention arithmetic
   plus lookup and not exact Softmax; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+- Issue `#482` scales the bounded Softmax-table source and LogUp sidecar to
+  four heads: `208` lookup claims, a `52746`-byte source proof, a `21783`-byte
+  sidecar proof, and `24 / 24` sidecar-gate mutations rejected. The useful
+  relation-level scaling signal is `4.000000x` lookup claims versus
+  single-head with only `1.477314x` raw sidecar proof bytes; see
+  `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+- Issue `#478` fuses the single-head bounded Softmax-table attention
+  arithmetic and LogUp table-membership relation into one native Stwo proof
+  object: `52` lookup claims, a `47698`-byte raw proof, a `478626`-byte checked
+  envelope, and `25 / 25` gate mutations rejected. Fusion adds only `3006` raw
+  proof bytes over the arithmetic-only proof and saves `11739` raw proof bytes
+  versus the prior source-plus-sidecar pair. This is fused single-head bounded
+  table evidence, not exact Softmax, not two-head/four-head fusion, and not full
+  inference; see
+  `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -272,11 +287,12 @@ Tablero boundary.
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
   causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
   weighted, d8 bounded weighted, two-head bounded weighted, bounded
-  Softmax-table, two-head bounded Softmax-table, and Softmax-table proof-byte
-  accounting gates are separate native scale/semantics/accounting gates for the
-  first route family. It rejects `42 / 42` selector mutations and keeps exact
-  Softmax, long-context
-  inference, full inference, and recursion/PCD out of scope; see
+  Softmax-table, two-head bounded Softmax-table, four-head bounded
+  Softmax-table, LogUp sidecar, and fused single-head Softmax-table gates are
+  separate native scale/semantics/accounting/fusion gates for the first route
+  family. It rejects `42 / 42` selector mutations and keeps exact exp/div
+  Softmax, long-context inference, full inference, and recursion/PCD out of
+  scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
   PCD outer proof backend exists. The d128 two-slice lane now has a

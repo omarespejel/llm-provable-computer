@@ -47,9 +47,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 41. `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`
 42. `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
 43. `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
-44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-45. `docs/engineering/reproducibility.md`
-46. `git status --short --branch`
+44. `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`
+45. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+46. `docs/engineering/reproducibility.md`
+47. `git status --short --branch`
 
 ## What this repository is now
 
@@ -249,6 +250,17 @@ This repository currently has three live lanes.
     bytes grow only `1.477314x`, and `2.000000x` versus two-head while raw
     sidecar proof bytes grow only `1.203215x`; see
     `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+
+  - Issue `#478` fuses the single-head bounded Softmax-table attention
+    arithmetic and LogUp table-membership relation into one native Stwo proof
+    object. The fused proof checks `52` lookup claims against the same `9`-row
+    table, has a `47698`-byte raw proof, a `478626`-byte checked envelope, and
+    rejects `25 / 25` gate mutations. The useful signal is that fusion adds
+    only `3006` raw proof bytes over the arithmetic-only proof and saves
+    `11739` raw proof bytes versus the previous source-plus-sidecar pair. This
+    is a fused single-head bounded table fixture, not exact Softmax, not
+    two-head/four-head fusion, and not full inference; see
+    `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
