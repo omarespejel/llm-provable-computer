@@ -48,20 +48,21 @@ this route.
 
 ## Exact Route Identifiers
 
-The fused envelope and gate pin these identifiers:
+The fused proof envelope carries the proof/verifier identifiers. The gate output
+adds the route-level evidence identifier used by the route selector.
 
-| Field | Value |
-| --- | --- |
-| `route_id` | `local_stwo_attention_kv_d8_fused_bounded_softmax_table_logup_proof` |
-| `proof_backend` | `stwo` |
-| `proof_backend_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1` |
-| `proof_schema_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1` |
-| `statement_version` | `zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1` |
-| `target_id` | `attention-kv-d8-causal-mask-fused-bounded-softmax-table-logup-v1` |
-| `verifier_domain` | `ptvm:zkai:attention-kv-stwo-native-d8-fused-bounded-softmax-table-logup:v1` |
-| `lookup_relation` | `AttentionKvD8FusedSoftmaxTableRelation` |
-| `lookup_relation_width` | `2` |
-| `timing_policy` | `proof_existence_and_byte_accounting_only_not_public_benchmark` |
+| Surface | Field | Value |
+| --- | --- | --- |
+| Gate output | `route_id` | `local_stwo_attention_kv_d8_fused_bounded_softmax_table_logup_proof` |
+| Envelope | `proof_backend` | `stwo` |
+| Envelope | `proof_backend_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1` |
+| Envelope | `proof_schema_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1` |
+| Envelope | `statement_version` | `zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1` |
+| Envelope | `target_id` | `attention-kv-d8-causal-mask-fused-bounded-softmax-table-logup-v1` |
+| Envelope | `verifier_domain` | `ptvm:zkai:attention-kv-stwo-native-d8-fused-bounded-softmax-table-logup:v1` |
+| Envelope summary / gate output | `lookup_relation` | `AttentionKvD8FusedSoftmaxTableRelation` |
+| Envelope summary / gate output | `lookup_relation_width` | `2` |
+| Envelope summary / gate output | `timing_policy` | `proof_existence_and_byte_accounting_only_not_public_benchmark` |
 
 ## Table Multiplicities
 
