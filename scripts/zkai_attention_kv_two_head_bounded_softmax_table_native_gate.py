@@ -55,6 +55,7 @@ SEMANTICS = "bounded_table_softmax_approx_attention"
 WEIGHT_POLICY = "exp2_half_gap_table_clipped_8_floor_division"
 SCORE_SCALE = 1
 SCORE_GAP_CLIP = 8
+SEQUENCE_LENGTH = 8
 WEIGHT_TABLE = (
     {"gap": 0, "weight": 256},
     {"gap": 1, "weight": 181},
@@ -103,8 +104,10 @@ EXPECTED_MUTATION_NAMES = (
     "two_head_table_score_scale_relabeling",
     "two_head_table_score_gap_clip_relabeling",
     "two_head_table_attention_outputs_relabeling",
+    "two_head_table_cross_head_output_swap_relabeling",
     "two_head_table_outputs_commitment_relabeling",
     "two_head_table_score_row_count_relabeling",
+    "two_head_table_quotient_remainder_drift_relabeling",
     "two_head_table_final_kv_relabeling",
     "two_head_table_target_id_relabeling",
     "two_head_table_backend_version_relabeling",
@@ -397,10 +400,17 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         receipt["score_gap_clip"] = 4
     elif name == "two_head_table_attention_outputs_relabeling":
         receipt["attention_outputs"][0][0] += 1
+    elif name == "two_head_table_cross_head_output_swap_relabeling":
+        receipt["attention_outputs"][0], receipt["attention_outputs"][SEQUENCE_LENGTH] = (
+            receipt["attention_outputs"][SEQUENCE_LENGTH],
+            receipt["attention_outputs"][0],
+        )
     elif name == "two_head_table_outputs_commitment_relabeling":
         receipt["outputs_commitment"] = "blake2b-256:" + "77" * 32
     elif name == "two_head_table_score_row_count_relabeling":
         receipt["score_rows"] += 1
+    elif name == "two_head_table_quotient_remainder_drift_relabeling":
+        receipt["score_row_commitment"] = "blake2b-256:" + "aa" * 32
     elif name == "two_head_table_final_kv_relabeling":
         receipt["final_kv_cache_commitment"] = "blake2b-256:" + "88" * 32
     elif name == "two_head_table_target_id_relabeling":

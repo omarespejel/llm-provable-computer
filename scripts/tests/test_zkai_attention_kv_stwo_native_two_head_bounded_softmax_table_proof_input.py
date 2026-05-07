@@ -52,6 +52,12 @@ class AttentionKvTwoHeadBoundedSoftmaxTableInputTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableInputError, "statement commitment drift"):
             gate.validate_payload(payload)
 
+    def test_rejects_unknown_top_level_field(self):
+        payload = gate.build_payload()
+        payload["unexpected"] = "claim smuggling"
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableInputError, "unknown field"):
+            gate.validate_payload(payload)
+
     def test_tsv_contains_statement_commitment(self):
         payload = gate.build_payload()
         tsv = gate.to_tsv(payload)

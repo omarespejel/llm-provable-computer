@@ -73,8 +73,9 @@ combines that policy with the two-head carried-state shape: `104` score rows, a
 `128`-row trace, a `47104`-byte proof, a `563637`-byte checked envelope, a
 weight-table commitment
 `blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea`,
-and `20 / 20` mutation rejections. This is the strongest native attention/KV
-synthesis result currently checked, but it is still a public-row
+and `22 / 22` mutation rejections, including explicit cross-head output-swap
+and quotient/remainder score-row drift cases. This is the strongest native
+attention/KV synthesis result currently checked, but it is still a public-row
 verifier-recomputed table policy, not exact Softmax and not an AIR-private
 lookup argument.
 
@@ -114,7 +115,7 @@ Claim boundary:
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
 | External zkVM attention/KV scaled sequence semantics receipt | GO; real RISC Zero receipt computes eight carried integer-argmax KV transitions |
 | External zkVM attention/KV wide masked sequence semantics receipt | GO; real RISC Zero receipt computes eight `d=8` causal-prefix masked integer-argmax KV transitions |
-| Softmax attention/KV claim | NO-GO; current fixture is integer argmax attention, not Softmax |
+| Exact unbounded Softmax attention/KV claim | NO-GO; bounded Softmax-table routes are checked, but exact exp/div Softmax remains out of scope |
 
 ## Evidence
 
@@ -185,8 +186,9 @@ This is a real research advance for the STARK-first verifiable-AI lane. The
 attention/KV result is no longer only a statement envelope, source contract, or
 external zkVM control. It now has a native Stwo proof for a tiny but
 transformer-shaped stateful attention surface: carried KV rows, causal-prefix
-masking, per-candidate dot-product score rows, argmax selection, tie-break
-policy, output binding, and final KV binding.
+masking, per-candidate dot-product score rows, integer selection fixtures,
+bounded table-weighted aggregation fixtures, output binding, and final KV
+binding.
 
 The result should be positioned carefully:
 
@@ -199,16 +201,18 @@ The result should be positioned carefully:
   statement binding into actual Stwo-native transformer-shaped arithmetic.
 
 The next breakthrough target is not another metadata wrapper. It is scaling this
-native route to a slightly richer transformer surface: multi-head, a native
-RMSNorm/attention bridge, or a bounded Softmax-like approximation. Each should
-remain a checked GO/NO-GO gate with exact blockers if it fails.
+native route to a slightly richer transformer surface: AIR-private lookup/table
+columns, a native RMSNorm/attention bridge, larger width, or exact Softmax
+semantics if the backend can support the required range and division discipline.
+Each should remain a checked GO/NO-GO gate with exact blockers if it fails.
 
 ## Non-Claims
 
-- This is not a Softmax proof.
+- This is not an exact unbounded Softmax proof; issues `#463` and `#471` check
+  bounded Softmax-table approximation fixtures.
 - This is not general multi-head attention; issue `#455` checks one integer
-  argmax two-head fixture and issue `#461` checks one bounded weighted two-head
-  fixture.
+  argmax two-head fixture, issue `#461` checks one bounded weighted two-head
+  fixture, and issue `#471` checks one bounded Softmax-table two-head fixture.
 - This is not full autoregressive inference.
 - This is not agent correctness.
 - This is not recursive or proof-carrying data.

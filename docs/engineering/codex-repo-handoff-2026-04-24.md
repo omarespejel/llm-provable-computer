@@ -295,11 +295,12 @@ Tablero boundary.
   fixed two-head, eight-step-per-head `d=8` causal-prefix bounded
   Softmax-table attention/KV sequence with `104` score rows, a `128`-row trace,
   twenty final KV rows, sixteen weighted output vectors, a `47104`-byte proof,
-  and a `563637`-byte checked envelope. The gate rejects `20 / 20`
-  table/scale/clip/head/relabeling/schema/metric/overclaim mutations. The
-  interesting engineering signal is that score rows double versus issue `#463`,
-  while raw proof bytes grow only `1.054x`; keep that engineering-only until
-  issue `#469` accounts for binary PCS/FRI subobjects. This is still a
+  and a `563637`-byte checked envelope. The gate rejects `22 / 22`
+  table/scale/clip/head/relabeling/schema/metric/overclaim mutations, including
+  explicit cross-head output-swap and quotient/remainder score-row drift cases.
+  The interesting engineering signal is that score rows double versus issue
+  `#463`, while raw proof bytes grow only `1.054x`; keep that engineering-only
+  until issue `#469` accounts for binary PCS/FRI subobjects. This is still a
   public-row verifier-recomputed table policy, not exact Softmax and not an
   AIR-private lookup argument; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
