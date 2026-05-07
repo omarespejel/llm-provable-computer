@@ -182,7 +182,11 @@ INPUT_MODULE = load_script_module(INPUT_SCRIPT, "zkai_attention_kv_stwo_native_t
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
     bounded_file_size(path, max_bytes, label)
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        with path.open("rb") as handle:
+            raw = handle.read(max_bytes + 1)
+        if len(raw) > max_bytes:
+            raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(f"{label} size drift: read more than {max_bytes} bytes")
+        return json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(f"failed to read {label}: {err}") from err
 
@@ -359,6 +363,7 @@ def build_payload() -> dict[str, Any]:
             "claim_boundary": payload["claim_boundary"],
             "receipt_statement_commitment": receipt["statement_commitment"],
             "first_blocker": payload["first_blocker"],
+            "non_claims": payload["non_claims"],
         },
         "ptvm:zkai:attention-kv-two-head-bounded-softmax-table-native-gate:v1",
     )
@@ -509,6 +514,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "claim_boundary": payload["claim_boundary"],
             "receipt_statement_commitment": receipt["statement_commitment"],
             "first_blocker": payload["first_blocker"],
+            "non_claims": payload["non_claims"],
         },
         "ptvm:zkai:attention-kv-two-head-bounded-softmax-table-native-gate:v1",
     )

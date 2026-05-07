@@ -109,6 +109,13 @@ class AttentionKvTwoHeadBoundedSoftmaxTableInputTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableInputError, r"input_steps\[0\]\.head_index outside head range"):
             gate.build_score_rows(initial, steps)
 
+    def test_build_score_rows_rejects_token_position_drift(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        steps[0]["token_position"] += 1
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableInputError, r"input_steps\[0\]\.token_position drift"):
+            gate.build_score_rows(initial, steps)
+
     def test_build_score_rows_rejects_missing_per_head_steps(self):
         initial = gate.fixture_initial_kv()
         steps = gate.fixture_input_steps()[:-1]

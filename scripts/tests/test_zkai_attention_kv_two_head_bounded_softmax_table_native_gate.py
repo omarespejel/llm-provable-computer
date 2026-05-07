@@ -1,5 +1,7 @@
 import copy
+import tempfile
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_two_head_bounded_softmax_table_native_gate as gate
 
@@ -100,6 +102,14 @@ class AttentionKvTwoHeadBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
         envelope["proof"][0] = True
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError, r"proof byte\[0\] must be an integer"):
             gate.validate_source_pair(input_payload, envelope)
+
+    def test_read_bounded_json_enforces_actual_read_cap(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            path = gate.pathlib.Path(tempdir) / "too-large.json"
+            path.write_text('{"ok":true}', encoding="utf-8")
+            with mock.patch.object(gate, "bounded_file_size", return_value=10):
+                with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError, "read more than 10 bytes"):
+                    gate.read_bounded_json(path, 10, "fixture")
 
     def test_rejects_source_pair_out_of_range_proof_element(self):
         input_payload = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
