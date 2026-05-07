@@ -619,6 +619,8 @@ def run_gate() -> dict[str, Any]:
 
 
 def validate_result(result: dict[str, Any]) -> None:
+    if not isinstance(result, dict):
+        raise AttentionKvD8FusedSoftmaxTableGateError("result must be an object")
     expected_exact: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -659,15 +661,21 @@ def validate_result(result: dict[str, Any]) -> None:
     missing = required - set(result)
     if missing:
         raise AttentionKvD8FusedSoftmaxTableGateError(f"missing result keys: {sorted(missing)}")
+    extra = set(result) - required
+    if extra:
+        raise AttentionKvD8FusedSoftmaxTableGateError(f"unknown result keys: {sorted(extra)}")
     for key, expected_value in expected_exact.items():
         if result.get(key) != expected_value:
             raise AttentionKvD8FusedSoftmaxTableGateError(f"result drift for {key}")
     mutation_results = result["mutation_results"]
     if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
         raise AttentionKvD8FusedSoftmaxTableGateError("mutation result shape drift")
-    mutation_names = tuple(
-        item.get("name") for item in mutation_results if isinstance(item, dict)
-    )
+    for item in mutation_results:
+        if not isinstance(item, dict):
+            raise AttentionKvD8FusedSoftmaxTableGateError("mutation result shape drift")
+        if set(item) != {"name", "rejected", "error"}:
+            raise AttentionKvD8FusedSoftmaxTableGateError("mutation result schema drift")
+    mutation_names = tuple(item["name"] for item in mutation_results)
     if mutation_names != EXPECTED_MUTATION_NAMES:
         raise AttentionKvD8FusedSoftmaxTableGateError("mutation result name drift")
     for item in mutation_results:
@@ -682,23 +690,54 @@ def validate_result(result: dict[str, Any]) -> None:
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    validate_result(json.loads(path.read_text(encoding="utf-8")))
+    validate_result(result)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        tmp_path = pathlib.Path(handle.name)
+        handle.write(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    try:
+        validate_result(json.loads(tmp_path.read_text(encoding="utf-8")))
+        tmp_path.replace(path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    validate_result(result)
     row = {column: result[column] for column in TSV_COLUMNS}
-    with path.open("w", encoding="utf-8", newline="") as handle:
+    expected_row = {column: str(value) for column, value in row.items()}
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        tmp_path = pathlib.Path(handle.name)
         writer = csv.DictWriter(
             handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n"
         )
         writer.writeheader()
         writer.writerow(row)
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle, delimiter="\t"))
-    if len(rows) != 1 or set(rows[0]) != set(TSV_COLUMNS):
-        raise AttentionKvD8FusedSoftmaxTableGateError("TSV round-trip drift")
+    try:
+        with tmp_path.open("r", encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle, delimiter="\t"))
+        if rows != [expected_row]:
+            raise AttentionKvD8FusedSoftmaxTableGateError("TSV round-trip drift")
+        tmp_path.replace(path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def main() -> None:
