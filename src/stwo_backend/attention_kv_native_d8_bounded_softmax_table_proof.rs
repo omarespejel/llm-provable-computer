@@ -653,6 +653,12 @@ fn validate_input(input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput) 
     Ok(())
 }
 
+pub(crate) fn validate_zkai_attention_kv_native_d8_bounded_softmax_table_input(
+    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+) -> Result<()> {
+    validate_input(input)
+}
+
 fn validate_sequence(input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput) -> Result<()> {
     if input.initial_kv_cache.len() != INITIAL_KV_ITEMS {
         return Err(weighted_error("initial KV cache length drift"));
