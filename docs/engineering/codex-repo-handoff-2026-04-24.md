@@ -315,6 +315,14 @@ Tablero boundary.
   buffer is UTF-8 JSON and no stable typed/binary Stwo proof serializer/schema
   is exposed; see
   `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`.
+- Issue `#470` moves the single-head bounded Softmax-table membership question
+  into a real native Stwo LogUp sidecar proof over the issue `#463` source rows.
+  The sidecar constrains `52` `(clipped score gap, table weight)` lookup claims
+  against the `9`-row statement-bound table, with a `14745`-byte proof, a
+  `214085`-byte checked envelope, and `18 / 18` gate mutations rejected. This
+  is AIR-constrained table membership as a sidecar, not a fused
+  attention-arithmetic-plus-lookup component and not exact Softmax; see
+  `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`

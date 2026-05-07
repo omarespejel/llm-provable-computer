@@ -10,6 +10,8 @@ mod attention_kv_native_d8_bounded_softmax_table_proof;
 #[cfg(feature = "stwo-backend")]
 mod attention_kv_native_d8_bounded_weighted_proof;
 #[cfg(feature = "stwo-backend")]
+mod attention_kv_native_d8_softmax_table_lookup_proof;
+#[cfg(feature = "stwo-backend")]
 mod attention_kv_native_masked_sequence_proof;
 #[cfg(feature = "stwo-backend")]
 mod attention_kv_native_two_head_bounded_softmax_table_proof;
@@ -174,6 +176,23 @@ pub use attention_kv_native_d8_bounded_weighted_proof::{
     ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_WEIGHTED_STATEMENT_VERSION,
     ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_WEIGHTED_TARGET_ID,
     ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_WEIGHTED_VERIFIER_DOMAIN,
+};
+#[cfg(feature = "stwo-backend")]
+pub use attention_kv_native_d8_softmax_table_lookup_proof::{
+    prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope,
+    verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope,
+    zkai_attention_kv_native_d8_softmax_table_lookup_envelope_from_json_slice,
+    zkai_attention_kv_native_d8_softmax_table_lookup_source_input_from_json_str,
+    AttentionKvD8SoftmaxTableLookupMultiplicity, ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope,
+    ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_TARGET_ID,
+    ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use attention_kv_native_masked_sequence_proof::{

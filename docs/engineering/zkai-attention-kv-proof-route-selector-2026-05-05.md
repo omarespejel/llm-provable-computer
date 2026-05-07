@@ -79,6 +79,14 @@ strongest native attention/KV synthesis result currently checked, but it is stil
 verifier-recomputed table policy, not exact Softmax and not an AIR-private
 lookup argument.
 
+Issue `#470` adds a separate native Stwo LogUp sidecar proof for the issue
+`#463` single-head source rows. That sidecar constrains `52` `(clipped score
+gap, table weight)` lookup claims against the `9`-row statement-bound table
+with a `14745`-byte proof and `18 / 18` gate mutation rejections. This changes
+the single-head table-membership evidence from verifier-only recomputation to
+AIR-constrained lookup membership, but it is explicitly not a fused
+attention-arithmetic-plus-lookup component and not exact Softmax.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
 two-head gate discharges one bounded multi-head fixture, and the bounded
@@ -109,6 +117,7 @@ Claim boundary:
 | Local Stwo d8 bounded weighted attention/KV semantics gate | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked bounded weighted sequence, recorded as a semantics gate rather than a new route family |
 | Local Stwo two-head d8 bounded weighted attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded weighted attention semantics |
 | Local Stwo d8 bounded Softmax-table attention/KV semantics gate | GO; real native Stwo AIR proof for a statement-bound exp-like table policy, still verifier-recomputed over public rows |
+| Local Stwo d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the single-head table-membership multiset, not fused with attention arithmetic |
 | Local Stwo two-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded Softmax-table attention semantics |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
@@ -132,6 +141,8 @@ Claim boundary:
 - Native d8 bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json`
 - Native two-head bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.json`
 - Native two-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json`
+- Native d8 bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.json`
+- Native d8 bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -243,6 +254,9 @@ The Softmax-table routes check a public-row verifier-recomputed
 `exp2_half_gap_table_clipped_8_floor_division` policy with score gap clip `8`;
 they are not exact Softmax and not AIR-private lookup arguments. None of these
 timings is a public benchmark row.
+The issue `#470` sidecar separately proves the single-head table-membership
+multiset with a native Stwo LogUp relation, but it is not fused into the
+attention arithmetic proof and does not change the exact-Softmax non-claim.
 
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
@@ -336,6 +350,21 @@ python3 scripts/zkai_attention_kv_two_head_bounded_softmax_table_native_gate.py 
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.tsv
 
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_softmax_table_lookup_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_softmax_table_lookup_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_air_private_softmax_table_lookup_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
@@ -350,6 +379,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d8_bounded_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_softmax_table_proof_input \
   scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_air_private_softmax_table_lookup_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
@@ -365,5 +395,8 @@ cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_softmax_table_proo
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_softmax_table_proof \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_d8_softmax_table_lookup \
   --lib --features stwo-backend
 ```
