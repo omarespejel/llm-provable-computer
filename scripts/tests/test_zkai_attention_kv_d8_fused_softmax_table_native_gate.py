@@ -130,6 +130,46 @@ class AttentionKvD8FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             ):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 
+    def test_write_json_rejects_unknown_result_key(self):
+        payload = copy.deepcopy(self.payload)
+        payload["unexpected"] = "claim smuggling"
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(
+                gate.AttentionKvD8FusedSoftmaxTableGateError,
+                "unknown result keys",
+            ):
+                gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
+
+    def test_validate_result_rejects_non_object_payload(self):
+        with self.assertRaisesRegex(
+            gate.AttentionKvD8FusedSoftmaxTableGateError,
+            "result must be an object",
+        ):
+            gate.validate_result([])
+
+    def test_validate_result_rejects_extra_mutation_result_key(self):
+        payload = copy.deepcopy(self.payload)
+        payload["mutation_results"][0]["unexpected"] = "claim smuggling"
+        with self.assertRaisesRegex(
+            gate.AttentionKvD8FusedSoftmaxTableGateError,
+            "mutation result schema drift",
+        ):
+            gate.validate_result(payload)
+
+    def test_write_json_failure_preserves_existing_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = gate.pathlib.Path(tmp) / "gate.json"
+            gate.write_json(path, self.payload)
+            original = path.read_text(encoding="utf-8")
+            payload = copy.deepcopy(self.payload)
+            payload["route_id"] = "different-route"
+            with self.assertRaisesRegex(
+                gate.AttentionKvD8FusedSoftmaxTableGateError,
+                "result drift for route_id",
+            ):
+                gate.write_json(path, payload)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
 
 if __name__ == "__main__":
     unittest.main()
