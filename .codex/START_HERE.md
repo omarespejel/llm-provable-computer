@@ -46,9 +46,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 40. `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`
 41. `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`
 42. `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
-43. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-44. `docs/engineering/reproducibility.md`
-45. `git status --short --branch`
+43. `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
+44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+45. `docs/engineering/reproducibility.md`
+46. `git status --short --branch`
 
 ## What this repository is now
 
@@ -238,6 +239,16 @@ This repository currently has three live lanes.
     useful scaling signal is that lookup claims double while raw sidecar proof
     bytes grow only `1.227806x`; see
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+  - Issue `#482` scales the bounded Softmax-table source and LogUp sidecar to
+    four heads. The source proof checks `208` score rows over a `256`-row trace
+    with a `52746`-byte raw proof and rejects `23 / 23` source-gate mutations.
+    The LogUp sidecar constrains `208` lookup claims against the same `9`-row
+    table, has a `21783`-byte proof and a `543187`-byte checked envelope, and
+    rejects `24 / 24` sidecar-gate mutations. The useful scaling signal is that
+    lookup claims grow `4.000000x` versus single-head while raw sidecar proof
+    bytes grow only `1.477314x`, and `2.000000x` versus two-head while raw
+    sidecar proof bytes grow only `1.203215x`; see
+    `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
