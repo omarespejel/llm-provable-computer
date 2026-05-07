@@ -282,7 +282,10 @@ def verify_lookup_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: s
             f"native lookup verifier failed to run for {label}: {err}"
         ) from err
     finally:
-        tmp_path.unlink(missing_ok=True)
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
     if completed.returncode != 0:
         detail = (completed.stderr or completed.stdout).strip().splitlines()
         suffix = detail[-1] if detail else f"exit code {completed.returncode}"
