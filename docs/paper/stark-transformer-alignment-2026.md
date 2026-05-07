@@ -1311,7 +1311,7 @@ directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, a `24394`-byte proof, and
 `42 / 42` route-selector mutation rejections. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
-the minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
+the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-sequence-v1`, proof version
 is `stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1`, and timings are
 single-run local engineering measurements rather than benchmark rows. This is
@@ -1330,7 +1330,7 @@ rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-scale-gate-2026-05.json`.
-The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-seq16-v1`, proof version
 is `stwo-attention-kv-d8-causal-mask-seq16-air-proof-v1`, and timings remain
 single-run local engineering measurements rather than benchmark rows. This is
@@ -1348,7 +1348,7 @@ envelope, and `16 / 16` width-gate mutation rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-width-gate-2026-05.json`.
-The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d16-causal-mask-sequence-v1`, proof
 version is `stwo-attention-kv-d16-causal-mask-sequence-air-proof-v1`, and
 timings remain single-run local engineering measurements rather than benchmark
@@ -1367,7 +1367,7 @@ rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-gate-2026-05.json`.
-The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-masked-sequence-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-two-head-v1`, proof
 version is `stwo-attention-kv-d8-causal-mask-two-head-air-proof-v1`, and
 timings remain single-run local engineering measurements rather than benchmark
@@ -1391,7 +1391,7 @@ rejections. Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json`.
-The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-bounded-weighted-v1`, proof
 version is `stwo-attention-kv-d8-causal-mask-bounded-weighted-air-proof-v1`, and
 timings remain single-run local engineering measurements rather than benchmark
@@ -1411,7 +1411,7 @@ Evidence is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`.
-The minimal verifier command is `cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`.
+The minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-v1`,
 proof version is
 `stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-air-proof-v1`, and
@@ -1434,6 +1434,26 @@ signal in the artifact set: lookup membership no longer has to live as a
 detached sidecar for the checked bounded fixture, even at four heads. It remains
 bounded table evidence, not real-valued Softmax, not implementation-exact model
 Softmax, not full inference, not a public benchmark row, and not recursion/PCD.
+
+Reproducibility anchors for this follow-up are deliberately local and concrete:
+backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,
+Cargo.lock-pinned CLI verification via `--locked`, backend version
+`stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`, verifier
+domain
+`ptvm:zkai:attention-kv-stwo-native-four-head-fused-bounded-softmax-table-logup:v1`,
+and timing mode `proof_existence_and_byte_accounting_only_not_public_benchmark`.
+The checked step counts are `208` lookup claims, `256` trace rows, `9` table
+rows, and `4` Stwo proof commitments. Evidence paths are
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`,
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`.
+The minimal verification command is
+`CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`;
+the gate command is
+`CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv`.
 
 The credible sequencing is therefore: first scale this native attention/KV AIR
 one notch at a time; second fuse the lookup-heavy pieces when the arithmetic and

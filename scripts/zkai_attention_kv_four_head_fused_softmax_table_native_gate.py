@@ -152,9 +152,9 @@ EXPECTED_MUTATION_NAMES = (
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 
 VALIDATION_COMMANDS = (
-    "cargo +nightly-2025-07-14 test attention_kv_four_head_fused_softmax_table --lib --features stwo-backend",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate",
     "just lib",
@@ -183,7 +183,7 @@ TSV_COLUMNS = (
     "source_weight_table_commitment",
 )
 
-_FUSED_VERIFY_CACHE: set[tuple[str, int]] = set()
+_FUSED_VERIFY_CACHE: dict[tuple[str, int], dict[str, Any]] = {}
 _NATIVE_VERIFY_CACHE: dict[tuple[str, int, str], dict[str, Any]] = {}
 
 
@@ -319,6 +319,25 @@ def assert_exact_keys(mapping: dict[str, Any], expected_keys: set[str], label: s
         )
 
 
+def assert_native_verifier_summary(
+    mapping: dict[str, Any],
+    expected: dict[str, Any],
+    label: str,
+    *,
+    dynamic_path_key: str,
+) -> None:
+    assert_exact_keys(mapping, set(expected) | {"schema", dynamic_path_key}, label)
+    schema = mapping.get("schema")
+    if not isinstance(schema, str) or not schema.endswith("-cli-summary-v1"):
+        raise AttentionKvFourHeadFusedSoftmaxTableGateError(f"{label} schema drift: got {schema!r}")
+    dynamic_path = mapping.get(dynamic_path_key)
+    if not isinstance(dynamic_path, str) or not dynamic_path.endswith(".json"):
+        raise AttentionKvFourHeadFusedSoftmaxTableGateError(
+            f"{label} {dynamic_path_key} drift: got {dynamic_path!r}"
+        )
+    assert_fields(mapping, expected, label)
+
+
 def verify_envelope_bytes_with_native_cli(
     envelope_bytes: bytes,
     label: str,
@@ -326,6 +345,7 @@ def verify_envelope_bytes_with_native_cli(
     max_bytes: int,
     binary: str,
     expected_summary: dict[str, Any],
+    dynamic_path_key: str = "envelope_path",
 ) -> None:
     if len(envelope_bytes) <= 0 or len(envelope_bytes) > max_bytes:
         raise AttentionKvFourHeadFusedSoftmaxTableGateError(
@@ -335,7 +355,12 @@ def verify_envelope_bytes_with_native_cli(
     cache_key = (digest, len(envelope_bytes), binary)
     cached_summary = _NATIVE_VERIFY_CACHE.get(cache_key)
     if cached_summary is not None:
-        assert_fields(cached_summary, expected_summary, f"native {label} verifier summary")
+        assert_native_verifier_summary(
+            cached_summary,
+            expected_summary,
+            f"native {label} verifier summary",
+            dynamic_path_key=dynamic_path_key,
+        )
         return
     with tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False) as tmp:
         tmp.write(envelope_bytes)
@@ -344,6 +369,7 @@ def verify_envelope_bytes_with_native_cli(
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",
@@ -383,7 +409,12 @@ def verify_envelope_bytes_with_native_cli(
         raise AttentionKvFourHeadFusedSoftmaxTableGateError(
             f"native {label} verifier emitted malformed JSON: {err}"
         ) from err
-    assert_fields(summary, expected_summary, f"native {label} verifier summary")
+    assert_native_verifier_summary(
+        summary,
+        expected_summary,
+        f"native {label} verifier summary",
+        dynamic_path_key=dynamic_path_key,
+    )
     _NATIVE_VERIFY_CACHE[cache_key] = summary
 
 
@@ -394,7 +425,15 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: st
         )
     digest = hashlib.blake2b(envelope_bytes, digest_size=32).hexdigest()
     cache_key = (digest, len(envelope_bytes))
-    if cache_key in _FUSED_VERIFY_CACHE:
+    cached_summary = _FUSED_VERIFY_CACHE.get(cache_key)
+    expected = expected_fused_verifier_summary(len(envelope_bytes))
+    if cached_summary is not None:
+        assert_native_verifier_summary(
+            cached_summary,
+            expected,
+            f"native fused {label} verifier summary",
+            dynamic_path_key="fused_envelope_path",
+        )
         return
     with tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False) as tmp:
         tmp.write(envelope_bytes)
@@ -403,6 +442,7 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: st
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",
@@ -436,18 +476,26 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: st
         summary = json.loads(completed.stdout)
     except json.JSONDecodeError as err:
         raise AttentionKvFourHeadFusedSoftmaxTableGateError(f"native fused verifier emitted malformed JSON: {err}") from err
-    expected = {
+    assert_native_verifier_summary(
+        summary,
+        expected,
+        f"native fused {label} verifier summary",
+        dynamic_path_key="fused_envelope_path",
+    )
+    _FUSED_VERIFY_CACHE[cache_key] = summary
+
+
+def expected_fused_verifier_summary(envelope_size_bytes: int) -> dict[str, Any]:
+    return {
         "mode": "verify",
         "verified": True,
         "proof_size_bytes": FUSED_PROOF_SIZE_BYTES,
-        "envelope_size_bytes": len(envelope_bytes),
+        "envelope_size_bytes": envelope_size_bytes,
         "source_plus_sidecar_raw_proof_bytes": SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES,
         "source_statement_commitment": SOURCE_STATEMENT_COMMITMENT,
         "lookup_claims": SOURCE_SCORE_ROWS,
         "table_rows": SOURCE_TABLE_ROWS,
     }
-    assert_fields(summary, expected, "native fused verifier summary")
-    _FUSED_VERIFY_CACHE.add(cache_key)
 
 
 def expected_summary(source_input: dict[str, Any]) -> dict[str, Any]:
@@ -660,6 +708,7 @@ def validate_source_artifacts(
             "lookup_claims": SOURCE_SCORE_ROWS,
             "table_rows": SOURCE_TABLE_ROWS,
         },
+        dynamic_path_key="lookup_envelope_path",
     )
 
 

@@ -64,6 +64,16 @@ previous source-plus-sidecar pair.
 | Envelope summary / gate output | `lookup_relation_width` | `2` |
 | Envelope summary / gate output | `timing_policy` | `proof_existence_and_byte_accounting_only_not_public_benchmark` |
 
+Backend/profile: Rust `nightly-2025-07-14`, Cargo.lock-pinned with `--locked`
+for native CLI verification, `--features stwo-backend`, backend version
+`stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`, verifier
+domain
+`ptvm:zkai:attention-kv-stwo-native-four-head-fused-bounded-softmax-table-logup:v1`.
+The measurement mode is proof-existence and byte-accounting only: the checked
+step counts are `208` lookup claims, a `256`-row trace, `9` table rows, and
+`4` Stwo proof commitments. No proof-generation or verifier-time benchmark row
+is claimed here.
+
 ## Source Bindings
 
 The fused summary binds the four-head source route, not just the table:
@@ -173,13 +183,13 @@ semantics, and zero-denominator behavior.
 ## Reproduce
 
 ```bash
-cargo +nightly-2025-07-14 test attention_kv_four_head_fused_softmax_table   --lib --features stwo-backend
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 run --features stwo-backend   --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof --   prove   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 run --locked --features stwo-backend   --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof --   prove   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
 
-cargo +nightly-2025-07-14 run --features stwo-backend   --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof --   verify   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 run --locked --features stwo-backend   --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof --   verify   docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
 
-python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv
 
 python3 -m unittest   scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate
 

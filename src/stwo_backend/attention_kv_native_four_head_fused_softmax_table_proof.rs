@@ -481,6 +481,31 @@ fn validate_envelope(
     {
         return Err(fused_error("fused proof byte length outside bounded cap"));
     }
+    parse_fused_proof_payload(&envelope.proof)?;
+    Ok(())
+}
+
+fn parse_fused_proof_payload(
+    proof: &[u8],
+) -> Result<AttentionKvNativeFourHeadFusedSoftmaxTableProofPayload> {
+    let payload: AttentionKvNativeFourHeadFusedSoftmaxTableProofPayload =
+        serde_json::from_slice(proof)
+            .map_err(|error| fused_error(format!("malformed fused proof payload: {error}")))?;
+    validate_fused_proof_payload_shape(&payload.stark_proof)?;
+    Ok(payload)
+}
+
+fn validate_fused_proof_payload_shape(
+    stark_proof: &StarkProof<Blake2sM31MerkleHasher>,
+) -> Result<()> {
+    validate_pcs_config(stark_proof.config)?;
+    if stark_proof.commitments.len() != EXPECTED_PROOF_COMMITMENTS {
+        return Err(fused_error(format!(
+            "fused proof commitment count mismatch: got {}, expected exactly {}",
+            stark_proof.commitments.len(),
+            EXPECTED_PROOF_COMMITMENTS
+        )));
+    }
     Ok(())
 }
 
@@ -797,8 +822,7 @@ fn verify_fused(
     {
         return Err(fused_error("fused proof byte length outside bounded cap"));
     }
-    let payload: AttentionKvNativeFourHeadFusedSoftmaxTableProofPayload =
-        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let payload = parse_fused_proof_payload(proof)?;
     let stark_proof = payload.stark_proof;
     let config = validate_pcs_config(stark_proof.config)?;
     let expected_roots = fused_commitment_roots(source_input, config)?;
@@ -807,13 +831,6 @@ fn verify_fused(
     let sizes = component_placeholder.trace_log_degree_bounds();
     if sizes.len() != EXPECTED_TRACE_COMMITMENTS {
         return Err(fused_error("fused component trace commitment count drift"));
-    }
-    if stark_proof.commitments.len() != EXPECTED_PROOF_COMMITMENTS {
-        return Err(fused_error(format!(
-            "fused proof commitment count mismatch: got {}, expected exactly {}",
-            stark_proof.commitments.len(),
-            EXPECTED_PROOF_COMMITMENTS
-        )));
     }
     for index in 0..EXPECTED_TRACE_COMMITMENTS {
         if stark_proof.commitments[index] != expected_roots[index] {
@@ -1350,6 +1367,20 @@ mod tests {
             verify_zkai_attention_kv_native_four_head_fused_softmax_table_envelope(&envelope)
                 .expect_err("proof tamper must reject");
         assert!(!error.to_string().is_empty());
+    }
+
+    #[test]
+    fn attention_kv_four_head_fused_softmax_table_parse_rejects_malformed_proof_payload() {
+        let input = source_input();
+        let mut envelope =
+            prove_zkai_attention_kv_native_four_head_fused_softmax_table_envelope(&input)
+                .expect("prove fused attention/lookup");
+        envelope.proof = br#"{"not":"a proof"}"#.to_vec();
+        let raw = serde_json::to_vec(&envelope).expect("envelope bytes");
+        let error =
+            zkai_attention_kv_native_four_head_fused_softmax_table_envelope_from_json_slice(&raw)
+                .expect_err("malformed proof payload must reject at parse");
+        assert!(error.to_string().contains("malformed fused proof payload"));
     }
 
     #[test]

@@ -101,8 +101,8 @@ fn run() -> Result<String, String> {
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-four-head-fused-softmax-table-cli-summary-v1",
                 "mode": "prove",
-                "source_input_path": input_path,
-                "fused_envelope_path": envelope_path,
+                "source_input_path": input_path.display().to_string(),
+                "fused_envelope_path": envelope_path.display().to_string(),
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": envelope_bytes.len(),
                 "source_plus_sidecar_raw_proof_bytes": envelope.fused_summary.source_plus_sidecar_raw_proof_bytes,
@@ -133,7 +133,7 @@ fn run() -> Result<String, String> {
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-four-head-fused-softmax-table-cli-summary-v1",
                 "mode": "verify",
-                "fused_envelope_path": envelope_path,
+                "fused_envelope_path": envelope_path.display().to_string(),
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": raw.len(),
                 "source_plus_sidecar_raw_proof_bytes": envelope.fused_summary.source_plus_sidecar_raw_proof_bytes,
