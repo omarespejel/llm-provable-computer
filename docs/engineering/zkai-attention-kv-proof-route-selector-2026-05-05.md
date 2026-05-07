@@ -87,14 +87,24 @@ the single-head table-membership evidence from verifier-only recomputation to
 AIR-constrained lookup membership, but it is explicitly not a fused
 attention-arithmetic-plus-lookup component and not exact Softmax.
 
+Issue `#477` repeats the same native Stwo LogUp sidecar on the issue `#471`
+two-head source rows. The checked sidecar constrains `104` lookup claims against
+the same `9`-row statement-bound table with an `18104`-byte proof, a
+`333577`-byte checked envelope, and `24 / 24` gate mutation rejections. The
+interesting scaling signal is that lookup claims double from `52` to `104`
+while raw sidecar proof bytes grow only `1.227806x` (`14745` to `18104`). This
+is still a sidecar relation, not a fused attention-arithmetic-plus-lookup
+component and not exact Softmax.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
 two-head gate discharges one bounded multi-head fixture, and the bounded
 weighted gates discharge deterministic monotone-weight fixtures; neither is
 general multi-head exact Softmax attention. The bounded Softmax-table gates are
-closer to transformer attention, but they remain approximation fixtures with
-public-row table recomputation. The external SNARK and RISC Zero routes remain
-useful controls, not the headline result.
+closer to transformer attention, and the LogUp sidecars now prove table
+membership for both the single-head and two-head fixtures, but exact exp/div
+Softmax and fused attention-plus-lookup remain open. The external SNARK and
+RISC Zero routes remain useful controls, not the headline result.
 
 Decision:
 
@@ -119,6 +129,7 @@ Claim boundary:
 | Local Stwo d8 bounded Softmax-table attention/KV semantics gate | GO; real native Stwo AIR proof for a statement-bound exp-like table policy, still verifier-recomputed over public rows |
 | Local Stwo d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the single-head table-membership multiset, not fused with attention arithmetic |
 | Local Stwo two-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded Softmax-table attention semantics |
+| Local Stwo two-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the two-head table-membership multiset; `2.0x` lookup claims with `1.227806x` raw proof bytes versus single-head |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -143,6 +154,8 @@ Claim boundary:
 - Native two-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json`
 - Native d8 bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.json`
 - Native d8 bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
+- Native two-head bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05.json`
+- Native two-head bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -257,6 +270,10 @@ timings is a public benchmark row.
 The issue `#470` sidecar separately proves the single-head table-membership
 multiset with a native Stwo LogUp relation, but it is not fused into the
 attention arithmetic proof and does not change the exact-Softmax non-claim.
+The issue `#477` sidecar repeats that membership relation on the two-head
+source, doubling lookup claims from `52` to `104` while raw proof bytes grow
+from `14745` to `18104` (`1.227806x`). This is relation scaling evidence, not a
+public performance benchmark row.
 
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
@@ -365,6 +382,21 @@ python3 scripts/zkai_attention_kv_air_private_softmax_table_lookup_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05.tsv
 
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_softmax_table_lookup_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_softmax_table_lookup_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_two_head_air_private_softmax_table_lookup_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
@@ -380,6 +412,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_softmax_table_proof_input \
   scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_air_private_softmax_table_lookup_gate \
+  scripts.tests.test_zkai_attention_kv_two_head_air_private_softmax_table_lookup_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
@@ -398,5 +431,8 @@ cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_softmax_tabl
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_d8_softmax_table_lookup \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_two_head_softmax_table_lookup \
   --lib --features stwo-backend
 ```
