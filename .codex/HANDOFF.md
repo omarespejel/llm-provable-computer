@@ -271,8 +271,8 @@ Tablero boundary.
   `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
 - Issue `#478` fuses the single-head bounded Softmax-table attention
   arithmetic and LogUp table-membership relation into one native Stwo proof
-  object: `52` lookup claims, a `47698`-byte raw proof, a `478626`-byte checked
-  envelope, and `25 / 25` gate mutations rejected. Fusion adds only `3006` raw
+  object: `52` lookup claims, a `47698`-byte raw proof, a `478713`-byte checked
+  envelope, and `26 / 26` gate mutations rejected. Fusion adds only `3006` raw
   proof bytes over the arithmetic-only proof and saves `11739` raw proof bytes
   versus the prior source-plus-sidecar pair. This is fused single-head bounded
   table evidence, not exact Softmax, not two-head/four-head fusion, and not full

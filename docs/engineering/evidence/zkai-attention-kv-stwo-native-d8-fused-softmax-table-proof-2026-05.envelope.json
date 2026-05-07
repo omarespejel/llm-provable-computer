@@ -1,6 +1,7 @@
 {
   "proof_backend": "stwo",
-  "proof_backend_version": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
+  "proof_backend_version": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
+  "proof_schema_version": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
   "statement_version": "zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1",
   "semantic_scope": "d8_bounded_softmax_table_attention_arithmetic_and_logup_membership_fused_in_one_native_stwo_proof",
   "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",

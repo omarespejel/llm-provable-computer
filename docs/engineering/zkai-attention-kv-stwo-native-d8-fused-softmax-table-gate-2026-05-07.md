@@ -29,7 +29,7 @@ The checked result:
 | Source arithmetic proof only (`#463`) | `44,692` | `451,982` |
 | LogUp sidecar only (`#470`) | `14,745` | `214,085` |
 | Source + sidecar pair | `59,437` | `666,067` |
-| Fused proof (`#478`) | `47,698` | `478,626` |
+| Fused proof (`#478`) | `47,698` | `478,713` |
 
 The useful signal is the delta:
 
@@ -38,7 +38,7 @@ The useful signal is the delta:
 | Fused overhead over arithmetic-only proof | `3,006` bytes |
 | Fused savings versus source-plus-sidecar raw proofs | `11,739` bytes |
 | Fused / source-plus-sidecar raw proof ratio | `0.8024967612766458` |
-| Gate mutations | `25 / 25` rejected |
+| Gate mutations | `26 / 26` rejected |
 
 This is the first checked native Stwo attention/KV route where table membership
 is not just verifier-recomputed metadata and not a separate sidecar proof. The

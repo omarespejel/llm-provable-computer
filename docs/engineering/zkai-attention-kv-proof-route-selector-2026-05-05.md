@@ -112,7 +112,7 @@ issue `#463` attention arithmetic and the issue `#470` LogUp table-membership
 relation for the same `52` lookup claims. The fused proof is `47698` raw bytes:
 only `3006` bytes over the arithmetic-only proof and `11739` bytes smaller than
 the previous source-plus-sidecar raw proof pair (`59437` bytes). The fused gate
-rejects `25 / 25` mutations. This is the first fused attention-arithmetic plus
+rejects `26 / 26` mutations. This is the first fused attention-arithmetic plus
 table-membership GO, still scoped to the single-head bounded table fixture and
 still not exact Softmax.
 
@@ -313,12 +313,14 @@ The issue `#482` sidecar repeats the same relation on a four-head source,
 doubling lookup claims again from `104` to `208` while raw proof bytes grow from
 `18104` to `21783` (`1.203215x`), and growing claims `4.000000x` versus
 single-head while raw proof bytes grow `1.477314x`.
-The issue `#478` fused route uses proof version
-`stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1` and statement
-version `zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1`
-to fuse the single-head d8 bounded Softmax-table attention arithmetic and the
-LogUp membership relation into one native Stwo proof object. It keeps sequence
-length `8`, width `8`, score gap clip `8`, `52` lookup claims, and the same
+The issue `#478` fused route uses backend identity
+`stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1`, proof schema
+version `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1`, and
+statement version
+`zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1` to
+fuse the single-head d8 bounded Softmax-table attention arithmetic and the LogUp
+membership relation into one native Stwo proof object. It keeps sequence length
+`8`, width `8`, score gap clip `8`, `52` lookup claims, and the same
 proof-existence/byte-accounting-only timing policy; it is not an exact Softmax
 or public benchmark row.
 
