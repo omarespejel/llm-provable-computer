@@ -81,7 +81,7 @@ public rows and bound into the proof input before native proof verification.
 | Output remainder bits | `16` |
 | Proof size | `47104` bytes |
 | Envelope size | `563637` bytes |
-| Mutation cases rejected | `20 / 20` |
+| Mutation cases rejected | `22 / 22` |
 
 Checked attention outputs:
 
@@ -140,7 +140,7 @@ accounts for the binary PCS/FRI subobjects and a controlled grid exists.
 
 ## Mutation Coverage
 
-The gate rejects `20 / 20` checked mutations:
+The gate rejects `22 / 22` checked mutations:
 
 - statement commitment relabeling;
 - public-instance commitment relabeling;
@@ -150,8 +150,10 @@ The gate rejects `20 / 20` checked mutations:
 - score-scale relabeling;
 - score-gap-clip relabeling;
 - attention-output relabeling;
+- cross-head output-swap relabeling;
 - output-commitment relabeling;
 - score-row-count relabeling;
+- quotient/remainder score-row drift relabeling;
 - final-KV relabeling;
 - target-id relabeling;
 - backend-version relabeling;

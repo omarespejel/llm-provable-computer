@@ -279,6 +279,11 @@
       "rejected": true
     },
     {
+      "error": "bounded Softmax-table receipt attention_outputs drift",
+      "name": "two_head_table_cross_head_output_swap_relabeling",
+      "rejected": true
+    },
+    {
       "error": "bounded Softmax-table receipt outputs_commitment drift",
       "name": "two_head_table_outputs_commitment_relabeling",
       "rejected": true
@@ -286,6 +291,11 @@
     {
       "error": "bounded Softmax-table receipt score_rows drift",
       "name": "two_head_table_score_row_count_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt score_row_commitment drift",
+      "name": "two_head_table_quotient_remainder_drift_relabeling",
       "rejected": true
     },
     {
@@ -339,8 +349,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 20,
-  "mutations_rejected": 20,
+  "mutations_checked": 22,
+  "mutations_rejected": 22,
   "non_claims": [
     "not exact Softmax attention",
     "not exp/div Softmax semantics",
