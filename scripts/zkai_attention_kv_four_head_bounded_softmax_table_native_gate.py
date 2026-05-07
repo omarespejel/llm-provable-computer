@@ -15,6 +15,7 @@ import copy
 import csv
 import hashlib
 import importlib.util
+import io
 import json
 import pathlib
 import subprocess
@@ -736,8 +737,6 @@ def to_tsv(payload: dict[str, Any]) -> str:
         "mutations_rejected": payload["mutations_rejected"],
         "statement_commitment": receipt["statement_commitment"],
     }
-    import io
-
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
