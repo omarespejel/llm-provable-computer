@@ -122,4 +122,8 @@ python3 scripts/zkai_attention_kv_air_private_softmax_table_lookup_gate.py \
 
 python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_air_private_softmax_table_lookup_gate
+
+just gate-fast
+
+just gate
 ```
