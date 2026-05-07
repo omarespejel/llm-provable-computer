@@ -368,7 +368,20 @@ Tablero boundary.
   the arithmetic-only proof in this checked artifact, and saves `21061` raw
   bytes versus the previous four-head source-plus-sidecar pair (`74529` bytes).
   This is fused four-head bounded table evidence, not exact Softmax and not full
-  inference; see
+  inference. Backend/profile is Rust `nightly-2025-07-14` with
+  `--features stwo-backend`, Cargo.lock-pinned native verification via
+  `--locked`, backend version
+  `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`, and timing
+  mode `proof_existence_and_byte_accounting_only_not_public_benchmark`. The
+  checked step counts are `208` lookup claims over a `256`-row trace and a
+  `9`-row table. Evidence paths are
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv`.
+  Reproduce with
+  `CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`;
+  see
   `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`.
 
 
