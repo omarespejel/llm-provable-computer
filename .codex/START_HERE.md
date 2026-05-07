@@ -43,9 +43,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 37. `docs/engineering/zkai-attention-kv-native-proof-size-profile-2026-05-07.md`
 38. `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`
 39. `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`
-40. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-41. `docs/engineering/reproducibility.md`
-42. `git status --short --branch`
+40. `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`
+41. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+42. `docs/engineering/reproducibility.md`
+43. `git status --short --branch`
 
 ## What this repository is now
 
@@ -207,11 +208,19 @@ This repository currently has three live lanes.
     mutations, including explicit cross-head output-swap, final-KV cross-head
     swap, and quotient/remainder row-drift cases. The interesting engineering
     signal is that score rows double versus issue `#463`, while raw proof bytes
-    grow only `1.054x`; keep that engineering-only until issue `#469` accounts
-    for binary PCS/FRI subobjects.
+    grow only `1.054x`.
     This is still a public-row verifier-recomputed table policy, not exact
     Softmax and not an AIR-private lookup argument; see
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
+  - Issue `#469` accounts for that Softmax-table proof-byte signal at the
+    stable JSON `stark_proof` subobject layer: the `1 -> 2` head comparison
+    adds `2412` raw proof bytes while checked envelope file bytes add `111655`.
+    The largest top-level raw-proof delta is `fri_proof` (`1217` bytes), and
+    the FRI group delta is mostly decommitment material (`1018` bytes). This is
+    a JSON-subobject accounting GO and a true binary PCS/FRI accounting no-go:
+    the checked proof buffer is UTF-8 JSON and no stable typed/binary Stwo proof
+    serializer/schema is exposed; see
+    `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the

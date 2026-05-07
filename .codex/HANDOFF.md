@@ -226,6 +226,28 @@ Tablero boundary.
   exact Softmax, not exp/div semantics, not head aggregation, not full inference,
   not long-context evidence, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`.
+- Issue `#463` upgrades the native `d=8` attention/KV surface to a bounded
+  Softmax-table policy: a real Stwo AIR proof checks `52` score rows, a
+  `64`-row trace, a statement-bound exp-like clipped score-gap table, a
+  `44692`-byte proof, and a `451982`-byte checked envelope. This is public-row
+  verifier recomputation plus AIR-checked arithmetic, not exact Softmax and not
+  AIR-private lookup arguments; see
+  `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`.
+- Issue `#471` combines the issue `#463` bounded Softmax-table policy with the
+  issue `#461` two-head carried-state shape: a real Stwo AIR proof checks
+  `104` score rows, a `128`-row trace, a `47104`-byte proof, and a `563637`-byte
+  checked envelope. The gate rejects `23 / 23` checked mutations, including
+  cross-head relabeling cases; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
+- Issue `#469` accounts for that bounded Softmax-table proof-size signal at the
+  stable JSON `stark_proof` subobject layer: the `1 -> 2` head comparison adds
+  `2412` raw proof bytes while checked envelope file bytes add `111655`; the
+  largest top-level raw-proof delta is `fri_proof` (`1217` bytes), and the FRI
+  group delta is mostly decommitment material (`1018` bytes). This is a
+  JSON-subobject accounting GO and a true binary PCS/FRI accounting no-go
+  because the checked proof buffer is UTF-8 JSON and no stable typed/binary
+  Stwo proof serializer/schema is exposed; see
+  `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -234,8 +256,9 @@ Tablero boundary.
   route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
   causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
-  weighted, d8 bounded weighted, and two-head bounded weighted proofs are
-  separate native scale/semantics gates for the
+  weighted, d8 bounded weighted, two-head bounded weighted, bounded
+  Softmax-table, two-head bounded Softmax-table, and Softmax-table proof-byte
+  accounting gates are separate native scale/semantics/accounting gates for the
   first route family. It rejects `42 / 42` selector mutations and keeps exact
   Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see

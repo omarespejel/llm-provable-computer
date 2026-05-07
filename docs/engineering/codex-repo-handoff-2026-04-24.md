@@ -300,11 +300,21 @@ Tablero boundary.
   explicit cross-head output-swap, final-KV cross-head swap, and
   quotient/remainder row-drift cases. The interesting engineering signal is that
   score rows double versus issue `#463`, while raw proof bytes grow only
-  `1.054x`; keep that engineering-only until issue `#469` accounts for binary
-  PCS/FRI subobjects. This is still a
+  `1.054x`. This is still a
   public-row verifier-recomputed table policy, not exact Softmax and not an
   AIR-private lookup argument; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
+- Issue `#469` accounts for that bounded Softmax-table proof-size signal at the
+  stable JSON `stark_proof` subobject layer. In the `1 -> 2` head comparison,
+  score rows double from `52` to `104`, raw proof bytes grow from `44692` to
+  `47104` (`+2412`, `1.053969x`), and checked envelope file bytes grow from
+  `451982` to `563637` (`+111655`, `1.247034x`). The largest top-level
+  raw-proof delta is `fri_proof` (`+1217` bytes), and the FRI group delta is
+  mostly decommitment material (`+1018` bytes). This is a JSON-subobject
+  accounting GO and a true binary PCS/FRI accounting no-go: the checked proof
+  buffer is UTF-8 JSON and no stable typed/binary Stwo proof serializer/schema
+  is exposed; see
+  `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -314,7 +324,8 @@ Tablero boundary.
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
   causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
   weighted, d8 bounded weighted, two-head bounded weighted, proof-size profile,
-  bounded Softmax-table, and two-head bounded Softmax-table proofs are separate native scale/semantics gates for the
+  bounded Softmax-table, two-head bounded Softmax-table, and Softmax-table
+  proof-byte accounting gates are separate native scale/semantics/accounting gates for the
   first route family. It rejects `42 / 42` selector mutations and keeps exact
   Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see
