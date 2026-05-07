@@ -92,6 +92,20 @@ class AttentionKvSoftmaxTableProofByteAccountingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvSoftmaxTableProofByteAccountingGateError, "mutation rejection drift"):
             gate.validate_payload(payload)
 
+    def test_rejects_mutation_summary_drift_when_allowing_missing_summary(self):
+        payload = gate.build_payload()
+        payload["mutation_cases"][0]["rejected"] = False
+        with self.assertRaisesRegex(gate.AttentionKvSoftmaxTableProofByteAccountingGateError, "mutation rejection drift"):
+            gate.validate_payload(payload, allow_missing_mutation_summary=True)
+
+    def test_rejects_missing_envelope_input_with_gate_error(self):
+        with self.assertRaisesRegex(gate.AttentionKvSoftmaxTableProofByteAccountingGateError, "envelope missing input"):
+            gate.envelope_component_sizes({"proof": []})
+
+    def test_rejects_malformed_envelope_proof_with_gate_error(self):
+        with self.assertRaisesRegex(gate.AttentionKvSoftmaxTableProofByteAccountingGateError, "envelope proof must be byte list"):
+            gate.envelope_component_sizes({"input": {}, "proof": {}})
+
     def test_mutation_harness_crashes_are_not_counted_as_rejections(self):
         payload = gate.build_payload()
         original_validate_payload = gate.validate_payload

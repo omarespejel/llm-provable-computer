@@ -319,7 +319,9 @@ def load_script_module(path: pathlib.Path, module_name: str) -> ModuleType:
     try:
         spec.loader.exec_module(module)
     except Exception as err:
-        raise ImportError(f"failed to import {module_name} from {path}: {err}") from err
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError(
+            f"failed to import {module_name} from {path}: {err}"
+        ) from err
     return module
 
 
@@ -488,6 +490,16 @@ def proof_accounting(envelope: dict[str, Any]) -> dict[str, Any]:
 
 
 def envelope_component_sizes(envelope: dict[str, Any]) -> dict[str, int]:
+    if not isinstance(envelope, dict):
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError("envelope must be object")
+    if "input" not in envelope:
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError("envelope missing input")
+    if "proof" not in envelope:
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError("envelope missing proof")
+    if not isinstance(envelope["input"], dict):
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError("envelope input must be object")
+    if not isinstance(envelope["proof"], list):
+        raise AttentionKvSoftmaxTableProofByteAccountingGateError("envelope proof must be byte list")
     metadata = {key: value for key, value in envelope.items() if key not in {"input", "proof"}}
     return {
         "canonical_input_bytes": canonical_json_size(envelope["input"]),
@@ -986,9 +998,8 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "accounting_gate_commitment",
     }
     mutation_summary_keys = {"mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"}
-    if not allow_missing_mutation_summary:
-        expected_keys |= mutation_summary_keys
-    elif mutation_summary_keys & set(payload):
+    has_mutation_summary = bool(mutation_summary_keys & set(payload))
+    if not allow_missing_mutation_summary or has_mutation_summary:
         expected_keys |= mutation_summary_keys
     if set(payload) != expected_keys:
         raise AttentionKvSoftmaxTableProofByteAccountingGateError("payload field set drift")
@@ -1017,7 +1028,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_scaling_diagnostics(payload.get("scaling_diagnostics"), rows[0], rows[1])
     if payload.get("accounting_gate_commitment") != expected_commitment(payload):
         raise AttentionKvSoftmaxTableProofByteAccountingGateError("accounting gate commitment drift")
-    if not allow_missing_mutation_summary:
+    if not allow_missing_mutation_summary or has_mutation_summary:
         validate_mutation_summary(payload)
 
 
