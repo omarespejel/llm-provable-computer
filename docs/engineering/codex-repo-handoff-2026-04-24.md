@@ -290,6 +290,19 @@ Tablero boundary.
   verifier-recomputed table policy, not exact Softmax and not an AIR-private
   lookup argument; see
   `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`.
+- Issue `#471` combines the issue `#463` bounded Softmax-table policy with the
+  issue `#461` two-head carried-state shape. A real Stwo AIR proof checks a
+  fixed two-head, eight-step-per-head `d=8` causal-prefix bounded
+  Softmax-table attention/KV sequence with `104` score rows, a `128`-row trace,
+  twenty final KV rows, sixteen weighted output vectors, a `47104`-byte proof,
+  and a `563637`-byte checked envelope. The gate rejects `20 / 20`
+  table/scale/clip/head/relabeling/schema/metric/overclaim mutations. The
+  interesting engineering signal is that score rows double versus issue `#463`,
+  while raw proof bytes grow only `1.054x`; keep that engineering-only until
+  issue `#469` accounts for binary PCS/FRI subobjects. This is still a
+  public-row verifier-recomputed table policy, not exact Softmax and not an
+  AIR-private lookup argument; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`
@@ -299,7 +312,7 @@ Tablero boundary.
   eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
   causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
   weighted, d8 bounded weighted, two-head bounded weighted, proof-size profile,
-  and bounded Softmax-table proofs are separate native scale/semantics gates for the
+  bounded Softmax-table, and two-head bounded Softmax-table proofs are separate native scale/semantics gates for the
   first route family. It rejects `42 / 42` selector mutations and keeps exact
   Softmax, long-context
   inference, full inference, and recursion/PCD out of scope; see
