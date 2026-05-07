@@ -210,6 +210,18 @@ class AttentionKvFourHeadBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
         self.assertIn(gate.ROUTE_ID, tsv)
         self.assertIn(payload["bounded_softmax_table_receipt"]["statement_commitment"], tsv)
 
+    def test_write_json_validates_payload_before_write(self):
+        payload = gate.build_payload()
+        payload["decision"] = "GO_FAKE"
+        with tempfile.TemporaryDirectory() as tempdir:
+            path = gate.pathlib.Path(tempdir) / "gate.json"
+            with self.assertRaisesRegex(
+                gate.AttentionKvFourHeadBoundedSoftmaxTableNativeGateError,
+                "decision drift",
+            ):
+                gate.write_json(payload, path)
+            self.assertFalse(path.exists())
+
     def test_mutation_harness_crashes_are_not_counted_as_rejections(self):
         payload = gate.build_payload()
         original_validate_payload = gate.validate_payload
