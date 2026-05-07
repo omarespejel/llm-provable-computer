@@ -124,6 +124,37 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 sidecar_envelope_bytes=sidecar_raw,
             )
 
+    def test_native_verifier_cache_still_checks_expected_summary(self):
+        expected = {
+            "mode": "verify",
+            "verified": True,
+            "proof_size_bytes": gate.SOURCE_PROOF_SIZE_BYTES,
+            "envelope_size_bytes": len(self.source_raw),
+            "statement_commitment": gate.SOURCE_STATEMENT_COMMITMENT,
+            "score_row_count": gate.SOURCE_SCORE_ROWS,
+            "trace_row_count": gate.SOURCE_TRACE_ROWS,
+        }
+        gate.verify_envelope_bytes_with_native_cli(
+            self.source_raw,
+            "source cache seed",
+            max_bytes=gate.MAX_SOURCE_ENVELOPE_JSON_BYTES,
+            binary="zkai_attention_kv_native_two_head_bounded_softmax_table_proof",
+            expected_summary=expected,
+        )
+        wrong_expected = copy.deepcopy(expected)
+        wrong_expected["proof_size_bytes"] = gate.SOURCE_PROOF_SIZE_BYTES + 1
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "native source cache replay verifier summary drift for proof_size_bytes",
+        ):
+            gate.verify_envelope_bytes_with_native_cli(
+                self.source_raw,
+                "source cache replay",
+                max_bytes=gate.MAX_SOURCE_ENVELOPE_JSON_BYTES,
+                binary="zkai_attention_kv_native_two_head_bounded_softmax_table_proof",
+                expected_summary=wrong_expected,
+            )
+
     def test_gate_checks_source_sidecar_and_fused_envelope_byte_sizes(self):
         cases = (
             ("source envelope", gate.SOURCE_ENVELOPE_JSON, gate.SOURCE_ENVELOPE_SIZE_BYTES),
