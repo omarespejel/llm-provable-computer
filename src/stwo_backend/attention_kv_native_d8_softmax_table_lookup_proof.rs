@@ -584,27 +584,40 @@ fn lookup_interaction_trace(
             preprocessed_trace[0].data[vec_row],
             preprocessed_trace[1].data[vec_row],
         ]);
-        let numerator = enabled * table_q - table_multiplicity * claimed_q;
-        let denominator = zero_contribution_denominator_guard(numerator, claimed_q * table_q);
+        let (numerator, denominator) =
+            masked_lookup_fraction_terms(enabled, table_multiplicity, claimed_q, table_q);
         col_gen.write_frac(vec_row, numerator, denominator);
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
 }
 
-fn zero_contribution_denominator_guard(
-    numerator: PackedSecureField,
+fn masked_lookup_fraction_terms(
+    enabled: PackedSecureField,
+    table_multiplicity: PackedSecureField,
+    claimed_q: PackedSecureField,
+    table_q: PackedSecureField,
+) -> (PackedSecureField, PackedSecureField) {
+    let claimed_denominator = selector_masked_denominator(enabled, claimed_q);
+    let table_denominator = selector_masked_denominator(table_multiplicity, table_q);
+    (
+        enabled * table_denominator - table_multiplicity * claimed_denominator,
+        claimed_denominator * table_denominator,
+    )
+}
+
+fn selector_masked_denominator(
+    selector: PackedSecureField,
     denominator: PackedSecureField,
 ) -> PackedSecureField {
-    let numerator_lanes = numerator.to_array();
+    let selector_lanes = selector.to_array();
     let mut denominator_lanes = denominator.to_array();
-    for (numerator_lane, denominator_lane) in
-        numerator_lanes.iter().zip(denominator_lanes.iter_mut())
+    for (selector_lane, denominator_lane) in selector_lanes.iter().zip(denominator_lanes.iter_mut())
     {
-        if *numerator_lane == SecureField::zero() {
-            // Zero-multiplicity rows contribute exactly zero to the LogUp sum. Use
-            // a fixed non-zero denominator so padding never requires inverting a
-            // challenge-derived zero.
+        if *selector_lane == SecureField::zero() {
+            // A zero selector means this side contributes nothing. Use a fixed
+            // denominator of one so disabled claim/table sides never require
+            // inverting an irrelevant challenge-derived zero.
             *denominator_lane = SecureField::one();
         }
     }
@@ -727,22 +740,43 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_guards_zero_contribution_denominators() {
-        let guarded = zero_contribution_denominator_guard(
-            PackedSecureField::zero(),
-            PackedSecureField::zero(),
-        );
+    fn attention_kv_d8_softmax_table_lookup_masks_inactive_denominators() {
+        let guarded =
+            selector_masked_denominator(PackedSecureField::zero(), PackedSecureField::zero());
         assert!(guarded
             .to_array()
             .iter()
             .all(|lane| *lane == SecureField::one()));
 
-        let non_zero_numerator = PackedSecureField::one();
+        let active_selector = PackedSecureField::one();
         let original_denominator =
             PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
-        let preserved =
-            zero_contribution_denominator_guard(non_zero_numerator, original_denominator);
+        let preserved = selector_masked_denominator(active_selector, original_denominator);
         assert_eq!(preserved.to_array(), original_denominator.to_array());
+    }
+
+    #[test]
+    fn attention_kv_d8_softmax_table_lookup_preserves_one_sided_contributions() {
+        let one = PackedSecureField::one();
+        let zero = PackedSecureField::zero();
+        let claimed_q = PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
+        let table_q_zero = PackedSecureField::zero();
+        let (numerator, denominator) =
+            masked_lookup_fraction_terms(one, zero, claimed_q, table_q_zero);
+        assert_eq!(numerator.to_array(), one.to_array());
+        assert_eq!(denominator.to_array(), claimed_q.to_array());
+
+        let table_q = PackedSecureField::broadcast(SecureField::from(BaseField::from(11u32)));
+        let table_multiplicity =
+            PackedSecureField::broadcast(SecureField::from(BaseField::from(3u32)));
+        let (numerator, denominator) = masked_lookup_fraction_terms(
+            zero,
+            table_multiplicity,
+            PackedSecureField::zero(),
+            table_q,
+        );
+        assert_eq!((-numerator).to_array(), table_multiplicity.to_array());
+        assert_eq!(denominator.to_array(), table_q.to_array());
     }
 
     #[test]
