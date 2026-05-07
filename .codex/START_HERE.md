@@ -203,9 +203,9 @@ This repository currently has three live lanes.
     Softmax-table attention/KV sequence with `104` score rows, a `128`-row
     trace, twenty final KV rows, sixteen weighted output vectors, a
     `47104`-byte proof, and a `563637`-byte checked envelope. The gate rejects
-    `22 / 22` table/scale/clip/head/relabeling/schema/metric/overclaim
-    mutations, including explicit cross-head output-swap and
-    quotient/remainder score-row drift cases. The interesting engineering
+    `23 / 23` table/scale/clip/head/relabeling/schema/metric/overclaim
+    mutations, including explicit cross-head output-swap, final-KV cross-head
+    swap, and quotient/remainder row-drift cases. The interesting engineering
     signal is that score rows double versus issue `#463`, while raw proof bytes
     grow only `1.054x`; keep that engineering-only until issue `#469` accounts
     for binary PCS/FRI subobjects.

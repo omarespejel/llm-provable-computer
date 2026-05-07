@@ -33,9 +33,13 @@ class AttentionKvTwoHeadBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
     def test_individual_mutations_reject(self):
         payload = gate.build_payload()
         for name in gate.EXPECTED_MUTATION_NAMES:
-            mutated = gate.mutate_payload(payload, name)
             with self.assertRaises(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError):
-                gate.validate_payload(mutated, allow_missing_mutation_summary=True)
+                if name in gate.SOURCE_PAIR_MUTATION_NAMES:
+                    mutated_input, mutated_envelope = gate.mutate_source_pair(name)
+                    gate.validate_source_pair(mutated_input, mutated_envelope)
+                else:
+                    mutated = gate.mutate_payload(payload, name)
+                    gate.validate_payload(mutated, allow_missing_mutation_summary=True)
 
     def test_rejects_statement_relabeling(self):
         payload = gate.build_payload()
@@ -102,6 +106,41 @@ class AttentionKvTwoHeadBoundedSoftmaxTableNativeGateTests(unittest.TestCase):
         envelope["proof"][0] = True
         with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError, r"proof byte\[0\] must be an integer"):
             gate.validate_source_pair(input_payload, envelope)
+
+    def test_cross_head_output_swap_uses_same_step_pair(self):
+        payload = gate.build_payload()
+        mutated = gate.mutate_payload(payload, "two_head_table_cross_head_output_swap_relabeling")
+        original_outputs = payload["bounded_softmax_table_receipt"]["attention_outputs"]
+        mutated_outputs = mutated["bounded_softmax_table_receipt"]["attention_outputs"]
+        self.assertEqual(mutated_outputs[0], original_outputs[1])
+        self.assertEqual(mutated_outputs[1], original_outputs[0])
+        self.assertEqual(mutated_outputs[8], original_outputs[8])
+        self.assert_rejects(mutated, "attention_outputs drift")
+
+    def test_final_kv_cross_head_swap_mutates_source_rows(self):
+        original = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
+        mutated_input, mutated_envelope = gate.mutate_source_pair("two_head_table_final_kv_cross_head_swap_relabeling")
+        self.assertEqual(mutated_input["final_kv_cache"][0], original["final_kv_cache"][2])
+        self.assertEqual(mutated_input["final_kv_cache"][2], original["final_kv_cache"][0])
+        self.assertNotEqual(mutated_input["final_kv_cache_commitment"], original["final_kv_cache_commitment"])
+        self.assertEqual(mutated_envelope["input"], mutated_input)
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError, "final KV drift"):
+            gate.validate_source_pair(mutated_input, mutated_envelope)
+
+    def test_quotient_remainder_drift_mutates_source_rows(self):
+        original = gate.read_bounded_json(gate.INPUT_JSON, gate.MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
+        mutated_input, mutated_envelope = gate.mutate_source_pair("two_head_table_quotient_remainder_row_drift")
+        self.assertNotEqual(
+            mutated_input["score_rows"][0]["output_remainder"],
+            original["score_rows"][0]["output_remainder"],
+        )
+        self.assertNotEqual(
+            mutated_input["score_row_commitment"],
+            original["score_row_commitment"],
+        )
+        self.assertEqual(mutated_envelope["input"], mutated_input)
+        with self.assertRaisesRegex(gate.AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError, "score rows drift"):
+            gate.validate_source_pair(mutated_input, mutated_envelope)
 
     def test_read_bounded_json_enforces_actual_read_cap(self):
         with tempfile.TemporaryDirectory() as tempdir:
