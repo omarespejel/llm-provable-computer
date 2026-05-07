@@ -1,4 +1,5 @@
 import copy
+import json
 import tempfile
 import unittest
 
@@ -92,6 +93,24 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         payload = self.strip_mutation_summary(gate.build_payload())
         payload["lookup_receipt"]["lookup_claims"] = 104.0
         self.assert_rejects(payload, "lookup_receipt drift")
+
+    def test_native_verifier_rejects_same_size_tampered_proof_payload(self):
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        proof_text = bytes(envelope["proof"]).decode("utf-8")
+        byte_index = proof_text.index("138") + 2
+        self.assertEqual(envelope["proof"][byte_index], ord("8"))
+        envelope["proof"][byte_index] = ord("9")
+        self.assertEqual(json.loads(bytes(envelope["proof"]).decode("utf-8"))["stark_proof"]["commitments"][0][0], 139)
+        serialized = json.dumps(envelope, indent=2, sort_keys=True)
+        self.assertEqual(len(serialized.encode("utf-8")), gate.LOOKUP_ENVELOPE_SIZE_BYTES)
+        with tempfile.TemporaryDirectory() as tmp:
+            tampered = gate.pathlib.Path(tmp) / "same-size-tampered-envelope.json"
+            tampered.write_text(serialized, encoding="utf-8")
+            with self.assertRaisesRegex(
+                gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+                "native lookup verifier rejected",
+            ):
+                gate.verify_lookup_envelope_with_native_cli(tampered)
 
     def test_tsv_summary_matches_payload(self):
         payload = gate.build_payload()

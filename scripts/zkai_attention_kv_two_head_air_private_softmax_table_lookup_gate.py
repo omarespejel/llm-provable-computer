@@ -16,6 +16,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import subprocess
 from types import ModuleType
 from typing import Any
 
@@ -45,6 +46,7 @@ NEXT_BACKEND_STEP = (
     "the sidecar now reproduces across single-head and two-head source families"
 )
 TIMING_POLICY = "no_new_timing_proof_existence_and_relation_gate_only"
+LOOKUP_VERIFY_TIMEOUT_SECONDS = 180
 
 SOURCE_DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_TWO_HEAD_BOUNDED_SOFTMAX_TABLE_AIR_PROOF"
 SOURCE_STATEMENT_COMMITMENT = "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b"
@@ -159,6 +161,8 @@ TSV_COLUMNS = (
     "mutations_rejected",
 )
 
+_LOOKUP_VERIFY_CACHE: set[tuple[str, int, int]] = set()
+
 
 class AttentionKvAirPrivateSoftmaxTableLookupGateError(ValueError):
     pass
@@ -242,6 +246,68 @@ def parse_lookup_proof(proof_bytes: list[Any]) -> dict[str, Any]:
     if not isinstance(commitments, list) or len(commitments) != LOOKUP_PROOF_COMMITMENTS:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup proof commitment count drift")
     return stark_proof
+
+
+def verify_lookup_envelope_with_native_cli(path: pathlib.Path) -> None:
+    """Run the real native Stwo verifier before emitting a GO gate artifact."""
+    bounded_file_size(path, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
+    stat = path.stat()
+    cache_key = (str(path.resolve()), stat.st_size, stat.st_mtime_ns)
+    if cache_key in _LOOKUP_VERIFY_CACHE:
+        return
+    command = [
+        "cargo",
+        "+nightly-2025-07-14",
+        "run",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "zkai_attention_kv_native_two_head_softmax_table_lookup_proof",
+        "--",
+        "verify",
+        str(path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=LOOKUP_VERIFY_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier failed to run for {path}: {err}"
+        ) from err
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip().splitlines()
+        suffix = detail[-1] if detail else f"exit code {completed.returncode}"
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier rejected {path}: {suffix}"
+        )
+    try:
+        summary = json.loads(completed.stdout)
+    except json.JSONDecodeError as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier emitted malformed JSON for {path}: {err}"
+        ) from err
+    expected_summary = {
+        "mode": "verify",
+        "verified": True,
+        "proof_size_bytes": LOOKUP_PROOF_SIZE_BYTES,
+        "envelope_size_bytes": stat.st_size,
+        "source_statement_commitment": SOURCE_STATEMENT_COMMITMENT,
+        "lookup_claims": SOURCE_SCORE_ROWS,
+        "table_rows": SOURCE_TABLE_ROWS,
+    }
+    for key, expected in expected_summary.items():
+        if summary.get(key) != expected:
+            raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+                f"native lookup verifier summary drift for {key}: got {summary.get(key)!r}"
+            )
+    _LOOKUP_VERIFY_CACHE.add(cache_key)
 
 
 def validate_source_input(source_input: Any) -> None:
@@ -377,6 +443,7 @@ def build_payload() -> dict[str, Any]:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope size drift")
     envelope = read_bounded_json(LOOKUP_ENVELOPE_JSON, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
     receipt = validate_lookup_envelope(envelope, source_input, envelope_size_bytes)
+    verify_lookup_envelope_with_native_cli(LOOKUP_ENVELOPE_JSON)
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,
