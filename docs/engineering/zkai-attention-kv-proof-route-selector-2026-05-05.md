@@ -93,11 +93,11 @@ Decision:
 
 First blocker:
 
-`NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF`
+`NO_EXACT_SOFTMAX_GENERAL_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF`
 
 Claim boundary:
 
-`NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
+`NATIVE_STWO_D8_CAUSAL_MASKED_ATTENTION_KV_SEQUENCE_AND_BOUNDED_WEIGHT_SOFTMAX_TABLE_TWO_HEAD_FIXTURE_PROOFS_WITH_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_EXACT_SOFTMAX_NOT_GENERAL_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
 
 ## Checked Routes
 
@@ -229,8 +229,16 @@ two-head bounded-weighted synthesis uses backend identity
 `stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-v1` and proof
 version `stwo-attention-kv-d8-causal-mask-two-head-bounded-weighted-air-proof-v1`,
 with `2` heads, `8` steps per head, `d=8`, and deterministic CLI evidence that
-does not embed host timing fields. None of these timings is a public benchmark
-row.
+does not embed host timing fields. The d8 bounded Softmax-table gate uses backend
+identity `stwo-attention-kv-d8-causal-mask-bounded-softmax-table-v1` and proof
+version `stwo-attention-kv-d8-causal-mask-bounded-softmax-table-air-proof-v1`;
+the two-head bounded Softmax-table synthesis uses backend identity
+`stwo-attention-kv-d8-causal-mask-two-head-bounded-softmax-table-v1` and proof
+version `stwo-attention-kv-d8-causal-mask-two-head-bounded-softmax-table-air-proof-v1`.
+The Softmax-table routes check a public-row verifier-recomputed
+`exp2_half_gap_table_clipped_8_floor_division` policy with score gap clip `8`;
+they are not exact Softmax and not AIR-private lookup arguments. None of these
+timings is a public benchmark row.
 
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
@@ -278,6 +286,36 @@ cargo +nightly-2025-07-14 run --features stwo-backend \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json
 
+python3 scripts/zkai_attention_kv_stwo_native_d8_bounded_softmax_table_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_bounded_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_bounded_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_stwo_native_two_head_bounded_softmax_table_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_bounded_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_bounded_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json
+
 python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-gate-2026-05.tsv
@@ -285,6 +323,14 @@ python3 scripts/zkai_attention_kv_d8_bounded_weighted_native_gate.py \
 python3 scripts/zkai_attention_kv_two_head_bounded_weighted_native_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.tsv
+
+python3 scripts/zkai_attention_kv_d8_bounded_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.tsv
+
+python3 scripts/zkai_attention_kv_two_head_bounded_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.tsv
 
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
@@ -296,6 +342,10 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate \
   scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_weighted_proof_input \
   scripts.tests.test_zkai_attention_kv_two_head_bounded_weighted_native_gate \
+  scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_softmax_table_proof_input \
+  scripts.tests.test_zkai_attention_kv_d8_bounded_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_softmax_table_proof_input \
+  scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
@@ -305,5 +355,11 @@ cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof \
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_weighted_proof \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_softmax_table_proof \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_softmax_table_proof \
   --lib --features stwo-backend
 ```

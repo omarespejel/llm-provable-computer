@@ -485,6 +485,11 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
         local_step_counts[head_index] += 1
         if step_index >= SEQUENCE_LENGTH:
             raise AttentionKvTwoHeadBoundedSoftmaxTableInputError(f"input_steps[{global_step_index}] exceeds per-head sequence length")
+        expected_position = INITIAL_KV_ITEMS_PER_HEAD + step_index
+        if step["token_position"] != expected_position:
+            raise AttentionKvTwoHeadBoundedSoftmaxTableInputError(
+                f"input_steps[{global_step_index}].token_position drift: got {step['token_position']}, expected {expected_position}"
+            )
         next_item = {
             "head_index": head_index,
             "position": step["token_position"],

@@ -116,7 +116,7 @@ Checked attention outputs:
 | Final KV cache | `blake2b-256:747b8a86849b00f96402ca693cbf7255322cffbbc4dcdb88073e87598d7b1abb` |
 | Outputs | `blake2b-256:4d03a0d881ef05c2d54e01668fd10e5da887523270068c3205d1a5632bc2edd6` |
 | Weight table | `blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea` |
-| Gate | `blake2b-256:e3a7ee93a9e9c306898383df7133177c08b5594d657bfcf7c6a53750c3624133` |
+| Gate | `blake2b-256:4480537073014d4fe68837c3b7750d34d1f1ef34157b21c39ff11ed998149a2e` |
 
 The proof CLI emits deterministic JSON summaries and does not include wall-clock
 timing fields. This gate records only artifact-size and mutation evidence, not a
