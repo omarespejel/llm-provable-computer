@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Checked native Stwo four-head d8 bounded Softmax-table-attention gate for issue #471.
+"""Checked native Stwo four-head d8 bounded Softmax-table-attention gate for issue #482.
 
 The gate records the first native route combining four-head carried KV state with
 a statement-bound bounded Softmax-table weighting policy. It is deliberately
 scoped: table membership is verifier-recomputed over public rows, not an
-AIR-private lookup argument, and this is not exact Softmax.
+AIR-private lookup argument, and this is not exact Softmax. Issue #471 is the
+two-head source family this gate expands from.
 """
 
 from __future__ import annotations
