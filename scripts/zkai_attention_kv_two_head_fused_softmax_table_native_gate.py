@@ -184,7 +184,7 @@ TSV_COLUMNS = (
 )
 
 _FUSED_VERIFY_CACHE: set[tuple[str, int]] = set()
-_NATIVE_VERIFY_CACHE: set[tuple[str, int, str]] = set()
+_NATIVE_VERIFY_CACHE: dict[tuple[str, int, str], dict[str, Any]] = {}
 
 
 class AttentionKvTwoHeadFusedSoftmaxTableGateError(ValueError):
@@ -322,7 +322,9 @@ def verify_envelope_bytes_with_native_cli(
         )
     digest = hashlib.blake2b(envelope_bytes, digest_size=32).hexdigest()
     cache_key = (digest, len(envelope_bytes), binary)
-    if cache_key in _NATIVE_VERIFY_CACHE:
+    cached_summary = _NATIVE_VERIFY_CACHE.get(cache_key)
+    if cached_summary is not None:
+        assert_fields(cached_summary, expected_summary, f"native {label} verifier summary")
         return
     with tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False) as tmp:
         tmp.write(envelope_bytes)
@@ -371,7 +373,7 @@ def verify_envelope_bytes_with_native_cli(
             f"native {label} verifier emitted malformed JSON: {err}"
         ) from err
     assert_fields(summary, expected_summary, f"native {label} verifier summary")
-    _NATIVE_VERIFY_CACHE.add(cache_key)
+    _NATIVE_VERIFY_CACHE[cache_key] = summary
 
 
 def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: str) -> None:
