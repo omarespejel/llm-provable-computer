@@ -190,7 +190,7 @@ Claim boundary:
 | Surface | Result |
 | --- | ---: |
 | Proof-backed routes available | 6 |
-| Routes checked | 8 |
+| Routes checked | 10 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
 | Native Stwo proof envelope size | `265791` bytes |
