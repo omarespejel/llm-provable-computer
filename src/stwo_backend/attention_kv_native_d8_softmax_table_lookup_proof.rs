@@ -324,8 +324,8 @@ fn build_lookup_bundle(
     if input.score_rows.len() > TRACE_ROW_COUNT || input.weight_table.len() > TRACE_ROW_COUNT {
         return Err(lookup_error("lookup fixture exceeds trace capacity"));
     }
-    let preprocessed_trace = lookup_preprocessed_trace(input, &summary);
-    let base_trace = lookup_base_trace(input);
+    let preprocessed_trace = lookup_preprocessed_trace(input, &summary)?;
+    let base_trace = lookup_base_trace(input)?;
     Ok(LookupBundle {
         log_size: LOG_SIZE,
         summary,
@@ -337,26 +337,30 @@ fn build_lookup_bundle(
 fn lookup_preprocessed_trace(
     input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
     summary: &ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
-) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
     let mut gaps = Vec::with_capacity(TRACE_ROW_COUNT);
     let mut weights = Vec::with_capacity(TRACE_ROW_COUNT);
     let mut multiplicities = Vec::with_capacity(TRACE_ROW_COUNT);
     for entry in &summary.table_multiplicities {
-        gaps.push(field_usize(entry.gap));
+        gaps.push(field_usize(entry.gap, "lookup table gap")?);
         weights.push(field_i64(entry.weight));
-        multiplicities.push(field_usize(entry.multiplicity));
+        multiplicities.push(field_usize(
+            entry.multiplicity,
+            "lookup table multiplicity",
+        )?);
     }
-    let pad = input
-        .weight_table
-        .last()
-        .expect("source validation requires a non-empty weight table");
+    let Some(pad) = input.weight_table.last() else {
+        return Err(lookup_error(
+            "source validation requires a non-empty weight table",
+        ));
+    };
     while gaps.len() < TRACE_ROW_COUNT {
-        gaps.push(field_usize(pad.gap));
+        gaps.push(field_usize(pad.gap, "lookup padding table gap")?);
         weights.push(field_i64(pad.weight));
-        multiplicities.push(field_usize(0));
+        multiplicities.push(field_usize(0, "lookup padding multiplicity")?);
     }
-    vec![
+    Ok(vec![
         CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
             domain,
             BaseColumn::from_iter(gaps),
@@ -372,28 +376,28 @@ fn lookup_preprocessed_trace(
             BaseColumn::from_iter(multiplicities),
         )
         .bit_reverse(),
-    ]
+    ])
 }
 
 fn lookup_base_trace(
     input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
-) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
     let mut gaps = Vec::with_capacity(TRACE_ROW_COUNT);
     let mut weights = Vec::with_capacity(TRACE_ROW_COUNT);
     let mut enabled = Vec::with_capacity(TRACE_ROW_COUNT);
     for row in &input.score_rows {
         let clipped_gap = std::cmp::min(row.score_gap as usize, input.score_gap_clip);
-        gaps.push(field_usize(clipped_gap));
+        gaps.push(field_usize(clipped_gap, "lookup claimed clipped gap")?);
         weights.push(field_i64(row.attention_weight));
-        enabled.push(field_usize(1));
+        enabled.push(field_usize(1, "lookup enabled selector")?);
     }
     while gaps.len() < TRACE_ROW_COUNT {
-        gaps.push(field_usize(0));
-        weights.push(field_usize(0));
-        enabled.push(field_usize(0));
+        gaps.push(field_usize(0, "lookup padding claimed gap")?);
+        weights.push(field_usize(0, "lookup padding claimed weight")?);
+        enabled.push(field_usize(0, "lookup padding enabled selector")?);
     }
-    vec![
+    Ok(vec![
         CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
             domain,
             BaseColumn::from_iter(gaps),
@@ -409,7 +413,7 @@ fn lookup_base_trace(
             BaseColumn::from_iter(enabled),
         )
         .bit_reverse(),
-    ]
+    ])
 }
 
 fn prove_lookup(bundle: &LookupBundle) -> Result<Vec<u8>> {
@@ -672,8 +676,13 @@ fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
     PreProcessedColumnId { id: id.to_string() }
 }
 
-fn field_usize(value: usize) -> BaseField {
-    BaseField::from(u32::try_from(value).expect("field_usize: value out of u32 range"))
+fn field_usize(value: usize, label: &str) -> Result<BaseField> {
+    let value = u32::try_from(value).map_err(|_| {
+        lookup_error(format!(
+            "{label} exceeds bounded M31/u32 encoding range: {value}"
+        ))
+    })?;
+    Ok(BaseField::from(value))
 }
 
 fn field_i64(value: i64) -> BaseField {
@@ -737,6 +746,37 @@ mod tests {
             .table_multiplicities
             .iter()
             .any(|entry| entry.gap == input.score_gap_clip && entry.multiplicity > 0));
+    }
+
+    #[test]
+    fn attention_kv_d8_softmax_table_lookup_rejects_empty_table_without_panic() {
+        let mut input = source_input();
+        let mut summary = lookup_summary(&input).expect("summary");
+        input.weight_table.clear();
+        summary.table_rows = 0;
+        summary.table_multiplicities.clear();
+
+        let error = match lookup_preprocessed_trace(&input, &summary) {
+            Ok(_) => panic!("empty table must not produce a preprocessed trace"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("non-empty weight table"));
+    }
+
+    #[test]
+    fn attention_kv_d8_softmax_table_lookup_rejects_preprocessed_overflow_without_panic() {
+        let input = source_input();
+        let mut summary = lookup_summary(&input).expect("summary");
+        let Some(overflow) = (u32::MAX as usize).checked_add(1) else {
+            return;
+        };
+        summary.table_multiplicities[0].gap = overflow;
+
+        let error = match lookup_preprocessed_trace(&input, &summary) {
+            Ok(_) => panic!("overflowing table gap must not produce a preprocessed trace"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("bounded M31/u32 encoding range"));
     }
 
     #[test]
