@@ -17,6 +17,8 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import subprocess
+import tempfile
 from types import ModuleType
 from typing import Any
 
@@ -46,6 +48,7 @@ NEXT_BACKEND_STEP = (
     "then repeat the check on the two-head route"
 )
 TIMING_POLICY = "no_new_timing_proof_existence_and_relation_gate_only"
+LOOKUP_VERIFY_TIMEOUT_SECONDS = 180
 
 SOURCE_DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_D8_BOUNDED_SOFTMAX_TABLE_AIR_PROOF"
 SOURCE_STATEMENT_COMMITMENT = "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b"
@@ -139,6 +142,8 @@ TSV_COLUMNS = (
     "mutations_rejected",
 )
 
+_LOOKUP_VERIFY_CACHE: set[tuple[str, int]] = set()
+
 
 class AttentionKvAirPrivateSoftmaxTableLookupGateError(ValueError):
     pass
@@ -162,11 +167,24 @@ SOURCE_INPUT_MODULE = load_script_module(
 
 
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
-    bounded_file_size(path, max_bytes, label)
+    raw = read_bounded_bytes(path, max_bytes, label)
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
+        return json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"failed to read {label}: {err}") from err
+
+
+def read_bounded_bytes(path: pathlib.Path, max_bytes: int, label: str) -> bytes:
+    expected_size = bounded_file_size(path, max_bytes, label)
+    try:
+        raw = path.read_bytes()
+    except OSError as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"failed to read {label}: {err}") from err
+    if len(raw) != expected_size:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"{label} read size drift: stat={expected_size}, read={len(raw)}"
+        )
+    return raw
 
 
 def bounded_file_size(path: pathlib.Path, max_bytes: int, label: str) -> int:
@@ -224,6 +242,81 @@ def parse_lookup_proof(proof_bytes: list[Any]) -> dict[str, Any]:
     return stark_proof
 
 
+def verify_lookup_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: str) -> None:
+    """Run the real native Stwo verifier on the exact bytes parsed by the gate."""
+    if len(envelope_bytes) <= 0 or len(envelope_bytes) > MAX_LOOKUP_ENVELOPE_JSON_BYTES:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"{label} size drift: got {len(envelope_bytes)}, max {MAX_LOOKUP_ENVELOPE_JSON_BYTES}"
+        )
+    digest = hashlib.blake2b(envelope_bytes, digest_size=32).hexdigest()
+    cache_key = (digest, len(envelope_bytes))
+    if cache_key in _LOOKUP_VERIFY_CACHE:
+        return
+    with tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False) as tmp:
+        tmp.write(envelope_bytes)
+        tmp_path = pathlib.Path(tmp.name)
+    command = [
+        "cargo",
+        "+nightly-2025-07-14",
+        "run",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "zkai_attention_kv_native_d8_softmax_table_lookup_proof",
+        "--",
+        "verify",
+        str(tmp_path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=LOOKUP_VERIFY_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier failed to run for {label}: {err}"
+        ) from err
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip().splitlines()
+        suffix = detail[-1] if detail else f"exit code {completed.returncode}"
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier rejected {label}: {suffix}"
+        )
+    try:
+        summary = json.loads(completed.stdout)
+    except json.JSONDecodeError as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+            f"native lookup verifier emitted malformed JSON for {label}: {err}"
+        ) from err
+    expected_summary = {
+        "mode": "verify",
+        "verified": True,
+        "proof_size_bytes": LOOKUP_PROOF_SIZE_BYTES,
+        "envelope_size_bytes": len(envelope_bytes),
+        "source_statement_commitment": SOURCE_STATEMENT_COMMITMENT,
+        "lookup_claims": SOURCE_SCORE_ROWS,
+        "table_rows": SOURCE_TABLE_ROWS,
+    }
+    for key, expected in expected_summary.items():
+        if summary.get(key) != expected:
+            raise AttentionKvAirPrivateSoftmaxTableLookupGateError(
+                f"native lookup verifier summary drift for {key}: got {summary.get(key)!r}"
+            )
+    _LOOKUP_VERIFY_CACHE.add(cache_key)
+
+
+def verify_lookup_envelope_with_native_cli(path: pathlib.Path) -> None:
+    raw = read_bounded_bytes(path, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
+    verify_lookup_envelope_bytes_with_native_cli(raw, str(path))
+
+
 def validate_source_input(source_input: Any) -> None:
     if not isinstance(source_input, dict):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("source input must be an object")
@@ -276,7 +369,7 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
     for key, expected in expected_scalars.items():
         if envelope.get(key) != expected:
             raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"{key} drift")
-    if envelope.get("source_input") != source_input:
+    if not type_strict_equal(envelope.get("source_input"), source_input):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope source input split-brain drift")
     summary = envelope.get("lookup_summary")
     if not isinstance(summary, dict):
@@ -329,11 +422,16 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
 def build_payload() -> dict[str, Any]:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source bounded Softmax-table input")
     validate_source_input(source_input)
-    envelope_size_bytes = bounded_file_size(LOOKUP_ENVELOPE_JSON, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
+    envelope_raw = read_bounded_bytes(LOOKUP_ENVELOPE_JSON, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
+    envelope_size_bytes = len(envelope_raw)
     if envelope_size_bytes != LOOKUP_ENVELOPE_SIZE_BYTES:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope size drift")
-    envelope = read_bounded_json(LOOKUP_ENVELOPE_JSON, MAX_LOOKUP_ENVELOPE_JSON_BYTES, "lookup sidecar envelope")
+    try:
+        envelope = json.loads(envelope_raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"failed to read lookup sidecar envelope: {err}") from err
     receipt = validate_lookup_envelope(envelope, source_input, envelope_size_bytes)
+    verify_lookup_envelope_bytes_with_native_cli(envelope_raw, str(LOOKUP_ENVELOPE_JSON))
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,

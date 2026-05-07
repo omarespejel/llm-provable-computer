@@ -1,4 +1,6 @@
 import copy
+import json
+import os
 import tempfile
 import unittest
 
@@ -16,6 +18,24 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         with self.assertRaises(gate.AttentionKvAirPrivateSoftmaxTableLookupGateError) as ctx:
             gate.validate_payload(payload, allow_missing_mutation_summary=True)
         self.assertIn(message, str(ctx.exception))
+
+    def same_digit_mutation(self, value):
+        for candidate in (value + 1, value - 1):
+            if 0 <= candidate <= 255 and len(str(candidate)) == len(str(value)):
+                return candidate
+        self.fail(f"no same-digit mutation available for {value}")
+
+    def same_size_tampered_envelope_json(self):
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        proof_payload = json.loads(bytes(envelope["proof"]).decode("utf-8"))
+        commitments = proof_payload["stark_proof"]["commitments"]
+        commitments[0][0] = self.same_digit_mutation(commitments[0][0])
+        proof_bytes = json.dumps(proof_payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        self.assertEqual(len(proof_bytes), len(envelope["proof"]))
+        envelope["proof"] = list(proof_bytes)
+        serialized = json.dumps(envelope, indent=2, sort_keys=True)
+        self.assertEqual(len(serialized.encode("utf-8")), gate.LOOKUP_ENVELOPE_SIZE_BYTES)
+        return serialized
 
     def test_build_payload_records_logup_sidecar_go(self):
         payload = gate.build_payload()
@@ -89,6 +109,48 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         payload = self.strip_mutation_summary(gate.build_payload())
         payload["lookup_receipt"]["lookup_claims"] = 52.0
         self.assert_rejects(payload, "lookup_receipt drift")
+
+    def test_native_verifier_rejects_same_size_tampered_proof_payload(self):
+        serialized = self.same_size_tampered_envelope_json()
+        with tempfile.TemporaryDirectory() as tmp:
+            tampered = gate.pathlib.Path(tmp) / "same-size-tampered-envelope.json"
+            tampered.write_text(serialized, encoding="utf-8")
+            with self.assertRaisesRegex(
+                gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+                "native lookup verifier rejected",
+            ):
+                gate.verify_lookup_envelope_with_native_cli(tampered)
+
+    def test_native_verifier_cache_is_bound_to_exact_envelope_bytes(self):
+        gate._LOOKUP_VERIFY_CACHE.clear()
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        original = json.dumps(envelope, indent=2, sort_keys=True)
+        tampered = self.same_size_tampered_envelope_json()
+        self.assertEqual(len(original.encode("utf-8")), len(tampered.encode("utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = gate.pathlib.Path(tmp) / "lookup-envelope.json"
+            path.write_text(original, encoding="utf-8")
+            gate.verify_lookup_envelope_with_native_cli(path)
+            stat = path.stat()
+            path.write_text(tampered, encoding="utf-8")
+            os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+            with self.assertRaisesRegex(
+                gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+                "native lookup verifier rejected",
+            ):
+                gate.verify_lookup_envelope_with_native_cli(path)
+
+    def test_rejects_embedded_source_input_float_and_bool_relabeling(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        for relabel in (8.0, True):
+            mutated = copy.deepcopy(envelope)
+            mutated["source_input"]["score_gap_clip"] = relabel
+            with self.assertRaisesRegex(
+                gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+                "lookup envelope source input split-brain drift",
+            ):
+                gate.validate_lookup_envelope(mutated, source_input, gate.LOOKUP_ENVELOPE_SIZE_BYTES)
 
     def test_tsv_summary_matches_payload(self):
         payload = gate.build_payload()
