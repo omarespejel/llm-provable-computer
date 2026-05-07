@@ -116,7 +116,7 @@ EXPECTED_MUTATION_NAMES = (
     "lookup_claim_count_metric_smuggling",
     "source_plus_sidecar_metric_smuggling",
     "fused_proof_size_metric_smuggling",
-    "fused_envelope_size_metric_smuggling",
+    "source_input_statement_commitment_relabeling",
     "table_multiplicity_drift",
     "non_claim_removed",
     "source_input_split_brain_weight",
@@ -202,10 +202,32 @@ def read_bounded_bytes(path: pathlib.Path, max_bytes: int, label: str) -> bytes:
 
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
     raw = read_bounded_bytes(path, max_bytes, label)
+    return parse_bounded_json_bytes(raw, label)
+
+
+def parse_bounded_json_bytes(raw: bytes, label: str) -> Any:
     try:
         return json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionKvD8FusedSoftmaxTableGateError(f"failed to decode {label}: {err}") from err
+
+
+def expect_artifact_size(raw: bytes, expected_size: int, label: str) -> None:
+    if len(raw) != expected_size:
+        raise AttentionKvD8FusedSoftmaxTableGateError(
+            f"{label} size drift: got {len(raw)}, expected {expected_size}"
+        )
+
+
+def read_sized_envelope(
+    path: pathlib.Path,
+    max_bytes: int,
+    expected_size: int,
+    label: str,
+) -> tuple[Any, bytes]:
+    raw = read_bounded_bytes(path, max_bytes, label)
+    expect_artifact_size(raw, expected_size, label)
+    return parse_bounded_json_bytes(raw, label), raw
 
 
 def parse_stark_proof(proof_bytes: list[Any], expected_bytes: int, label: str) -> dict[str, Any]:
@@ -228,6 +250,25 @@ def parse_stark_proof(proof_bytes: list[Any], expected_bytes: int, label: str) -
     if not isinstance(commitments, list) or len(commitments) != FUSED_PROOF_COMMITMENTS:
         raise AttentionKvD8FusedSoftmaxTableGateError(f"{label} proof commitment count drift")
     return stark_proof
+
+
+def same_digit_int_mutation(value: int, label: str) -> int:
+    for candidate in (value + 1, value - 1):
+        if 0 <= candidate <= 255 and len(str(candidate)) == len(str(value)):
+            return candidate
+    raise AttentionKvD8FusedSoftmaxTableGateError(f"no same-width byte mutation for {label}")
+
+
+def mutate_same_size_stark_proof_commitment(envelope: dict[str, Any]) -> None:
+    payload = json.loads(bytes(envelope["proof"]).decode("utf-8"))
+    commitments = payload["stark_proof"]["commitments"]
+    commitments[0][0] = same_digit_int_mutation(
+        commitments[0][0], "first proof commitment byte"
+    )
+    proof_bytes = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    if len(proof_bytes) != len(envelope["proof"]):
+        raise AttentionKvD8FusedSoftmaxTableGateError("same-size proof mutation changed byte length")
+    envelope["proof"] = list(proof_bytes)
 
 
 def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: str) -> None:
@@ -405,22 +446,76 @@ def mutation_cases(envelope: dict[str, Any]) -> list[tuple[str, dict[str, Any], 
 
     add("fused_decision_relabeling", lambda v: v.__setitem__("decision", "GO_EXACT_SOFTMAX_FUSED_PROOF"))
     add("fusion_status_relabeling", lambda v: v["fused_summary"].__setitem__("fusion_status", "GO_SIDE_CAR_ONLY"))
-    add("non_fused_status_relabeling", lambda v: v["fused_summary"].__setitem__("non_fused_status", "SIDE_CAR_STILL_REQUIRED"))
-    add("claim_boundary_exact_softmax_overclaim", lambda v: v["fused_summary"]["non_claims"].remove("not exact Softmax attention"))
-    add("semantic_scope_exact_softmax_overclaim", lambda v: v.__setitem__("semantic_scope", "exact_real_valued_softmax_attention"))
-    add("source_statement_commitment_relabeling", lambda v: v["fused_summary"].__setitem__("source_statement_commitment", "blake2b-256:" + "11" * 32))
-    add("source_weight_table_commitment_relabeling", lambda v: v["fused_summary"].__setitem__("source_weight_table_commitment", "blake2b-256:" + "22" * 32))
-    add("source_score_row_commitment_relabeling", lambda v: v["fused_summary"].__setitem__("source_score_row_commitment", "blake2b-256:" + "33" * 32))
+    add(
+        "non_fused_status_relabeling",
+        lambda v: v["fused_summary"].__setitem__(
+            "non_fused_status", "SIDE_CAR_STILL_REQUIRED"
+        ),
+    )
+    add(
+        "claim_boundary_exact_softmax_overclaim",
+        lambda v: v["fused_summary"]["non_claims"].remove("not exact Softmax attention"),
+    )
+    add(
+        "semantic_scope_exact_softmax_overclaim",
+        lambda v: v.__setitem__("semantic_scope", "exact_real_valued_softmax_attention"),
+    )
+    add(
+        "source_statement_commitment_relabeling",
+        lambda v: v["fused_summary"].__setitem__(
+            "source_statement_commitment", "blake2b-256:" + "11" * 32
+        ),
+    )
+    add(
+        "source_weight_table_commitment_relabeling",
+        lambda v: v["fused_summary"].__setitem__(
+            "source_weight_table_commitment", "blake2b-256:" + "22" * 32
+        ),
+    )
+    add(
+        "source_score_row_commitment_relabeling",
+        lambda v: v["fused_summary"].__setitem__(
+            "source_score_row_commitment", "blake2b-256:" + "33" * 32
+        ),
+    )
     add("lookup_relation_relabeling", lambda v: v["fused_summary"].__setitem__("lookup_relation", "OtherRelation"))
-    add("lookup_claim_count_metric_smuggling", lambda v: v["fused_summary"].__setitem__("lookup_claims", SOURCE_SCORE_ROWS + 1))
-    add("source_plus_sidecar_metric_smuggling", lambda v: v["fused_summary"].__setitem__("source_plus_sidecar_raw_proof_bytes", SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - 1))
+    add(
+        "lookup_claim_count_metric_smuggling",
+        lambda v: v["fused_summary"].__setitem__("lookup_claims", SOURCE_SCORE_ROWS + 1),
+    )
+    add(
+        "source_plus_sidecar_metric_smuggling",
+        lambda v: v["fused_summary"].__setitem__(
+            "source_plus_sidecar_raw_proof_bytes", SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - 1
+        ),
+    )
     add("fused_proof_size_metric_smuggling", lambda v: v["proof"].append(0))
-    add("fused_envelope_size_metric_smuggling", lambda v: v.__setitem__("envelope_size_bytes", FUSED_ENVELOPE_SIZE_BYTES - 1))
-    add("table_multiplicity_drift", lambda v: v["fused_summary"]["table_multiplicities"][0].__setitem__("multiplicity", 9))
+    add(
+        "source_input_statement_commitment_relabeling",
+        lambda v: v["source_input"].__setitem__(
+            "statement_commitment", "blake2b-256:" + "44" * 32
+        ),
+    )
+    add(
+        "table_multiplicity_drift",
+        lambda v: v["fused_summary"]["table_multiplicities"][0].__setitem__(
+            "multiplicity", 9
+        ),
+    )
     add("non_claim_removed", lambda v: v["fused_summary"]["non_claims"].pop())
-    add("source_input_split_brain_weight", lambda v: v["source_input"]["score_rows"][0].__setitem__("attention_weight", 255))
-    add("source_input_output_remainder_drift", lambda v: v["source_input"]["score_rows"][0]["output_remainder"].__setitem__(0, 999))
-    add("proof_byte_tamper", lambda v: v["proof"].__setitem__(-1, v["proof"][-1] ^ 1), run_native=True)
+    add(
+        "source_input_split_brain_weight",
+        lambda v: v["source_input"]["score_rows"][0].__setitem__(
+            "attention_weight", 255
+        ),
+    )
+    add(
+        "source_input_output_remainder_drift",
+        lambda v: v["source_input"]["score_rows"][0]["output_remainder"].__setitem__(
+            0, 999
+        ),
+    )
+    add("proof_byte_tamper", mutate_same_size_stark_proof_commitment, run_native=True)
     add("target_id_relabeling", lambda v: v.__setitem__("target_id", "different-target"))
     add("verifier_domain_relabeling", lambda v: v.__setitem__("verifier_domain", "different-domain"))
     add("statement_version_relabeling", lambda v: v.__setitem__("statement_version", "different-statement"))
@@ -433,14 +528,24 @@ def mutation_cases(envelope: dict[str, Any]) -> list[tuple[str, dict[str, Any], 
 
 def run_gate() -> dict[str, Any]:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
-    source_envelope = read_bounded_json(SOURCE_ENVELOPE_JSON, MAX_SOURCE_ENVELOPE_JSON_BYTES, "source envelope")
-    sidecar_envelope = read_bounded_json(SIDECAR_ENVELOPE_JSON, MAX_SIDECAR_ENVELOPE_JSON_BYTES, "sidecar envelope")
-    fused_raw = read_bounded_bytes(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
-    if len(fused_raw) != FUSED_ENVELOPE_SIZE_BYTES:
-        raise AttentionKvD8FusedSoftmaxTableGateError(
-            f"fused envelope size drift: got {len(fused_raw)}, expected {FUSED_ENVELOPE_SIZE_BYTES}"
-        )
-    fused_envelope = json.loads(fused_raw.decode("utf-8"))
+    source_envelope, _source_raw = read_sized_envelope(
+        SOURCE_ENVELOPE_JSON,
+        MAX_SOURCE_ENVELOPE_JSON_BYTES,
+        SOURCE_ENVELOPE_SIZE_BYTES,
+        "source envelope",
+    )
+    sidecar_envelope, _sidecar_raw = read_sized_envelope(
+        SIDECAR_ENVELOPE_JSON,
+        MAX_SIDECAR_ENVELOPE_JSON_BYTES,
+        SIDECAR_ENVELOPE_SIZE_BYTES,
+        "sidecar envelope",
+    )
+    fused_envelope, fused_raw = read_sized_envelope(
+        FUSED_ENVELOPE_JSON,
+        MAX_FUSED_ENVELOPE_JSON_BYTES,
+        FUSED_ENVELOPE_SIZE_BYTES,
+        "fused envelope",
+    )
     validate_source_artifacts(source_input, source_envelope, sidecar_envelope)
     validate_fused_envelope(fused_envelope, source_input, run_native=False)
     verify_fused_envelope_bytes_with_native_cli(fused_raw, str(FUSED_ENVELOPE_JSON))
@@ -526,11 +631,20 @@ def validate_result(result: dict[str, Any]) -> None:
         raise AttentionKvD8FusedSoftmaxTableGateError("source+sidecar proof byte drift")
     if result["fused_proof_size_bytes"] != FUSED_PROOF_SIZE_BYTES:
         raise AttentionKvD8FusedSoftmaxTableGateError("fused proof byte drift")
+    if result.get("source_envelope_size_bytes") != SOURCE_ENVELOPE_SIZE_BYTES:
+        raise AttentionKvD8FusedSoftmaxTableGateError("source envelope byte drift")
+    if result.get("sidecar_envelope_size_bytes") != SIDECAR_ENVELOPE_SIZE_BYTES:
+        raise AttentionKvD8FusedSoftmaxTableGateError("sidecar envelope byte drift")
+    if result.get("fused_envelope_size_bytes") != FUSED_ENVELOPE_SIZE_BYTES:
+        raise AttentionKvD8FusedSoftmaxTableGateError("fused envelope byte drift")
     if result["fused_over_source_proof_bytes"] != FUSED_OVER_SOURCE_PROOF_BYTES:
         raise AttentionKvD8FusedSoftmaxTableGateError("fused overhead drift")
     if result["fused_saves_vs_source_plus_sidecar_bytes"] != FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES:
         raise AttentionKvD8FusedSoftmaxTableGateError("fused savings drift")
-    if result["mutations_checked"] != EXPECTED_MUTATION_COUNT or result["mutations_rejected"] != EXPECTED_MUTATION_COUNT:
+    if (
+        result["mutations_checked"] != EXPECTED_MUTATION_COUNT
+        or result["mutations_rejected"] != EXPECTED_MUTATION_COUNT
+    ):
         raise AttentionKvD8FusedSoftmaxTableGateError("mutation count drift")
 
 

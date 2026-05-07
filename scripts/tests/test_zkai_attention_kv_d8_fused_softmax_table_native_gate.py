@@ -55,10 +55,7 @@ class AttentionKvD8FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
 
     def same_digit_mutation(self, value):
-        for candidate in (value + 1, value - 1):
-            if 0 <= candidate <= 255 and len(str(candidate)) == len(str(value)):
-                return candidate
-        self.fail(f"no same-digit mutation available for {value}")
+        return gate.same_digit_int_mutation(value, "test proof byte")
 
     def test_native_verifier_rejects_same_size_tampered_proof_payload(self):
         envelope = copy.deepcopy(self.fused_envelope)
@@ -79,6 +76,18 @@ class AttentionKvD8FusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 gate.verify_fused_envelope_bytes_with_native_cli(tmp_path.read_bytes(), str(tmp_path))
         finally:
             tmp_path.unlink(missing_ok=True)
+
+    def test_gate_checks_source_sidecar_and_fused_envelope_byte_sizes(self):
+        cases = (
+            ("source envelope", gate.SOURCE_ENVELOPE_JSON, gate.SOURCE_ENVELOPE_SIZE_BYTES),
+            ("sidecar envelope", gate.SIDECAR_ENVELOPE_JSON, gate.SIDECAR_ENVELOPE_SIZE_BYTES),
+            ("fused envelope", gate.FUSED_ENVELOPE_JSON, gate.FUSED_ENVELOPE_SIZE_BYTES),
+        )
+        for label, path, expected_size in cases:
+            raw = path.read_bytes()
+            self.assertEqual(len(raw), expected_size)
+            with self.assertRaisesRegex(gate.AttentionKvD8FusedSoftmaxTableGateError, f"{label} size drift"):
+                gate.expect_artifact_size(raw + b" ", expected_size, label)
 
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
