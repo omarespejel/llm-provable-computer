@@ -166,6 +166,9 @@ python3 scripts/zkai_attention_kv_softmax_table_proof_byte_accounting_gate.py \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05.tsv
 
 python3 -m unittest scripts.tests.test_zkai_attention_kv_softmax_table_proof_byte_accounting_gate
+
+just gate-fast
+just gate
 ```
 
 ## Next Research Hooks
