@@ -46,6 +46,23 @@ same proof object carries both the arithmetic trace and the lookup interaction
 trace, so the old source-proof / lookup-proof split-brain surface is absent in
 this route.
 
+## Exact Route Identifiers
+
+The fused envelope and gate pin these identifiers:
+
+| Field | Value |
+| --- | --- |
+| `route_id` | `local_stwo_attention_kv_d8_fused_bounded_softmax_table_logup_proof` |
+| `proof_backend` | `stwo` |
+| `proof_backend_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1` |
+| `proof_schema_version` | `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1` |
+| `statement_version` | `zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1` |
+| `target_id` | `attention-kv-d8-causal-mask-fused-bounded-softmax-table-logup-v1` |
+| `verifier_domain` | `ptvm:zkai:attention-kv-stwo-native-d8-fused-bounded-softmax-table-logup:v1` |
+| `lookup_relation` | `AttentionKvD8FusedSoftmaxTableRelation` |
+| `lookup_relation_width` | `2` |
+| `timing_policy` | `proof_existence_and_byte_accounting_only_not_public_benchmark` |
+
 ## Table Multiplicities
 
 The LogUp relation constrains `52` lookup claims against the statement-bound
