@@ -255,6 +255,14 @@ Tablero boundary.
   AIR-constrained table membership as a sidecar, not a fused
   attention-arithmetic-plus-lookup component and not exact Softmax; see
   `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+- Issue `#477` repeats that native Stwo LogUp sidecar over the issue `#471`
+  two-head bounded Softmax-table source rows: `104` lookup claims, `9` table
+  rows, an `18104`-byte proof, a `333577`-byte checked envelope, and `24 / 24`
+  gate mutations rejected. The relation-level scaling signal is `2.000000x`
+  lookup claims with only `1.227806x` raw sidecar proof bytes versus the
+  single-head sidecar. This is still a sidecar, not fused attention arithmetic
+  plus lookup and not exact Softmax; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
 
 - The attention/KV proof-route selector records a narrow
   `GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS`

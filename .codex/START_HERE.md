@@ -45,9 +45,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 39. `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`
 40. `docs/engineering/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05-07.md`
 41. `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`
-42. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-43. `docs/engineering/reproducibility.md`
-44. `git status --short --branch`
+42. `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
+43. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+44. `docs/engineering/reproducibility.md`
+45. `git status --short --branch`
 
 ## What this repository is now
 
@@ -230,6 +231,13 @@ This repository currently has three live lanes.
     is AIR-constrained table membership as a sidecar, not a fused
     attention-arithmetic-plus-lookup component and not exact Softmax; see
     `docs/engineering/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-gate-2026-05-07.md`.
+  - Issue `#477` repeats the same native Stwo LogUp sidecar on the issue `#471`
+    two-head bounded Softmax-table source rows. The sidecar constrains `104`
+    lookup claims against the same `9`-row table, has an `18104`-byte proof, a
+    `333577`-byte checked envelope, and rejects `24 / 24` gate mutations. The
+    useful scaling signal is that lookup claims double while raw sidecar proof
+    bytes grow only `1.227806x`; see
+    `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
