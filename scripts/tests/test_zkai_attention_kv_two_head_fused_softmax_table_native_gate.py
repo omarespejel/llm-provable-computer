@@ -155,6 +155,48 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 expected_summary=wrong_expected,
             )
 
+    def test_source_artifact_validation_rejects_unknown_source_or_sidecar_fields(self):
+        source_envelope = copy.deepcopy(self.source_envelope)
+        source_envelope["unexpected"] = "claim smuggling"
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "source envelope field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                source_envelope,
+                self.sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=self.sidecar_raw,
+            )
+
+        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
+        sidecar_envelope["unexpected"] = "claim smuggling"
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "sidecar envelope field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                self.source_envelope,
+                sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=self.sidecar_raw,
+            )
+
+    def test_mutation_collection_does_not_swallow_runtime_bugs(self):
+        original_validate = gate.validate_fused_envelope
+
+        def raise_runtime_bug(*args, **kwargs):
+            raise RuntimeError("synthetic validator bug")
+
+        gate.validate_fused_envelope = raise_runtime_bug
+        try:
+            with self.assertRaisesRegex(RuntimeError, "synthetic validator bug"):
+                gate.evaluate_mutation_results(self.fused_envelope, self.source_input)
+        finally:
+            gate.validate_fused_envelope = original_validate
+
     def test_gate_checks_source_sidecar_and_fused_envelope_byte_sizes(self):
         cases = (
             ("source envelope", gate.SOURCE_ENVELOPE_JSON, gate.SOURCE_ENVELOPE_SIZE_BYTES),
