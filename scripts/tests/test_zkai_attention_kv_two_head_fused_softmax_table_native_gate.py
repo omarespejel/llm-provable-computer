@@ -184,6 +184,21 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 sidecar_envelope_bytes=self.sidecar_raw,
             )
 
+    def test_source_artifact_validation_rejects_unknown_lookup_summary_fields(self):
+        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
+        sidecar_envelope["lookup_summary"]["unexpected_metric"] = 1
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "sidecar lookup summary field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                self.source_envelope,
+                sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=self.sidecar_raw,
+            )
+
     def test_mutation_collection_does_not_swallow_runtime_bugs(self):
         original_validate = gate.validate_fused_envelope
 
