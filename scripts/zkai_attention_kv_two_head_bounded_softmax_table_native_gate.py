@@ -107,8 +107,9 @@ EXPECTED_MUTATION_NAMES = (
     "two_head_table_cross_head_output_swap_relabeling",
     "two_head_table_outputs_commitment_relabeling",
     "two_head_table_score_row_count_relabeling",
-    "two_head_table_quotient_remainder_drift_relabeling",
+    "two_head_table_quotient_remainder_row_drift",
     "two_head_table_final_kv_relabeling",
+    "two_head_table_final_kv_cross_head_swap_relabeling",
     "two_head_table_target_id_relabeling",
     "two_head_table_backend_version_relabeling",
     "proof_size_metric_smuggling",
@@ -119,6 +120,10 @@ EXPECTED_MUTATION_NAMES = (
     "receipt_unknown_field_injection",
     "unknown_field_injection",
 )
+SOURCE_PAIR_MUTATION_NAMES = {
+    "two_head_table_quotient_remainder_row_drift",
+    "two_head_table_final_kv_cross_head_swap_relabeling",
+}
 MUTATION_CASE_KEYS = {"name", "rejected", "error"}
 NON_CLAIMS = (
     "not exact Softmax attention",
@@ -229,7 +234,9 @@ def validate_source_pair(input_payload: Any, envelope: Any) -> None:
     }
     extra_envelope_keys = set(envelope) - allowed_envelope_keys
     if extra_envelope_keys:
-        raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(f"unknown envelope field(s): {sorted(extra_envelope_keys)}")
+        raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(
+            f"unknown envelope field(s): {sorted(extra_envelope_keys)}"
+        )
     if input_payload.get("schema") != NATIVE_INPUT_SCHEMA:
         raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError("input schema drift")
     if input_payload.get("decision") != NATIVE_INPUT_DECISION:
@@ -332,9 +339,13 @@ def receipt_summary(input_payload: dict[str, Any], envelope: dict[str, Any], env
 def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
     cases = []
     for name in EXPECTED_MUTATION_NAMES:
-        mutated = mutate_payload(payload, name)
         try:
-            validate_payload(mutated, allow_missing_mutation_summary=True)
+            if name in SOURCE_PAIR_MUTATION_NAMES:
+                mutated_input, mutated_envelope = mutate_source_pair(name)
+                validate_source_pair(mutated_input, mutated_envelope)
+            else:
+                mutated = mutate_payload(payload, name)
+                validate_payload(mutated, allow_missing_mutation_summary=True)
         except AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError as err:
             cases.append({"name": name, "rejected": True, "error": str(err)})
         else:
@@ -401,16 +412,14 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "two_head_table_attention_outputs_relabeling":
         receipt["attention_outputs"][0][0] += 1
     elif name == "two_head_table_cross_head_output_swap_relabeling":
-        receipt["attention_outputs"][0], receipt["attention_outputs"][SEQUENCE_LENGTH] = (
-            receipt["attention_outputs"][SEQUENCE_LENGTH],
+        receipt["attention_outputs"][0], receipt["attention_outputs"][1] = (
+            receipt["attention_outputs"][1],
             receipt["attention_outputs"][0],
         )
     elif name == "two_head_table_outputs_commitment_relabeling":
         receipt["outputs_commitment"] = "blake2b-256:" + "77" * 32
     elif name == "two_head_table_score_row_count_relabeling":
         receipt["score_rows"] += 1
-    elif name == "two_head_table_quotient_remainder_drift_relabeling":
-        receipt["score_row_commitment"] = "blake2b-256:" + "aa" * 32
     elif name == "two_head_table_final_kv_relabeling":
         receipt["final_kv_cache_commitment"] = "blake2b-256:" + "88" * 32
     elif name == "two_head_table_target_id_relabeling":
@@ -434,6 +443,43 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     else:
         raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(f"unknown mutation: {name}")
     return mutated
+
+
+def refresh_source_commitments(input_payload: dict[str, Any]) -> None:
+    input_payload["score_row_commitment"] = INPUT_MODULE.rows_commitment(input_payload["score_rows"])
+    input_payload["final_kv_cache_commitment"] = INPUT_MODULE.kv_commitment(
+        input_payload["final_kv_cache"],
+        INPUT_MODULE.FINAL_KV_DOMAIN,
+    )
+    input_payload["outputs_commitment"] = INPUT_MODULE.outputs_commitment(
+        input_payload["input_steps"],
+        input_payload["attention_outputs"],
+    )
+    input_payload["statement_commitment"] = INPUT_MODULE.statement_commitment(input_payload)
+    input_payload["public_instance_commitment"] = INPUT_MODULE.public_instance_commitment(
+        input_payload["statement_commitment"]
+    )
+
+
+def mutate_source_pair(name: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    input_payload = copy.deepcopy(
+        read_bounded_json(INPUT_JSON, MAX_INPUT_JSON_BYTES, "bounded Softmax-table input")
+    )
+    envelope = copy.deepcopy(
+        read_bounded_json(ENVELOPE_JSON, MAX_ENVELOPE_JSON_BYTES, "bounded Softmax-table envelope")
+    )
+    if name == "two_head_table_quotient_remainder_row_drift":
+        input_payload["score_rows"][0]["output_remainder"][0] += 1
+    elif name == "two_head_table_final_kv_cross_head_swap_relabeling":
+        input_payload["final_kv_cache"][0], input_payload["final_kv_cache"][2] = (
+            input_payload["final_kv_cache"][2],
+            input_payload["final_kv_cache"][0],
+        )
+    else:
+        raise AttentionKvTwoHeadBoundedSoftmaxTableNativeGateError(f"unknown source-pair mutation: {name}")
+    refresh_source_commitments(input_payload)
+    envelope["input"] = input_payload
+    return input_payload, envelope
 
 
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:

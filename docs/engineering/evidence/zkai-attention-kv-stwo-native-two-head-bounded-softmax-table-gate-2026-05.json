@@ -294,13 +294,18 @@
       "rejected": true
     },
     {
-      "error": "bounded Softmax-table receipt score_row_commitment drift",
-      "name": "two_head_table_quotient_remainder_drift_relabeling",
+      "error": "source input validation drift: score rows drift",
+      "name": "two_head_table_quotient_remainder_row_drift",
       "rejected": true
     },
     {
       "error": "bounded Softmax-table receipt final_kv_cache_commitment drift",
       "name": "two_head_table_final_kv_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: final KV drift",
+      "name": "two_head_table_final_kv_cross_head_swap_relabeling",
       "rejected": true
     },
     {
@@ -349,8 +354,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 22,
-  "mutations_rejected": 22,
+  "mutations_checked": 23,
+  "mutations_rejected": 23,
   "non_claims": [
     "not exact Softmax attention",
     "not exp/div Softmax semantics",

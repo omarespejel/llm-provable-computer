@@ -73,9 +73,9 @@ combines that policy with the two-head carried-state shape: `104` score rows, a
 `128`-row trace, a `47104`-byte proof, a `563637`-byte checked envelope, a
 weight-table commitment
 `blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea`,
-and `22 / 22` mutation rejections, including explicit cross-head output-swap
-and quotient/remainder score-row drift cases. This is the strongest native
-attention/KV synthesis result currently checked, but it is still a public-row
+and `23 / 23` mutation rejections, including explicit cross-head output-swap,
+final-KV cross-head swap, and quotient/remainder row-drift cases. This is the
+strongest native attention/KV synthesis result currently checked, but it is still a public-row
 verifier-recomputed table policy, not exact Softmax and not an AIR-private
 lookup argument.
 
