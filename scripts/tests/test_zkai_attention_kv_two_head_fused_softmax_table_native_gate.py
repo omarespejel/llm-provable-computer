@@ -158,9 +158,56 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
     def test_source_artifact_validation_rejects_unknown_source_or_sidecar_fields(self):
         source_envelope = copy.deepcopy(self.source_envelope)
         source_envelope["unexpected"] = "claim smuggling"
+        source_raw = json.dumps(source_envelope, indent=2, ensure_ascii=False).encode("utf-8")
         with self.assertRaisesRegex(
             gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
             "source envelope field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                source_envelope,
+                self.sidecar_envelope,
+                source_envelope_bytes=source_raw,
+                sidecar_envelope_bytes=self.sidecar_raw,
+            )
+
+        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
+        sidecar_envelope["unexpected"] = "claim smuggling"
+        sidecar_raw = json.dumps(sidecar_envelope, indent=2, ensure_ascii=False).encode("utf-8")
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "sidecar envelope field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                self.source_envelope,
+                sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=sidecar_raw,
+            )
+
+    def test_source_artifact_validation_rejects_unknown_lookup_summary_fields(self):
+        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
+        sidecar_envelope["lookup_summary"]["unexpected_metric"] = 1
+        sidecar_raw = json.dumps(sidecar_envelope, indent=2, ensure_ascii=False).encode("utf-8")
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "sidecar lookup summary field set drift",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                self.source_envelope,
+                sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=sidecar_raw,
+            )
+
+    def test_source_artifact_validation_binds_envelope_bytes_to_dicts(self):
+        source_envelope = copy.deepcopy(self.source_envelope)
+        source_envelope["decision"] = "GO_RELABELED_SOURCE"
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "source envelope bytes/dict split-brain drift",
         ):
             gate.validate_source_artifacts(
                 self.source_input,
@@ -171,25 +218,10 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
             )
 
         sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
-        sidecar_envelope["unexpected"] = "claim smuggling"
+        sidecar_envelope["decision"] = "GO_RELABELED_SIDECAR"
         with self.assertRaisesRegex(
             gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
-            "sidecar envelope field set drift",
-        ):
-            gate.validate_source_artifacts(
-                self.source_input,
-                self.source_envelope,
-                sidecar_envelope,
-                source_envelope_bytes=self.source_raw,
-                sidecar_envelope_bytes=self.sidecar_raw,
-            )
-
-    def test_source_artifact_validation_rejects_unknown_lookup_summary_fields(self):
-        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
-        sidecar_envelope["lookup_summary"]["unexpected_metric"] = 1
-        with self.assertRaisesRegex(
-            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
-            "sidecar lookup summary field set drift",
+            "sidecar envelope bytes/dict split-brain drift",
         ):
             gate.validate_source_artifacts(
                 self.source_input,
