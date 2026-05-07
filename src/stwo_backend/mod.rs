@@ -193,6 +193,7 @@ pub use attention_kv_native_d8_fused_softmax_table_proof::{
     zkai_attention_kv_native_d8_fused_softmax_table_source_input_from_json_str,
     AttentionKvD8FusedSoftmaxTableMultiplicity, ZkAiAttentionKvNativeD8FusedSoftmaxTableEnvelope,
     ZkAiAttentionKvNativeD8FusedSoftmaxTableSummary,
+    ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_BACKEND_VERSION,
     ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_DECISION,
     ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES,
     ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_MAX_PROOF_BYTES,

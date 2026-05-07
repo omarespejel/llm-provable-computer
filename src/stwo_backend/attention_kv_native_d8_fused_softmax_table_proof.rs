@@ -34,6 +34,8 @@ use crate::proof::StarkProofBackend;
 
 pub const ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_PROOF_VERSION: &str =
     "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_BACKEND_VERSION: &str =
+    "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1";
 pub const ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_STATEMENT_VERSION: &str =
     "zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1";
 pub const ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_SEMANTIC_SCOPE: &str =
@@ -316,6 +318,7 @@ pub struct ZkAiAttentionKvNativeD8FusedSoftmaxTableSummary {
 pub struct ZkAiAttentionKvNativeD8FusedSoftmaxTableEnvelope {
     pub proof_backend: StarkProofBackend,
     pub proof_backend_version: String,
+    pub proof_schema_version: String,
     pub statement_version: String,
     pub semantic_scope: String,
     pub decision: String,
@@ -370,7 +373,9 @@ pub fn prove_zkai_attention_kv_native_d8_fused_softmax_table_envelope(
     let proof = prove_fused(&bundle)?;
     let envelope = ZkAiAttentionKvNativeD8FusedSoftmaxTableEnvelope {
         proof_backend: StarkProofBackend::Stwo,
-        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_PROOF_VERSION
+        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_BACKEND_VERSION
+            .to_string(),
+        proof_schema_version: ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_PROOF_VERSION
             .to_string(),
         statement_version: ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_STATEMENT_VERSION
             .to_string(),
@@ -418,8 +423,13 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD8FusedSoftmaxTableEnvelope
     }
     expect_eq(
         &envelope.proof_backend_version,
-        ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_PROOF_VERSION,
+        ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_BACKEND_VERSION,
         "fused proof backend version",
+    )?;
+    expect_eq(
+        &envelope.proof_schema_version,
+        ZKAI_ATTENTION_KV_NATIVE_D8_FUSED_SOFTMAX_TABLE_PROOF_VERSION,
+        "fused proof schema version",
     )?;
     expect_eq(
         &envelope.statement_version,
@@ -1233,6 +1243,28 @@ mod tests {
         let error = verify_zkai_attention_kv_native_d8_fused_softmax_table_envelope(&envelope)
             .expect_err("proof tamper must reject");
         assert!(!error.to_string().is_empty());
+    }
+
+    #[test]
+    fn attention_kv_d8_fused_softmax_table_rejects_backend_version_drift() {
+        let input = source_input();
+        let mut envelope = prove_zkai_attention_kv_native_d8_fused_softmax_table_envelope(&input)
+            .expect("prove fused attention/lookup");
+        envelope.proof_backend_version = "different-stwo-backend".to_string();
+        let error = verify_zkai_attention_kv_native_d8_fused_softmax_table_envelope(&envelope)
+            .expect_err("backend version drift must reject");
+        assert!(error.to_string().contains("fused proof backend version"));
+    }
+
+    #[test]
+    fn attention_kv_d8_fused_softmax_table_rejects_proof_schema_version_drift() {
+        let input = source_input();
+        let mut envelope = prove_zkai_attention_kv_native_d8_fused_softmax_table_envelope(&input)
+            .expect("prove fused attention/lookup");
+        envelope.proof_schema_version = "different-fused-proof-schema".to_string();
+        let error = verify_zkai_attention_kv_native_d8_fused_softmax_table_envelope(&envelope)
+            .expect_err("proof schema version drift must reject");
+        assert!(error.to_string().contains("fused proof schema version"));
     }
 
     #[test]

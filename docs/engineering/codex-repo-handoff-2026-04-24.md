@@ -344,8 +344,8 @@ Tablero boundary.
 - Issue `#478` fuses the single-head bounded Softmax-table attention
   arithmetic and LogUp table-membership relation into one native Stwo proof
   object. The fused proof checks `52` lookup claims against the same `9`-row
-  table, has a `47698`-byte raw proof, a `478626`-byte checked envelope, and
-  rejects `25 / 25` gate mutations. The useful signal is that fusion adds only
+  table, has a `47698`-byte raw proof, a `478713`-byte checked envelope, and
+  rejects `26 / 26` gate mutations. The useful signal is that fusion adds only
   `3006` raw proof bytes over the arithmetic-only proof and saves `11739` raw
   proof bytes versus the previous source-plus-sidecar pair. This is a fused
   single-head bounded table fixture, not exact Softmax, not two-head/four-head

@@ -56,7 +56,7 @@ SIDECAR_PROOF_SIZE_BYTES = 14_745
 SIDECAR_ENVELOPE_SIZE_BYTES = 214_085
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + SIDECAR_PROOF_SIZE_BYTES
 FUSED_PROOF_SIZE_BYTES = 47_698
-FUSED_ENVELOPE_SIZE_BYTES = 478_626
+FUSED_ENVELOPE_SIZE_BYTES = 478_713
 FUSED_OVER_SOURCE_PROOF_BYTES = FUSED_PROOF_SIZE_BYTES - SOURCE_PROOF_SIZE_BYTES
 FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - FUSED_PROOF_SIZE_BYTES
 FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = FUSED_PROOF_SIZE_BYTES / SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES
@@ -73,7 +73,8 @@ SOURCE_TABLE_ROWS = 9
 LOOKUP_RELATION = "AttentionKvD8FusedSoftmaxTableRelation"
 LOOKUP_RELATION_WIDTH = 2
 
-FUSED_PROOF_VERSION = "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1"
+FUSED_BACKEND_VERSION = "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1"
+FUSED_PROOF_SCHEMA_VERSION = "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1"
 FUSED_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1"
 FUSED_SEMANTIC_SCOPE = "d8_bounded_softmax_table_attention_arithmetic_and_logup_membership_fused_in_one_native_stwo_proof"
 FUSED_TARGET_ID = "attention-kv-d8-causal-mask-fused-bounded-softmax-table-logup-v1"
@@ -126,6 +127,7 @@ EXPECTED_MUTATION_NAMES = (
     "verifier_domain_relabeling",
     "statement_version_relabeling",
     "proof_backend_version_relabeling",
+    "proof_schema_version_relabeling",
     "sidecar_proof_injection",
     "source_proof_injection",
     "unknown_field_injection",
@@ -398,6 +400,7 @@ def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, An
     allowed_keys = {
         "proof_backend",
         "proof_backend_version",
+        "proof_schema_version",
         "statement_version",
         "semantic_scope",
         "decision",
@@ -412,8 +415,10 @@ def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, An
         raise AttentionKvD8FusedSoftmaxTableGateError(f"unknown fused envelope field(s): {sorted(extra_keys)}")
     if envelope.get("proof_backend") != "stwo":
         raise AttentionKvD8FusedSoftmaxTableGateError("fused proof backend drift")
-    if envelope.get("proof_backend_version") != FUSED_PROOF_VERSION:
+    if envelope.get("proof_backend_version") != FUSED_BACKEND_VERSION:
         raise AttentionKvD8FusedSoftmaxTableGateError("fused proof backend version drift")
+    if envelope.get("proof_schema_version") != FUSED_PROOF_SCHEMA_VERSION:
+        raise AttentionKvD8FusedSoftmaxTableGateError("fused proof schema version drift")
     if envelope.get("statement_version") != FUSED_STATEMENT_VERSION:
         raise AttentionKvD8FusedSoftmaxTableGateError("fused statement version drift")
     if envelope.get("semantic_scope") != FUSED_SEMANTIC_SCOPE:
@@ -519,7 +524,14 @@ def mutation_cases(envelope: dict[str, Any]) -> list[tuple[str, dict[str, Any], 
     add("target_id_relabeling", lambda v: v.__setitem__("target_id", "different-target"))
     add("verifier_domain_relabeling", lambda v: v.__setitem__("verifier_domain", "different-domain"))
     add("statement_version_relabeling", lambda v: v.__setitem__("statement_version", "different-statement"))
-    add("proof_backend_version_relabeling", lambda v: v.__setitem__("proof_backend_version", "sidecar-proof-v1"))
+    add(
+        "proof_backend_version_relabeling",
+        lambda v: v.__setitem__("proof_backend_version", "different-stwo-backend"),
+    )
+    add(
+        "proof_schema_version_relabeling",
+        lambda v: v.__setitem__("proof_schema_version", "different-fused-proof-schema"),
+    )
     add("sidecar_proof_injection", lambda v: v.__setitem__("sidecar_proof", []))
     add("source_proof_injection", lambda v: v.__setitem__("source_proof", []))
     add("unknown_field_injection", lambda v: v.__setitem__("unexpected", "claim smuggling"))
@@ -658,7 +670,9 @@ def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {column: result[column] for column in TSV_COLUMNS}
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
+        writer = csv.DictWriter(
+            handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n"
+        )
         writer.writeheader()
         writer.writerow(row)
     with path.open("r", encoding="utf-8", newline="") as handle:

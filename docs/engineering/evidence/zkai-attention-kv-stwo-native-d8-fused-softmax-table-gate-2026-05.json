@@ -1,7 +1,7 @@
 {
   "claim_boundary": "ONE_NATIVE_STWO_D8_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
   "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
-  "fused_envelope_size_bytes": 478626,
+  "fused_envelope_size_bytes": 478713,
   "fused_over_source_proof_bytes": 3006,
   "fused_proof_size_bytes": 47698,
   "fused_saves_vs_source_plus_sidecar_bytes": 11739,
@@ -123,6 +123,11 @@
       "rejected": true
     },
     {
+      "error": "fused proof schema version drift",
+      "name": "proof_schema_version_relabeling",
+      "rejected": true
+    },
+    {
       "error": "unknown fused envelope field(s): ['sidecar_proof']",
       "name": "sidecar_proof_injection",
       "rejected": true
@@ -138,8 +143,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 25,
-  "mutations_rejected": 25,
+  "mutations_checked": 26,
+  "mutations_rejected": 26,
   "non_claims": [
     "not exact Softmax attention",
     "not exp/div Softmax semantics",
