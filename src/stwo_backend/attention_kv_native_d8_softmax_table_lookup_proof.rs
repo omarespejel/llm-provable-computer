@@ -1,4 +1,4 @@
-use ark_ff::Zero;
+use ark_ff::{One, Zero};
 use serde::{Deserialize, Serialize};
 use stwo::core::air::Component;
 use stwo::core::channel::{Blake2sM31Channel, Channel};
@@ -584,14 +584,31 @@ fn lookup_interaction_trace(
             preprocessed_trace[0].data[vec_row],
             preprocessed_trace[1].data[vec_row],
         ]);
-        col_gen.write_frac(
-            vec_row,
-            enabled * table_q - table_multiplicity * claimed_q,
-            claimed_q * table_q,
-        );
+        let numerator = enabled * table_q - table_multiplicity * claimed_q;
+        let denominator = zero_contribution_denominator_guard(numerator, claimed_q * table_q);
+        col_gen.write_frac(vec_row, numerator, denominator);
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
+}
+
+fn zero_contribution_denominator_guard(
+    numerator: PackedSecureField,
+    denominator: PackedSecureField,
+) -> PackedSecureField {
+    let numerator_lanes = numerator.to_array();
+    let mut denominator_lanes = denominator.to_array();
+    for (numerator_lane, denominator_lane) in
+        numerator_lanes.iter().zip(denominator_lanes.iter_mut())
+    {
+        if *numerator_lane == SecureField::zero() {
+            // Zero-multiplicity rows contribute exactly zero to the LogUp sum. Use
+            // a fixed non-zero denominator so padding never requires inverting a
+            // challenge-derived zero.
+            *denominator_lane = SecureField::one();
+        }
+    }
+    PackedSecureField::from_array(denominator_lanes)
 }
 
 fn lookup_component(
@@ -707,6 +724,25 @@ mod tests {
             .table_multiplicities
             .iter()
             .any(|entry| entry.gap == input.score_gap_clip && entry.multiplicity > 0));
+    }
+
+    #[test]
+    fn attention_kv_d8_softmax_table_lookup_guards_zero_contribution_denominators() {
+        let guarded = zero_contribution_denominator_guard(
+            PackedSecureField::zero(),
+            PackedSecureField::zero(),
+        );
+        assert!(guarded
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::one()));
+
+        let non_zero_numerator = PackedSecureField::one();
+        let original_denominator =
+            PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
+        let preserved =
+            zero_contribution_denominator_guard(non_zero_numerator, original_denominator);
+        assert_eq!(preserved.to_array(), original_denominator.to_array());
     }
 
     #[test]
