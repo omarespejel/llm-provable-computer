@@ -520,6 +520,20 @@ def validate_source_artifacts(
     source_envelope_bytes: bytes,
     sidecar_envelope_bytes: bytes,
 ) -> None:
+    if (
+        parse_bounded_json_bytes(source_envelope_bytes, "source envelope bytes")
+        != source_envelope
+    ):
+        raise AttentionKvTwoHeadFusedSoftmaxTableGateError(
+            "source envelope bytes/dict split-brain drift"
+        )
+    if (
+        parse_bounded_json_bytes(sidecar_envelope_bytes, "sidecar envelope bytes")
+        != sidecar_envelope
+    ):
+        raise AttentionKvTwoHeadFusedSoftmaxTableGateError(
+            "sidecar envelope bytes/dict split-brain drift"
+        )
     try:
         SOURCE_INPUT_MODULE.validate_payload(source_input)
     except Exception as err:
