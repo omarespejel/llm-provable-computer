@@ -190,7 +190,8 @@ Claim boundary:
 | Surface | Result |
 | --- | ---: |
 | Proof-backed routes available | 6 |
-| Routes checked | 10 |
+| Routes checked by selector evidence | 8 |
+| Additional native Softmax-table scale gates summarized | 2 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
 | Native Stwo proof envelope size | `265791` bytes |
