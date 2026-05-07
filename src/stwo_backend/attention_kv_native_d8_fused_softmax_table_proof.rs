@@ -24,6 +24,7 @@ use stwo_constraint_framework::{
 };
 
 use super::attention_kv_native_d8_bounded_softmax_table_proof::{
+    validate_zkai_attention_kv_native_d8_bounded_softmax_table_input,
     zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str,
     AttentionKvD8BoundedSoftmaxTableScoreRow, ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
     ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES,
@@ -74,6 +75,7 @@ const PREPROCESSED_TABLE_WEIGHT: &str =
     "zkai/attention-kv/native-d8-fused-softmax-table-logup/table-weight";
 const PREPROCESSED_TABLE_MULTIPLICITY: &str =
     "zkai/attention-kv/native-d8-fused-softmax-table-logup/table-multiplicity";
+const FUSED_COLUMN_PREFIX: &str = "zkai/attention-kv/native-d8-fused-softmax-table-logup";
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not exact Softmax attention",
@@ -338,6 +340,16 @@ struct FusedBundle {
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct FusedTraceColumnIndices {
+    enabled: usize,
+    attention_weight: usize,
+    lookup_gap: usize,
+    table_gap: usize,
+    table_weight: usize,
+    table_multiplicity: usize,
+}
+
 pub fn zkai_attention_kv_native_d8_fused_softmax_table_source_input_from_json_str(
     raw_json: &str,
 ) -> Result<ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput> {
@@ -449,10 +461,7 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD8FusedSoftmaxTableEnvelope
 fn validate_source_input(
     input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
 ) -> Result<()> {
-    let raw =
-        serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
-    zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str(&raw)?;
-    Ok(())
+    validate_zkai_attention_kv_native_d8_bounded_softmax_table_input(input)
 }
 
 fn fused_summary(
@@ -856,21 +865,18 @@ fn fused_interaction_trace(
 ) {
     let mut logup_gen = LogupTraceGenerator::new(log_size);
     let mut col_gen = logup_gen.new_col();
-    let enabled_index = 0;
-    let attention_weight_index = 11;
-    let lookup_gap_index = 13;
-    let table_offset = fused_row_column_ids().len();
+    let indices = fused_trace_column_indices();
     for vec_row in 0..(1 << (log_size - LOG_N_LANES)) {
-        let enabled = PackedSecureField::from(base_trace[enabled_index].data[vec_row]);
+        let enabled = PackedSecureField::from(base_trace[indices.enabled].data[vec_row]);
         let table_multiplicity =
-            PackedSecureField::from(preprocessed_trace[table_offset + 2].data[vec_row]);
+            PackedSecureField::from(preprocessed_trace[indices.table_multiplicity].data[vec_row]);
         let claimed_q: PackedSecureField = lookup_elements.combine(&[
-            base_trace[lookup_gap_index].data[vec_row],
-            base_trace[attention_weight_index].data[vec_row],
+            base_trace[indices.lookup_gap].data[vec_row],
+            base_trace[indices.attention_weight].data[vec_row],
         ]);
         let table_q: PackedSecureField = lookup_elements.combine(&[
-            preprocessed_trace[table_offset].data[vec_row],
-            preprocessed_trace[table_offset + 1].data[vec_row],
+            preprocessed_trace[indices.table_gap].data[vec_row],
+            preprocessed_trace[indices.table_weight].data[vec_row],
         ]);
         let (numerator, denominator) =
             masked_lookup_fraction_terms(enabled, table_multiplicity, claimed_q, table_q);
@@ -970,7 +976,7 @@ fn fused_row_column_ids() -> Vec<String> {
         "lookup-clipped-gap",
     ]
     .into_iter()
-    .map(|suffix| format!("zkai/attention-kv/native-d8-fused-softmax-table-logup/{suffix}"))
+    .map(fused_column_id)
     .collect::<Vec<_>>();
     for prefix in [
         "query",
@@ -988,34 +994,59 @@ fn fused_row_column_ids() -> Vec<String> {
             VALUE_WIDTH
         };
         for index in 0..width {
-            ids.push(format!(
-                "zkai/attention-kv/native-d8-fused-softmax-table-logup/{prefix}-{index:02}"
-            ));
+            ids.push(fused_column_id(&format!("{prefix}-{index:02}")));
         }
     }
     for index in 0..SCORE_GAP_BITS {
-        ids.push(format!(
-            "zkai/attention-kv/native-d8-fused-softmax-table-logup/score-gap-bit-{index:02}"
-        ));
+        ids.push(fused_column_id(&format!("score-gap-bit-{index:02}")));
     }
     for index in 0..CAUSAL_GAP_BITS {
-        ids.push(format!(
-            "zkai/attention-kv/native-d8-fused-softmax-table-logup/causal-gap-bit-{index:02}"
-        ));
+        ids.push(fused_column_id(&format!("causal-gap-bit-{index:02}")));
     }
     for index in 0..WEIGHT_BITS {
-        ids.push(format!(
-            "zkai/attention-kv/native-d8-fused-softmax-table-logup/weight-bit-{index:02}"
-        ));
+        ids.push(fused_column_id(&format!("weight-bit-{index:02}")));
     }
     for dim in 0..VALUE_WIDTH {
         for index in 0..OUTPUT_REMAINDER_BITS {
-            ids.push(format!(
-                "zkai/attention-kv/native-d8-fused-softmax-table-logup/output-remainder-{dim:02}-bit-{index:02}"
-            ));
+            ids.push(fused_column_id(&format!(
+                "output-remainder-{dim:02}-bit-{index:02}"
+            )));
         }
     }
     ids
+}
+
+fn fused_column_id(suffix: &str) -> String {
+    format!("{FUSED_COLUMN_PREFIX}/{suffix}")
+}
+
+fn fused_trace_column_indices() -> FusedTraceColumnIndices {
+    let row_ids = fused_row_column_ids();
+    let preprocessed_ids = fused_preprocessed_column_ids();
+    FusedTraceColumnIndices {
+        enabled: fused_row_column_index(&row_ids, "enabled"),
+        attention_weight: fused_row_column_index(&row_ids, "attention-weight"),
+        lookup_gap: fused_row_column_index(&row_ids, "lookup-clipped-gap"),
+        table_gap: fused_preprocessed_column_index(&preprocessed_ids, PREPROCESSED_TABLE_GAP),
+        table_weight: fused_preprocessed_column_index(&preprocessed_ids, PREPROCESSED_TABLE_WEIGHT),
+        table_multiplicity: fused_preprocessed_column_index(
+            &preprocessed_ids,
+            PREPROCESSED_TABLE_MULTIPLICITY,
+        ),
+    }
+}
+
+fn fused_row_column_index(ids: &[String], suffix: &str) -> usize {
+    let target = fused_column_id(suffix);
+    ids.iter()
+        .position(|id| id == &target)
+        .unwrap_or_else(|| panic!("missing fused trace column id: {target}"))
+}
+
+fn fused_preprocessed_column_index(ids: &[PreProcessedColumnId], target: &str) -> usize {
+    ids.iter()
+        .position(|id| id.id == target)
+        .unwrap_or_else(|| panic!("missing fused preprocessed column id: {target}"))
 }
 
 fn fused_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
@@ -1115,6 +1146,35 @@ mod tests {
         assert_eq!(total, input.score_rows.len());
         assert_eq!(summary.source_issue, SOURCE_ISSUE);
         assert_eq!(summary.fusion_status, FUSION_STATUS);
+    }
+
+    #[test]
+    fn attention_kv_d8_fused_softmax_table_derives_logup_indices_from_column_ids() {
+        let row_ids = fused_row_column_ids();
+        let preprocessed_ids = fused_preprocessed_column_ids();
+        let indices = fused_trace_column_indices();
+
+        assert_eq!(row_ids[indices.enabled], fused_column_id("enabled"));
+        assert_eq!(
+            row_ids[indices.attention_weight],
+            fused_column_id("attention-weight")
+        );
+        assert_eq!(
+            row_ids[indices.lookup_gap],
+            fused_column_id("lookup-clipped-gap")
+        );
+        assert_eq!(
+            preprocessed_ids[indices.table_gap].id,
+            PREPROCESSED_TABLE_GAP
+        );
+        assert_eq!(
+            preprocessed_ids[indices.table_weight].id,
+            PREPROCESSED_TABLE_WEIGHT
+        );
+        assert_eq!(
+            preprocessed_ids[indices.table_multiplicity].id,
+            PREPROCESSED_TABLE_MULTIPLICITY
+        );
     }
 
     #[test]
