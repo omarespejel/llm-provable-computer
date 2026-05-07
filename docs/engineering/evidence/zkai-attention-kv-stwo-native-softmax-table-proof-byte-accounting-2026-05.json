@@ -1,0 +1,519 @@
+{
+  "accounting_gate_commitment": "blake2b-256:7f7451d107832180c1a8ba4a4edb8d830081a9402ab0562727428d385f855212",
+  "all_mutations_rejected": true,
+  "binary_pcs_fri_accounting_status": "NO_GO_TYPED_BINARY_STWO_PROOF_COMPONENT_SCHEMA_NOT_EXPOSED",
+  "claim_boundary": "NATIVE_STWO_BOUNDED_SOFTMAX_TABLE_PROOF_BYTE_ACCOUNTING_JSON_SUBOBJECTS_ONLY_NOT_BINARY_PCS_FRI_INTERNALS_NOT_SCALING_LAW_NOT_PUBLIC_BENCHMARK",
+  "controlled_grid_status": "PARTIAL_ONE_TO_TWO_HEAD_SOFTMAX_TABLE_POINT_ONLY_CONTROLLED_GRID_MISSING",
+  "decision": "GO_JSON_STARK_PROOF_SUBOBJECT_ACCOUNTING_NO_GO_BINARY_PCS_FRI_ACCOUNTING",
+  "first_blocker": "NO_GO_BINARY_PCS_FRI_ACCOUNTING_STABLE_STWO_BINARY_SERIALIZATION_SCHEMA_NOT_EXPOSED",
+  "issue": 469,
+  "json_accounting_status": "GO_STABLE_JSON_STARK_PROOF_SUBOBJECT_ACCOUNTING",
+  "mutation_cases": [
+    {
+      "error": "profile row proof_size_bytes drift",
+      "name": "single_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_size_bytes drift",
+      "name": "two_head_proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row envelope_size_bytes drift",
+      "name": "single_envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row envelope_size_bytes drift",
+      "name": "two_head_envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_accounting drift",
+      "name": "top_level_fri_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_accounting drift",
+      "name": "fri_inner_layers_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_accounting drift",
+      "name": "fri_decommitment_group_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_accounting drift",
+      "name": "sampled_lane_length_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row proof_accounting drift",
+      "name": "queried_lane_length_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "dominant_delta_section_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "binary_pcs_fri_accounting_status drift",
+      "name": "binary_accounting_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_binary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first_blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "envelope_ratio_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "scaling diagnostics drift",
+      "name": "proof_ratio_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row gate_commitment drift",
+      "name": "source_gate_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "profile row statement_commitment drift",
+      "name": "statement_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field set drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
+  "non_claims": [
+    "not binary PCS/FRI internal accounting",
+    "not a proof-size scaling law",
+    "not a public performance benchmark row",
+    "not a timing benchmark",
+    "not exact Softmax attention",
+    "not AIR-private lookup arguments",
+    "not full autoregressive inference",
+    "not proof aggregation or recursion",
+    "not controlled-grid coverage"
+  ],
+  "profile_rows": [
+    {
+      "canonical_envelope_metadata_bytes": 379,
+      "canonical_input_bytes": 34893,
+      "canonical_proof_byte_array_bytes": 134589,
+      "envelope_size_bytes": 451982,
+      "gate_commitment": "blake2b-256:6fb160ca48a77e08097c4301f45bbbcd749112e451078d7d96135a449ea8b6ce",
+      "head_count": 1,
+      "key_width": 8,
+      "label": "single_head_d8_seq8_bounded_softmax_table",
+      "proof_accounting": {
+        "binary_pcs_fri_accounting_status": "NO_GO_TYPED_BINARY_STWO_PROOF_COMPONENT_SCHEMA_NOT_EXPOSED",
+        "commitment_bytes_by_lane": [
+          113,
+          113,
+          110
+        ],
+        "decommitments": {
+          "lane_bytes": [
+            1829,
+            1829,
+            1832
+          ],
+          "lane_count": 3,
+          "top_level_bytes": 5494
+        },
+        "fri_proof": {
+          "component_group_bytes": {
+            "commitments": 686,
+            "decommitments": 4036,
+            "json_structure_overhead": 333,
+            "last_layer_poly": 72,
+            "witnesses": 769
+          },
+          "first_layer_bytes": 1780,
+          "first_layer_component_bytes": {
+            "commitment": 115,
+            "decommitment": 1473,
+            "fri_witness": 146
+          },
+          "inner_layer_component_bytes": [
+            {
+              "commitment": 116,
+              "decommitment": 1147,
+              "fri_witness": 148,
+              "layer": 0,
+              "total": 1457
+            },
+            {
+              "commitment": 114,
+              "decommitment": 812,
+              "fri_witness": 141,
+              "layer": 1,
+              "total": 1113
+            },
+            {
+              "commitment": 116,
+              "decommitment": 463,
+              "fri_witness": 141,
+              "layer": 2,
+              "total": 766
+            },
+            {
+              "commitment": 115,
+              "decommitment": 122,
+              "fri_witness": 143,
+              "layer": 3,
+              "total": 426
+            },
+            {
+              "commitment": 110,
+              "decommitment": 19,
+              "fri_witness": 50,
+              "layer": 4,
+              "total": 225
+            }
+          ],
+          "inner_layer_count": 5,
+          "inner_layers_bytes": 3993,
+          "last_layer_poly_bytes": 72,
+          "top_level_bytes": 5896
+        },
+        "json_accounting_status": "GO_STABLE_JSON_STARK_PROOF_SUBOBJECT_ACCOUNTING",
+        "proof_config": {
+          "fri_config": {
+            "fold_step": 1,
+            "log_blowup_factor": 1,
+            "log_last_layer_degree_bound": 0,
+            "n_queries": 3
+          },
+          "lifting_log_size": null,
+          "pow_bits": 10
+        },
+        "proof_json_wrapper_bytes": 125,
+        "proof_payload_kind": "utf8_json_object_with_single_stark_proof_field",
+        "proof_section_bytes": {
+          "commitments": 340,
+          "config": 136,
+          "decommitments": 5494,
+          "fri_proof": 5896,
+          "proof_of_work": 3,
+          "queried_values": 12868,
+          "sampled_values": 19830
+        },
+        "proof_section_payload_bytes_total": 44567,
+        "queried_values": {
+          "lane_bytes": [
+            6297,
+            6297,
+            270
+          ],
+          "lane_count": 3,
+          "lane_lengths": [
+            246,
+            246,
+            8
+          ],
+          "top_level_bytes": 12868
+        },
+        "raw_proof_size_bytes": 44692,
+        "sampled_values": {
+          "lane_bytes": [
+            9713,
+            9713,
+            400
+          ],
+          "lane_count": 3,
+          "lane_lengths": [
+            246,
+            246,
+            8
+          ],
+          "top_level_bytes": 19830
+        }
+      },
+      "proof_backend": "stwo",
+      "proof_size_bytes": 44692,
+      "proof_system": "Stwo",
+      "route_id": "local_stwo_attention_kv_d8_bounded_softmax_table_masked_sequence_proof",
+      "score_rows": 52,
+      "semantics": "bounded_table_softmax_approx_attention",
+      "sequence_length_per_head": 8,
+      "source_issue": 463,
+      "statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+      "trace_rows": 64,
+      "value_width": 8,
+      "weight_policy": "exp2_half_gap_table_clipped_8_floor_division"
+    },
+    {
+      "canonical_envelope_metadata_bytes": 412,
+      "canonical_input_bytes": 67945,
+      "canonical_proof_byte_array_bytes": 141869,
+      "envelope_size_bytes": 563637,
+      "gate_commitment": "blake2b-256:4480537073014d4fe68837c3b7750d34d1f1ef34157b21c39ff11ed998149a2e",
+      "head_count": 2,
+      "key_width": 8,
+      "label": "two_head_d8_seq8_bounded_softmax_table",
+      "proof_accounting": {
+        "binary_pcs_fri_accounting_status": "NO_GO_TYPED_BINARY_STWO_PROOF_COMPONENT_SCHEMA_NOT_EXPOSED",
+        "commitment_bytes_by_lane": [
+          113,
+          113,
+          116
+        ],
+        "decommitments": {
+          "lane_bytes": [
+            1935,
+            1935,
+            1924
+          ],
+          "lane_count": 3,
+          "top_level_bytes": 5798
+        },
+        "fri_proof": {
+          "component_group_bytes": {
+            "commitments": 788,
+            "decommitments": 5054,
+            "json_structure_overhead": 380,
+            "last_layer_poly": 70,
+            "witnesses": 821
+          },
+          "first_layer_bytes": 1871,
+          "first_layer_component_bytes": {
+            "commitment": 107,
+            "decommitment": 1575,
+            "fri_witness": 143
+          },
+          "inner_layer_component_bytes": [
+            {
+              "commitment": 118,
+              "decommitment": 1246,
+              "fri_witness": 145,
+              "layer": 0,
+              "total": 1555
+            },
+            {
+              "commitment": 112,
+              "decommitment": 929,
+              "fri_witness": 146,
+              "layer": 1,
+              "total": 1233
+            },
+            {
+              "commitment": 119,
+              "decommitment": 578,
+              "fri_witness": 145,
+              "layer": 2,
+              "total": 888
+            },
+            {
+              "commitment": 108,
+              "decommitment": 463,
+              "fri_witness": 47,
+              "layer": 3,
+              "total": 664
+            },
+            {
+              "commitment": 107,
+              "decommitment": 244,
+              "fri_witness": 99,
+              "layer": 4,
+              "total": 496
+            },
+            {
+              "commitment": 117,
+              "decommitment": 19,
+              "fri_witness": 96,
+              "layer": 5,
+              "total": 278
+            }
+          ],
+          "inner_layer_count": 6,
+          "inner_layers_bytes": 5121,
+          "last_layer_poly_bytes": 70,
+          "top_level_bytes": 7113
+        },
+        "json_accounting_status": "GO_STABLE_JSON_STARK_PROOF_SUBOBJECT_ACCOUNTING",
+        "proof_config": {
+          "fri_config": {
+            "fold_step": 1,
+            "log_blowup_factor": 1,
+            "log_last_layer_degree_bound": 0,
+            "n_queries": 3
+          },
+          "lifting_log_size": null,
+          "pow_bits": 10
+        },
+        "proof_json_wrapper_bytes": 125,
+        "proof_payload_kind": "utf8_json_object_with_single_stark_proof_field",
+        "proof_section_bytes": {
+          "commitments": 346,
+          "config": 136,
+          "decommitments": 5798,
+          "fri_proof": 7113,
+          "proof_of_work": 4,
+          "queried_values": 13214,
+          "sampled_values": 20368
+        },
+        "proof_section_payload_bytes_total": 46979,
+        "queried_values": {
+          "lane_bytes": [
+            6469,
+            6469,
+            272
+          ],
+          "lane_count": 3,
+          "lane_lengths": [
+            247,
+            247,
+            8
+          ],
+          "top_level_bytes": 13214
+        },
+        "raw_proof_size_bytes": 47104,
+        "sampled_values": {
+          "lane_bytes": [
+            9979,
+            9979,
+            406
+          ],
+          "lane_count": 3,
+          "lane_lengths": [
+            247,
+            247,
+            8
+          ],
+          "top_level_bytes": 20368
+        }
+      },
+      "proof_backend": "stwo",
+      "proof_size_bytes": 47104,
+      "proof_system": "Stwo",
+      "route_id": "local_stwo_attention_kv_two_head_bounded_softmax_table_masked_sequence_proof",
+      "score_rows": 104,
+      "semantics": "bounded_table_softmax_approx_attention",
+      "sequence_length_per_head": 8,
+      "source_issue": 471,
+      "statement_commitment": "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b",
+      "trace_rows": 128,
+      "value_width": 8,
+      "weight_policy": "exp2_half_gap_table_clipped_8_floor_division"
+    }
+  ],
+  "scaling_diagnostics": {
+    "axes_compared": "head_count_1_to_2_same_d8_same_sequence_length_per_head_same_bounded_softmax_table_policy",
+    "baseline_head_count": 1,
+    "binary_pcs_fri_accounting_status": "NO_GO_TYPED_BINARY_STWO_PROOF_COMPONENT_SCHEMA_NOT_EXPOSED",
+    "canonical_envelope_component_delta_bytes": {
+      "input": 33052,
+      "metadata": 33,
+      "proof_byte_array": 7280
+    },
+    "dominant_top_level_delta_section": "fri_proof",
+    "envelope_delta_per_raw_proof_delta": 46.291459369818,
+    "envelope_file_growth_vs_score_growth": 0.623517086964,
+    "envelope_file_size_delta_bytes": 111655,
+    "envelope_file_size_ratio": 1.247034173927,
+    "envelope_file_size_ratio_fraction": {
+      "denominator": 451982,
+      "numerator": 563637
+    },
+    "fri_component_group_delta_bytes": {
+      "commitments": 102,
+      "decommitments": 1018,
+      "json_structure_overhead": 47,
+      "last_layer_poly": -2,
+      "witnesses": 52
+    },
+    "fri_proof_delta_share_of_raw_proof_delta": 0.50456053068,
+    "fri_subcomponent_delta_bytes": {
+      "first_layer_bytes": 91,
+      "inner_layer_count_delta": 1,
+      "inner_layers_bytes": 1128,
+      "last_layer_poly_bytes": -2
+    },
+    "json_accounting_status": "GO_STABLE_JSON_STARK_PROOF_SUBOBJECT_ACCOUNTING",
+    "profile_interpretation": "doubling_heads_and_score_rows_adds_2412_raw_json_proof_bytes_while_checked_envelope_file_bytes_add_111655_raw_proof_growth_is_fri_and_query_material_dominated_but_true_binary_pcs_fri_accounting_is_not_available",
+    "queried_values_lane_length_delta": [
+      1,
+      1,
+      0
+    ],
+    "raw_proof_growth_vs_score_growth": 0.526984695247,
+    "raw_proof_size_delta_bytes": 2412,
+    "raw_proof_size_ratio": 1.053969390495,
+    "raw_proof_size_ratio_fraction": {
+      "denominator": 44692,
+      "numerator": 47104
+    },
+    "sampled_values_lane_length_delta": [
+      1,
+      1,
+      0
+    ],
+    "scaled_head_count": 2,
+    "score_rows_ratio": 2.0,
+    "score_rows_ratio_fraction": {
+      "denominator": 52,
+      "numerator": 104
+    },
+    "top_level_section_delta_bytes": {
+      "commitments": 6,
+      "config": 0,
+      "decommitments": 304,
+      "fri_proof": 1217,
+      "proof_of_work": 1,
+      "queried_values": 346,
+      "sampled_values": 538
+    },
+    "top_level_section_growth_ratios": {
+      "commitments": 1.017647058824,
+      "config": 1.0,
+      "decommitments": 1.055333090644,
+      "fri_proof": 1.206411126187,
+      "proof_of_work": 1.333333333333,
+      "queried_values": 1.026888405347,
+      "sampled_values": 1.027130610187
+    },
+    "trace_rows_ratio": 2.0,
+    "trace_rows_ratio_fraction": {
+      "denominator": 64,
+      "numerator": 128
+    }
+  },
+  "schema": "zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-gate-v1",
+  "source_issues": [
+    463,
+    471
+  ],
+  "timing_policy": "no_new_timing_proof_byte_accounting_only",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_d8_bounded_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.tsv",
+    "python3 scripts/zkai_attention_kv_two_head_bounded_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.tsv",
+    "python3 scripts/zkai_attention_kv_softmax_table_proof_byte_accounting_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-softmax-table-proof-byte-accounting-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_softmax_table_proof_byte_accounting_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}
