@@ -42,9 +42,9 @@ It supports the following presentation posture:
   narrow native Stwo attention/KV proofs for single-head, seq16, d16,
   two-head integer-argmax carried-state fixtures, bounded weighted attention,
   bounded Softmax-table attention, LogUp table-membership sidecars, and fused
-  single-head/two-head bounded Softmax-table-plus-LogUp proof objects (not exact
+  single-head/two-head/four-head bounded Softmax-table-plus-LogUp proof objects (not exact
   Softmax, implementation-exact model Softmax, long-context inference, full
-  inference, proof aggregation across heads, public benchmark evidence, or
+  inference, recursive aggregation of independent head proofs, public benchmark evidence, or
   recursion) show that proof validity, statement binding, numeric range
   assumptions, approximation policies, table membership, and state transitions
   must remain separate verifier layers,

@@ -1421,13 +1421,29 @@ inference, not full transformer inference, and not recursion/PCD. Its value is
 that the native STARK surface now supports multi-head carried KV state and a
 monotone weighted-read policy in the same checked proof object.
 
+The sixth follow-up now fuses the bounded Softmax-table attention arithmetic and
+LogUp table-membership relation into a single native Stwo proof object. The
+four-head route checks `208` lookup claims against the same nine-row
+statement-bound table, has a `53468`-byte raw proof inside a `797717`-byte
+checked envelope, and rejects `30 / 30` relabeling, commitment-drift,
+split-route-injection, metric-smuggling, proof-byte, and exact-Softmax-overclaim
+mutations. Before fusion, the corresponding arithmetic proof plus LogUp sidecar
+used `74529` raw proof bytes; the fused route uses `0.7174120141153109x` of that
+source-plus-sidecar budget. This is the strongest current native Stwo attention
+signal in the artifact set: lookup membership no longer has to live as a
+detached sidecar for the checked bounded fixture, even at four heads. It remains
+bounded table evidence, not real-valued Softmax, not implementation-exact model
+Softmax, not full inference, not a public benchmark row, and not recursion/PCD.
+
 The credible sequencing is therefore: first scale this native attention/KV AIR
-one notch at a time; second profile the observed row-count/proof-size behavior
-under a stronger timing policy; third keep matched external rows only when public
-proof artifacts and verifier inputs make baseline verification and metadata
-mutation reproducible; fourth return to recursive/PCD compression only once the
-small native surfaces are stable. That keeps the next contribution technically
-attributable and prevents the paper from comparing unlike objects.
+one notch at a time; second fuse the lookup-heavy pieces when the arithmetic and
+table-membership claims share a statement boundary; third profile the observed
+row-count/proof-size behavior under a stronger timing policy; fourth keep matched
+external rows only when public proof artifacts and verifier inputs make baseline
+verification and metadata mutation reproducible; fifth return to recursive/PCD
+compression only once the small native surfaces are stable. That keeps the next
+contribution technically attributable and prevents the paper from comparing
+unlike objects.
 
 ______________________________________________________________________
 
