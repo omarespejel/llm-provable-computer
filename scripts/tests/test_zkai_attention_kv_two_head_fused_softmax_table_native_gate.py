@@ -10,6 +10,18 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source_input = gate.read_bounded_json(gate.SOURCE_INPUT_JSON, gate.MAX_SOURCE_INPUT_JSON_BYTES, "source input")
+        cls.source_envelope, cls.source_raw = gate.read_sized_envelope(
+            gate.SOURCE_ENVELOPE_JSON,
+            gate.MAX_SOURCE_ENVELOPE_JSON_BYTES,
+            gate.SOURCE_ENVELOPE_SIZE_BYTES,
+            "source envelope",
+        )
+        cls.sidecar_envelope, cls.sidecar_raw = gate.read_sized_envelope(
+            gate.SIDECAR_ENVELOPE_JSON,
+            gate.MAX_SIDECAR_ENVELOPE_JSON_BYTES,
+            gate.SIDECAR_ENVELOPE_SIZE_BYTES,
+            "sidecar envelope",
+        )
         cls.fused_envelope = gate.read_bounded_json(gate.FUSED_ENVELOPE_JSON, gate.MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
         cls.payload = gate.run_gate()
 
@@ -77,6 +89,40 @@ class AttentionKvTwoHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 gate.verify_fused_envelope_bytes_with_native_cli(tmp_path.read_bytes(), str(tmp_path))
         finally:
             tmp_path.unlink(missing_ok=True)
+
+    def test_source_artifact_validation_rejects_same_size_source_proof_tamper(self):
+        source_envelope = copy.deepcopy(self.source_envelope)
+        gate.mutate_same_size_stark_proof_commitment(source_envelope)
+        source_raw = json.dumps(source_envelope, indent=2, ensure_ascii=False).encode("utf-8")
+        self.assertEqual(len(source_raw), len(self.source_raw))
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "native source verifier rejected artifact",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                source_envelope,
+                self.sidecar_envelope,
+                source_envelope_bytes=source_raw,
+                sidecar_envelope_bytes=self.sidecar_raw,
+            )
+
+    def test_source_artifact_validation_rejects_same_size_sidecar_proof_tamper(self):
+        sidecar_envelope = copy.deepcopy(self.sidecar_envelope)
+        gate.mutate_same_size_stark_proof_commitment(sidecar_envelope)
+        sidecar_raw = json.dumps(sidecar_envelope, indent=2, ensure_ascii=False).encode("utf-8")
+        self.assertEqual(len(sidecar_raw), len(self.sidecar_raw))
+        with self.assertRaisesRegex(
+            gate.AttentionKvTwoHeadFusedSoftmaxTableGateError,
+            "native sidecar verifier rejected artifact",
+        ):
+            gate.validate_source_artifacts(
+                self.source_input,
+                self.source_envelope,
+                sidecar_envelope,
+                source_envelope_bytes=self.source_raw,
+                sidecar_envelope_bytes=sidecar_raw,
+            )
 
     def test_gate_checks_source_sidecar_and_fused_envelope_byte_sizes(self):
         cases = (
