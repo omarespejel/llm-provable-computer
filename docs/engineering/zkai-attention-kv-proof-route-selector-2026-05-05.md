@@ -313,6 +313,14 @@ The issue `#482` sidecar repeats the same relation on a four-head source,
 doubling lookup claims again from `104` to `208` while raw proof bytes grow from
 `18104` to `21783` (`1.203215x`), and growing claims `4.000000x` versus
 single-head while raw proof bytes grow `1.477314x`.
+The issue `#478` fused route uses proof version
+`stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1` and statement
+version `zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1`
+to fuse the single-head d8 bounded Softmax-table attention arithmetic and the
+LogUp membership relation into one native Stwo proof object. It keeps sequence
+length `8`, width `8`, score gap clip `8`, `52` lookup claims, and the same
+proof-existence/byte-accounting-only timing policy; it is not an exact Softmax
+or public benchmark row.
 
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
@@ -470,6 +478,21 @@ python3 scripts/zkai_attention_kv_four_head_air_private_softmax_table_lookup_gat
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05.tsv
 
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d8_fused_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
@@ -489,6 +512,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_stwo_native_four_head_bounded_softmax_table_proof_input \
   scripts.tests.test_zkai_attention_kv_four_head_bounded_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_four_head_air_private_softmax_table_lookup_gate \
+  scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
@@ -516,5 +540,8 @@ cargo +nightly-2025-07-14 test attention_kv_native_four_head_bounded_softmax_tab
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_four_head_softmax_table_lookup \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_d8_fused_softmax_table \
   --lib --features stwo-backend
 ```

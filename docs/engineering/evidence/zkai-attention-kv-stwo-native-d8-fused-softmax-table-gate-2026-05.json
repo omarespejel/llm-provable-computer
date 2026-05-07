@@ -73,8 +73,8 @@
       "rejected": true
     },
     {
-      "error": "unknown fused envelope field(s): ['envelope_size_bytes']",
-      "name": "fused_envelope_size_metric_smuggling",
+      "error": "fused source input split-brain drift",
+      "name": "source_input_statement_commitment_relabeling",
       "rejected": true
     },
     {
@@ -98,7 +98,7 @@
       "rejected": true
     },
     {
-      "error": "failed to decode fused proof payload: Expecting ',' delimiter: line 1 column 47698 (char 47697)",
+      "error": "native fused verifier rejected in-memory fused envelope: unsupported proof construction: attention/KV native d8 fused bounded Softmax-table proof: fused proof commitment 0 does not match recomputed source rows",
       "name": "proof_byte_tamper",
       "rejected": true
     },
