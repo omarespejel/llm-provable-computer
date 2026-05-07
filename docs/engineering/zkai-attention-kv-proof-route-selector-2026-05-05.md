@@ -67,12 +67,25 @@ bounded weighted-attention proof with `104` score rows, a `128`-row trace, a
 rejections. This is a synthesis gate, not exact Softmax, not head aggregation,
 not full inference, and not recursion/PCD.
 
+Issue `#463` upgrades the single-head bounded weighted route to a bounded
+Softmax-table policy with statement-bound exp-like weights. Issue `#471` then
+combines that policy with the two-head carried-state shape: `104` score rows, a
+`128`-row trace, a `47104`-byte proof, a `563637`-byte checked envelope, a
+weight-table commitment
+`blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea`,
+and `20 / 20` mutation rejections. This is the strongest native attention/KV
+synthesis result currently checked, but it is still a public-row
+verifier-recomputed table policy, not exact Softmax and not an AIR-private
+lookup argument.
+
 The boundary remains strict. The selector is not Softmax, not long-context
 inference, not a full transformer block, and not recursion/PCD. The later
 two-head gate discharges one bounded multi-head fixture, and the bounded
 weighted gates discharge deterministic monotone-weight fixtures; neither is
-general multi-head exact Softmax attention. The external SNARK and RISC Zero
-routes remain useful controls, not the headline result.
+general multi-head exact Softmax attention. The bounded Softmax-table gates are
+closer to transformer attention, but they remain approximation fixtures with
+public-row table recomputation. The external SNARK and RISC Zero routes remain
+useful controls, not the headline result.
 
 Decision:
 
@@ -94,6 +107,8 @@ Claim boundary:
 | Local Stwo d8 masked attention/KV sequence proof | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked integer-argmax sequence |
 | Local Stwo d8 bounded weighted attention/KV semantics gate | GO; real native Stwo AIR proof for the fixed `d=8` causal-prefix masked bounded weighted sequence, recorded as a semantics gate rather than a new route family |
 | Local Stwo two-head d8 bounded weighted attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded weighted attention semantics |
+| Local Stwo d8 bounded Softmax-table attention/KV semantics gate | GO; real native Stwo AIR proof for a statement-bound exp-like table policy, still verifier-recomputed over public rows |
+| Local Stwo two-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded Softmax-table attention semantics |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -112,6 +127,10 @@ Claim boundary:
 - Native d8 bounded weighted proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json`
 - Native two-head bounded weighted gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`
 - Native two-head bounded weighted proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json`
+- Native d8 bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.json`
+- Native d8 bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json`
+- Native two-head bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05.json`
+- Native two-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`

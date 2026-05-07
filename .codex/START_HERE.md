@@ -42,9 +42,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 36. `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05-06.md`
 37. `docs/engineering/zkai-attention-kv-native-proof-size-profile-2026-05-07.md`
 38. `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`
-39. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-40. `docs/engineering/reproducibility.md`
-41. `git status --short --branch`
+39. `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`
+40. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+41. `docs/engineering/reproducibility.md`
+42. `git status --short --branch`
 
 ## What this repository is now
 
@@ -196,6 +197,19 @@ This repository currently has three live lanes.
     a public-row verifier-recomputed table policy, not exact Softmax and not an
     AIR-private lookup argument; see
     `docs/engineering/zkai-attention-kv-stwo-native-bounded-softmax-table-gate-2026-05-07.md`.
+  - Issue `#471` combines the issue `#463` bounded Softmax-table policy with
+    the issue `#461` two-head carried-state shape. A real Stwo AIR proof checks
+    a fixed two-head, eight-step-per-head `d=8` causal-prefix bounded
+    Softmax-table attention/KV sequence with `104` score rows, a `128`-row
+    trace, twenty final KV rows, sixteen weighted output vectors, a
+    `47104`-byte proof, and a `563637`-byte checked envelope. The gate rejects
+    `20 / 20` table/scale/clip/head/relabeling/schema/metric/overclaim
+    mutations. The interesting engineering signal is that score rows double
+    versus issue `#463`, while raw proof bytes grow only `1.054x`; keep that
+    engineering-only until issue `#469` accounts for binary PCS/FRI subobjects.
+    This is still a public-row verifier-recomputed table policy, not exact
+    Softmax and not an AIR-private lookup argument; see
+    `docs/engineering/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-gate-2026-05-07.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for six
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
