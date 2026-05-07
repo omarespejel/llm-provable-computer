@@ -628,6 +628,7 @@ def validate_source_artifacts(
         "lookup_claims": SOURCE_SCORE_ROWS,
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
     }
+    assert_exact_keys(lookup_summary, set(expected_sidecar), "sidecar lookup summary")
     for key, expected_value in expected_sidecar.items():
         if lookup_summary.get(key) != expected_value:
             raise AttentionKvTwoHeadFusedSoftmaxTableGateError(f"sidecar summary drift for {key}")
