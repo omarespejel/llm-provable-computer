@@ -682,10 +682,7 @@ def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dic
     )
     try:
         payload = json.loads(raw)
-        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(
-            payload,
-            native_profile_ids=set(MULTIHEAD_QUANTIZED_SOFTMAX.profile_ids()),
-        )
+        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(payload, run_native=True)
     except MULTIHEAD_QUANTIZED_SOFTMAX.MultiheadQuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax receipt drift: {error}") from error
     except Exception as error:
