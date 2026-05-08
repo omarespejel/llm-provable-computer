@@ -1308,18 +1308,22 @@ Softmax, long-context inference, recursion/PCD, or agent correctness.
 The next step is now no longer just a plan. A native Stwo follow-up proves a
 fixed eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
 directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
-`0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, a `24394`-byte proof, and
-`42 / 42` route-selector mutation rejections. Evidence is the checked envelope
+`0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, and a `24394`-byte proof. The
+current route selector now also includes single-head plus two-head/four-head
+implementation-exact quantized Softmax-table receipts and rejects `55 / 55`
+route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
 Backend identity is `stwo-attention-kv-d8-causal-mask-sequence-v1`, proof version
 is `stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1`, and timings are
 single-run local engineering measurements rather than benchmark rows. This is
-still tiny, not Softmax, not multi-head, and not a benchmark row. But it is
-important because it moves the carried-state attention result from external
-controls into the STARK-native lane. It is exactly the kind of evidence this
-paper needs: not a claim that STARKs have already won, but a concrete proof
-surface showing why transformer decode looks like trace-friendly carried state.
+still tiny, not real-valued Softmax, not long-context inference, and not a
+benchmark row. But it is important because it moves the carried-state attention
+result from external controls into the STARK-native lane and then checks the
+integer table/floor-division Softmax-like kernel across single-head, two-head,
+and four-head fixtures. It is exactly the kind of evidence this paper needs:
+not a claim that STARKs have already won, but a concrete proof surface showing
+why transformer decode looks like trace-friendly carried state.
 
 The first scale follow-up now exists along the sequence axis. The same native
 Stwo verifier accepts a sixteen-step `d=8` causal-prefix masked sequence with

@@ -394,23 +394,33 @@ Tablero boundary.
   table/floor-division kernel, not real-valued Softmax and not full inference;
   see
   `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`.
+- Issue `#494` extends that implementation-exact receipt discipline across the
+  two-head and four-head fused native Stwo routes. The gate checks head counts
+  `[2, 4]`, `312` total lookup claims / score rows, `384` trace rows,
+  `102976` fused proof bytes across profiles, output indices derived from the
+  statement `input_steps` order, and rejects `43 / 43` semantic/proof
+  mutations. This is exact for the pinned integer table/floor-division kernel
+  across checked multi-head fixtures, not real-valued Softmax, full inference,
+  long-context inference, public benchmark evidence, or recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
 
 
 - The attention/KV proof-route selector records a narrow
-  `GO_NATIVE_STWO_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
-  for seven proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
-  the native Stwo implementation-exact quantized Softmax-table kernel receipt,
-  the external SNARK statement-receipt route, the RISC Zero transition semantics
-  route, the RISC Zero three-step sequence semantics route, the RISC Zero fixed
-  eight-step sequence semantics route, and the RISC Zero fixed eight-step `d=8`
-  causal-prefix masked sequence route. The native seq16, d16, two-head, bounded
-  weighted, d8 bounded weighted, two-head bounded weighted, proof-size profile,
-  bounded Softmax-table, two-head bounded Softmax-table, Softmax-table
-  proof-byte accounting, LogUp sidecar, fused single-head Softmax-table, fused
-  two-head Softmax-table, fused four-head Softmax-table, and quantized
-  Softmax-table receipt gates are separate native
+  `GO_NATIVE_STWO_SINGLE_AND_MULTIHEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+  for eight proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
+  the native Stwo single-head implementation-exact quantized Softmax-table kernel
+  receipt, the native Stwo multi-head implementation-exact quantized
+  Softmax-table kernel receipt, the external SNARK statement-receipt route, the
+  RISC Zero transition semantics route, the RISC Zero three-step sequence
+  semantics route, the RISC Zero fixed eight-step sequence semantics route, and
+  the RISC Zero fixed eight-step `d=8` causal-prefix masked sequence route. The
+  native seq16, d16, two-head, bounded weighted, d8 bounded weighted, two-head
+  bounded weighted, proof-size profile, bounded Softmax-table, two-head bounded
+  Softmax-table, Softmax-table proof-byte accounting, LogUp sidecar, fused
+  single-head Softmax-table, fused two-head Softmax-table, fused four-head
+  Softmax-table, and quantized Softmax-table receipt gates are separate native
   scale/semantics/accounting/fusion gates for the first route family. It
-  rejects `48 / 48` selector mutations and keeps real-valued Softmax,
+  rejects `55 / 55` selector mutations and keeps real-valued Softmax,
   long-context inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
