@@ -45,6 +45,7 @@ It supports the following presentation posture:
   single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp
   proof objects, plus a fixed-width two-head long-sequence fused proof object
   and a width-axis d16 fused proof object with a matched source-plus-sidecar control
+  plus an implementation-exact d16 quantized Softmax-table receipt
   (not exact Softmax, implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
   public benchmark evidence, or
