@@ -97,6 +97,10 @@ across the following classes:
 - unknown receipt-field injection.
 
 The checked result rejects `28 / 28` mutations.
+The default Python unit suite keeps the native Rust verifier path opt-in so
+lightweight semantic tests do not depend on a pinned Rust toolchain. The checked
+evidence-generation command and the `RUN_NATIVE_STWO_TESTS=1` test slice both
+exercise the native backing verifier.
 
 ## Claim Boundary
 

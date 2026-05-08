@@ -1,9 +1,14 @@
 import copy
 import json
+import os
 import tempfile
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_quantized_softmax_receipt_gate as gate
+
+
+RUN_NATIVE_STWO_TESTS = os.environ.get("RUN_NATIVE_STWO_TESTS") == "1"
 
 
 class QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
@@ -44,18 +49,42 @@ class QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertLess(metrics["max_observed_division_error_decimal"], 1.0)
 
     def test_all_declared_mutations_reject(self):
-        for name, receipt, source, envelope, run_native in gate.mutation_cases(
-            self.result, self.source, self.envelope
-        ):
+        cases = gate.mutation_cases(self.result, self.source, self.envelope)
+        checked = 0
+        for name, receipt, source, envelope, run_native in cases:
+            if run_native and not RUN_NATIVE_STWO_TESTS:
+                continue
             with self.assertRaises(gate.QuantizedSoftmaxReceiptGateError, msg=name):
                 gate.validate_receipt(receipt, source, envelope, run_native=run_native)
+            checked += 1
+        expected = len(cases) if RUN_NATIVE_STWO_TESTS else sum(1 for case in cases if not case[4])
+        self.assertEqual(checked, expected)
 
+    def test_run_gate_invokes_native_backing_gate(self):
+        with mock.patch.object(gate.fused_gate, "run_gate") as fused_run_gate:
+            with mock.patch.object(gate, "mutation_cases", return_value=[]):
+                with mock.patch.object(gate, "validate_receipt"):
+                    result = gate.run_gate()
+
+        fused_run_gate.assert_called_once_with()
+        self.assertEqual(result["decision"], gate.DECISION)
+
+    @unittest.skipUnless(RUN_NATIVE_STWO_TESTS, "set RUN_NATIVE_STWO_TESTS=1 to run the native Stwo verifier path")
     def test_run_gate_executes_full_native_backing_proof(self):
         result = gate.run_gate()
+        gate.validate_receipt(result, self.source, self.envelope, run_native=True)
 
         self.assertEqual(result["decision"], gate.DECISION)
         self.assertEqual(result["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
+
+    @unittest.skipUnless(RUN_NATIVE_STWO_TESTS, "set RUN_NATIVE_STWO_TESTS=1 to run the native Stwo verifier path")
+    def test_native_fused_proof_tamper_rejects(self):
+        native_cases = [case for case in gate.mutation_cases(self.result, self.source, self.envelope) if case[4]]
+        self.assertEqual([case[0] for case in native_cases], ["fused_proof_byte_tamper"])
+        name, receipt, source, envelope, run_native = native_cases[0]
+        with self.assertRaises(gate.QuantizedSoftmaxReceiptGateError, msg=name):
+            gate.validate_receipt(receipt, source, envelope, run_native=run_native)
 
     def test_rejects_source_denominator_or_remainder_drift(self):
         source = copy.deepcopy(self.source)

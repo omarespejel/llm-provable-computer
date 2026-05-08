@@ -113,6 +113,7 @@ EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate",
+    "RUN_NATIVE_STWO_TESTS=1 python3 -m unittest scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate.QuantizedSoftmaxReceiptGateTests.test_run_gate_executes_full_native_backing_proof scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate.QuantizedSoftmaxReceiptGateTests.test_native_fused_proof_tamper_rejects",
     "cargo +nightly-2025-07-14 test attention_kv_d8_fused_softmax_table --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json",
     "just lib",
