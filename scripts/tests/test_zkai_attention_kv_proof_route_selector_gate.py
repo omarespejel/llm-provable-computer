@@ -21,10 +21,10 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_regression_issue_448_records_native_stwo_and_external_control_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 42)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 48)
         self.assertEqual(
             payload["decision"],
-            "GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS",
+            "GO_NATIVE_STWO_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
         )
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
@@ -35,6 +35,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             payload["proof_backed_routes_available"],
             [
                 "local_stwo_attention_kv_d8_masked_sequence_proof",
+                "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
                 "external_snark_attention_kv_statement_receipt",
                 "external_zkvm_attention_kv_semantics_receipt",
                 "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -62,6 +63,21 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             [0, 2, 3, 3, 5, 5, 7, 9],
         )
         self.assertEqual(payload["native_stwo_masked_sequence_receipt"]["final_kv_items"], 10)
+        self.assertEqual(payload["quantized_softmax_receipt"]["decision"], GATE.QUANTIZED_SOFTMAX_DECISION)
+        self.assertEqual(payload["quantized_softmax_receipt"]["route_id"], GATE.QUANTIZED_SOFTMAX_ROUTE_ID)
+        self.assertEqual(payload["quantized_softmax_receipt"]["proof_system"], "Stwo")
+        self.assertEqual(payload["quantized_softmax_receipt"]["proof_backend"], "stwo")
+        self.assertEqual(payload["quantized_softmax_receipt"]["proof_size_bytes"], 47698)
+        self.assertEqual(payload["quantized_softmax_receipt"]["lookup_claims"], 52)
+        self.assertEqual(payload["quantized_softmax_receipt"]["table_rows"], 9)
+        self.assertEqual(payload["quantized_softmax_receipt"]["score_gap_clip"], 8)
+        self.assertEqual(payload["quantized_softmax_receipt"]["steps"], 8)
+        self.assertEqual(payload["quantized_softmax_receipt"]["score_rows"], 52)
+        self.assertEqual(payload["quantized_softmax_receipt"]["real_softmax_status"], GATE.QUANTIZED_SOFTMAX.REAL_SOFTMAX_STATUS)
+        self.assertIn("< 1 output unit", payload["quantized_softmax_receipt"]["division_error_bound"])
+        self.assertIn("no real-valued Softmax", payload["quantized_softmax_receipt"]["table_error_bound_policy"])
+        self.assertEqual(payload["quantized_softmax_receipt"]["mutations_checked"], GATE.QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT)
+        self.assertEqual(payload["quantized_softmax_receipt"]["mutations_rejected"], GATE.QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT)
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["next_kv_items"], 3)
@@ -109,6 +125,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(
             payload["metrics"]["native_stwo_envelope_size_bytes"],
             payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"],
+        )
+        self.assertEqual(
+            payload["metrics"]["quantized_softmax_proof_size_bytes"],
+            payload["quantized_softmax_receipt"]["proof_size_bytes"],
+        )
+        self.assertEqual(
+            payload["metrics"]["quantized_softmax_lookup_claims"],
+            payload["quantized_softmax_receipt"]["lookup_claims"],
         )
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])
@@ -329,6 +353,13 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         local_stwo_route = GATE.route_candidate_by_id(local_stwo_removed["route_candidates"], GATE.LOCAL_STWO_ROUTE_ID)
         self.assertFalse(local_stwo_route["usable_today"])
         self.assertFalse(local_stwo_route["proof_backed"])
+
+        quantized_removed = GATE.mutate_payload(payload, "quantized_softmax_route_removed")
+        quantized_route = GATE.route_candidate_by_id(
+            quantized_removed["route_candidates"], GATE.QUANTIZED_SOFTMAX_ROUTE_ID
+        )
+        self.assertFalse(quantized_route["usable_today"])
+        self.assertFalse(quantized_route["proof_backed"])
 
         snark_removed = GATE.mutate_payload(payload, "external_snark_route_removed")
         snark_route = GATE.route_candidate_by_id(snark_removed["route_candidates"], GATE.EXTERNAL_SNARK_ROUTE_ID)

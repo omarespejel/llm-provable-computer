@@ -3,11 +3,13 @@
 
 This gate consumes the existing source-backed and external proof-backed
 attention/KV evidence and asks which route is usable today. The current answer
-has six narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
-integer-argmax attention/KV sequence, one external snarkjs/Groth16 statement
-receipt, and four RISC Zero controls that re-execute the transition/sequence
-semantics in a zkVM. Softmax, multi-head attention, long-context benchmarks, and
-recursion/PCD remain explicitly outside the current proof route.
+has seven narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
+integer-argmax attention/KV sequence, one native Stwo proof-backed
+implementation-exact quantized Softmax-table receipt, one external
+snarkjs/Groth16 statement receipt, and four RISC Zero controls that re-execute
+the transition/sequence semantics in a zkVM. Real-valued Softmax, general
+multi-head attention, long-context benchmarks, and recursion/PCD remain
+explicitly outside the current proof route.
 """
 
 from __future__ import annotations
@@ -37,6 +39,9 @@ RISC0_WIDE_MASKED_SEQUENCE_RECEIPT_SCRIPT = (
 STWO_NATIVE_MASKED_SEQUENCE_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_stwo_native_masked_sequence_proof_input.py"
 )
+QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_quantized_softmax_receipt_gate.py"
+)
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
 )
@@ -61,6 +66,9 @@ STWO_NATIVE_MASKED_SEQUENCE_JSON = (
 STWO_NATIVE_MASKED_SEQUENCE_ENVELOPE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json"
 )
+QUANTIZED_SOFTMAX_RECEIPT_JSON = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json"
+)
 STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES = 1_048_576
 STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES = 1_048_576
 JSON_OUT = (
@@ -71,11 +79,12 @@ TSV_OUT = (
 )
 
 SCHEMA = "zkai-attention-kv-proof-route-selector-gate-v1"
-DECISION = "GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS"
-FIRST_BLOCKER = "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF"
+DECISION = "GO_NATIVE_STWO_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS"
+FIRST_BLOCKER = "NO_REAL_VALUED_SOFTMAX_GENERAL_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF"
 CLAIM_BOUNDARY = (
-    "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_"
-    "NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
+    "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_"
+    "QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_GENERAL_MULTIHEAD_"
+    "NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
 )
 SOURCE_DATE_EPOCH_DEFAULT = 0
 
@@ -95,12 +104,14 @@ REQUIRED_PUBLIC_FIELDS = (
 SOURCE_ROUTE_ID = "source_backed_attention_kv_receipt_contract"
 LOCAL_STWO_ROUTE_ID = "local_stwo_attention_kv_d8_masked_sequence_proof"
 LOCAL_STWO_PROOF_DECISION = "GO_STWO_NATIVE_ATTENTION_KV_MASKED_SEQUENCE_AIR_PROOF"
+QUANTIZED_SOFTMAX_ROUTE_ID = "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt"
+QUANTIZED_SOFTMAX_DECISION = "GO_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_sequence_semantics_receipt"
 EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_scaled_sequence_semantics_receipt"
 EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt"
-SOFTMAX_ROUTE_ID = "softmax_attention_kv_claim"
+REAL_VALUED_SOFTMAX_ROUTE_ID = "real_valued_softmax_attention_kv_claim"
 
 BASE_ROUTES = (
     {
@@ -113,6 +124,13 @@ BASE_ROUTES = (
     {
         "route_id": LOCAL_STWO_ROUTE_ID,
         "status": "GO_STWO_NATIVE_ATTENTION_KV_D8_MASKED_SEQUENCE_AIR_PROOF",
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
+    },
+    {
+        "route_id": QUANTIZED_SOFTMAX_ROUTE_ID,
+        "status": QUANTIZED_SOFTMAX_DECISION,
         "blocker": None,
         "usable_today": True,
         "proof_backed": True,
@@ -153,12 +171,22 @@ BASE_ROUTES = (
         "proof_backed": True,
     },
     {
-        "route_id": SOFTMAX_ROUTE_ID,
-        "status": "NO_GO_OUT_OF_SCOPE_FOR_INTEGER_ARGMAX_FIXTURE",
-        "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
+        "route_id": REAL_VALUED_SOFTMAX_ROUTE_ID,
+        "status": "NO_GO_REAL_VALUED_SOFTMAX_OUT_OF_SCOPE_FOR_QUANTIZED_TABLE_KERNEL",
+        "blocker": "REAL_VALUED_EXP_DIV_SOFTMAX_NOT_PROVED_BY_CURRENT_KERNEL",
         "usable_today": False,
         "proof_backed": False,
     },
+)
+
+EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE = (
+    LOCAL_STWO_ROUTE_ID,
+    QUANTIZED_SOFTMAX_ROUTE_ID,
+    EXTERNAL_SNARK_ROUTE_ID,
+    EXTERNAL_ZKVM_ROUTE_ID,
+    EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
+    EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
+    EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
 )
 
 TSV_COLUMNS = (
@@ -173,6 +201,13 @@ TSV_COLUMNS = (
     "source_statement_commitment",
 )
 
+
+def proof_routes_except(*excluded: str) -> list[str]:
+    """Return the canonical proof-backed route list minus named removed routes."""
+
+    excluded_set = set(excluded)
+    return [route for route in EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE if route not in excluded_set]
+
 EXPECTED_MUTATION_NAMES = (
     "source_contract_decision_drift",
     "source_contract_proof_status_overclaim",
@@ -181,6 +216,12 @@ EXPECTED_MUTATION_NAMES = (
     "local_stwo_route_removed",
     "local_stwo_native_receipt_decision_drift",
     "local_stwo_native_receipt_statement_drift",
+    "quantized_softmax_route_removed",
+    "quantized_softmax_receipt_decision_drift",
+    "quantized_softmax_receipt_route_drift",
+    "quantized_softmax_receipt_mutation_rejections_drift",
+    "quantized_softmax_real_softmax_overclaim",
+    "quantized_softmax_denominator_drift",
     "external_snark_route_removed",
     "external_snark_receipt_decision_drift",
     "external_snark_receipt_mutation_rejections_drift",
@@ -222,13 +263,14 @@ EXPECTED_NEXT_GO_CRITERIA = (
     "native Stwo proof scales the d8 causal-mask integer-argmax attention arithmetic beyond the fixed eight-step fixture without weakening intermediate-state binding",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
     "a d=16 or multi-head fixture preserves the same width, masking, and intermediate-state binding guarantees",
+    "a native Stwo route fuses the quantized Softmax-table attention arithmetic and LogUp table membership beyond the fixed d8 single-head fixture",
     "the explicit causal-prefix masking axis remains statement data in any native route",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
-    "Softmax is kept out of scope unless the proof covers Softmax semantics",
+    "real-valued exp/div Softmax stays out of scope unless the proof covers that exact kernel and error bound",
 )
 
 EXPECTED_NON_CLAIMS = (
-    "not a Softmax proof",
+    "not real-valued Softmax",
     "not full autoregressive inference",
     "not agent correctness",
     "not recursive or proof-carrying data",
@@ -333,6 +375,22 @@ def _load_stwo_native_masked_sequence_module():
     return module
 
 
+def _load_quantized_softmax_receipt_module():
+    """Load the implementation-exact quantized Softmax receipt gate."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_quantized_softmax_receipt_gate",
+        QUANTIZED_SOFTMAX_RECEIPT_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(
+            f"failed to load quantized Softmax receipt script: {QUANTIZED_SOFTMAX_RECEIPT_SCRIPT}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
 SNARK = _load_snark_module()
 RISC0 = _load_risc0_module()
@@ -340,6 +398,7 @@ RISC0_SEQUENCE = _load_risc0_sequence_module()
 RISC0_SCALED_SEQUENCE = _load_risc0_scaled_sequence_module()
 RISC0_WIDE_MASKED_SEQUENCE = _load_risc0_wide_masked_sequence_module()
 STWO_NATIVE_MASKED_SEQUENCE = _load_stwo_native_masked_sequence_module()
+QUANTIZED_SOFTMAX = _load_quantized_softmax_receipt_module()
 
 
 def validate_stwo_native_masked_sequence_payload(payload: Any, label: str) -> None:
@@ -533,6 +592,21 @@ def load_stwo_native_masked_sequence_envelope(
     if any(not isinstance(item, int) or item < 0 or item > 255 for item in proof):
         raise AttentionKvRouteSelectorError("Stwo native proof bytes malformed")
     return envelope
+
+
+def load_quantized_softmax_receipt_payload(path: pathlib.Path = QUANTIZED_SOFTMAX_RECEIPT_JSON) -> dict[str, Any]:
+    """Load and validate the implementation-exact quantized Softmax receipt payload."""
+
+    if not path.exists():
+        raise AttentionKvRouteSelectorError(f"missing quantized Softmax receipt evidence: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        QUANTIZED_SOFTMAX.validate_result(payload)
+    except QUANTIZED_SOFTMAX.QuantizedSoftmaxReceiptGateError as error:
+        raise AttentionKvRouteSelectorError(f"quantized Softmax receipt drift: {error}") from error
+    except Exception as error:
+        raise AttentionKvRouteSelectorError(f"quantized Softmax receipt malformed: {error}") from error
+    return payload
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -745,6 +819,51 @@ def stwo_native_masked_sequence_summary(native_payload: dict[str, Any]) -> dict[
     }
 
 
+def quantized_softmax_receipt_summary(softmax_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the narrow quantized Softmax-table route fields the selector depends on."""
+
+    contract = softmax_payload["kernel_contract"]
+    metrics = contract["kernel_metrics"]
+    return {
+        "schema": softmax_payload["schema"],
+        "decision": softmax_payload["decision"],
+        "route_id": softmax_payload["route_id"],
+        "result": "GO",
+        "claim_boundary": softmax_payload["claim_boundary"],
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json",
+        "proof_system": "Stwo",
+        "proof_backend": "stwo",
+        "proof_size_bytes": softmax_payload["fused_proof_size_bytes"],
+        "envelope_size_bytes": softmax_payload["fused_envelope_size_bytes"],
+        "fused_gate_decision": softmax_payload["fused_gate_decision"],
+        "kernel_name": contract["kernel_name"],
+        "kernel_status": contract["kernel_status"],
+        "real_softmax_status": contract["real_softmax_status"],
+        "score_scale": contract["score_scale"],
+        "score_gap_clip": contract["score_gap_clip"],
+        "weight_policy": contract["weight_policy"],
+        "weight_table_commitment": contract["weight_table_commitment"],
+        "denominator_policy": contract["denominator_policy"],
+        "division_rule": contract["division_rule"],
+        "rounding_rule": contract["rounding_rule"],
+        "division_error_bound": contract["division_error_bound"],
+        "table_error_bound_policy": contract["table_error_bound_policy"],
+        "source_statement_commitment": contract["source_statement_commitment"],
+        "source_public_instance_commitment": contract["source_public_instance_commitment"],
+        "source_score_row_commitment": contract["source_score_row_commitment"],
+        "lookup_claims": softmax_payload["lookup_claims"],
+        "table_rows": softmax_payload["table_rows"],
+        "steps": metrics["steps"],
+        "score_rows": metrics["score_rows"],
+        "per_step_denominators": metrics["per_step_denominators"],
+        "max_observed_division_error_fraction": metrics["max_observed_division_error_fraction"],
+        "mutations_checked": softmax_payload["mutations_checked"],
+        "mutations_rejected": softmax_payload["mutations_rejected"],
+        "all_mutations_rejected": softmax_payload["mutations_rejected"] == softmax_payload["mutations_checked"],
+        "timing_policy": softmax_payload["timing_policy"],
+    }
+
+
 def route_inventory() -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
@@ -754,6 +873,7 @@ def route_inventory() -> list[dict[str, Any]]:
     risc0_scaled_sequence = risc0_scaled_sequence_receipt_summary(load_risc0_scaled_sequence_payload())
     risc0_wide_masked_sequence = risc0_wide_masked_sequence_receipt_summary(load_risc0_wide_masked_sequence_payload())
     stwo_native = stwo_native_masked_sequence_summary(load_stwo_native_masked_sequence_payload())
+    quantized_softmax = quantized_softmax_receipt_summary(load_quantized_softmax_receipt_payload())
     routes = [dict(route) for route in BASE_ROUTES]
     local_stwo_route = route_candidate_by_id(routes, LOCAL_STWO_ROUTE_ID)
     local_stwo_route["evidence"] = stwo_native["evidence"]
@@ -773,6 +893,21 @@ def route_inventory() -> list[dict[str, Any]]:
     local_stwo_route["masking_policy"] = stwo_native["masking_policy"]
     local_stwo_route["tie_break"] = stwo_native["tie_break"]
     local_stwo_route["final_kv_items"] = stwo_native["final_kv_items"]
+    quantized_softmax_route = route_candidate_by_id(routes, QUANTIZED_SOFTMAX_ROUTE_ID)
+    quantized_softmax_route["evidence"] = quantized_softmax["evidence"]
+    quantized_softmax_route["proof_system"] = quantized_softmax["proof_system"]
+    quantized_softmax_route["proof_backend"] = quantized_softmax["proof_backend"]
+    quantized_softmax_route["proof_size_bytes"] = quantized_softmax["proof_size_bytes"]
+    quantized_softmax_route["envelope_size_bytes"] = quantized_softmax["envelope_size_bytes"]
+    quantized_softmax_route["kernel_name"] = quantized_softmax["kernel_name"]
+    quantized_softmax_route["kernel_status"] = quantized_softmax["kernel_status"]
+    quantized_softmax_route["real_softmax_status"] = quantized_softmax["real_softmax_status"]
+    quantized_softmax_route["score_scale"] = quantized_softmax["score_scale"]
+    quantized_softmax_route["score_gap_clip"] = quantized_softmax["score_gap_clip"]
+    quantized_softmax_route["lookup_claims"] = quantized_softmax["lookup_claims"]
+    quantized_softmax_route["table_rows"] = quantized_softmax["table_rows"]
+    quantized_softmax_route["source_statement_commitment"] = quantized_softmax["source_statement_commitment"]
+    quantized_softmax_route["weight_table_commitment"] = quantized_softmax["weight_table_commitment"]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
     snark_route["proof_system"] = snark["proof_system"]
@@ -869,6 +1004,7 @@ def build_payload() -> dict[str, Any]:
     risc0_scaled_sequence_payload = load_risc0_scaled_sequence_payload()
     risc0_wide_masked_sequence_payload = load_risc0_wide_masked_sequence_payload()
     stwo_native_masked_sequence_payload = load_stwo_native_masked_sequence_payload()
+    quantized_softmax_payload = load_quantized_softmax_receipt_payload()
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
@@ -876,6 +1012,7 @@ def build_payload() -> dict[str, Any]:
     risc0_scaled_sequence_summary = risc0_scaled_sequence_receipt_summary(risc0_scaled_sequence_payload)
     risc0_wide_masked_sequence_summary = risc0_wide_masked_sequence_receipt_summary(risc0_wide_masked_sequence_payload)
     stwo_native_masked_sequence_receipt = stwo_native_masked_sequence_summary(stwo_native_masked_sequence_payload)
+    quantized_softmax_receipt = quantized_softmax_receipt_summary(quantized_softmax_payload)
     routes = route_inventory()
     proof_backed_routes_available = [
         route["route_id"]
@@ -900,6 +1037,7 @@ def build_payload() -> dict[str, Any]:
         "external_risc0_scaled_sequence_receipt": risc0_scaled_sequence_summary,
         "external_risc0_wide_masked_sequence_receipt": risc0_wide_masked_sequence_summary,
         "native_stwo_masked_sequence_receipt": stwo_native_masked_sequence_receipt,
+        "quantized_softmax_receipt": quantized_softmax_receipt,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
@@ -907,6 +1045,13 @@ def build_payload() -> dict[str, Any]:
             "native_stwo_envelope_size_bytes": stwo_native_masked_sequence_receipt["envelope_size_bytes"],
             "native_stwo_score_row_count": stwo_native_masked_sequence_receipt["score_row_count"],
             "native_stwo_trace_row_count": stwo_native_masked_sequence_receipt["trace_row_count"],
+            "quantized_softmax_proof_size_bytes": quantized_softmax_receipt["proof_size_bytes"],
+            "quantized_softmax_envelope_size_bytes": quantized_softmax_receipt["envelope_size_bytes"],
+            "quantized_softmax_lookup_claims": quantized_softmax_receipt["lookup_claims"],
+            "quantized_softmax_table_rows": quantized_softmax_receipt["table_rows"],
+            "quantized_softmax_max_observed_division_error_fraction": (
+                quantized_softmax_receipt["max_observed_division_error_fraction"]
+            ),
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
@@ -942,6 +1087,7 @@ def build_payload() -> dict[str, Any]:
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
             "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
             "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
+            "quantized_softmax_receipt": payload["quantized_softmax_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -979,13 +1125,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         local_stwo_route["status"] = "NO_GO_MISSING_NATIVE_STWO_ATTENTION_KV_PROOF"
         local_stwo_route["usable_today"] = False
         local_stwo_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            EXTERNAL_SNARK_ROUTE_ID,
-            EXTERNAL_ZKVM_ROUTE_ID,
-            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(LOCAL_STWO_ROUTE_ID)
     elif name == "local_stwo_native_receipt_decision_drift":
         out["native_stwo_masked_sequence_receipt"]["decision"] = (
             "NO_GO_MISSING_NATIVE_STWO_ATTENTION_KV_MASKED_SEQUENCE_PROOF"
@@ -994,18 +1134,28 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["native_stwo_masked_sequence_receipt"]["statement_commitment"] = (
             "blake2b-256:0000000000000000000000000000000000000000000000000000000000000000"
         )
+    elif name == "quantized_softmax_route_removed":
+        quantized_route = route_candidate_by_id(out["route_candidates"], QUANTIZED_SOFTMAX_ROUTE_ID)
+        quantized_route["status"] = "NO_GO_MISSING_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+        quantized_route["usable_today"] = False
+        quantized_route["proof_backed"] = False
+        out["proof_backed_routes_available"] = proof_routes_except(QUANTIZED_SOFTMAX_ROUTE_ID)
+    elif name == "quantized_softmax_receipt_decision_drift":
+        out["quantized_softmax_receipt"]["decision"] = "NO_GO_MISSING_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+    elif name == "quantized_softmax_receipt_route_drift":
+        out["quantized_softmax_receipt"]["route_id"] = "real_valued_softmax_attention_kv_claim"
+    elif name == "quantized_softmax_receipt_mutation_rejections_drift":
+        out["quantized_softmax_receipt"]["mutations_rejected"] -= 1
+    elif name == "quantized_softmax_real_softmax_overclaim":
+        out["quantized_softmax_receipt"]["real_softmax_status"] = "GO_REAL_VALUED_SOFTMAX"
+    elif name == "quantized_softmax_denominator_drift":
+        out["quantized_softmax_receipt"]["per_step_denominators"][0] = 0
     elif name == "external_snark_route_removed":
         snark_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_SNARK_ROUTE_ID)
         snark_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
         snark_route["usable_today"] = False
         snark_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            LOCAL_STWO_ROUTE_ID,
-            EXTERNAL_ZKVM_ROUTE_ID,
-            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(EXTERNAL_SNARK_ROUTE_ID)
     elif name == "external_snark_receipt_decision_drift":
         out["external_snark_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
     elif name == "external_snark_receipt_mutation_rejections_drift":
@@ -1015,13 +1165,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         zkvm_route["status"] = "NO_GO_MISSING_ATTENTION_KV_ZKVM_RECEIPT"
         zkvm_route["usable_today"] = False
         zkvm_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            LOCAL_STWO_ROUTE_ID,
-            EXTERNAL_SNARK_ROUTE_ID,
-            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(EXTERNAL_ZKVM_ROUTE_ID)
     elif name == "external_zkvm_receipt_decision_drift":
         out["external_risc0_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SEMANTICS_RECEIPT"
     elif name == "external_zkvm_receipt_mutation_rejections_drift":
@@ -1035,13 +1179,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         sequence_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SEQUENCE_ZKVM_RECEIPT"
         sequence_route["usable_today"] = False
         sequence_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            LOCAL_STWO_ROUTE_ID,
-            EXTERNAL_SNARK_ROUTE_ID,
-            EXTERNAL_ZKVM_ROUTE_ID,
-            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID)
     elif name == "external_zkvm_sequence_receipt_decision_drift":
         out["external_risc0_sequence_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SEQUENCE_RECEIPT"
     elif name == "external_zkvm_sequence_receipt_mutation_rejections_drift":
@@ -1057,13 +1195,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         scaled_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SCALED_SEQUENCE_ZKVM_RECEIPT"
         scaled_route["usable_today"] = False
         scaled_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            LOCAL_STWO_ROUTE_ID,
-            EXTERNAL_SNARK_ROUTE_ID,
-            EXTERNAL_ZKVM_ROUTE_ID,
-            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID)
     elif name == "external_zkvm_scaled_sequence_receipt_decision_drift":
         out["external_risc0_scaled_sequence_receipt"]["decision"] = "NO_GO_MISSING_ATTENTION_KV_RISC0_SCALED_SEQUENCE_RECEIPT"
     elif name == "external_zkvm_scaled_sequence_receipt_mutation_rejections_drift":
@@ -1079,13 +1211,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         wide_masked_route["status"] = "NO_GO_MISSING_ATTENTION_KV_WIDE_MASKED_SEQUENCE_ZKVM_RECEIPT"
         wide_masked_route["usable_today"] = False
         wide_masked_route["proof_backed"] = False
-        out["proof_backed_routes_available"] = [
-            LOCAL_STWO_ROUTE_ID,
-            EXTERNAL_SNARK_ROUTE_ID,
-            EXTERNAL_ZKVM_ROUTE_ID,
-            EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
-            EXTERNAL_ZKVM_SCALED_SEQUENCE_ROUTE_ID,
-        ]
+        out["proof_backed_routes_available"] = proof_routes_except(EXTERNAL_ZKVM_WIDE_MASKED_SEQUENCE_ROUTE_ID)
     elif name == "external_zkvm_wide_masked_sequence_receipt_decision_drift":
         out["external_risc0_wide_masked_sequence_receipt"]["decision"] = (
             "NO_GO_MISSING_ATTENTION_KV_RISC0_WIDE_MASKED_SEQUENCE_RECEIPT"
@@ -1109,7 +1235,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "next_go_criteria_weakened":
         out["next_go_criteria"] = ["any zkVM receipt wraps the source-backed contract"]
     elif name == "non_claims_weakened":
-        out["non_claims"] = [claim for claim in out["non_claims"] if claim != "not a Softmax proof"]
+        out["non_claims"] = [claim for claim in out["non_claims"] if claim != "not real-valued Softmax"]
     elif name == "claim_boundary_weakened":
         out["claim_boundary"] = "PROOF_BACKED_ATTENTION_KV_RECEIPT"
     elif name == "first_blocker_removed":
@@ -1410,6 +1536,54 @@ def validate_stwo_native_masked_sequence_receipt(summary: Any) -> None:
             raise AttentionKvRouteSelectorError(f"native Stwo masked sequence {key} drift")
 
 
+def validate_quantized_softmax_receipt(summary: Any) -> None:
+    """Validate the implementation-exact quantized Softmax-table receipt summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("quantized Softmax receipt must be an object")
+    expected = quantized_softmax_receipt_summary(load_quantized_softmax_receipt_payload())
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("quantized Softmax receipt drift")
+    if summary["decision"] != QUANTIZED_SOFTMAX_DECISION:
+        raise AttentionKvRouteSelectorError("quantized Softmax decision drift")
+    if summary["route_id"] != QUANTIZED_SOFTMAX_ROUTE_ID:
+        raise AttentionKvRouteSelectorError("quantized Softmax route drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("quantized Softmax result drift")
+    if summary["proof_system"] != "Stwo" or summary["proof_backend"] != "stwo":
+        raise AttentionKvRouteSelectorError("quantized Softmax backend drift")
+    if summary["kernel_name"] != QUANTIZED_SOFTMAX.KERNEL_NAME:
+        raise AttentionKvRouteSelectorError("quantized Softmax kernel-name drift")
+    if summary["kernel_status"] != QUANTIZED_SOFTMAX.KERNEL_STATUS:
+        raise AttentionKvRouteSelectorError("quantized Softmax kernel-status drift")
+    if summary["real_softmax_status"] != QUANTIZED_SOFTMAX.REAL_SOFTMAX_STATUS:
+        raise AttentionKvRouteSelectorError("quantized Softmax real-valued overclaim")
+    if summary["score_scale"] != 1 or summary["score_gap_clip"] != 8:
+        raise AttentionKvRouteSelectorError("quantized Softmax scaling drift")
+    if summary["lookup_claims"] != 52 or summary["table_rows"] != 9:
+        raise AttentionKvRouteSelectorError("quantized Softmax lookup/table drift")
+    if summary["steps"] != 8 or summary["score_rows"] != 52:
+        raise AttentionKvRouteSelectorError("quantized Softmax row-count drift")
+    if len(summary["per_step_denominators"]) != summary["steps"] or any(
+        not isinstance(item, int) or item <= 0 for item in summary["per_step_denominators"]
+    ):
+        raise AttentionKvRouteSelectorError("quantized Softmax denominator drift")
+    if summary["mutations_checked"] != QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("quantized Softmax mutation count drift")
+    if summary["mutations_rejected"] != QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("quantized Softmax mutation rejection drift")
+    if summary["all_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("quantized Softmax fail-closed drift")
+    if not isinstance(summary.get("division_error_bound"), str) or "< 1 output unit" not in summary["division_error_bound"]:
+        raise AttentionKvRouteSelectorError("quantized Softmax division-bound drift")
+    if "no real-valued Softmax" not in summary.get("table_error_bound_policy", ""):
+        raise AttentionKvRouteSelectorError("quantized Softmax real-valued error-bound overclaim")
+    for key in ("source_statement_commitment", "source_public_instance_commitment", "source_score_row_commitment"):
+        commitment = summary.get(key)
+        if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+            raise AttentionKvRouteSelectorError(f"quantized Softmax {key} drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -1430,6 +1604,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "external_risc0_scaled_sequence_receipt",
         "external_risc0_wide_masked_sequence_receipt",
         "native_stwo_masked_sequence_receipt",
+        "quantized_softmax_receipt",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -1458,21 +1633,22 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_risc0_scaled_sequence_receipt(payload.get("external_risc0_scaled_sequence_receipt"))
     validate_risc0_wide_masked_sequence_receipt(payload.get("external_risc0_wide_masked_sequence_receipt"))
     validate_stwo_native_masked_sequence_receipt(payload.get("native_stwo_masked_sequence_receipt"))
+    validate_quantized_softmax_receipt(payload.get("quantized_softmax_receipt"))
     validate_routes(payload.get("route_candidates"))
-    if payload.get("proof_backed_routes_available") != [
-        "local_stwo_attention_kv_d8_masked_sequence_proof",
-        "external_snark_attention_kv_statement_receipt",
-        "external_zkvm_attention_kv_semantics_receipt",
-        "external_zkvm_attention_kv_sequence_semantics_receipt",
-        "external_zkvm_attention_kv_scaled_sequence_semantics_receipt",
-        "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt",
-    ]:
+    if tuple(payload.get("proof_backed_routes_available") or ()) != EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
     expected_metrics = {
         "native_stwo_proof_size_bytes": payload["native_stwo_masked_sequence_receipt"]["proof_size_bytes"],
         "native_stwo_envelope_size_bytes": payload["native_stwo_masked_sequence_receipt"]["envelope_size_bytes"],
         "native_stwo_score_row_count": payload["native_stwo_masked_sequence_receipt"]["score_row_count"],
         "native_stwo_trace_row_count": payload["native_stwo_masked_sequence_receipt"]["trace_row_count"],
+        "quantized_softmax_proof_size_bytes": payload["quantized_softmax_receipt"]["proof_size_bytes"],
+        "quantized_softmax_envelope_size_bytes": payload["quantized_softmax_receipt"]["envelope_size_bytes"],
+        "quantized_softmax_lookup_claims": payload["quantized_softmax_receipt"]["lookup_claims"],
+        "quantized_softmax_table_rows": payload["quantized_softmax_receipt"]["table_rows"],
+        "quantized_softmax_max_observed_division_error_fraction": (
+            payload["quantized_softmax_receipt"]["max_observed_division_error_fraction"]
+        ),
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
         "risc0_receipt_size_bytes": payload["external_risc0_receipt"]["proof_size_bytes"],
@@ -1515,6 +1691,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "external_risc0_scaled_sequence_receipt": payload["external_risc0_scaled_sequence_receipt"],
             "external_risc0_wide_masked_sequence_receipt": payload["external_risc0_wide_masked_sequence_receipt"],
             "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
+            "quantized_softmax_receipt": payload["quantized_softmax_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
