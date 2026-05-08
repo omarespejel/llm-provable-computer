@@ -167,8 +167,9 @@ versus the previous four-head source-plus-sidecar pair (`74529` bytes). This is
 the relevant Stwo-native breakthrough signal for the next transformer/STARK
 paper: table membership no longer has to live as a detached sidecar for the
 checked bounded fixture, even at four heads. It is still not exact Softmax, not
-implementation-exact model Softmax, not full inference, not a public benchmark
-row, and not recursion/PCD.
+exp/div semantics, not implementation-exact model Softmax, not full inference,
+not long-context inference, not on-chain verifier evidence, not a public
+benchmark row, and not recursion/PCD.
 
 The next research result should keep scaling the native Stwo surface, not add
 another metadata adapter:

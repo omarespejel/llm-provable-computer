@@ -947,12 +947,14 @@ The current strongest native attention/KV follow-up fuses bounded Softmax-table
 attention arithmetic and LogUp table-membership into one Stwo proof object. The
 four-head route checks `208` lookup claims against a statement-bound nine-row
 table, has a `53468`-byte raw proof inside a `797717`-byte checked envelope,
-rejects `30 / 30` relabeling and proof-byte mutations, and uses
+rejects `30 / 30` relabeling, split-route injection, metric-smuggling,
+proof-byte, unknown-field, and exact-Softmax-overclaim mutations, and uses
 `0.7174120141153109x` of the previous four-head arithmetic-plus-sidecar raw
 proof budget (`74529` bytes). This remains supporting transformer/STARK evidence,
 not a Tablero performance row: it is bounded table attention, not exact
-real-valued Softmax, not implementation-exact model Softmax, not full inference,
-not a public benchmark row, and not recursion/PCD. It is anchored to
+real-valued Softmax, not exp/div semantics, not implementation-exact model
+Softmax, not full inference, not long-context inference, not on-chain verifier
+evidence, not a public benchmark row, and not recursion/PCD. It is anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`.

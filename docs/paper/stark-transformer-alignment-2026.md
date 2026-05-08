@@ -1432,8 +1432,10 @@ used `74529` raw proof bytes; the fused route uses `0.7174120141153109x` of that
 source-plus-sidecar budget. This is the strongest current native Stwo attention
 signal in the artifact set: lookup membership no longer has to live as a
 detached sidecar for the checked bounded fixture, even at four heads. It remains
-bounded table evidence, not real-valued Softmax, not implementation-exact model
-Softmax, not full inference, not a public benchmark row, and not recursion/PCD.
+bounded table evidence, not real-valued Softmax, not exp/div semantics, not
+implementation-exact model Softmax, not full inference, not long-context
+inference, not on-chain verifier evidence, not a public benchmark row, and not
+recursion/PCD.
 
 Reproducibility anchors for this follow-up are deliberately local and concrete:
 backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,
