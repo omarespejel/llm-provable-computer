@@ -37,7 +37,11 @@ fn main() -> ExitCode {
 
 #[cfg(feature = "stwo-backend")]
 fn run() -> Result<String, String> {
-    let mut args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    run_with_args(std::env::args_os().skip(1).collect())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn run_with_args(mut args: Vec<std::ffi::OsString>) -> Result<String, String> {
     if args.is_empty() {
         return Err("usage: zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof prove <source-input.json> <fused-envelope.json> | verify <fused-envelope.json>".to_string());
     }
@@ -211,7 +215,10 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 
 #[cfg(all(test, feature = "stwo-backend"))]
 mod tests {
-    use super::read_bounded_file;
+    use super::{
+        read_bounded_file, run_with_args,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES,
+    };
     use std::{
         fs,
         path::PathBuf,
@@ -249,6 +256,43 @@ mod tests {
             read_bounded_file(&valid, 3, "fixture").expect("valid file accepted"),
             b"abc"
         );
+
+        fs::remove_dir_all(&dir).expect("remove temp dir");
+    }
+
+    #[test]
+    fn verify_mode_rejects_non_file_malformed_and_oversized_inputs() {
+        let dir = temp_dir("verify");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("create temp dir");
+        let malformed = dir.join("malformed.json");
+        let oversized = dir.join("oversized.json");
+        fs::write(&malformed, b"{}").expect("write malformed fixture");
+        fs::write(
+            &oversized,
+            vec![
+                b'x';
+                ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES
+                    + 1
+            ],
+        )
+        .expect("write oversized fixture");
+
+        let non_file_error = run_with_args(vec!["verify".into(), dir.as_os_str().to_os_string()])
+            .expect_err("directory rejected");
+        assert!(non_file_error.contains("not a regular file"));
+        let malformed_error =
+            run_with_args(vec!["verify".into(), malformed.as_os_str().to_os_string()])
+                .expect_err("malformed envelope rejected");
+        assert!(
+            malformed_error.contains("missing field")
+                || malformed_error.contains("unknown variant")
+                || malformed_error.contains("expected")
+        );
+        let oversized_error =
+            run_with_args(vec!["verify".into(), oversized.as_os_str().to_os_string()])
+                .expect_err("oversized envelope rejected");
+        assert!(oversized_error.contains("exceeds max size"));
 
         fs::remove_dir_all(&dir).expect("remove temp dir");
     }
