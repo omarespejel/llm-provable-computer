@@ -195,10 +195,11 @@ another metadata adapter:
    head multiplicity with bounded weighted semantics in one fixed fixture. It is
    not a one-axis scaling claim, not real-valued Softmax, and not head
    aggregation.
-4. Work `#494` next if the goal is semantics: extend the implementation-exact
-   quantized Softmax-table receipt from single-head to multi-head without
-   weakening the denominator/remainder contract.
-5. Work `#486` next if the goal is scaling: run the controlled head-count grid
+4. Work `#496` next if the goal is semantics at scale: extend the checked
+   multi-head quantized Softmax-table receipt beyond the two-head and four-head
+   fixtures without weakening denominator, remainder, max-score recomputation,
+   output-order, or proof-binding checks.
+5. Work `#486` next if the goal is proof-size scaling: run the controlled head-count grid
    for bounded Softmax-table + LogUp proof size.
 6. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.

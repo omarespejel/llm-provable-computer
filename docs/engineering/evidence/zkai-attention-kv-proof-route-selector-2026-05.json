@@ -339,7 +339,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "0d3b357aeb8b4bf2817b8e460873f966d7a2e61c",
+  "git_commit": "be362759c52673a25df64aab8d333a5d8f7cfab0",
   "metrics": {
     "multihead_quantized_softmax_fused_proof_size_bytes_sum": 102976,
     "multihead_quantized_softmax_head_counts_checked": [
@@ -381,7 +381,7 @@
   "multihead_quantized_softmax_receipt": {
     "all_mutations_rejected": true,
     "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
-    "claim_boundary": "TWO_AND_FOUR_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_PUBLIC_BENCHMARK",
+    "claim_boundary": "TWO_AND_FOUR_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK",
     "decision": "GO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
     "denominator_policy": "sum_positive_statement_bound_table_weights_per_step",
     "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
@@ -398,8 +398,8 @@
     "lookup_claims_total": 312,
     "max_fused_proof_size_bytes": 53468,
     "max_observed_division_error_fraction": "55/56",
-    "mutations_checked": 43,
-    "mutations_rejected": 43,
+    "mutations_checked": 45,
+    "mutations_rejected": 45,
     "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
     "profile_output_index_policies": [
       "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
@@ -1086,7 +1086,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:13017006f4d632f06533e162655f81e5910b8900b782bcae4fb0154b9888fbb9",
+  "selector_commitment": "blake2b-256:60a0530b4df97a4f93331f0b4b3721e92ea35f4c1a59d93e88e291e34461b423",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",
