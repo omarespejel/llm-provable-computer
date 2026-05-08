@@ -52,6 +52,8 @@ The module-level tests construct the exact inactive-side / zero-denominator lane
 - expected denominator = `1`
 
 The shared helper also preserves active lanes and one-sided contributions.
+It returns the original packed denominator unchanged when every selector lane
+is active, avoiding denominator scalarization on the common fully-active path.
 
 ## Validation
 
