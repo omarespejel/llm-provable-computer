@@ -1230,6 +1230,21 @@ mod tests {
     }
 
     #[test]
+    fn phase10_shared_normalization_trace_path_masks_inactive_denominators() {
+        let log_size = LOG_N_LANES.max(4);
+        let base_trace = zero_normalization_trace(log_size, 3);
+        let preprocessed_trace = zero_normalization_trace(log_size, 2);
+        let (interaction_trace, claimed_sum) = shared_normalization_interaction_trace(
+            log_size,
+            &base_trace,
+            &preprocessed_trace,
+            &Phase10SharedNormalizationLookupElements::dummy(),
+        );
+        assert!(!interaction_trace.is_empty());
+        assert_eq!(claimed_sum, SecureField::zero());
+    }
+
+    #[test]
     fn phase10_shared_normalization_verification_detects_tampered_claimed_rows() {
         let mut envelope =
             prove_phase10_shared_normalization_lookup_envelope(&[(4, 128), (16, 64)])
@@ -1297,5 +1312,20 @@ mod tests {
         )
         .expect_err("empty canonical rows should fail");
         assert!(error.to_string().contains("canonical lookup table row"));
+    }
+
+    fn zero_normalization_trace(
+        log_size: u32,
+        columns: usize,
+    ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+        let domain = CanonicCoset::new(log_size).circle_domain();
+        let row_count = 1usize << log_size;
+        (0..columns)
+            .map(|_| {
+                let column = BaseColumn::from_iter((0..row_count).map(|_| BaseField::zero()));
+                CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, column)
+                    .bit_reverse()
+            })
+            .collect()
     }
 }

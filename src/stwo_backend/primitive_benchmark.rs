@@ -6269,6 +6269,18 @@ mod tests {
             .to_array()
             .iter()
             .all(|lane| *lane == SecureField::one()));
+
+        let nontrivial_q = PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
+        let (_, active_denominator) = selector_masked_lookup_fraction_terms(
+            PackedSecureField::one(),
+            PackedSecureField::one(),
+            nontrivial_q,
+            nontrivial_q,
+        );
+        assert!(!active_denominator
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::one()));
     }
 
     #[test]

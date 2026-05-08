@@ -41,7 +41,9 @@ Added tests:
 - `stwo_backend::logup_utils::tests::selector_masked_denominator_preserves_active_lanes`
 - `stwo_backend::logup_utils::tests::selector_masked_lookup_fraction_terms_preserve_one_sided_contributions`
 - `stwo_backend::lookup_prover::tests::phase10_shared_lookup_masks_inactive_denominators`
+- `stwo_backend::lookup_prover::tests::phase10_shared_lookup_trace_path_masks_inactive_denominators`
 - `stwo_backend::normalization_prover::tests::phase10_shared_normalization_masks_inactive_denominators`
+- `stwo_backend::normalization_prover::tests::phase10_shared_normalization_trace_path_masks_inactive_denominators`
 - `stwo_backend::primitive_benchmark::tests::primitive_benchmark_softmax_selector_lookup_masks_inactive_denominators`
 
 The module-level tests construct the exact inactive-side / zero-denominator lane:
@@ -59,25 +61,30 @@ is active, avoiding denominator scalarization on the common fully-active path.
 
 ```bash
 cargo fmt --all
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm \
+CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-logup-denominator-audit}"
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   cargo +nightly-2025-07-14 test --locked masks_inactive_denominators --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   cargo +nightly-2025-07-14 test --locked selector_masked --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   cargo +nightly-2025-07-14 test --locked phase10_shared --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   cargo +nightly-2025-07-14 test --locked primitive_benchmark_rejects --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/espejelomar/StarkNet/_codex_target/provable-transformer-vm \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   cargo +nightly-2025-07-14 test --locked primitive_benchmark_runs_all_matched_paths --lib --features stwo-backend
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" just gate-fast
+# Run before merging if this branch has not already passed the repo release gate:
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" just gate
 ```
 
 Result:
 
-- inactive-path tests: `6 passed; 0 failed`
+- inactive-path tests: `8 passed; 0 failed`
 - shared-helper tests: `3 passed; 0 failed`
-- shared lookup / normalization behavior tests: `10 passed; 0 failed`
+- shared lookup / normalization behavior tests: `12 passed; 0 failed`
 - primitive benchmark tamper/rejection tests: `10 passed; 0 failed`
 - primitive matched-path smoke: `1 passed; 0 failed`
+- full local release gate: `14 / 14 steps OK`
 
 ## Claim Boundary
 
