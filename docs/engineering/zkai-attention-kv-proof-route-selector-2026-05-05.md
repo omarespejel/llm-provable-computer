@@ -164,7 +164,7 @@ Issue `#494` extends that implementation-exact receipt discipline across the
 multi-head fused routes. The gate consumes the issue `#489` two-head fused proof
 and the issue `#491` four-head fused proof, checking head counts `[2, 4]`, `312`
 total lookup claims / score rows, `384` trace rows, `102976` fused proof bytes
-across the two profiles, and `47 / 47` semantic/proof mutations. The key
+across the two profiles, and `51 / 51` semantic/proof mutations. The key
 multi-head hardening is output binding: the receipt derives the output index
 from the statement `input_steps` order instead of assuming a hard-coded
 `step_index * head_count + head_index` layout. This is exact for the pinned
@@ -217,7 +217,7 @@ Claim boundary:
 | Local Stwo two-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head attention arithmetic and table membership; `49508` raw proof bytes versus `65208` bytes for the previous source-plus-sidecar pair |
 | Local Stwo four-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks four-head attention arithmetic and table membership; `53468` raw proof bytes versus `74529` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
-| Local Stwo multi-head implementation-exact quantized Softmax-table receipt | GO; two-head and four-head fused Stwo proofs back the same pinned integer kernel; head counts `[2, 4]`, `312` total lookup claims / score rows, `102976` fused proof bytes across profiles, and `47 / 47` semantic/proof mutations rejected |
+| Local Stwo multi-head implementation-exact quantized Softmax-table receipt | GO; two-head and four-head fused Stwo proofs back the same pinned integer kernel; head counts `[2, 4]`, `312` total lookup claims / score rows, `102976` fused proof bytes across profiles, and `51 / 51` semantic/proof mutations rejected |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -305,7 +305,7 @@ Claim boundary:
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
 | Mutations checked | 55 |
 | Mutations rejected | 55 |
-| Selector commitment | `blake2b-256:11401e5817b1c24f9795eaa560d13c03bda32bc40fe6455d7189c788c588569e` |
+| Selector commitment | `blake2b-256:7c9115b2863a487ae0b2b96df0a4e101f1434b43a9a2a2d540c7b917c8db5ddf` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, external SNARK route/removal and
