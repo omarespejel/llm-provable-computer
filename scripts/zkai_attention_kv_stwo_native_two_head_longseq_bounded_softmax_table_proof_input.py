@@ -158,7 +158,10 @@ class AttentionKvTwoHeadLongseqBoundedSoftmaxTableInputError(ValueError):
 
 
 def _load_source_module() -> Any:
-    spec = importlib.util.spec_from_file_location("zkai_attention_kv_risc0_wide_masked_sequence_receipt_gate", SOURCE_SCRIPT)
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_stwo_native_two_head_bounded_softmax_table_proof_input",
+        SOURCE_SCRIPT,
+    )
     if spec is None or spec.loader is None:
         raise AttentionKvTwoHeadLongseqBoundedSoftmaxTableInputError(f"failed to load source script: {SOURCE_SCRIPT}")
     module = importlib.util.module_from_spec(spec)

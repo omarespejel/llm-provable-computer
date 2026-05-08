@@ -769,7 +769,7 @@ def load_multihead_quantized_softmax_receipt_payload(
 
 @functools.lru_cache(maxsize=2)
 def _load_longseq_fused_softmax_payload(path: pathlib.Path, run_native: bool) -> dict[str, Any]:
-    """Load and validate the two-head long-sequence fused Softmax-table gate payload."""
+    """Load the gate payload and its fixed source/envelope evidence pair."""
 
     raw = read_bounded_text(
         path,
@@ -2104,11 +2104,17 @@ def validate_longseq_fused_softmax_receipt(summary: Any) -> None:
     if summary["fused_envelope_size_bytes"] != 1000098:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax envelope-size drift")
     if summary["source_plus_sidecar_raw_proof_bytes"] != 0:
-        raise AttentionKvRouteSelectorError("long-sequence fused Softmax comparator drift")
+        raise AttentionKvRouteSelectorError(
+            "long-sequence fused Softmax comparator unexpectedly implemented before issue #500"
+        )
     if summary["fused_saves_vs_source_plus_sidecar_bytes"] is not None:
-        raise AttentionKvRouteSelectorError("long-sequence fused Softmax savings overclaim")
+        raise AttentionKvRouteSelectorError(
+            "long-sequence fused Softmax savings comparator unexpectedly implemented before issue #500"
+        )
     if summary["fused_to_source_plus_sidecar_ratio"] is not None:
-        raise AttentionKvRouteSelectorError("long-sequence fused Softmax ratio overclaim")
+        raise AttentionKvRouteSelectorError(
+            "long-sequence fused Softmax ratio comparator unexpectedly implemented before issue #500"
+        )
     if summary["mutations_checked"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax mutation count drift")
     if summary["mutations_rejected"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:

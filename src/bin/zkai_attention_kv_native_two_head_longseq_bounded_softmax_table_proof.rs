@@ -150,8 +150,15 @@ fn run() -> Result<String, String> {
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
-    let metadata = fs::metadata(path)
-        .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    let file = fs::File::open(path)
+        .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
+    let metadata = file.metadata().map_err(|error| {
+        format!(
+            "failed to stat opened {} {}: {error}",
+            label,
+            path.display()
+        )
+    })?;
     if !metadata.is_file() {
         return Err(format!(
             "{} {} is not a regular file",
@@ -166,8 +173,6 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             max_bytes
         ));
     }
-    let file = fs::File::open(path)
-        .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let mut raw = Vec::new();
     file.take(max_bytes.saturating_add(1) as u64)
         .read_to_end(&mut raw)

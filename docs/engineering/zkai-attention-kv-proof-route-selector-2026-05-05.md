@@ -316,8 +316,8 @@ Claim boundary:
 
 | Surface | Result |
 | --- | ---: |
-| Proof-backed routes available | 8 |
-| Routes checked by selector evidence | 10 |
+| Proof-backed routes available | 9 |
+| Routes checked by selector evidence | 11 |
 | Additional native Softmax-table scale gates summarized | 3 |
 | Additional fused Softmax-table routes summarized | 4 |
 | Additional implementation-exact quantized Softmax-table receipts summarized | 2 |
@@ -349,9 +349,9 @@ Claim boundary:
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
-| Mutations checked | 55 |
-| Mutations rejected | 55 |
-| Selector commitment | `blake2b-256:802a27fcd21f4c84d5f07ca95adeb565130278f52b7d3fced284d31821fe86b0` |
+| Mutations checked | 60 |
+| Mutations rejected | 60 |
+| Selector commitment | `blake2b-256:0aaef9920841347f8d5f96966b6d687c6046a7c56c03118d6e503303fff2d746` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, external SNARK route/removal and

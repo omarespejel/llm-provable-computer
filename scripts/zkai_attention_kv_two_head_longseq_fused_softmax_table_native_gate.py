@@ -139,6 +139,7 @@ VALIDATION_COMMANDS = (
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate",
     "just lib",
     "just gate-fast",
+    "just gate",
 )
 
 TSV_COLUMNS = (
@@ -339,7 +340,14 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes) -> None:
             stderr=subprocess.PIPE,
             text=True,
         ) as proc:
-            stdout, stderr = proc.communicate(timeout=FUSED_VERIFY_TIMEOUT_SECONDS)
+            try:
+                stdout, stderr = proc.communicate(timeout=FUSED_VERIFY_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired as error:
+                proc.kill()
+                _stdout, stderr = proc.communicate()
+                raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
+                    f"native fused verifier timed out after {FUSED_VERIFY_TIMEOUT_SECONDS}s: {stderr[-1000:]}"
+                ) from error
     if proc.returncode != 0:
         raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
             f"native fused verifier failed with {proc.returncode}: {stderr[-1000:]}"
@@ -507,7 +515,7 @@ def run_gate() -> dict[str, Any]:
     for name, mutated_result, mutated_envelope, mutated_source in mutation_cases(result, envelope, source_input):
         try:
             validate_result(mutated_result, mutated_envelope, mutated_source)
-        except Exception as err:  # noqa: BLE001
+        except AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError as err:
             mutation_results.append({"name": name, "rejected": True, "error": str(err)})
         else:
             mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
