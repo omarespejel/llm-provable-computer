@@ -63,6 +63,8 @@ mod decoding;
 mod history_replay_projection_prover;
 mod layout;
 #[cfg(feature = "stwo-backend")]
+mod logup_utils;
+#[cfg(feature = "stwo-backend")]
 mod lookup_component;
 #[cfg(feature = "stwo-backend")]
 mod lookup_prover;

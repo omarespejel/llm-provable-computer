@@ -70,6 +70,7 @@ use super::history_replay_projection_prover::{
     STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
     STWO_PHASE44D_BOUNDARY_BINDING_MICROPROFILE_CLAIM_SCOPE,
 };
+use super::logup_utils::selector_masked_lookup_fraction_terms;
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
     prove_phase10_shared_binary_step_lookup_envelope,
@@ -5535,11 +5536,9 @@ fn lookup_interaction_trace(
             preprocessed_trace[0].data[vec_row],
             preprocessed_trace[1].data[vec_row],
         ]);
-        col_gen.write_frac(
-            vec_row,
-            selector * (table_q - witness_q),
-            witness_q * table_q,
-        );
+        let (numerator, denominator) =
+            selector_masked_lookup_fraction_terms(selector, selector, witness_q, table_q);
+        col_gen.write_frac(vec_row, numerator, denominator);
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
@@ -6185,6 +6184,7 @@ fn padded_activation_rows(
 mod tests {
     use super::*;
     use crate::stwo_backend::prove_phase12_decoding_demo_for_layout_steps;
+    use ark_ff::One;
     use std::collections::HashMap;
 
     #[test]
@@ -6254,6 +6254,21 @@ mod tests {
         let error = prove_softmax_exp_lookup(&[(0, 256), (0, 256)])
             .expect_err("duplicate rows must be rejected");
         assert!(error.to_string().contains("duplicate row"));
+    }
+
+    #[test]
+    fn primitive_benchmark_softmax_selector_lookup_masks_inactive_denominators() {
+        let zero = PackedSecureField::zero();
+        let (numerator, denominator) =
+            selector_masked_lookup_fraction_terms(zero, zero, zero, zero);
+        assert!(numerator
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::zero()));
+        assert!(denominator
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::one()));
     }
 
     #[test]

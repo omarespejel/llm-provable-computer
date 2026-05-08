@@ -30,6 +30,7 @@ use stwo_constraint_framework::{
 };
 
 use super::decoding::{read_json_bytes_with_limit, write_json_with_limit};
+use super::logup_utils::selector_masked_lookup_fraction_terms;
 use super::normalization_component::{
     phase5_normalization_component, phase5_normalization_table_rows,
     Phase5NormalizationLookupElements,
@@ -1109,11 +1110,9 @@ fn shared_normalization_interaction_trace(
             preprocessed_trace[0].data[vec_row],
             preprocessed_trace[1].data[vec_row],
         ]);
-        col_gen.write_frac(
-            vec_row,
-            selector * (table_q - witness_q),
-            witness_q * table_q,
-        );
+        let (numerator, denominator) =
+            selector_masked_lookup_fraction_terms(selector, selector, witness_q, table_q);
+        col_gen.write_frac(vec_row, numerator, denominator);
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
@@ -1146,6 +1145,7 @@ fn lower_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_ff::One;
 
     #[test]
     fn phase5_normalization_demo_round_trips_real_proof() {
@@ -1212,6 +1212,21 @@ mod tests {
         let error = prove_phase10_shared_normalization_lookup_envelope(&[(4, 128), (4, 128)])
             .expect_err("duplicate rows should fail");
         assert!(error.to_string().contains("duplicate"));
+    }
+
+    #[test]
+    fn phase10_shared_normalization_masks_inactive_denominators() {
+        let zero = PackedSecureField::zero();
+        let (numerator, denominator) =
+            selector_masked_lookup_fraction_terms(zero, zero, zero, zero);
+        assert!(numerator
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::zero()));
+        assert!(denominator
+            .to_array()
+            .iter()
+            .all(|lane| *lane == SecureField::one()));
     }
 
     #[test]
