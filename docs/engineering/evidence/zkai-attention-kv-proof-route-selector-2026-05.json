@@ -1,7 +1,7 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_GENERAL_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
-  "decision": "GO_NATIVE_STWO_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
+  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
+  "decision": "GO_NATIVE_STWO_SINGLE_AND_MULTIHEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
     "attention_output": [
@@ -337,10 +337,19 @@
     "statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
     "timing_policy": "not_measured_in_this_gate"
   },
-  "first_blocker": "NO_REAL_VALUED_SOFTMAX_GENERAL_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF",
+  "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "e5beac633c2722c7cfb0536934da76e2726d14ed",
+  "git_commit": "58a89b7b372b6bfafe492278ccd9fa527d03824d",
   "metrics": {
+    "multihead_quantized_softmax_fused_proof_size_bytes_sum": 102976,
+    "multihead_quantized_softmax_head_counts_checked": [
+      2,
+      4
+    ],
+    "multihead_quantized_softmax_lookup_claims_total": 312,
+    "multihead_quantized_softmax_max_fused_proof_size_bytes": 53468,
+    "multihead_quantized_softmax_max_observed_division_error_fraction": "55/56",
+    "multihead_quantized_softmax_profiles_checked": 2,
     "native_stwo_envelope_size_bytes": 265791,
     "native_stwo_proof_size_bytes": 24394,
     "native_stwo_score_row_count": 52,
@@ -368,6 +377,59 @@
     "snark_public_signal_count": 18,
     "timing_policy": "not_measured_in_this_gate",
     "verifier_time_ms": null
+  },
+  "multihead_quantized_softmax_receipt": {
+    "all_mutations_rejected": true,
+    "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
+    "claim_boundary": "TWO_AND_FOUR_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_PUBLIC_BENCHMARK",
+    "decision": "GO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+    "denominator_policy": "sum_positive_statement_bound_table_weights_per_step",
+    "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
+    "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json",
+    "fused_proof_size_bytes_sum": 102976,
+    "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
+    "head_counts_checked": [
+      2,
+      4
+    ],
+    "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_TWO_AND_FOUR_HEAD_FIXTURES",
+    "lookup_claims_total": 312,
+    "max_fused_proof_size_bytes": 53468,
+    "max_observed_division_error_fraction": "55/56",
+    "mutations_checked": 43,
+    "mutations_rejected": 43,
+    "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+    "profile_output_index_policies": [
+      "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+      "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout"
+    ],
+    "profile_statement_commitments": [
+      "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b",
+      "blake2b-256:c0fe8e31be336f35dd021bc16d35674750456e17b8cd52dca5718a820aef9db6"
+    ],
+    "profile_weight_table_commitments": [
+      "blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea",
+      "blake2b-256:3c3e5002672d7efa6b7a1293d17388c98344f61aceae7914f00a391ce355de62"
+    ],
+    "profiles_checked": 2,
+    "proof_backend": "stwo",
+    "proof_system": "Stwo",
+    "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+    "result": "GO",
+    "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
+    "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
+    "schema": "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1",
+    "score_gap_clip": 8,
+    "score_rows_total": 312,
+    "score_scale": 1,
+    "step_binding_policy": "each score row binds per-head local step_index derived from the statement input_steps order",
+    "table_error_bound_policy": "no real-valued Softmax approximation error bound is claimed; the literal integer table is the kernel",
+    "table_rows": 9,
+    "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
+    "trace_rows_total": 384,
+    "weight_policy": "exp2_half_gap_table_clipped_8_floor_division"
   },
   "mutation_cases": [
     {
@@ -433,6 +495,41 @@
     {
       "name": "quantized_softmax_denominator_drift",
       "reason": "quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_route_removed",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_receipt_decision_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_receipt_route_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_receipt_mutation_rejections_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_real_softmax_overclaim",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_profile_count_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_output_mapping_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
       "rejected": true
     },
     {
@@ -611,8 +708,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 48,
-  "mutations_rejected": 48,
+  "mutations_checked": 55,
+  "mutations_rejected": 55,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -736,8 +833,8 @@
   "next_go_criteria": [
     "native Stwo proof scales the d8 causal-mask integer-argmax attention arithmetic beyond the fixed eight-step fixture without weakening intermediate-state binding",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
-    "a d=16 or multi-head fixture preserves the same width, masking, and intermediate-state binding guarantees",
-    "a native Stwo route fuses the quantized Softmax-table attention arithmetic and LogUp table membership beyond the fixed d8 single-head fixture",
+    "larger-width, higher-head-count, or longer-context fixtures preserve the same masking, intermediate-state, denominator/remainder, and output-order binding guarantees",
+    "the implementation-exact quantized Softmax-table receipt scales beyond the checked two-head and four-head d8 fixtures without weakening head/output binding",
     "the explicit causal-prefix masking axis remains statement data in any native route",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "real-valued exp/div Softmax stays out of scope unless the proof covers that exact kernel and error bound"
@@ -753,6 +850,7 @@
   "proof_backed_routes_available": [
     "local_stwo_attention_kv_d8_masked_sequence_proof",
     "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
+    "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
     "external_snark_attention_kv_statement_receipt",
     "external_zkvm_attention_kv_semantics_receipt",
     "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -862,6 +960,38 @@
     },
     {
       "blocker": null,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json",
+      "fused_proof_size_bytes_sum": 102976,
+      "head_counts_checked": [
+        2,
+        4
+      ],
+      "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+      "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_TWO_AND_FOUR_HEAD_FIXTURES",
+      "lookup_claims_total": 312,
+      "max_fused_proof_size_bytes": 53468,
+      "profile_statement_commitments": [
+        "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b",
+        "blake2b-256:c0fe8e31be336f35dd021bc16d35674750456e17b8cd52dca5718a820aef9db6"
+      ],
+      "profile_weight_table_commitments": [
+        "blake2b-256:ee5958fcab99005d7efc9311c55141cd7936c4d74f74e7cffd9af7483a2c02ea",
+        "blake2b-256:3c3e5002672d7efa6b7a1293d17388c98344f61aceae7914f00a391ce355de62"
+      ],
+      "profiles_checked": 2,
+      "proof_backed": true,
+      "proof_backend": "stwo",
+      "proof_system": "Stwo",
+      "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+      "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
+      "score_gap_clip": 8,
+      "score_scale": 1,
+      "status": "GO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+      "table_rows": 9,
+      "usable_today": true
+    },
+    {
+      "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
       "proof_backed": true,
       "proof_size_bytes": 802,
@@ -956,7 +1086,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:1a89fdcfadd29504ff284fd7ae7707dbc89dc9beb349d289ead4bf7982b8bfc7",
+  "selector_commitment": "blake2b-256:13017006f4d632f06533e162655f81e5910b8900b782bcae4fb0154b9888fbb9",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

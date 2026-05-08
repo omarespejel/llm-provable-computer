@@ -71,9 +71,12 @@ object, and RISC Zero receipts compute integer-argmax transition and sequence
 semantics in a zkVM guest. These external rows are controls, not the headline
 result. The new STARK-native bridge is a tiny Stwo AIR proof for the same
 transformer-shaped surface: a fixed eight-step `d=8` causal-prefix masked
-integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, a
-`24394`-byte proof, and `42 / 42` route-selector mutation rejections. This is
-not Softmax, not multi-head attention, not long-context inference, and not full
-inference. The extension therefore treats nested-proof verification, commitment
-binding, resource bounds, and publication-versus-experimental drift as
-validation risks rather than established facts.
+integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, and
+a `24394`-byte proof. The current route selector also includes single-head plus
+two-head/four-head implementation-exact quantized Softmax-table receipts over
+the pinned integer table/floor-division kernel and rejects `55 / 55`
+route-selector mutations. This is not real-valued Softmax, not long-context
+inference, and not full inference. The extension therefore treats nested-proof
+verification, commitment binding, resource bounds, and
+publication-versus-experimental drift as validation risks rather than
+established facts.
