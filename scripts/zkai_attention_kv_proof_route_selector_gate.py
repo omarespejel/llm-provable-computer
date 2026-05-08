@@ -999,6 +999,8 @@ def multihead_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any])
         "max_fused_proof_size_bytes": softmax_payload["max_fused_proof_size_bytes"],
         "profile_statement_commitments": [profile["source_statement_commitment"] for profile in profiles],
         "profile_weight_table_commitments": [profile["source_weight_table_commitment"] for profile in profiles],
+        "profile_fused_envelope_commitments": [profile["fused_envelope_commitment"] for profile in profiles],
+        "profile_fused_proof_commitments": [profile["fused_proof_commitment"] for profile in profiles],
         "profile_output_index_policies": [profile["output_index_policy"] for profile in profiles],
         "max_observed_division_error_fraction": metrics["max_observed_division_error_fraction"],
         "mutations_checked": softmax_payload["mutations_checked"],
@@ -1081,6 +1083,12 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     ]
     multihead_quantized_softmax_route["profile_weight_table_commitments"] = multihead_quantized_softmax[
         "profile_weight_table_commitments"
+    ]
+    multihead_quantized_softmax_route["profile_fused_envelope_commitments"] = multihead_quantized_softmax[
+        "profile_fused_envelope_commitments"
+    ]
+    multihead_quantized_softmax_route["profile_fused_proof_commitments"] = multihead_quantized_softmax[
+        "profile_fused_proof_commitments"
     ]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
@@ -1850,7 +1858,12 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax division-bound drift")
     if "no real-valued Softmax" not in summary.get("table_error_bound_policy", ""):
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax real-valued error-bound overclaim")
-    for key in ("profile_statement_commitments", "profile_weight_table_commitments"):
+    for key in (
+        "profile_statement_commitments",
+        "profile_weight_table_commitments",
+        "profile_fused_envelope_commitments",
+        "profile_fused_proof_commitments",
+    ):
         commitments = summary.get(key)
         if not isinstance(commitments, list) or len(commitments) != summary["profiles_checked"]:
             raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax {key} shape drift")

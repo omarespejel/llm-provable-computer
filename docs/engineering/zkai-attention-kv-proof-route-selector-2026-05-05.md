@@ -172,6 +172,12 @@ integer table/floor-division kernel across the checked two-head and four-head
 fixtures. It is still not real-valued exp/div Softmax, full inference,
 long-context inference, or recursion/PCD.
 
+The selector's default receipt load is structural and cheap, but it is not blind
+to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
+each fused envelope and each fused proof byte payload. The checked strict command
+uses `--run-native` to additionally re-run the native Stwo proof verifiers over
+the backing envelopes.
+
 The boundary remains strict. The earlier argmax and bounded-weighted selectors
 are not Softmax, not long-context inference, not a full transformer block, and
 not recursion/PCD. The bounded Softmax-table gates are closer to transformer

@@ -31,6 +31,12 @@ Aggregate checked surface:
 - Mutations rejected for the backing profiles and timing policy listed above:
   `51 / 51`.
 
+The receipt records stable `blake2b-256` commitments for each backing fused
+envelope and each fused proof byte payload. Fast selector loads can therefore
+detect evidence-file proof-byte tampering without running cargo. The strict
+reproduction command still runs the native Stwo verifiers over the backing
+envelopes.
+
 ## Kernel Contract
 
 This is exact for the pinned integer table/floor-division kernel:
@@ -50,7 +56,8 @@ This is exact for the pinned integer table/floor-division kernel:
    `0 <= remainder < denominator`.
 9. Check the division-error bound `< 1` output unit.
 10. Bind `head_index`, per-head `step_index`, causal-prefix policy, verifier
-    domain, statement version, source commitments, and fused proof commitments.
+    domain, statement version, source commitments, fused envelope commitments,
+    and fused proof-byte commitments.
 
 The important multi-head hardening is output binding: the gate derives the
 `attention_outputs` index from the statement `input_steps` order. It does not

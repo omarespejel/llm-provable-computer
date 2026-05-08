@@ -50,8 +50,10 @@
         "denominator_sum": 8085,
         "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05.json",
         "fused_artifact": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+        "fused_envelope_commitment": "blake2b-256:0e7aa999643e024087c7fea479d3b66b2762f2212419c840cfdde048f7bcaea4",
         "fused_envelope_size_bytes": 585857,
         "fused_proof_backend_version": "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1",
+        "fused_proof_commitment": "blake2b-256:baec9f001c631451517360f74920074302ad94bbb144845992fdc0b003b1a6a9",
         "fused_proof_schema_version": "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
         "fused_proof_size_bytes": 49508,
         "fused_statement_version": "zkai-attention-kv-stwo-native-two-head-fused-softmax-table-logup-statement-v1",
@@ -248,8 +250,10 @@
         "denominator_sum": 14378,
         "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json",
         "fused_artifact": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+        "fused_envelope_commitment": "blake2b-256:b7d589848fef687ff8224d676d5509d8a5e68d4b83f071b594ce50ced10f4fd4",
         "fused_envelope_size_bytes": 797717,
         "fused_proof_backend_version": "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1",
+        "fused_proof_commitment": "blake2b-256:01e2b9f9a17f0fc510f7dea46b839f17ac2119275002824f5abde00cc085420b",
         "fused_proof_schema_version": "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-proof-v1",
         "fused_proof_size_bytes": 53468,
         "fused_statement_version": "zkai-attention-kv-stwo-native-four-head-fused-softmax-table-logup-statement-v1",
@@ -876,32 +880,32 @@
       "rejected": true
     },
     {
-      "error": "two_head fused proof receipt drift: fused verifier domain drift",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_two_head_verifier_domain_relabeling",
       "rejected": true
     },
     {
-      "error": "two_head fused proof receipt drift: fused statement version drift",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_two_head_statement_version_relabeling",
       "rejected": true
     },
     {
-      "error": "two_head fused proof receipt drift: native fused verifier rejected in-memory fused envelope: unsupported proof construction: attention/KV native two-head fused bounded Softmax-table proof: fused proof commitment 0 does not match recomputed source rows",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_two_head_proof_byte_tamper",
       "rejected": true
     },
     {
-      "error": "four_head fused proof receipt drift: fused verifier domain drift",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_four_head_verifier_domain_relabeling",
       "rejected": true
     },
     {
-      "error": "four_head fused proof receipt drift: fused statement version drift",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_four_head_statement_version_relabeling",
       "rejected": true
     },
     {
-      "error": "four_head fused proof receipt drift: native fused verifier rejected in-memory fused envelope: unsupported proof construction: attention/KV native four-head fused bounded Softmax-table proof: fused proof commitment 0 does not match recomputed source rows",
+      "error": "receipt drift for kernel_contract",
       "name": "fused_four_head_proof_byte_tamper",
       "rejected": true
     },
