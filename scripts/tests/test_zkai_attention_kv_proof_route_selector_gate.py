@@ -337,6 +337,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         finally:
             GATE.STWO_NATIVE_MASKED_SEQUENCE.validate_payload = original_validator
 
+    def test_quantized_softmax_receipt_loader_wraps_malformed_json(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            path = pathlib.Path(raw_tmp) / "malformed-quantized-receipt.json"
+            path.write_text("{", encoding="utf-8")
+
+            with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "quantized Softmax receipt malformed"):
+                GATE.load_quantized_softmax_receipt_payload(path)
+
     def test_individual_mutations_reject(self) -> None:
         payload = GATE.build_payload()
 
