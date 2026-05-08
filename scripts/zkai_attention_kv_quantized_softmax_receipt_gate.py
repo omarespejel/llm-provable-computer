@@ -457,10 +457,10 @@ def run_gate() -> dict[str, Any]:
     return receipt
 
 
-def validate_result(result: dict[str, Any]) -> None:
+def validate_result(result: dict[str, Any], *, run_native: bool = False) -> None:
     source = source_input()
     envelope = fused_envelope()
-    validate_receipt(result, source, envelope, run_native=False)
+    validate_receipt(result, source, envelope, run_native=run_native)
 
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:

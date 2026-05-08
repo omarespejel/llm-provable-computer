@@ -709,8 +709,8 @@ def run_gate() -> dict[str, Any]:
     return receipt
 
 
-def validate_result(result: dict[str, Any]) -> None:
-    validate_receipt(result, load_sources(), load_envelopes())
+def validate_result(result: dict[str, Any], *, native_profile_ids: set[str] | None = None) -> None:
+    validate_receipt(result, load_sources(), load_envelopes(), native_profile_ids=native_profile_ids)
 
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
