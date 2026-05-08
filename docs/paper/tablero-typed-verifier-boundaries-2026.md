@@ -883,14 +883,14 @@ score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
 proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
-The route selector now records nine proof-backed routes and rejects `60 / 60`
+The route selector now records ten proof-backed routes and rejects `65 / 65`
 route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This includes single-head plus two-head/four-head/
 eight-head implementation-exact quantized Softmax-table receipts over the pinned
-integer table/floor-division kernel, plus a separate two-head long-sequence
-fused Softmax-table/LogUp proof, not real-valued exp/div Softmax. It is anchored to
+integer table/floor-division kernel, plus separate two-head long-sequence and
+d16 width-axis fused Softmax-table/LogUp proofs, not real-valued exp/div Softmax. It is anchored to
 `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
@@ -963,8 +963,12 @@ inside a `1050248`-byte checked envelope, and rejects `19 / 19` mutations.
 Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw
 proof bytes grow `1.222064x`. The matched long-sequence source-plus-sidecar
 control is now checked at `79444` raw proof bytes, so the fused proof is `18942`
-bytes smaller (`0.761568x`). This remains supporting transformer/STARK evidence,
-not a Tablero performance row: it is bounded table attention, not exact
+bytes smaller (`0.761568x`). A separate d16 width-axis check keeps score rows
+fixed at `52`, doubles key/value width from `8` to `16`, and records a `64375`
+byte fused proof versus a matched `75003` byte source-plus-sidecar pair
+(`0.858299x`, `10628` bytes saved), with `26 / 26` fused-gate mutations
+rejected. This remains supporting transformer/STARK evidence, not a Tablero
+performance row: it is bounded table attention, not exact
 real-valued Softmax, not exp/div semantics, not implementation-exact model
 Softmax, not full inference, not a public long-context benchmark, not on-chain
 verifier evidence, not a public benchmark row, not a timing result, and not
@@ -972,6 +976,7 @@ recursion/PCD. It is
 anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`,
+`docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`,
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.
 
