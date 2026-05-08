@@ -1310,8 +1310,9 @@ fixed eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
 directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, and a `24394`-byte proof. The
 current route selector now also includes single-head plus two-head/four-head/
-eight-head implementation-exact quantized Softmax-table receipts and a separate
-two-head long-sequence fused Softmax-table/LogUp proof; it rejects `60 / 60`
+eight-head implementation-exact quantized Softmax-table receipts, a separate
+two-head long-sequence fused Softmax-table/LogUp proof, and a d16 width-axis
+fused Softmax-table/LogUp proof; it rejects `65 / 65`
 route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
@@ -1453,7 +1454,20 @@ LogUp sidecar is `79444` raw proof bytes, so the fused proof is `18942` bytes
 smaller (`0.761568x` of the matched control). This is the strongest current
 native Stwo attention signal in the artifact set: lookup membership no longer
 has to live as a detached sidecar for the checked bounded fixture, and the fused
-object survives both eight-head and longer-sequence scale points. It remains
+object survives both eight-head and longer-sequence scale points.
+
+A width-axis follow-up keeps the score-row count fixed at `52` and doubles
+key/value width from `8` to `16`. The d16 source arithmetic proof is `61516`
+raw bytes, the matched LogUp sidecar is `13487` raw bytes, and the fused proof
+is `64375` raw bytes inside a `665491`-byte checked envelope. The fused d16
+route is `10628` bytes smaller than the matched source-plus-sidecar pair
+(`75003` raw bytes, `0.858299x`) and rejects `26 / 26` fused-gate mutations.
+This adds a separate width-scaling check to the native attention ladder. It is
+not a claim that proof size is independent of width; it says the same fused
+attention-arithmetic-plus-table-membership construction still works after the
+width increase and still removes the second proof object.
+
+The fused ladder remains
 bounded table evidence, not real-valued Softmax, not exp/div semantics, not
 implementation-exact model Softmax, not full inference, not a public long-context
 benchmark, not on-chain verifier evidence, not a public benchmark row, not a
@@ -1470,10 +1484,21 @@ evidence paths are
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`,
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.
+The d16 width-axis fused evidence paths are
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json`,
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json`.
 The minimal verification command is
 `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`;
 the gate command is
 `python3 scripts/zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.tsv`.
+For the d16 width-axis point, the corresponding minimal verifier command is
+`cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json`;
+the gate command is
+`python3 scripts/zkai_attention_kv_d16_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.tsv`.
 
 The credible sequencing is therefore: first scale this native attention/KV AIR
 one notch at a time; second fuse the lookup-heavy pieces when the arithmetic and

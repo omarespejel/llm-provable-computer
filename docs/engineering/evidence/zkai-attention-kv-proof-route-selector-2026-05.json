@@ -1,7 +1,53 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
-  "decision": "GO_NATIVE_STWO_SINGLE_AND_MULTIHEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
+  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
+  "d16_fused_softmax_receipt": {
+    "all_mutations_rejected": true,
+    "claim_boundary": "ONE_NATIVE_STWO_D16_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
+    "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json",
+    "fused_envelope_size_bytes": 665491,
+    "fused_over_source_proof_bytes": 2859,
+    "fused_proof_size_bytes": 64375,
+    "fused_saves_vs_source_plus_sidecar_bytes": 10628,
+    "fused_to_source_plus_sidecar_ratio": 0.8582990013732784,
+    "fusion_status": "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP",
+    "key_width": 16,
+    "lookup_claims": 52,
+    "lookup_relation": "AttentionKvD16FusedSoftmaxTableRelation",
+    "lookup_relation_width": 2,
+    "mutations_checked": 26,
+    "mutations_rejected": 26,
+    "non_claims": [
+      "not exact Softmax attention",
+      "not exp/div Softmax semantics",
+      "not full autoregressive inference",
+      "not a long-context benchmark",
+      "not recursive verification or PCD",
+      "not private witness privacy",
+      "not on-chain verification evidence",
+      "clipped-gap derivation and source-row semantics are verifier-recomputed from public rows before proof verification"
+    ],
+    "non_fused_status": "GO_MATCHED_D16_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+    "proof_backend": "stwo",
+    "proof_system": "Stwo",
+    "result": "GO",
+    "route_id": "local_stwo_attention_kv_d16_fused_bounded_softmax_table_logup_proof",
+    "schema": "zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-v1",
+    "score_rows": 52,
+    "source_envelope_size_bytes": 639928,
+    "source_plus_sidecar_raw_proof_bytes": 75003,
+    "source_proof_size_bytes": 61516,
+    "source_public_instance_commitment": "blake2b-256:bad2b16dd13bc731bace7459a4aee8c28f470de7541fa8181034552c22e1ca34",
+    "source_score_row_commitment": "blake2b-256:7ad8c6066d1bf36cae62d4e2da29a9b3fd04b74acd6b1e4a33e6018464cbfb66",
+    "source_statement_commitment": "blake2b-256:4292fdf43f7f08a5820584e3e80ba22e6bc8a378a9811a5983799b36badda462",
+    "source_weight_table_commitment": "blake2b-256:d2eb4b2f2162e4748a7eb125efb9cb499ca41698844f94eae039dfa96f45ceb5",
+    "table_rows": 9,
+    "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
+    "trace_rows": 64,
+    "value_width": 16
+  },
+  "decision": "GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
     "attention_output": [
@@ -339,7 +385,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "7c0386daac5104538ab99a73d9501d823ea48425",
+  "git_commit": "351ee765a45e1119d6508ba5e734266cbcefca31",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -389,6 +435,15 @@
     "trace_rows": 512
   },
   "metrics": {
+    "d16_fused_softmax_fused_envelope_size_bytes": 665491,
+    "d16_fused_softmax_fused_proof_size_bytes": 64375,
+    "d16_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 10628,
+    "d16_fused_softmax_fused_to_source_plus_sidecar_ratio": 0.8582990013732784,
+    "d16_fused_softmax_key_width": 16,
+    "d16_fused_softmax_lookup_claims": 52,
+    "d16_fused_softmax_source_plus_sidecar_raw_proof_bytes": 75003,
+    "d16_fused_softmax_trace_rows": 64,
+    "d16_fused_softmax_value_width": 16,
     "longseq_fused_softmax_fused_envelope_size_bytes": 1050248,
     "longseq_fused_softmax_fused_proof_size_bytes": 60502,
     "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 18942,
@@ -628,6 +683,31 @@
       "rejected": true
     },
     {
+      "name": "d16_fused_softmax_route_removed",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_fused_softmax_decision_drift",
+      "reason": "d16 fused Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_fused_softmax_width_drift",
+      "reason": "d16 fused Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_fused_softmax_exact_softmax_overclaim",
+      "reason": "d16 fused Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_fused_softmax_mutation_rejections_drift",
+      "reason": "d16 fused Softmax receipt drift",
+      "rejected": true
+    },
+    {
       "name": "external_snark_route_removed",
       "reason": "route inventory drift",
       "rejected": true
@@ -803,8 +883,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 60,
-  "mutations_rejected": 60,
+  "mutations_checked": 65,
+  "mutations_rejected": 65,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -947,6 +1027,7 @@
     "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
     "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
     "local_stwo_attention_kv_two_head_longseq_fused_bounded_softmax_table_logup_proof",
+    "local_stwo_attention_kv_d16_fused_bounded_softmax_table_logup_proof",
     "external_snark_attention_kv_statement_receipt",
     "external_zkvm_attention_kv_semantics_receipt",
     "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -1125,6 +1206,28 @@
     },
     {
       "blocker": null,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_size_bytes": 665491,
+      "fused_proof_size_bytes": 64375,
+      "fusion_status": "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP",
+      "key_width": 16,
+      "lookup_claims": 52,
+      "non_fused_status": "GO_MATCHED_D16_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "proof_backed": true,
+      "proof_backend": "stwo",
+      "proof_system": "Stwo",
+      "route_id": "local_stwo_attention_kv_d16_fused_bounded_softmax_table_logup_proof",
+      "source_proof_size_bytes": 61516,
+      "source_statement_commitment": "blake2b-256:4292fdf43f7f08a5820584e3e80ba22e6bc8a378a9811a5983799b36badda462",
+      "source_weight_table_commitment": "blake2b-256:d2eb4b2f2162e4748a7eb125efb9cb499ca41698844f94eae039dfa96f45ceb5",
+      "status": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+      "table_rows": 9,
+      "trace_rows": 64,
+      "usable_today": true,
+      "value_width": 16
+    },
+    {
+      "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
       "proof_backed": true,
       "proof_size_bytes": 802,
@@ -1219,7 +1322,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:e283f7187287a85dad167f0bd5bd550b8cb31d09dd5067027ceae90b78e3a913",
+  "selector_commitment": "blake2b-256:34fa1ba36c4e092c4410acb00a35db485d5305c3e0a842db311d58610a44b5dc",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

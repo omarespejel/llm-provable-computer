@@ -53,11 +53,12 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 47. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
 48. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
 49. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`
-50. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-51. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
-52. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-53. `docs/engineering/reproducibility.md`
-53. `git status --short --branch`
+50. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
+51. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+52. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
+53. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+54. `docs/engineering/reproducibility.md`
+55. `git status --short --branch`
 
 ## What this repository is now
 
@@ -334,15 +335,16 @@ This repository currently has three live lanes.
     and
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
 
-  - The attention/KV proof-route selector is now a narrow GO for nine
+  - The attention/KV proof-route selector is now a narrow GO for ten
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
     the native Stwo single-head implementation-exact quantized Softmax-table
     receipt, the native Stwo multi-head implementation-exact quantized
     Softmax-table receipt, the native Stwo two-head long-sequence fused
-    Softmax-table proof, the external SNARK statement-receipt route, RISC Zero
-    transition receipt, RISC Zero three-step sequence receipt, RISC Zero fixed
-    eight-step sequence receipt, and RISC Zero fixed eight-step `d=8`
-    causal-prefix masked sequence receipt. The native seq16, d16, two-head,
+    Softmax-table proof, the native Stwo d16 fused Softmax-table width-axis
+    route, the external SNARK statement-receipt route, RISC Zero transition
+    receipt, RISC Zero three-step sequence receipt, RISC Zero fixed eight-step
+    sequence receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked
+    sequence receipt. The native seq16, d16, two-head,
     bounded weighted, d8 bounded weighted, two-head bounded weighted,
     proof-size profile, and bounded Softmax-table, LogUp sidecar, fused
     single-head Softmax-table, fused two-head Softmax-table, fused four-head

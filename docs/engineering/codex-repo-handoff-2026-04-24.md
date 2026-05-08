@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `15f0f798467110510785d65d0e1f6d93827d6961` (matches
+**Mainline tip at last refresh:** `351ee765a45e1119d6508ba5e734266cbcefca31` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -37,9 +37,11 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 26. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
 27. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
 28. `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`
-29. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-30. `docs/engineering/reproducibility.md`
-31. `git status --short --branch`
+29. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
+30. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
+31. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+32. `docs/engineering/reproducibility.md`
+33. `git status --short --branch`
 
 ## Current lane split
 
@@ -407,6 +409,18 @@ Tablero boundary.
   long-context benchmark, not a timing claim, and not full inference; see
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md` and
   `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
+- Issue `#501` scales the fused route along width at fixed sequence length:
+  one native Stwo proof object checks a single-head `d=16` bounded
+  Softmax-table source and LogUp table membership for `52` lookup claims over a
+  `64`-row trace. The matched source-plus-sidecar control is source proof
+  `61516` bytes plus LogUp sidecar `13487` bytes (`75003` raw bytes total).
+  The fused proof is `64375` raw bytes and `665491` checked envelope bytes,
+  rejects `26 / 26` fused-gate mutations, and is `10628` bytes smaller than the
+  matched source-plus-sidecar pair (`0.858299x`). This is width-axis
+  proof-existence and byte-accounting evidence, not exact Softmax, not a claim
+  that proof size is independent of width, not a timing claim, and not full
+  inference; see
+  `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`.
 - Issue `#485` pins the issue `#478` fused single-head route as an
   implementation-exact quantized Softmax-table kernel receipt. The backing
   proof remains the native Stwo fused proof (`47698` raw bytes, `478713`
@@ -431,22 +445,24 @@ Tablero boundary.
 
 
 - The attention/KV proof-route selector records a narrow
-  `GO_NATIVE_STWO_SINGLE_AND_MULTIHEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
-  for nine proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
+  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+  for ten proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
   the native Stwo single-head implementation-exact quantized Softmax-table kernel
   receipt, the native Stwo multi-head implementation-exact quantized
   Softmax-table kernel receipt, the native Stwo two-head long-sequence fused
-  Softmax-table/LogUp route, the external SNARK statement-receipt route, the RISC
+  Softmax-table/LogUp route, the native Stwo d16 fused Softmax-table/LogUp
+  width-axis route, the external SNARK statement-receipt route, the RISC
   Zero transition semantics route, the RISC Zero three-step sequence semantics
   route, the RISC Zero fixed eight-step sequence semantics route, and the RISC
   Zero fixed eight-step `d=8` causal-prefix masked sequence route. The
   native seq16, d16, two-head, bounded weighted, d8 bounded weighted, two-head
   bounded weighted, proof-size profile, bounded Softmax-table, two-head bounded
   Softmax-table, Softmax-table proof-byte accounting, LogUp sidecar, fused
-  single-head Softmax-table, fused two-head Softmax-table, fused four-head
-  Softmax-table, fused eight-head Softmax-table, fused long-sequence Softmax-table,
+  single-head Softmax-table, fused d16 Softmax-table, fused two-head
+  Softmax-table, fused four-head Softmax-table, fused eight-head Softmax-table,
+  fused long-sequence Softmax-table,
   and quantized Softmax-table receipt gates are separate native
-  scale/semantics/accounting/fusion gates. It rejects `60 / 60` selector mutations and keeps real-valued Softmax,
+  scale/semantics/accounting/fusion gates. It rejects `65 / 65` selector mutations and keeps real-valued Softmax,
   long-context inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or

@@ -1,0 +1,347 @@
+{
+  "all_mutations_rejected": true,
+  "bounded_softmax_table_receipt": {
+    "attention_outputs": [
+      [
+        1,
+        -4,
+        1,
+        -5,
+        0,
+        4,
+        -1,
+        3,
+        -2,
+        2,
+        -3,
+        1,
+        -4,
+        1,
+        -5,
+        0
+      ],
+      [
+        1,
+        -4,
+        1,
+        -5,
+        -1,
+        3,
+        -1,
+        3,
+        -2,
+        1,
+        -3,
+        1,
+        -4,
+        1,
+        -5,
+        -1
+      ],
+      [
+        1,
+        -3,
+        -1,
+        1,
+        -2,
+        -1,
+        -4,
+        3,
+        0,
+        -3,
+        4,
+        1,
+        -3,
+        -1,
+        1,
+        -2
+      ],
+      [
+        1,
+        -4,
+        0,
+        -4,
+        -1,
+        3,
+        -1,
+        3,
+        -2,
+        1,
+        -2,
+        1,
+        -4,
+        0,
+        -4,
+        -1
+      ],
+      [
+        3,
+        1,
+        0,
+        -2,
+        -3,
+        3,
+        1,
+        0,
+        -1,
+        -3,
+        -4,
+        3,
+        1,
+        0,
+        -2,
+        -3
+      ],
+      [
+        -1,
+        -2,
+        1,
+        -1,
+        -4,
+        0,
+        -2,
+        2,
+        0,
+        -3,
+        2,
+        -1,
+        -2,
+        1,
+        -1,
+        -4
+      ],
+      [
+        0,
+        -2,
+        0,
+        -2,
+        -1,
+        1,
+        -1,
+        0,
+        -1,
+        -1,
+        -2,
+        0,
+        -2,
+        0,
+        -2,
+        -1
+      ],
+      [
+        0,
+        -3,
+        2,
+        -1,
+        -4,
+        1,
+        -2,
+        3,
+        0,
+        -3,
+        2,
+        0,
+        -3,
+        2,
+        -1,
+        -4
+      ]
+    ],
+    "decision": "GO_NATIVE_STWO_ATTENTION_KV_BOUNDED_SOFTMAX_TABLE_D16_MASKED_SEQUENCE",
+    "envelope_size_bytes": 639928,
+    "final_kv_cache_commitment": "blake2b-256:f9ecd71ca201798438bf7382f6fcfda655b005d86c2137ef3c281501c44423b6",
+    "final_kv_items": 10,
+    "initial_kv_items": 2,
+    "key_width": 16,
+    "outputs_commitment": "blake2b-256:671c804064c3c24265c8520508e95af23bf5f05884a0c35b4ee3f29ad3586c99",
+    "proof_backend": "stwo",
+    "proof_size_bytes": 61516,
+    "proof_system": "Stwo",
+    "proof_version": "stwo-attention-kv-d16-causal-mask-bounded-softmax-table-air-proof-v1",
+    "public_instance_commitment": "blake2b-256:bad2b16dd13bc731bace7459a4aee8c28f470de7541fa8181034552c22e1ca34",
+    "required_backend_version": "stwo-attention-kv-d16-causal-mask-bounded-softmax-table-v1",
+    "route_id": "local_stwo_attention_kv_d16_bounded_softmax_table_masked_sequence_proof",
+    "score_gap_clip": 8,
+    "score_row_commitment": "blake2b-256:7ad8c6066d1bf36cae62d4e2da29a9b3fd04b74acd6b1e4a33e6018464cbfb66",
+    "score_rows": 52,
+    "score_scale": 1,
+    "semantic_scope": "d16_bounded_table_softmax_approx_attention_kv_causal_mask_rows_bound_to_statement_receipt",
+    "semantics": "bounded_table_softmax_approx_attention",
+    "sequence_length": 8,
+    "statement_commitment": "blake2b-256:4292fdf43f7f08a5820584e3e80ba22e6bc8a378a9811a5983799b36badda462",
+    "statement_version": "zkai-attention-kv-stwo-native-d16-bounded-softmax-table-statement-v1",
+    "target_id": "attention-kv-d16-causal-mask-bounded-softmax-table-v1",
+    "trace_rows": 64,
+    "value_width": 16,
+    "verifier_domain": "ptvm:zkai:attention-kv-stwo-native-d16-bounded-softmax-table:v1",
+    "weight_policy": "exp2_half_gap_table_clipped_8_floor_division",
+    "weight_table": [
+      {
+        "gap": 0,
+        "weight": 256
+      },
+      {
+        "gap": 1,
+        "weight": 181
+      },
+      {
+        "gap": 2,
+        "weight": 128
+      },
+      {
+        "gap": 3,
+        "weight": 91
+      },
+      {
+        "gap": 4,
+        "weight": 64
+      },
+      {
+        "gap": 5,
+        "weight": 45
+      },
+      {
+        "gap": 6,
+        "weight": 32
+      },
+      {
+        "gap": 7,
+        "weight": 23
+      },
+      {
+        "gap": 8,
+        "weight": 16
+      }
+    ],
+    "weight_table_commitment": "blake2b-256:d2eb4b2f2162e4748a7eb125efb9cb499ca41698844f94eae039dfa96f45ceb5"
+  },
+  "claim_boundary": "NATIVE_STWO_D16_CAUSAL_MASKED_BOUNDED_SOFTMAX_TABLE_ATTENTION_KV_PROOF_NOT_EXACT_SOFTMAX_NOT_LONG_CONTEXT_NOT_FULL_INFERENCE_NOT_RECURSION_OR_PCD",
+  "decision": "GO_NATIVE_STWO_ATTENTION_KV_BOUNDED_SOFTMAX_TABLE_D16_MASKED_SEQUENCE",
+  "first_blocker": "NO_AIR_PRIVATE_LOOKUP_ARGUMENT_OR_EXACT_SOFTMAX_EXP_DIV_AIR_YET",
+  "gate_commitment": "blake2b-256:cc63767b56ff1d7d5eaf49cda595e3dacab62a3830a127d2d6965bca1de6b8a3",
+  "issue": 501,
+  "mutation_cases": [
+    {
+      "error": "bounded Softmax-table receipt statement_commitment drift",
+      "name": "table_statement_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt public_instance_commitment drift",
+      "name": "table_public_instance_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt weight_policy drift",
+      "name": "table_weight_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt weight_table_commitment drift",
+      "name": "table_weight_table_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt score_scale drift",
+      "name": "table_score_scale_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt score_gap_clip drift",
+      "name": "table_score_gap_clip_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt attention_outputs drift",
+      "name": "bounded_softmax_table_attention_outputs_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt outputs_commitment drift",
+      "name": "table_outputs_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt score_rows drift",
+      "name": "table_score_row_count_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt final_kv_cache_commitment drift",
+      "name": "table_final_kv_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt target_id drift",
+      "name": "table_target_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt required_backend_version drift",
+      "name": "table_backend_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt proof_size_bytes drift",
+      "name": "proof_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt envelope_size_bytes drift",
+      "name": "envelope_size_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_exact_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first_blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "bounded Softmax-table receipt schema drift: extra=['unexpected'] missing=[]",
+      "name": "receipt_unknown_field_injection",
+      "rejected": true
+    },
+    {
+      "error": "unknown field(s): ['unexpected']",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
+  "non_claims": [
+    "not exact Softmax attention",
+    "not exp/div Softmax semantics",
+    "not full autoregressive inference",
+    "not recursive verification or PCD",
+    "not a long-context benchmark",
+    "not a public performance benchmark row",
+    "not a Starknet deployment result",
+    "not AIR-private lookup arguments"
+  ],
+  "schema": "zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-v1",
+  "source_issue": 453,
+  "timing_policy": "single_local_dev_profile_engineering_only_not_public_benchmark",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_d16_bounded_softmax_table_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_bounded_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_d16_bounded_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_bounded_softmax_table_native_gate",
+    "just lib",
+    "just gate-fast",
+    "just gate"
+  ]
+}
