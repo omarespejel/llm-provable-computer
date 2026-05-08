@@ -12,7 +12,7 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.sources = gate.load_sources()
         cls.envelopes = gate.load_envelopes()
-        cls.result = gate.build_base_receipt(cls.sources)
+        cls.result = gate.build_base_receipt(cls.sources, cls.envelopes)
         cls.result["mutation_results"] = [
             {"name": name, "rejected": True, "error": "covered by mutation-specific unit tests"}
             for name in gate.EXPECTED_MUTATION_NAMES
@@ -54,6 +54,8 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             self.assertEqual(len(denominators), profile["head_count"] * profile["sequence_length_per_head"])
             self.assertTrue(all(item["denominator"] > 0 for item in denominators))
             self.assertLess(profile["max_observed_division_error_decimal"], 1.0)
+            self.assertRegex(profile["fused_envelope_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
+            self.assertRegex(profile["fused_proof_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
 
     def test_output_index_mapping_uses_input_steps_not_naive_layout(self):
         two_map = gate.output_index_by_head_step(self.sources["two_head"])
@@ -95,36 +97,22 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         four_head_run_gate.assert_called_once_with()
         self.assertEqual(result["decision"], gate.DECISION)
 
-    def test_fused_proof_tamper_requests_profile_specific_native_validation(self):
-        native_cases = [case for case in gate.mutation_cases(self.result, self.sources, self.envelopes) if case[4]]
+    def test_fused_proof_tamper_rejects_without_native_verifier(self):
+        proof_tamper_cases = [
+            case for case in gate.mutation_cases(self.result, self.sources, self.envelopes) if "proof_byte_tamper" in case[0]
+        ]
         self.assertEqual(
-            [(case[0], sorted(case[4])) for case in native_cases],
-            [
-                ("fused_two_head_proof_byte_tamper", ["two_head"]),
-                ("fused_four_head_proof_byte_tamper", ["four_head"]),
-            ],
+            [case[0] for case in proof_tamper_cases],
+            ["fused_two_head_proof_byte_tamper", "fused_four_head_proof_byte_tamper"],
         )
-        calls: list[tuple[str, bool]] = []
-
-        def reject_two(_envelope, _source, *, run_native):
-            calls.append(("two_head", run_native))
-            raise RuntimeError("mock native verifier rejected tampered two-head proof")
-
-        def reject_four(_envelope, _source, *, run_native):
-            calls.append(("four_head", run_native))
-            raise RuntimeError("mock native verifier rejected tampered four-head proof")
-
-        two_case, four_case = native_cases
-        with mock.patch.object(gate.two_head_fused_gate, "validate_fused_envelope", side_effect=reject_two):
-            name, receipt, sources, envelopes, native_profile_ids = two_case
-            with self.assertRaises(gate.MultiheadQuantizedSoftmaxReceiptGateError, msg=name):
+        self.assertTrue(all(not case[4] for case in proof_tamper_cases))
+        for name, receipt, sources, envelopes, native_profile_ids in proof_tamper_cases:
+            with self.assertRaisesRegex(
+                gate.MultiheadQuantizedSoftmaxReceiptGateError,
+                "kernel contract|kernel_contract",
+                msg=name,
+            ):
                 gate.validate_receipt(receipt, sources, envelopes, native_profile_ids=native_profile_ids)
-        with mock.patch.object(gate.four_head_fused_gate, "validate_fused_envelope", side_effect=reject_four):
-            name, receipt, sources, envelopes, native_profile_ids = four_case
-            with self.assertRaises(gate.MultiheadQuantizedSoftmaxReceiptGateError, msg=name):
-                gate.validate_receipt(receipt, sources, envelopes, native_profile_ids=native_profile_ids)
-        self.assertEqual(calls[0], ("two_head", True))
-        self.assertEqual(calls[-1], ("four_head", True))
 
     def test_validate_result_defaults_to_structural_validation_only(self):
         with mock.patch.object(gate, "load_sources", return_value=self.sources):
@@ -154,17 +142,29 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         source = copy.deepcopy(self.sources["two_head"])
         source["score_rows"][0]["weight_denominator"] = 0
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|denominator"):
-            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+            gate.validate_quantized_kernel_for_profile(
+                gate.PROFILE_BY_ID["two_head"],
+                source,
+                self.envelopes["two_head"],
+            )
 
         source = copy.deepcopy(self.sources["two_head"])
         source["score_rows"][0]["output_remainder"][0] = 999
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|quotient|remainder"):
-            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+            gate.validate_quantized_kernel_for_profile(
+                gate.PROFILE_BY_ID["two_head"],
+                source,
+                self.envelopes["two_head"],
+            )
 
         source = copy.deepcopy(self.sources["two_head"])
         source["score_rows"][0]["candidate_position"] = source["score_rows"][0]["token_position"] + 1
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|causal mask"):
-            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+            gate.validate_quantized_kernel_for_profile(
+                gate.PROFILE_BY_ID["two_head"],
+                source,
+                self.envelopes["two_head"],
+            )
 
         source = copy.deepcopy(self.sources["two_head"])
         head_step = (source["score_rows"][0]["head_index"], source["score_rows"][0]["step_index"])
@@ -172,7 +172,11 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             if (row["head_index"], row["step_index"]) == head_step:
                 row["token_position"] += 1
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|token-position"):
-            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+            gate.validate_quantized_kernel_for_profile(
+                gate.PROFILE_BY_ID["two_head"],
+                source,
+                self.envelopes["two_head"],
+            )
 
     def test_rejects_coherent_output_vector_truncation(self):
         source = copy.deepcopy(self.sources["two_head"])
@@ -181,7 +185,11 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         row["output_remainder"] = row["output_remainder"][:-1]
         row["weighted_numerator"] = row["weighted_numerator"][:-1]
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|vector length"):
-            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+            gate.validate_quantized_kernel_for_profile(
+                gate.PROFILE_BY_ID["two_head"],
+                source,
+                self.envelopes["two_head"],
+            )
 
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -302,10 +302,11 @@ This repository currently has three live lanes.
     the two-head and four-head fused native Stwo routes. The gate checks head
     counts `[2, 4]`, `312` total lookup claims / score rows, `384` trace rows,
     `102976` fused proof bytes across profiles, output indices derived from
-    statement `input_steps` order, and rejects `43 / 43` semantic/proof
-    mutations. This is exact for the pinned integer table/floor-division kernel
-    across checked multi-head fixtures, not real-valued Softmax, full inference,
-    long-context inference, public benchmark evidence, or recursion/PCD; see
+    statement `input_steps` order, fused envelope/proof-byte commitments, and
+    rejects `51 / 51` semantic/proof mutations. This is exact for the pinned
+    integer table/floor-division kernel across checked multi-head fixtures, not
+    real-valued Softmax, full inference, long-context inference, public
+    benchmark evidence, or recursion/PCD; see
     `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for eight

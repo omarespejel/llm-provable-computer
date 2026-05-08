@@ -339,7 +339,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "0c3c3a1b144bb9f463713409b7ab0bca04033455",
+  "git_commit": "c564fa153cdb1af2a68d434ad318eeceb5be89a1",
   "metrics": {
     "multihead_quantized_softmax_fused_proof_size_bytes_sum": 102976,
     "multihead_quantized_softmax_head_counts_checked": [
@@ -401,6 +401,14 @@
     "mutations_checked": 51,
     "mutations_rejected": 51,
     "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+    "profile_fused_envelope_commitments": [
+      "blake2b-256:0e7aa999643e024087c7fea479d3b66b2762f2212419c840cfdde048f7bcaea4",
+      "blake2b-256:b7d589848fef687ff8224d676d5509d8a5e68d4b83f071b594ce50ced10f4fd4"
+    ],
+    "profile_fused_proof_commitments": [
+      "blake2b-256:baec9f001c631451517360f74920074302ad94bbb144845992fdc0b003b1a6a9",
+      "blake2b-256:01e2b9f9a17f0fc510f7dea46b839f17ac2119275002824f5abde00cc085420b"
+    ],
     "profile_output_index_policies": [
       "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
       "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout"
@@ -970,6 +978,14 @@
       "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_TWO_AND_FOUR_HEAD_FIXTURES",
       "lookup_claims_total": 312,
       "max_fused_proof_size_bytes": 53468,
+      "profile_fused_envelope_commitments": [
+        "blake2b-256:0e7aa999643e024087c7fea479d3b66b2762f2212419c840cfdde048f7bcaea4",
+        "blake2b-256:b7d589848fef687ff8224d676d5509d8a5e68d4b83f071b594ce50ced10f4fd4"
+      ],
+      "profile_fused_proof_commitments": [
+        "blake2b-256:baec9f001c631451517360f74920074302ad94bbb144845992fdc0b003b1a6a9",
+        "blake2b-256:01e2b9f9a17f0fc510f7dea46b839f17ac2119275002824f5abde00cc085420b"
+      ],
       "profile_statement_commitments": [
         "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b",
         "blake2b-256:c0fe8e31be336f35dd021bc16d35674750456e17b8cd52dca5718a820aef9db6"
@@ -1086,7 +1102,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:7c9115b2863a487ae0b2b96df0a4e101f1434b43a9a2a2d540c7b917c8db5ddf",
+  "selector_commitment": "blake2b-256:bbd993ae6e8fe24c58d43a71339976eee6e7cce777cfa44e19fbc9f18de6992e",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

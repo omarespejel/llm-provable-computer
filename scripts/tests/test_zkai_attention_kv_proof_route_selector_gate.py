@@ -132,6 +132,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["max_fused_proof_size_bytes"], 53468)
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["real_softmax_status"], GATE.MULTIHEAD_QUANTIZED_SOFTMAX.REAL_SOFTMAX_STATUS)
         self.assertIn("input_steps order", payload["multihead_quantized_softmax_receipt"]["output_order_policy"])
+        self.assertEqual(len(payload["multihead_quantized_softmax_receipt"]["profile_fused_envelope_commitments"]), 2)
+        self.assertEqual(len(payload["multihead_quantized_softmax_receipt"]["profile_fused_proof_commitments"]), 2)
+        self.assertTrue(
+            all(
+                commitment.startswith("blake2b-256:")
+                for commitment in payload["multihead_quantized_softmax_receipt"]["profile_fused_proof_commitments"]
+            )
+        )
         self.assertEqual(
             payload["multihead_quantized_softmax_receipt"]["mutations_checked"],
             GATE.MULTIHEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT,

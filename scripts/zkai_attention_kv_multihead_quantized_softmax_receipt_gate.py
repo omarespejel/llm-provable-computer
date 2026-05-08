@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import copy
 import csv
+import hashlib
 import json
 import pathlib
 import sys
@@ -243,6 +244,23 @@ def load_envelopes() -> dict[str, dict[str, Any]]:
     return {profile.profile_id: fused_envelope(profile) for profile in PROFILES}
 
 
+def blake2b256(data: bytes) -> str:
+    return "blake2b-256:" + hashlib.blake2b(data, digest_size=32).hexdigest()
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def proof_bytes(envelope: dict[str, Any]) -> bytes:
+    proof = envelope.get("proof")
+    if not isinstance(proof, list):
+        raise MultiheadQuantizedSoftmaxReceiptGateError("fused envelope proof must be a byte list")
+    if any(not isinstance(byte, int) or isinstance(byte, bool) or byte < 0 or byte > 255 for byte in proof):
+        raise MultiheadQuantizedSoftmaxReceiptGateError("fused envelope proof byte out of range")
+    return bytes(proof)
+
+
 def validate_source_profile(profile: Profile, source: dict[str, Any]) -> None:
     try:
         profile.fused_gate.SOURCE_INPUT_MODULE.validate_payload(source)
@@ -319,7 +337,7 @@ def rows_by_head_step(rows: list[dict[str, Any]]) -> dict[tuple[int, int], list[
     return grouped
 
 
-def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, Any]) -> dict[str, Any]:
+def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, Any], envelope: dict[str, Any]) -> dict[str, Any]:
     validate_source_profile(profile, source)
     table = table_by_gap(source)
     rows = source.get("score_rows")
@@ -439,13 +457,18 @@ def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, An
         "fused_statement_version": profile.fused_gate.FUSED_STATEMENT_VERSION,
         "fused_target_id": profile.fused_gate.FUSED_TARGET_ID,
         "fused_verifier_domain": profile.fused_gate.FUSED_VERIFIER_DOMAIN,
+        "fused_envelope_commitment": blake2b256(canonical_json_bytes(envelope)),
+        "fused_proof_commitment": blake2b256(proof_bytes(envelope)),
         "evidence": profile.evidence,
         "fused_artifact": profile.fused_artifact,
     }
 
 
-def profile_metrics(sources: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    return [validate_quantized_kernel_for_profile(profile, sources[profile.profile_id]) for profile in PROFILES]
+def profile_metrics(sources: dict[str, dict[str, Any]], envelopes: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        validate_quantized_kernel_for_profile(profile, sources[profile.profile_id], envelopes[profile.profile_id])
+        for profile in PROFILES
+    ]
 
 
 def aggregate_metrics(profiles: list[dict[str, Any]]) -> dict[str, Any]:
@@ -470,8 +493,8 @@ def aggregate_metrics(profiles: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def kernel_contract(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    profiles = profile_metrics(sources)
+def kernel_contract(sources: dict[str, dict[str, Any]], envelopes: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    profiles = profile_metrics(sources, envelopes)
     return {
         "kernel_name": KERNEL_NAME,
         "kernel_status": KERNEL_STATUS,
@@ -504,8 +527,12 @@ def kernel_contract(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def validate_kernel_contract(contract: dict[str, Any], sources: dict[str, dict[str, Any]]) -> None:
-    if contract != kernel_contract(sources):
+def validate_kernel_contract(
+    contract: dict[str, Any],
+    sources: dict[str, dict[str, Any]],
+    envelopes: dict[str, dict[str, Any]],
+) -> None:
+    if contract != kernel_contract(sources, envelopes):
         raise MultiheadQuantizedSoftmaxReceiptGateError("kernel contract drift")
 
 
@@ -528,8 +555,8 @@ def validate_profile_envelopes(
             ) from err
 
 
-def build_base_receipt(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    contract = kernel_contract(sources)
+def build_base_receipt(sources: dict[str, dict[str, Any]], envelopes: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    contract = kernel_contract(sources, envelopes)
     metrics = contract["aggregate_metrics"]
     return {
         "schema": SCHEMA,
@@ -593,13 +620,13 @@ def validate_receipt(
     extra = set(receipt) - allowed_keys
     if extra:
         raise MultiheadQuantizedSoftmaxReceiptGateError(f"unknown receipt field(s): {sorted(extra)}")
-    expected = build_base_receipt(sources)
+    expected = build_base_receipt(sources, envelopes)
     for key, expected_value in expected.items():
         if key == "mutation_results":
             continue
         if receipt.get(key) != expected_value:
             raise MultiheadQuantizedSoftmaxReceiptGateError(f"receipt drift for {key}")
-    validate_kernel_contract(receipt.get("kernel_contract"), sources)
+    validate_kernel_contract(receipt.get("kernel_contract"), sources, envelopes)
     validate_profile_envelopes(sources, envelopes, native_profile_ids=native_profile_ids)
     validate_mutation_results(receipt.get("mutation_results"))
 
@@ -700,14 +727,12 @@ def mutation_cases(
     add(
         "fused_two_head_proof_byte_tamper",
         lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID["two_head"], e["two_head"]),
-        native_profile_ids={"two_head"},
     )
     add("fused_four_head_verifier_domain_relabeling", lambda _r, _s, e: e["four_head"].__setitem__("verifier_domain", "different-domain"))
     add("fused_four_head_statement_version_relabeling", lambda _r, _s, e: e["four_head"].__setitem__("statement_version", "different-statement"))
     add(
         "fused_four_head_proof_byte_tamper",
         lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID["four_head"], e["four_head"]),
-        native_profile_ids={"four_head"},
     )
     add("unknown_receipt_key_injection", lambda r, _s, _e: r.__setitem__("unexpected", "claim smuggling"))
     return cases
@@ -726,13 +751,13 @@ def validate_mutation_results(mutation_results: Any) -> None:
 
 
 def run_gate() -> dict[str, Any]:
-    sources = load_sources()
-    envelopes = load_envelopes()
     # Validate the backing fused proof artifacts, including their native CLI proof verifiers.
     for profile in PROFILES:
         profile.fused_gate.run_gate()
 
-    receipt = build_base_receipt(sources)
+    sources = load_sources()
+    envelopes = load_envelopes()
+    receipt = build_base_receipt(sources, envelopes)
     mutation_results = []
     for name, mutated_receipt, mutated_sources, mutated_envelopes, native_profile_ids in mutation_cases(
         receipt, sources, envelopes
