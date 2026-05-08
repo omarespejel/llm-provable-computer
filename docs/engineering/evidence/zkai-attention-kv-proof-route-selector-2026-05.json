@@ -339,7 +339,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "be362759c52673a25df64aab8d333a5d8f7cfab0",
+  "git_commit": "ee407fbecf2d1710f1bae066867f91dddb2d48fc",
   "metrics": {
     "multihead_quantized_softmax_fused_proof_size_bytes_sum": 102976,
     "multihead_quantized_softmax_head_counts_checked": [
@@ -398,8 +398,8 @@
     "lookup_claims_total": 312,
     "max_fused_proof_size_bytes": 53468,
     "max_observed_division_error_fraction": "55/56",
-    "mutations_checked": 45,
-    "mutations_rejected": 45,
+    "mutations_checked": 47,
+    "mutations_rejected": 47,
     "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
     "profile_output_index_policies": [
       "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
@@ -1086,7 +1086,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:60a0530b4df97a4f93331f0b4b3721e92ea35f4c1a59d93e88e291e34461b423",
+  "selector_commitment": "blake2b-256:11401e5817b1c24f9795eaa560d13c03bda32bc40fe6455d7189c788c588569e",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

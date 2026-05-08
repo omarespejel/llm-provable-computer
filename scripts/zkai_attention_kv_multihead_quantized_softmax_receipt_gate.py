@@ -141,6 +141,7 @@ EXPECTED_MUTATION_NAMES = (
     "source_input_two_head_head_count_drift",
     "source_input_two_head_head_index_relabeling",
     "source_input_two_head_step_index_relabeling",
+    "source_input_two_head_mask_allowed_false",
     "source_input_two_head_denominator_zero",
     "source_input_two_head_selected_score_gap_coherent_drift",
     "source_input_two_head_remainder_drift",
@@ -148,6 +149,7 @@ EXPECTED_MUTATION_NAMES = (
     "source_input_four_head_head_count_drift",
     "source_input_four_head_head_index_relabeling",
     "source_input_four_head_step_index_relabeling",
+    "source_input_four_head_mask_allowed_false",
     "source_input_four_head_denominator_zero",
     "source_input_four_head_selected_score_gap_coherent_drift",
     "source_input_four_head_remainder_drift",
@@ -348,9 +350,10 @@ def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, An
             raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} token-position drift")
         query_token_position = next(iter(token_positions))
         for row in step_rows:
-            if row.get("mask_allowed") not in (True, 1):
-                raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} mask row not allowed")
-            if row["candidate_position"] > query_token_position:
+            expected_mask_allowed = row["candidate_position"] <= query_token_position
+            if row.get("mask_allowed") != expected_mask_allowed:
+                raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} causal mask flag drift")
+            if not expected_mask_allowed:
                 raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} causal mask drift")
             if row["score_gap"] != max_score - row["score"]:
                 raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} score-gap recomputation drift")
@@ -651,6 +654,7 @@ def mutation_cases(
     add("source_input_two_head_head_count_drift", lambda _r, s, e: (s["two_head"].__setitem__("head_count", 3), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_head_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("head_index", 2), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_step_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("step_index", 99), e["two_head"].__setitem__("source_input", s["two_head"])))
+    add("source_input_two_head_mask_allowed_false", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_denominator_zero", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_remainder_drift", lambda _r, s, e: (s["two_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["two_head"].__setitem__("source_input", s["two_head"])))
@@ -658,6 +662,7 @@ def mutation_cases(
     add("source_input_four_head_head_count_drift", lambda _r, s, e: (s["four_head"].__setitem__("head_count", 5), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_head_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("head_index", 4), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_step_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("step_index", 99), e["four_head"].__setitem__("source_input", s["four_head"])))
+    add("source_input_four_head_mask_allowed_false", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_denominator_zero", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_remainder_drift", lambda _r, s, e: (s["four_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["four_head"].__setitem__("source_input", s["four_head"])))
