@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head bounded Softmax-table-plus-LogUp proof objects, and single-head plus multi-head implementation-exact quantized Softmax-table kernel receipts; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, and single-head plus multi-head implementation-exact quantized Softmax-table kernel receipts; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -64,7 +64,7 @@ The current paper package supports these checked claims:
 - Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
 - Do not say the native Stwo bounded weighted attention/KV proof is exact Softmax, long-context inference, full inference, a benchmark row, or recursive/PCD.
 - Do not say the native Stwo bounded Softmax-table or fused LogUp proofs are exact exp/div Softmax, full inference, public benchmark rows, private lookup privacy, recursive aggregation of independent head proofs, or recursive/PCD.
-- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, and four-head fixtures.
+- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, and eight-head fixtures. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
 
 ## Validation Gate
 
@@ -88,6 +88,8 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attent
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json
 python3 scripts/zkai_attention_kv_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv
 python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv
 cargo +nightly-2025-07-14 test --locked attention_kv_native_masked_sequence_proof --lib --features stwo-backend
@@ -101,7 +103,9 @@ cargo +nightly-2025-07-14 test --locked attention_kv_two_head_softmax_table_look
 cargo +nightly-2025-07-14 test --locked attention_kv_d8_fused_softmax_table --lib --features stwo-backend
 cargo +nightly-2025-07-14 test --locked attention_kv_two_head_fused_softmax_table --lib --features stwo-backend
 cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table --lib --features stwo-backend
-python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_two_head_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_d8_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_two_head_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate
+cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_fused_softmax_table --lib --features stwo-backend
+python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_two_head_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_d8_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_two_head_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_eight_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate
 git diff --check
 just gate-fast
 just lib
@@ -114,12 +118,12 @@ The attention/KV lane now has a tiny native Stwo AIR proof for the fixed `d=8`
 causal-prefix masked integer-argmax carried-state surface. The proof checks `52`
 score rows over a `64`-row trace, emits selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, binds ten final KV rows, and has a `24394`-byte proof
-inside a `265791`-byte checked envelope. The route selector now records eight
-proof-backed routes and rejects `55 / 55` checked mutations, including the
-single-head and multi-head implementation-exact quantized Softmax-table
-receipts. External `snarkjs/Groth16` and RISC Zero receipts remain useful
-controls for statement-binding and zkVM semantic transfer, but they are not the
-headline.
+inside a `265791`-byte checked envelope. The route selector now records nine
+proof-backed routes and rejects `60 / 60` checked mutations, including the
+single-head and multi-head implementation-exact quantized Softmax-table receipts
+and the new two-head long-sequence fused Softmax-table/LogUp proof. External
+`snarkjs/Groth16` and RISC Zero receipts remain useful controls for
+statement-binding and zkVM semantic transfer, but they are not the headline.
 
 The first native Stwo scale follow-up now also exists: a sequence-length-16
 profile keeps the same `d=8`, integer-argmax, causal-prefix, public-row
@@ -171,7 +175,18 @@ checked envelope, rejects `30 / 30` gate mutations, and saves `21061` raw bytes
 versus the previous four-head source-plus-sidecar pair (`74529` bytes). This is
 the relevant Stwo-native breakthrough signal for the next transformer/STARK
 paper: table membership no longer has to live as a detached sidecar for the
-checked bounded fixture, even at four heads.
+checked bounded fixture.
+
+That fused route now also survives two harder scale points. The eight-head route
+checks `416` lookup claims over a `512`-row trace with a `60450`-byte raw proof
+inside a `1219007`-byte checked envelope and rejects `16 / 16` gate mutations.
+The two-head long-sequence route keeps `d=8` and two heads fixed, doubles the
+per-head sequence length to sixteen steps, checks `336` lookup claims over a
+`512`-row trace, has a `54234`-byte raw proof inside a `1000098`-byte checked
+envelope, and rejects `16 / 16` gate mutations. Lookup claims grow `3.230769x`
+versus the fixed two-head fused route while raw proof bytes grow `1.095459x`.
+This is sequence-axis proof-existence and byte-accounting evidence, not a public
+long-context benchmark and not a fused-versus-sidecar savings claim.
 
 The latest semantics follow-up also exists: the single-head fused route now has
 an implementation-exact quantized Softmax-table kernel receipt. It keeps the
@@ -195,12 +210,13 @@ another metadata adapter:
    head multiplicity with bounded weighted semantics in one fixed fixture. It is
    not a one-axis scaling claim, not real-valued Softmax, and not head
    aggregation.
-4. Work `#496` next if the goal is semantics at scale: extend the checked
-   multi-head quantized Softmax-table receipt beyond the two-head and four-head
-   fixtures without weakening denominator, remainder, max-score recomputation,
-   output-order, or proof-binding checks.
-5. Work `#486` next if the goal is proof-size scaling: run the controlled head-count grid
-   for bounded Softmax-table + LogUp proof size.
+4. Work the next controlled scale grid if the goal is paper-grade scaling:
+   produce matched head-count and sequence-length profiles with the same
+   semantics and mutation surfaces, so proof-size behavior is not inferred from
+   isolated fixtures.
+5. Work the denominator/rounding audit next if the goal is semantic precision:
+   keep the exact integer Softmax-table kernel pinned while checking zero
+   denominator, output-order, and remainder edge cases across the scale grid.
 6. Treat the external RISC Zero rows as controls and only widen them if they
    remain useful for cross-proof-system carried-state evidence.
 7. Keep real-valued Softmax out of scope unless the native proof actually covers

@@ -3,14 +3,15 @@
 
 This gate consumes the existing source-backed and external proof-backed
 attention/KV evidence and asks which route is usable today. The current answer
-has eight narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
+has nine narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
 integer-argmax attention/KV sequence, one native Stwo proof-backed single-head
 implementation-exact quantized Softmax-table receipt, one native Stwo
 proof-backed multi-head implementation-exact quantized Softmax-table receipt,
-one external snarkjs/Groth16 statement receipt, and four RISC Zero controls that
+one native Stwo two-head long-sequence fused Softmax-table/LogUp proof, one
+external snarkjs/Groth16 statement receipt, and four RISC Zero controls that
 re-execute the transition/sequence semantics in a zkVM. Real-valued Softmax,
-long-context benchmarks, full inference, and recursion/PCD remain explicitly
-outside the current proof route.
+public long-context benchmarks, full inference, and recursion/PCD remain
+explicitly outside the current proof route.
 """
 
 from __future__ import annotations
@@ -47,6 +48,9 @@ QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
 MULTIHEAD_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py"
 )
+LONGSEQ_FUSED_SOFTMAX_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate.py"
+)
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
 )
@@ -81,10 +85,34 @@ MULTIHEAD_QUANTIZED_SOFTMAX_RECEIPT_JSON = (
     / "evidence"
     / "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json"
 )
+LONGSEQ_FUSED_SOFTMAX_JSON = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json"
+)
+LONGSEQ_FUSED_SOFTMAX_SOURCE_INPUT_JSON = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json"
+)
+LONGSEQ_FUSED_SOFTMAX_ENVELOPE_JSON = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json"
+)
 STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES = 1_048_576
 STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES = 1_048_576
 QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
 MULTIHEAD_QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 2_097_152
+LONGSEQ_FUSED_SOFTMAX_MAX_JSON_BYTES = 1_048_576
+LONGSEQ_FUSED_SOFTMAX_SOURCE_INPUT_MAX_JSON_BYTES = 2_097_152
+LONGSEQ_FUSED_SOFTMAX_ENVELOPE_MAX_JSON_BYTES = 4_194_304
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -98,6 +126,7 @@ FIRST_BLOCKER = "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION
 CLAIM_BOUNDARY = (
     "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_"
     "QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_"
+    "AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_"
     "AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
 )
 SOURCE_DATE_EPOCH_DEFAULT = 0
@@ -125,6 +154,10 @@ MULTIHEAD_QUANTIZED_SOFTMAX_ROUTE_ID = (
 )
 MULTIHEAD_QUANTIZED_SOFTMAX_DECISION = (
     "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+)
+LONGSEQ_FUSED_SOFTMAX_ROUTE_ID = "local_stwo_attention_kv_two_head_longseq_fused_bounded_softmax_table_logup_proof"
+LONGSEQ_FUSED_SOFTMAX_DECISION = (
+    "GO_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP"
 )
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
@@ -158,6 +191,13 @@ BASE_ROUTES = (
     {
         "route_id": MULTIHEAD_QUANTIZED_SOFTMAX_ROUTE_ID,
         "status": MULTIHEAD_QUANTIZED_SOFTMAX_DECISION,
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
+    },
+    {
+        "route_id": LONGSEQ_FUSED_SOFTMAX_ROUTE_ID,
+        "status": LONGSEQ_FUSED_SOFTMAX_DECISION,
         "blocker": None,
         "usable_today": True,
         "proof_backed": True,
@@ -210,6 +250,7 @@ EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE = (
     LOCAL_STWO_ROUTE_ID,
     QUANTIZED_SOFTMAX_ROUTE_ID,
     MULTIHEAD_QUANTIZED_SOFTMAX_ROUTE_ID,
+    LONGSEQ_FUSED_SOFTMAX_ROUTE_ID,
     EXTERNAL_SNARK_ROUTE_ID,
     EXTERNAL_ZKVM_ROUTE_ID,
     EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
@@ -257,6 +298,11 @@ EXPECTED_MUTATION_NAMES = (
     "multihead_quantized_softmax_real_softmax_overclaim",
     "multihead_quantized_softmax_profile_count_drift",
     "multihead_quantized_softmax_output_mapping_drift",
+    "longseq_fused_softmax_route_removed",
+    "longseq_fused_softmax_decision_drift",
+    "longseq_fused_softmax_lookup_claims_drift",
+    "longseq_fused_softmax_exact_softmax_overclaim",
+    "longseq_fused_softmax_mutation_rejections_drift",
     "external_snark_route_removed",
     "external_snark_receipt_decision_drift",
     "external_snark_receipt_mutation_rejections_drift",
@@ -442,6 +488,22 @@ def _load_multihead_quantized_softmax_receipt_module():
     return module
 
 
+def _load_longseq_fused_softmax_module():
+    """Load the two-head long-sequence fused Softmax-table gate."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate",
+        LONGSEQ_FUSED_SOFTMAX_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(
+            f"failed to load long-sequence fused Softmax-table gate: {LONGSEQ_FUSED_SOFTMAX_SCRIPT}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
 SNARK = _load_snark_module()
 RISC0 = _load_risc0_module()
@@ -451,6 +513,7 @@ RISC0_WIDE_MASKED_SEQUENCE = _load_risc0_wide_masked_sequence_module()
 STWO_NATIVE_MASKED_SEQUENCE = _load_stwo_native_masked_sequence_module()
 QUANTIZED_SOFTMAX = _load_quantized_softmax_receipt_module()
 MULTIHEAD_QUANTIZED_SOFTMAX = _load_multihead_quantized_softmax_receipt_module()
+LONGSEQ_FUSED_SOFTMAX = _load_longseq_fused_softmax_module()
 
 
 def validate_stwo_native_masked_sequence_payload(payload: Any, label: str) -> None:
@@ -702,6 +765,54 @@ def load_multihead_quantized_softmax_receipt_payload(
     """Load the multi-head implementation-exact quantized Softmax receipt payload."""
 
     return copy.deepcopy(_load_multihead_quantized_softmax_receipt_payload(path, run_native))
+
+
+@functools.lru_cache(maxsize=2)
+def _load_longseq_fused_softmax_payload(path: pathlib.Path, run_native: bool) -> dict[str, Any]:
+    """Load and validate the two-head long-sequence fused Softmax-table gate payload."""
+
+    raw = read_bounded_text(
+        path,
+        LONGSEQ_FUSED_SOFTMAX_MAX_JSON_BYTES,
+        "two-head long-sequence fused Softmax-table gate evidence",
+    )
+    source_raw = read_bounded_text(
+        LONGSEQ_FUSED_SOFTMAX_SOURCE_INPUT_JSON,
+        LONGSEQ_FUSED_SOFTMAX_SOURCE_INPUT_MAX_JSON_BYTES,
+        "two-head long-sequence source input evidence",
+    )
+    envelope_raw = read_bounded_text(
+        LONGSEQ_FUSED_SOFTMAX_ENVELOPE_JSON,
+        LONGSEQ_FUSED_SOFTMAX_ENVELOPE_MAX_JSON_BYTES,
+        "two-head long-sequence fused Softmax-table proof envelope",
+    )
+    try:
+        payload = json.loads(raw)
+        source_input = json.loads(source_raw)
+        envelope = json.loads(envelope_raw)
+        LONGSEQ_FUSED_SOFTMAX.validate_result(payload, envelope, source_input)
+        if run_native:
+            LONGSEQ_FUSED_SOFTMAX.validate_fused_envelope(
+                envelope,
+                source_input,
+                run_native=True,
+                native_envelope_bytes=envelope_raw.encode("utf-8"),
+            )
+    except LONGSEQ_FUSED_SOFTMAX.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError as error:
+        raise AttentionKvRouteSelectorError(f"two-head long-sequence fused Softmax-table drift: {error}") from error
+    except Exception as error:
+        raise AttentionKvRouteSelectorError(f"two-head long-sequence fused Softmax-table malformed: {error}") from error
+    return payload
+
+
+def load_longseq_fused_softmax_payload(
+    path: pathlib.Path = LONGSEQ_FUSED_SOFTMAX_JSON,
+    *,
+    run_native: bool = False,
+) -> dict[str, Any]:
+    """Load the two-head long-sequence fused Softmax-table gate payload."""
+
+    return copy.deepcopy(_load_longseq_fused_softmax_payload(path, run_native))
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -1010,6 +1121,50 @@ def multihead_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any])
     }
 
 
+def longseq_fused_softmax_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the two-head long-sequence fused Softmax-table route fields."""
+
+    return {
+        "schema": payload["schema"],
+        "decision": payload["decision"],
+        "route_id": payload["route_id"],
+        "result": "GO",
+        "claim_boundary": payload["claim_boundary"],
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json",
+        "proof_system": "Stwo",
+        "proof_backend": "stwo",
+        "fusion_status": payload["fusion_status"],
+        "non_fused_status": payload["non_fused_status"],
+        "source_head_count": payload["source_head_count"],
+        "sequence_length_per_head": 16,
+        "lookup_claims": payload["lookup_claims"],
+        "score_rows": payload["lookup_claims"],
+        "trace_rows": payload["trace_rows"],
+        "table_rows": payload["table_rows"],
+        "source_proof_size_bytes": payload["source_proof_size_bytes"],
+        "source_envelope_size_bytes": payload["source_envelope_size_bytes"],
+        "source_plus_sidecar_raw_proof_bytes": payload["source_plus_sidecar_raw_proof_bytes"],
+        "fused_proof_size_bytes": payload["fused_proof_size_bytes"],
+        "fused_envelope_size_bytes": payload["fused_envelope_size_bytes"],
+        "fused_over_source_proof_bytes": payload["fused_over_source_proof_bytes"],
+        "fused_saves_vs_source_plus_sidecar_bytes": payload["fused_saves_vs_source_plus_sidecar_bytes"],
+        "fused_to_source_plus_sidecar_ratio": payload["fused_to_source_plus_sidecar_ratio"],
+        "source_statement_commitment": payload["source_statement_commitment"],
+        "source_public_instance_commitment": payload["source_public_instance_commitment"],
+        "source_score_row_commitment": payload["source_score_row_commitment"],
+        "source_final_kv_cache_commitment": payload["source_final_kv_cache_commitment"],
+        "source_outputs_commitment": payload["source_outputs_commitment"],
+        "source_weight_table_commitment": payload["source_weight_table_commitment"],
+        "fused_envelope_commitment": payload["fused_envelope_commitment"],
+        "fused_proof_commitment": payload["fused_proof_commitment"],
+        "mutations_checked": payload["mutations_checked"],
+        "mutations_rejected": payload["mutations_rejected"],
+        "all_mutations_rejected": payload["mutations_checked"] == payload["mutations_rejected"],
+        "timing_policy": payload["timing_policy"],
+        "non_claims": payload["non_claims"],
+    }
+
+
 def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
@@ -1024,6 +1179,9 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     )
     multihead_quantized_softmax = multihead_quantized_softmax_receipt_summary(
         load_multihead_quantized_softmax_receipt_payload(run_native=run_native)
+    )
+    longseq_fused_softmax = longseq_fused_softmax_summary(
+        load_longseq_fused_softmax_payload(run_native=run_native)
     )
     routes = [dict(route) for route in BASE_ROUTES]
     local_stwo_route = route_candidate_by_id(routes, LOCAL_STWO_ROUTE_ID)
@@ -1090,6 +1248,28 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     multihead_quantized_softmax_route["profile_fused_proof_commitments"] = multihead_quantized_softmax[
         "profile_fused_proof_commitments"
     ]
+    longseq_fused_softmax_route = route_candidate_by_id(routes, LONGSEQ_FUSED_SOFTMAX_ROUTE_ID)
+    longseq_fused_softmax_route["evidence"] = longseq_fused_softmax["evidence"]
+    longseq_fused_softmax_route["proof_system"] = longseq_fused_softmax["proof_system"]
+    longseq_fused_softmax_route["proof_backend"] = longseq_fused_softmax["proof_backend"]
+    longseq_fused_softmax_route["fusion_status"] = longseq_fused_softmax["fusion_status"]
+    longseq_fused_softmax_route["non_fused_status"] = longseq_fused_softmax["non_fused_status"]
+    longseq_fused_softmax_route["source_head_count"] = longseq_fused_softmax["source_head_count"]
+    longseq_fused_softmax_route["sequence_length_per_head"] = longseq_fused_softmax["sequence_length_per_head"]
+    longseq_fused_softmax_route["lookup_claims"] = longseq_fused_softmax["lookup_claims"]
+    longseq_fused_softmax_route["trace_rows"] = longseq_fused_softmax["trace_rows"]
+    longseq_fused_softmax_route["table_rows"] = longseq_fused_softmax["table_rows"]
+    longseq_fused_softmax_route["source_proof_size_bytes"] = longseq_fused_softmax["source_proof_size_bytes"]
+    longseq_fused_softmax_route["fused_proof_size_bytes"] = longseq_fused_softmax["fused_proof_size_bytes"]
+    longseq_fused_softmax_route["fused_envelope_size_bytes"] = longseq_fused_softmax["fused_envelope_size_bytes"]
+    longseq_fused_softmax_route["source_statement_commitment"] = longseq_fused_softmax["source_statement_commitment"]
+    longseq_fused_softmax_route["source_weight_table_commitment"] = longseq_fused_softmax[
+        "source_weight_table_commitment"
+    ]
+    longseq_fused_softmax_route["fused_envelope_commitment"] = longseq_fused_softmax[
+        "fused_envelope_commitment"
+    ]
+    longseq_fused_softmax_route["fused_proof_commitment"] = longseq_fused_softmax["fused_proof_commitment"]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
     snark_route["proof_system"] = snark["proof_system"]
@@ -1188,6 +1368,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     stwo_native_masked_sequence_payload = load_stwo_native_masked_sequence_payload()
     quantized_softmax_payload = load_quantized_softmax_receipt_payload(run_native=run_native)
     multihead_quantized_softmax_payload = load_multihead_quantized_softmax_receipt_payload(run_native=run_native)
+    longseq_fused_softmax_payload = load_longseq_fused_softmax_payload(run_native=run_native)
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
@@ -1199,6 +1380,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     multihead_quantized_softmax_receipt = multihead_quantized_softmax_receipt_summary(
         multihead_quantized_softmax_payload
     )
+    longseq_fused_softmax_receipt = longseq_fused_softmax_summary(longseq_fused_softmax_payload)
     routes = route_inventory(run_native=run_native)
     proof_backed_routes_available = [
         route["route_id"]
@@ -1225,6 +1407,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
         "native_stwo_masked_sequence_receipt": stwo_native_masked_sequence_receipt,
         "quantized_softmax_receipt": quantized_softmax_receipt,
         "multihead_quantized_softmax_receipt": multihead_quantized_softmax_receipt,
+        "longseq_fused_softmax_receipt": longseq_fused_softmax_receipt,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
@@ -1256,6 +1439,14 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             ),
             "multihead_quantized_softmax_max_observed_division_error_fraction": (
                 multihead_quantized_softmax_receipt["max_observed_division_error_fraction"]
+            ),
+            "longseq_fused_softmax_lookup_claims": longseq_fused_softmax_receipt["lookup_claims"],
+            "longseq_fused_softmax_trace_rows": longseq_fused_softmax_receipt["trace_rows"],
+            "longseq_fused_softmax_fused_proof_size_bytes": (
+                longseq_fused_softmax_receipt["fused_proof_size_bytes"]
+            ),
+            "longseq_fused_softmax_fused_envelope_size_bytes": (
+                longseq_fused_softmax_receipt["fused_envelope_size_bytes"]
             ),
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
@@ -1294,6 +1485,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
             "quantized_softmax_receipt": payload["quantized_softmax_receipt"],
             "multihead_quantized_softmax_receipt": payload["multihead_quantized_softmax_receipt"],
+            "longseq_fused_softmax_receipt": payload["longseq_fused_softmax_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -1378,6 +1570,20 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["multihead_quantized_softmax_receipt"]["profile_output_index_policies"][1] = (
             "step_index_times_head_count_plus_head"
         )
+    elif name == "longseq_fused_softmax_route_removed":
+        longseq_route = route_candidate_by_id(out["route_candidates"], LONGSEQ_FUSED_SOFTMAX_ROUTE_ID)
+        longseq_route["status"] = "NO_GO_MISSING_TWO_HEAD_LONGSEQUENCE_FUSED_SOFTMAX_TABLE_PROOF"
+        longseq_route["usable_today"] = False
+        longseq_route["proof_backed"] = False
+        out["proof_backed_routes_available"] = proof_routes_except(LONGSEQ_FUSED_SOFTMAX_ROUTE_ID)
+    elif name == "longseq_fused_softmax_decision_drift":
+        out["longseq_fused_softmax_receipt"]["decision"] = "NO_GO_MISSING_TWO_HEAD_LONGSEQUENCE_FUSED_SOFTMAX_TABLE_PROOF"
+    elif name == "longseq_fused_softmax_lookup_claims_drift":
+        out["longseq_fused_softmax_receipt"]["lookup_claims"] = 104
+    elif name == "longseq_fused_softmax_exact_softmax_overclaim":
+        out["longseq_fused_softmax_receipt"]["claim_boundary"] = "GO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_BENCHMARK"
+    elif name == "longseq_fused_softmax_mutation_rejections_drift":
+        out["longseq_fused_softmax_receipt"]["mutations_rejected"] -= 1
     elif name == "external_snark_route_removed":
         snark_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_SNARK_ROUTE_ID)
         snark_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
@@ -1871,6 +2077,61 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
             raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax {key} drift")
 
 
+def validate_longseq_fused_softmax_receipt(summary: Any) -> None:
+    """Validate the two-head long-sequence fused Softmax-table route summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax receipt must be an object")
+    expected = longseq_fused_softmax_summary(load_longseq_fused_softmax_payload())
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax receipt drift")
+    if summary["decision"] != LONGSEQ_FUSED_SOFTMAX_DECISION:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax decision drift")
+    if summary["route_id"] != LONGSEQ_FUSED_SOFTMAX_ROUTE_ID:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax route drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax result drift")
+    if summary["proof_system"] != "Stwo" or summary["proof_backend"] != "stwo":
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax backend drift")
+    if summary["source_head_count"] != 2 or summary["sequence_length_per_head"] != 16:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax shape drift")
+    if summary["lookup_claims"] != 336 or summary["score_rows"] != 336:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax lookup drift")
+    if summary["trace_rows"] != 512 or summary["table_rows"] != 9:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax trace/table drift")
+    if summary["source_proof_size_bytes"] != 52366 or summary["fused_proof_size_bytes"] != 54234:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax proof-size drift")
+    if summary["fused_envelope_size_bytes"] != 1000098:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax envelope-size drift")
+    if summary["source_plus_sidecar_raw_proof_bytes"] != 0:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax comparator drift")
+    if summary["fused_saves_vs_source_plus_sidecar_bytes"] is not None:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax savings overclaim")
+    if summary["fused_to_source_plus_sidecar_ratio"] is not None:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax ratio overclaim")
+    if summary["mutations_checked"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax mutation count drift")
+    if summary["mutations_rejected"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax mutation rejection drift")
+    if summary["all_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax fail-closed drift")
+    for key in (
+        "source_statement_commitment",
+        "source_public_instance_commitment",
+        "source_score_row_commitment",
+        "source_final_kv_cache_commitment",
+        "source_outputs_commitment",
+        "source_weight_table_commitment",
+        "fused_envelope_commitment",
+        "fused_proof_commitment",
+    ):
+        commitment = summary.get(key)
+        if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+            raise AttentionKvRouteSelectorError(f"long-sequence fused Softmax {key} drift")
+    if not isinstance(summary.get("non_claims"), list) or "not a long-context benchmark" not in summary["non_claims"]:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax non-claim drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -1893,6 +2154,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "native_stwo_masked_sequence_receipt",
         "quantized_softmax_receipt",
         "multihead_quantized_softmax_receipt",
+        "longseq_fused_softmax_receipt",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -1923,6 +2185,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_stwo_native_masked_sequence_receipt(payload.get("native_stwo_masked_sequence_receipt"))
     validate_quantized_softmax_receipt(payload.get("quantized_softmax_receipt"))
     validate_multihead_quantized_softmax_receipt(payload.get("multihead_quantized_softmax_receipt"))
+    validate_longseq_fused_softmax_receipt(payload.get("longseq_fused_softmax_receipt"))
     validate_routes(payload.get("route_candidates"))
     if tuple(payload.get("proof_backed_routes_available") or ()) != EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
@@ -1955,6 +2218,14 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         ),
         "multihead_quantized_softmax_max_observed_division_error_fraction": (
             payload["multihead_quantized_softmax_receipt"]["max_observed_division_error_fraction"]
+        ),
+        "longseq_fused_softmax_lookup_claims": payload["longseq_fused_softmax_receipt"]["lookup_claims"],
+        "longseq_fused_softmax_trace_rows": payload["longseq_fused_softmax_receipt"]["trace_rows"],
+        "longseq_fused_softmax_fused_proof_size_bytes": (
+            payload["longseq_fused_softmax_receipt"]["fused_proof_size_bytes"]
+        ),
+        "longseq_fused_softmax_fused_envelope_size_bytes": (
+            payload["longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"]
         ),
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
@@ -2000,6 +2271,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "native_stwo_masked_sequence_receipt": payload["native_stwo_masked_sequence_receipt"],
             "quantized_softmax_receipt": payload["quantized_softmax_receipt"],
             "multihead_quantized_softmax_receipt": payload["multihead_quantized_softmax_receipt"],
+            "longseq_fused_softmax_receipt": payload["longseq_fused_softmax_receipt"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],

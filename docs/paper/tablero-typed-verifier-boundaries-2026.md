@@ -883,13 +883,14 @@ score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
 proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
-The route selector now records eight proof-backed routes and rejects `55 / 55`
+The route selector now records nine proof-backed routes and rejects `60 / 60`
 route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and
-claim-boundary mutations. This includes single-head plus two-head/four-head
-implementation-exact quantized Softmax-table receipts over the pinned integer
-table/floor-division kernel, not real-valued exp/div Softmax. It is anchored to
+claim-boundary mutations. This includes single-head plus two-head/four-head/
+eight-head implementation-exact quantized Softmax-table receipts over the pinned
+integer table/floor-division kernel, plus a separate two-head long-sequence
+fused Softmax-table/LogUp proof, not real-valued exp/div Softmax. It is anchored to
 `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
@@ -946,21 +947,30 @@ coexist inside one native Stwo proof surface. It is anchored to
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`.
 
-The current strongest native attention/KV follow-up fuses bounded Softmax-table
+The current strongest native attention/KV follow-ups fuse bounded Softmax-table
 attention arithmetic and LogUp table-membership into one Stwo proof object. The
 four-head route checks `208` lookup claims against a statement-bound nine-row
 table, has a `53468`-byte raw proof inside a `797717`-byte checked envelope,
 rejects `30 / 30` relabeling, split-route injection, metric-smuggling,
 proof-byte, unknown-field, and exact-Softmax-overclaim mutations, and uses
 `0.7174120141153109x` of the previous four-head arithmetic-plus-sidecar raw
-proof budget (`74529` bytes). This remains supporting transformer/STARK evidence,
-not a Tablero performance row: it is bounded table attention, not exact
-real-valued Softmax, not exp/div semantics, not implementation-exact model
-Softmax, not full inference, not long-context inference, not on-chain verifier
-evidence, not a public benchmark row, and not recursion/PCD. It is anchored to
-`docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
+proof budget (`74529` bytes). The eight-head route then checks `416` lookup
+claims over a `512`-row trace with a `60450`-byte raw proof and `16 / 16`
+mutation rejections. A separate two-head long-sequence route keeps `d=8` and
+two heads fixed while increasing per-head sequence length to sixteen steps; it
+checks `336` lookup claims over a `512`-row trace, has a `54234`-byte raw proof
+inside a `1000098`-byte checked envelope, and rejects `16 / 16` mutations.
+Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw
+proof bytes grow `1.095459x`. This remains supporting transformer/STARK
+evidence, not a Tablero performance row: it is bounded table attention, not
+exact real-valued Softmax, not exp/div semantics, not implementation-exact model
+Softmax, not full inference, not a public long-context benchmark, not on-chain
+verifier evidence, not a public benchmark row, and not recursion/PCD. It is
+anchored to
+`docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`,
+`docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`,
 and
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`.
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.
 
 A follow-up matched-block feasibility probe prevents this result from being
 overstated. It asks whether the same checked Stwo surface can honestly serve as

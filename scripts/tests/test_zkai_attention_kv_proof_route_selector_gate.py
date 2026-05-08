@@ -22,6 +22,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_selector_revalidates_quantized_receipts_with_native_backing_proofs(self) -> None:
         GATE._load_quantized_softmax_receipt_payload.cache_clear()
         GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+        GATE._load_longseq_fused_softmax_payload.cache_clear()
         try:
             with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
                 GATE.load_quantized_softmax_receipt_payload(run_native=True)
@@ -32,13 +33,19 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
                 GATE.load_multihead_quantized_softmax_receipt_payload(run_native=True)
             validate_multihead.assert_called_once()
             self.assertEqual(validate_multihead.call_args.kwargs, {"run_native": True})
+
+            with mock.patch.object(GATE.LONGSEQ_FUSED_SOFTMAX, "validate_fused_envelope") as validate_longseq:
+                GATE.load_longseq_fused_softmax_payload(run_native=True)
+            self.assertTrue(any(call.kwargs.get("run_native") is True for call in validate_longseq.call_args_list))
         finally:
             GATE._load_quantized_softmax_receipt_payload.cache_clear()
             GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+            GATE._load_longseq_fused_softmax_payload.cache_clear()
 
     def test_selector_default_receipt_loaders_are_structural_only(self) -> None:
         GATE._load_quantized_softmax_receipt_payload.cache_clear()
         GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+        GATE._load_longseq_fused_softmax_payload.cache_clear()
         try:
             with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
                 GATE.load_quantized_softmax_receipt_payload()
@@ -49,14 +56,19 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
                 GATE.load_multihead_quantized_softmax_receipt_payload()
             validate_multihead.assert_called_once()
             self.assertEqual(validate_multihead.call_args.kwargs, {"run_native": False})
+
+            with mock.patch.object(GATE.LONGSEQ_FUSED_SOFTMAX, "validate_fused_envelope") as validate_longseq:
+                GATE.load_longseq_fused_softmax_payload()
+            self.assertFalse(any(call.kwargs.get("run_native") is True for call in validate_longseq.call_args_list))
         finally:
             GATE._load_quantized_softmax_receipt_payload.cache_clear()
             GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+            GATE._load_longseq_fused_softmax_payload.cache_clear()
 
     def test_regression_issue_448_records_native_stwo_and_external_control_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 55)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 60)
         self.assertEqual(
             payload["decision"],
             "GO_NATIVE_STWO_SINGLE_AND_MULTIHEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
@@ -72,6 +84,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
                 "local_stwo_attention_kv_d8_masked_sequence_proof",
                 "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
                 "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
+                "local_stwo_attention_kv_two_head_longseq_fused_bounded_softmax_table_logup_proof",
                 "external_snark_attention_kv_statement_receipt",
                 "external_zkvm_attention_kv_semantics_receipt",
                 "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -148,6 +161,26 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             payload["multihead_quantized_softmax_receipt"]["mutations_rejected"],
             GATE.MULTIHEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT,
         )
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["decision"], GATE.LONGSEQ_FUSED_SOFTMAX_DECISION)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["route_id"], GATE.LONGSEQ_FUSED_SOFTMAX_ROUTE_ID)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["proof_system"], "Stwo")
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["proof_backend"], "stwo")
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["source_head_count"], 2)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["sequence_length_per_head"], 16)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["lookup_claims"], 336)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["trace_rows"], 512)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_proof_size_bytes"], 54234)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"], 1000098)
+        self.assertIsNone(payload["longseq_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"])
+        self.assertIn("not a long-context benchmark", payload["longseq_fused_softmax_receipt"]["non_claims"])
+        self.assertEqual(
+            payload["longseq_fused_softmax_receipt"]["mutations_checked"],
+            GATE.LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT,
+        )
+        self.assertEqual(
+            payload["longseq_fused_softmax_receipt"]["mutations_rejected"],
+            GATE.LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT,
+        )
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["next_kv_items"], 3)
@@ -211,6 +244,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(
             payload["metrics"]["multihead_quantized_softmax_head_counts_checked"],
             payload["multihead_quantized_softmax_receipt"]["head_counts_checked"],
+        )
+        self.assertEqual(
+            payload["metrics"]["longseq_fused_softmax_lookup_claims"],
+            payload["longseq_fused_softmax_receipt"]["lookup_claims"],
+        )
+        self.assertEqual(
+            payload["metrics"]["longseq_fused_softmax_fused_proof_size_bytes"],
+            payload["longseq_fused_softmax_receipt"]["fused_proof_size_bytes"],
         )
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])

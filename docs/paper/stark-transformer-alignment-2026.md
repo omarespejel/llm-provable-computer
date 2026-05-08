@@ -1309,8 +1309,9 @@ The next step is now no longer just a plan. A native Stwo follow-up proves a
 fixed eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
 directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, and a `24394`-byte proof. The
-current route selector now also includes single-head plus two-head/four-head
-implementation-exact quantized Softmax-table receipts and rejects `55 / 55`
+current route selector now also includes single-head plus two-head/four-head/
+eight-head implementation-exact quantized Softmax-table receipts and a separate
+two-head long-sequence fused Softmax-table/LogUp proof; it rejects `60 / 60`
 route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
@@ -1321,7 +1322,8 @@ still tiny, not real-valued Softmax, not long-context inference, and not a
 benchmark row. But it is important because it moves the carried-state attention
 result from external controls into the STARK-native lane and then checks the
 pinned integer table/floor-division kernel across single-head, two-head,
-and four-head fixtures. It is exactly the kind of evidence this paper needs:
+four-head, and eight-head fixtures. It is exactly the kind of evidence this
+paper needs:
 not a claim that STARKs have already won, but a concrete proof surface showing
 why transformer decode looks like trace-friendly carried state.
 
@@ -1426,40 +1428,48 @@ that the native STARK surface now supports multi-head carried KV state and a
 monotone weighted-read policy in the same checked proof object.
 
 The sixth follow-up now fuses the bounded Softmax-table attention arithmetic and
-LogUp table-membership relation into a single native Stwo proof object. The
+LogUp table-membership relation into single native Stwo proof objects. The
 four-head route checks `208` lookup claims against the same nine-row
 statement-bound table, has a `53468`-byte raw proof inside a `797717`-byte
 checked envelope, and rejects `30 / 30` relabeling, commitment-drift,
 split-route-injection, metric-smuggling, proof-byte, and exact-Softmax-overclaim
 mutations. Before fusion, the corresponding arithmetic proof plus LogUp sidecar
 used `74529` raw proof bytes; the fused route uses `0.7174120141153109x` of that
-source-plus-sidecar budget. This is the strongest current native Stwo attention
-signal in the artifact set: lookup membership no longer has to live as a
-detached sidecar for the checked bounded fixture, even at four heads. It remains
-bounded table evidence, not real-valued Softmax, not exp/div semantics, not
-implementation-exact model Softmax, not full inference, not long-context
-inference, not on-chain verifier evidence, not a public benchmark row, and not
-recursion/PCD.
+source-plus-sidecar budget. The next head-count point checks eight heads:
+`416` lookup claims over a `512`-row trace, a `60450`-byte raw proof, a
+`1219007`-byte checked envelope, and `16 / 16` gate mutation rejections. There
+is no eight-head source-plus-sidecar comparator in that route, so it is
+proof-existence and byte-accounting evidence, not a savings claim.
 
-Reproducibility anchors for this follow-up are deliberately local and concrete:
+The same fusion also survives a separate sequence-axis point. Holding `d=8` and
+two heads fixed, the long-sequence route doubles per-head sequence length to
+sixteen steps. It checks `336` lookup claims over a `512`-row trace, has a
+`54234`-byte raw proof inside a `1000098`-byte checked envelope, and rejects
+`16 / 16` proof/statement/relabeling/overclaim mutations. Lookup claims grow
+from `104` on the fixed two-head fused route to `336` (`3.230769x`) while fused
+raw proof bytes grow from `49508` to `54234` (`1.095459x`). This is the strongest
+current native Stwo attention signal in the artifact set: lookup membership no
+longer has to live as a detached sidecar for the checked bounded fixture, and
+the fused object survives both eight-head and longer-sequence scale points. It
+remains bounded table evidence, not real-valued Softmax, not exp/div semantics,
+not implementation-exact model Softmax, not full inference, not a public
+long-context benchmark, not on-chain verifier evidence, not a public benchmark
+row, and not recursion/PCD.
+
+Reproducibility anchors for these follow-ups are deliberately local and concrete:
 backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,
-Cargo.lock-pinned CLI verification via `--locked`, backend version
-`stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`, verifier
-domain
-`ptvm:zkai:attention-kv-stwo-native-four-head-fused-bounded-softmax-table-logup:v1`,
-and timing mode `proof_existence_and_byte_accounting_only_not_public_benchmark`.
-The checked step counts are `208` lookup claims, `256` trace rows, `9` table
-rows, and `4` Stwo proof commitments. Evidence paths are
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.json`,
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.envelope.json`,
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`,
+Cargo.lock-pinned CLI verification via `--locked`, and timing mode
+`proof_existence_and_byte_accounting_only_not_public_benchmark`. The long-sequence
+evidence paths are
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`,
 and
-`docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json`.
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.
 The minimal verification command is
-`CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-four-head-fused-repro}" CARGO_INCREMENTAL=0 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json`;
+`cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`;
 the gate command is
-`CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-four-head-fused-repro}" CARGO_INCREMENTAL=0 python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv`.
+`python3 scripts/zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.tsv`.
 
 The credible sequencing is therefore: first scale this native attention/KV AIR
 one notch at a time; second fuse the lookup-heavy pieces when the arithmetic and
