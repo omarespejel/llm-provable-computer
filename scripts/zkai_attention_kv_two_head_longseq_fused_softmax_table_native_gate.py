@@ -487,6 +487,12 @@ def build_result(envelope: dict[str, Any], source_input: dict[str, Any], mutatio
     }
 
 
+def baseline_mutation_results() -> list[dict[str, Any]]:
+    """Return a structurally valid mutation vector for seeding mutated cases."""
+
+    return [{"name": name, "rejected": True, "error": "baseline placeholder"} for name in EXPECTED_MUTATION_NAMES]
+
+
 def run_gate() -> dict[str, Any]:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
     envelope_bytes = read_bounded_bytes(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
@@ -496,7 +502,7 @@ def run_gate() -> dict[str, Any]:
         )
     envelope = json.loads(envelope_bytes)
     validate_fused_envelope(envelope, source_input, run_native=True, native_envelope_bytes=envelope_bytes)
-    result = build_result(envelope, source_input, [])
+    result = build_result(envelope, source_input, baseline_mutation_results())
     mutation_results = []
     for name, mutated_result, mutated_envelope, mutated_source in mutation_cases(result, envelope, source_input):
         try:
