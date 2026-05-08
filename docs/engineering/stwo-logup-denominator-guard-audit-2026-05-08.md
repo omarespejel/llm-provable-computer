@@ -60,27 +60,25 @@ is active, avoiding denominator scalarization on the common fully-active path.
 ## Validation
 
 ```bash
+just gate-fast
 cargo fmt --all
-CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/zkai-logup-denominator-audit}"
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/codex}" \
   cargo +nightly-2025-07-14 test --locked masks_inactive_denominators --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/codex}" \
   cargo +nightly-2025-07-14 test --locked selector_masked --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/codex}" \
   cargo +nightly-2025-07-14 test --locked phase10_shared --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/codex}" \
   cargo +nightly-2025-07-14 test --locked primitive_benchmark_rejects --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target/codex}" \
   cargo +nightly-2025-07-14 test --locked primitive_benchmark_runs_all_matched_paths --lib --features stwo-backend
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" just gate-fast
-# Run before merging if this branch has not already passed the repo release gate:
-CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" just gate
+just gate
 ```
 
 Result:
 
 - inactive-path tests: `8 passed; 0 failed`
-- shared-helper tests: `3 passed; 0 failed`
+- shared-helper tests: `4 passed; 0 failed`
 - shared lookup / normalization behavior tests: `12 passed; 0 failed`
 - primitive benchmark tamper/rejection tests: `10 passed; 0 failed`
 - primitive matched-path smoke: `1 passed; 0 failed`
