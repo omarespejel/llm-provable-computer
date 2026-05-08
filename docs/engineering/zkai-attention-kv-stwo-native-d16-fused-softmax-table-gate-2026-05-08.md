@@ -36,7 +36,7 @@ and value width from `8` to `16`.
 | Fused envelope bytes | `665,491` |
 | Fused delta versus source proof | `2,859` bytes |
 | Fused savings versus source + sidecar | `10,628` bytes |
-| Fused / source+sidecar raw proof ratio | `0.860874x` |
+| Fused / source+sidecar raw proof ratio | `0.860487x` |
 | Source gate mutations | `19 / 19` rejected |
 | Sidecar gate mutations | `18 / 18` rejected |
 | Fused gate mutations | `26 / 26` rejected |

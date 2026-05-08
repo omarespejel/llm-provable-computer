@@ -414,9 +414,9 @@ Tablero boundary.
   Softmax-table source and LogUp table membership for `52` lookup claims over a
   `64`-row trace. The matched source-plus-sidecar control is source proof
   `61516` bytes plus LogUp sidecar `13445` bytes (`74961` raw bytes total).
-  The fused proof is `64532` raw bytes and `666747` checked envelope bytes,
-  rejects `26 / 26` fused-gate mutations, and is `10429` bytes smaller than the
-  matched source-plus-sidecar pair (`0.860874x`). This is width-axis
+  The fused proof is `64503` raw bytes and `666515` checked envelope bytes,
+  rejects `26 / 26` fused-gate mutations, and is `10458` bytes smaller than the
+  matched source-plus-sidecar pair (`0.860487x`). This is width-axis
   proof-existence and byte-accounting evidence, not exact Softmax, not a claim
   that proof size is independent of width, not a timing claim, and not full
   inference; see

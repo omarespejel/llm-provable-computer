@@ -22,10 +22,12 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
         self.assertEqual(payload["source_proof_size_bytes"], 61516)
         self.assertEqual(payload["sidecar_proof_size_bytes"], 13445)
         self.assertEqual(payload["source_plus_sidecar_raw_proof_bytes"], 74961)
-        self.assertEqual(payload["fused_proof_size_bytes"], 64532)
-        self.assertEqual(payload["fused_over_source_proof_bytes"], 3016)
-        self.assertEqual(payload["fused_saves_vs_source_plus_sidecar_bytes"], 10429)
-        self.assertLess(payload["fused_to_source_plus_sidecar_ratio"], 0.87)
+        self.assertEqual(payload["fused_proof_size_bytes"], 64503)
+        self.assertEqual(payload["fused_over_source_proof_bytes"], 2987)
+        self.assertEqual(payload["fused_saves_vs_source_plus_sidecar_bytes"], 10458)
+        self.assertEqual(payload["fused_to_source_plus_sidecar_ratio"], "0.860487")
+        self.assertTrue(payload["fused_envelope_commitment"].startswith("blake2b-256:"))
+        self.assertTrue(payload["fused_proof_commitment"].startswith("blake2b-256:"))
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 
@@ -110,7 +112,7 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             gate.write_tsv(tsv_path, self.payload)
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8"))["decision"], gate.DECISION)
             self.assertIn(gate.DECISION, tsv_path.read_text(encoding="utf-8"))
-            self.assertIn("64532", tsv_path.read_text(encoding="utf-8"))
+            self.assertIn("64503", tsv_path.read_text(encoding="utf-8"))
 
     def test_write_json_rejects_metric_drift(self):
         payload = copy.deepcopy(self.payload)
@@ -129,6 +131,16 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 gate.AttentionKvD16FusedSoftmaxTableGateError,
                 "result drift for route_id",
+            ):
+                gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
+
+    def test_write_json_rejects_fused_artifact_commitment_drift(self):
+        payload = copy.deepcopy(self.payload)
+        payload["fused_proof_commitment"] = "blake2b-256:" + "0" * 64
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(
+                gate.AttentionKvD16FusedSoftmaxTableGateError,
+                "result drift for fused_proof_commitment",
             ):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 

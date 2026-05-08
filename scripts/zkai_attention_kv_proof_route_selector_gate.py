@@ -1304,6 +1304,8 @@ def d16_fused_softmax_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "source_public_instance_commitment": payload["source_public_instance_commitment"],
         "source_score_row_commitment": payload["source_score_row_commitment"],
         "source_weight_table_commitment": payload["source_weight_table_commitment"],
+        "fused_envelope_commitment": payload["fused_envelope_commitment"],
+        "fused_proof_commitment": payload["fused_proof_commitment"],
         "mutations_checked": payload["mutations_checked"],
         "mutations_rejected": payload["mutations_rejected"],
         "all_mutations_rejected": payload["mutations_checked"] == payload["mutations_rejected"],
@@ -2362,15 +2364,15 @@ def validate_d16_fused_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 fused Softmax lookup drift")
     if summary["trace_rows"] != 64 or summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("d16 fused Softmax trace/table drift")
-    if summary["source_proof_size_bytes"] != 61516 or summary["fused_proof_size_bytes"] != 64532:
+    if summary["source_proof_size_bytes"] != 61516 or summary["fused_proof_size_bytes"] != 64503:
         raise AttentionKvRouteSelectorError("d16 fused Softmax proof-size drift")
-    if summary["fused_envelope_size_bytes"] != 666747:
+    if summary["fused_envelope_size_bytes"] != 666515:
         raise AttentionKvRouteSelectorError("d16 fused Softmax envelope-size drift")
     if summary["source_plus_sidecar_raw_proof_bytes"] != 74961:
         raise AttentionKvRouteSelectorError("d16 fused Softmax source-plus-sidecar drift")
-    if summary["fused_saves_vs_source_plus_sidecar_bytes"] != 10429:
+    if summary["fused_saves_vs_source_plus_sidecar_bytes"] != 10458:
         raise AttentionKvRouteSelectorError("d16 fused Softmax savings comparator drift")
-    if summary["fused_to_source_plus_sidecar_ratio"] != 0.8608743213137499:
+    if summary["fused_to_source_plus_sidecar_ratio"] != "0.860487":
         raise AttentionKvRouteSelectorError("d16 fused Softmax ratio comparator drift")
     if summary["lookup_relation"] != "AttentionKvD16FusedSoftmaxTableRelation":
         raise AttentionKvRouteSelectorError("d16 fused Softmax lookup relation drift")
@@ -2387,6 +2389,8 @@ def validate_d16_fused_softmax_receipt(summary: Any) -> None:
         "source_public_instance_commitment",
         "source_score_row_commitment",
         "source_weight_table_commitment",
+        "fused_envelope_commitment",
+        "fused_proof_commitment",
     ):
         commitment = summary.get(key)
         if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):

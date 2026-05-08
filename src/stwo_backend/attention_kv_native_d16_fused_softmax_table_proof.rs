@@ -925,6 +925,29 @@ fn mix_fused_summary(
     channel: &mut Blake2sM31Channel,
     summary: &ZkAiAttentionKvNativeD16FusedSoftmaxTableSummary,
 ) {
+    channel.mix_u64(6);
+    mix_fused_summary_str(
+        channel,
+        "source_statement_commitment",
+        &summary.source_statement_commitment,
+    );
+    mix_fused_summary_str(
+        channel,
+        "source_public_instance_commitment",
+        &summary.source_public_instance_commitment,
+    );
+    mix_fused_summary_str(
+        channel,
+        "source_score_row_commitment",
+        &summary.source_score_row_commitment,
+    );
+    mix_fused_summary_str(
+        channel,
+        "source_weight_table_commitment",
+        &summary.source_weight_table_commitment,
+    );
+    mix_fused_summary_str(channel, "weight_policy", &summary.weight_policy);
+    mix_fused_summary_str(channel, "lookup_relation", &summary.lookup_relation);
     channel.mix_u64(summary.issue as u64);
     channel.mix_u64(summary.source_issue as u64);
     channel.mix_u64(summary.score_rows as u64);
@@ -939,6 +962,24 @@ fn mix_fused_summary(
         channel.mix_u64(entry.weight.rem_euclid(M31_MODULUS) as u64);
         channel.mix_u64(entry.multiplicity as u64);
     }
+}
+
+fn mix_fused_summary_str(channel: &mut Blake2sM31Channel, label: &str, value: &str) {
+    channel.mix_u64(label.len() as u64);
+    channel.mix_u64(value.len() as u64);
+    channel.mix_u32s(&bytes_to_channel_words(label.as_bytes()));
+    channel.mix_u32s(&bytes_to_channel_words(value.as_bytes()));
+}
+
+fn bytes_to_channel_words(bytes: &[u8]) -> Vec<u32> {
+    bytes
+        .chunks(4)
+        .map(|chunk| {
+            let mut word = [0u8; 4];
+            word[..chunk.len()].copy_from_slice(chunk);
+            u32::from_le_bytes(word)
+        })
+        .collect()
 }
 
 fn validate_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {

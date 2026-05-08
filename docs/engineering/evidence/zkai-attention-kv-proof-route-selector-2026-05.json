@@ -6,11 +6,13 @@
     "claim_boundary": "ONE_NATIVE_STWO_D16_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
     "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json",
-    "fused_envelope_size_bytes": 666747,
-    "fused_over_source_proof_bytes": 3016,
-    "fused_proof_size_bytes": 64532,
-    "fused_saves_vs_source_plus_sidecar_bytes": 10429,
-    "fused_to_source_plus_sidecar_ratio": 0.8608743213137499,
+    "fused_envelope_commitment": "blake2b-256:402c14ac6777370dd8fc7af7b1282d59e321c8b8a1afce2cc2f6d3e25c8e4e92",
+    "fused_envelope_size_bytes": 666515,
+    "fused_over_source_proof_bytes": 2987,
+    "fused_proof_commitment": "blake2b-256:cd1c0349fb9a5c37c4473b8ef4068f0b5c755de4c75fb2fb97c049f0528bc0a1",
+    "fused_proof_size_bytes": 64503,
+    "fused_saves_vs_source_plus_sidecar_bytes": 10458,
+    "fused_to_source_plus_sidecar_ratio": "0.860487",
     "fusion_status": "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP",
     "key_width": 16,
     "lookup_claims": 52,
@@ -385,7 +387,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "a0792df4122b0bf9f6b12fc31ed265f43041627f",
+  "git_commit": "fd761467f631454f2527ad885fa98e8d8eb155a1",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -435,10 +437,10 @@
     "trace_rows": 512
   },
   "metrics": {
-    "d16_fused_softmax_fused_envelope_size_bytes": 666747,
-    "d16_fused_softmax_fused_proof_size_bytes": 64532,
-    "d16_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 10429,
-    "d16_fused_softmax_fused_to_source_plus_sidecar_ratio": 0.8608743213137499,
+    "d16_fused_softmax_fused_envelope_size_bytes": 666515,
+    "d16_fused_softmax_fused_proof_size_bytes": 64503,
+    "d16_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 10458,
+    "d16_fused_softmax_fused_to_source_plus_sidecar_ratio": "0.860487",
     "d16_fused_softmax_key_width": 16,
     "d16_fused_softmax_lookup_claims": 52,
     "d16_fused_softmax_source_plus_sidecar_raw_proof_bytes": 74961,
@@ -1207,8 +1209,8 @@
     {
       "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json",
-      "fused_envelope_size_bytes": 666747,
-      "fused_proof_size_bytes": 64532,
+      "fused_envelope_size_bytes": 666515,
+      "fused_proof_size_bytes": 64503,
       "fusion_status": "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP",
       "key_width": 16,
       "lookup_claims": 52,
@@ -1322,7 +1324,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:dc907305cfd1bb6df59524b9cca6c973b74bdff4ba497d720ff6e0d0ba0b3877",
+  "selector_commitment": "blake2b-256:05d71513e2702d13341de77bcb38d27a9d682859335a82630b6c8770272f5e47",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

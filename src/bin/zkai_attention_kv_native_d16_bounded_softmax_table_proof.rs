@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -37,7 +38,15 @@ fn main() -> ExitCode {
 
 #[cfg(feature = "stwo-backend")]
 fn run() -> Result<String, String> {
-    let mut args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    run_with_args(std::env::args_os().skip(1))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn run_with_args<I>(args: I) -> Result<String, String>
+where
+    I: IntoIterator<Item = OsString>,
+{
+    let mut args = args.into_iter().collect::<Vec<_>>();
     if args.is_empty() {
         return Err("usage: zkai_attention_kv_native_d16_bounded_softmax_table_proof prove <input.json> <envelope.json> | verify <envelope.json>".to_string());
     }
@@ -153,8 +162,15 @@ fn run() -> Result<String, String> {
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
-    let metadata = fs::metadata(path)
-        .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    let file = fs::File::open(path)
+        .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
+    let metadata = file.metadata().map_err(|error| {
+        format!(
+            "failed to stat opened {} {}: {error}",
+            label,
+            path.display()
+        )
+    })?;
     if !metadata.is_file() {
         return Err(format!(
             "{} {} is not a regular file",
@@ -169,8 +185,6 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             max_bytes
         ));
     }
-    let file = fs::File::open(path)
-        .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let mut raw = Vec::new();
     file.take(max_bytes.saturating_add(1) as u64)
         .read_to_end(&mut raw)
@@ -181,4 +195,89 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
         ));
     }
     Ok(raw)
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn arg(value: &str) -> OsString {
+        OsString::from(value)
+    }
+
+    fn temp_path(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "ptvm-d16-bounded-softmax-cli-{label}-{}-{nonce}.json",
+            std::process::id()
+        ))
+    }
+
+    fn write_temp(label: &str, bytes: &[u8]) -> PathBuf {
+        let path = temp_path(label);
+        fs::write(&path, bytes).expect("write temp file");
+        path
+    }
+
+    #[test]
+    fn rejects_missing_or_unknown_cli_args() {
+        assert!(run_with_args(Vec::<OsString>::new())
+            .expect_err("missing args must reject")
+            .contains("usage:"));
+        assert_eq!(
+            run_with_args(vec![arg("wat")]).expect_err("unknown mode must reject"),
+            "unknown mode: wat"
+        );
+        assert_eq!(
+            run_with_args(vec![arg("prove")]).expect_err("bad prove args must reject"),
+            "usage: prove <input.json> <envelope.json>"
+        );
+        assert_eq!(
+            run_with_args(vec![arg("verify")]).expect_err("bad verify args must reject"),
+            "usage: verify <envelope.json>"
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_input_json() {
+        let input = write_temp("bad-input", b"{not-json");
+        let output = temp_path("unused-output");
+        let error = run_with_args(vec![
+            arg("prove"),
+            input.as_os_str().to_os_string(),
+            output.as_os_str().to_os_string(),
+        ])
+        .expect_err("malformed input must reject");
+        assert!(error.contains("key must be a string") || error.contains("expected ident"));
+        let _ = fs::remove_file(input);
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn rejects_malformed_envelope_json() {
+        let envelope = write_temp("bad-envelope", b"{not-json");
+        let error = run_with_args(vec![arg("verify"), envelope.as_os_str().to_os_string()])
+            .expect_err("malformed envelope must reject");
+        assert!(error.contains("key must be a string") || error.contains("expected ident"));
+        let _ = fs::remove_file(envelope);
+    }
+
+    #[test]
+    fn rejects_oversized_envelope_before_deserialization() {
+        let envelope = write_temp(
+            "oversized-envelope",
+            &vec![
+                b'0';
+                ZKAI_ATTENTION_KV_NATIVE_D16_BOUNDED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES + 1
+            ],
+        );
+        let error = run_with_args(vec![arg("verify"), envelope.as_os_str().to_os_string()])
+            .expect_err("oversized envelope must reject");
+        assert!(error.contains("envelope JSON exceeds max size"));
+        let _ = fs::remove_file(envelope);
+    }
 }

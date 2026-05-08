@@ -258,6 +258,36 @@ def weight_from_gap(score_gap: int) -> int:
     return table[clipped]
 
 
+def require_unsigned_bits(value: int, bits: int, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be a nonnegative integer")
+    if value >= (1 << bits):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} exceeds {bits}-bit budget")
+
+
+def validate_row_metadata(rows: list[dict[str, Any]], payload: dict[str, Any]) -> None:
+    expected = {
+        "score_row_count": len(rows),
+        "score_gap_bits": SCORE_GAP_BITS,
+        "causal_gap_bits": CAUSAL_GAP_BITS,
+        "weight_bits": WEIGHT_BITS,
+        "output_remainder_bits": OUTPUT_REMAINDER_BITS,
+    }
+    for key, value in expected.items():
+        if payload.get(key) != value:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"{key} drift")
+    for index, row in enumerate(rows):
+        require_unsigned_bits(row["score_gap"], payload["score_gap_bits"], f"score_rows[{index}].score_gap")
+        require_unsigned_bits(row["causal_gap"], payload["causal_gap_bits"], f"score_rows[{index}].causal_gap")
+        require_unsigned_bits(row["attention_weight"], payload["weight_bits"], f"score_rows[{index}].attention_weight")
+        for dim, remainder in enumerate(row["output_remainder"]):
+            require_unsigned_bits(
+                remainder,
+                payload["output_remainder_bits"],
+                f"score_rows[{index}].output_remainder[{dim}]",
+            )
+
+
 def weight_table_commitment() -> str:
     return commitment_from_parts(
         [
@@ -499,12 +529,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "sequence_length": SEQUENCE_LENGTH,
         "initial_kv_items": INITIAL_KV_ITEMS,
         "final_kv_items": FINAL_KV_ITEMS,
-        "score_row_count": SCORE_ROW_COUNT,
         "trace_row_count": TRACE_ROW_COUNT,
-        "score_gap_bits": SCORE_GAP_BITS,
-        "causal_gap_bits": CAUSAL_GAP_BITS,
-        "weight_bits": WEIGHT_BITS,
-        "output_remainder_bits": OUTPUT_REMAINDER_BITS,
         "next_backend_step": NEXT_BACKEND_STEP,
     }
     allowed_keys = set(expected_scalars) | {
@@ -513,6 +538,11 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "final_kv_cache",
         "attention_outputs",
         "score_rows",
+        "score_row_count",
+        "score_gap_bits",
+        "causal_gap_bits",
+        "weight_bits",
+        "output_remainder_bits",
         "initial_kv_cache_commitment",
         "input_steps_commitment",
         "score_row_commitment",
@@ -551,6 +581,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise AttentionKvBoundedSoftmaxTableInputError("input steps drift")
     if payload.get("score_rows") != rows:
         raise AttentionKvBoundedSoftmaxTableInputError("score rows drift")
+    validate_row_metadata(rows, payload)
     if payload.get("final_kv_cache") != final_cache:
         raise AttentionKvBoundedSoftmaxTableInputError("final KV drift")
     if payload.get("attention_outputs") != outputs:

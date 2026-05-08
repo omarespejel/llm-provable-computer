@@ -964,9 +964,9 @@ Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw
 proof bytes grow `1.222064x`. The matched long-sequence source-plus-sidecar
 control is now checked at `79444` raw proof bytes, so the fused proof is `18942`
 bytes smaller (`0.761568x`). A separate d16 width-axis check keeps score rows
-fixed at `52`, doubles key/value width from `8` to `16`, and records a `64532`
+fixed at `52`, doubles key/value width from `8` to `16`, and records a `64503`
 byte fused proof versus a matched `74961` byte source-plus-sidecar pair
-(`0.860874x`, `10429` bytes saved), with `26 / 26` fused-gate mutations
+(`0.860487x`, `10458` bytes saved), with `26 / 26` fused-gate mutations
 rejected. This remains supporting transformer/STARK evidence, not a Tablero
 performance row: it is bounded table attention, not exact
 real-valued Softmax, not exp/div semantics, not implementation-exact model

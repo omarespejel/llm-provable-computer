@@ -201,11 +201,15 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["d16_fused_softmax_receipt"]["value_width"], 16)
         self.assertEqual(payload["d16_fused_softmax_receipt"]["lookup_claims"], 52)
         self.assertEqual(payload["d16_fused_softmax_receipt"]["trace_rows"], 64)
-        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_proof_size_bytes"], 64532)
-        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_envelope_size_bytes"], 666747)
+        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_proof_size_bytes"], 64503)
+        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_envelope_size_bytes"], 666515)
         self.assertEqual(payload["d16_fused_softmax_receipt"]["source_plus_sidecar_raw_proof_bytes"], 74961)
-        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_saves_vs_source_plus_sidecar_bytes"], 10429)
-        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"], 0.8608743213137499)
+        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_saves_vs_source_plus_sidecar_bytes"], 10458)
+        self.assertEqual(payload["d16_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"], "0.860487")
+        self.assertTrue(
+            payload["d16_fused_softmax_receipt"]["fused_envelope_commitment"].startswith("blake2b-256:")
+        )
+        self.assertTrue(payload["d16_fused_softmax_receipt"]["fused_proof_commitment"].startswith("blake2b-256:"))
         self.assertIn("not exact Softmax attention", payload["d16_fused_softmax_receipt"]["non_claims"])
         self.assertEqual(
             payload["d16_fused_softmax_receipt"]["mutations_checked"],
