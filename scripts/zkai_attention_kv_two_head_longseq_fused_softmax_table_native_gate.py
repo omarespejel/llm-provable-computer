@@ -37,7 +37,7 @@ FUSED_VERIFY_TIMEOUT_SECONDS = 300
 SCHEMA = "zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-v1"
 ISSUE = 498
 SOURCE_ISSUE = 498
-SIDECAR_ISSUE = 0
+SIDECAR_ISSUE = 500
 DECISION = "GO_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP"
 ROUTE_ID = "local_stwo_attention_kv_two_head_longseq_fused_bounded_softmax_table_logup_proof"
 CLAIM_BOUNDARY = (
@@ -45,17 +45,19 @@ CLAIM_BOUNDARY = (
     "NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD"
 )
 FUSION_STATUS = "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP"
-NON_FUSED_STATUS = "NO_TWO_HEAD_LONGSEQ_SOURCE_PLUS_SIDECAR_COMPARATOR_RECORDED_IN_THIS_ROUTE"
+NON_FUSED_STATUS = "GO_MATCHED_TWO_HEAD_LONGSEQ_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED"
 TIMING_POLICY = "proof_existence_and_byte_accounting_only_not_public_benchmark"
 
 SOURCE_PROOF_SIZE_BYTES = 52_366
 SOURCE_ENVELOPE_SIZE_BYTES = 982_131
-SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = 0
-FUSED_PROOF_SIZE_BYTES = 54_234
-FUSED_ENVELOPE_SIZE_BYTES = 1_000_098
+SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = 79_444
+SIDECAR_PROOF_SIZE_BYTES = 27_078
+SIDECAR_ENVELOPE_SIZE_BYTES = 781_775
+FUSED_PROOF_SIZE_BYTES = 60_502
+FUSED_ENVELOPE_SIZE_BYTES = 1_050_248
 FUSED_OVER_SOURCE_PROOF_BYTES = FUSED_PROOF_SIZE_BYTES - SOURCE_PROOF_SIZE_BYTES
-FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = None
-FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = None
+FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - FUSED_PROOF_SIZE_BYTES
+FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = "0.761568"
 
 SOURCE_STATEMENT_COMMITMENT = "blake2b-256:7bc1dc6ea381972e9dd526b838998905cef8f5618c422e23c9a2fa1a7316a00a"
 SOURCE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:38d80dd69b0eb4eed44c9f22b4817402892d3646d7cd5aca452cc90a85060747"
@@ -114,6 +116,9 @@ EXPECTED_MUTATION_NAMES = (
     "source_statement_commitment_relabeling",
     "source_head_count_metric_smuggling",
     "lookup_claim_count_metric_smuggling",
+    "source_plus_sidecar_metric_smuggling",
+    "fused_savings_metric_smuggling",
+    "fused_ratio_metric_smuggling",
     "table_multiplicity_drift",
     "source_input_head_index_relabeling",
     "source_input_output_remainder_drift",
@@ -135,6 +140,9 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_fused_softmax_table --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_softmax_table_lookup --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_two_head_longseq_air_private_softmax_table_lookup_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.tsv",
     "python3 scripts/zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate",
     "just lib",
@@ -148,8 +156,11 @@ TSV_COLUMNS = (
     "lookup_claims",
     "table_rows",
     "source_proof_size_bytes",
+    "source_plus_sidecar_raw_proof_bytes",
     "fused_proof_size_bytes",
     "fused_over_source_proof_bytes",
+    "fused_saves_vs_source_plus_sidecar_bytes",
+    "fused_to_source_plus_sidecar_ratio",
     "mutations_checked",
     "mutations_rejected",
     "source_head_count",
@@ -449,6 +460,9 @@ def mutation_cases(result: dict[str, Any], envelope: dict[str, Any], source_inpu
     add("source_statement_commitment_relabeling", lambda _r, e, _s: e["fused_summary"].__setitem__("source_statement_commitment", "blake2b-256:" + "55" * 32))
     add("source_head_count_metric_smuggling", lambda _r, e, _s: e["fused_summary"].__setitem__("source_head_count", 9))
     add("lookup_claim_count_metric_smuggling", lambda _r, e, _s: e["fused_summary"].__setitem__("lookup_claims", SOURCE_SCORE_ROWS - 1))
+    add("source_plus_sidecar_metric_smuggling", lambda r, _e, _s: r.__setitem__("source_plus_sidecar_raw_proof_bytes", SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES + 1))
+    add("fused_savings_metric_smuggling", lambda r, _e, _s: r.__setitem__("fused_saves_vs_source_plus_sidecar_bytes", FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES - 1))
+    add("fused_ratio_metric_smuggling", lambda r, _e, _s: r.__setitem__("fused_to_source_plus_sidecar_ratio", "1.000000"))
     add("table_multiplicity_drift", lambda _r, e, _s: e["fused_summary"]["table_multiplicities"][0].__setitem__("multiplicity", 1))
     add("source_input_head_index_relabeling", lambda _r, e, s: (s["score_rows"][0].__setitem__("head_index", 8), e.__setitem__("source_input", s)))
     add("source_input_output_remainder_drift", lambda _r, e, s: (s["score_rows"][0]["output_remainder"].__setitem__(0, 999), e.__setitem__("source_input", s)))
@@ -557,7 +571,13 @@ def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
     validate_result(result, envelope, source_input)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", extrasaction="ignore")
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=TSV_COLUMNS,
+            delimiter="\t",
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerow(result)
 

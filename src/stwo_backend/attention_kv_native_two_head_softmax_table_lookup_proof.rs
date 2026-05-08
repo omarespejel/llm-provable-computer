@@ -1,4 +1,6 @@
-use ark_ff::{One, Zero};
+#[cfg(test)]
+use ark_ff::One;
+use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 use stwo::core::air::Component;
 use stwo::core::channel::{Blake2sM31Channel, Channel};

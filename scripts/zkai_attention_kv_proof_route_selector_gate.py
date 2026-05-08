@@ -1448,6 +1448,15 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "longseq_fused_softmax_fused_envelope_size_bytes": (
                 longseq_fused_softmax_receipt["fused_envelope_size_bytes"]
             ),
+            "longseq_fused_softmax_source_plus_sidecar_raw_proof_bytes": (
+                longseq_fused_softmax_receipt["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": (
+                longseq_fused_softmax_receipt["fused_saves_vs_source_plus_sidecar_bytes"]
+            ),
+            "longseq_fused_softmax_fused_to_source_plus_sidecar_ratio": (
+                longseq_fused_softmax_receipt["fused_to_source_plus_sidecar_ratio"]
+            ),
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
@@ -2099,22 +2108,16 @@ def validate_longseq_fused_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax lookup drift")
     if summary["trace_rows"] != 512 or summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax trace/table drift")
-    if summary["source_proof_size_bytes"] != 52366 or summary["fused_proof_size_bytes"] != 54234:
+    if summary["source_proof_size_bytes"] != 52366 or summary["fused_proof_size_bytes"] != 60502:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax proof-size drift")
-    if summary["fused_envelope_size_bytes"] != 1000098:
+    if summary["fused_envelope_size_bytes"] != 1050248:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax envelope-size drift")
-    if summary["source_plus_sidecar_raw_proof_bytes"] != 0:
-        raise AttentionKvRouteSelectorError(
-            "long-sequence fused Softmax comparator unexpectedly implemented before issue #500"
-        )
-    if summary["fused_saves_vs_source_plus_sidecar_bytes"] is not None:
-        raise AttentionKvRouteSelectorError(
-            "long-sequence fused Softmax savings comparator unexpectedly implemented before issue #500"
-        )
-    if summary["fused_to_source_plus_sidecar_ratio"] is not None:
-        raise AttentionKvRouteSelectorError(
-            "long-sequence fused Softmax ratio comparator unexpectedly implemented before issue #500"
-        )
+    if summary["source_plus_sidecar_raw_proof_bytes"] != 79444:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax source-plus-sidecar drift")
+    if summary["fused_saves_vs_source_plus_sidecar_bytes"] != 18942:
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax savings comparator drift")
+    if summary["fused_to_source_plus_sidecar_ratio"] != "0.761568":
+        raise AttentionKvRouteSelectorError("long-sequence fused Softmax ratio comparator drift")
     if summary["mutations_checked"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:
         raise AttentionKvRouteSelectorError("long-sequence fused Softmax mutation count drift")
     if summary["mutations_rejected"] != LONGSEQ_FUSED_SOFTMAX.EXPECTED_MUTATION_COUNT:
@@ -2232,6 +2235,15 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         ),
         "longseq_fused_softmax_fused_envelope_size_bytes": (
             payload["longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"]
+        ),
+        "longseq_fused_softmax_source_plus_sidecar_raw_proof_bytes": (
+            payload["longseq_fused_softmax_receipt"]["source_plus_sidecar_raw_proof_bytes"]
+        ),
+        "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": (
+            payload["longseq_fused_softmax_receipt"]["fused_saves_vs_source_plus_sidecar_bytes"]
+        ),
+        "longseq_fused_softmax_fused_to_source_plus_sidecar_ratio": (
+            payload["longseq_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"]
         ),
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],

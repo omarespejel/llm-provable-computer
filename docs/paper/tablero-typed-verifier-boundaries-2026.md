@@ -958,14 +958,17 @@ proof budget (`74529` bytes). The eight-head route then checks `416` lookup
 claims over a `512`-row trace with a `60450`-byte raw proof and `16 / 16`
 mutation rejections. A separate two-head long-sequence route keeps `d=8` and
 two heads fixed while increasing per-head sequence length to sixteen steps; it
-checks `336` lookup claims over a `512`-row trace, has a `54234`-byte raw proof
-inside a `1000098`-byte checked envelope, and rejects `16 / 16` mutations.
+checks `336` lookup claims over a `512`-row trace, has a `60502`-byte raw proof
+inside a `1050248`-byte checked envelope, and rejects `19 / 19` mutations.
 Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw
-proof bytes grow `1.095459x`. This remains supporting transformer/STARK
-evidence, not a Tablero performance row: it is bounded table attention, not
-exact real-valued Softmax, not exp/div semantics, not implementation-exact model
+proof bytes grow `1.222064x`. The matched long-sequence source-plus-sidecar
+control is now checked at `79444` raw proof bytes, so the fused proof is `18942`
+bytes smaller (`0.761568x`). This remains supporting transformer/STARK evidence,
+not a Tablero performance row: it is bounded table attention, not exact
+real-valued Softmax, not exp/div semantics, not implementation-exact model
 Softmax, not full inference, not a public long-context benchmark, not on-chain
-verifier evidence, not a public benchmark row, and not recursion/PCD. It is
+verifier evidence, not a public benchmark row, not a timing result, and not
+recursion/PCD. It is
 anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`,

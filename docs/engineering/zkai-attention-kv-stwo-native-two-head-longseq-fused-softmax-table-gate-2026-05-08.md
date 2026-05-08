@@ -38,19 +38,26 @@ table/floor-division kernel. It is not exact real-valued Softmax.
 | Table rows | `9` |
 | Source arithmetic proof bytes | `52,366` |
 | Source arithmetic envelope bytes | `982,131` |
-| Fused proof bytes | `54,234` |
-| Fused envelope bytes | `1,000,098` |
-| Fused delta versus source proof | `1,868` bytes |
-| Gate mutations | `16 / 16` rejected |
+| LogUp sidecar proof bytes | `27,078` |
+| Source + sidecar raw proof bytes | `79,444` |
+| Fused proof bytes | `60,502` |
+| Fused envelope bytes | `1,050,248` |
+| Fused delta versus source proof | `8,136` bytes |
+| Fused savings versus source + sidecar | `18,942` bytes |
+| Fused / source+sidecar raw proof ratio | `0.761568x` |
+| Gate mutations | `19 / 19` rejected |
 
 Compared with the fixed-length two-head fused route from issue `#489`, lookup
 claims grow from `104` to `336` (`3.230769x`) while fused raw proof bytes grow
-from `49,508` to `54,234` (`1.095459x`). This is useful sequence-axis evidence,
+from `49,508` to `60,502` (`1.222064x`). This is useful sequence-axis evidence,
 but it is proof-existence and byte-accounting evidence only.
 
-There is no checked long-sequence source-plus-sidecar comparator in this route.
-Therefore this note records a sequence-length scale GO and proof-existence byte
-row, not a fused-versus-sidecar savings claim at the longer sequence length.
+Issue `#500` now supplies the matched long-sequence source-plus-sidecar control:
+the source proof is `52,366` bytes, the LogUp sidecar proof is `27,078` bytes,
+and the source+sidecar pair is `79,444` raw proof bytes. The fused proof is
+`60,502` bytes, so this route records a checked `18,942` byte savings
+(`0.761568x` of the matched source+sidecar pair). This is still a proof-byte
+accounting claim, not a timing row or public benchmark.
 
 ## What Is Bound
 
@@ -141,15 +148,14 @@ width and fixed two-head count.
 - Not recursive verification or PCD.
 - Not private witness privacy.
 - Not on-chain verification evidence.
-- Not a long-sequence fused-versus-sidecar savings claim.
+- Not a timing result.
 
 ## Next Backend Step
 
 The next controlled research targets are:
 
 1. wider value/key vectors for the same fused integer table kernel;
-2. a controlled long-sequence source-plus-sidecar comparator if we want a
-   fused-versus-sidecar savings ratio for this axis;
+2. wider sequence lengths once this source-plus-sidecar comparator remains stable;
 3. an implementation-exact quantized Softmax receipt aggregate that includes
    this long-sequence profile without weakening output-order or remainder
    checks.
@@ -160,6 +166,12 @@ The next controlled research targets are:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json`
 - Source arithmetic proof envelope:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json`
+- LogUp sidecar proof envelope:
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
+- LogUp sidecar gate JSON:
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.json`
+- LogUp sidecar gate TSV:
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.tsv`
 - Fused proof envelope:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`
 - Fused gate JSON:
@@ -205,6 +217,20 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend \
 cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_fused_softmax_table \
   --lib --features stwo-backend
 
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_softmax_table_lookup \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_two_head_longseq_fused_softmax_table_proof -- \
   prove \
@@ -220,7 +246,12 @@ python3 scripts/zkai_attention_kv_two_head_longseq_fused_softmax_table_native_ga
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_two_head_longseq_air_private_softmax_table_lookup_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.tsv
+
 python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate
+python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_longseq_air_private_softmax_table_lookup_gate
 
 just lib
 just gate-fast
