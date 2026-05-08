@@ -17,8 +17,9 @@ import json
 import pathlib
 import sys
 import tempfile
+from collections.abc import Callable
 from fractions import Fraction
-from typing import Any, Callable
+from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -489,10 +490,10 @@ def validate_recomputed_mutation_results(result: dict[str, Any], recomputed: lis
     validate_mutation_results(recomputed)
     serialized = result.get("mutation_results")
     validate_mutation_results(serialized)
-    serialized_bitmap = tuple((item["name"], item["rejected"]) for item in serialized)
-    recomputed_bitmap = tuple((item["name"], item["rejected"]) for item in recomputed)
-    if serialized_bitmap != recomputed_bitmap:
-        raise QuantizedSoftmaxReceiptGateError("recomputed mutation result bitmap drift")
+    serialized_details = tuple((item["name"], item["rejected"], item["error"]) for item in serialized)
+    recomputed_details = tuple((item["name"], item["rejected"], item["error"]) for item in recomputed)
+    if serialized_details != recomputed_details:
+        raise QuantizedSoftmaxReceiptGateError("recomputed mutation result detail drift")
     if result.get("mutations_rejected") != sum(1 for item in recomputed if item["rejected"]):
         raise QuantizedSoftmaxReceiptGateError("recomputed mutation rejection count drift")
 

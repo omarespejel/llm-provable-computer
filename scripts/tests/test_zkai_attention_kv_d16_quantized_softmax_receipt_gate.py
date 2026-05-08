@@ -13,10 +13,8 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         cls.source = gate.source_input()
         cls.envelope = gate.fused_envelope()
         cls.result = gate.build_base_receipt(cls.source)
-        cls.result["mutation_results"] = [
-            {"name": name, "rejected": True, "error": "covered by mutation-specific unit tests"}
-            for name in gate.EXPECTED_MUTATION_NAMES
-        ]
+        cls.result["mutation_results"] = gate.recompute_mutation_results(cls.result, cls.source, cls.envelope)
+        cls.result["mutations_rejected"] = sum(1 for item in cls.result["mutation_results"] if item["rejected"])
         gate.validate_receipt(cls.result, cls.source, cls.envelope, run_native=False)
 
     def test_records_exact_integer_kernel_without_real_softmax_overclaim(self):
@@ -49,6 +47,7 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         checked = 0
         for name, receipt, source, envelope, run_native in cases:
             if run_native:
+                # Native proof-byte tampering is covered by the dedicated run_native test below.
                 continue
             with self.assertRaises(gate.QuantizedSoftmaxReceiptGateError, msg=name):
                 gate.validate_receipt(receipt, source, envelope, run_native=run_native)
@@ -129,6 +128,13 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         with mock.patch.object(gate, "mutation_cases", return_value=[]):
             with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "mutation result shape drift"):
                 gate.validate_result(self.result)
+
+    def test_recomputed_mutation_validation_binds_error_details(self):
+        payload = copy.deepcopy(self.result)
+        recomputed = copy.deepcopy(payload["mutation_results"])
+        payload["mutation_results"][0]["error"] = "tampered explanation"
+        with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "recomputed mutation result detail drift"):
+            gate.validate_recomputed_mutation_results(payload, recomputed)
 
     def test_write_json_rejects_unknown_result_key(self):
         payload = copy.deepcopy(self.result)
