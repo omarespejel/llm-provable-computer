@@ -756,6 +756,8 @@ def run_gate() -> dict[str, Any]:
 
 
 def validate_result(result: dict[str, Any], *, native_profile_ids: set[str] | None = None) -> None:
+    if native_profile_ids is None:
+        native_profile_ids = set(profile_ids())
     validate_receipt(result, load_sources(), load_envelopes(), native_profile_ids=native_profile_ids)
 
 
