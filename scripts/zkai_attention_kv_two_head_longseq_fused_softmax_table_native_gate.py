@@ -533,6 +533,9 @@ def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
 
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
+    source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
+    envelope = read_bounded_json(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
+    validate_result(result, envelope, source_input)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", extrasaction="ignore")
