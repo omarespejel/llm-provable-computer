@@ -73,6 +73,8 @@ SOURCE_TRACE_ROWS = 64
 SOURCE_TABLE_ROWS = 9
 LOOKUP_RELATION = "AttentionKvD16FusedSoftmaxTableRelation"
 LOOKUP_RELATION_WIDTH = 2
+SIDECAR_LOOKUP_RELATION = "AttentionKvD16SoftmaxTableLookupRelation"
+SIDECAR_LOOKUP_RELATION_WIDTH = 2
 
 FUSED_BACKEND_VERSION = "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1"
 FUSED_PROOF_SCHEMA_VERSION = "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1"
@@ -419,10 +421,12 @@ def validate_source_artifacts(source_input: dict[str, Any], source_envelope: dic
         "table_rows": SOURCE_TABLE_ROWS,
         "score_gap_clip": SOURCE_SCORE_GAP_CLIP,
         "weight_policy": SOURCE_WEIGHT_POLICY,
+        "lookup_relation": SIDECAR_LOOKUP_RELATION,
+        "lookup_relation_width": SIDECAR_LOOKUP_RELATION_WIDTH,
         "lookup_claims": SOURCE_SCORE_ROWS,
     }
     for key, expected_value in expected_sidecar.items():
-        if lookup_summary.get(key) != expected_value:
+        if not type_strict_equal(lookup_summary.get(key), expected_value):
             raise AttentionKvD16FusedSoftmaxTableGateError(f"sidecar summary drift for {key}")
 
 

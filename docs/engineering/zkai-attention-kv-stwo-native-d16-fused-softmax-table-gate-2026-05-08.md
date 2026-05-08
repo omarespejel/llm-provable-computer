@@ -29,13 +29,13 @@ and value width from `8` to `16`.
 | Table rows | `9` |
 | Source arithmetic proof bytes | `61,516` |
 | Source arithmetic envelope bytes | `639,928` |
-| LogUp sidecar proof bytes | `13,487` |
-| LogUp sidecar envelope bytes | `257,377` |
-| Source + sidecar raw proof bytes | `75,003` |
-| Fused proof bytes | `64,375` |
-| Fused envelope bytes | `665,491` |
-| Fused delta versus source proof | `2,859` bytes |
-| Fused savings versus source + sidecar | `10,628` bytes |
+| LogUp sidecar proof bytes | `13,445` |
+| LogUp sidecar envelope bytes | `257,041` |
+| Source + sidecar raw proof bytes | `74,961` |
+| Fused proof bytes | `64,503` |
+| Fused envelope bytes | `666,515` |
+| Fused delta versus source proof | `2,987` bytes |
+| Fused savings versus source + sidecar | `10,458` bytes |
 | Fused / source+sidecar raw proof ratio | `0.860487x` |
 | Source gate mutations | `19 / 19` rejected |
 | Sidecar gate mutations | `18 / 18` rejected |

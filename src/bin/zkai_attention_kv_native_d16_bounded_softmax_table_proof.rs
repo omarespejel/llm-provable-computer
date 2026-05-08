@@ -1,6 +1,10 @@
+#[cfg(feature = "stwo-backend")]
 use std::ffi::OsString;
+#[cfg(feature = "stwo-backend")]
 use std::fs;
+#[cfg(feature = "stwo-backend")]
 use std::io::Read;
+#[cfg(feature = "stwo-backend")]
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 

@@ -10,6 +10,12 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source_input = gate.read_bounded_json(gate.SOURCE_INPUT_JSON, gate.MAX_SOURCE_INPUT_JSON_BYTES, "source input")
+        cls.source_envelope = gate.read_bounded_json(
+            gate.SOURCE_ENVELOPE_JSON, gate.MAX_SOURCE_ENVELOPE_JSON_BYTES, "source envelope"
+        )
+        cls.sidecar_envelope = gate.read_bounded_json(
+            gate.SIDECAR_ENVELOPE_JSON, gate.MAX_SIDECAR_ENVELOPE_JSON_BYTES, "sidecar envelope"
+        )
         cls.fused_envelope = gate.read_bounded_json(gate.FUSED_ENVELOPE_JSON, gate.MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
         cls.payload = gate.run_gate()
 
@@ -67,6 +73,17 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
         mutated["fused_summary"]["lookup_claims"] = float(mutated["fused_summary"]["lookup_claims"])
         with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "fused summary drift"):
             gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
+
+    def test_rejects_sidecar_lookup_relation_relabeling(self):
+        for key, value in (("lookup_relation", "OtherRelation"), ("lookup_relation_width", 2.0)):
+            with self.subTest(key=key):
+                sidecar = copy.deepcopy(self.sidecar_envelope)
+                sidecar["lookup_summary"][key] = value
+                with self.assertRaisesRegex(
+                    gate.AttentionKvD16FusedSoftmaxTableGateError,
+                    f"sidecar summary drift for {key}",
+                ):
+                    gate.validate_source_artifacts(self.source_input, self.source_envelope, sidecar)
 
     def same_digit_mutation(self, value):
         return gate.same_digit_int_mutation(value, "test proof byte")
