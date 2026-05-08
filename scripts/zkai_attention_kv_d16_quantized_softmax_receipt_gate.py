@@ -469,6 +469,34 @@ def validate_mutation_results(mutation_results: Any) -> None:
             raise QuantizedSoftmaxReceiptGateError("mutation result rejection drift")
 
 
+def recompute_mutation_results(
+    receipt: dict[str, Any],
+    source: dict[str, Any],
+    envelope: dict[str, Any],
+) -> list[dict[str, Any]]:
+    mutation_results = []
+    for name, mutated_receipt, mutated_source, mutated_envelope, run_native in mutation_cases(receipt, source, envelope):
+        try:
+            validate_receipt(mutated_receipt, mutated_source, mutated_envelope, run_native=run_native)
+        except QuantizedSoftmaxReceiptGateError as err:
+            mutation_results.append({"name": name, "rejected": True, "error": str(err)})
+        else:
+            mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
+    return mutation_results
+
+
+def validate_recomputed_mutation_results(result: dict[str, Any], recomputed: list[dict[str, Any]]) -> None:
+    validate_mutation_results(recomputed)
+    serialized = result.get("mutation_results")
+    validate_mutation_results(serialized)
+    serialized_bitmap = tuple((item["name"], item["rejected"]) for item in serialized)
+    recomputed_bitmap = tuple((item["name"], item["rejected"]) for item in recomputed)
+    if serialized_bitmap != recomputed_bitmap:
+        raise QuantizedSoftmaxReceiptGateError("recomputed mutation result bitmap drift")
+    if result.get("mutations_rejected") != sum(1 for item in recomputed if item["rejected"]):
+        raise QuantizedSoftmaxReceiptGateError("recomputed mutation rejection count drift")
+
+
 def build_base_receipt(source: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": SCHEMA,
@@ -499,14 +527,7 @@ def run_gate() -> dict[str, Any]:
     fused_gate.run_gate()
 
     receipt = build_base_receipt(source)
-    mutation_results = []
-    for name, mutated_receipt, mutated_source, mutated_envelope, run_native in mutation_cases(receipt, source, envelope):
-        try:
-            validate_receipt(mutated_receipt, mutated_source, mutated_envelope, run_native=run_native)
-        except QuantizedSoftmaxReceiptGateError as err:
-            mutation_results.append({"name": name, "rejected": True, "error": str(err)})
-        else:
-            mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
+    mutation_results = recompute_mutation_results(receipt, source, envelope)
     receipt["mutation_results"] = mutation_results
     rejected = sum(1 for item in mutation_results if item["rejected"])
     receipt["mutations_rejected"] = rejected
@@ -518,6 +539,7 @@ def validate_result(result: dict[str, Any], *, run_native: bool = False) -> None
     source = source_input()
     envelope = fused_envelope()
     validate_receipt(result, source, envelope, run_native=run_native)
+    validate_recomputed_mutation_results(result, recompute_mutation_results(result, source, envelope))
 
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
