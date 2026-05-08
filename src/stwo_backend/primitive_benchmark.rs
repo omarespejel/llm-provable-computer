@@ -6281,6 +6281,30 @@ mod tests {
             .to_array()
             .iter()
             .all(|lane| *lane == SecureField::one()));
+
+        let mut selector_lanes = PackedSecureField::one().to_array();
+        for (index, lane) in selector_lanes.iter_mut().enumerate() {
+            if index % 2 == 1 {
+                *lane = SecureField::zero();
+            }
+        }
+        let mixed_selector = PackedSecureField::from_array(selector_lanes);
+        let (mixed_numerator, mixed_denominator) =
+            selector_masked_lookup_fraction_terms(mixed_selector, zero, nontrivial_q, zero);
+        for (index, (numerator_lane, denominator_lane)) in mixed_numerator
+            .to_array()
+            .iter()
+            .zip(mixed_denominator.to_array().iter())
+            .enumerate()
+        {
+            if index % 2 == 1 {
+                assert_eq!(*numerator_lane, SecureField::zero());
+                assert_eq!(*denominator_lane, SecureField::one());
+            } else {
+                assert_eq!(*numerator_lane, SecureField::one());
+                assert_eq!(*denominator_lane, SecureField::from(BaseField::from(7u32)));
+            }
+        }
     }
 
     #[test]
