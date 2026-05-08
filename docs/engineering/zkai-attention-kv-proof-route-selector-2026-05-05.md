@@ -630,6 +630,7 @@ python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv
 
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
+  --run-native \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
 

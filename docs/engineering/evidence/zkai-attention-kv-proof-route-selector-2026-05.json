@@ -339,7 +339,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "dfc3ced8b348acaa691b90acd67fe1fc69a43610",
+  "git_commit": "0c3c3a1b144bb9f463713409b7ab0bca04033455",
   "metrics": {
     "multihead_quantized_softmax_fused_proof_size_bytes_sum": 102976,
     "multihead_quantized_softmax_head_counts_checked": [

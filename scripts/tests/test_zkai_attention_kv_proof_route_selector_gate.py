@@ -24,14 +24,31 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
         try:
             with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
-                GATE.load_quantized_softmax_receipt_payload()
+                GATE.load_quantized_softmax_receipt_payload(run_native=True)
             validate_single.assert_called_once()
             self.assertEqual(validate_single.call_args.kwargs, {"run_native": True})
 
             with mock.patch.object(GATE.MULTIHEAD_QUANTIZED_SOFTMAX, "validate_result") as validate_multihead:
-                GATE.load_multihead_quantized_softmax_receipt_payload()
+                GATE.load_multihead_quantized_softmax_receipt_payload(run_native=True)
             validate_multihead.assert_called_once()
             self.assertEqual(validate_multihead.call_args.kwargs, {"run_native": True})
+        finally:
+            GATE._load_quantized_softmax_receipt_payload.cache_clear()
+            GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+
+    def test_selector_default_receipt_loaders_are_structural_only(self) -> None:
+        GATE._load_quantized_softmax_receipt_payload.cache_clear()
+        GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
+        try:
+            with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
+                GATE.load_quantized_softmax_receipt_payload()
+            validate_single.assert_called_once()
+            self.assertEqual(validate_single.call_args.kwargs, {"run_native": False})
+
+            with mock.patch.object(GATE.MULTIHEAD_QUANTIZED_SOFTMAX, "validate_result") as validate_multihead:
+                GATE.load_multihead_quantized_softmax_receipt_payload()
+            validate_multihead.assert_called_once()
+            self.assertEqual(validate_multihead.call_args.kwargs, {"run_native": False})
         finally:
             GATE._load_quantized_softmax_receipt_payload.cache_clear()
             GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
