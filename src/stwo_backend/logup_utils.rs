@@ -21,6 +21,13 @@ pub(crate) fn selector_masked_denominator(
     denominator: PackedSecureField,
 ) -> PackedSecureField {
     let selector_lanes = selector.to_array();
+    if selector_lanes
+        .iter()
+        .all(|selector_lane| *selector_lane != SecureField::zero())
+    {
+        return denominator;
+    }
+
     let mut denominator_lanes = denominator.to_array();
     for (selector_lane, denominator_lane) in selector_lanes.iter().zip(denominator_lanes.iter_mut())
     {
