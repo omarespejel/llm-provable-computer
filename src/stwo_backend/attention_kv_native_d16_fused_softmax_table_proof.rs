@@ -573,9 +573,10 @@ fn fused_preprocessed_trace(
     let mut columns: Vec<Vec<BaseField>> =
         vec![Vec::with_capacity(TRACE_ROW_COUNT); fused_preprocessed_column_ids().len()];
     let row_column_count = fused_row_column_ids().len();
-    if columns.len() < row_column_count {
+    let table_column_count = 3;
+    if columns.len() < row_column_count + table_column_count {
         return Err(fused_error(
-            "fused preprocessed trace has fewer columns than row layout",
+            "fused preprocessed trace has fewer columns than row and table layout",
         ));
     }
 
