@@ -729,6 +729,51 @@ python3 scripts/zkai_attention_kv_two_head_longseq_air_private_softmax_table_loo
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_bounded_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_bounded_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_softmax_table_lookup_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_softmax_table_lookup_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d16_air_private_softmax_table_lookup_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-gate-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d16_fused_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv
@@ -759,6 +804,9 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_eight_head_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_two_head_longseq_air_private_softmax_table_lookup_gate \
+  scripts.tests.test_zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input \
+  scripts.tests.test_zkai_attention_kv_d16_air_private_softmax_table_lookup_gate \
+  scripts.tests.test_zkai_attention_kv_d16_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
@@ -805,5 +853,14 @@ cargo +nightly-2025-07-14 test attention_kv_two_head_longseq_fused_softmax_table
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_two_head_longseq_softmax_table_lookup \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_native_d16_bounded_softmax_table \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_d16_softmax_table_lookup \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_native_d16_fused_softmax_table \
   --lib --features stwo-backend
 ```

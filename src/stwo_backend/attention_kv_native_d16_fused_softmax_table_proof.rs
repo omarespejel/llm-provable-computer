@@ -572,6 +572,12 @@ fn fused_preprocessed_trace(
     let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
     let mut columns: Vec<Vec<BaseField>> =
         vec![Vec::with_capacity(TRACE_ROW_COUNT); fused_preprocessed_column_ids().len()];
+    let row_column_count = fused_row_column_ids().len();
+    if columns.len() < row_column_count {
+        return Err(fused_error(
+            "fused preprocessed trace has fewer columns than row layout",
+        ));
+    }
 
     let mut rows = input.score_rows.clone();
     while rows.len() < TRACE_ROW_COUNT {
@@ -580,16 +586,15 @@ fn fused_preprocessed_trace(
     for (real_index, row) in rows.iter().enumerate() {
         let enabled = usize::from(real_index < input.score_rows.len());
         let values = row_values(row, enabled)?;
-        for (column, value) in columns
-            .iter_mut()
-            .take(fused_row_column_ids().len())
-            .zip(values)
-        {
+        if values.len() != row_column_count {
+            return Err(fused_error("fused row/value column count drift"));
+        }
+        for (column, value) in columns.iter_mut().take(row_column_count).zip(values) {
             column.push(value);
         }
     }
 
-    let table_offset = fused_row_column_ids().len();
+    let table_offset = row_column_count;
     let Some(pad) = input.weight_table.last() else {
         return Err(fused_error(
             "source validation requires a non-empty weight table",
