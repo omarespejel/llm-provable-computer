@@ -55,11 +55,12 @@ SOURCE_ENVELOPE_SIZE_BYTES = 639_928
 SIDECAR_PROOF_SIZE_BYTES = 13_445
 SIDECAR_ENVELOPE_SIZE_BYTES = 257_041
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + SIDECAR_PROOF_SIZE_BYTES
-FUSED_PROOF_SIZE_BYTES = 64_532
-FUSED_ENVELOPE_SIZE_BYTES = 666_747
+FUSED_PROOF_SIZE_BYTES = 64_503
+FUSED_ENVELOPE_SIZE_BYTES = 666_515
 FUSED_OVER_SOURCE_PROOF_BYTES = FUSED_PROOF_SIZE_BYTES - SOURCE_PROOF_SIZE_BYTES
 FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - FUSED_PROOF_SIZE_BYTES
-FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = FUSED_PROOF_SIZE_BYTES / SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES
+# Fixed-decimal strings keep checked evidence stable across JSON encoders.
+FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = "0.860487"
 
 SOURCE_STATEMENT_COMMITMENT = "blake2b-256:4292fdf43f7f08a5820584e3e80ba22e6bc8a378a9811a5983799b36badda462"
 SOURCE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:bad2b16dd13bc731bace7459a4aee8c28f470de7541fa8181034552c22e1ca34"
@@ -281,6 +282,25 @@ def type_strict_equal(left: Any, right: Any) -> bool:
     if isinstance(left, list):
         return len(left) == len(right) and all(type_strict_equal(a, b) for a, b in zip(left, right))
     return left == right
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def proof_bytes(envelope: dict[str, Any]) -> bytes:
+    proof = envelope.get("proof")
+    if not isinstance(proof, list) or not all(isinstance(value, int) for value in proof):
+        raise AttentionKvD16FusedSoftmaxTableGateError("fused proof bytes drift")
+    return bytes(proof)
+
+
+def fused_artifact_commitments(envelope: dict[str, Any]) -> tuple[str, str]:
+    envelope_commitment = "blake2b-256:" + hashlib.blake2b(
+        canonical_json_bytes(envelope), digest_size=32
+    ).hexdigest()
+    proof_commitment = "blake2b-256:" + hashlib.blake2b(proof_bytes(envelope), digest_size=32).hexdigest()
+    return envelope_commitment, proof_commitment
 
 
 def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: str) -> None:
@@ -586,6 +606,7 @@ def run_gate() -> dict[str, Any]:
     rejected = sum(1 for result in mutation_results if result["rejected"])
     if rejected != EXPECTED_MUTATION_COUNT:
         raise AttentionKvD16FusedSoftmaxTableGateError(f"mutation rejection drift: got {rejected}")
+    fused_envelope_commitment, fused_proof_commitment = fused_artifact_commitments(fused_envelope)
 
     result = {
         "schema": SCHEMA,
@@ -617,6 +638,8 @@ def run_gate() -> dict[str, Any]:
         "source_public_instance_commitment": SOURCE_PUBLIC_INSTANCE_COMMITMENT,
         "source_score_row_commitment": SOURCE_SCORE_ROW_COMMITMENT,
         "source_weight_table_commitment": SOURCE_WEIGHT_TABLE_COMMITMENT,
+        "fused_envelope_commitment": fused_envelope_commitment,
+        "fused_proof_commitment": fused_proof_commitment,
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
@@ -631,6 +654,13 @@ def run_gate() -> dict[str, Any]:
 def validate_result(result: dict[str, Any]) -> None:
     if not isinstance(result, dict):
         raise AttentionKvD16FusedSoftmaxTableGateError("result must be an object")
+    fused_envelope, _fused_raw = read_sized_envelope(
+        FUSED_ENVELOPE_JSON,
+        MAX_FUSED_ENVELOPE_JSON_BYTES,
+        FUSED_ENVELOPE_SIZE_BYTES,
+        "fused envelope",
+    )
+    fused_envelope_commitment, fused_proof_commitment = fused_artifact_commitments(fused_envelope)
     expected_exact: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -661,6 +691,8 @@ def validate_result(result: dict[str, Any]) -> None:
         "source_public_instance_commitment": SOURCE_PUBLIC_INSTANCE_COMMITMENT,
         "source_score_row_commitment": SOURCE_SCORE_ROW_COMMITMENT,
         "source_weight_table_commitment": SOURCE_WEIGHT_TABLE_COMMITMENT,
+        "fused_envelope_commitment": fused_envelope_commitment,
+        "fused_proof_commitment": fused_proof_commitment,
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
@@ -674,6 +706,10 @@ def validate_result(result: dict[str, Any]) -> None:
     extra = set(result) - required
     if extra:
         raise AttentionKvD16FusedSoftmaxTableGateError(f"unknown result keys: {sorted(extra)}")
+    for key in ("fused_envelope_commitment", "fused_proof_commitment"):
+        value = expected_exact[key]
+        if not isinstance(value, str) or not value.startswith("blake2b-256:"):
+            raise AttentionKvD16FusedSoftmaxTableGateError(f"{key} drift")
     for key, expected_value in expected_exact.items():
         if not type_strict_equal(result.get(key), expected_value):
             raise AttentionKvD16FusedSoftmaxTableGateError(f"result drift for {key}")

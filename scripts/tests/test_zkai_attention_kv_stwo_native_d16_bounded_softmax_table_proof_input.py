@@ -50,6 +50,21 @@ class AttentionKvBoundedSoftmaxTableInputTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableInputError, "unknown payload keys"):
             gate.validate_payload(payload)
 
+    def test_rejects_row_metadata_drift(self):
+        cases = {
+            "score_row_count": gate.SCORE_ROW_COUNT + 1,
+            "score_gap_bits": gate.SCORE_GAP_BITS + 1,
+            "causal_gap_bits": gate.CAUSAL_GAP_BITS + 1,
+            "weight_bits": gate.WEIGHT_BITS + 1,
+            "output_remainder_bits": gate.OUTPUT_REMAINDER_BITS + 1,
+        }
+        for key, value in cases.items():
+            with self.subTest(key=key):
+                payload = gate.build_payload()
+                payload[key] = value
+                with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableInputError, f"{key} drift"):
+                    gate.validate_payload(payload)
+
     def test_rejects_weight_relabeling(self):
         payload = gate.build_payload()
         payload["score_rows"][0]["attention_weight"] = 15
