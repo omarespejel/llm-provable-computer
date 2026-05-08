@@ -138,9 +138,9 @@ EXPECTED_MUTATION_NAMES = (
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 
 VALIDATION_COMMANDS = (
-    "cargo +nightly-2025-07-14 test attention_kv_d16_fused_softmax_table --lib --features stwo-backend",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_d16_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_d16_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_fused_softmax_table_native_gate",
     "just lib",
@@ -321,6 +321,7 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: st
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",
@@ -402,7 +403,7 @@ def validate_source_artifacts(source_input: dict[str, Any], source_envelope: dic
         SOURCE_INPUT_MODULE.validate_payload(source_input)
     except Exception as err:
         raise AttentionKvD16FusedSoftmaxTableGateError(f"source input validation drift: {err}") from err
-    if source_envelope.get("input") != source_input:
+    if not type_strict_equal(source_envelope.get("input"), source_input):
         raise AttentionKvD16FusedSoftmaxTableGateError("source envelope/input split-brain drift")
     if len(source_envelope.get("proof", [])) != SOURCE_PROOF_SIZE_BYTES:
         raise AttentionKvD16FusedSoftmaxTableGateError("source proof size drift")

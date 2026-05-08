@@ -85,6 +85,15 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 ):
                     gate.validate_source_artifacts(self.source_input, self.source_envelope, sidecar)
 
+    def test_rejects_source_envelope_input_type_smuggling(self):
+        envelope = copy.deepcopy(self.source_envelope)
+        envelope["input"]["score_rows"][0]["row_index"] = float(envelope["input"]["score_rows"][0]["row_index"])
+        with self.assertRaisesRegex(
+            gate.AttentionKvD16FusedSoftmaxTableGateError,
+            "source envelope/input split-brain drift",
+        ):
+            gate.validate_source_artifacts(self.source_input, envelope, self.sidecar_envelope)
+
     def same_digit_mutation(self, value):
         return gate.same_digit_int_mutation(value, "test proof byte")
 

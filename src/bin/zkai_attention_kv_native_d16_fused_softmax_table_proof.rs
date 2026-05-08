@@ -1,4 +1,6 @@
 #[cfg(feature = "stwo-backend")]
+use std::ffi::OsString;
+#[cfg(feature = "stwo-backend")]
 use std::fs;
 #[cfg(feature = "stwo-backend")]
 use std::io::Read;
@@ -40,7 +42,15 @@ fn main() -> ExitCode {
 
 #[cfg(feature = "stwo-backend")]
 fn run() -> Result<String, String> {
-    let mut args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    run_with_args(std::env::args_os().skip(1))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn run_with_args<I>(args: I) -> Result<String, String>
+where
+    I: IntoIterator<Item = OsString>,
+{
+    let mut args = args.into_iter().collect::<Vec<_>>();
     if args.is_empty() {
         return Err("usage: zkai_attention_kv_native_d16_fused_softmax_table_proof prove <source-input.json> <fused-envelope.json> | verify <fused-envelope.json>".to_string());
     }
@@ -189,4 +199,97 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
         ));
     }
     Ok(raw)
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn arg(value: &str) -> OsString {
+        OsString::from(value)
+    }
+
+    fn temp_path(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "ptvm-d16-fused-softmax-cli-{label}-{}-{nonce}.json",
+            std::process::id()
+        ))
+    }
+
+    fn write_temp(label: &str, bytes: &[u8]) -> PathBuf {
+        let path = temp_path(label);
+        fs::write(&path, bytes).expect("write temp file");
+        path
+    }
+
+    #[test]
+    fn rejects_missing_or_unknown_cli_args() {
+        assert!(run_with_args(Vec::<OsString>::new())
+            .expect_err("missing args must reject")
+            .contains("usage:"));
+        assert_eq!(
+            run_with_args(vec![arg("wat")]).expect_err("unknown mode must reject"),
+            "unknown mode: wat"
+        );
+        assert_eq!(
+            run_with_args(vec![arg("prove")]).expect_err("bad prove args must reject"),
+            "usage: prove <source-input.json> <fused-envelope.json>"
+        );
+        assert_eq!(
+            run_with_args(vec![arg("verify")]).expect_err("bad verify args must reject"),
+            "usage: verify <fused-envelope.json>"
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_envelope_json() {
+        let envelope = write_temp("bad-envelope", b"{not-json");
+        let error = run_with_args(vec![arg("verify"), envelope.as_os_str().to_os_string()])
+            .expect_err("malformed envelope must reject");
+        assert!(error.contains("key must be a string") || error.contains("expected ident"));
+        let _ = fs::remove_file(envelope);
+    }
+
+    #[test]
+    fn rejects_oversized_envelope_before_deserialization() {
+        let envelope = write_temp(
+            "oversized-envelope",
+            &vec![
+                b'0';
+                ZKAI_ATTENTION_KV_NATIVE_D16_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES + 1
+            ],
+        );
+        let error = run_with_args(vec![arg("verify"), envelope.as_os_str().to_os_string()])
+            .expect_err("oversized envelope must reject");
+        assert!(error.contains("fused envelope JSON exceeds max size"));
+        let _ = fs::remove_file(envelope);
+    }
+
+    #[test]
+    fn rejects_tampered_envelope_proof_bytes() {
+        let mut envelope: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json"
+        ))
+        .expect("checked fused envelope fixture");
+        let proof = envelope
+            .get_mut("proof")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("proof bytes");
+        let first = proof
+            .first()
+            .and_then(serde_json::Value::as_u64)
+            .expect("first proof byte");
+        proof[0] = serde_json::Value::from((first ^ 1) as u8);
+        let raw = serde_json::to_vec(&envelope).expect("serialize tampered envelope");
+        let path = write_temp("tampered-envelope", &raw);
+        let error = run_with_args(vec![arg("verify"), path.as_os_str().to_os_string()])
+            .expect_err("tampered envelope must reject");
+        assert!(!error.is_empty());
+        let _ = fs::remove_file(path);
+    }
 }
