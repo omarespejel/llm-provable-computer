@@ -186,7 +186,13 @@ def read_bounded_bytes(path: pathlib.Path, max_bytes: int, label: str) -> bytes:
     size = path.stat().st_size
     if size <= 0 or size > max_bytes:
         raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"{label} size drift: got {size}, max {max_bytes}")
-    return path.read_bytes()
+    with path.open("rb") as handle:
+        raw = handle.read(max_bytes + 1)
+    if len(raw) <= 0 or len(raw) > max_bytes:
+        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
+            f"{label} size drift: got {len(raw)}, max {max_bytes}"
+        )
+    return raw
 
 
 def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:

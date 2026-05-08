@@ -57,6 +57,18 @@ class TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.TestCase):
         mutation_errors = [item["error"] for item in result["mutation_results"]]
         self.assertNotIn("mutation result shape drift", mutation_errors)
 
+    def test_read_bounded_bytes_rejects_empty_and_oversized_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = gate.pathlib.Path(tmp)
+            empty_path = tmp_dir / "empty.bin"
+            oversized_path = tmp_dir / "oversized.bin"
+            empty_path.write_bytes(b"")
+            oversized_path.write_bytes(b"abc")
+            with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "size drift"):
+                gate.read_bounded_bytes(empty_path, 8, "empty")
+            with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "size drift"):
+                gate.read_bounded_bytes(oversized_path, 2, "oversized")
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_dir = gate.pathlib.Path(tmp)

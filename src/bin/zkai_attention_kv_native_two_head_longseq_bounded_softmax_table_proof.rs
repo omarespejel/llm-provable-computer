@@ -99,11 +99,13 @@ fn run() -> Result<String, String> {
                     envelope_path.display()
                 )
             })?;
+            let input_path_json = input_path.to_string_lossy().into_owned();
+            let envelope_path_json = envelope_path.to_string_lossy().into_owned();
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-cli-summary-v1",
                 "mode": "prove",
-                "input_path": input_path,
-                "envelope_path": envelope_path,
+                "input_path": input_path_json,
+                "envelope_path": envelope_path_json,
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": envelope_bytes.len(),
                 "statement_commitment": envelope.input.statement_commitment,
@@ -131,10 +133,11 @@ fn run() -> Result<String, String> {
                 &envelope,
             )
             .map_err(|error| error.to_string())?;
+            let envelope_path_json = envelope_path.to_string_lossy().into_owned();
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-cli-summary-v1",
                 "mode": "verify",
-                "envelope_path": envelope_path,
+                "envelope_path": envelope_path_json,
                 "proof_size_bytes": envelope.proof.len(),
                 "envelope_size_bytes": raw.len(),
                 "statement_commitment": envelope.input.statement_commitment,
@@ -150,6 +153,22 @@ fn run() -> Result<String, String> {
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
+    let preflight_metadata = fs::metadata(path)
+        .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    if !preflight_metadata.is_file() {
+        return Err(format!(
+            "{} {} is not a regular file",
+            label,
+            path.display()
+        ));
+    }
+    if preflight_metadata.len() > max_bytes as u64 {
+        return Err(format!(
+            "{label} exceeds max size: got {} bytes, limit {} bytes",
+            preflight_metadata.len(),
+            max_bytes
+        ));
+    }
     let file = fs::File::open(path)
         .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let metadata = file.metadata().map_err(|error| {
