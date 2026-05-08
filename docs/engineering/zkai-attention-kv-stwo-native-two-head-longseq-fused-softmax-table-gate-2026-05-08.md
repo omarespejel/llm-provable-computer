@@ -224,4 +224,5 @@ python3 -m unittest scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_
 
 just lib
 just gate-fast
+just gate
 ```
