@@ -74,30 +74,30 @@ python3 scripts/paper/generate_tablero_results_overview.py
 python3 scripts/paper/generate_tablero_scaling_law.py
 python3 scripts/paper/generate_tablero_replay_breakdown.py
 python3 scripts/paper/paper_preflight.py --repo-root .
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-softmax-table-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_two_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_native_bounded_weighted_proof --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_weighted_proof --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_bounded_softmax_table --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_two_head_bounded_softmax_table --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_d8_softmax_table_lookup --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_two_head_softmax_table_lookup --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_d8_fused_softmax_table --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_two_head_fused_softmax_table --lib --features stwo-backend
-cargo +nightly-2025-07-14 test attention_kv_four_head_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-seq16-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-masked-sequence-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-weighted-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_weighted_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-bounded-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d8_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d8_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 test --locked attention_kv_native_masked_sequence_proof --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_native_bounded_weighted_proof --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_native_d8_bounded_weighted_proof --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_native_two_head_bounded_weighted_proof --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_bounded_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_bounded_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_d8_softmax_table_lookup --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_softmax_table_lookup --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_d8_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table --lib --features stwo-backend
 python3 -m unittest scripts.tests.test_aggregate_tablero_replay_breakdown scripts.tests.test_zkai_attention_kv_transition_receipt_probe scripts.tests.test_zkai_attention_kv_snark_statement_receipt_gate scripts.tests.test_zkai_attention_kv_stwo_native_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_stwo_native_seq16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_seq16_native_scale_gate scripts.tests.test_zkai_attention_kv_stwo_native_d16_masked_sequence_proof_input scripts.tests.test_zkai_attention_kv_d16_native_width_gate scripts.tests.test_zkai_attention_kv_proof_route_selector_gate scripts.tests.test_zkai_attention_kv_stwo_native_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_d8_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_stwo_native_two_head_bounded_weighted_proof_input scripts.tests.test_zkai_attention_kv_two_head_bounded_weighted_native_gate scripts.tests.test_zkai_attention_kv_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_bounded_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_d8_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_two_head_softmax_table_lookup_native_gate scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_two_head_fused_softmax_table_native_gate scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate
 git diff --check
 just gate-fast
