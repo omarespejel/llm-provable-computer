@@ -7,7 +7,7 @@ today?
 
 ## Result
 
-GO for ten narrow proof-backed routes, with the native Stwo routes now first:
+GO for eleven narrow proof-backed routes, with the native Stwo routes now first:
 
 1. a native Stwo AIR proof for a fixed eight-step `d=8` causal-prefix masked
    integer-argmax attention/KV sequence;
@@ -19,15 +19,17 @@ GO for ten narrow proof-backed routes, with the native Stwo routes now first:
    proof over sixteen steps per head;
 5. a native Stwo d16 fused Softmax-table attention/LogUp proof over the width
    axis at fixed sequence length;
-6. an external `snarkjs/Groth16/BN128` statement receipt over the source-backed
+6. a native Stwo d16 implementation-exact quantized Softmax-table kernel
+   receipt over the d16 fused attention/LogUp proof;
+7. an external `snarkjs/Groth16/BN128` statement receipt over the source-backed
    attention/KV transition contract;
-7. a RISC Zero receipt whose guest computes the tiny integer-argmax
+8. a RISC Zero receipt whose guest computes the tiny integer-argmax
    attention/KV transition semantics under an explicit no-mask policy;
-8. a RISC Zero receipt whose guest computes a three-step carried KV-cache
+9. a RISC Zero receipt whose guest computes a three-step carried KV-cache
    sequence and commits every intermediate transition row;
-9. a RISC Zero receipt whose guest computes a fixed eight-step carried KV-cache
+10. a RISC Zero receipt whose guest computes a fixed eight-step carried KV-cache
    sequence and commits every intermediate transition row;
-10. a RISC Zero receipt whose guest computes a fixed eight-step `d=8`
+11. a RISC Zero receipt whose guest computes a fixed eight-step `d=8`
    causal-prefix masked sequence and commits every intermediate transition row.
 
 The important update is that the native Stwo route is no longer a no-go for this
@@ -213,6 +215,19 @@ kernel across the checked two-head, four-head, and eight-head fixtures. It is
 still not real-valued exp/div Softmax, full inference, long-context inference,
 or recursion/PCD.
 
+Issue `#506` applies the same implementation-exact receipt discipline to the
+width-axis d16 fused route from issue `#501`. The backing proof is the d16
+fused native Stwo proof (`64503` raw bytes, `52` lookup claims, `9` table
+rows), and the receipt pins key width `16`, value width `16`, sequence length
+`8`, score scale `1`, per-step max subtraction, clipped-gap table lookup,
+positive denominators, Euclidean floor division, nonnegative output
+remainders, and a `< 1` output-unit division-error bound. The observed
+per-step denominators are `[288, 304, 560, 336, 352, 416, 544, 400]`; the
+largest observed division residual is `25/26`. The gate rejects `34 / 34`
+semantic/proof mutations. This is exact for the pinned d16 integer
+table/floor-division kernel, not real-valued Softmax, not implementation-exact
+model Softmax, not full inference, and not a timing result.
+
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
 each fused envelope and each fused proof byte payload. The checked strict command
@@ -234,14 +249,16 @@ Issue `#485` closes the first implementation-exact
 quantized Softmax-table kernel receipt on the single-head fused route. Issues
 `#494` and `#496` close the bounded multi-head version for checked two-head,
 four-head, and eight-head fused routes without weakening denominator/remainder,
-max-score recomputation, or output-order binding. Exact real-valued exp/div
-Softmax, long-context inference, full inference, and recursion/PCD remain open.
+max-score recomputation, or output-order binding. Issue `#506` closes the same
+integer-kernel receipt discipline for the checked d16 width point. Exact
+real-valued exp/div Softmax, long-context inference, full inference, and
+recursion/PCD remain open.
 The external SNARK and RISC Zero routes remain useful controls, not the headline
 result.
 
 Decision:
 
-`GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+`GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
 
 First blocker:
 
@@ -249,7 +266,7 @@ First blocker:
 
 Claim boundary:
 
-`NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
+`NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
 
 ## Checked Routes
 
@@ -269,6 +286,7 @@ Claim boundary:
 | Local Stwo four-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the four-head table-membership multiset; `4.0x` lookup claims with `1.477314x` raw proof bytes versus single-head |
 | Local Stwo d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks single-head attention arithmetic and table membership; `47698` raw proof bytes versus `59437` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d16 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks d16 attention arithmetic and table membership; `64503` raw proof bytes versus `74961` bytes for the matched d16 source-plus-sidecar pair |
+| Local Stwo d16 implementation-exact quantized Softmax-table receipt | GO; one d16 fused Stwo proof backs the pinned width-16 integer table/floor-division kernel; `64503` raw proof bytes, `52` lookup claims, `9` table rows, and `34 / 34` semantic/proof mutations rejected |
 | Local Stwo two-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head attention arithmetic and table membership; `49508` raw proof bytes versus `65208` bytes for the previous source-plus-sidecar pair |
 | Local Stwo four-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks four-head attention arithmetic and table membership; `53468` raw proof bytes versus `74529` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
@@ -331,6 +349,8 @@ Claim boundary:
 - Native d16 fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json`
 - Native quantized Softmax-table receipt gate: `docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json`
 - Native quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv`
+- Native d16 quantized Softmax-table receipt gate: `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json`
+- Native d16 quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -348,11 +368,11 @@ Claim boundary:
 
 | Surface | Result |
 | --- | ---: |
-| Proof-backed routes available | 10 |
-| Routes checked by selector evidence | 12 |
+| Proof-backed routes available | 11 |
+| Routes checked by selector evidence | 13 |
 | Additional native Softmax-table scale gates summarized | 3 |
 | Additional fused Softmax-table routes summarized | 6 |
-| Additional implementation-exact quantized Softmax-table receipts summarized | 2 |
+| Additional implementation-exact quantized Softmax-table receipts summarized | 3 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
 | Native Stwo proof envelope size | `265791` bytes |
@@ -380,22 +400,28 @@ Claim boundary:
 | d16 fused Softmax-table envelope size | `666515` bytes |
 | d16 fused versus source-plus-sidecar bytes | `64503` / `74961` |
 | d16 fused bytes saved versus source-plus-sidecar | `10458` bytes |
+| d16 quantized Softmax-table proof size | `64503` bytes |
+| d16 quantized Softmax-table key/value width | `16` / `16` |
+| d16 quantized Softmax-table sequence length | `8` |
+| d16 quantized Softmax-table lookup claims | `52` |
+| d16 quantized Softmax-table max observed division residual | `25/26` |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
 | RISC Zero transition semantics receipt size | `221842` bytes |
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
-| Mutations checked | 65 |
-| Mutations rejected | 65 |
-| Selector commitment | `blake2b-256:34fa1ba36c4e092c4410acb00a35db485d5305c3e0a842db311d58610a44b5dc` |
+| Mutations checked | 72 |
+| Mutations rejected | 72 |
+| Selector commitment | `blake2b-256:aad6edf7121af58ca7c908bf35b24708878c4375047fe9f0b6b168a6ca6f96d4` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
-drift, long-sequence and d16 fused-route drift, external SNARK route/removal and
-receipt drift, all RISC Zero route/removal and sequence/metric drift cases, fake
-proof/verifier metrics, next-go weakening, non-claim weakening, claim-boundary
-weakening, first-blocker removal, and unknown top-level fields.
+drift, d16 quantized Softmax receipt drift, long-sequence and d16 fused-route
+drift, external SNARK route/removal and receipt drift, all RISC Zero
+route/removal and sequence/metric drift cases, fake proof/verifier metrics,
+next-go weakening, non-claim weakening, claim-boundary weakening, first-blocker
+removal, and unknown top-level fields.
 
 ## Interpretation
 

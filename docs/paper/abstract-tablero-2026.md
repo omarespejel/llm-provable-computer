@@ -74,10 +74,12 @@ transformer-shaped surface: a fixed eight-step `d=8` causal-prefix masked
 integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, and
 a `24394`-byte proof. The current route selector also includes single-head plus
 two-head/four-head/eight-head implementation-exact quantized Softmax-table
-receipts over the pinned integer table/floor-division kernel, plus a separate
-two-head long-sequence fused Softmax-table proof with `336` lookup claims and a
-`60502`-byte raw proof. The matched source-plus-sidecar control is `79444` raw
-proof bytes, so this route records proof-byte savings only, not timing. This is
+receipts over the pinned integer table/floor-division kernel, a d16
+implementation-exact quantized Softmax-table receipt with a `64503`-byte proof,
+and a separate two-head long-sequence fused Softmax-table proof with `336`
+lookup claims and a `60502`-byte raw proof. The matched source-plus-sidecar
+control is `79444` raw proof bytes, so this route records proof-byte savings
+only, not timing. This is
 not real-valued Softmax, not a public long-context benchmark, and not full inference. The extension therefore treats nested-proof
 verification, commitment binding, resource bounds, and
 publication-versus-experimental drift as validation risks rather than

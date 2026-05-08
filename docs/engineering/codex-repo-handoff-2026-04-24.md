@@ -445,13 +445,14 @@ Tablero boundary.
 
 
 - The attention/KV proof-route selector records a narrow
-  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
-  for ten proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
+  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+  for eleven proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
   the native Stwo single-head implementation-exact quantized Softmax-table kernel
   receipt, the native Stwo multi-head implementation-exact quantized
   Softmax-table kernel receipt, the native Stwo two-head long-sequence fused
   Softmax-table/LogUp route, the native Stwo d16 fused Softmax-table/LogUp
-  width-axis route, the external SNARK statement-receipt route, the RISC
+  width-axis route, the native Stwo d16 implementation-exact quantized
+  Softmax-table kernel receipt, the external SNARK statement-receipt route, the RISC
   Zero transition semantics route, the RISC Zero three-step sequence semantics
   route, the RISC Zero fixed eight-step sequence semantics route, and the RISC
   Zero fixed eight-step `d=8` causal-prefix masked sequence route. The
@@ -462,7 +463,7 @@ Tablero boundary.
   Softmax-table, fused four-head Softmax-table, fused eight-head Softmax-table,
   fused long-sequence Softmax-table,
   and quantized Softmax-table receipt gates are separate native
-  scale/semantics/accounting/fusion gates. It rejects `65 / 65` selector mutations and keeps real-valued Softmax,
+  scale/semantics/accounting/fusion gates. It rejects `72 / 72` selector mutations and keeps real-valued Softmax,
   long-context inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or
