@@ -339,7 +339,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_GENERAL_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "8aa85b0fde632d8e36ace14f22ebe0e53d1b6dcd",
+  "git_commit": "18c09496e41757ce306bdf1a5c2e0a774af6b2a1",
   "metrics": {
     "native_stwo_envelope_size_bytes": 265791,
     "native_stwo_proof_size_bytes": 24394,

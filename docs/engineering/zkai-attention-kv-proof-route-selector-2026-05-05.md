@@ -286,9 +286,9 @@ Claim boundary:
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
-| Mutations checked | 42 |
-| Mutations rejected | 42 |
-| Selector commitment | `blake2b-256:dd5e6101a72d037339afb985245fede039d7ef5f0defce3a190540c143f29961` |
+| Mutations checked | 48 |
+| Mutations rejected | 48 |
+| Selector commitment | `blake2b-256:1a89fdcfadd29504ff284fd7ae7707dbc89dc9beb349d289ead4bf7982b8bfc7` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, external SNARK route/removal and
@@ -603,6 +603,10 @@ python3 scripts/zkai_attention_kv_four_head_fused_softmax_table_native_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_quantized_softmax_receipt_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.tsv
@@ -625,6 +629,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_two_head_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \

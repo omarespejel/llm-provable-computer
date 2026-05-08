@@ -8,10 +8,15 @@ from scripts import zkai_attention_kv_quantized_softmax_receipt_gate as gate
 
 class QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.source = gate.source_input()
         cls.envelope = gate.fused_envelope()
-        cls.result = gate.run_gate()
+        cls.result = gate.build_base_receipt(cls.source)
+        cls.result["mutation_results"] = [
+            {"name": name, "rejected": True, "error": "covered by mutation-specific unit tests"}
+            for name in gate.EXPECTED_MUTATION_NAMES
+        ]
+        gate.validate_receipt(cls.result, cls.source, cls.envelope, run_native=False)
 
     def test_records_exact_integer_kernel_without_real_softmax_overclaim(self):
         result = self.result
@@ -39,11 +44,18 @@ class QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertLess(metrics["max_observed_division_error_decimal"], 1.0)
 
     def test_all_declared_mutations_reject(self):
-        base = copy.deepcopy(self.result)
-        base["mutation_results"] = []
-        for name, receipt, source, envelope, run_native in gate.mutation_cases(base, self.source, self.envelope):
+        for name, receipt, source, envelope, run_native in gate.mutation_cases(
+            self.result, self.source, self.envelope
+        ):
             with self.assertRaises(gate.QuantizedSoftmaxReceiptGateError, msg=name):
                 gate.validate_receipt(receipt, source, envelope, run_native=run_native)
+
+    def test_run_gate_executes_full_native_backing_proof(self):
+        result = gate.run_gate()
+
+        self.assertEqual(result["decision"], gate.DECISION)
+        self.assertEqual(result["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
+        self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 
     def test_rejects_source_denominator_or_remainder_drift(self):
         source = copy.deepcopy(self.source)
