@@ -10,12 +10,13 @@ one attention head without weakening the kernel contract?
 GO for a bounded multi-head receipt over the existing fused native Stwo
 Softmax-table proofs.
 
-The gate consumes two backing proof objects:
+The gate consumes two backing proof objects under timing policy
+`proof_existence_and_byte_accounting_only_not_public_benchmark`:
 
-| Profile | Head count | Lookup claims | Fused proof bytes | Checked envelope bytes |
-| --- | ---: | ---: | ---: | ---: |
-| Two-head `d=8` causal-prefix fused Softmax-table proof | 2 | 104 | 49,508 | 585,857 |
-| Four-head `d=8` causal-prefix fused Softmax-table proof | 4 | 208 | 53,468 | 797,717 |
+| Profile ID | Backing backend/profile ID | Head count | Lookup claims | Fused proof bytes | Checked envelope bytes |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `two_head` | `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1` | 2 | 104 | 49,508 | 585,857 |
+| `four_head` | `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1` | 4 | 208 | 53,468 | 797,717 |
 
 Aggregate checked surface:
 
