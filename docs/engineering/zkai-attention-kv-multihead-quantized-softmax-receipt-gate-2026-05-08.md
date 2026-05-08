@@ -2,34 +2,36 @@
 
 ## Question
 
-Can the implementation-exact quantized Softmax-table receipt survive more than
-one attention head without weakening the kernel contract?
+Can the implementation-exact quantized Softmax-table receipt scale from the
+checked two-head and four-head fixtures to an eight-head fixture without
+weakening the kernel contract?
 
 ## Result
 
-GO for a bounded multi-head receipt over the existing fused native Stwo
+GO for a bounded multi-head receipt over the checked fused native Stwo
 Softmax-table proofs.
 
-The gate consumes two backing proof objects under timing policy
+The gate consumes three backing proof objects under timing policy
 `proof_existence_and_byte_accounting_only_not_public_benchmark`:
 
 | Profile ID | Backing backend/profile ID | Head count | Lookup claims | Fused proof bytes | Checked envelope bytes |
 | --- | --- | ---: | ---: | ---: | ---: |
 | `two_head` | `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1` | 2 | 104 | 49,508 | 585,857 |
 | `four_head` | `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1` | 4 | 208 | 53,468 | 797,717 |
+| `eight_head` | `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1` | 8 | 416 | 60,450 | 1,219,007 |
 
 Aggregate checked surface:
 
-- Profiles checked: `2`.
-- Head counts checked: `2, 4`.
-- Heads checked in total: `6`.
-- Input steps checked: `48`.
-- Score rows / lookup claims checked: `312`.
-- Trace rows checked: `384`.
+- Profiles checked: `3`.
+- Head counts checked: `2, 4, 8`.
+- Heads checked in total: `14`.
+- Input steps checked: `112`.
+- Score rows / lookup claims checked: `728`.
+- Trace rows checked: `896`.
 - Shared statement-bound table rows: `9`.
-- Fused proof bytes across the two profiles: `102,976`.
+- Fused proof bytes across the three profiles: `163,426`.
 - Mutations rejected for the backing profiles and timing policy listed above:
-  `51 / 51`.
+  `64 / 64`.
 
 The receipt records stable `blake2b-256` commitments for each backing fused
 envelope and each fused proof byte payload. Fast selector loads can therefore
@@ -62,8 +64,8 @@ This is exact for the pinned integer table/floor-division kernel:
 The important multi-head hardening is output binding: the gate derives the
 `attention_outputs` index from the statement `input_steps` order. It does not
 assume a simple `step_index * head_count + head_index` layout. That matters for
-the four-head fixture, whose outputs are ordered by the source input-step
-schedule rather than a naive dense head-major or step-major formula.
+the four-head and eight-head fixtures, whose outputs are ordered by the source
+input-step schedule rather than a naive dense head-major or step-major formula.
 
 ## Non-Claims
 
@@ -97,11 +99,19 @@ cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_tab
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- \
   verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- \
+  verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json
 ```
 
 ## Next Useful Research Step
 
-Issue `#496` tracks the next controlled scale-up: push this exact-kernel receipt
-along head count, width, or sequence length. Report GO only if the same
-denominator/remainder, output-order, causal-mask, statement-bound table, and
-proof-binding checks remain fail-closed after proof serialization.
+The next controlled scale-up is no longer "can it survive beyond four heads";
+issue `#496` answers that with an eight-head GO. The remaining research targets
+are different axes: longer sequence length, wider value/key vectors, or a
+controlled 8-head source-plus-sidecar comparator for byte accounting. Report GO
+only if the same denominator/remainder, output-order, causal-mask,
+statement-bound table, and proof-binding checks remain fail-closed after proof
+serialization.

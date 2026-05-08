@@ -124,7 +124,7 @@ MULTIHEAD_QUANTIZED_SOFTMAX_ROUTE_ID = (
     "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt"
 )
 MULTIHEAD_QUANTIZED_SOFTMAX_DECISION = (
-    "GO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+    "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
 )
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
@@ -298,7 +298,7 @@ EXPECTED_NEXT_GO_CRITERIA = (
     "native Stwo proof scales the d8 causal-mask integer-argmax attention arithmetic beyond the fixed eight-step fixture without weakening intermediate-state binding",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
     "larger-width, higher-head-count, or longer-context fixtures preserve the same masking, intermediate-state, denominator/remainder, and output-order binding guarantees",
-    "the implementation-exact quantized Softmax-table receipt scales beyond the checked two-head and four-head d8 fixtures without weakening head/output binding",
+    "the implementation-exact quantized Softmax-table receipt scales beyond the checked two-head, four-head, and eight-head d8 fixtures without weakening head/output binding",
     "the explicit causal-prefix masking axis remains statement data in any native route",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
     "real-valued exp/div Softmax stays out of scope unless the proof covers that exact kernel and error bound",
@@ -1836,13 +1836,13 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax real-valued overclaim")
     if summary["score_scale"] != 1 or summary["score_gap_clip"] != 8:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax scaling drift")
-    if summary["profiles_checked"] != 2 or summary["head_counts_checked"] != [2, 4]:
+    if summary["profiles_checked"] != 3 or summary["head_counts_checked"] != [2, 4, 8]:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax profile/head-count drift")
-    if summary["lookup_claims_total"] != 312 or summary["score_rows_total"] != 312:
+    if summary["lookup_claims_total"] != 728 or summary["score_rows_total"] != 728:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax row-count drift")
     if summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax table drift")
-    if summary["fused_proof_size_bytes_sum"] != 102976 or summary["max_fused_proof_size_bytes"] != 53468:
+    if summary["fused_proof_size_bytes_sum"] != 163426 or summary["max_fused_proof_size_bytes"] != 60450:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax proof metric drift")
     if summary["mutations_checked"] != MULTIHEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax mutation count drift")

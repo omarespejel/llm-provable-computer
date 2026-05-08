@@ -50,10 +50,11 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 44. `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`
 45. `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`
 46. `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
-47. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-48. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
-49. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-50. `docs/engineering/reproducibility.md`
+47. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
+48. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+49. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
+50. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+51. `docs/engineering/reproducibility.md`
 51. `git status --short --branch`
 
 ## What this repository is now
@@ -287,6 +288,16 @@ This repository currently has three live lanes.
     and not full inference; see
     `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`.
 
+  - Issue `#496` scales fusion to the eight-head bounded Softmax-table route:
+    one native Stwo proof object checks eight-head `d=8` attention arithmetic
+    and LogUp table membership for `416` lookup claims over a `512`-row trace.
+    The fused proof is `60450` raw bytes and `1219007` checked envelope bytes,
+    rejects `16 / 16` gate mutations, and records no eight-head
+    source-plus-sidecar comparator. This is fused eight-head bounded table
+    proof-existence evidence, not exact Softmax, not a fused-vs-sidecar savings
+    claim, and not full inference; see
+    `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`.
+
   - Issue `#485` pins the single-head fused route as an implementation-exact
     quantized Softmax-table kernel receipt. The backing object is the issue
     `#478` fused native Stwo proof (`47698` raw bytes, `52` lookup claims, `9`
@@ -298,15 +309,15 @@ This repository currently has three live lanes.
     inference; see
     `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`.
 
-  - Issue `#494` extends that implementation-exact receipt discipline across
-    the two-head and four-head fused native Stwo routes. The gate checks head
-    counts `[2, 4]`, `312` total lookup claims / score rows, `384` trace rows,
-    `102976` fused proof bytes across profiles, output indices derived from
-    statement `input_steps` order, fused envelope/proof-byte commitments, and
-    rejects `51 / 51` semantic/proof mutations. This is exact for the pinned
-    integer table/floor-division kernel across checked multi-head fixtures, not
-    real-valued Softmax, full inference, long-context inference, public
-    benchmark evidence, or recursion/PCD; see
+  - Issue `#494` and issue `#496` extend that implementation-exact receipt
+    discipline across the two-head, four-head, and eight-head fused native Stwo
+    routes. The gate checks head counts `[2, 4, 8]`, `728` total lookup claims /
+    score rows, `896` trace rows, `163426` fused proof bytes across profiles,
+    output indices derived from statement `input_steps` order, fused
+    envelope/proof-byte commitments, and rejects `64 / 64` semantic/proof
+    mutations. This is exact for the pinned integer table/floor-division kernel
+    across checked multi-head fixtures, not real-valued Softmax, full inference,
+    long-context inference, public benchmark evidence, or recursion/PCD; see
     `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for eight
@@ -320,7 +331,7 @@ This repository currently has three live lanes.
     bounded weighted, d8 bounded weighted, two-head bounded weighted,
     proof-size profile, and bounded Softmax-table, LogUp sidecar, fused
     single-head Softmax-table, fused two-head Softmax-table, fused four-head
-    Softmax-table, and quantized Softmax-table receipt gates are separate native
+    Softmax-table, fused eight-head Softmax-table, and quantized Softmax-table receipt gates are separate native
     scale/semantics/accounting/fusion gates for the first route family.
     Real-valued Softmax, long-context inference, full inference, and
     recursion/PCD remain out of scope; see

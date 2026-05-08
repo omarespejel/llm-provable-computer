@@ -1,34 +1,37 @@
 {
-  "claim_boundary": "TWO_AND_FOUR_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK",
-  "decision": "GO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+  "claim_boundary": "TWO_FOUR_AND_EIGHT_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK",
+  "decision": "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
   "fused_gate_decisions": {
+    "eight_head": "GO_NATIVE_STWO_EIGHT_HEAD_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
     "four_head": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
     "two_head": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP"
   },
-  "fused_proof_size_bytes_sum": 102976,
+  "fused_proof_size_bytes_sum": 163426,
   "head_counts_checked": [
     2,
-    4
+    4,
+    8
   ],
-  "issue": 494,
+  "issue": 496,
   "kernel_contract": {
     "aggregate_metrics": {
-      "fused_proof_size_bytes_sum": 102976,
+      "fused_proof_size_bytes_sum": 163426,
       "head_counts_checked": [
         2,
-        4
+        4,
+        8
       ],
-      "max_fused_proof_size_bytes": 53468,
+      "max_fused_proof_size_bytes": 60450,
       "max_observed_division_error_decimal": 0.9821428571428571,
       "max_observed_division_error_fraction": "55/56",
-      "profiles_checked": 2,
+      "profiles_checked": 3,
       "table_rows": 9,
-      "total_heads_checked": 6,
-      "total_input_steps": 48,
-      "total_lookup_claims": 312,
-      "total_outputs": 48,
-      "total_score_rows": 312,
-      "total_trace_rows": 384
+      "total_heads_checked": 14,
+      "total_input_steps": 112,
+      "total_lookup_claims": 728,
+      "total_outputs": 112,
+      "total_score_rows": 728,
+      "total_trace_rows": 896
     },
     "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
     "clip_policy": "clipped_gap = min(max_score - score, 8)",
@@ -38,7 +41,7 @@
     "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
     "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
     "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
-    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_TWO_AND_FOUR_HEAD_FIXTURES",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_AND_EIGHT_HEAD_FIXTURES",
     "max_subtraction_policy": "per_step_max_allowed_score_subtracted_before_table_lookup",
     "model_binding_status": "no separate trainable model weights in this fixture; public query/key/value/KV rows are statement-bound",
     "numerator_policy": "per_output_dim_sum_over_allowed_candidates(weight * value_dim)",
@@ -605,6 +608,686 @@
         "source_weight_table_commitment": "blake2b-256:3c3e5002672d7efa6b7a1293d17388c98344f61aceae7914f00a391ce355de62",
         "table_rows": 9,
         "trace_rows": 256
+      },
+      {
+        "denominator_sum": 25637,
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json",
+        "fused_artifact": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+        "fused_envelope_commitment": "blake2b-256:c77b57d94fd89bcf4e728d3d3801f476b692ad89500ca55e2075c909e00fa203",
+        "fused_envelope_size_bytes": 1219007,
+        "fused_proof_backend_version": "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1",
+        "fused_proof_commitment": "blake2b-256:8e1b18be5e453b88806a45a5393859056bdc059a4de2ce929d855750c5eb8f3e",
+        "fused_proof_schema_version": "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-proof-v1",
+        "fused_proof_size_bytes": 60450,
+        "fused_statement_version": "zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-logup-statement-v1",
+        "fused_target_id": "attention-kv-eight-head-d8-causal-mask-fused-bounded-softmax-table-logup-v1",
+        "fused_verifier_domain": "ptvm:zkai:attention-kv-stwo-native-eight-head-fused-bounded-softmax-table-logup:v1",
+        "head_count": 8,
+        "input_steps": 64,
+        "label": "eight-head d8 causal-prefix fused Softmax-table proof",
+        "lookup_claims": 416,
+        "max_observed_division_error_decimal": 0.9820971867007673,
+        "max_observed_division_error_fraction": "384/391",
+        "max_rows_per_head_step": 10,
+        "output_index_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+        "outputs": 64,
+        "per_head_step_denominators": [
+          {
+            "denominator": 400,
+            "head_index": 0,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 0,
+            "step_index": 1
+          },
+          {
+            "denominator": 432,
+            "head_index": 0,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 0,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 0,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 0,
+            "step_index": 5
+          },
+          {
+            "denominator": 432,
+            "head_index": 0,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 0,
+            "step_index": 7
+          },
+          {
+            "denominator": 304,
+            "head_index": 1,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 1,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 1,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 1,
+            "step_index": 3
+          },
+          {
+            "denominator": 1792,
+            "head_index": 1,
+            "step_index": 4
+          },
+          {
+            "denominator": 397,
+            "head_index": 1,
+            "step_index": 5
+          },
+          {
+            "denominator": 391,
+            "head_index": 1,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 1,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 2,
+            "step_index": 0
+          },
+          {
+            "denominator": 379,
+            "head_index": 2,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 2,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 2,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 2,
+            "step_index": 4
+          },
+          {
+            "denominator": 509,
+            "head_index": 2,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 2,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 2,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 3,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 3,
+            "step_index": 1
+          },
+          {
+            "denominator": 395,
+            "head_index": 3,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 3,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 3,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 3,
+            "step_index": 5
+          },
+          {
+            "denominator": 842,
+            "head_index": 3,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 3,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 4,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 4,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 4,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 4,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 4,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 4,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 4,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 4,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 5,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 5,
+            "step_index": 1
+          },
+          {
+            "denominator": 349,
+            "head_index": 5,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 5,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 5,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 5,
+            "step_index": 5
+          },
+          {
+            "denominator": 391,
+            "head_index": 5,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 5,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 6,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 6,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 6,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 6,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 6,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 6,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 6,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 6,
+            "step_index": 7
+          },
+          {
+            "denominator": 400,
+            "head_index": 7,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 7,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 7,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 7,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 7,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 7,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 7,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 7,
+            "step_index": 7
+          }
+        ],
+        "per_head_step_row_counts": [
+          {
+            "head_index": 0,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 0,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 0,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 0,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 0,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 0,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 0,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 0,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 1,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 1,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 1,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 1,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 1,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 1,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 1,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 1,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 2,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 2,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 2,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 2,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 2,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 2,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 2,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 2,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 3,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 3,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 3,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 3,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 3,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 3,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 3,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 3,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 4,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 4,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 4,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 4,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 4,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 4,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 4,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 4,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 5,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 5,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 5,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 5,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 5,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 5,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 5,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 5,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 6,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 6,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 6,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 6,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 6,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 6,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 6,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 6,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 7,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 7,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 7,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 7,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 7,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 7,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 7,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 7,
+            "rows": 10,
+            "step_index": 7
+          }
+        ],
+        "profile_id": "eight_head",
+        "score_rows": 416,
+        "sequence_length_per_head": 8,
+        "source_arithmetic_issue": 496,
+        "source_final_kv_cache_commitment": "blake2b-256:e46608cd8f539f865d00b32f371e4d2d9567f7917c2304eb263ed2f6fb99ee09",
+        "source_issue": 496,
+        "source_outputs_commitment": "blake2b-256:45ebc4cebb88e1ea1a4ff7ebbf571e4309b82a826ecc3a76f91b5d9cf33846c6",
+        "source_public_instance_commitment": "blake2b-256:5db2d62c333a4d3636e155e7cdb4060b7f9e74d4497d516623fba47dc4f84e4f",
+        "source_score_row_commitment": "blake2b-256:c3f172e88b7fac3b28f40fe72c07fc240f51c778907f4714940bee5c41154e81",
+        "source_statement_commitment": "blake2b-256:7356acc1a770a9cc5e9e952cf4d1f7e0315c2a20ad167f184397dcb0539f33e0",
+        "source_weight_table_commitment": "blake2b-256:3feb652428a7a093407684fbbb1dce7825fc33ecd5438a0be7cc121ff0135268",
+        "table_rows": 9,
+        "trace_rows": 512
       }
     ],
     "proof_binding_status": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_LOGUP_TABLE_MEMBERSHIP_PROOFS_BACK_MULTIHEAD_RECEIPT",
@@ -656,8 +1339,8 @@
       }
     ]
   },
-  "lookup_claims_total": 312,
-  "max_fused_proof_size_bytes": 53468,
+  "lookup_claims_total": 728,
+  "max_fused_proof_size_bytes": 60450,
   "mutation_results": [
     {
       "error": "receipt drift for kernel_contract",
@@ -880,6 +1563,56 @@
       "rejected": true
     },
     {
+      "error": "eight_head source input validation drift: head_count drift",
+      "name": "source_input_eight_head_head_count_drift",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_head_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_step_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_token_position_drift",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_mask_allowed_false",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_denominator_zero",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_selected_score_gap_coherent_drift",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_output_vector_truncation",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: score rows drift",
+      "name": "source_input_eight_head_remainder_drift",
+      "rejected": true
+    },
+    {
+      "error": "eight_head source input validation drift: attention outputs drift",
+      "name": "source_input_eight_head_output_order_swap",
+      "rejected": true
+    },
+    {
       "error": "receipt drift for kernel_contract",
       "name": "fused_two_head_verifier_domain_relabeling",
       "rejected": true
@@ -910,28 +1643,45 @@
       "rejected": true
     },
     {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_eight_head_verifier_domain_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_eight_head_statement_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_eight_head_proof_byte_tamper",
+      "rejected": true
+    },
+    {
       "error": "unknown receipt field(s): ['unexpected']",
       "name": "unknown_receipt_key_injection",
       "rejected": true
     }
   ],
-  "mutations_checked": 51,
-  "mutations_rejected": 51,
-  "profiles_checked": 2,
+  "mutations_checked": 64,
+  "mutations_rejected": 64,
+  "profiles_checked": 3,
   "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
   "schema": "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1",
-  "score_rows_total": 312,
+  "score_rows_total": 728,
   "source_arithmetic_issues": [
     471,
-    482
+    482,
+    496
   ],
   "source_issues": [
     489,
-    491
+    491,
+    496
   ],
   "table_rows": 9,
   "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
-  "trace_rows_total": 384,
+  "trace_rows_total": 896,
   "validation_commands": [
     "python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate",
@@ -939,6 +1689,8 @@
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_two_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
     "just lib",
     "just gate-fast",
     "just gate"
