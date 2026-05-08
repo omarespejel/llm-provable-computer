@@ -646,8 +646,8 @@ def load_stwo_native_masked_sequence_envelope(
     return envelope
 
 
-@functools.lru_cache(maxsize=1)
-def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
+@functools.lru_cache(maxsize=2)
+def _load_quantized_softmax_receipt_payload(path: pathlib.Path, run_native: bool) -> dict[str, Any]:
     """Load and validate the current implementation-exact quantized Softmax receipt payload."""
 
     raw = read_bounded_text(
@@ -657,7 +657,7 @@ def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any
     )
     try:
         payload = json.loads(raw)
-        QUANTIZED_SOFTMAX.validate_result(payload, run_native=True)
+        QUANTIZED_SOFTMAX.validate_result(payload, run_native=run_native)
     except QUANTIZED_SOFTMAX.QuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"quantized Softmax receipt drift: {error}") from error
     except Exception as error:
@@ -665,14 +665,18 @@ def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any
     return payload
 
 
-def load_quantized_softmax_receipt_payload(path: pathlib.Path = QUANTIZED_SOFTMAX_RECEIPT_JSON) -> dict[str, Any]:
+def load_quantized_softmax_receipt_payload(
+    path: pathlib.Path = QUANTIZED_SOFTMAX_RECEIPT_JSON,
+    *,
+    run_native: bool = False,
+) -> dict[str, Any]:
     """Load the implementation-exact quantized Softmax receipt payload as a fresh object."""
 
-    return copy.deepcopy(_load_quantized_softmax_receipt_payload(path))
+    return copy.deepcopy(_load_quantized_softmax_receipt_payload(path, run_native))
 
 
-@functools.lru_cache(maxsize=1)
-def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
+@functools.lru_cache(maxsize=2)
+def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path, run_native: bool) -> dict[str, Any]:
     """Load and validate the current multi-head quantized Softmax receipt payload."""
 
     raw = read_bounded_text(
@@ -682,7 +686,7 @@ def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dic
     )
     try:
         payload = json.loads(raw)
-        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(payload, run_native=True)
+        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(payload, run_native=run_native)
     except MULTIHEAD_QUANTIZED_SOFTMAX.MultiheadQuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax receipt drift: {error}") from error
     except Exception as error:
@@ -692,10 +696,12 @@ def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dic
 
 def load_multihead_quantized_softmax_receipt_payload(
     path: pathlib.Path = MULTIHEAD_QUANTIZED_SOFTMAX_RECEIPT_JSON,
+    *,
+    run_native: bool = False,
 ) -> dict[str, Any]:
     """Load the multi-head implementation-exact quantized Softmax receipt payload."""
 
-    return copy.deepcopy(_load_multihead_quantized_softmax_receipt_payload(path))
+    return copy.deepcopy(_load_multihead_quantized_softmax_receipt_payload(path, run_native))
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -1002,7 +1008,7 @@ def multihead_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any])
     }
 
 
-def route_inventory() -> list[dict[str, Any]]:
+def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
     snark = snark_receipt_summary(load_snark_payload())
@@ -1011,9 +1017,11 @@ def route_inventory() -> list[dict[str, Any]]:
     risc0_scaled_sequence = risc0_scaled_sequence_receipt_summary(load_risc0_scaled_sequence_payload())
     risc0_wide_masked_sequence = risc0_wide_masked_sequence_receipt_summary(load_risc0_wide_masked_sequence_payload())
     stwo_native = stwo_native_masked_sequence_summary(load_stwo_native_masked_sequence_payload())
-    quantized_softmax = quantized_softmax_receipt_summary(load_quantized_softmax_receipt_payload())
+    quantized_softmax = quantized_softmax_receipt_summary(
+        load_quantized_softmax_receipt_payload(run_native=run_native)
+    )
     multihead_quantized_softmax = multihead_quantized_softmax_receipt_summary(
-        load_multihead_quantized_softmax_receipt_payload()
+        load_multihead_quantized_softmax_receipt_payload(run_native=run_native)
     )
     routes = [dict(route) for route in BASE_ROUTES]
     local_stwo_route = route_candidate_by_id(routes, LOCAL_STWO_ROUTE_ID)
@@ -1160,7 +1168,7 @@ def source_contract_summary(source_payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_payload() -> dict[str, Any]:
+def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     """Build and self-validate the proof-route selector decision payload."""
 
     source_payload = load_source_payload()
@@ -1170,8 +1178,8 @@ def build_payload() -> dict[str, Any]:
     risc0_scaled_sequence_payload = load_risc0_scaled_sequence_payload()
     risc0_wide_masked_sequence_payload = load_risc0_wide_masked_sequence_payload()
     stwo_native_masked_sequence_payload = load_stwo_native_masked_sequence_payload()
-    quantized_softmax_payload = load_quantized_softmax_receipt_payload()
-    multihead_quantized_softmax_payload = load_multihead_quantized_softmax_receipt_payload()
+    quantized_softmax_payload = load_quantized_softmax_receipt_payload(run_native=run_native)
+    multihead_quantized_softmax_payload = load_multihead_quantized_softmax_receipt_payload(run_native=run_native)
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
@@ -1183,7 +1191,7 @@ def build_payload() -> dict[str, Any]:
     multihead_quantized_softmax_receipt = multihead_quantized_softmax_receipt_summary(
         multihead_quantized_softmax_payload
     )
-    routes = route_inventory()
+    routes = route_inventory(run_native=run_native)
     proof_backed_routes_available = [
         route["route_id"]
         for route in routes
@@ -2059,6 +2067,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--write-json", type=pathlib.Path, default=JSON_OUT)
     parser.add_argument("--write-tsv", type=pathlib.Path, default=TSV_OUT)
     parser.add_argument("--no-write", action="store_true")
+    parser.add_argument(
+        "--run-native",
+        action="store_true",
+        help="run native proof verification for proof-backed quantized Softmax receipt routes",
+    )
     return parser.parse_args()
 
 
@@ -2066,7 +2079,7 @@ def main() -> int:
     """CLI entrypoint."""
 
     args = parse_args()
-    payload = build_payload()
+    payload = build_payload(run_native=args.run_native)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     if not args.no_write:
