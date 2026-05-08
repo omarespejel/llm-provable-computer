@@ -52,11 +52,11 @@ TIMING_POLICY = "proof_existence_and_byte_accounting_only_not_public_benchmark"
 
 SOURCE_PROOF_SIZE_BYTES = 61_516
 SOURCE_ENVELOPE_SIZE_BYTES = 639_928
-SIDECAR_PROOF_SIZE_BYTES = 13_487
-SIDECAR_ENVELOPE_SIZE_BYTES = 257_377
+SIDECAR_PROOF_SIZE_BYTES = 13_445
+SIDECAR_ENVELOPE_SIZE_BYTES = 257_041
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + SIDECAR_PROOF_SIZE_BYTES
-FUSED_PROOF_SIZE_BYTES = 64_375
-FUSED_ENVELOPE_SIZE_BYTES = 665_491
+FUSED_PROOF_SIZE_BYTES = 64_532
+FUSED_ENVELOPE_SIZE_BYTES = 666_747
 FUSED_OVER_SOURCE_PROOF_BYTES = FUSED_PROOF_SIZE_BYTES - SOURCE_PROOF_SIZE_BYTES
 FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - FUSED_PROOF_SIZE_BYTES
 FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = FUSED_PROOF_SIZE_BYTES / SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES
@@ -273,6 +273,16 @@ def mutate_same_size_stark_proof_commitment(envelope: dict[str, Any]) -> None:
     envelope["proof"] = list(proof_bytes)
 
 
+def type_strict_equal(left: Any, right: Any) -> bool:
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return set(left) == set(right) and all(type_strict_equal(left[key], right[key]) for key in left)
+    if isinstance(left, list):
+        return len(left) == len(right) and all(type_strict_equal(a, b) for a, b in zip(left, right))
+    return left == right
+
+
 def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: str) -> None:
     if len(envelope_bytes) <= 0 or len(envelope_bytes) > MAX_FUSED_ENVELOPE_JSON_BYTES:
         raise AttentionKvD16FusedSoftmaxTableGateError(
@@ -429,9 +439,9 @@ def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, An
         raise AttentionKvD16FusedSoftmaxTableGateError("fused target id drift")
     if envelope.get("verifier_domain") != FUSED_VERIFIER_DOMAIN:
         raise AttentionKvD16FusedSoftmaxTableGateError("fused verifier domain drift")
-    if envelope.get("source_input") != source_input:
+    if not type_strict_equal(envelope.get("source_input"), source_input):
         raise AttentionKvD16FusedSoftmaxTableGateError("fused source input split-brain drift")
-    if envelope.get("fused_summary") != expected_summary(source_input):
+    if not type_strict_equal(envelope.get("fused_summary"), expected_summary(source_input)):
         raise AttentionKvD16FusedSoftmaxTableGateError("fused summary drift")
     parse_stark_proof(envelope.get("proof"), FUSED_PROOF_SIZE_BYTES, "fused")
     if run_native:
@@ -665,7 +675,7 @@ def validate_result(result: dict[str, Any]) -> None:
     if extra:
         raise AttentionKvD16FusedSoftmaxTableGateError(f"unknown result keys: {sorted(extra)}")
     for key, expected_value in expected_exact.items():
-        if result.get(key) != expected_value:
+        if not type_strict_equal(result.get(key), expected_value):
             raise AttentionKvD16FusedSoftmaxTableGateError(f"result drift for {key}")
     mutation_results = result["mutation_results"]
     if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:

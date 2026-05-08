@@ -4,7 +4,7 @@ import os
 import tempfile
 import unittest
 
-from scripts import zkai_attention_kv_air_private_softmax_table_lookup_gate as gate
+from scripts import zkai_attention_kv_d16_air_private_softmax_table_lookup_gate as gate
 
 
 class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
@@ -48,12 +48,12 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertEqual(receipt["table_rows"], 9)
         self.assertEqual(receipt["lookup_relation"], gate.LOOKUP_RELATION)
         self.assertEqual(receipt["lookup_relation_width"], 2)
-        self.assertEqual(receipt["lookup_proof_size_bytes"], 14745)
-        self.assertEqual(receipt["lookup_envelope_size_bytes"], 214085)
+        self.assertEqual(receipt["lookup_proof_size_bytes"], 13445)
+        self.assertEqual(receipt["lookup_envelope_size_bytes"], 257041)
         self.assertEqual(receipt["lookup_proof_commitments"], 4)
         self.assertEqual(receipt["lookup_trace_commitments"], 3)
         self.assertEqual(sum(row["multiplicity"] for row in receipt["table_multiplicities"]), 52)
-        self.assertEqual(receipt["table_multiplicities"][-1]["multiplicity"], 29)
+        self.assertEqual(receipt["table_multiplicities"][-1]["multiplicity"], 40)
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertTrue(payload["all_mutations_rejected"])
@@ -156,7 +156,7 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         payload = gate.build_payload()
         tsv = gate.to_tsv(payload)
         self.assertIn(gate.DECISION, tsv)
-        self.assertIn("14745", tsv)
+        self.assertIn("13445", tsv)
         self.assertIn(gate.SOURCE_STATEMENT_COMMITMENT, tsv)
 
     def test_write_json_validates_before_writing(self):

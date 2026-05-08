@@ -54,7 +54,7 @@ pub const ZKAI_ATTENTION_KV_NATIVE_D16_FUSED_SOFTMAX_TABLE_MAX_PROOF_BYTES: usiz
 
 const ISSUE: usize = 501;
 const SOURCE_ISSUE: usize = 501;
-const SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES: usize = 61_516 + 13_487;
+const SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES: usize = 61_516 + 13_445;
 const FUSION_STATUS: &str =
     "GO_ONE_NATIVE_STWO_PROOF_OBJECT_WITH_ATTENTION_ARITHMETIC_AND_LOGUP_MEMBERSHIP";
 const NON_FUSED_STATUS: &str = "GO_MATCHED_D16_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED";
@@ -218,7 +218,13 @@ impl FrameworkEval for AttentionKvNativeD16FusedSoftmaxTableEval {
             remainder_bits.push(bits_sum);
         }
 
-        for (column_id, trace_value) in fused_row_column_ids().iter().zip(trace_values) {
+        let column_ids = fused_row_column_ids();
+        assert_eq!(
+            column_ids.len(),
+            trace_values.len(),
+            "fused trace/public column count drift"
+        );
+        for (column_id, trace_value) in column_ids.iter().zip(trace_values) {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
         }
@@ -473,7 +479,14 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD16FusedSoftmaxTableEnvelop
 fn validate_source_input(
     input: &ZkAiAttentionKvNativeD16BoundedSoftmaxTableProofInput,
 ) -> Result<()> {
-    validate_zkai_attention_kv_native_d16_bounded_softmax_table_input(input)
+    validate_zkai_attention_kv_native_d16_bounded_softmax_table_input(input)?;
+    if input.score_gap_clip != SCORE_GAP_CLIP {
+        return Err(fused_error(format!(
+            "score_gap_clip drift: got {}, expected {}",
+            input.score_gap_clip, SCORE_GAP_CLIP
+        )));
+    }
+    Ok(())
 }
 
 fn fused_summary(

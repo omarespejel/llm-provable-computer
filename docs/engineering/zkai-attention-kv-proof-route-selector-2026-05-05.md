@@ -179,10 +179,10 @@ public long-context benchmark, full inference result, or exact Softmax claim.
 Issue `#501` scales the fused bounded Softmax-table route along the width axis.
 The checked source keeps sequence length fixed at eight steps and score rows
 fixed at `52`, but doubles key/value width from `8` to `16`. The d16 source
-arithmetic proof is `61516` raw bytes, the matched LogUp sidecar is `13487`
-raw bytes, and the fused proof is `64375` raw bytes. The fused route is therefore
-`10628` bytes smaller than the matched source-plus-sidecar pair (`75003` raw
-bytes, `0.858299x`) while adding `2859` bytes over arithmetic-only. The source,
+arithmetic proof is `61516` raw bytes, the matched LogUp sidecar is `13445`
+raw bytes, and the fused proof is `64532` raw bytes. The fused route is therefore
+`10429` bytes smaller than the matched source-plus-sidecar pair (`74961` raw
+bytes, `0.860874x`) while adding `3016` bytes over arithmetic-only. The source,
 sidecar, and fused gates reject `19 / 19`, `18 / 18`, and `26 / 26` mutations,
 respectively. This is width-axis proof-existence and byte-accounting evidence,
 not a claim that proof size is independent of width.
@@ -262,13 +262,13 @@ Claim boundary:
 | Local Stwo d8 bounded Softmax-table attention/KV semantics gate | GO; real native Stwo AIR proof for a statement-bound exp-like table policy, still verifier-recomputed over public rows |
 | Local Stwo d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the single-head table-membership multiset, not fused with attention arithmetic |
 | Local Stwo d16 bounded Softmax-table attention/KV width gate | GO; real native Stwo source proof checks the d16 bounded table fixture with `52` score rows, a `64`-row trace, and a `61516`-byte raw proof |
-| Local Stwo d16 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the d16 table-membership multiset with `52` lookup claims and a `13487`-byte raw proof |
+| Local Stwo d16 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the d16 table-membership multiset with `52` lookup claims and a `13445`-byte raw proof |
 | Local Stwo two-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof combines two-head KV carry with bounded Softmax-table attention semantics |
 | Local Stwo two-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the two-head table-membership multiset; `2.0x` lookup claims with `1.227806x` raw proof bytes versus single-head |
 | Local Stwo four-head d8 bounded Softmax-table attention/KV synthesis gate | GO; real native Stwo AIR proof scales the bounded Softmax-table source surface to four heads and `208` score rows |
 | Local Stwo four-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the four-head table-membership multiset; `4.0x` lookup claims with `1.477314x` raw proof bytes versus single-head |
 | Local Stwo d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks single-head attention arithmetic and table membership; `47698` raw proof bytes versus `59437` bytes for the previous source-plus-sidecar pair |
-| Local Stwo d16 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks d16 attention arithmetic and table membership; `64375` raw proof bytes versus `75003` bytes for the matched d16 source-plus-sidecar pair |
+| Local Stwo d16 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks d16 attention arithmetic and table membership; `64532` raw proof bytes versus `74961` bytes for the matched d16 source-plus-sidecar pair |
 | Local Stwo two-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head attention arithmetic and table membership; `49508` raw proof bytes versus `65208` bytes for the previous source-plus-sidecar pair |
 | Local Stwo four-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks four-head attention arithmetic and table membership; `53468` raw proof bytes versus `74529` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
@@ -374,10 +374,10 @@ Claim boundary:
 | Multi-head quantized Softmax-table fused proof bytes | `163426` |
 | Multi-head quantized Softmax-table max fused proof bytes | `60450` |
 | d16 fused Softmax-table lookup claims | `52` |
-| d16 fused Softmax-table proof size | `64375` bytes |
-| d16 fused Softmax-table envelope size | `665491` bytes |
-| d16 fused versus source-plus-sidecar bytes | `64375` / `75003` |
-| d16 fused bytes saved versus source-plus-sidecar | `10628` bytes |
+| d16 fused Softmax-table proof size | `64532` bytes |
+| d16 fused Softmax-table envelope size | `666747` bytes |
+| d16 fused versus source-plus-sidecar bytes | `64532` / `74961` |
+| d16 fused bytes saved versus source-plus-sidecar | `10429` bytes |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
 | RISC Zero transition semantics receipt size | `221842` bytes |

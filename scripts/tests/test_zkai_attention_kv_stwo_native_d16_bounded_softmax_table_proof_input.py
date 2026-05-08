@@ -44,6 +44,12 @@ class AttentionKvBoundedSoftmaxTableInputTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableInputError, "weight table commitment drift"):
             gate.validate_payload(payload)
 
+    def test_rejects_unknown_top_level_field(self):
+        payload = gate.build_payload()
+        payload["unexpected"] = "claim smuggling"
+        with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableInputError, "unknown payload keys"):
+            gate.validate_payload(payload)
+
     def test_rejects_weight_relabeling(self):
         payload = gate.build_payload()
         payload["score_rows"][0]["attention_weight"] = 15
