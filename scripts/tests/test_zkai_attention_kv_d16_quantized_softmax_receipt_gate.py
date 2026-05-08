@@ -90,6 +90,14 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "source input validation drift|quotient|remainder"):
             gate.validate_quantized_kernel(source)
 
+    def test_rejects_selected_score_drift_before_trusting_score_gap(self):
+        source = copy.deepcopy(self.source)
+        for row in source["score_rows"]:
+            if row["step_index"] == 0:
+                row["selected_score"] += 1
+        with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "max-score recomputation drift"):
+            gate.validate_quantized_kernel(source)
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_dir = gate.pathlib.Path(tmp)

@@ -150,8 +150,16 @@ python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py \
 python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d16_quantized_softmax_receipt_gate
 
+cargo +nightly-2025-07-14 test --locked \
+  attention_kv_native_d16_fused_softmax_table \
+  --lib --features stwo-backend
+
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_d16_fused_softmax_table_proof -- \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json
+
+just lib
+just gate-fast
+just gate
 ```

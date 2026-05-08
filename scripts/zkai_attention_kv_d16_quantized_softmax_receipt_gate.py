@@ -235,6 +235,8 @@ def validate_quantized_kernel(source: dict[str, Any]) -> dict[str, Any]:
         if len(selected_scores) != 1:
             raise QuantizedSoftmaxReceiptGateError("per-step selected score drift")
         max_score = next(iter(selected_scores))
+        if max_score != max(row["score"] for row in step_rows):
+            raise QuantizedSoftmaxReceiptGateError("max-score recomputation drift")
         recomputed_denominator = 0
         for row in step_rows:
             if len(row["query"]) != KEY_WIDTH or len(row["key"]) != KEY_WIDTH:
