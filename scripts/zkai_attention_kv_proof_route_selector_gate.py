@@ -19,6 +19,7 @@ import argparse
 import copy
 import csv
 import datetime as dt
+import functools
 import hashlib
 import importlib.util
 import json
@@ -645,6 +646,7 @@ def load_stwo_native_masked_sequence_envelope(
     return envelope
 
 
+@functools.lru_cache(maxsize=1)
 def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
     """Load and validate the current implementation-exact quantized Softmax receipt payload."""
 
@@ -655,7 +657,7 @@ def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any
     )
     try:
         payload = json.loads(raw)
-        QUANTIZED_SOFTMAX.validate_result(payload)
+        QUANTIZED_SOFTMAX.validate_result(payload, run_native=True)
     except QUANTIZED_SOFTMAX.QuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"quantized Softmax receipt drift: {error}") from error
     except Exception as error:
@@ -669,6 +671,7 @@ def load_quantized_softmax_receipt_payload(path: pathlib.Path = QUANTIZED_SOFTMA
     return copy.deepcopy(_load_quantized_softmax_receipt_payload(path))
 
 
+@functools.lru_cache(maxsize=1)
 def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
     """Load and validate the current multi-head quantized Softmax receipt payload."""
 
@@ -679,7 +682,10 @@ def _load_multihead_quantized_softmax_receipt_payload(path: pathlib.Path) -> dic
     )
     try:
         payload = json.loads(raw)
-        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(payload)
+        MULTIHEAD_QUANTIZED_SOFTMAX.validate_result(
+            payload,
+            native_profile_ids=set(MULTIHEAD_QUANTIZED_SOFTMAX.profile_ids()),
+        )
     except MULTIHEAD_QUANTIZED_SOFTMAX.MultiheadQuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax receipt drift: {error}") from error
     except Exception as error:
