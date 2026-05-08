@@ -181,13 +181,16 @@ SOURCE_INPUT_MODULE = load_script_module(
 
 
 def read_bounded_bytes(path: pathlib.Path, max_bytes: int, label: str) -> bytes:
-    if not path.is_file():
-        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"missing {label}: {path}")
-    size = path.stat().st_size
-    if size <= 0 or size > max_bytes:
-        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"{label} size drift: got {size}, max {max_bytes}")
-    with path.open("rb") as handle:
-        raw = handle.read(max_bytes + 1)
+    try:
+        if not path.is_file():
+            raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"missing {label}: {path}")
+        size = path.stat().st_size
+        if size <= 0 or size > max_bytes:
+            raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"{label} size drift: got {size}, max {max_bytes}")
+        with path.open("rb") as handle:
+            raw = handle.read(max_bytes + 1)
+    except OSError as err:
+        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"{label} read failed: {err}") from err
     if len(raw) <= 0 or len(raw) > max_bytes:
         raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
             f"{label} size drift: got {len(raw)}, max {max_bytes}"
@@ -201,6 +204,21 @@ def read_bounded_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
         return json.loads(raw)
     except json.JSONDecodeError as err:
         raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"{label} is not JSON: {err}") from err
+
+
+def read_expected_fused_envelope() -> tuple[dict[str, Any], bytes]:
+    envelope_bytes = read_bounded_bytes(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
+    if len(envelope_bytes) != FUSED_ENVELOPE_SIZE_BYTES:
+        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
+            f"fused envelope file size drift: got {len(envelope_bytes)}, expected {FUSED_ENVELOPE_SIZE_BYTES}"
+        )
+    try:
+        envelope = json.loads(envelope_bytes)
+    except json.JSONDecodeError as err:
+        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(f"fused envelope is not JSON: {err}") from err
+    if not isinstance(envelope, dict):
+        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError("fused envelope must be a JSON object")
+    return envelope, envelope_bytes
 
 
 def assert_exact_keys(mapping: dict[str, Any], expected_keys: set[str], label: str) -> None:
@@ -509,12 +527,7 @@ def baseline_mutation_results() -> list[dict[str, Any]]:
 
 def run_gate() -> dict[str, Any]:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
-    envelope_bytes = read_bounded_bytes(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
-    if len(envelope_bytes) != FUSED_ENVELOPE_SIZE_BYTES:
-        raise AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError(
-            f"fused envelope file size drift: got {len(envelope_bytes)}, expected {FUSED_ENVELOPE_SIZE_BYTES}"
-        )
-    envelope = json.loads(envelope_bytes)
+    envelope, envelope_bytes = read_expected_fused_envelope()
     validate_fused_envelope(envelope, source_input, run_native=True, native_envelope_bytes=envelope_bytes)
     result = build_result(envelope, source_input, baseline_mutation_results())
     mutation_results = []
@@ -532,7 +545,7 @@ def run_gate() -> dict[str, Any]:
 
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
-    envelope = read_bounded_json(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
+    envelope, _envelope_bytes = read_expected_fused_envelope()
     validate_result(result, envelope, source_input)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -540,7 +553,7 @@ def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
     source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
-    envelope = read_bounded_json(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
+    envelope, _envelope_bytes = read_expected_fused_envelope()
     validate_result(result, envelope, source_input)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:

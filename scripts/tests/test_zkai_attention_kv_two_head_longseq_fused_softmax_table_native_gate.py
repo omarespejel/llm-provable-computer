@@ -94,6 +94,17 @@ class TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "result drift"):
                 gate.write_tsv(gate.pathlib.Path(tmp) / "bad.tsv", payload)
 
+    def test_writers_reject_exact_envelope_size_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = gate.pathlib.Path(tmp)
+            padded_envelope_path = tmp_dir / "padded-envelope.json"
+            padded_envelope_path.write_bytes(gate.FUSED_ENVELOPE_JSON.read_bytes() + b"\n")
+            with mock.patch.object(gate, "FUSED_ENVELOPE_JSON", padded_envelope_path):
+                with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "file size drift"):
+                    gate.write_json(tmp_dir / "bad.json", self.result)
+                with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "file size drift"):
+                    gate.write_tsv(tmp_dir / "bad.tsv", self.result)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -208,3 +208,48 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
     }
     Ok(raw)
 }
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::read_bounded_file;
+    use std::{
+        fs,
+        path::PathBuf,
+        process,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    fn temp_dir(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time before epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "zkai-longseq-fused-cli-{label}-{}-{nonce}",
+            process::id()
+        ))
+    }
+
+    #[test]
+    fn read_bounded_file_rejects_non_file_and_oversized_input() {
+        let dir = temp_dir("reader");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("create temp dir");
+        let oversized = dir.join("oversized.json");
+        let valid = dir.join("valid.json");
+        fs::write(&oversized, b"abcd").expect("write oversized fixture");
+        fs::write(&valid, b"abc").expect("write valid fixture");
+
+        let non_file_error = read_bounded_file(&dir, 8, "fixture").expect_err("directory rejected");
+        assert!(non_file_error.contains("not a regular file"));
+        let oversized_error =
+            read_bounded_file(&oversized, 3, "fixture").expect_err("oversized file rejected");
+        assert!(oversized_error.contains("exceeds max size"));
+        assert_eq!(
+            read_bounded_file(&valid, 3, "fixture").expect("valid file accepted"),
+            b"abc"
+        );
+
+        fs::remove_dir_all(&dir).expect("remove temp dir");
+    }
+}
