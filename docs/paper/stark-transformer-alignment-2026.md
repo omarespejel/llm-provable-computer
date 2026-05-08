@@ -1320,7 +1320,7 @@ single-run local engineering measurements rather than benchmark rows. This is
 still tiny, not real-valued Softmax, not long-context inference, and not a
 benchmark row. But it is important because it moves the carried-state attention
 result from external controls into the STARK-native lane and then checks the
-integer table/floor-division Softmax-like kernel across single-head, two-head,
+pinned integer table/floor-division kernel across single-head, two-head,
 and four-head fixtures. It is exactly the kind of evidence this paper needs:
 not a claim that STARKs have already won, but a concrete proof surface showing
 why transformer decode looks like trace-friendly carried state.

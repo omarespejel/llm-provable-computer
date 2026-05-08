@@ -27,7 +27,7 @@ Aggregate checked surface:
 - Trace rows checked: `384`.
 - Shared statement-bound table rows: `9`.
 - Fused proof bytes across the two profiles: `102,976`.
-- Mutations rejected: `43 / 43`.
+- Mutations rejected: `45 / 45`.
 
 ## Kernel Contract
 
@@ -35,7 +35,8 @@ This is exact for the pinned integer table/floor-division kernel:
 
 1. `score_scale = 1`.
 2. For each `(head_index, local_step_index)`, compute the per-step max score.
-3. For each score row, compute `score_gap = max_score - score`.
+3. For each score row, recompute `score_gap = max_score - score`; the gate
+   does not trust the stored `selected_score`.
 4. Clip with `clipped_gap = min(score_gap, 8)`.
 5. Look up the literal statement-bound table:
    `0 -> 256`, `1 -> 181`, `2 -> 128`, `3 -> 91`, `4 -> 64`,
