@@ -603,8 +603,8 @@ def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any
         QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES,
         "quantized Softmax receipt evidence",
     )
-    payload = json.loads(raw)
     try:
+        payload = json.loads(raw)
         QUANTIZED_SOFTMAX.validate_result(payload)
     except QUANTIZED_SOFTMAX.QuantizedSoftmaxReceiptGateError as error:
         raise AttentionKvRouteSelectorError(f"quantized Softmax receipt drift: {error}") from error
