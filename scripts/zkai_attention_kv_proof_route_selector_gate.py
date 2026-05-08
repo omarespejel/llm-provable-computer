@@ -18,7 +18,6 @@ import argparse
 import copy
 import csv
 import datetime as dt
-import functools
 import hashlib
 import importlib.util
 import json
@@ -595,9 +594,8 @@ def load_stwo_native_masked_sequence_envelope(
     return envelope
 
 
-@functools.lru_cache(maxsize=None)
-def _load_quantized_softmax_receipt_payload_cached(path: pathlib.Path) -> dict[str, Any]:
-    """Load and validate the implementation-exact quantized Softmax receipt payload once per process."""
+def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
+    """Load and validate the current implementation-exact quantized Softmax receipt payload."""
 
     if not path.exists():
         raise AttentionKvRouteSelectorError(f"missing quantized Softmax receipt evidence: {path}")
@@ -614,7 +612,7 @@ def _load_quantized_softmax_receipt_payload_cached(path: pathlib.Path) -> dict[s
 def load_quantized_softmax_receipt_payload(path: pathlib.Path = QUANTIZED_SOFTMAX_RECEIPT_JSON) -> dict[str, Any]:
     """Load the implementation-exact quantized Softmax receipt payload as a fresh object."""
 
-    return copy.deepcopy(_load_quantized_softmax_receipt_payload_cached(path))
+    return copy.deepcopy(_load_quantized_softmax_receipt_payload(path))
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -872,9 +870,8 @@ def quantized_softmax_receipt_summary(softmax_payload: dict[str, Any]) -> dict[s
     }
 
 
-@functools.lru_cache(maxsize=1)
-def _route_inventory_cached() -> tuple[dict[str, Any], ...]:
-    """Build the canonical route inventory once per process."""
+def route_inventory() -> list[dict[str, Any]]:
+    """Return the checked route candidates as fresh dictionaries."""
 
     snark = snark_receipt_summary(load_snark_payload())
     risc0 = risc0_receipt_summary(load_risc0_payload())
@@ -974,13 +971,7 @@ def _route_inventory_cached() -> tuple[dict[str, Any], ...]:
     wide_masked_sequence_route["masking_policy"] = risc0_wide_masked_sequence["masking_policy"]
     wide_masked_sequence_route["tie_break"] = risc0_wide_masked_sequence["tie_break"]
     wide_masked_sequence_route["final_kv_items"] = risc0_wide_masked_sequence["final_kv_items"]
-    return tuple(routes)
-
-
-def route_inventory() -> list[dict[str, Any]]:
-    """Return the checked route candidates as fresh dictionaries."""
-
-    return copy.deepcopy(list(_route_inventory_cached()))
+    return copy.deepcopy(routes)
 
 
 def route_candidate_by_id(routes: list[dict[str, Any]], route_id: str) -> dict[str, Any]:
