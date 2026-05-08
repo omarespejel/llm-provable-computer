@@ -169,9 +169,11 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["longseq_fused_softmax_receipt"]["sequence_length_per_head"], 16)
         self.assertEqual(payload["longseq_fused_softmax_receipt"]["lookup_claims"], 336)
         self.assertEqual(payload["longseq_fused_softmax_receipt"]["trace_rows"], 512)
-        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_proof_size_bytes"], 54234)
-        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"], 1000098)
-        self.assertIsNone(payload["longseq_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"])
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_proof_size_bytes"], 60502)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"], 1050248)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["source_plus_sidecar_raw_proof_bytes"], 79444)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_saves_vs_source_plus_sidecar_bytes"], 18942)
+        self.assertEqual(payload["longseq_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"], "0.761568")
         self.assertIn("not a long-context benchmark", payload["longseq_fused_softmax_receipt"]["non_claims"])
         self.assertEqual(
             payload["longseq_fused_softmax_receipt"]["mutations_checked"],

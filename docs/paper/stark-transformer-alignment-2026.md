@@ -1444,17 +1444,20 @@ proof-existence and byte-accounting evidence, not a savings claim.
 The same fusion also survives a separate sequence-axis point. Holding `d=8` and
 two heads fixed, the long-sequence route doubles per-head sequence length to
 sixteen steps. It checks `336` lookup claims over a `512`-row trace, has a
-`54234`-byte raw proof inside a `1000098`-byte checked envelope, and rejects
-`16 / 16` proof/statement/relabeling/overclaim mutations. Lookup claims grow
+`60502`-byte raw proof inside a `1050248`-byte checked envelope, and rejects
+`19 / 19` proof/statement/relabeling/overclaim mutations. Lookup claims grow
 from `104` on the fixed two-head fused route to `336` (`3.230769x`) while fused
-raw proof bytes grow from `49508` to `54234` (`1.095459x`). This is the strongest
-current native Stwo attention signal in the artifact set: lookup membership no
-longer has to live as a detached sidecar for the checked bounded fixture, and
-the fused object survives both eight-head and longer-sequence scale points. It
-remains bounded table evidence, not real-valued Softmax, not exp/div semantics,
-not implementation-exact model Softmax, not full inference, not a public
-long-context benchmark, not on-chain verifier evidence, not a public benchmark
-row, and not recursion/PCD.
+raw proof bytes grow from `49508` to `60502` (`1.222064x`). Issue `#500` now
+adds the matched long-sequence source-plus-sidecar control: the source proof plus
+LogUp sidecar is `79444` raw proof bytes, so the fused proof is `18942` bytes
+smaller (`0.761568x` of the matched control). This is the strongest current
+native Stwo attention signal in the artifact set: lookup membership no longer
+has to live as a detached sidecar for the checked bounded fixture, and the fused
+object survives both eight-head and longer-sequence scale points. It remains
+bounded table evidence, not real-valued Softmax, not exp/div semantics, not
+implementation-exact model Softmax, not full inference, not a public long-context
+benchmark, not on-chain verifier evidence, not a public benchmark row, not a
+timing result, and not recursion/PCD.
 
 Reproducibility anchors for these follow-ups are deliberately local and concrete:
 backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,
@@ -1463,6 +1466,7 @@ Cargo.lock-pinned CLI verification via `--locked`, and timing mode
 evidence paths are
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`,
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.

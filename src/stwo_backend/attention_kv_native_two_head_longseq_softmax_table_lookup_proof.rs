@@ -25,10 +25,10 @@ use stwo_constraint_framework::{
     RelationEntry, TraceLocationAllocator,
 };
 
-use super::attention_kv_native_d8_bounded_softmax_table_proof::{
-    zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str,
-    ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
-    ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES,
+use super::attention_kv_native_two_head_longseq_bounded_softmax_table_proof::{
+    zkai_attention_kv_native_two_head_longseq_bounded_softmax_table_input_from_json_str,
+    ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
+    ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES,
 };
 #[cfg(test)]
 use super::logup_utils::selector_masked_denominator;
@@ -36,42 +36,44 @@ use super::logup_utils::selector_masked_lookup_fraction_terms as masked_lookup_f
 use crate::error::{Result, VmError};
 use crate::proof::StarkProofBackend;
 
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION: &str =
-    "stwo-attention-kv-d8-softmax-table-logup-sidecar-proof-v1";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION: &str =
-    "zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-statement-v1";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE: &str =
-    "d8_bounded_softmax_table_membership_constrained_by_native_stwo_logup_sidecar";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_DECISION: &str =
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION: &str =
+    "stwo-attention-kv-two-head-longseq-softmax-table-logup-sidecar-proof-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION: &str =
+    "zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-statement-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE: &str =
+    "two_head_longseq_bounded_softmax_table_membership_constrained_by_native_stwo_logup_sidecar";
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_DECISION: &str =
     "GO_NATIVE_STWO_AIR_CONSTRAINED_SOFTMAX_TABLE_LOOKUP_RELATION_SIDECAR";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_TARGET_ID: &str =
-    "attention-kv-d8-causal-mask-bounded-softmax-table-logup-sidecar-v1";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN: &str =
-    "ptvm:zkai:attention-kv-stwo-native-d8-softmax-table-logup-sidecar:v1";
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES: usize =
-    1_048_576;
-pub const ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES: usize = 65_536;
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_TARGET_ID: &str =
+    "attention-kv-two-head-longseq-d8-causal-mask-bounded-softmax-table-logup-sidecar-v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN: &str =
+    "ptvm:zkai:attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar:v1";
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES:
+    usize = 4_194_304;
+pub const ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES: usize =
+    131_072;
 
-const LOG_SIZE: u32 = 6;
-const TRACE_ROW_COUNT: usize = 64;
+const LOG_SIZE: u32 = 9;
+const TRACE_ROW_COUNT: usize = 512;
 const EXPECTED_TRACE_COMMITMENTS: usize = 3;
 const EXPECTED_PROOF_COMMITMENTS: usize = 4;
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 
-const PREPROCESSED_TABLE_GAP: &str = "zkai/attention-kv/native-d8-softmax-table-logup/table-gap";
+const PREPROCESSED_TABLE_GAP: &str =
+    "zkai/attention-kv/native-two-head-longseq-softmax-table-logup/table-gap";
 const PREPROCESSED_TABLE_WEIGHT: &str =
-    "zkai/attention-kv/native-d8-softmax-table-logup/table-weight";
+    "zkai/attention-kv/native-two-head-longseq-softmax-table-logup/table-weight";
 const PREPROCESSED_TABLE_MULTIPLICITY: &str =
-    "zkai/attention-kv/native-d8-softmax-table-logup/table-multiplicity";
+    "zkai/attention-kv/native-two-head-longseq-softmax-table-logup/table-multiplicity";
 
-relation!(AttentionKvD8SoftmaxTableLookupRelation, 2);
+relation!(AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation, 2);
 
 #[derive(Debug, Clone)]
-struct AttentionKvD8SoftmaxTableLookupEval {
-    lookup_elements: AttentionKvD8SoftmaxTableLookupRelation,
+struct AttentionKvTwoHeadLongseqSoftmaxTableLookupEval {
+    lookup_elements: AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation,
 }
 
-impl FrameworkEval for AttentionKvD8SoftmaxTableLookupEval {
+impl FrameworkEval for AttentionKvTwoHeadLongseqSoftmaxTableLookupEval {
     fn log_size(&self) -> u32 {
         LOG_SIZE
     }
@@ -110,7 +112,7 @@ impl FrameworkEval for AttentionKvD8SoftmaxTableLookupEval {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct AttentionKvD8SoftmaxTableLookupMultiplicity {
+pub struct AttentionKvTwoHeadLongseqSoftmaxTableLookupMultiplicity {
     pub gap: usize,
     pub weight: i64,
     pub multiplicity: usize,
@@ -118,11 +120,14 @@ pub struct AttentionKvD8SoftmaxTableLookupMultiplicity {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary {
+pub struct ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary {
     pub source_statement_commitment: String,
     pub source_public_instance_commitment: String,
     pub source_score_row_commitment: String,
+    pub source_final_kv_cache_commitment: String,
+    pub source_outputs_commitment: String,
     pub source_weight_table_commitment: String,
+    pub source_head_count: usize,
     pub score_rows: usize,
     pub trace_rows: usize,
     pub table_rows: usize,
@@ -131,59 +136,64 @@ pub struct ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary {
     pub lookup_relation: String,
     pub lookup_relation_width: usize,
     pub lookup_claims: usize,
-    pub table_multiplicities: Vec<AttentionKvD8SoftmaxTableLookupMultiplicity>,
+    pub table_multiplicities: Vec<AttentionKvTwoHeadLongseqSoftmaxTableLookupMultiplicity>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope {
+pub struct ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope {
     pub proof_backend: StarkProofBackend,
     pub proof_backend_version: String,
     pub statement_version: String,
     pub semantic_scope: String,
     pub decision: String,
     pub verifier_domain: String,
-    pub lookup_summary: ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
-    pub source_input: ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    pub lookup_summary: ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary,
+    pub source_input: ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
     pub proof: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct AttentionKvD8SoftmaxTableLookupProofPayload {
+struct AttentionKvTwoHeadLongseqSoftmaxTableLookupProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
 }
 
 #[derive(Clone)]
 struct LookupBundle {
     log_size: u32,
-    summary: ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
+    summary: ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary,
     preprocessed_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 }
 
-pub fn zkai_attention_kv_native_d8_softmax_table_lookup_source_input_from_json_str(
+pub fn zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_source_input_from_json_str(
     raw_json: &str,
-) -> Result<ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput> {
-    zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str(raw_json)
+) -> Result<ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput> {
+    zkai_attention_kv_native_two_head_longseq_bounded_softmax_table_input_from_json_str(raw_json)
 }
 
-pub fn prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(
-    source_input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
-) -> Result<ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope> {
+pub fn prove_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+    source_input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
+) -> Result<ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope> {
     validate_source_input(source_input)?;
     let bundle = build_lookup_bundle(source_input)?;
     let proof = prove_lookup(&bundle)?;
-    let envelope = ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope {
+    let envelope = ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope {
         proof_backend: StarkProofBackend::Stwo,
-        proof_backend_version: ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION
+        proof_backend_version:
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION.to_string(),
+        statement_version:
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION
+                .to_string(),
+        semantic_scope:
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE
+                .to_string(),
+        decision: ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_DECISION
             .to_string(),
-        statement_version: ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION
-            .to_string(),
-        semantic_scope: ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE.to_string(),
-        decision: ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_DECISION.to_string(),
-        verifier_domain: ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN
-            .to_string(),
+        verifier_domain:
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN
+                .to_string(),
         lookup_summary: bundle.summary,
         source_input: source_input.clone(),
         proof,
@@ -192,58 +202,62 @@ pub fn prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(
     Ok(envelope)
 }
 
-pub fn zkai_attention_kv_native_d8_softmax_table_lookup_envelope_from_json_slice(
+pub fn zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope_from_json_slice(
     raw_json: &[u8],
-) -> Result<ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope> {
-    if raw_json.len() > ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES {
+) -> Result<ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope> {
+    if raw_json.len()
+        > ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES
+    {
         return Err(lookup_error(format!(
             "lookup envelope JSON exceeds max size: got {} bytes, limit {} bytes",
             raw_json.len(),
-            ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_ENVELOPE_JSON_BYTES
         )));
     }
-    let envelope: ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope =
+    let envelope: ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope =
         serde_json::from_slice(raw_json)
             .map_err(|error| VmError::Serialization(error.to_string()))?;
     validate_envelope(&envelope)?;
     Ok(envelope)
 }
 
-pub fn verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(
-    envelope: &ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope,
+pub fn verify_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+    envelope: &ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope,
 ) -> Result<bool> {
     validate_envelope(envelope)?;
     verify_lookup(&envelope.source_input, &envelope.proof)
 }
 
-fn validate_envelope(envelope: &ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelope) -> Result<()> {
+fn validate_envelope(
+    envelope: &ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupEnvelope,
+) -> Result<()> {
     validate_source_input(&envelope.source_input)?;
     if envelope.proof_backend != StarkProofBackend::Stwo {
         return Err(lookup_error("lookup proof backend is not Stwo"));
     }
     expect_eq(
         &envelope.proof_backend_version,
-        ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_PROOF_VERSION,
         "lookup proof backend version",
     )?;
     expect_eq(
         &envelope.statement_version,
-        ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_STATEMENT_VERSION,
         "lookup statement version",
     )?;
     expect_eq(
         &envelope.semantic_scope,
-        ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE,
         "lookup semantic scope",
     )?;
     expect_eq(
         &envelope.decision,
-        ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_DECISION,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_DECISION,
         "lookup decision",
     )?;
     expect_eq(
         &envelope.verifier_domain,
-        ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN,
+        ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN,
         "lookup verifier domain",
     )?;
     let expected_summary = lookup_summary(&envelope.source_input)?;
@@ -251,7 +265,8 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelop
         return Err(lookup_error("lookup summary does not match source input"));
     }
     if envelope.proof.is_empty()
-        || envelope.proof.len() > ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES
+        || envelope.proof.len()
+            > ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES
     {
         return Err(lookup_error("lookup proof byte length outside bounded cap"));
     }
@@ -259,30 +274,34 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD8SoftmaxTableLookupEnvelop
 }
 
 fn validate_source_input(
-    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
 ) -> Result<()> {
     let raw =
         serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
-    if raw.len() > ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES {
+    if raw.len()
+        > ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES
+    {
         return Err(lookup_error(
             "source input JSON exceeds inherited bounded cap",
         ));
     }
-    zkai_attention_kv_native_d8_bounded_softmax_table_input_from_json_str(&raw)?;
+    zkai_attention_kv_native_two_head_longseq_bounded_softmax_table_input_from_json_str(&raw)?;
     Ok(())
 }
 
 fn lookup_summary(
-    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
-) -> Result<ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary> {
+    input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
+) -> Result<ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary> {
     let mut multiplicities = input
         .weight_table
         .iter()
-        .map(|entry| AttentionKvD8SoftmaxTableLookupMultiplicity {
-            gap: entry.gap,
-            weight: entry.weight,
-            multiplicity: 0,
-        })
+        .map(
+            |entry| AttentionKvTwoHeadLongseqSoftmaxTableLookupMultiplicity {
+                gap: entry.gap,
+                weight: entry.weight,
+                multiplicity: 0,
+            },
+        )
         .collect::<Vec<_>>();
     for row in &input.score_rows {
         if row.score_gap < 0 {
@@ -302,25 +321,30 @@ fn lookup_summary(
             .checked_add(1)
             .ok_or_else(|| lookup_error("lookup multiplicity overflow"))?;
     }
-    Ok(ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary {
-        source_statement_commitment: input.statement_commitment.clone(),
-        source_public_instance_commitment: input.public_instance_commitment.clone(),
-        source_score_row_commitment: input.score_row_commitment.clone(),
-        source_weight_table_commitment: input.weight_table_commitment.clone(),
-        score_rows: input.score_row_count,
-        trace_rows: TRACE_ROW_COUNT,
-        table_rows: input.weight_table.len(),
-        score_gap_clip: input.score_gap_clip,
-        weight_policy: input.weight_policy.clone(),
-        lookup_relation: "AttentionKvD8SoftmaxTableLookupRelation".to_string(),
-        lookup_relation_width: 2,
-        lookup_claims: input.score_rows.len(),
-        table_multiplicities: multiplicities,
-    })
+    Ok(
+        ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary {
+            source_statement_commitment: input.statement_commitment.clone(),
+            source_public_instance_commitment: input.public_instance_commitment.clone(),
+            source_score_row_commitment: input.score_row_commitment.clone(),
+            source_final_kv_cache_commitment: input.final_kv_cache_commitment.clone(),
+            source_outputs_commitment: input.outputs_commitment.clone(),
+            source_weight_table_commitment: input.weight_table_commitment.clone(),
+            source_head_count: input.head_count,
+            score_rows: input.score_row_count,
+            trace_rows: TRACE_ROW_COUNT,
+            table_rows: input.weight_table.len(),
+            score_gap_clip: input.score_gap_clip,
+            weight_policy: input.weight_policy.clone(),
+            lookup_relation: "AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation".to_string(),
+            lookup_relation_width: 2,
+            lookup_claims: input.score_rows.len(),
+            table_multiplicities: multiplicities,
+        },
+    )
 }
 
 fn build_lookup_bundle(
-    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
 ) -> Result<LookupBundle> {
     let summary = lookup_summary(input)?;
     if TRACE_ROW_COUNT != 1usize << LOG_SIZE {
@@ -340,8 +364,8 @@ fn build_lookup_bundle(
 }
 
 fn lookup_preprocessed_trace(
-    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
-    summary: &ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
+    input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
+    summary: &ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
     let mut gaps = Vec::with_capacity(TRACE_ROW_COUNT);
@@ -385,7 +409,7 @@ fn lookup_preprocessed_trace(
 }
 
 fn lookup_base_trace(
-    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(LOG_SIZE).circle_domain();
     let mut gaps = Vec::with_capacity(TRACE_ROW_COUNT);
@@ -422,7 +446,7 @@ fn lookup_base_trace(
 }
 
 fn prove_lookup(bundle: &LookupBundle) -> Result<Vec<u8>> {
-    let component = lookup_component(AttentionKvD8SoftmaxTableLookupRelation::dummy());
+    let component = lookup_component(AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::dummy());
     let config = lookup_pcs_config();
     let twiddles = SimdBackend::precompute_twiddles(
         CanonicCoset::new(
@@ -445,7 +469,7 @@ fn prove_lookup(bundle: &LookupBundle) -> Result<Vec<u8>> {
     tree_builder.commit(channel);
 
     mix_lookup_summary(channel, &bundle.summary);
-    let lookup_elements = AttentionKvD8SoftmaxTableLookupRelation::draw(channel);
+    let lookup_elements = AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::draw(channel);
     let (interaction_trace, claimed_sum) = lookup_interaction_trace(
         bundle.log_size,
         &bundle.base_trace,
@@ -468,26 +492,28 @@ fn prove_lookup(bundle: &LookupBundle) -> Result<Vec<u8>> {
             .map_err(|error| {
                 lookup_error(format!("Softmax-table lookup proving failed: {error}"))
             })?;
-    serde_json::to_vec(&AttentionKvD8SoftmaxTableLookupProofPayload { stark_proof })
+    serde_json::to_vec(&AttentionKvTwoHeadLongseqSoftmaxTableLookupProofPayload { stark_proof })
         .map_err(|error| VmError::Serialization(error.to_string()))
 }
 
 fn verify_lookup(
-    source_input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    source_input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
     proof: &[u8],
 ) -> Result<bool> {
     validate_source_input(source_input)?;
     if proof.is_empty()
-        || proof.len() > ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES
+        || proof.len()
+            > ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_MAX_PROOF_BYTES
     {
         return Err(lookup_error("lookup proof byte length outside bounded cap"));
     }
-    let payload: AttentionKvD8SoftmaxTableLookupProofPayload =
+    let payload: AttentionKvTwoHeadLongseqSoftmaxTableLookupProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     let stark_proof = payload.stark_proof;
     let config = validate_pcs_config(stark_proof.config)?;
     let expected_roots = lookup_commitment_roots(source_input, config)?;
-    let component_placeholder = lookup_component(AttentionKvD8SoftmaxTableLookupRelation::dummy());
+    let component_placeholder =
+        lookup_component(AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::dummy());
     let sizes = component_placeholder.trace_log_degree_bounds();
     if sizes.len() != EXPECTED_TRACE_COMMITMENTS {
         return Err(lookup_error(
@@ -515,7 +541,7 @@ fn verify_lookup(
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
     let summary = lookup_summary(source_input)?;
     mix_lookup_summary(channel, &summary);
-    let lookup_elements = AttentionKvD8SoftmaxTableLookupRelation::draw(channel);
+    let lookup_elements = AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::draw(channel);
     let component = lookup_component(lookup_elements);
     commitment_scheme.commit(stark_proof.commitments[2], &sizes[2], channel);
     verify(&[&component], channel, commitment_scheme, stark_proof)
@@ -524,7 +550,7 @@ fn verify_lookup(
 }
 
 fn lookup_commitment_roots(
-    source_input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    source_input: &ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput,
     config: PcsConfig,
 ) -> Result<
     stwo::core::pcs::TreeVec<
@@ -532,7 +558,7 @@ fn lookup_commitment_roots(
     >,
 > {
     let bundle = build_lookup_bundle(source_input)?;
-    let component = lookup_component(AttentionKvD8SoftmaxTableLookupRelation::dummy());
+    let component = lookup_component(AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::dummy());
     let twiddles = SimdBackend::precompute_twiddles(
         CanonicCoset::new(
             component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
@@ -554,7 +580,7 @@ fn lookup_commitment_roots(
     tree_builder.commit(channel);
 
     mix_lookup_summary(channel, &bundle.summary);
-    let lookup_elements = AttentionKvD8SoftmaxTableLookupRelation::draw(channel);
+    let lookup_elements = AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation::draw(channel);
     let (interaction_trace, claimed_sum) = lookup_interaction_trace(
         bundle.log_size,
         &bundle.base_trace,
@@ -577,7 +603,7 @@ fn lookup_interaction_trace(
     log_size: u32,
     base_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     preprocessed_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
-    lookup_elements: &AttentionKvD8SoftmaxTableLookupRelation,
+    lookup_elements: &AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation,
 ) -> (
     ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     SecureField,
@@ -602,23 +628,24 @@ fn lookup_interaction_trace(
 }
 
 fn lookup_component(
-    lookup_elements: AttentionKvD8SoftmaxTableLookupRelation,
-) -> FrameworkComponent<AttentionKvD8SoftmaxTableLookupEval> {
+    lookup_elements: AttentionKvTwoHeadLongseqSoftmaxTableLookupRelation,
+) -> FrameworkComponent<AttentionKvTwoHeadLongseqSoftmaxTableLookupEval> {
     FrameworkComponent::new(
         &mut TraceLocationAllocator::new_with_preprocessed_columns(&[
             preprocessed_column_id(PREPROCESSED_TABLE_GAP),
             preprocessed_column_id(PREPROCESSED_TABLE_WEIGHT),
             preprocessed_column_id(PREPROCESSED_TABLE_MULTIPLICITY),
         ]),
-        AttentionKvD8SoftmaxTableLookupEval { lookup_elements },
+        AttentionKvTwoHeadLongseqSoftmaxTableLookupEval { lookup_elements },
         SecureField::zero(),
     )
 }
 
 fn mix_lookup_summary(
     channel: &mut Blake2sM31Channel,
-    summary: &ZkAiAttentionKvNativeD8SoftmaxTableLookupSummary,
+    summary: &ZkAiAttentionKvNativeTwoHeadLongseqSoftmaxTableLookupSummary,
 ) {
+    channel.mix_u64(summary.source_head_count as u64);
     channel.mix_u64(summary.score_rows as u64);
     channel.mix_u64(summary.trace_rows as u64);
     channel.mix_u64(summary.table_rows as u64);
@@ -679,34 +706,40 @@ fn lookup_error(message: impl Into<String>) -> VmError {
 mod tests {
     use super::*;
 
-    fn source_input() -> ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput {
+    fn source_input() -> ZkAiAttentionKvNativeTwoHeadLongseqBoundedSoftmaxTableProofInput {
         let raw = include_str!(
-            "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json"
+            "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json"
         );
-        zkai_attention_kv_native_d8_softmax_table_lookup_source_input_from_json_str(raw)
-            .expect("source input")
+        zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_source_input_from_json_str(
+            raw,
+        )
+        .expect("source input")
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_sidecar_round_trips_real_proof() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_sidecar_round_trips_real_proof() {
         let input = source_input();
-        let envelope = prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&input)
-            .expect("prove lookup sidecar");
+        let envelope =
+            prove_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
         assert_eq!(
             envelope.decision,
-            ZKAI_ATTENTION_KV_NATIVE_D8_SOFTMAX_TABLE_LOOKUP_DECISION
+            ZKAI_ATTENTION_KV_NATIVE_TWO_HEAD_LONGSEQ_SOFTMAX_TABLE_LOOKUP_DECISION
         );
-        assert_eq!(envelope.lookup_summary.score_rows, 52);
-        assert_eq!(envelope.lookup_summary.lookup_claims, 52);
+        assert_eq!(envelope.lookup_summary.source_head_count, 2);
+        assert_eq!(envelope.lookup_summary.score_rows, 336);
+        assert_eq!(envelope.lookup_summary.lookup_claims, 336);
         assert_eq!(envelope.lookup_summary.table_rows, 9);
         assert!(
-            verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&envelope)
-                .expect("verify lookup sidecar")
+            verify_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+                &envelope
+            )
+            .expect("verify lookup sidecar")
         );
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_summary_counts_claims() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_summary_counts_claims() {
         let input = source_input();
         let summary = lookup_summary(&input).expect("summary");
         let total: usize = summary
@@ -722,7 +755,7 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_rejects_empty_table_without_panic() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_rejects_empty_table_without_panic() {
         let mut input = source_input();
         let mut summary = lookup_summary(&input).expect("summary");
         input.weight_table.clear();
@@ -737,7 +770,8 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_rejects_preprocessed_overflow_without_panic() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_rejects_preprocessed_overflow_without_panic(
+    ) {
         let input = source_input();
         let mut summary = lookup_summary(&input).expect("summary");
         let Some(overflow) = (u32::MAX as usize).checked_add(1) else {
@@ -753,7 +787,7 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_masks_inactive_denominators() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_masks_inactive_denominators() {
         let guarded =
             selector_masked_denominator(PackedSecureField::zero(), PackedSecureField::zero());
         assert!(guarded
@@ -769,7 +803,7 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_preserves_one_sided_contributions() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_preserves_one_sided_contributions() {
         let one = PackedSecureField::one();
         let zero = PackedSecureField::zero();
         let claimed_q = PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
@@ -793,24 +827,30 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_rejects_summary_drift() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_rejects_summary_drift() {
         let input = source_input();
-        let mut envelope = prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&input)
-            .expect("prove lookup sidecar");
+        let mut envelope =
+            prove_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
         envelope.lookup_summary.lookup_claims += 1;
-        let error = verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&envelope)
-            .expect_err("summary drift must reject");
+        let error = verify_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+            &envelope,
+        )
+        .expect_err("summary drift must reject");
         assert!(error.to_string().contains("lookup summary"));
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_rejects_source_weight_drift() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_rejects_source_weight_drift() {
         let input = source_input();
-        let mut envelope = prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&input)
-            .expect("prove lookup sidecar");
+        let mut envelope =
+            prove_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
         envelope.source_input.score_rows[0].attention_weight += 1;
-        let error = verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&envelope)
-            .expect_err("source drift must reject");
+        let error = verify_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+            &envelope,
+        )
+        .expect_err("source drift must reject");
         assert!(
             error.to_string().contains("attention weight")
                 || error.to_string().contains("source row")
@@ -820,14 +860,17 @@ mod tests {
     }
 
     #[test]
-    fn attention_kv_d8_softmax_table_lookup_rejects_proof_byte_tamper() {
+    fn attention_kv_two_head_longseq_softmax_table_lookup_rejects_proof_byte_tamper() {
         let input = source_input();
-        let mut envelope = prove_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&input)
-            .expect("prove lookup sidecar");
+        let mut envelope =
+            prove_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
         let last = envelope.proof.last_mut().expect("proof byte");
         *last ^= 1;
-        let error = verify_zkai_attention_kv_native_d8_softmax_table_lookup_envelope(&envelope)
-            .expect_err("proof tamper must reject");
+        let error = verify_zkai_attention_kv_native_two_head_longseq_softmax_table_lookup_envelope(
+            &envelope,
+        )
+        .expect_err("proof tamper must reject");
         assert!(!error.to_string().is_empty());
     }
 }

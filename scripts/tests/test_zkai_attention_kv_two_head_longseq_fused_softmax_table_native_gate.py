@@ -26,8 +26,11 @@ class TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.TestCase):
         self.assertEqual(result["source_head_count"], 2)
         self.assertEqual(result["lookup_claims"], 336)
         self.assertEqual(result["trace_rows"], 512)
-        self.assertEqual(result["fused_proof_size_bytes"], 54234)
-        self.assertEqual(result["fused_envelope_size_bytes"], 1000098)
+        self.assertEqual(result["fused_proof_size_bytes"], 60502)
+        self.assertEqual(result["fused_envelope_size_bytes"], 1050248)
+        self.assertEqual(result["source_plus_sidecar_raw_proof_bytes"], 79444)
+        self.assertEqual(result["fused_saves_vs_source_plus_sidecar_bytes"], 18942)
+        self.assertEqual(result["fused_to_source_plus_sidecar_ratio"], "0.761568")
         self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertIn("NOT_EXACT_SOFTMAX", result["claim_boundary"])
 

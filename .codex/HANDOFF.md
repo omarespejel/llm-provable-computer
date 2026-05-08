@@ -309,14 +309,18 @@ Tablero boundary.
 - Issue `#498` scales the fused route along sequence length at fixed `d=8` and
   fixed two-head shape: one native Stwo proof object checks two-head,
   sixteen-step-per-head bounded Softmax-table attention arithmetic and LogUp
-  table membership for `336` lookup claims over a `512`-row trace. The fused
-  proof is `54234` raw bytes and `1000098` checked envelope bytes, rejects
-  `16 / 16` gate mutations, and records no long-sequence source-plus-sidecar
-  comparator. Lookup claims grow `3.230769x` versus the fixed two-head fused
-  route while fused proof bytes grow `1.095459x`. This is sequence-axis
-  proof-existence evidence, not exact Softmax, not a long-context benchmark,
-  not a fused-vs-sidecar savings claim, and not full inference; see
-  `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`.
+  table membership for `336` lookup claims over a `512`-row trace. Issue `#500`
+  now supplies the matched long-sequence source-plus-sidecar comparator: source
+  proof `52366` bytes plus LogUp sidecar `27078` bytes (`79444` raw bytes
+  total). After binding that comparator metadata, the fused proof is `60502` raw
+  bytes and `1050248` checked envelope bytes, rejects `19 / 19` gate mutations,
+  and is `18942` bytes smaller than the matched source-plus-sidecar pair
+  (`0.761568x`). Lookup claims grow `3.230769x` versus the fixed two-head fused
+  route while fused proof bytes grow `1.222064x`. This is sequence-axis
+  proof-existence and byte-accounting evidence, not exact Softmax, not a
+  long-context benchmark, not a timing claim, and not full inference; see
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md` and
+  `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
 
 - Issue `#485` pins the issue `#478` fused single-head route as an
   implementation-exact quantized Softmax-table kernel receipt. The backing
