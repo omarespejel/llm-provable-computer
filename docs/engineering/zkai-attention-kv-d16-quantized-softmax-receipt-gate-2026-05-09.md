@@ -39,15 +39,20 @@ exact real-valued `exp`/division Softmax and it is not full inference.
 | --- | ---: |
 | Decision | `GO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT` |
 | Route | `local_stwo_attention_kv_d16_quantized_softmax_table_kernel_receipt` |
+| Backend / profile | `stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1` / `stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1` |
+| Timing mode | `proof_existence_and_byte_accounting_only_not_public_benchmark` |
 | Backing proof | issue `#501` d16 fused native Stwo proof |
 | Raw fused proof bytes | `64,503` |
 | Checked fused envelope bytes | `666,515` |
 | Lookup claims / score rows | `52` |
+| Trace rows | `64` |
 | Table rows | `9` |
 | Key width | `16` |
 | Value width | `16` |
 | Sequence length | `8` |
-| Mutations rejected | `34 / 34` |
+| Evidence path | `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json` |
+| Produce command | `python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv` |
+| Mutations rejected | `36 / 36` |
 
 The verifier-side recomputation checks `52` source rows across `8` decode
 steps. The per-step denominators are:
@@ -95,12 +100,13 @@ The gate rejects semantic relabeling, proof relabeling, and source drift across:
 - division and rounding-rule relabeling;
 - output-scale and division-error-bound relabeling;
 - source input score-scale, key-width, value-width, sequence-length, clip,
-  weight-policy, denominator, and remainder drift;
+  weight-policy, denominator, weighted-value, weighted-numerator, and remainder
+  drift;
 - fused verifier-domain and statement-version relabeling;
 - fused proof-byte tampering;
 - unknown receipt-field injection.
 
-The checked result rejects `34 / 34` mutations.
+The checked result rejects `36 / 36` mutations.
 
 ## Claim Boundary
 

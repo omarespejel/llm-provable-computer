@@ -111,6 +111,8 @@ EXPECTED_MUTATION_NAMES = (
     "source_input_clip_drift",
     "source_input_weight_policy_drift",
     "source_input_denominator_zero",
+    "source_input_weighted_value_drift",
+    "source_input_weighted_numerator_drift",
     "source_input_remainder_drift",
     "fused_verifier_domain_relabeling",
     "fused_statement_version_relabeling",
@@ -254,13 +256,22 @@ def validate_quantized_kernel(source: dict[str, Any]) -> dict[str, Any]:
                 raise QuantizedSoftmaxReceiptGateError("negative clipped gap")
             if row["attention_weight"] != table[clipped_gap]:
                 raise QuantizedSoftmaxReceiptGateError("table-weight recomputation drift")
+            expected_weighted_value = [row["attention_weight"] * value for value in row["value"]]
+            if row["weighted_value"] != expected_weighted_value:
+                raise QuantizedSoftmaxReceiptGateError("weighted-value recomputation drift")
             recomputed_denominator += row["attention_weight"]
         if not (1 <= recomputed_denominator < (1 << 9) * fused_gate.SOURCE_SCORE_ROWS):
             raise QuantizedSoftmaxReceiptGateError("denominator outside statement bound")
         per_step_denominators.append(recomputed_denominator)
+        recomputed_numerator = [0] * VALUE_WIDTH
+        for row in step_rows:
+            for dim, value in enumerate(row["weighted_value"]):
+                recomputed_numerator[dim] += value
         for row in step_rows:
             if row["weight_denominator"] != recomputed_denominator:
                 raise QuantizedSoftmaxReceiptGateError("weight denominator drift")
+            if row["weighted_numerator"] != recomputed_numerator:
+                raise QuantizedSoftmaxReceiptGateError("weighted-numerator recomputation drift")
             for dim, (output, remainder, numerator) in enumerate(
                 zip(row["attention_output"], row["output_remainder"], row["weighted_numerator"], strict=True)
             ):
@@ -434,6 +445,8 @@ def mutation_cases(receipt: dict[str, Any], source: dict[str, Any], envelope: di
     add("source_input_clip_drift", lambda _r, s, e: (s.__setitem__("score_gap_clip", 7), e.__setitem__("source_input", s)))
     add("source_input_weight_policy_drift", lambda _r, s, e: (s.__setitem__("weight_policy", "float-exp"), e.__setitem__("source_input", s)))
     add("source_input_denominator_zero", lambda _r, s, e: (s["score_rows"][0].__setitem__("weight_denominator", 0), e.__setitem__("source_input", s)))
+    add("source_input_weighted_value_drift", lambda _r, s, e: (s["score_rows"][0]["weighted_value"].__setitem__(0, 81), e.__setitem__("source_input", s)))
+    add("source_input_weighted_numerator_drift", lambda _r, s, e: (s["score_rows"][0]["weighted_numerator"].__setitem__(0, 561), e.__setitem__("source_input", s)))
     add("source_input_remainder_drift", lambda _r, s, e: (s["score_rows"][0]["output_remainder"].__setitem__(0, 999), e.__setitem__("source_input", s)))
     add("fused_verifier_domain_relabeling", lambda _r, _s, e: e.__setitem__("verifier_domain", "different-domain"))
     add("fused_statement_version_relabeling", lambda _r, _s, e: e.__setitem__("statement_version", "different-statement"))
@@ -488,7 +501,7 @@ def run_gate() -> dict[str, Any]:
     for name, mutated_receipt, mutated_source, mutated_envelope, run_native in mutation_cases(receipt, source, envelope):
         try:
             validate_receipt(mutated_receipt, mutated_source, mutated_envelope, run_native=run_native)
-        except Exception as err:  # noqa: BLE001 - gate records exact rejection surface.
+        except QuantizedSoftmaxReceiptGateError as err:
             mutation_results.append({"name": name, "rejected": True, "error": str(err)})
         else:
             mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})

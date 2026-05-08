@@ -245,6 +245,16 @@
       "rejected": true
     },
     {
+      "error": "weighted-value recomputation drift",
+      "name": "source_input_weighted_value_drift",
+      "rejected": true
+    },
+    {
+      "error": "weighted-numerator recomputation drift",
+      "name": "source_input_weighted_numerator_drift",
+      "rejected": true
+    },
+    {
       "error": "quotient/remainder relation drift",
       "name": "source_input_remainder_drift",
       "rejected": true
@@ -270,8 +280,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 34,
-  "mutations_rejected": 34,
+  "mutations_checked": 36,
+  "mutations_rejected": 36,
   "route_id": "local_stwo_attention_kv_d16_quantized_softmax_table_kernel_receipt",
   "schema": "zkai-attention-kv-d16-quantized-softmax-receipt-gate-v1",
   "source_arithmetic_issue": 501,
