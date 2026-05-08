@@ -71,6 +71,7 @@ QUANTIZED_SOFTMAX_RECEIPT_JSON = (
 )
 STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES = 1_048_576
 STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES = 1_048_576
+QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -597,9 +598,12 @@ def load_stwo_native_masked_sequence_envelope(
 def _load_quantized_softmax_receipt_payload(path: pathlib.Path) -> dict[str, Any]:
     """Load and validate the current implementation-exact quantized Softmax receipt payload."""
 
-    if not path.exists():
-        raise AttentionKvRouteSelectorError(f"missing quantized Softmax receipt evidence: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    raw = read_bounded_text(
+        path,
+        QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES,
+        "quantized Softmax receipt evidence",
+    )
+    payload = json.loads(raw)
     try:
         QUANTIZED_SOFTMAX.validate_result(payload)
     except QUANTIZED_SOFTMAX.QuantizedSoftmaxReceiptGateError as error:
