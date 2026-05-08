@@ -323,6 +323,8 @@ Claim boundary:
 - Native two-head long-sequence LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Native d16 bounded Softmax-table source input: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.json`
 - Native d16 bounded Softmax-table source envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json`
+- Native d16 bounded Softmax-table source gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.json`
+- Native d16 bounded Softmax-table source gate TSV: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.tsv`
 - Native d16 bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-gate-2026-05.json`
 - Native d16 bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Native d16 fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json`
@@ -743,6 +745,10 @@ cargo +nightly-2025-07-14 run --features stwo-backend \
   --bin zkai_attention_kv_native_d16_bounded_softmax_table_proof -- \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d16_bounded_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-gate-2026-05.tsv
 
 cargo +nightly-2025-07-14 run --features stwo-backend \
   --bin zkai_attention_kv_native_d16_softmax_table_lookup_proof -- \

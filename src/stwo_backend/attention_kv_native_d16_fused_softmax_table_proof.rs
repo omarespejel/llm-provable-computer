@@ -632,11 +632,16 @@ fn fused_base_trace(
     while rows.len() < TRACE_ROW_COUNT {
         rows.push(padding_row(rows.len()));
     }
+    let row_column_count = fused_row_column_ids().len();
     let mut columns: Vec<Vec<BaseField>> =
-        vec![Vec::with_capacity(TRACE_ROW_COUNT); fused_row_column_ids().len()];
+        vec![Vec::with_capacity(TRACE_ROW_COUNT); row_column_count];
     for (real_index, row) in rows.iter().enumerate() {
         let enabled = usize::from(real_index < input.score_rows.len());
-        for (column, value) in columns.iter_mut().zip(row_values(row, enabled)?) {
+        let values = row_values(row, enabled)?;
+        if values.len() != row_column_count {
+            return Err(fused_error("fused row/value column count drift"));
+        }
+        for (column, value) in columns.iter_mut().zip(values) {
             column.push(value);
         }
     }
