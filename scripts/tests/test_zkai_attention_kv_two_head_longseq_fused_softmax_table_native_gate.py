@@ -54,6 +54,8 @@ class TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.TestCase):
         self.assertEqual(len(native_bytes), gate.FUSED_ENVELOPE_SIZE_BYTES)
         self.assertEqual(result["decision"], gate.DECISION)
         self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
+        mutation_errors = [item["error"] for item in result["mutation_results"]]
+        self.assertNotIn("mutation result shape drift", mutation_errors)
 
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
