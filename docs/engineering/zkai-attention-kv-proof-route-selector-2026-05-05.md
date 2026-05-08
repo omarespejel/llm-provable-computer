@@ -223,10 +223,11 @@ rows), and the receipt pins key width `16`, value width `16`, sequence length
 positive denominators, Euclidean floor division, nonnegative output
 remainders, and a `< 1` output-unit division-error bound. The observed
 per-step denominators are `[288, 304, 560, 336, 352, 416, 544, 400]`; the
-largest observed division residual is `25/26`. The gate rejects `34 / 34`
-semantic/proof mutations. This is exact for the pinned d16 integer
-table/floor-division kernel, not real-valued Softmax, not implementation-exact
-model Softmax, not full inference, and not a timing result.
+largest observed division residual is `25/26`. The gate rejects `36 / 36`
+semantic/proof mutations, including weighted-value and weighted-numerator
+recomputation drift. This is exact for the pinned d16 integer table/floor-division
+kernel, not real-valued Softmax, not implementation-exact model
+Softmax, not full inference, and not a timing result.
 
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
@@ -286,7 +287,7 @@ Claim boundary:
 | Local Stwo four-head d8 bounded Softmax-table LogUp sidecar | GO; real native Stwo LogUp proof constrains the four-head table-membership multiset; `4.0x` lookup claims with `1.477314x` raw proof bytes versus single-head |
 | Local Stwo d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks single-head attention arithmetic and table membership; `47698` raw proof bytes versus `59437` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d16 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks d16 attention arithmetic and table membership; `64503` raw proof bytes versus `74961` bytes for the matched d16 source-plus-sidecar pair |
-| Local Stwo d16 implementation-exact quantized Softmax-table receipt | GO; one d16 fused Stwo proof backs the pinned width-16 integer table/floor-division kernel; `64503` raw proof bytes, `52` lookup claims, `9` table rows, and `34 / 34` semantic/proof mutations rejected |
+| Local Stwo d16 implementation-exact quantized Softmax-table receipt | GO; one d16 fused Stwo proof backs the pinned width-16 integer table/floor-division kernel; `64503` raw proof bytes, `52` lookup claims, `9` table rows, and `36 / 36` semantic/proof mutations rejected |
 | Local Stwo two-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head attention arithmetic and table membership; `49508` raw proof bytes versus `65208` bytes for the previous source-plus-sidecar pair |
 | Local Stwo four-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks four-head attention arithmetic and table membership; `53468` raw proof bytes versus `74529` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
@@ -405,6 +406,7 @@ Claim boundary:
 | d16 quantized Softmax-table sequence length | `8` |
 | d16 quantized Softmax-table lookup claims | `52` |
 | d16 quantized Softmax-table max observed division residual | `25/26` |
+| d16 quantized Softmax-table receipt mutations | `36 / 36` |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
 | RISC Zero transition semantics receipt size | `221842` bytes |
@@ -413,7 +415,7 @@ Claim boundary:
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
 | Mutations checked | 72 |
 | Mutations rejected | 72 |
-| Selector commitment | `blake2b-256:aad6edf7121af58ca7c908bf35b24708878c4375047fe9f0b6b168a6ca6f96d4` |
+| Selector commitment | `blake2b-256:dc3c505e15361d085b98c3a48bc3cb983c7caf38959cff218f529c4ecd98da2c` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
@@ -810,6 +812,10 @@ python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --run-native \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
@@ -839,7 +845,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input \
   scripts.tests.test_zkai_attention_kv_d16_air_private_softmax_table_lookup_gate \
   scripts.tests.test_zkai_attention_kv_d16_fused_softmax_table_native_gate \
-  scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate \
+  scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_d16_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
 cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
