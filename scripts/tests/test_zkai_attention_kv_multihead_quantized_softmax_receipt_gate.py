@@ -126,11 +126,23 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(calls[0], ("two_head", True))
         self.assertEqual(calls[-1], ("four_head", True))
 
-    def test_validate_result_defaults_to_all_native_profiles(self):
+    def test_validate_result_defaults_to_structural_validation_only(self):
         with mock.patch.object(gate, "load_sources", return_value=self.sources):
             with mock.patch.object(gate, "load_envelopes", return_value=self.envelopes):
                 with mock.patch.object(gate, "validate_receipt") as validate_receipt:
                     gate.validate_result(self.result)
+        validate_receipt.assert_called_once_with(
+            self.result,
+            self.sources,
+            self.envelopes,
+            native_profile_ids=set(),
+        )
+
+    def test_validate_result_can_opt_into_all_native_profiles(self):
+        with mock.patch.object(gate, "load_sources", return_value=self.sources):
+            with mock.patch.object(gate, "load_envelopes", return_value=self.envelopes):
+                with mock.patch.object(gate, "validate_receipt") as validate_receipt:
+                    gate.validate_result(self.result, run_native=True)
         validate_receipt.assert_called_once_with(
             self.result,
             self.sources,

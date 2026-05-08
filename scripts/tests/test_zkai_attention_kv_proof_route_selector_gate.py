@@ -31,10 +31,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             with mock.patch.object(GATE.MULTIHEAD_QUANTIZED_SOFTMAX, "validate_result") as validate_multihead:
                 GATE.load_multihead_quantized_softmax_receipt_payload()
             validate_multihead.assert_called_once()
-            self.assertEqual(
-                validate_multihead.call_args.kwargs,
-                {"native_profile_ids": set(GATE.MULTIHEAD_QUANTIZED_SOFTMAX.profile_ids())},
-            )
+            self.assertEqual(validate_multihead.call_args.kwargs, {"run_native": True})
         finally:
             GATE._load_quantized_softmax_receipt_payload.cache_clear()
             GATE._load_multihead_quantized_softmax_receipt_payload.cache_clear()
