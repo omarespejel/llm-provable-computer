@@ -1,7 +1,7 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_SOFTMAX_NOT_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
-  "decision": "GO_NATIVE_STWO_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_MASKED_SEQUENCE_RECEIPTS",
+  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_GENERAL_MULTIHEAD_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
+  "decision": "GO_NATIVE_STWO_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
     "attention_output": [
@@ -337,15 +337,20 @@
     "statement_commitment": "blake2b-256:4d901855dd3e24b867d4c52fd42c15bf165d5133b23f54dc6dbbc521720daee8",
     "timing_policy": "not_measured_in_this_gate"
   },
-  "first_blocker": "NO_SOFTMAX_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF",
+  "first_blocker": "NO_REAL_VALUED_SOFTMAX_GENERAL_MULTIHEAD_OR_LONG_CONTEXT_NATIVE_ATTENTION_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "36a7a2236a898e1762db84222ab6d1a26f9428e4",
+  "git_commit": "8aa85b0fde632d8e36ace14f22ebe0e53d1b6dcd",
   "metrics": {
     "native_stwo_envelope_size_bytes": 265791,
     "native_stwo_proof_size_bytes": 24394,
     "native_stwo_score_row_count": 52,
     "native_stwo_trace_row_count": 64,
     "proof_generation_time_ms": null,
+    "quantized_softmax_envelope_size_bytes": 478713,
+    "quantized_softmax_lookup_claims": 52,
+    "quantized_softmax_max_observed_division_error_fraction": "422/429",
+    "quantized_softmax_proof_size_bytes": 47698,
+    "quantized_softmax_table_rows": 9,
     "risc0_receipt_size_bytes": 221842,
     "risc0_scaled_sequence_receipt_size_bytes": 264146,
     "risc0_scaled_sequence_verifier_time_ms": 27.273667000000003,
@@ -398,6 +403,36 @@
     {
       "name": "local_stwo_native_receipt_statement_drift",
       "reason": "native Stwo masked sequence receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_route_removed",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_receipt_decision_drift",
+      "reason": "quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_receipt_route_drift",
+      "reason": "quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_receipt_mutation_rejections_drift",
+      "reason": "quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_real_softmax_overclaim",
+      "reason": "quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "quantized_softmax_denominator_drift",
+      "reason": "quantized Softmax receipt drift",
       "rejected": true
     },
     {
@@ -576,8 +611,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 42,
-  "mutations_rejected": 42,
+  "mutations_checked": 48,
+  "mutations_rejected": 48,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -702,12 +737,13 @@
     "native Stwo proof scales the d8 causal-mask integer-argmax attention arithmetic beyond the fixed eight-step fixture without weakening intermediate-state binding",
     "the carried KV-cache sequence scales beyond a fixed eight-step fixture without weakening intermediate-state binding",
     "a d=16 or multi-head fixture preserves the same width, masking, and intermediate-state binding guarantees",
+    "a native Stwo route fuses the quantized Softmax-table attention arithmetic and LogUp table membership beyond the fixed d8 single-head fixture",
     "the explicit causal-prefix masking axis remains statement data in any native route",
     "prior KV, intermediate KV, input/query, attention output, final KV, verifier domain, proof status, and statement commitment relabels reject after proof serialization",
-    "Softmax is kept out of scope unless the proof covers Softmax semantics"
+    "real-valued exp/div Softmax stays out of scope unless the proof covers that exact kernel and error bound"
   ],
   "non_claims": [
-    "not a Softmax proof",
+    "not real-valued Softmax",
     "not full autoregressive inference",
     "not agent correctness",
     "not recursive or proof-carrying data",
@@ -716,12 +752,60 @@
   ],
   "proof_backed_routes_available": [
     "local_stwo_attention_kv_d8_masked_sequence_proof",
+    "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
     "external_snark_attention_kv_statement_receipt",
     "external_zkvm_attention_kv_semantics_receipt",
     "external_zkvm_attention_kv_sequence_semantics_receipt",
     "external_zkvm_attention_kv_scaled_sequence_semantics_receipt",
     "external_zkvm_attention_kv_wide_masked_sequence_semantics_receipt"
   ],
+  "quantized_softmax_receipt": {
+    "all_mutations_rejected": true,
+    "claim_boundary": "ONE_NATIVE_STWO_FUSED_D8_ATTENTION_RECEIPT_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_PUBLIC_BENCHMARK",
+    "decision": "GO_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+    "denominator_policy": "sum_positive_statement_bound_table_weights_per_step",
+    "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
+    "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
+    "envelope_size_bytes": 478713,
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json",
+    "fused_gate_decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+    "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL",
+    "lookup_claims": 52,
+    "max_observed_division_error_fraction": "422/429",
+    "mutations_checked": 28,
+    "mutations_rejected": 28,
+    "per_step_denominators": [
+      429,
+      368,
+      395,
+      789,
+      592,
+      391,
+      384,
+      455
+    ],
+    "proof_backend": "stwo",
+    "proof_size_bytes": 47698,
+    "proof_system": "Stwo",
+    "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+    "result": "GO",
+    "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
+    "route_id": "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
+    "schema": "zkai-attention-kv-quantized-softmax-receipt-gate-v1",
+    "score_gap_clip": 8,
+    "score_rows": 52,
+    "score_scale": 1,
+    "source_public_instance_commitment": "blake2b-256:24007e2e093726eaeabfefc32de4b0633babe0f8ccb80945036dd93579f7d05c",
+    "source_score_row_commitment": "blake2b-256:1279d23d93288d6ddce174aaae45b895f8c0ba690754c0a3035a84a556efb5ec",
+    "source_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+    "steps": 8,
+    "table_error_bound_policy": "no real-valued Softmax approximation error bound is claimed; the literal integer table is the kernel",
+    "table_rows": 9,
+    "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
+    "weight_policy": "exp2_half_gap_table_clipped_8_floor_division",
+    "weight_table_commitment": "blake2b-256:8c45ca7eec1032a0ffa5d5a1e842bebd5f6268d75f82d696b29ec7cf9a420e13"
+  },
   "question": "Can the checked attention/KV transition receipt be promoted from a source-backed contract to a proof-backed receipt today?",
   "route_candidates": [
     {
@@ -754,6 +838,27 @@
       "trace_row_count": 64,
       "usable_today": true,
       "value_width": 8
+    },
+    {
+      "blocker": null,
+      "envelope_size_bytes": 478713,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json",
+      "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+      "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL",
+      "lookup_claims": 52,
+      "proof_backed": true,
+      "proof_backend": "stwo",
+      "proof_size_bytes": 47698,
+      "proof_system": "Stwo",
+      "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+      "route_id": "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
+      "score_gap_clip": 8,
+      "score_scale": 1,
+      "source_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+      "status": "GO_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+      "table_rows": 9,
+      "usable_today": true,
+      "weight_table_commitment": "blake2b-256:8c45ca7eec1032a0ffa5d5a1e842bebd5f6268d75f82d696b29ec7cf9a420e13"
     },
     {
       "blocker": null,
@@ -843,15 +948,15 @@
       "value_width": 8
     },
     {
-      "blocker": "SOFTMAX_SEMANTICS_ARE_NOT_PROVED_BY_THE_CURRENT_FIXTURE",
+      "blocker": "REAL_VALUED_EXP_DIV_SOFTMAX_NOT_PROVED_BY_CURRENT_KERNEL",
       "proof_backed": false,
-      "route_id": "softmax_attention_kv_claim",
-      "status": "NO_GO_OUT_OF_SCOPE_FOR_INTEGER_ARGMAX_FIXTURE",
+      "route_id": "real_valued_softmax_attention_kv_claim",
+      "status": "NO_GO_REAL_VALUED_SOFTMAX_OUT_OF_SCOPE_FOR_QUANTIZED_TABLE_KERNEL",
       "usable_today": false
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:b29a5b9024b980d53b7d57ea312e3371421d8e3aa3d1e2345e1f9d9474d39847",
+  "selector_commitment": "blake2b-256:1a89fdcfadd29504ff284fd7ae7707dbc89dc9beb349d289ead4bf7982b8bfc7",
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

@@ -50,9 +50,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 44. `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`
 45. `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`
 46. `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
-47. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-48. `docs/engineering/reproducibility.md`
-49. `git status --short --branch`
+47. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+48. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+49. `docs/engineering/reproducibility.md`
+50. `git status --short --branch`
 
 ## What this repository is now
 
@@ -285,19 +286,30 @@ This repository currently has three live lanes.
     and not full inference; see
     `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`.
 
+  - Issue `#485` pins the single-head fused route as an implementation-exact
+    quantized Softmax-table kernel receipt. The backing object is the issue
+    `#478` fused native Stwo proof (`47698` raw bytes, `52` lookup claims, `9`
+    table rows), while the receipt gate binds score scale `1`, per-step max
+    subtraction, clipped-gap table lookup, positive denominators, Euclidean
+    floor division, output remainders, and a division-error bound `< 1` output
+    unit. It rejects `28 / 28` semantic/proof mutations. This is exact for the
+    integer table/floor-division kernel, not real-valued Softmax and not full
+    inference; see
+    `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`.
 
-  - The attention/KV proof-route selector is now a narrow GO for six
+  - The attention/KV proof-route selector is now a narrow GO for seven
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof, the
+    native Stwo implementation-exact quantized Softmax-table kernel receipt, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
     receipt. The native seq16, d16, two-head, bounded weighted, d8 bounded
     weighted, two-head bounded weighted, proof-size profile, and bounded
     Softmax-table, LogUp sidecar, fused single-head Softmax-table, fused
-    two-head Softmax-table, and fused four-head Softmax-table proofs are separate native
-    scale/semantics/accounting/fusion gates for the first route family. Exact
-    Softmax, long-context inference, full inference, and recursion/PCD remain out
-    of scope; see
+    two-head Softmax-table, fused four-head Softmax-table, and quantized
+    Softmax-table receipt gates are separate native scale/semantics/accounting/fusion
+    gates for the first route family. Real-valued Softmax, long-context inference,
+    full inference, and recursion/PCD remain out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
    - The `d=128` route now has six partial proof handles: RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
