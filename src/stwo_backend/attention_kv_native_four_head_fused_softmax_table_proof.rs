@@ -791,7 +791,7 @@ fn prove_fused(bundle: &FusedBundle) -> Result<Vec<u8>> {
         &bundle.base_trace,
         &bundle.preprocessed_trace,
         &lookup_elements,
-    );
+    )?;
     if claimed_sum != SecureField::zero() {
         return Err(fused_error(
             "fused Softmax-table LogUp expected zero claimed sum",
@@ -891,7 +891,7 @@ fn fused_commitment_roots(
         &bundle.base_trace,
         &bundle.preprocessed_trace,
         &lookup_elements,
-    );
+    )?;
     if claimed_sum != SecureField::zero() {
         return Err(fused_error(
             "fused Softmax-table LogUp expected zero claimed sum",
@@ -909,13 +909,13 @@ fn fused_interaction_trace(
     base_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     preprocessed_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     lookup_elements: &AttentionKvFourHeadFusedSoftmaxTableRelation,
-) -> (
+) -> Result<(
     ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     SecureField,
-) {
+)> {
     let mut logup_gen = LogupTraceGenerator::new(log_size);
     let mut col_gen = logup_gen.new_col();
-    let indices = fused_trace_column_indices();
+    let indices = fused_trace_column_indices()?;
     for vec_row in 0..(1 << (log_size - LOG_N_LANES)) {
         let enabled = PackedSecureField::from(base_trace[indices.enabled].data[vec_row]);
         let table_multiplicity =
@@ -933,7 +933,7 @@ fn fused_interaction_trace(
         col_gen.write_frac(vec_row, numerator, denominator);
     }
     col_gen.finalize_col();
-    logup_gen.finalize_last()
+    Ok(logup_gen.finalize_last())
 }
 
 fn masked_lookup_fraction_terms(
@@ -1128,33 +1128,36 @@ fn fused_column_id(suffix: &str) -> String {
     format!("{FUSED_COLUMN_PREFIX}/{suffix}")
 }
 
-fn fused_trace_column_indices() -> FusedTraceColumnIndices {
+fn fused_trace_column_indices() -> Result<FusedTraceColumnIndices> {
     let row_ids = fused_row_column_ids();
     let preprocessed_ids = fused_preprocessed_column_ids();
-    FusedTraceColumnIndices {
-        enabled: fused_row_column_index(&row_ids, "enabled"),
-        attention_weight: fused_row_column_index(&row_ids, "attention-weight"),
-        lookup_gap: fused_row_column_index(&row_ids, "lookup-clipped-gap"),
-        table_gap: fused_preprocessed_column_index(&preprocessed_ids, PREPROCESSED_TABLE_GAP),
-        table_weight: fused_preprocessed_column_index(&preprocessed_ids, PREPROCESSED_TABLE_WEIGHT),
+    Ok(FusedTraceColumnIndices {
+        enabled: fused_row_column_index(&row_ids, "enabled")?,
+        attention_weight: fused_row_column_index(&row_ids, "attention-weight")?,
+        lookup_gap: fused_row_column_index(&row_ids, "lookup-clipped-gap")?,
+        table_gap: fused_preprocessed_column_index(&preprocessed_ids, PREPROCESSED_TABLE_GAP)?,
+        table_weight: fused_preprocessed_column_index(
+            &preprocessed_ids,
+            PREPROCESSED_TABLE_WEIGHT,
+        )?,
         table_multiplicity: fused_preprocessed_column_index(
             &preprocessed_ids,
             PREPROCESSED_TABLE_MULTIPLICITY,
-        ),
-    }
+        )?,
+    })
 }
 
-fn fused_row_column_index(ids: &[String], suffix: &str) -> usize {
+fn fused_row_column_index(ids: &[String], suffix: &str) -> Result<usize> {
     let target = fused_column_id(suffix);
     ids.iter()
         .position(|id| id == &target)
-        .unwrap_or_else(|| panic!("missing fused trace column id: {target}"))
+        .ok_or_else(|| fused_error(format!("missing fused trace column id: {target}")))
 }
 
-fn fused_preprocessed_column_index(ids: &[PreProcessedColumnId], target: &str) -> usize {
+fn fused_preprocessed_column_index(ids: &[PreProcessedColumnId], target: &str) -> Result<usize> {
     ids.iter()
         .position(|id| id.id == target)
-        .unwrap_or_else(|| panic!("missing fused preprocessed column id: {target}"))
+        .ok_or_else(|| fused_error(format!("missing fused preprocessed column id: {target}")))
 }
 
 fn fused_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
@@ -1278,7 +1281,7 @@ mod tests {
     fn attention_kv_four_head_fused_softmax_table_derives_logup_indices_from_column_ids() {
         let row_ids = fused_row_column_ids();
         let preprocessed_ids = fused_preprocessed_column_ids();
-        let indices = fused_trace_column_indices();
+        let indices = fused_trace_column_indices().expect("derive fused column indices");
 
         assert_eq!(row_ids[indices.enabled], fused_column_id("enabled"));
         assert_eq!(
@@ -1300,6 +1303,26 @@ mod tests {
         assert_eq!(
             preprocessed_ids[indices.table_multiplicity].id,
             PREPROCESSED_TABLE_MULTIPLICITY
+        );
+    }
+
+    #[test]
+    fn attention_kv_four_head_fused_softmax_table_returns_error_on_column_id_drift() {
+        let row_err = fused_row_column_index(&[], "enabled").expect_err("missing row id");
+        assert!(
+            row_err
+                .to_string()
+                .contains("missing fused trace column id"),
+            "unexpected row-id error: {row_err}"
+        );
+
+        let preprocessed_err = fused_preprocessed_column_index(&[], PREPROCESSED_TABLE_GAP)
+            .expect_err("missing table id");
+        assert!(
+            preprocessed_err
+                .to_string()
+                .contains("missing fused preprocessed column id"),
+            "unexpected preprocessed-id error: {preprocessed_err}"
         );
     }
 
