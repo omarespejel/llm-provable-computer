@@ -899,6 +899,8 @@ def _load_d16_fused_softmax_payload(path: pathlib.Path, run_native: bool) -> dic
         payload = json.loads(raw)
         source_input = json.loads(source_raw)
         envelope = json.loads(envelope_raw)
+        D16_FUSED_SOFTMAX.SOURCE_INPUT_MODULE.validate_payload(source_input)
+        D16_FUSED_SOFTMAX.SOURCE_INPUT_MODULE.validate_payload(envelope.get("source_input"))
         D16_FUSED_SOFTMAX.validate_result(payload)
         D16_FUSED_SOFTMAX.validate_fused_envelope(envelope, source_input, run_native=run_native)
     except D16_FUSED_SOFTMAX.AttentionKvD16FusedSoftmaxTableGateError as error:
@@ -2360,15 +2362,15 @@ def validate_d16_fused_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 fused Softmax lookup drift")
     if summary["trace_rows"] != 64 or summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("d16 fused Softmax trace/table drift")
-    if summary["source_proof_size_bytes"] != 61516 or summary["fused_proof_size_bytes"] != 64375:
+    if summary["source_proof_size_bytes"] != 61516 or summary["fused_proof_size_bytes"] != 64532:
         raise AttentionKvRouteSelectorError("d16 fused Softmax proof-size drift")
-    if summary["fused_envelope_size_bytes"] != 665491:
+    if summary["fused_envelope_size_bytes"] != 666747:
         raise AttentionKvRouteSelectorError("d16 fused Softmax envelope-size drift")
-    if summary["source_plus_sidecar_raw_proof_bytes"] != 75003:
+    if summary["source_plus_sidecar_raw_proof_bytes"] != 74961:
         raise AttentionKvRouteSelectorError("d16 fused Softmax source-plus-sidecar drift")
-    if summary["fused_saves_vs_source_plus_sidecar_bytes"] != 10628:
+    if summary["fused_saves_vs_source_plus_sidecar_bytes"] != 10429:
         raise AttentionKvRouteSelectorError("d16 fused Softmax savings comparator drift")
-    if summary["fused_to_source_plus_sidecar_ratio"] != 0.8582990013732784:
+    if summary["fused_to_source_plus_sidecar_ratio"] != 0.8608743213137499:
         raise AttentionKvRouteSelectorError("d16 fused Softmax ratio comparator drift")
     if summary["lookup_relation"] != "AttentionKvD16FusedSoftmaxTableRelation":
         raise AttentionKvRouteSelectorError("d16 fused Softmax lookup relation drift")

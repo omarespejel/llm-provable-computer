@@ -475,6 +475,8 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
 
 
 def validate_payload(payload: dict[str, Any]) -> None:
+    if not isinstance(payload, dict):
+        raise AttentionKvBoundedSoftmaxTableInputError("payload must be an object")
     expected_scalars = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -505,6 +507,28 @@ def validate_payload(payload: dict[str, Any]) -> None:
         "output_remainder_bits": OUTPUT_REMAINDER_BITS,
         "next_backend_step": NEXT_BACKEND_STEP,
     }
+    allowed_keys = set(expected_scalars) | {
+        "initial_kv_cache",
+        "input_steps",
+        "final_kv_cache",
+        "attention_outputs",
+        "score_rows",
+        "initial_kv_cache_commitment",
+        "input_steps_commitment",
+        "score_row_commitment",
+        "final_kv_cache_commitment",
+        "outputs_commitment",
+        "weight_table_commitment",
+        "proof_native_parameter_commitment",
+        "public_instance_commitment",
+        "statement_commitment",
+        "non_claims",
+        "proof_verifier_hardening",
+        "validation_commands",
+    }
+    extra_keys = set(payload) - allowed_keys
+    if extra_keys:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"unknown payload keys: {sorted(extra_keys)}")
     for key, expected in expected_scalars.items():
         if payload.get(key) != expected:
             raise AttentionKvBoundedSoftmaxTableInputError(f"{key} drift")

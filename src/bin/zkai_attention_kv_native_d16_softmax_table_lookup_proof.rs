@@ -66,8 +66,12 @@ fn run() -> Result<String, String> {
             let envelope =
                 prove_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&source_input)
                     .map_err(|error| error.to_string())?;
-            verify_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&envelope)
-                .map_err(|error| error.to_string())?;
+            let verified =
+                verify_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&envelope)
+                    .map_err(|error| error.to_string())?;
+            if !verified {
+                return Err("lookup sidecar envelope verification returned false".to_string());
+            }
             if let Some(parent) = envelope_path.parent() {
                 if !parent.as_os_str().is_empty() {
                     fs::create_dir_all(parent).map_err(|error| {
@@ -122,8 +126,12 @@ fn run() -> Result<String, String> {
             let envelope =
                 zkai_attention_kv_native_d16_softmax_table_lookup_envelope_from_json_slice(&raw)
                     .map_err(|error| error.to_string())?;
-            verify_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&envelope)
-                .map_err(|error| error.to_string())?;
+            let verified =
+                verify_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&envelope)
+                    .map_err(|error| error.to_string())?;
+            if !verified {
+                return Err("lookup sidecar envelope verification returned false".to_string());
+            }
             Ok(serde_json::json!({
                 "schema": "zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-cli-summary-v1",
                 "mode": "verify",

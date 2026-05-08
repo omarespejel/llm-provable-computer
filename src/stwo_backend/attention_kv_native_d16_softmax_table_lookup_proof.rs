@@ -612,6 +612,29 @@ fn mix_lookup_summary(
     channel: &mut Blake2sM31Channel,
     summary: &ZkAiAttentionKvNativeD16SoftmaxTableLookupSummary,
 ) {
+    channel.mix_u64(6);
+    mix_lookup_summary_str(
+        channel,
+        "source_statement_commitment",
+        &summary.source_statement_commitment,
+    );
+    mix_lookup_summary_str(
+        channel,
+        "source_public_instance_commitment",
+        &summary.source_public_instance_commitment,
+    );
+    mix_lookup_summary_str(
+        channel,
+        "source_score_row_commitment",
+        &summary.source_score_row_commitment,
+    );
+    mix_lookup_summary_str(
+        channel,
+        "source_weight_table_commitment",
+        &summary.source_weight_table_commitment,
+    );
+    mix_lookup_summary_str(channel, "weight_policy", &summary.weight_policy);
+    mix_lookup_summary_str(channel, "lookup_relation", &summary.lookup_relation);
     channel.mix_u64(summary.score_rows as u64);
     channel.mix_u64(summary.trace_rows as u64);
     channel.mix_u64(summary.table_rows as u64);
@@ -623,6 +646,24 @@ fn mix_lookup_summary(
         channel.mix_u64(entry.weight.rem_euclid(M31_MODULUS) as u64);
         channel.mix_u64(entry.multiplicity as u64);
     }
+}
+
+fn mix_lookup_summary_str(channel: &mut Blake2sM31Channel, label: &str, value: &str) {
+    channel.mix_u64(label.len() as u64);
+    channel.mix_u64(value.len() as u64);
+    channel.mix_u32s(&bytes_to_channel_words(label.as_bytes()));
+    channel.mix_u32s(&bytes_to_channel_words(value.as_bytes()));
+}
+
+fn bytes_to_channel_words(bytes: &[u8]) -> Vec<u32> {
+    bytes
+        .chunks(4)
+        .map(|chunk| {
+            let mut word = [0u8; 4];
+            word[..chunk.len()].copy_from_slice(chunk);
+            u32::from_le_bytes(word)
+        })
+        .collect()
 }
 
 fn validate_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
@@ -794,6 +835,22 @@ mod tests {
         let error = verify_zkai_attention_kv_native_d16_softmax_table_lookup_envelope(&envelope)
             .expect_err("summary drift must reject");
         assert!(error.to_string().contains("lookup summary"));
+    }
+
+    #[test]
+    fn attention_kv_d16_softmax_table_lookup_transcript_binds_claim_strings() {
+        let input = source_input();
+        let mut bundle = build_lookup_bundle(&input).expect("lookup bundle");
+        bundle.summary.source_statement_commitment = format!("blake2b-256:{}", "aa".repeat(32));
+        let proof = prove_lookup(&bundle).expect("prove relabeled lookup sidecar");
+
+        let error = verify_lookup(&input, &proof).expect_err("relabeled transcript must reject");
+        let message = error.to_string();
+        assert!(
+            message.contains("lookup proof commitment 2")
+                || message.contains("Softmax-table lookup proof rejected"),
+            "{message}"
+        );
     }
 
     #[test]

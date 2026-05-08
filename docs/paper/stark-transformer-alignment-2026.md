@@ -1458,10 +1458,10 @@ object survives both eight-head and longer-sequence scale points.
 
 A width-axis follow-up keeps the score-row count fixed at `52` and doubles
 key/value width from `8` to `16`. The d16 source arithmetic proof is `61516`
-raw bytes, the matched LogUp sidecar is `13487` raw bytes, and the fused proof
-is `64375` raw bytes inside a `665491`-byte checked envelope. The fused d16
-route is `10628` bytes smaller than the matched source-plus-sidecar pair
-(`75003` raw bytes, `0.858299x`) and rejects `26 / 26` fused-gate mutations.
+raw bytes, the matched LogUp sidecar is `13445` raw bytes, and the fused proof
+is `64532` raw bytes inside a `666747`-byte checked envelope. The fused d16
+route is `10429` bytes smaller than the matched source-plus-sidecar pair
+(`74961` raw bytes, `0.860874x`) and rejects `26 / 26` fused-gate mutations.
 This adds a separate width-scaling check to the native attention ladder. It is
 not a claim that proof size is independent of width; it says the same fused
 attention-arithmetic-plus-table-membership construction still works after the

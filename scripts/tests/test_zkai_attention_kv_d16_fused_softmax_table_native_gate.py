@@ -20,12 +20,12 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
         self.assertEqual(payload["lookup_claims"], 52)
         self.assertEqual(payload["table_rows"], 9)
         self.assertEqual(payload["source_proof_size_bytes"], 61516)
-        self.assertEqual(payload["sidecar_proof_size_bytes"], 13487)
-        self.assertEqual(payload["source_plus_sidecar_raw_proof_bytes"], 75003)
-        self.assertEqual(payload["fused_proof_size_bytes"], 64375)
-        self.assertEqual(payload["fused_over_source_proof_bytes"], 2859)
-        self.assertEqual(payload["fused_saves_vs_source_plus_sidecar_bytes"], 10628)
-        self.assertLess(payload["fused_to_source_plus_sidecar_ratio"], 0.86)
+        self.assertEqual(payload["sidecar_proof_size_bytes"], 13445)
+        self.assertEqual(payload["source_plus_sidecar_raw_proof_bytes"], 74961)
+        self.assertEqual(payload["fused_proof_size_bytes"], 64532)
+        self.assertEqual(payload["fused_over_source_proof_bytes"], 3016)
+        self.assertEqual(payload["fused_saves_vs_source_plus_sidecar_bytes"], 10429)
+        self.assertLess(payload["fused_to_source_plus_sidecar_ratio"], 0.87)
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 
@@ -52,6 +52,18 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
         mutated = copy.deepcopy(self.fused_envelope)
         mutated["source_input"]["score_rows"][0]["attention_weight"] = 255
         with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "source input split-brain"):
+            gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
+
+    def test_rejects_source_input_type_relabeling(self):
+        mutated = copy.deepcopy(self.fused_envelope)
+        mutated["source_input"]["score_gap_clip"] = float(mutated["source_input"]["score_gap_clip"])
+        with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "source input split-brain"):
+            gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
+
+    def test_rejects_summary_type_relabeling(self):
+        mutated = copy.deepcopy(self.fused_envelope)
+        mutated["fused_summary"]["lookup_claims"] = float(mutated["fused_summary"]["lookup_claims"])
+        with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "fused summary drift"):
             gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
 
     def same_digit_mutation(self, value):
@@ -98,7 +110,7 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             gate.write_tsv(tsv_path, self.payload)
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8"))["decision"], gate.DECISION)
             self.assertIn(gate.DECISION, tsv_path.read_text(encoding="utf-8"))
-            self.assertIn("64375", tsv_path.read_text(encoding="utf-8"))
+            self.assertIn("64532", tsv_path.read_text(encoding="utf-8"))
 
     def test_write_json_rejects_metric_drift(self):
         payload = copy.deepcopy(self.payload)
