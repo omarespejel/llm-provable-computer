@@ -75,6 +75,13 @@ class TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "result drift"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 
+    def test_write_tsv_rejects_overclaim(self):
+        payload = copy.deepcopy(self.result)
+        payload["claim_boundary"] = "GO_EXACT_REAL_SOFTMAX"
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(gate.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError, "result drift"):
+                gate.write_tsv(gate.pathlib.Path(tmp) / "bad.tsv", payload)
+
 
 if __name__ == "__main__":
     unittest.main()
