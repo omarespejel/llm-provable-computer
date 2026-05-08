@@ -792,6 +792,11 @@
     },
     {
       "error": "two_head source input validation drift: score rows drift",
+      "name": "source_input_two_head_mask_allowed_false",
+      "rejected": true
+    },
+    {
+      "error": "two_head source input validation drift: score rows drift",
       "name": "source_input_two_head_denominator_zero",
       "rejected": true
     },
@@ -823,6 +828,11 @@
     {
       "error": "four_head source input validation drift: score rows drift",
       "name": "source_input_four_head_step_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "four_head source input validation drift: score rows drift",
+      "name": "source_input_four_head_mask_allowed_false",
       "rejected": true
     },
     {
@@ -881,8 +891,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 45,
-  "mutations_rejected": 45,
+  "mutations_checked": 47,
+  "mutations_rejected": 47,
   "profiles_checked": 2,
   "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
   "schema": "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1",
