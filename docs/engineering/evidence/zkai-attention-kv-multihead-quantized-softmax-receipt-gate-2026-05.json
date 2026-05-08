@@ -792,6 +792,11 @@
     },
     {
       "error": "two_head source input validation drift: score rows drift",
+      "name": "source_input_two_head_token_position_drift",
+      "rejected": true
+    },
+    {
+      "error": "two_head source input validation drift: score rows drift",
       "name": "source_input_two_head_mask_allowed_false",
       "rejected": true
     },
@@ -803,6 +808,11 @@
     {
       "error": "two_head source input validation drift: score rows drift",
       "name": "source_input_two_head_selected_score_gap_coherent_drift",
+      "rejected": true
+    },
+    {
+      "error": "two_head source input validation drift: score rows drift",
+      "name": "source_input_two_head_output_vector_truncation",
       "rejected": true
     },
     {
@@ -832,6 +842,11 @@
     },
     {
       "error": "four_head source input validation drift: score rows drift",
+      "name": "source_input_four_head_token_position_drift",
+      "rejected": true
+    },
+    {
+      "error": "four_head source input validation drift: score rows drift",
       "name": "source_input_four_head_mask_allowed_false",
       "rejected": true
     },
@@ -843,6 +858,11 @@
     {
       "error": "four_head source input validation drift: score rows drift",
       "name": "source_input_four_head_selected_score_gap_coherent_drift",
+      "rejected": true
+    },
+    {
+      "error": "four_head source input validation drift: score rows drift",
+      "name": "source_input_four_head_output_vector_truncation",
       "rejected": true
     },
     {
@@ -891,8 +911,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 47,
-  "mutations_rejected": 47,
+  "mutations_checked": 51,
+  "mutations_rejected": 51,
   "profiles_checked": 2,
   "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
   "schema": "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1",

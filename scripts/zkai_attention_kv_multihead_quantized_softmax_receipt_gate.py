@@ -141,17 +141,21 @@ EXPECTED_MUTATION_NAMES = (
     "source_input_two_head_head_count_drift",
     "source_input_two_head_head_index_relabeling",
     "source_input_two_head_step_index_relabeling",
+    "source_input_two_head_token_position_drift",
     "source_input_two_head_mask_allowed_false",
     "source_input_two_head_denominator_zero",
     "source_input_two_head_selected_score_gap_coherent_drift",
+    "source_input_two_head_output_vector_truncation",
     "source_input_two_head_remainder_drift",
     "source_input_two_head_attention_output_split_brain",
     "source_input_four_head_head_count_drift",
     "source_input_four_head_head_index_relabeling",
     "source_input_four_head_step_index_relabeling",
+    "source_input_four_head_token_position_drift",
     "source_input_four_head_mask_allowed_false",
     "source_input_four_head_denominator_zero",
     "source_input_four_head_selected_score_gap_coherent_drift",
+    "source_input_four_head_output_vector_truncation",
     "source_input_four_head_remainder_drift",
     "source_input_four_head_output_order_swap",
     "fused_two_head_verifier_domain_relabeling",
@@ -340,6 +344,8 @@ def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, An
         if not step_rows:
             raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} empty head/step rows")
         output_index = output_map[head_step]
+        expected_input_step = source["input_steps"][output_index]
+        expected_token_position = expected_input_step["token_position"]
         selected_scores = {row["selected_score"] for row in step_rows}
         max_score = max(row["score"] for row in step_rows)
         if selected_scores != {max_score}:
@@ -349,6 +355,8 @@ def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, An
         if len(token_positions) != 1:
             raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} token-position drift")
         query_token_position = next(iter(token_positions))
+        if query_token_position != expected_token_position:
+            raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} token-position/input-step drift")
         for row in step_rows:
             expected_mask_allowed = row["candidate_position"] <= query_token_position
             if row.get("mask_allowed") != expected_mask_allowed:
@@ -375,8 +383,11 @@ def validate_quantized_kernel_for_profile(profile: Profile, source: dict[str, An
             if row["weight_denominator"] != recomputed_denominator:
                 raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} weight denominator drift")
             expected_output = outputs[output_index]
+            output_vectors = (row["attention_output"], row["output_remainder"], row["weighted_numerator"])
+            if any(len(vector) != len(expected_output) for vector in output_vectors):
+                raise MultiheadQuantizedSoftmaxReceiptGateError(f"{profile.profile_id} output vector length drift")
             for dim, (output, remainder, numerator) in enumerate(
-                zip(row["attention_output"], row["output_remainder"], row["weighted_numerator"], strict=True)
+                zip(*output_vectors, strict=True)
             ):
                 if output != expected_output[dim]:
                     raise MultiheadQuantizedSoftmaxReceiptGateError(
@@ -624,6 +635,19 @@ def mutation_cases(
                 row["selected_score"] += 1
                 row["score_gap"] += 1
 
+    def shift_step_token_position(source: dict[str, Any]) -> None:
+        first = source["score_rows"][0]
+        head_step = (first["head_index"], first["step_index"])
+        for row in source["score_rows"]:
+            if (row["head_index"], row["step_index"]) == head_step:
+                row["token_position"] += 1
+
+    def truncate_output_vectors(source: dict[str, Any]) -> None:
+        first = source["score_rows"][0]
+        first["attention_output"] = first["attention_output"][:-1]
+        first["output_remainder"] = first["output_remainder"][:-1]
+        first["weighted_numerator"] = first["weighted_numerator"][:-1]
+
     add("kernel_status_relabeling", lambda r, _s, _e: r["kernel_contract"].__setitem__("kernel_status", "GO_REAL_SOFTMAX"))
     add("kernel_name_relabeling", lambda r, _s, _e: r["kernel_contract"].__setitem__("kernel_name", "real_softmax"))
     add("claim_boundary_real_softmax_overclaim", lambda r, _s, _e: r.__setitem__("claim_boundary", "GO_REAL_VALUED_SOFTMAX"))
@@ -654,17 +678,21 @@ def mutation_cases(
     add("source_input_two_head_head_count_drift", lambda _r, s, e: (s["two_head"].__setitem__("head_count", 3), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_head_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("head_index", 2), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_step_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("step_index", 99), e["two_head"].__setitem__("source_input", s["two_head"])))
+    add("source_input_two_head_token_position_drift", lambda _r, s, e: (shift_step_token_position(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_mask_allowed_false", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_denominator_zero", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
+    add("source_input_two_head_output_vector_truncation", lambda _r, s, e: (truncate_output_vectors(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_remainder_drift", lambda _r, s, e: (s["two_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_two_head_attention_output_split_brain", lambda _r, s, e: (s["two_head"]["score_rows"][0]["attention_output"].__setitem__(0, 999), e["two_head"].__setitem__("source_input", s["two_head"])))
     add("source_input_four_head_head_count_drift", lambda _r, s, e: (s["four_head"].__setitem__("head_count", 5), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_head_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("head_index", 4), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_step_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("step_index", 99), e["four_head"].__setitem__("source_input", s["four_head"])))
+    add("source_input_four_head_token_position_drift", lambda _r, s, e: (shift_step_token_position(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_mask_allowed_false", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_denominator_zero", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
+    add("source_input_four_head_output_vector_truncation", lambda _r, s, e: (truncate_output_vectors(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_remainder_drift", lambda _r, s, e: (s["four_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("source_input_four_head_output_order_swap", lambda _r, s, e: (s["four_head"]["attention_outputs"].__setitem__(0, s["four_head"]["attention_outputs"][1]), e["four_head"].__setitem__("source_input", s["four_head"])))
     add("fused_two_head_verifier_domain_relabeling", lambda _r, _s, e: e["two_head"].__setitem__("verifier_domain", "different-domain"))

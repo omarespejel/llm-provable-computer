@@ -28,7 +28,7 @@ Aggregate checked surface:
 - Trace rows checked: `384`.
 - Shared statement-bound table rows: `9`.
 - Fused proof bytes across the two profiles: `102,976`.
-- Mutations rejected: `47 / 47`.
+- Mutations rejected: `51 / 51`.
 
 ## Kernel Contract
 

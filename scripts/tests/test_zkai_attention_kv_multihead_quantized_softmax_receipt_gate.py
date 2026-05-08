@@ -142,6 +142,23 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|causal mask"):
             gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
 
+        source = copy.deepcopy(self.sources["two_head"])
+        head_step = (source["score_rows"][0]["head_index"], source["score_rows"][0]["step_index"])
+        for row in source["score_rows"]:
+            if (row["head_index"], row["step_index"]) == head_step:
+                row["token_position"] += 1
+        with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|token-position"):
+            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+
+    def test_rejects_coherent_output_vector_truncation(self):
+        source = copy.deepcopy(self.sources["two_head"])
+        row = source["score_rows"][0]
+        row["attention_output"] = row["attention_output"][:-1]
+        row["output_remainder"] = row["output_remainder"][:-1]
+        row["weighted_numerator"] = row["weighted_numerator"][:-1]
+        with self.assertRaisesRegex(gate.MultiheadQuantizedSoftmaxReceiptGateError, "validation drift|vector length"):
+            gate.validate_quantized_kernel_for_profile(gate.PROFILE_BY_ID["two_head"], source)
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_dir = gate.pathlib.Path(tmp)
