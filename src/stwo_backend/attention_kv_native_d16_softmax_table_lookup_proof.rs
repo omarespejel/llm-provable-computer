@@ -26,9 +26,9 @@ use stwo_constraint_framework::{
 };
 
 use super::attention_kv_native_d16_bounded_softmax_table_proof::{
+    validate_zkai_attention_kv_native_d16_bounded_softmax_table_input,
     zkai_attention_kv_native_d16_bounded_softmax_table_input_from_json_str,
     ZkAiAttentionKvNativeD16BoundedSoftmaxTableProofInput,
-    ZKAI_ATTENTION_KV_NATIVE_D16_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES,
 };
 #[cfg(test)]
 use super::logup_utils::selector_masked_denominator;
@@ -262,15 +262,7 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD16SoftmaxTableLookupEnvelo
 fn validate_source_input(
     input: &ZkAiAttentionKvNativeD16BoundedSoftmaxTableProofInput,
 ) -> Result<()> {
-    let raw =
-        serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
-    if raw.len() > ZKAI_ATTENTION_KV_NATIVE_D16_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES {
-        return Err(lookup_error(
-            "source input JSON exceeds inherited bounded cap",
-        ));
-    }
-    zkai_attention_kv_native_d16_bounded_softmax_table_input_from_json_str(&raw)?;
-    Ok(())
+    validate_zkai_attention_kv_native_d16_bounded_softmax_table_input(input)
 }
 
 fn lookup_summary(
