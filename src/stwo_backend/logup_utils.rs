@@ -81,4 +81,46 @@ mod tests {
         assert_eq!((-numerator).to_array(), table_multiplicity.to_array());
         assert_eq!(denominator.to_array(), table_q.to_array());
     }
+
+    #[test]
+    fn selector_masked_lookup_fraction_terms_handle_mixed_lanes() {
+        let mut selector_lanes = PackedSecureField::one().to_array();
+        for (index, lane) in selector_lanes.iter_mut().enumerate() {
+            if index % 2 == 1 {
+                *lane = SecureField::zero();
+            }
+        }
+        let mixed_selector = PackedSecureField::from_array(selector_lanes);
+        let claimed_q = PackedSecureField::broadcast(SecureField::from(BaseField::from(7u32)));
+
+        let guarded = selector_masked_denominator(mixed_selector, claimed_q);
+        for (index, lane) in guarded.to_array().iter().enumerate() {
+            if index % 2 == 1 {
+                assert_eq!(*lane, SecureField::one());
+            } else {
+                assert_eq!(*lane, SecureField::from(BaseField::from(7u32)));
+            }
+        }
+
+        let (numerator, denominator) = selector_masked_lookup_fraction_terms(
+            mixed_selector,
+            PackedSecureField::zero(),
+            claimed_q,
+            PackedSecureField::zero(),
+        );
+        for (index, (numerator_lane, denominator_lane)) in numerator
+            .to_array()
+            .iter()
+            .zip(denominator.to_array().iter())
+            .enumerate()
+        {
+            if index % 2 == 1 {
+                assert_eq!(*numerator_lane, SecureField::zero());
+                assert_eq!(*denominator_lane, SecureField::one());
+            } else {
+                assert_eq!(*numerator_lane, SecureField::one());
+                assert_eq!(*denominator_lane, SecureField::from(BaseField::from(7u32)));
+            }
+        }
+    }
 }
