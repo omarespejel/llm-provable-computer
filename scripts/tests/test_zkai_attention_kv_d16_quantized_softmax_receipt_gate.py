@@ -125,6 +125,11 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "mutation result rejection drift"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 
+    def test_validate_result_recomputes_mutation_bitmap(self):
+        with mock.patch.object(gate, "mutation_cases", return_value=[]):
+            with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "mutation result shape drift"):
+                gate.validate_result(self.result)
+
     def test_write_json_rejects_unknown_result_key(self):
         payload = copy.deepcopy(self.result)
         payload["unexpected"] = "claim smuggling"
