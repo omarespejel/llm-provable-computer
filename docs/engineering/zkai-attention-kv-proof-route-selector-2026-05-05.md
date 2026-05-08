@@ -7,7 +7,7 @@ today?
 
 ## Result
 
-GO for eight narrow proof-backed routes, with the native Stwo routes now first:
+GO for nine narrow proof-backed routes, with the native Stwo routes now first:
 
 1. a native Stwo AIR proof for a fixed eight-step `d=8` causal-prefix masked
    integer-argmax attention/KV sequence;
@@ -15,15 +15,17 @@ GO for eight narrow proof-backed routes, with the native Stwo routes now first:
    over the single-head fused attention/LogUp proof;
 3. a native Stwo multi-head implementation-exact quantized Softmax-table kernel
    receipt over the two-head, four-head, and eight-head fused attention/LogUp proofs;
-4. an external `snarkjs/Groth16/BN128` statement receipt over the source-backed
+4. a native Stwo two-head long-sequence fused Softmax-table attention/LogUp
+   proof over sixteen steps per head;
+5. an external `snarkjs/Groth16/BN128` statement receipt over the source-backed
    attention/KV transition contract;
-5. a RISC Zero receipt whose guest computes the tiny integer-argmax
+6. a RISC Zero receipt whose guest computes the tiny integer-argmax
    attention/KV transition semantics under an explicit no-mask policy;
-6. a RISC Zero receipt whose guest computes a three-step carried KV-cache
+7. a RISC Zero receipt whose guest computes a three-step carried KV-cache
    sequence and commits every intermediate transition row;
-7. a RISC Zero receipt whose guest computes a fixed eight-step carried KV-cache
+8. a RISC Zero receipt whose guest computes a fixed eight-step carried KV-cache
    sequence and commits every intermediate transition row;
-8. a RISC Zero receipt whose guest computes a fixed eight-step `d=8`
+9. a RISC Zero receipt whose guest computes a fixed eight-step `d=8`
    causal-prefix masked sequence and commits every intermediate transition row.
 
 The important update is that the native Stwo route is no longer a no-go for this
@@ -157,6 +159,19 @@ mutations. There is no checked eight-head source-plus-sidecar comparator in this
 route, so the result is a head-count scale GO and proof-existence byte-accounting
 row, not a fused-versus-sidecar savings claim at eight heads.
 
+Issue `#498` scales the fused route along sequence length at fixed `d=8` and
+fixed two-head shape. One native Stwo proof object checks two-head,
+sixteen-step-per-head bounded Softmax-table attention arithmetic and LogUp
+table-membership relation for `336` lookup claims over a `512`-row trace. The
+fused proof is `54234` raw bytes, the checked envelope is `1000098` bytes, and
+the gate rejects `16 / 16` proof/statement/relabeling/overclaim mutations.
+Lookup claims grow from `104` on the fixed two-head fused route to `336`
+(`3.230769x`), while fused raw proof bytes grow from `49508` to `54234`
+(`1.095459x`). There is no checked long-sequence source-plus-sidecar comparator
+in this route, so the result is a sequence-axis scale GO and proof-existence
+byte-accounting row, not a fused-versus-sidecar savings claim or public
+long-context benchmark.
+
 Issue `#485` pins the semantics of the single-head fused route as an
 implementation-exact quantized Softmax-table kernel. The backing proof is the
 issue `#478` fused native Stwo proof (`47698` raw bytes, `52` lookup claims,
@@ -195,7 +210,8 @@ not recursion/PCD. The bounded Softmax-table gates are closer to transformer
 attention, and the LogUp sidecars prove table membership for the single-head,
 two-head, and four-head fixtures. The fused single-head, two-head, four-head,
 and eight-head routes now prove attention arithmetic and table membership in
-one native Stwo proof object. Issue `#485` closes the first implementation-exact
+one native Stwo proof object, and issue `#498` shows the same fused route
+survives a longer two-head sequence-length point. Issue `#485` closes the first implementation-exact
 quantized Softmax-table kernel receipt on the single-head fused route. Issues
 `#494` and `#496` close the bounded multi-head version for checked two-head,
 four-head, and eight-head fused routes without weakening denominator/remainder,
@@ -214,7 +230,7 @@ First blocker:
 
 Claim boundary:
 
-`NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
+`NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS`
 
 ## Checked Routes
 
@@ -235,6 +251,7 @@ Claim boundary:
 | Local Stwo four-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks four-head attention arithmetic and table membership; `53468` raw proof bytes versus `74529` bytes for the previous source-plus-sidecar pair |
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
 | Local Stwo eight-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks eight-head attention arithmetic and table membership; `60450` raw proof bytes, `416` lookup claims, and `16 / 16` gate mutations rejected; no eight-head source-plus-sidecar comparator is recorded in this route |
+| Local Stwo two-head long-sequence d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head, sixteen-step-per-head attention arithmetic and table membership; `54234` raw proof bytes, `336` lookup claims, and `16 / 16` gate mutations rejected; no long-sequence source-plus-sidecar comparator is recorded in this route |
 | Local Stwo multi-head implementation-exact quantized Softmax-table receipt | GO; two-head, four-head, and eight-head fused Stwo proofs back the same pinned integer kernel; head counts `[2, 4, 8]`, `728` total lookup claims / score rows, `163426` fused proof bytes across profiles, and `64 / 64` semantic/proof mutations rejected |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
@@ -278,6 +295,8 @@ Claim boundary:
 - Native eight-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.envelope.json`
 - Native eight-head fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 - Native eight-head fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`
+- Native two-head long-sequence fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`
+- Native two-head long-sequence fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json`
 - Native quantized Softmax-table receipt gate: `docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json`
 - Native quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
@@ -666,6 +685,10 @@ python3 scripts/zkai_attention_kv_eight_head_fused_softmax_table_native_gate.py 
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv
@@ -693,6 +716,8 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d8_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_two_head_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_four_head_fused_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_eight_head_fused_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate \
   scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
@@ -730,5 +755,11 @@ cargo +nightly-2025-07-14 test attention_kv_two_head_fused_softmax_table \
   --lib --features stwo-backend
 
 cargo +nightly-2025-07-14 test attention_kv_four_head_fused_softmax_table \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_eight_head_fused_softmax_table \
+  --lib --features stwo-backend
+
+cargo +nightly-2025-07-14 test attention_kv_two_head_longseq_fused_softmax_table \
   --lib --features stwo-backend
 ```

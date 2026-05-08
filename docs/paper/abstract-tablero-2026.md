@@ -73,10 +73,11 @@ result. The new STARK-native bridge is a tiny Stwo AIR proof for the same
 transformer-shaped surface: a fixed eight-step `d=8` causal-prefix masked
 integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, and
 a `24394`-byte proof. The current route selector also includes single-head plus
-two-head/four-head implementation-exact quantized Softmax-table receipts over
-the pinned integer table/floor-division kernel and rejects `55 / 55`
-route-selector mutations. This is not real-valued Softmax, not long-context
-inference, and not full inference. The extension therefore treats nested-proof
+two-head/four-head/eight-head implementation-exact quantized Softmax-table
+receipts over the pinned integer table/floor-division kernel, plus a separate
+two-head long-sequence fused Softmax-table proof with `336` lookup claims and a
+`54234`-byte raw proof. This is not real-valued Softmax, not a public
+long-context benchmark, and not full inference. The extension therefore treats nested-proof
 verification, commitment binding, resource bounds, and
 publication-versus-experimental drift as validation risks rather than
 established facts.

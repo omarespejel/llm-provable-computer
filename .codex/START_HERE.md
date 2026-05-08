@@ -51,11 +51,12 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 45. `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`
 46. `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
 47. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
-48. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-49. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
-50. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-51. `docs/engineering/reproducibility.md`
-51. `git status --short --branch`
+48. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
+49. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+50. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
+51. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+52. `docs/engineering/reproducibility.md`
+53. `git status --short --branch`
 
 ## What this repository is now
 
