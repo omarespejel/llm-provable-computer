@@ -28,6 +28,9 @@ use super::attention_kv_native_d8_bounded_softmax_table_proof::{
     ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
     ZKAI_ATTENTION_KV_NATIVE_D8_BOUNDED_SOFTMAX_TABLE_MAX_INPUT_JSON_BYTES,
 };
+#[cfg(test)]
+use super::logup_utils::selector_masked_denominator;
+use super::logup_utils::selector_masked_lookup_fraction_terms as masked_lookup_fraction_terms;
 use crate::error::{Result, VmError};
 use crate::proof::StarkProofBackend;
 
@@ -594,38 +597,6 @@ fn lookup_interaction_trace(
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
-}
-
-fn masked_lookup_fraction_terms(
-    enabled: PackedSecureField,
-    table_multiplicity: PackedSecureField,
-    claimed_q: PackedSecureField,
-    table_q: PackedSecureField,
-) -> (PackedSecureField, PackedSecureField) {
-    let claimed_denominator = selector_masked_denominator(enabled, claimed_q);
-    let table_denominator = selector_masked_denominator(table_multiplicity, table_q);
-    (
-        enabled * table_denominator - table_multiplicity * claimed_denominator,
-        claimed_denominator * table_denominator,
-    )
-}
-
-fn selector_masked_denominator(
-    selector: PackedSecureField,
-    denominator: PackedSecureField,
-) -> PackedSecureField {
-    let selector_lanes = selector.to_array();
-    let mut denominator_lanes = denominator.to_array();
-    for (selector_lane, denominator_lane) in selector_lanes.iter().zip(denominator_lanes.iter_mut())
-    {
-        if *selector_lane == SecureField::zero() {
-            // A zero selector means this side contributes nothing. Use a fixed
-            // denominator of one so disabled claim/table sides never require
-            // inverting an irrelevant challenge-derived zero.
-            *denominator_lane = SecureField::one();
-        }
-    }
-    PackedSecureField::from_array(denominator_lanes)
 }
 
 fn lookup_component(
