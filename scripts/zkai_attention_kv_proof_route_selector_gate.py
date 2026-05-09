@@ -3292,6 +3292,18 @@ def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax table drift")
     if summary["proof_size_bytes"] != 78211 or summary["envelope_size_bytes"] != 921008:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax proof metric drift")
+    expected_kernel_policy_fields = {
+        "denominator_policy": "sum_positive_statement_bound_table_weights_per_head_step",
+        "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
+        "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
+        "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
+        "step_binding_policy": "each score row binds per-head local step_index derived from statement input_steps order",
+        "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
+        "weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0",
+    }
+    for key, expected_value in expected_kernel_policy_fields.items():
+        if summary.get(key) != expected_value:
+            raise AttentionKvRouteSelectorError(f"d16 two-head quantized Softmax {key} drift")
     denominators = summary.get("per_head_step_denominators")
     if not isinstance(denominators, list) or len(denominators) != 16:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax denominator shape drift")

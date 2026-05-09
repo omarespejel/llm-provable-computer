@@ -633,6 +633,30 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "mutation rejection"):
             GATE.validate_payload(payload)
 
+    def test_d16_two_head_quantized_validator_pins_kernel_policy_fields(self) -> None:
+        payload = GATE.build_payload()
+        base_summary = payload["d16_two_head_quantized_softmax_receipt"]
+        original_summary_fn = GATE.d16_two_head_quantized_softmax_receipt_summary
+        cases = {
+            "denominator_policy": "external denominator",
+            "division_rule": "round-to-nearest",
+            "rounding_rule": "truncate_toward_zero",
+            "head_binding_policy": "metadata only",
+            "step_binding_policy": "metadata only",
+            "causal_mask_policy": "not checked",
+            "weight_table_commitment": "blake2b-256:" + "55" * 32,
+        }
+        try:
+            for field, value in cases.items():
+                mutated = copy.deepcopy(base_summary)
+                mutated[field] = value
+                GATE.d16_two_head_quantized_softmax_receipt_summary = lambda _payload, mutated=mutated: mutated
+                with self.subTest(field=field):
+                    with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, field):
+                        GATE.validate_d16_two_head_quantized_softmax_receipt(mutated)
+        finally:
+            GATE.d16_two_head_quantized_softmax_receipt_summary = original_summary_fn
+
     def test_multihead_quantized_softmax_rejects_trace_row_drift(self) -> None:
         payload = GATE.build_payload()
         summary = copy.deepcopy(payload["multihead_quantized_softmax_receipt"])
