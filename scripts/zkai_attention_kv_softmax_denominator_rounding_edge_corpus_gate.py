@@ -15,7 +15,6 @@ import copy
 import csv
 import io
 import json
-import math
 import os
 import pathlib
 import sys
@@ -460,13 +459,7 @@ def validate_result(result: Any) -> None:
         raise SoftmaxEdgeCorpusGateError("min denominator drift")
     if result.get("max_denominator") != max(denominators):
         raise SoftmaxEdgeCorpusGateError("max denominator drift")
-    actual_max_remainder_ratio = result.get("max_remainder_ratio")
-    if not isinstance(actual_max_remainder_ratio, (int, float)) or not math.isclose(
-        float(actual_max_remainder_ratio),
-        expected_max_remainder_ratio,
-        rel_tol=0.0,
-        abs_tol=1e-12,
-    ):
+    if result.get("max_remainder_ratio") != expected_max_remainder_ratio:
         raise SoftmaxEdgeCorpusGateError("max remainder ratio drift")
     if result.get("negative_numerator_cases") != [
         case["name"] for case in expected_cases if case["negative_numerator_dimensions"] > 0
