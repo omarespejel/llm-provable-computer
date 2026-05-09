@@ -2,6 +2,7 @@ import copy
 import json
 import tempfile
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate as gate
 
@@ -70,6 +71,15 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
         self.assertTrue(
             all("source input validation drift" in row["error"] for row in self.result["route_mutation_results"])
         )
+
+    def test_rejects_pristine_artifact_validation_drift(self):
+        with mock.patch.object(
+            gate.source_gate,
+            "validate_source_pair",
+            side_effect=gate.source_gate.AttentionKvBoundedSoftmaxTableNativeGateError("source drift"),
+        ):
+            with self.assertRaisesRegex(gate.SoftmaxEdgeCorpusGateError, "pristine artifact validation drift"):
+                gate.route_rejection_results()
 
     def test_rejects_route_mutation_result_drift(self):
         mutated = copy.deepcopy(self.result)

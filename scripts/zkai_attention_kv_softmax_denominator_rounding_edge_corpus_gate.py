@@ -15,8 +15,10 @@ import copy
 import csv
 import json
 import math
+import os
 import pathlib
 import sys
+import tempfile
 from collections import Counter
 from typing import Any
 
@@ -249,6 +251,20 @@ def mutate_source_negative_remainder(source_payload: dict[str, Any]) -> None:
 
 def route_rejection_results() -> list[dict[str, Any]]:
     source_payload, source_envelope, sidecar_envelope, fused_envelope = load_source_artifacts()
+    try:
+        source_gate.validate_source_pair(source_payload, source_envelope)
+        sidecar_gate.validate_lookup_envelope(
+            sidecar_envelope,
+            source_payload,
+            sidecar_gate.LOOKUP_ENVELOPE_SIZE_BYTES,
+        )
+        fused_gate.validate_fused_envelope(fused_envelope, source_payload, run_native=False)
+    except (
+        source_gate.AttentionKvBoundedSoftmaxTableNativeGateError,
+        sidecar_gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+        fused_gate.AttentionKvD16FusedSoftmaxTableGateError,
+    ) as err:
+        raise SoftmaxEdgeCorpusGateError(f"pristine artifact validation drift: {err}") from err
     results: list[dict[str, Any]] = []
 
     def record(name: str, route: str, check) -> None:
@@ -462,15 +478,36 @@ def to_tsv(result: dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def atomic_write_text(path: pathlib.Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path: pathlib.Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = pathlib.Path(handle.name)
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    except Exception:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
+        raise
+
+
 def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
     validate_result(result)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_text(path, json.dumps(result, indent=2, sort_keys=True) + "\n")
 
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_tsv(result), encoding="utf-8")
+    atomic_write_text(path, to_tsv(result))
 
 
 def main() -> None:
