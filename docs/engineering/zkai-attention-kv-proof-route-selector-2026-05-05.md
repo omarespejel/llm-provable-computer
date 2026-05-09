@@ -14,7 +14,7 @@ GO for eleven narrow proof-backed routes, with the native Stwo routes now first:
 2. a native Stwo implementation-exact quantized Softmax-table kernel receipt
    over the single-head fused attention/LogUp proof;
 3. a native Stwo multi-head implementation-exact quantized Softmax-table kernel
-   receipt over the two-head, four-head, and eight-head fused attention/LogUp proofs;
+   receipt over the two-head, four-head, eight-head, and sixteen-head fused attention/LogUp proofs;
 4. a native Stwo two-head long-sequence fused Softmax-table attention/LogUp
    proof over sixteen steps per head;
 5. a native Stwo d16 fused Softmax-table attention/LogUp proof over the width
@@ -216,18 +216,20 @@ kernel" claim in the native attention/KV ladder, not a real-valued Softmax
 claim and not a full inference result.
 
 Issue `#494` extends that implementation-exact receipt discipline across the
-multi-head fused routes, and issue `#496` scales the same receipt to an
-eight-head fused proof. The checked aggregate now consumes the issue `#489`
-two-head proof, the issue `#491` four-head proof, and the issue `#496`
-eight-head proof, checking head counts `[2, 4, 8]`, `728` total lookup claims /
-score rows, `896` trace rows, `162351` fused proof bytes across the three
-profiles, and `64 / 64` semantic/proof mutations. The key multi-head hardening
-is output binding: the receipt derives the output index from the statement
-`input_steps` order instead of assuming a hard-coded `step_index * head_count +
-head_index` layout. This is exact for the pinned integer table/floor-division
-kernel across the checked two-head, four-head, and eight-head fixtures. It is
-still not real-valued exp/div Softmax, full inference, long-context inference,
-or recursion/PCD.
+multi-head fused routes, issue `#496` scales the same receipt to an eight-head
+fused proof, and issue `#520` promotes the issue `#519` sixteen-head fused proof
+into the same receipt family. The checked aggregate now consumes the issue
+`#489` two-head proof, the issue `#491` four-head proof, the issue `#496`
+eight-head proof, and the issue `#519` sixteen-head proof, checking head counts
+`[2, 4, 8, 16]`, `1560` total lookup claims / score rows, `1920` trace rows,
+`227357` fused proof bytes across the four profiles, and `77 / 77`
+semantic/proof mutations. The key multi-head hardening is output binding: the
+receipt derives the output index from the statement `input_steps` order instead
+of assuming a hard-coded `step_index * head_count + head_index` layout. This is
+exact for the pinned integer table/floor-division kernel across the checked
+two-head, four-head, eight-head, and sixteen-head fixtures. It is still not
+real-valued exp/div Softmax, full inference, long-context inference, or
+recursion/PCD.
 
 Issue `#506` applies the same implementation-exact receipt discipline to the
 width-axis d16 fused route from issue `#501`. The backing proof is the d16
@@ -338,7 +340,7 @@ Claim boundary:
 | Local Stwo d8 implementation-exact quantized Softmax-table receipt | GO; one native Stwo fused proof backs the pinned integer table/floor-division kernel; `47698` raw proof bytes, `52` lookup claims, `9` table rows, and `28 / 28` semantic/proof mutations rejected |
 | Local Stwo eight-head d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks eight-head attention arithmetic and table membership; `59375` raw proof bytes versus `74086` bytes for the matched eight-head source-plus-sidecar pair, `416` lookup claims, and `16 / 16` gate mutations rejected |
 | Local Stwo two-head long-sequence d8 fused bounded Softmax-table attention/KV LogUp proof | GO; one native Stwo proof object checks two-head, sixteen-step-per-head attention arithmetic and table membership; `60502` raw proof bytes versus `79444` bytes for the matched long-sequence source-plus-sidecar pair, `336` lookup claims, and `19 / 19` gate mutations rejected |
-| Local Stwo multi-head implementation-exact quantized Softmax-table receipt | GO; two-head, four-head, and eight-head fused Stwo proofs back the same pinned integer kernel; head counts `[2, 4, 8]`, `728` total lookup claims / score rows, `162351` fused proof bytes across profiles, and `64 / 64` semantic/proof mutations rejected |
+| Local Stwo multi-head implementation-exact quantized Softmax-table receipt | GO; two-head, four-head, eight-head, and sixteen-head fused Stwo proofs back the same pinned integer kernel; head counts `[2, 4, 8, 16]`, `1560` total lookup claims / score rows, `227357` fused proof bytes across profiles, and `77 / 77` semantic/proof mutations rejected |
 | External SNARK attention/KV statement receipt | GO; real `snarkjs/Groth16` statement receipt for the source contract |
 | External zkVM attention/KV semantics receipt | GO; real RISC Zero receipt computes the tiny integer-argmax transition semantics |
 | External zkVM attention/KV sequence semantics receipt | GO; real RISC Zero receipt computes three carried integer-argmax KV transitions |
@@ -485,11 +487,11 @@ Softmax.
 | Quantized Softmax-table lookup claims | `52` |
 | Quantized Softmax-table rows | `9` |
 | Quantized Softmax-table max observed division residual | `422/429` |
-| Multi-head quantized Softmax-table profiles | `3` |
-| Multi-head quantized Softmax-table head counts | `[2, 4, 8]` |
-| Multi-head quantized Softmax-table lookup claims | `728` |
-| Multi-head quantized Softmax-table fused proof bytes | `162351` |
-| Multi-head quantized Softmax-table max fused proof bytes | `59375` |
+| Multi-head quantized Softmax-table profiles | `4` |
+| Multi-head quantized Softmax-table head counts | `[2, 4, 8, 16]` |
+| Multi-head quantized Softmax-table lookup claims | `1560` |
+| Multi-head quantized Softmax-table fused proof bytes | `227357` |
+| Multi-head quantized Softmax-table max fused proof bytes | `65006` |
 | d16 fused Softmax-table lookup claims | `52` |
 | d16 fused Softmax-table proof size | `64503` bytes |
 | d16 fused Softmax-table envelope size | `666515` bytes |
@@ -555,7 +557,7 @@ blockers if it fails.
 - This is not an exact unbounded Softmax proof; issues `#463` and `#471` check
   bounded Softmax-table approximation fixtures.
 - This is not general multi-head attention; the checked native fixtures now
-  include two-head, four-head, and eight-head bounded Softmax-table /
+  include two-head, four-head, eight-head, and sixteen-head bounded Softmax-table /
   quantized-table receipts, but not arbitrary head counts, long context, head
   aggregation, or full model attention.
 - This is not full autoregressive inference.

@@ -29,13 +29,13 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(contract["kernel_status"], gate.KERNEL_STATUS)
         self.assertEqual(contract["real_softmax_status"], gate.REAL_SOFTMAX_STATUS)
         self.assertIn("input_steps order", contract["output_order_policy"])
-        self.assertEqual(result["profiles_checked"], 3)
-        self.assertEqual(result["head_counts_checked"], [2, 4, 8])
-        self.assertEqual(metrics["total_heads_checked"], 14)
-        self.assertEqual(result["lookup_claims_total"], 728)
-        self.assertEqual(result["score_rows_total"], 728)
-        self.assertEqual(result["fused_proof_size_bytes_sum"], 162351)
-        self.assertEqual(result["max_fused_proof_size_bytes"], 59375)
+        self.assertEqual(result["profiles_checked"], 4)
+        self.assertEqual(result["head_counts_checked"], [2, 4, 8, 16])
+        self.assertEqual(metrics["total_heads_checked"], 30)
+        self.assertEqual(result["lookup_claims_total"], 1560)
+        self.assertEqual(result["score_rows_total"], 1560)
+        self.assertEqual(result["fused_proof_size_bytes_sum"], 227357)
+        self.assertEqual(result["max_fused_proof_size_bytes"], 65006)
         self.assertEqual(result["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 
@@ -53,6 +53,10 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(profiles["eight_head"]["sequence_length_per_head"], 8)
         self.assertEqual(profiles["eight_head"]["score_rows"], 416)
         self.assertEqual(profiles["eight_head"]["lookup_claims"], 416)
+        self.assertEqual(profiles["sixteen_head"]["head_count"], 16)
+        self.assertEqual(profiles["sixteen_head"]["sequence_length_per_head"], 8)
+        self.assertEqual(profiles["sixteen_head"]["score_rows"], 832)
+        self.assertEqual(profiles["sixteen_head"]["lookup_claims"], 832)
         for profile in profiles.values():
             denominators = profile["per_head_step_denominators"]
             self.assertEqual(len(denominators), profile["head_count"] * profile["sequence_length_per_head"])
@@ -81,6 +85,13 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(eight_map[(7, 0)], 49)
         self.assertEqual(eight_map[(4, 7)], 46)
         self.assertEqual(eight_map[(7, 7)], 63)
+        sixteen_map = gate.output_index_by_head_step(self.sources["sixteen_head"])
+        self.assertEqual(sixteen_map[(0, 0)], 0)
+        self.assertEqual(sixteen_map[(7, 0)], 49)
+        self.assertEqual(sixteen_map[(8, 0)], 64)
+        self.assertEqual(sixteen_map[(15, 0)], 113)
+        self.assertEqual(sixteen_map[(8, 7)], 78)
+        self.assertEqual(sixteen_map[(15, 7)], 127)
 
     def test_all_declared_non_native_mutations_reject(self):
         checked = 0
@@ -97,17 +108,19 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             sum(1 for case in gate.mutation_cases(self.result, self.sources, self.envelopes) if not case[4]),
         )
 
-    def test_run_gate_invokes_both_native_backing_gates(self):
+    def test_run_gate_invokes_all_native_backing_gates(self):
         with mock.patch.object(gate.two_head_fused_gate, "run_gate") as two_head_run_gate:
             with mock.patch.object(gate.four_head_fused_gate, "run_gate") as four_head_run_gate:
                 with mock.patch.object(gate.eight_head_fused_gate, "run_gate") as eight_head_run_gate:
-                    with mock.patch.object(gate, "mutation_cases", return_value=[]):
-                        with mock.patch.object(gate, "validate_receipt"):
-                            result = gate.run_gate()
+                    with mock.patch.object(gate.sixteen_head_fused_gate, "run_gate") as sixteen_head_run_gate:
+                        with mock.patch.object(gate, "mutation_cases", return_value=[]):
+                            with mock.patch.object(gate, "validate_receipt"):
+                                result = gate.run_gate()
 
         two_head_run_gate.assert_called_once_with()
         four_head_run_gate.assert_called_once_with()
         eight_head_run_gate.assert_called_once_with()
+        sixteen_head_run_gate.assert_called_once_with()
         self.assertEqual(result["decision"], gate.DECISION)
 
     def test_fused_proof_tamper_rejects_without_native_verifier(self):
@@ -120,6 +133,7 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
                 "fused_two_head_proof_byte_tamper",
                 "fused_four_head_proof_byte_tamper",
                 "fused_eight_head_proof_byte_tamper",
+                "fused_sixteen_head_proof_byte_tamper",
             ],
         )
         self.assertTrue(all(not case[4] for case in proof_tamper_cases))
@@ -220,7 +234,7 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             tsv = tsv_path.read_text(encoding="utf-8")
             self.assertIn(gate.ROUTE_ID, tsv)
             self.assertIn(gate.REAL_SOFTMAX_STATUS, tsv)
-            self.assertIn("2,4", tsv)
+            self.assertIn("2,4,8,16", tsv)
 
     def test_write_json_rejects_overclaim_or_unknown_key(self):
         payload = copy.deepcopy(self.result)

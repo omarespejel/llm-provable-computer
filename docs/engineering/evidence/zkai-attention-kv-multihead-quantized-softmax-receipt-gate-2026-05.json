@@ -1,37 +1,40 @@
 {
-  "claim_boundary": "TWO_FOUR_AND_EIGHT_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK",
+  "claim_boundary": "TWO_FOUR_EIGHT_AND_SIXTEEN_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK",
   "decision": "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
   "fused_gate_decisions": {
     "eight_head": "GO_NATIVE_STWO_EIGHT_HEAD_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
     "four_head": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+    "sixteen_head": "GO_NATIVE_STWO_SIXTEEN_HEAD_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
     "two_head": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP"
   },
-  "fused_proof_size_bytes_sum": 162351,
+  "fused_proof_size_bytes_sum": 227357,
   "head_counts_checked": [
     2,
     4,
-    8
+    8,
+    16
   ],
-  "issue": 496,
+  "issue": 520,
   "kernel_contract": {
     "aggregate_metrics": {
-      "fused_proof_size_bytes_sum": 162351,
+      "fused_proof_size_bytes_sum": 227357,
       "head_counts_checked": [
         2,
         4,
-        8
+        8,
+        16
       ],
-      "max_fused_proof_size_bytes": 59375,
+      "max_fused_proof_size_bytes": 65006,
       "max_observed_division_error_decimal": 0.9821428571428571,
       "max_observed_division_error_fraction": "55/56",
-      "profiles_checked": 3,
+      "profiles_checked": 4,
       "table_rows": 9,
-      "total_heads_checked": 14,
-      "total_input_steps": 112,
-      "total_lookup_claims": 728,
-      "total_outputs": 112,
-      "total_score_rows": 728,
-      "total_trace_rows": 896
+      "total_heads_checked": 30,
+      "total_input_steps": 240,
+      "total_lookup_claims": 1560,
+      "total_outputs": 240,
+      "total_score_rows": 1560,
+      "total_trace_rows": 1920
     },
     "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
     "clip_policy": "clipped_gap = min(max_score - score, 8)",
@@ -41,7 +44,7 @@
     "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
     "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
     "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
-    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_AND_EIGHT_HEAD_FIXTURES",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_EIGHT_AND_SIXTEEN_HEAD_FIXTURES",
     "max_subtraction_policy": "per_step_max_allowed_score_subtracted_before_table_lookup",
     "model_binding_status": "no separate trainable model weights in this fixture; public query/key/value/KV rows are statement-bound",
     "numerator_policy": "per_output_dim_sum_over_allowed_candidates(weight * value_dim)",
@@ -1288,6 +1291,1326 @@
         "source_weight_table_commitment": "blake2b-256:3feb652428a7a093407684fbbb1dce7825fc33ecd5438a0be7cc121ff0135268",
         "table_rows": 9,
         "trace_rows": 512
+      },
+      {
+        "denominator_sum": 48482,
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json",
+        "fused_artifact": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
+        "fused_envelope_commitment": "blake2b-256:d033f0a31fe23bba6a74073ddd814f1e5d1545f908ea18e5be6b47ead7733f55",
+        "fused_envelope_size_bytes": 1994648,
+        "fused_proof_backend_version": "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1",
+        "fused_proof_commitment": "blake2b-256:53f580d4c9d8b5e341cd2ad6af2207e7c06645952931cefb57d9bda450f757a2",
+        "fused_proof_schema_version": "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
+        "fused_proof_size_bytes": 65006,
+        "fused_statement_version": "zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-logup-statement-v1",
+        "fused_target_id": "attention-kv-sixteen-head-d8-causal-mask-fused-bounded-softmax-table-logup-v1",
+        "fused_verifier_domain": "ptvm:zkai:attention-kv-stwo-native-sixteen-head-fused-bounded-softmax-table-logup:v1",
+        "head_count": 16,
+        "input_steps": 128,
+        "label": "sixteen-head d8 causal-prefix fused Softmax-table proof",
+        "lookup_claims": 832,
+        "max_observed_division_error_decimal": 0.9820971867007673,
+        "max_observed_division_error_fraction": "384/391",
+        "max_rows_per_head_step": 10,
+        "output_index_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+        "outputs": 128,
+        "per_head_step_denominators": [
+          {
+            "denominator": 400,
+            "head_index": 0,
+            "step_index": 0
+          },
+          {
+            "denominator": 379,
+            "head_index": 0,
+            "step_index": 1
+          },
+          {
+            "denominator": 432,
+            "head_index": 0,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 0,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 0,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 0,
+            "step_index": 5
+          },
+          {
+            "denominator": 432,
+            "head_index": 0,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 0,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 1,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 1,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 1,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 1,
+            "step_index": 3
+          },
+          {
+            "denominator": 1792,
+            "head_index": 1,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 1,
+            "step_index": 5
+          },
+          {
+            "denominator": 391,
+            "head_index": 1,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 1,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 2,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 2,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 2,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 2,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 2,
+            "step_index": 4
+          },
+          {
+            "denominator": 509,
+            "head_index": 2,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 2,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 2,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 3,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 3,
+            "step_index": 1
+          },
+          {
+            "denominator": 395,
+            "head_index": 3,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 3,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 3,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 3,
+            "step_index": 5
+          },
+          {
+            "denominator": 820,
+            "head_index": 3,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 3,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 4,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 4,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 4,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 4,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 4,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 4,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 4,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 4,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 5,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 5,
+            "step_index": 1
+          },
+          {
+            "denominator": 349,
+            "head_index": 5,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 5,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 5,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 5,
+            "step_index": 5
+          },
+          {
+            "denominator": 391,
+            "head_index": 5,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 5,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 6,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 6,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 6,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 6,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 6,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 6,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 6,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 6,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 7,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 7,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 7,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 7,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 7,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 7,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 7,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 7,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 8,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 8,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 8,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 8,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 8,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 8,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 8,
+            "step_index": 6
+          },
+          {
+            "denominator": 432,
+            "head_index": 8,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 9,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 9,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 9,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 9,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 9,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 9,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 9,
+            "step_index": 6
+          },
+          {
+            "denominator": 656,
+            "head_index": 9,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 10,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 10,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 10,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 10,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 10,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 10,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 10,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 10,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 11,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 11,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 11,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 11,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 11,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 11,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 11,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 11,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 12,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 12,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 12,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 12,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 12,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 12,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 12,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 12,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 13,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 13,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 13,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 13,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 13,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 13,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 13,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 13,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 14,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 14,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 14,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 14,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 14,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 14,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 14,
+            "step_index": 6
+          },
+          {
+            "denominator": 640,
+            "head_index": 14,
+            "step_index": 7
+          },
+          {
+            "denominator": 288,
+            "head_index": 15,
+            "step_index": 0
+          },
+          {
+            "denominator": 304,
+            "head_index": 15,
+            "step_index": 1
+          },
+          {
+            "denominator": 320,
+            "head_index": 15,
+            "step_index": 2
+          },
+          {
+            "denominator": 336,
+            "head_index": 15,
+            "step_index": 3
+          },
+          {
+            "denominator": 352,
+            "head_index": 15,
+            "step_index": 4
+          },
+          {
+            "denominator": 368,
+            "head_index": 15,
+            "step_index": 5
+          },
+          {
+            "denominator": 384,
+            "head_index": 15,
+            "step_index": 6
+          },
+          {
+            "denominator": 400,
+            "head_index": 15,
+            "step_index": 7
+          }
+        ],
+        "per_head_step_row_counts": [
+          {
+            "head_index": 0,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 0,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 0,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 0,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 0,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 0,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 0,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 0,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 1,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 1,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 1,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 1,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 1,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 1,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 1,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 1,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 2,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 2,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 2,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 2,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 2,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 2,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 2,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 2,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 3,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 3,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 3,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 3,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 3,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 3,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 3,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 3,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 4,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 4,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 4,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 4,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 4,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 4,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 4,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 4,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 5,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 5,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 5,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 5,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 5,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 5,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 5,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 5,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 6,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 6,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 6,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 6,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 6,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 6,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 6,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 6,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 7,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 7,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 7,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 7,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 7,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 7,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 7,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 7,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 8,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 8,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 8,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 8,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 8,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 8,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 8,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 8,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 9,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 9,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 9,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 9,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 9,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 9,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 9,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 9,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 10,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 10,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 10,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 10,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 10,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 10,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 10,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 10,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 11,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 11,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 11,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 11,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 11,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 11,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 11,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 11,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 12,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 12,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 12,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 12,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 12,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 12,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 12,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 12,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 13,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 13,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 13,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 13,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 13,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 13,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 13,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 13,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 14,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 14,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 14,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 14,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 14,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 14,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 14,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 14,
+            "rows": 10,
+            "step_index": 7
+          },
+          {
+            "head_index": 15,
+            "rows": 3,
+            "step_index": 0
+          },
+          {
+            "head_index": 15,
+            "rows": 4,
+            "step_index": 1
+          },
+          {
+            "head_index": 15,
+            "rows": 5,
+            "step_index": 2
+          },
+          {
+            "head_index": 15,
+            "rows": 6,
+            "step_index": 3
+          },
+          {
+            "head_index": 15,
+            "rows": 7,
+            "step_index": 4
+          },
+          {
+            "head_index": 15,
+            "rows": 8,
+            "step_index": 5
+          },
+          {
+            "head_index": 15,
+            "rows": 9,
+            "step_index": 6
+          },
+          {
+            "head_index": 15,
+            "rows": 10,
+            "step_index": 7
+          }
+        ],
+        "profile_id": "sixteen_head",
+        "score_rows": 832,
+        "sequence_length_per_head": 8,
+        "source_arithmetic_issue": 519,
+        "source_final_kv_cache_commitment": "blake2b-256:a63420ac0614d2506972827b2712106e7a847af92d7e1b44d02420e02c9a7e12",
+        "source_issue": 520,
+        "source_outputs_commitment": "blake2b-256:819b0b89742a75949f5e48c26fc78488d6e848d3ff7477db1f153aeb5cee355d",
+        "source_public_instance_commitment": "blake2b-256:b7f67c7a99771905bcd95b633f3d9b427de83afa1abf8c774c51e408a72b9126",
+        "source_score_row_commitment": "blake2b-256:1f7f7016999e19675292d977a5edd197d4b51282310db083b4a8325747c51c8e",
+        "source_statement_commitment": "blake2b-256:2399d35396eaba82de216ba44a184ff6542a078db5beaaa7461e2ccc436bff38",
+        "source_weight_table_commitment": "blake2b-256:7673ae9c6a147197675339a4eefd8bfba9613669d21031abc2593f01a54b8dd6",
+        "table_rows": 9,
+        "trace_rows": 1024
       }
     ],
     "proof_binding_status": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_LOGUP_TABLE_MEMBERSHIP_PROOFS_BACK_MULTIHEAD_RECEIPT",
@@ -1339,8 +2662,8 @@
       }
     ]
   },
-  "lookup_claims_total": 728,
-  "max_fused_proof_size_bytes": 59375,
+  "lookup_claims_total": 1560,
+  "max_fused_proof_size_bytes": 65006,
   "mutation_results": [
     {
       "error": "receipt drift for kernel_contract",
@@ -1613,6 +2936,56 @@
       "rejected": true
     },
     {
+      "error": "sixteen_head source input validation drift: head_count drift",
+      "name": "source_input_sixteen_head_head_count_drift",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_head_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_step_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_token_position_drift",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_mask_allowed_false",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_denominator_zero",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_selected_score_gap_coherent_drift",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_output_vector_truncation",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: score rows drift",
+      "name": "source_input_sixteen_head_remainder_drift",
+      "rejected": true
+    },
+    {
+      "error": "sixteen_head source input validation drift: attention outputs drift",
+      "name": "source_input_sixteen_head_output_order_swap",
+      "rejected": true
+    },
+    {
       "error": "receipt drift for kernel_contract",
       "name": "fused_two_head_verifier_domain_relabeling",
       "rejected": true
@@ -1658,30 +3031,47 @@
       "rejected": true
     },
     {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_sixteen_head_verifier_domain_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_sixteen_head_statement_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "receipt drift for kernel_contract",
+      "name": "fused_sixteen_head_proof_byte_tamper",
+      "rejected": true
+    },
+    {
       "error": "unknown receipt field(s): ['unexpected']",
       "name": "unknown_receipt_key_injection",
       "rejected": true
     }
   ],
-  "mutations_checked": 64,
-  "mutations_rejected": 64,
-  "profiles_checked": 3,
+  "mutations_checked": 77,
+  "mutations_rejected": 77,
+  "profiles_checked": 4,
   "route_id": "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt",
   "schema": "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1",
-  "score_rows_total": 728,
+  "score_rows_total": 1560,
   "source_arithmetic_issues": [
     471,
     482,
-    496
+    496,
+    519
   ],
   "source_issues": [
     489,
     491,
-    496
+    496,
+    520
   ],
   "table_rows": 9,
   "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
-  "trace_rows_total": 896,
+  "trace_rows_total": 1920,
   "validation_commands": [
     "python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate",
@@ -1691,6 +3081,8 @@
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_sixteen_head_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_sixteen_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
     "just lib",
     "just gate-fast",
     "just gate"

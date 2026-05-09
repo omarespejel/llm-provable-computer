@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Checked multi-head implementation-exact quantized Softmax-table receipt gate.
 
-This gate answers issues #494 and #496 by promoting the fused native Stwo
+This gate answers issues #494, #496, and #520 by promoting the fused native Stwo
 Softmax-table proofs from "bounded table-like Softmax" evidence into a precise
-integer-kernel receipt across checked two-head, four-head, and eight-head
-profiles. The receipt is exact for the literal quantized table/floor-division
-kernel and remains explicitly not a real-valued exp/div Softmax or
-full-inference claim.
+integer-kernel receipt across checked two-head, four-head, eight-head, and
+sixteen-head profiles. The receipt is exact for the literal quantized
+table/floor-division kernel and remains explicitly not a real-valued exp/div
+Softmax or full-inference claim.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ if str(ROOT) not in sys.path:
 
 from scripts import zkai_attention_kv_four_head_fused_softmax_table_native_gate as four_head_fused_gate  # noqa: E402
 from scripts import zkai_attention_kv_quantized_softmax_receipt_gate as single_receipt_gate  # noqa: E402
+from scripts import zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate as sixteen_head_fused_gate  # noqa: E402
 from scripts import zkai_attention_kv_two_head_fused_softmax_table_native_gate as two_head_fused_gate  # noqa: E402
 from scripts import zkai_attention_kv_eight_head_fused_softmax_table_native_gate as eight_head_fused_gate  # noqa: E402
 
@@ -36,18 +37,20 @@ JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-multihead-quantized-softmax-receipt
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv"
 
 SCHEMA = "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1"
-ISSUE = 496
-SOURCE_ISSUES = (489, 491, 496)
-SOURCE_ARITHMETIC_ISSUES = (471, 482, 496)
+ISSUE = 520
+SOURCE_ISSUES = (489, 491, 496, 520)
+SOURCE_ARITHMETIC_ISSUES = (471, 482, 496, 519)
 DECISION = "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
 ROUTE_ID = "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt"
 CLAIM_BOUNDARY = (
-    "TWO_FOUR_AND_EIGHT_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_"
+    "TWO_FOUR_EIGHT_AND_SIXTEEN_HEAD_NATIVE_STWO_FUSED_ATTENTION_RECEIPTS_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_"
     "NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_"
     "NOT_ON_CHAIN_OR_VERIFIER_EVIDENCE_NOT_PUBLIC_BENCHMARK"
 )
 KERNEL_NAME = single_receipt_gate.KERNEL_NAME
-KERNEL_STATUS = "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_AND_EIGHT_HEAD_FIXTURES"
+KERNEL_STATUS = (
+    "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_EIGHT_AND_SIXTEEN_HEAD_FIXTURES"
+)
 REAL_SOFTMAX_STATUS = single_receipt_gate.REAL_SOFTMAX_STATUS
 PROOF_BINDING_STATUS = (
     "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_LOGUP_TABLE_MEMBERSHIP_PROOFS_BACK_MULTIHEAD_RECEIPT"
@@ -125,6 +128,18 @@ PROFILES = (
             "zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json"
         ),
     ),
+    Profile(
+        profile_id="sixteen_head",
+        label="sixteen-head d8 causal-prefix fused Softmax-table proof",
+        source_issue=520,
+        source_arithmetic_issue=519,
+        fused_gate=sixteen_head_fused_gate,
+        evidence="docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json",
+        fused_artifact=(
+            "docs/engineering/evidence/"
+            "zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json"
+        ),
+    ),
 )
 PROFILE_BY_ID = {profile.profile_id: profile for profile in PROFILES}
 
@@ -183,6 +198,16 @@ EXPECTED_MUTATION_NAMES = (
     "source_input_eight_head_output_vector_truncation",
     "source_input_eight_head_remainder_drift",
     "source_input_eight_head_output_order_swap",
+    "source_input_sixteen_head_head_count_drift",
+    "source_input_sixteen_head_head_index_relabeling",
+    "source_input_sixteen_head_step_index_relabeling",
+    "source_input_sixteen_head_token_position_drift",
+    "source_input_sixteen_head_mask_allowed_false",
+    "source_input_sixteen_head_denominator_zero",
+    "source_input_sixteen_head_selected_score_gap_coherent_drift",
+    "source_input_sixteen_head_output_vector_truncation",
+    "source_input_sixteen_head_remainder_drift",
+    "source_input_sixteen_head_output_order_swap",
     "fused_two_head_verifier_domain_relabeling",
     "fused_two_head_statement_version_relabeling",
     "fused_two_head_proof_byte_tamper",
@@ -192,6 +217,9 @@ EXPECTED_MUTATION_NAMES = (
     "fused_eight_head_verifier_domain_relabeling",
     "fused_eight_head_statement_version_relabeling",
     "fused_eight_head_proof_byte_tamper",
+    "fused_sixteen_head_verifier_domain_relabeling",
+    "fused_sixteen_head_statement_version_relabeling",
+    "fused_sixteen_head_proof_byte_tamper",
     "unknown_receipt_key_injection",
 )
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
@@ -205,6 +233,8 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_four_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table --lib --features stwo-backend",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_sixteen_head_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_sixteen_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
     "just lib",
     "just gate-fast",
     "just gate",
@@ -676,10 +706,21 @@ def mutation_cases(
         mutator: Callable[[dict[str, Any], dict[str, dict[str, Any]], dict[str, dict[str, Any]]], None],
         *,
         native_profile_ids: set[str] | None = None,
+        copy_receipt: bool = True,
+        copy_source_profiles: tuple[str, ...] = (),
+        copy_envelope_profiles: tuple[str, ...] = (),
     ) -> None:
-        receipt_copy = copy.deepcopy(receipt)
-        sources_copy = copy.deepcopy(sources)
-        envelopes_copy = copy.deepcopy(envelopes)
+        source_profile_set = set(copy_source_profiles)
+        envelope_profile_set = set(copy_envelope_profiles)
+        receipt_copy = copy.deepcopy(receipt) if copy_receipt else receipt
+        sources_copy = {
+            profile_id: copy.deepcopy(source) if profile_id in source_profile_set else source
+            for profile_id, source in sources.items()
+        }
+        envelopes_copy = {
+            profile_id: copy.deepcopy(envelope) if profile_id in envelope_profile_set else envelope
+            for profile_id, envelope in envelopes.items()
+        }
         mutator(receipt_copy, sources_copy, envelopes_copy)
         cases.append((name, receipt_copy, sources_copy, envelopes_copy, native_profile_ids or set()))
 
@@ -703,6 +744,98 @@ def mutation_cases(
         first["attention_output"] = first["attention_output"][:-1]
         first["output_remainder"] = first["output_remainder"][:-1]
         first["weighted_numerator"] = first["weighted_numerator"][:-1]
+
+    def add_source_mutation(
+        name: str,
+        profile_id: str,
+        mutator: Callable[[dict[str, Any]], None],
+    ) -> None:
+        def apply(_receipt: dict[str, Any], mutated_sources: dict[str, dict[str, Any]], mutated_envelopes: dict[str, dict[str, Any]]) -> None:
+            mutator(mutated_sources[profile_id])
+            mutated_envelopes[profile_id]["source_input"] = mutated_sources[profile_id]
+
+        add(
+            name,
+            apply,
+            copy_receipt=False,
+            copy_source_profiles=(profile_id,),
+            copy_envelope_profiles=(profile_id,),
+        )
+
+    def add_source_profile_mutations(
+        profile_id: str,
+        invalid_head_count: int,
+        invalid_head_index: int,
+        *,
+        output_mutation_name: str,
+        output_mutator: Callable[[dict[str, Any]], None],
+    ) -> None:
+        add_source_mutation(
+            f"source_input_{profile_id}_head_count_drift",
+            profile_id,
+            lambda source: source.__setitem__("head_count", invalid_head_count),
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_head_index_relabeling",
+            profile_id,
+            lambda source: source["score_rows"][0].__setitem__("head_index", invalid_head_index),
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_step_index_relabeling",
+            profile_id,
+            lambda source: source["score_rows"][0].__setitem__("step_index", 99),
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_token_position_drift",
+            profile_id,
+            shift_step_token_position,
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_mask_allowed_false",
+            profile_id,
+            lambda source: source["score_rows"][0].__setitem__("mask_allowed", False),
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_denominator_zero",
+            profile_id,
+            lambda source: source["score_rows"][0].__setitem__("weight_denominator", 0),
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_selected_score_gap_coherent_drift",
+            profile_id,
+            coherently_shift_selected_score_and_gap,
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_output_vector_truncation",
+            profile_id,
+            truncate_output_vectors,
+        )
+        add_source_mutation(
+            f"source_input_{profile_id}_remainder_drift",
+            profile_id,
+            lambda source: source["score_rows"][0]["output_remainder"].__setitem__(0, 999),
+        )
+        add_source_mutation(output_mutation_name, profile_id, output_mutator)
+
+    def add_fused_profile_mutations(profile_id: str) -> None:
+        add(
+            f"fused_{profile_id}_verifier_domain_relabeling",
+            lambda _r, _s, e: e[profile_id].__setitem__("verifier_domain", "different-domain"),
+            copy_receipt=False,
+            copy_envelope_profiles=(profile_id,),
+        )
+        add(
+            f"fused_{profile_id}_statement_version_relabeling",
+            lambda _r, _s, e: e[profile_id].__setitem__("statement_version", "different-statement"),
+            copy_receipt=False,
+            copy_envelope_profiles=(profile_id,),
+        )
+        add(
+            f"fused_{profile_id}_proof_byte_tamper",
+            lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID[profile_id], e[profile_id]),
+            copy_receipt=False,
+            copy_envelope_profiles=(profile_id,),
+        )
 
     add("kernel_status_relabeling", lambda r, _s, _e: r["kernel_contract"].__setitem__("kernel_status", "GO_REAL_SOFTMAX"))
     add("kernel_name_relabeling", lambda r, _s, _e: r["kernel_contract"].__setitem__("kernel_name", "real_softmax"))
@@ -731,54 +864,36 @@ def mutation_cases(
     add("division_error_bound_relabeling", lambda r, _s, _e: r["kernel_contract"].__setitem__("division_error_bound", "0"))
     add("table_error_bound_policy_overclaim", lambda r, _s, _e: r["kernel_contract"].__setitem__("table_error_bound_policy", "bounded error to real Softmax"))
     add("model_binding_status_overclaim", lambda r, _s, _e: r["kernel_contract"].__setitem__("model_binding_status", "trainable model weights bound"))
-    add("source_input_two_head_head_count_drift", lambda _r, s, e: (s["two_head"].__setitem__("head_count", 3), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_head_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("head_index", 2), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_step_index_relabeling", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("step_index", 99), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_token_position_drift", lambda _r, s, e: (shift_step_token_position(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_mask_allowed_false", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_denominator_zero", lambda _r, s, e: (s["two_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_output_vector_truncation", lambda _r, s, e: (truncate_output_vectors(s["two_head"]), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_remainder_drift", lambda _r, s, e: (s["two_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_two_head_attention_output_split_brain", lambda _r, s, e: (s["two_head"]["score_rows"][0]["attention_output"].__setitem__(0, 999), e["two_head"].__setitem__("source_input", s["two_head"])))
-    add("source_input_four_head_head_count_drift", lambda _r, s, e: (s["four_head"].__setitem__("head_count", 5), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_head_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("head_index", 4), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_step_index_relabeling", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("step_index", 99), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_token_position_drift", lambda _r, s, e: (shift_step_token_position(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_mask_allowed_false", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_denominator_zero", lambda _r, s, e: (s["four_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_output_vector_truncation", lambda _r, s, e: (truncate_output_vectors(s["four_head"]), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_remainder_drift", lambda _r, s, e: (s["four_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_four_head_output_order_swap", lambda _r, s, e: (s["four_head"]["attention_outputs"].__setitem__(0, s["four_head"]["attention_outputs"][1]), e["four_head"].__setitem__("source_input", s["four_head"])))
-    add("source_input_eight_head_head_count_drift", lambda _r, s, e: (s["eight_head"].__setitem__("head_count", 9), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_head_index_relabeling", lambda _r, s, e: (s["eight_head"]["score_rows"][0].__setitem__("head_index", 8), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_step_index_relabeling", lambda _r, s, e: (s["eight_head"]["score_rows"][0].__setitem__("step_index", 99), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_token_position_drift", lambda _r, s, e: (shift_step_token_position(s["eight_head"]), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_mask_allowed_false", lambda _r, s, e: (s["eight_head"]["score_rows"][0].__setitem__("mask_allowed", False), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_denominator_zero", lambda _r, s, e: (s["eight_head"]["score_rows"][0].__setitem__("weight_denominator", 0), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_selected_score_gap_coherent_drift", lambda _r, s, e: (coherently_shift_selected_score_and_gap(s["eight_head"]), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_output_vector_truncation", lambda _r, s, e: (truncate_output_vectors(s["eight_head"]), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_remainder_drift", lambda _r, s, e: (s["eight_head"]["score_rows"][0]["output_remainder"].__setitem__(0, 999), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("source_input_eight_head_output_order_swap", lambda _r, s, e: (s["eight_head"]["attention_outputs"].__setitem__(0, s["eight_head"]["attention_outputs"][1]), e["eight_head"].__setitem__("source_input", s["eight_head"])))
-    add("fused_two_head_verifier_domain_relabeling", lambda _r, _s, e: e["two_head"].__setitem__("verifier_domain", "different-domain"))
-    add("fused_two_head_statement_version_relabeling", lambda _r, _s, e: e["two_head"].__setitem__("statement_version", "different-statement"))
-    add(
-        "fused_two_head_proof_byte_tamper",
-        lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID["two_head"], e["two_head"]),
+    add_source_profile_mutations(
+        "two_head",
+        3,
+        2,
+        output_mutation_name="source_input_two_head_attention_output_split_brain",
+        output_mutator=lambda source: source["score_rows"][0]["attention_output"].__setitem__(0, 999),
     )
-    add("fused_four_head_verifier_domain_relabeling", lambda _r, _s, e: e["four_head"].__setitem__("verifier_domain", "different-domain"))
-    add("fused_four_head_statement_version_relabeling", lambda _r, _s, e: e["four_head"].__setitem__("statement_version", "different-statement"))
-    add(
-        "fused_four_head_proof_byte_tamper",
-        lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID["four_head"], e["four_head"]),
+    add_source_profile_mutations(
+        "four_head",
+        5,
+        4,
+        output_mutation_name="source_input_four_head_output_order_swap",
+        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
     )
-    add("fused_eight_head_verifier_domain_relabeling", lambda _r, _s, e: e["eight_head"].__setitem__("verifier_domain", "different-domain"))
-    add("fused_eight_head_statement_version_relabeling", lambda _r, _s, e: e["eight_head"].__setitem__("statement_version", "different-statement"))
-    add(
-        "fused_eight_head_proof_byte_tamper",
-        lambda _r, _s, e: mutate_same_size_fused_proof(PROFILE_BY_ID["eight_head"], e["eight_head"]),
+    add_source_profile_mutations(
+        "eight_head",
+        9,
+        8,
+        output_mutation_name="source_input_eight_head_output_order_swap",
+        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
     )
+    add_source_profile_mutations(
+        "sixteen_head",
+        17,
+        16,
+        output_mutation_name="source_input_sixteen_head_output_order_swap",
+        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
+    )
+    for profile_id in profile_ids():
+        add_fused_profile_mutations(profile_id)
     add("unknown_receipt_key_injection", lambda r, _s, _e: r.__setitem__("unexpected", "claim smuggling"))
     return cases
 
@@ -814,8 +929,10 @@ def run_gate() -> dict[str, Any]:
                 mutated_envelopes,
                 native_profile_ids=native_profile_ids,
             )
-        except Exception as err:  # noqa: BLE001 - gate records exact rejection surface.
+        except MultiheadQuantizedSoftmaxReceiptGateError as err:
             mutation_results.append({"name": name, "rejected": True, "error": str(err)})
+        except Exception as err:  # noqa: BLE001
+            raise MultiheadQuantizedSoftmaxReceiptGateError(f"mutation harness crashed for {name}: {err}") from err
         else:
             mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
     receipt["mutation_results"] = mutation_results

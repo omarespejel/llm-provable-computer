@@ -58,7 +58,7 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 52. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`
 53. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
 54. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-55. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
+55. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`
 56. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 57. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
 58. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
@@ -347,16 +347,17 @@ This repository currently has three live lanes.
     inference; see
     `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`.
 
-  - Issue `#494` and issue `#496` extend that implementation-exact receipt
-    discipline across the two-head, four-head, and eight-head fused native Stwo
-    routes. The gate checks head counts `[2, 4, 8]`, `728` total lookup claims /
-    score rows, `896` trace rows, `162351` fused proof bytes across profiles,
-    output indices derived from statement `input_steps` order, fused
-    envelope/proof-byte commitments, and rejects `64 / 64` semantic/proof
-    mutations. This is exact for the pinned integer table/floor-division kernel
-    across checked multi-head fixtures, not real-valued Softmax, full inference,
-    long-context inference, public benchmark evidence, or recursion/PCD; see
-    `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
+  - Issue `#494`, issue `#496`, and issue `#520` extend that
+    implementation-exact receipt discipline across the two-head, four-head,
+    eight-head, and sixteen-head fused native Stwo routes. The gate checks head
+    counts `[2, 4, 8, 16]`, `1560` total lookup claims / score rows, `1920`
+    trace rows, `227357` fused proof bytes across profiles, output indices
+    derived from statement `input_steps` order, fused envelope/proof-byte
+    commitments, and rejects `77 / 77` semantic/proof mutations. This is exact
+    for the pinned integer table/floor-division kernel across checked
+    multi-head fixtures, not real-valued Softmax, full inference, long-context
+    inference, public benchmark evidence, or recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`.
 
   - Issue `#506` applies the same implementation-exact receipt discipline to
     the d16 fused width-axis route, and issue `#507` hardens it with a

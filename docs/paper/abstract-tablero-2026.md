@@ -73,8 +73,8 @@ result. The new STARK-native bridge is a tiny Stwo AIR proof for the same
 transformer-shaped surface: a fixed eight-step `d=8` causal-prefix masked
 integer-argmax attention/KV sequence with `52` score rows, a `64`-row trace, and
 a `24394`-byte proof. The current route selector also includes single-head plus
-two-head/four-head/eight-head implementation-exact quantized Softmax-table
-receipts over the pinned integer table/floor-division kernel, a d16
+two-head/four-head/eight-head/sixteen-head implementation-exact quantized
+Softmax-table receipts over the pinned integer table/floor-division kernel, a d16
 implementation-exact quantized Softmax-table receipt with a `64503`-byte proof,
 and a separate two-head long-sequence fused Softmax-table proof with `336`
 lookup claims and a `60502`-byte raw proof. The matched source-plus-sidecar
