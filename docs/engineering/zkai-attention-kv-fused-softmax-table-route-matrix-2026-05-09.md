@@ -23,7 +23,7 @@ The checked matrix is machine-readable at:
 
 The gate validates the existing per-route fused evidence files, checks the
 source-input dimensions, normalizes the matched source-plus-sidecar comparators,
-and rejects `18 / 18` matrix drift / overclaim mutations.
+and rejects `21 / 21` matrix drift, provenance-drift, and overclaim mutations.
 
 ## Route Matrix
 

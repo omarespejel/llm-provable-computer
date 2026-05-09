@@ -255,7 +255,7 @@ source-plus-sidecar comparator is checked. The useful axis-level signal is:
 d8 to d16 grows fused proof bytes `1.352321x` at fixed `52` lookup claims; one
 to eight heads grows lookup claims `8.000000x` while fused proof bytes grow
 `1.267349x`; and two-head seq8 to seq16 grows lookup claims `3.230769x` while
-fused proof bytes grow `1.222065x`. This is still not timing, real-valued
+fused proof bytes grow `1.222065x`. It rejects `21 / 21` matrix drift, provenance-drift, and overclaim mutations. This is still not timing, real-valued
 Softmax, full inference, public benchmark evidence, or recursion/PCD.
 
 The selector's default receipt load is structural and cheap, but it is not blind

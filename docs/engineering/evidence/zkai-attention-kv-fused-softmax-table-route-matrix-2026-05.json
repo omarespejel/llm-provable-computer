@@ -109,6 +109,21 @@
       "rejected": true
     },
     {
+      "error": "d8_single_head_seq8 label drift",
+      "name": "route_row_label_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 decision drift",
+      "name": "route_row_decision_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 evidence path drift",
+      "name": "route_row_evidence_path_relabeling",
+      "rejected": true
+    },
+    {
       "error": "d16_single_head_seq8 key width drift",
       "name": "d16_width_metric_smuggling",
       "rejected": true
@@ -159,8 +174,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 18,
-  "mutations_rejected": 18,
+  "mutations_checked": 21,
+  "mutations_rejected": 21,
   "no_comparator_profiles": [
     "d8_eight_head_seq8"
   ],
