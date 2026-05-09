@@ -371,16 +371,31 @@ Tablero boundary.
   long-sequence/d16 sidecar and fused validators reject the paired malformed
   object. This is validator hardening only; see
   `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
+- Issue `#505` records the controlled fused Softmax-table route matrix across
+  width, head-count, and sequence-length axes. The checked matrix covers six
+  native Stwo fused rows: d8 single-head seq8, d16 single-head seq8, d8
+  two-head seq8, d8 four-head seq8, d8 eight-head seq8, and d8 two-head seq16.
+  Matched source-plus-sidecar controls exist for five rows and are explicitly
+  absent for eight heads, so the eight-head row is proof-existence byte
+  accounting only. The useful engineering signal is separated by axis: d8 to
+  d16 grows fused proof bytes `1.352321x` at fixed `52` lookup claims; one to
+  eight heads grows lookup claims `8.000000x` while fused proof bytes grow
+  `1.267349x`; two-head seq8 to seq16 grows lookup claims `3.230769x` while
+  fused proof bytes grow `1.222065x`. The matrix rejects `18 / 18`
+  drift/overclaim mutations and remains not timing, not real-valued Softmax,
+  not full inference, and not recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`.
 
 
 - The attention/KV proof-route selector records a narrow
-  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
-  for ten proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
+  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+  for eleven proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
   the native Stwo single-head implementation-exact quantized Softmax-table kernel
   receipt, the native Stwo multi-head implementation-exact quantized
   Softmax-table kernel receipt, the native Stwo two-head long-sequence fused
   Softmax-table/LogUp route, the native Stwo d16 fused Softmax-table/LogUp
-  width-axis route, the external SNARK statement-receipt route, the RISC
+  width-axis route, the native Stwo d16 implementation-exact quantized
+  Softmax-table kernel receipt, the external SNARK statement-receipt route, the RISC
   Zero transition semantics route, the RISC Zero three-step sequence semantics
   route, the RISC Zero fixed eight-step sequence semantics route, and the RISC
   Zero fixed eight-step `d=8` causal-prefix masked sequence route. The

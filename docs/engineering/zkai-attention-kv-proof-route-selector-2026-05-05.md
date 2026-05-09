@@ -245,6 +245,19 @@ The checked audit gate mirrors an `output_remainder` mutation into both the
 caller-provided source input and the envelope's `source_input` field; all `11 /
 11` inspected validators reject the paired malformed object.
 
+Issue `#505` records the controlled fused Softmax-table route matrix across
+width, head-count, and sequence-length axes. The checked matrix covers six
+native Stwo fused rows: d8 single-head seq8, d16 single-head seq8, d8 two-head
+seq8, d8 four-head seq8, d8 eight-head seq8, and d8 two-head seq16. Matched
+source-plus-sidecar controls exist for five rows. The eight-head row is
+explicitly proof-existence byte accounting only because no matched
+source-plus-sidecar comparator is checked. The useful axis-level signal is:
+d8 to d16 grows fused proof bytes `1.352321x` at fixed `52` lookup claims; one
+to eight heads grows lookup claims `8.000000x` while fused proof bytes grow
+`1.267349x`; and two-head seq8 to seq16 grows lookup claims `3.230769x` while
+fused proof bytes grow `1.222065x`. This is still not timing, real-valued
+Softmax, full inference, public benchmark evidence, or recursion/PCD.
+
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
 each fused envelope and each fused proof byte payload. The checked strict command
@@ -372,6 +385,8 @@ Claim boundary:
 - Native d16 Softmax denominator/rounding edge corpus TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv`
 - Native Softmax-table paired-source validation audit JSON: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.json`
 - Native Softmax-table paired-source validation audit TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.tsv`
+- Native fused Softmax-table route matrix JSON: `docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json`
+- Native fused Softmax-table route matrix TSV: `docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.tsv`
 
 Reproduce the paired-source validation audit artifacts:
 
@@ -388,6 +403,20 @@ policy `not_timed_correctness_gate_only`, and performs no fresh Stwo prover or
 verifier timing run. Backend version and step/head/width counts are not free
 parameters of this audit; they are inherited from each target's checked
 source/envelope artifact and revalidated through the target validator.
+
+Reproduce the controlled fused route matrix:
+
+```bash
+python3 scripts/zkai_attention_kv_fused_softmax_table_route_matrix_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.tsv
+python3 -m unittest scripts.tests.test_zkai_attention_kv_fused_softmax_table_route_matrix_gate
+```
+
+This route matrix is proof-byte accounting only. It validates the existing
+fused evidence files and source-input dimensions, but it does not run timing,
+does not promote exact real-valued Softmax, and does not report eight-head
+fused savings without a matched sidecar comparator.
 
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
