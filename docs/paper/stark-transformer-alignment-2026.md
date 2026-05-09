@@ -1314,7 +1314,7 @@ current route selector now also includes single-head plus two-head/four-head/
 eight-head implementation-exact quantized Softmax-table receipts, a separate
 two-head long-sequence fused Softmax-table/LogUp proof, and a d16 width-axis
 fused Softmax-table/LogUp proof plus a d16 implementation-exact quantized
-Softmax-table receipt; it rejects `72 / 72`
+Softmax-table receipt; it rejects `74 / 74`
 route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.

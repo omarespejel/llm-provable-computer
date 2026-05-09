@@ -114,7 +114,7 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
             gate.validate_result(bad)
 
         bad = copy.deepcopy(self.result)
-        bad["axis_summary"]["head_axis_d8_seq8"]["fused_proof_ratio_1_to_8"] = 8.0
+        bad["axis_summary"]["head_axis_d8_seq8"]["fused_proof_ratio_1_to_16"] = 16.0
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "axis summary drift"):
             gate.validate_result(bad)
 
