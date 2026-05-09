@@ -138,6 +138,11 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         payload["lookup_receipt"]["lookup_claims"] = 416.0
         self.assert_rejects(payload, "lookup_receipt drift")
 
+    def test_rejects_float_encoded_single_head_comparison_scalar(self):
+        payload = self.strip_mutation_summary(gate.build_payload())
+        payload["single_head_comparison"]["single_head_lookup_claims"] = 52.0
+        self.assert_rejects(payload, "single_head_comparison drift")
+
     def test_native_verifier_rejects_same_size_tampered_proof_payload(self):
         serialized = self.same_size_tampered_envelope_json()
         with tempfile.TemporaryDirectory() as tmp:
