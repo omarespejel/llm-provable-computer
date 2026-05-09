@@ -832,6 +832,10 @@ python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv
 
+python3 scripts/zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv
+
 python3 scripts/zkai_attention_kv_proof_route_selector_gate.py \
   --run-native \
   --write-json docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json \
@@ -861,6 +865,7 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_stwo_native_d16_bounded_softmax_table_proof_input \
   scripts.tests.test_zkai_attention_kv_d16_air_private_softmax_table_lookup_gate \
   scripts.tests.test_zkai_attention_kv_d16_fused_softmax_table_native_gate \
+  scripts.tests.test_zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate \
   scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_d16_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 

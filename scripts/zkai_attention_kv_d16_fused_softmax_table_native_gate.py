@@ -431,7 +431,9 @@ def validate_source_artifacts(source_input: dict[str, Any], source_envelope: dic
             raise AttentionKvD16FusedSoftmaxTableGateError(f"sidecar summary drift for {key}")
 
 
-def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, Any], *, run_native: bool) -> None:
+def validate_fused_envelope(envelope: Any, source_input: dict[str, Any], *, run_native: bool) -> None:
+    if not isinstance(envelope, dict):
+        raise AttentionKvD16FusedSoftmaxTableGateError("fused envelope must be an object")
     try:
         SOURCE_INPUT_MODULE.validate_payload(source_input)
     except Exception as err:

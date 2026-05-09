@@ -56,6 +56,10 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "unknown fused envelope field"):
                 gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
 
+    def test_rejects_non_object_fused_envelope_without_crashing(self):
+        with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "fused envelope must be an object"):
+            gate.validate_fused_envelope([], self.source_input, run_native=False)
+
     def test_rejects_source_input_split_brain(self):
         mutated = copy.deepcopy(self.fused_envelope)
         mutated["source_input"]["score_rows"][0]["attention_weight"] = 255

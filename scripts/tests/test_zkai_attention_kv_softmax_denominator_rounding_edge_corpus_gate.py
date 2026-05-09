@@ -83,6 +83,12 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
         with self.assertRaisesRegex(gate.SoftmaxEdgeCorpusGateError, "result drift for claim_boundary"):
             gate.validate_result(mutated)
 
+    def test_rejects_max_remainder_ratio_drift(self):
+        mutated = copy.deepcopy(self.result)
+        mutated["max_remainder_ratio"] = 0
+        with self.assertRaisesRegex(gate.SoftmaxEdgeCorpusGateError, "max remainder ratio drift"):
+            gate.validate_result(mutated)
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = gate.pathlib.Path(tmp)
