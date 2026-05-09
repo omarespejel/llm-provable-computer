@@ -61,6 +61,9 @@ D16_TWO_HEAD_FUSED_SOFTMAX_SCRIPT = (
 D16_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_d16_quantized_softmax_receipt_gate.py"
 )
+D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate.py"
+)
 SOFTMAX_EDGE_CORPUS_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate.py"
 )
@@ -168,6 +171,13 @@ D16_QUANTIZED_SOFTMAX_RECEIPT_JSON = (
     / "evidence"
     / "zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json"
 )
+D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_JSON = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.json"
+)
 SOFTMAX_EDGE_CORPUS_JSON = (
     ROOT
     / "docs"
@@ -189,6 +199,7 @@ D16_TWO_HEAD_FUSED_SOFTMAX_MAX_JSON_BYTES = 1_048_576
 D16_TWO_HEAD_FUSED_SOFTMAX_SOURCE_INPUT_MAX_JSON_BYTES = 2_097_152
 D16_TWO_HEAD_FUSED_SOFTMAX_ENVELOPE_MAX_JSON_BYTES = 2_097_152
 D16_QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
+D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
 SOFTMAX_EDGE_CORPUS_MAX_JSON_BYTES = 1_048_576
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
@@ -199,7 +210,7 @@ TSV_OUT = (
 
 SCHEMA = "zkai-attention-kv-proof-route-selector-gate-v1"
 DECISION = (
-    "GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_TWO_HEAD_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS"
+    "GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_TWO_HEAD_FUSED_D16_QUANTIZED_D16_TWO_HEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS"
 )
 FIRST_BLOCKER = "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF"
 CLAIM_BOUNDARY = (
@@ -209,6 +220,7 @@ CLAIM_BOUNDARY = (
     "AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_"
     "AND_NATIVE_STWO_D16_TWO_HEAD_FUSED_SOFTMAX_TABLE_PROOF_"
     "AND_NATIVE_STWO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_"
+    "AND_NATIVE_STWO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_"
     "AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS"
 )
 SOURCE_DATE_EPOCH_DEFAULT = 0
@@ -251,6 +263,8 @@ D16_TWO_HEAD_FUSED_SOFTMAX_DECISION = (
 )
 D16_QUANTIZED_SOFTMAX_ROUTE_ID = "local_stwo_attention_kv_d16_quantized_softmax_table_kernel_receipt"
 D16_QUANTIZED_SOFTMAX_DECISION = "GO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID = "local_stwo_attention_kv_d16_two_head_quantized_softmax_table_kernel_receipt"
+D16_TWO_HEAD_QUANTIZED_SOFTMAX_DECISION = "GO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
 EXTERNAL_SNARK_ROUTE_ID = "external_snark_attention_kv_statement_receipt"
 EXTERNAL_ZKVM_ROUTE_ID = "external_zkvm_attention_kv_semantics_receipt"
 EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID = "external_zkvm_attention_kv_sequence_semantics_receipt"
@@ -316,6 +330,13 @@ BASE_ROUTES = (
         "proof_backed": True,
     },
     {
+        "route_id": D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID,
+        "status": D16_TWO_HEAD_QUANTIZED_SOFTMAX_DECISION,
+        "blocker": None,
+        "usable_today": True,
+        "proof_backed": True,
+    },
+    {
         "route_id": EXTERNAL_SNARK_ROUTE_ID,
         "status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_FOR_SOURCE_CONTRACT",
         "blocker": None,
@@ -367,6 +388,7 @@ EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE = (
     D16_FUSED_SOFTMAX_ROUTE_ID,
     D16_TWO_HEAD_FUSED_SOFTMAX_ROUTE_ID,
     D16_QUANTIZED_SOFTMAX_ROUTE_ID,
+    D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID,
     EXTERNAL_SNARK_ROUTE_ID,
     EXTERNAL_ZKVM_ROUTE_ID,
     EXTERNAL_ZKVM_SEQUENCE_ROUTE_ID,
@@ -437,6 +459,14 @@ EXPECTED_MUTATION_NAMES = (
     "d16_quantized_softmax_width_drift",
     "d16_quantized_softmax_denominator_drift",
     "d16_quantized_softmax_mutation_rejections_drift",
+    "d16_two_head_quantized_softmax_route_removed",
+    "d16_two_head_quantized_softmax_receipt_decision_drift",
+    "d16_two_head_quantized_softmax_receipt_route_drift",
+    "d16_two_head_quantized_softmax_real_softmax_overclaim",
+    "d16_two_head_quantized_softmax_width_or_head_drift",
+    "d16_two_head_quantized_softmax_denominator_drift",
+    "d16_two_head_quantized_softmax_output_order_drift",
+    "d16_two_head_quantized_softmax_mutation_rejections_drift",
     "d16_softmax_edge_corpus_claim_boundary_drift",
     "d16_softmax_edge_corpus_route_mutation_rejections_drift",
     "external_snark_route_removed",
@@ -686,6 +716,22 @@ def _load_d16_quantized_softmax_receipt_module():
     return module
 
 
+def _load_d16_two_head_quantized_softmax_receipt_module():
+    """Load the d16 two-head implementation-exact quantized Softmax receipt gate."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate",
+        D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(
+            f"failed to load d16 two-head quantized Softmax receipt script: {D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_softmax_edge_corpus_module():
     """Load the d16 denominator/rounding edge-corpus gate."""
 
@@ -713,6 +759,7 @@ LONGSEQ_FUSED_SOFTMAX = _load_longseq_fused_softmax_module()
 D16_FUSED_SOFTMAX = _load_d16_fused_softmax_module()
 D16_TWO_HEAD_FUSED_SOFTMAX = _load_d16_two_head_fused_softmax_module()
 D16_QUANTIZED_SOFTMAX = _load_d16_quantized_softmax_receipt_module()
+D16_TWO_HEAD_QUANTIZED_SOFTMAX = _load_d16_two_head_quantized_softmax_receipt_module()
 SOFTMAX_EDGE_CORPUS = _load_softmax_edge_corpus_module()
 
 
@@ -1149,6 +1196,35 @@ def _load_softmax_edge_corpus_payload(path: pathlib.Path) -> dict[str, Any]:
     except Exception as error:
         raise AttentionKvRouteSelectorError(f"d16 Softmax edge corpus malformed: {error}") from error
     return payload
+
+
+@functools.lru_cache(maxsize=2)
+def _load_d16_two_head_quantized_softmax_receipt_payload(path: pathlib.Path, run_native: bool) -> dict[str, Any]:
+    """Load and validate the d16 two-head implementation-exact quantized Softmax receipt payload."""
+
+    raw = read_bounded_text(
+        path,
+        D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES,
+        "d16 two-head quantized Softmax receipt evidence",
+    )
+    try:
+        payload = json.loads(raw)
+        D16_TWO_HEAD_QUANTIZED_SOFTMAX.validate_result(payload, run_native=run_native)
+    except D16_TWO_HEAD_QUANTIZED_SOFTMAX.D16TwoHeadQuantizedSoftmaxReceiptGateError as error:
+        raise AttentionKvRouteSelectorError(f"d16 two-head quantized Softmax receipt drift: {error}") from error
+    except Exception as error:
+        raise AttentionKvRouteSelectorError(f"d16 two-head quantized Softmax receipt malformed: {error}") from error
+    return payload
+
+
+def load_d16_two_head_quantized_softmax_receipt_payload(
+    path: pathlib.Path = D16_TWO_HEAD_QUANTIZED_SOFTMAX_RECEIPT_JSON,
+    *,
+    run_native: bool = False,
+) -> dict[str, Any]:
+    """Load the d16 two-head implementation-exact quantized Softmax receipt payload."""
+
+    return copy.deepcopy(_load_d16_two_head_quantized_softmax_receipt_payload(path, run_native))
 
 
 def load_softmax_edge_corpus_payload(
@@ -1649,6 +1725,65 @@ def d16_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any]) -> di
     }
 
 
+def d16_two_head_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the d16 two-head quantized Softmax-table receipt route fields."""
+
+    contract = softmax_payload["kernel_contract"]
+    metrics = contract["kernel_metrics"]
+    return {
+        "schema": softmax_payload["schema"],
+        "decision": softmax_payload["decision"],
+        "route_id": softmax_payload["route_id"],
+        "result": "GO",
+        "claim_boundary": softmax_payload["claim_boundary"],
+        "evidence": (
+            "docs/engineering/evidence/"
+            "zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.json"
+        ),
+        "proof_system": "Stwo",
+        "proof_backend": "stwo",
+        "proof_size_bytes": softmax_payload["fused_proof_size_bytes"],
+        "envelope_size_bytes": softmax_payload["fused_envelope_size_bytes"],
+        "fused_gate_decision": softmax_payload["fused_gate_decision"],
+        "kernel_name": contract["kernel_name"],
+        "kernel_status": contract["kernel_status"],
+        "real_softmax_status": contract["real_softmax_status"],
+        "score_scale": contract["score_scale"],
+        "key_width": contract["key_width"],
+        "value_width": contract["value_width"],
+        "head_count": contract["head_count"],
+        "sequence_length_per_head": contract["sequence_length_per_head"],
+        "score_gap_clip": contract["score_gap_clip"],
+        "weight_policy": contract["weight_policy"],
+        "weight_table_commitment": contract["weight_table_commitment"],
+        "denominator_policy": contract["denominator_policy"],
+        "division_rule": contract["division_rule"],
+        "rounding_rule": contract["rounding_rule"],
+        "division_error_bound": contract["division_error_bound"],
+        "table_error_bound_policy": contract["table_error_bound_policy"],
+        "head_binding_policy": contract["head_binding_policy"],
+        "step_binding_policy": contract["step_binding_policy"],
+        "output_order_policy": contract["output_order_policy"],
+        "causal_mask_policy": contract["causal_mask_policy"],
+        "source_statement_commitment": contract["source_statement_commitment"],
+        "source_public_instance_commitment": contract["source_public_instance_commitment"],
+        "source_score_row_commitment": contract["source_score_row_commitment"],
+        "source_outputs_commitment": contract["source_outputs_commitment"],
+        "source_final_kv_cache_commitment": contract["source_final_kv_cache_commitment"],
+        "lookup_claims": softmax_payload["lookup_claims"],
+        "table_rows": softmax_payload["table_rows"],
+        "input_steps": metrics["input_steps"],
+        "score_rows": metrics["score_rows"],
+        "trace_rows": metrics["trace_rows"],
+        "per_head_step_denominators": metrics["per_head_step_denominators"],
+        "max_observed_division_error_fraction": metrics["max_observed_division_error_fraction"],
+        "mutations_checked": softmax_payload["mutations_checked"],
+        "mutations_rejected": softmax_payload["mutations_rejected"],
+        "all_mutations_rejected": softmax_payload["mutations_rejected"] == softmax_payload["mutations_checked"],
+        "timing_policy": softmax_payload["timing_policy"],
+    }
+
+
 def softmax_edge_corpus_summary(edge_payload: dict[str, Any]) -> dict[str, Any]:
     """Extract the d16 denominator/rounding edge-corpus fields."""
 
@@ -1705,6 +1840,9 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     )
     d16_quantized_softmax = d16_quantized_softmax_receipt_summary(
         load_d16_quantized_softmax_receipt_payload(run_native=run_native)
+    )
+    d16_two_head_quantized_softmax = d16_two_head_quantized_softmax_receipt_summary(
+        load_d16_two_head_quantized_softmax_receipt_payload(run_native=run_native)
     )
     routes = [dict(route) for route in BASE_ROUTES]
     local_stwo_route = route_candidate_by_id(routes, LOCAL_STWO_ROUTE_ID)
@@ -1861,6 +1999,36 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
         "source_statement_commitment"
     ]
     d16_quantized_softmax_route["weight_table_commitment"] = d16_quantized_softmax["weight_table_commitment"]
+    d16_two_head_quantized_softmax_route = route_candidate_by_id(routes, D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID)
+    d16_two_head_quantized_softmax_route["evidence"] = d16_two_head_quantized_softmax["evidence"]
+    d16_two_head_quantized_softmax_route["proof_system"] = d16_two_head_quantized_softmax["proof_system"]
+    d16_two_head_quantized_softmax_route["proof_backend"] = d16_two_head_quantized_softmax["proof_backend"]
+    d16_two_head_quantized_softmax_route["proof_size_bytes"] = d16_two_head_quantized_softmax["proof_size_bytes"]
+    d16_two_head_quantized_softmax_route["envelope_size_bytes"] = d16_two_head_quantized_softmax[
+        "envelope_size_bytes"
+    ]
+    d16_two_head_quantized_softmax_route["kernel_name"] = d16_two_head_quantized_softmax["kernel_name"]
+    d16_two_head_quantized_softmax_route["kernel_status"] = d16_two_head_quantized_softmax["kernel_status"]
+    d16_two_head_quantized_softmax_route["real_softmax_status"] = d16_two_head_quantized_softmax[
+        "real_softmax_status"
+    ]
+    d16_two_head_quantized_softmax_route["key_width"] = d16_two_head_quantized_softmax["key_width"]
+    d16_two_head_quantized_softmax_route["value_width"] = d16_two_head_quantized_softmax["value_width"]
+    d16_two_head_quantized_softmax_route["head_count"] = d16_two_head_quantized_softmax["head_count"]
+    d16_two_head_quantized_softmax_route["sequence_length_per_head"] = d16_two_head_quantized_softmax[
+        "sequence_length_per_head"
+    ]
+    d16_two_head_quantized_softmax_route["input_steps"] = d16_two_head_quantized_softmax["input_steps"]
+    d16_two_head_quantized_softmax_route["score_scale"] = d16_two_head_quantized_softmax["score_scale"]
+    d16_two_head_quantized_softmax_route["score_gap_clip"] = d16_two_head_quantized_softmax["score_gap_clip"]
+    d16_two_head_quantized_softmax_route["lookup_claims"] = d16_two_head_quantized_softmax["lookup_claims"]
+    d16_two_head_quantized_softmax_route["table_rows"] = d16_two_head_quantized_softmax["table_rows"]
+    d16_two_head_quantized_softmax_route["source_statement_commitment"] = d16_two_head_quantized_softmax[
+        "source_statement_commitment"
+    ]
+    d16_two_head_quantized_softmax_route["weight_table_commitment"] = d16_two_head_quantized_softmax[
+        "weight_table_commitment"
+    ]
     snark_route = route_candidate_by_id(routes, EXTERNAL_SNARK_ROUTE_ID)
     snark_route["evidence"] = snark["evidence"]
     snark_route["proof_system"] = snark["proof_system"]
@@ -1963,6 +2131,9 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     d16_fused_softmax_payload = load_d16_fused_softmax_payload(run_native=run_native)
     d16_two_head_fused_softmax_payload = load_d16_two_head_fused_softmax_payload(run_native=run_native)
     d16_quantized_softmax_payload = load_d16_quantized_softmax_receipt_payload(run_native=run_native)
+    d16_two_head_quantized_softmax_payload = load_d16_two_head_quantized_softmax_receipt_payload(
+        run_native=run_native
+    )
     softmax_edge_corpus_payload = load_softmax_edge_corpus_payload()
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
@@ -1979,6 +2150,9 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     d16_fused_softmax_receipt = d16_fused_softmax_summary(d16_fused_softmax_payload)
     d16_two_head_fused_softmax_receipt = d16_two_head_fused_softmax_summary(d16_two_head_fused_softmax_payload)
     d16_quantized_softmax_receipt = d16_quantized_softmax_receipt_summary(d16_quantized_softmax_payload)
+    d16_two_head_quantized_softmax_receipt = d16_two_head_quantized_softmax_receipt_summary(
+        d16_two_head_quantized_softmax_payload
+    )
     softmax_edge_corpus = softmax_edge_corpus_summary(softmax_edge_corpus_payload)
     routes = route_inventory(run_native=run_native)
     proof_backed_routes_available = [
@@ -2010,6 +2184,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
         "d16_fused_softmax_receipt": d16_fused_softmax_receipt,
         "d16_two_head_fused_softmax_receipt": d16_two_head_fused_softmax_receipt,
         "d16_quantized_softmax_receipt": d16_quantized_softmax_receipt,
+        "d16_two_head_quantized_softmax_receipt": d16_two_head_quantized_softmax_receipt,
         "softmax_denominator_rounding_edge_corpus": softmax_edge_corpus,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
@@ -2108,6 +2283,26 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "d16_quantized_softmax_max_observed_division_error_fraction": (
                 d16_quantized_softmax_receipt["max_observed_division_error_fraction"]
             ),
+            "d16_two_head_quantized_softmax_proof_size_bytes": (
+                d16_two_head_quantized_softmax_receipt["proof_size_bytes"]
+            ),
+            "d16_two_head_quantized_softmax_envelope_size_bytes": (
+                d16_two_head_quantized_softmax_receipt["envelope_size_bytes"]
+            ),
+            "d16_two_head_quantized_softmax_lookup_claims": (
+                d16_two_head_quantized_softmax_receipt["lookup_claims"]
+            ),
+            "d16_two_head_quantized_softmax_table_rows": d16_two_head_quantized_softmax_receipt["table_rows"],
+            "d16_two_head_quantized_softmax_key_width": d16_two_head_quantized_softmax_receipt["key_width"],
+            "d16_two_head_quantized_softmax_value_width": d16_two_head_quantized_softmax_receipt["value_width"],
+            "d16_two_head_quantized_softmax_head_count": d16_two_head_quantized_softmax_receipt["head_count"],
+            "d16_two_head_quantized_softmax_sequence_length_per_head": (
+                d16_two_head_quantized_softmax_receipt["sequence_length_per_head"]
+            ),
+            "d16_two_head_quantized_softmax_input_steps": d16_two_head_quantized_softmax_receipt["input_steps"],
+            "d16_two_head_quantized_softmax_max_observed_division_error_fraction": (
+                d16_two_head_quantized_softmax_receipt["max_observed_division_error_fraction"]
+            ),
             "d16_softmax_edge_case_count": softmax_edge_corpus["edge_case_count"],
             "d16_softmax_edge_route_mutations_checked": softmax_edge_corpus["route_mutations_checked"],
             "d16_softmax_edge_route_mutations_rejected": softmax_edge_corpus["route_mutations_rejected"],
@@ -2155,6 +2350,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "d16_fused_softmax_receipt": payload["d16_fused_softmax_receipt"],
             "d16_two_head_fused_softmax_receipt": payload["d16_two_head_fused_softmax_receipt"],
             "d16_quantized_softmax_receipt": payload["d16_quantized_softmax_receipt"],
+            "d16_two_head_quantized_softmax_receipt": payload["d16_two_head_quantized_softmax_receipt"],
             "softmax_denominator_rounding_edge_corpus": payload["softmax_denominator_rounding_edge_corpus"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
@@ -2306,6 +2502,30 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["d16_quantized_softmax_receipt"]["per_step_denominators"][0] = 0
     elif name == "d16_quantized_softmax_mutation_rejections_drift":
         out["d16_quantized_softmax_receipt"]["mutations_rejected"] -= 1
+    elif name == "d16_two_head_quantized_softmax_route_removed":
+        d16_two_head_quantized_route = route_candidate_by_id(
+            out["route_candidates"], D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID
+        )
+        d16_two_head_quantized_route["status"] = "NO_GO_MISSING_D16_TWO_HEAD_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+        d16_two_head_quantized_route["usable_today"] = False
+        d16_two_head_quantized_route["proof_backed"] = False
+        out["proof_backed_routes_available"] = proof_routes_except(D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID)
+    elif name == "d16_two_head_quantized_softmax_receipt_decision_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["decision"] = (
+            "NO_GO_MISSING_D16_TWO_HEAD_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
+        )
+    elif name == "d16_two_head_quantized_softmax_receipt_route_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["route_id"] = "real_valued_softmax_attention_kv_claim"
+    elif name == "d16_two_head_quantized_softmax_real_softmax_overclaim":
+        out["d16_two_head_quantized_softmax_receipt"]["real_softmax_status"] = "GO_REAL_VALUED_SOFTMAX"
+    elif name == "d16_two_head_quantized_softmax_width_or_head_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["head_count"] = 1
+    elif name == "d16_two_head_quantized_softmax_denominator_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["per_head_step_denominators"][0]["denominator"] = 0
+    elif name == "d16_two_head_quantized_softmax_output_order_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["output_order_policy"] = "head_index_times_sequence_length_plus_step"
+    elif name == "d16_two_head_quantized_softmax_mutation_rejections_drift":
+        out["d16_two_head_quantized_softmax_receipt"]["mutations_rejected"] -= 1
     elif name == "d16_softmax_edge_corpus_claim_boundary_drift":
         out["softmax_denominator_rounding_edge_corpus"]["claim_boundary"] = "GO_REAL_VALUED_SOFTMAX_EDGE_CORPUS"
     elif name == "d16_softmax_edge_corpus_route_mutation_rejections_drift":
@@ -3035,6 +3255,74 @@ def validate_d16_quantized_softmax_receipt(summary: Any) -> None:
             raise AttentionKvRouteSelectorError(f"d16 quantized Softmax {key} drift")
 
 
+def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
+    """Validate the d16 two-head implementation-exact quantized Softmax-table receipt summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax receipt must be an object")
+    expected = d16_two_head_quantized_softmax_receipt_summary(
+        load_d16_two_head_quantized_softmax_receipt_payload()
+    )
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax receipt drift")
+    if summary["decision"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX_DECISION:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax decision drift")
+    if summary["route_id"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax route drift")
+    if summary["result"] != "GO":
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax result drift")
+    if summary["proof_system"] != "Stwo" or summary["proof_backend"] != "stwo":
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax backend drift")
+    if summary["kernel_name"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.KERNEL_NAME:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax kernel-name drift")
+    if summary["kernel_status"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.KERNEL_STATUS:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax kernel-status drift")
+    if summary["real_softmax_status"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.REAL_SOFTMAX_STATUS:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax real-valued overclaim")
+    if summary["score_scale"] != 1 or summary["score_gap_clip"] != 8:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax scaling drift")
+    if summary["key_width"] != 16 or summary["value_width"] != 16:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax width drift")
+    if summary["head_count"] != 2 or summary["sequence_length_per_head"] != 8 or summary["input_steps"] != 16:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax head/sequence drift")
+    if summary["lookup_claims"] != 104 or summary["score_rows"] != 104 or summary["trace_rows"] != 128:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax row-count drift")
+    if summary["table_rows"] != 9:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax table drift")
+    if summary["proof_size_bytes"] != 78211 or summary["envelope_size_bytes"] != 921008:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax proof metric drift")
+    denominators = summary.get("per_head_step_denominators")
+    if not isinstance(denominators, list) or len(denominators) != 16:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax denominator shape drift")
+    if any(
+        not isinstance(item, dict) or type(item.get("denominator")) is not int or item["denominator"] <= 0
+        for item in denominators
+    ):
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax denominator drift")
+    if summary["mutations_checked"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax mutation count drift")
+    if summary["mutations_rejected"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax mutation rejection drift")
+    if summary["all_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax fail-closed drift")
+    if "input_steps order" not in summary.get("output_order_policy", ""):
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax output-order drift")
+    if not isinstance(summary.get("division_error_bound"), str) or "< 1 output unit" not in summary["division_error_bound"]:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax division-bound drift")
+    if "no real-valued Softmax" not in summary.get("table_error_bound_policy", ""):
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax real-valued error-bound overclaim")
+    for key in (
+        "source_statement_commitment",
+        "source_public_instance_commitment",
+        "source_score_row_commitment",
+        "source_outputs_commitment",
+        "source_final_kv_cache_commitment",
+    ):
+        commitment = summary.get(key)
+        if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+            raise AttentionKvRouteSelectorError(f"d16 two-head quantized Softmax {key} drift")
+
+
 def validate_softmax_edge_corpus(summary: Any) -> None:
     """Validate the d16 denominator/rounding edge-corpus summary."""
 
@@ -3091,6 +3379,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "d16_fused_softmax_receipt",
         "d16_two_head_fused_softmax_receipt",
         "d16_quantized_softmax_receipt",
+        "d16_two_head_quantized_softmax_receipt",
         "softmax_denominator_rounding_edge_corpus",
         "route_candidates",
         "proof_backed_routes_available",
@@ -3126,6 +3415,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_d16_fused_softmax_receipt(payload.get("d16_fused_softmax_receipt"))
     validate_d16_two_head_fused_softmax_receipt(payload.get("d16_two_head_fused_softmax_receipt"))
     validate_d16_quantized_softmax_receipt(payload.get("d16_quantized_softmax_receipt"))
+    validate_d16_two_head_quantized_softmax_receipt(payload.get("d16_two_head_quantized_softmax_receipt"))
     validate_softmax_edge_corpus(payload.get("softmax_denominator_rounding_edge_corpus"))
     validate_routes(payload.get("route_candidates"))
     if tuple(payload.get("proof_backed_routes_available") or ()) != EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE:
@@ -3231,6 +3521,36 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "d16_quantized_softmax_max_observed_division_error_fraction": (
             payload["d16_quantized_softmax_receipt"]["max_observed_division_error_fraction"]
         ),
+        "d16_two_head_quantized_softmax_proof_size_bytes": (
+            payload["d16_two_head_quantized_softmax_receipt"]["proof_size_bytes"]
+        ),
+        "d16_two_head_quantized_softmax_envelope_size_bytes": (
+            payload["d16_two_head_quantized_softmax_receipt"]["envelope_size_bytes"]
+        ),
+        "d16_two_head_quantized_softmax_lookup_claims": (
+            payload["d16_two_head_quantized_softmax_receipt"]["lookup_claims"]
+        ),
+        "d16_two_head_quantized_softmax_table_rows": (
+            payload["d16_two_head_quantized_softmax_receipt"]["table_rows"]
+        ),
+        "d16_two_head_quantized_softmax_key_width": (
+            payload["d16_two_head_quantized_softmax_receipt"]["key_width"]
+        ),
+        "d16_two_head_quantized_softmax_value_width": (
+            payload["d16_two_head_quantized_softmax_receipt"]["value_width"]
+        ),
+        "d16_two_head_quantized_softmax_head_count": (
+            payload["d16_two_head_quantized_softmax_receipt"]["head_count"]
+        ),
+        "d16_two_head_quantized_softmax_sequence_length_per_head": (
+            payload["d16_two_head_quantized_softmax_receipt"]["sequence_length_per_head"]
+        ),
+        "d16_two_head_quantized_softmax_input_steps": (
+            payload["d16_two_head_quantized_softmax_receipt"]["input_steps"]
+        ),
+        "d16_two_head_quantized_softmax_max_observed_division_error_fraction": (
+            payload["d16_two_head_quantized_softmax_receipt"]["max_observed_division_error_fraction"]
+        ),
         "d16_softmax_edge_case_count": payload["softmax_denominator_rounding_edge_corpus"]["edge_case_count"],
         "d16_softmax_edge_route_mutations_checked": (
             payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_checked"]
@@ -3291,6 +3611,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "d16_fused_softmax_receipt": payload["d16_fused_softmax_receipt"],
             "d16_two_head_fused_softmax_receipt": payload["d16_two_head_fused_softmax_receipt"],
             "d16_quantized_softmax_receipt": payload["d16_quantized_softmax_receipt"],
+            "d16_two_head_quantized_softmax_receipt": payload["d16_two_head_quantized_softmax_receipt"],
             "softmax_denominator_rounding_edge_corpus": payload["softmax_denominator_rounding_edge_corpus"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],

@@ -1312,10 +1312,11 @@ directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, and a `24394`-byte proof. The
 current route selector now also includes single-head plus two-head/four-head/
 eight-head/sixteen-head implementation-exact quantized Softmax-table receipts, a
-separate two-head long-sequence fused Softmax-table/LogUp proof, and a d16
+separate two-head long-sequence fused Softmax-table/LogUp proof, a d16
 width-axis fused Softmax-table/LogUp proof, a d16 two-head fused
-Softmax-table/LogUp proof, plus a d16 implementation-exact quantized
-Softmax-table receipt; it rejects `80 / 80`
+Softmax-table/LogUp proof, a d16 implementation-exact quantized
+Softmax-table receipt, and a d16 two-head implementation-exact quantized
+Softmax-table receipt; it rejects `88 / 88`
 route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
@@ -1327,7 +1328,7 @@ behavior, not real-valued Softmax, not long-context inference, and not a
 benchmark row. But it is important because it moves the carried-state attention
 result from external controls into the STARK-native lane and then checks the
 pinned integer table/floor-division kernel across single-head, two-head,
-four-head, eight-head, and d16 fixtures. It is exactly the kind of evidence this
+four-head, eight-head, d16, and combined d16/two-head fixtures. It is exactly the kind of evidence this
 paper needs:
 not a claim that STARKs have already won, but a concrete proof surface showing
 why transformer decode looks like trace-friendly carried state.

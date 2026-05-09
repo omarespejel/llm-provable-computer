@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head/sixteen-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, a combined d16 two-head fused proof object, single-head, multi-head through sixteen heads, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head/sixteen-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, a combined d16 two-head fused proof object, single-head, multi-head through sixteen heads, plus d16 and d16 two-head implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -126,11 +126,12 @@ The attention/KV lane now has a tiny native Stwo AIR proof for the fixed `d=8`
 causal-prefix masked integer-argmax carried-state surface. The proof checks `52`
 score rows over a `64`-row trace, emits selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, binds ten final KV rows, and has a `24394`-byte proof
-inside a `265791`-byte checked envelope. The route selector now records twelve
-proof-backed routes and rejects `80 / 80` checked mutations, including the
-single-head, multi-head, and d16 implementation-exact quantized Softmax-table receipts,
-the d16 denominator/rounding edge corpus, and the two-head long-sequence plus
-d16 width-axis plus d16 two-head fused Softmax-table/LogUp proofs. External
+inside a `265791`-byte checked envelope. The route selector now records thirteen
+proof-backed routes and rejects `88 / 88` checked mutations, including the
+single-head, multi-head, d16, and d16 two-head implementation-exact quantized
+Softmax-table receipts, the d16 denominator/rounding edge corpus, and the
+two-head long-sequence plus d16 width-axis plus d16 two-head fused
+Softmax-table/LogUp proofs. External
 `snarkjs/Groth16` and RISC Zero receipts remain useful controls for
 statement-binding and zkVM semantic transfer, but they are not the headline.
 
