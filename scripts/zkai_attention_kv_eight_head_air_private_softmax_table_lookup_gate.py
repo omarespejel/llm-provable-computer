@@ -74,6 +74,8 @@ LOOKUP_PROOF_SIZE_BYTES = 21_694
 LOOKUP_ENVELOPE_SIZE_BYTES = 907_902
 LOOKUP_PROOF_COMMITMENTS = 4
 LOOKUP_TRACE_COMMITMENTS = 3
+LOOKUP_PROOF_COMMITMENT = "blake2b-256:ad9dbf2cb78f25c2411a843eeea2d5f22fcd31930fe50c3d01728d91514959f1"
+LOOKUP_ENVELOPE_COMMITMENT = "blake2b-256:3e9cc4e898dc141068a444ce697fee27bfe11fd1d0e408658fcd2f5bb0a4f769"
 LOOKUP_TABLE_MULTIPLICITIES = (
     {"gap": 0, "weight": 256, "multiplicity": 74},
     {"gap": 1, "weight": 181, "multiplicity": 1},
@@ -145,6 +147,8 @@ EXPECTED_MUTATION_NAMES = (
     "lookup_claim_count_metric_smuggling",
     "lookup_proof_size_metric_smuggling",
     "lookup_envelope_size_metric_smuggling",
+    "lookup_proof_commitment_relabeling",
+    "lookup_envelope_commitment_relabeling",
     "single_head_comparison_metric_smuggling",
     "table_multiplicity_drift",
     "non_claim_removed",
@@ -153,7 +157,7 @@ EXPECTED_MUTATION_NAMES = (
     "unknown_field_injection",
     "lookup_receipt_unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 24
+EXPECTED_MUTATION_COUNT = 26
 
 TSV_COLUMNS = (
     "decision",
@@ -182,6 +186,8 @@ TSV_COLUMNS = (
     "four_to_eight_envelope_size_ratio",
     "source_statement_commitment",
     "source_weight_table_commitment",
+    "lookup_proof_commitment",
+    "lookup_envelope_commitment",
     "mutations_checked",
     "mutations_rejected",
 )
@@ -262,6 +268,33 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
     return f"blake2b-256:{digest.hexdigest()}"
+
+
+def blake2b_bytes_commitment(data: bytes, domain: str) -> str:
+    digest = hashlib.blake2b(digest_size=32)
+    digest.update(domain.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(data)
+    return f"blake2b-256:{digest.hexdigest()}"
+
+
+def gate_commitment_for(payload: dict[str, Any], receipt: dict[str, Any]) -> str:
+    return blake2b_commitment(
+        {
+            "schema": payload["schema"],
+            "decision": payload["decision"],
+            "claim_boundary": payload["claim_boundary"],
+            "lookup_status": payload["lookup_status"],
+            "fused_component_status": payload["fused_component_status"],
+            "source_statement_commitment": receipt["source_statement_commitment"],
+            "source_weight_table_commitment": receipt["source_weight_table_commitment"],
+            "lookup_proof_size_bytes": receipt["lookup_proof_size_bytes"],
+            "lookup_proof_commitment": receipt["lookup_proof_commitment"],
+            "lookup_envelope_commitment": receipt["lookup_envelope_commitment"],
+            "single_to_eight_proof_size_ratio": payload["single_head_comparison"]["single_to_eight_proof_size_ratio"],
+        },
+        "ptvm:zkai:attention-kv-eight-head-softmax-table-logup-sidecar-gate:v1",
+    )
 
 
 def parse_lookup_proof(proof_bytes: list[Any]) -> dict[str, Any]:
@@ -392,7 +425,12 @@ def validate_source_input(source_input: Any) -> None:
             raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"source {key} drift")
 
 
-def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelope_size_bytes: int) -> dict[str, Any]:
+def validate_lookup_envelope(
+    envelope: Any,
+    source_input: dict[str, Any],
+    envelope_size_bytes: int,
+    envelope_bytes: bytes | None = None,
+) -> dict[str, Any]:
     validate_source_input(source_input)
     if not isinstance(envelope, dict):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope must be an object")
@@ -446,7 +484,10 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
     }
     if not type_strict_equal(summary, expected_summary):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup summary drift")
+    proof_bytes = bytes(envelope["proof"])
     stark_proof = parse_lookup_proof(envelope["proof"])
+    if envelope_bytes is None:
+        envelope_bytes = json.dumps(envelope, indent=2, sort_keys=True).encode("utf-8")
     return {
         "proof_backend": envelope["proof_backend"],
         "proof_version": envelope["proof_backend_version"],
@@ -471,6 +512,14 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
         "lookup_relation_width": summary["lookup_relation_width"],
         "lookup_trace_commitments": LOOKUP_TRACE_COMMITMENTS,
         "lookup_proof_commitments": len(stark_proof["commitments"]),
+        "lookup_proof_commitment": blake2b_bytes_commitment(
+            proof_bytes,
+            "ptvm:zkai:attention-kv-eight-head-softmax-table-logup-sidecar-proof-bytes:v1",
+        ),
+        "lookup_envelope_commitment": blake2b_bytes_commitment(
+            envelope_bytes,
+            "ptvm:zkai:attention-kv-eight-head-softmax-table-logup-sidecar-envelope-bytes:v1",
+        ),
         "table_multiplicities": summary["table_multiplicities"],
         "lookup_proof_size_bytes": len(envelope["proof"]),
         "lookup_envelope_size_bytes": envelope_size_bytes,
@@ -514,7 +563,7 @@ def build_payload() -> dict[str, Any]:
         envelope = json.loads(envelope_raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"failed to read lookup sidecar envelope: {err}") from err
-    receipt = validate_lookup_envelope(envelope, source_input, envelope_size_bytes)
+    receipt = validate_lookup_envelope(envelope, source_input, envelope_size_bytes, envelope_raw)
     verify_lookup_envelope_bytes_with_native_cli(envelope_raw, str(LOOKUP_ENVELOPE_JSON))
     payload: dict[str, Any] = {
         "schema": SCHEMA,
@@ -531,20 +580,7 @@ def build_payload() -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
     }
-    payload["gate_commitment"] = blake2b_commitment(
-        {
-            "schema": payload["schema"],
-            "decision": payload["decision"],
-            "claim_boundary": payload["claim_boundary"],
-            "lookup_status": payload["lookup_status"],
-            "fused_component_status": payload["fused_component_status"],
-            "source_statement_commitment": receipt["source_statement_commitment"],
-            "source_weight_table_commitment": receipt["source_weight_table_commitment"],
-            "lookup_proof_size_bytes": receipt["lookup_proof_size_bytes"],
-            "single_to_eight_proof_size_ratio": payload["single_head_comparison"]["single_to_eight_proof_size_ratio"],
-        },
-        "ptvm:zkai:attention-kv-eight-head-softmax-table-logup-sidecar-gate:v1",
-    )
+    payload["gate_commitment"] = gate_commitment_for(payload, receipt)
     cases = mutation_cases_for(payload)
     payload["mutation_cases"] = cases
     payload["mutations_checked"] = len(cases)
@@ -593,6 +629,10 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         receipt["lookup_proof_size_bytes"] += 1
     elif name == "lookup_envelope_size_metric_smuggling":
         receipt["lookup_envelope_size_bytes"] += 1
+    elif name == "lookup_proof_commitment_relabeling":
+        receipt["lookup_proof_commitment"] = "blake2b-256:" + "44" * 32
+    elif name == "lookup_envelope_commitment_relabeling":
+        receipt["lookup_envelope_commitment"] = "blake2b-256:" + "55" * 32
     elif name == "single_head_comparison_metric_smuggling":
         mutated["single_head_comparison"]["single_to_eight_proof_size_ratio"] = "1.000000"
     elif name == "table_multiplicity_drift":
@@ -704,26 +744,15 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "lookup_relation_width": LOOKUP_RELATION_WIDTH,
         "lookup_trace_commitments": LOOKUP_TRACE_COMMITMENTS,
         "lookup_proof_commitments": LOOKUP_PROOF_COMMITMENTS,
+        "lookup_proof_commitment": LOOKUP_PROOF_COMMITMENT,
+        "lookup_envelope_commitment": LOOKUP_ENVELOPE_COMMITMENT,
         "table_multiplicities": list(EXPECTED_LOOKUP_TABLE_MULTIPLICITIES),
         "lookup_proof_size_bytes": LOOKUP_PROOF_SIZE_BYTES,
         "lookup_envelope_size_bytes": LOOKUP_ENVELOPE_SIZE_BYTES,
     }
     if not type_strict_equal(receipt, expected_receipt):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup_receipt drift")
-    expected_gate_commitment = blake2b_commitment(
-        {
-            "schema": payload["schema"],
-            "decision": payload["decision"],
-            "claim_boundary": payload["claim_boundary"],
-            "lookup_status": payload["lookup_status"],
-            "fused_component_status": payload["fused_component_status"],
-            "source_statement_commitment": receipt["source_statement_commitment"],
-            "source_weight_table_commitment": receipt["source_weight_table_commitment"],
-            "lookup_proof_size_bytes": receipt["lookup_proof_size_bytes"],
-            "single_to_eight_proof_size_ratio": payload["single_head_comparison"]["single_to_eight_proof_size_ratio"],
-        },
-        "ptvm:zkai:attention-kv-eight-head-softmax-table-logup-sidecar-gate:v1",
-    )
+    expected_gate_commitment = gate_commitment_for(payload, receipt)
     if payload.get("gate_commitment") != expected_gate_commitment:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("gate_commitment drift")
     if allow_missing_mutation_summary and "mutation_cases" not in payload:
@@ -774,6 +803,8 @@ def to_tsv(payload: dict[str, Any]) -> str:
         "four_to_eight_envelope_size_ratio": comparison["four_to_eight_envelope_size_ratio"],
         "source_statement_commitment": receipt["source_statement_commitment"],
         "source_weight_table_commitment": receipt["source_weight_table_commitment"],
+        "lookup_proof_commitment": receipt["lookup_proof_commitment"],
+        "lookup_envelope_commitment": receipt["lookup_envelope_commitment"],
         "mutations_checked": payload["mutations_checked"],
         "mutations_rejected": payload["mutations_rejected"],
     }

@@ -1450,7 +1450,7 @@ eight-head route from proof-existence evidence into checked matched-comparator
 evidence. The matched sidecar control is checked by
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.json`
 with gate commitment
-`blake2b-256:e28e54c56958f7df36fb694ad66f9a35fb136cc3fa4e926224c49c99dcbbbbbd`;
+`blake2b-256:c2fd393134133fd36e8dfa7f583ea1a12fd09287707851242c34fad43d66ad9f`;
 the fused gate is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 with fused-envelope commitment
