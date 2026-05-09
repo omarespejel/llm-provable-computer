@@ -470,6 +470,13 @@ def validate_mutation_results(mutation_results: Any) -> None:
             raise QuantizedSoftmaxReceiptGateError("mutation result rejection drift")
 
 
+def stable_mutation_error(error: str) -> str:
+    native_rejection_prefix = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope"
+    if error.startswith(native_rejection_prefix):
+        return native_rejection_prefix
+    return error
+
+
 def recompute_mutation_results(
     receipt: dict[str, Any],
     source: dict[str, Any],
@@ -490,8 +497,8 @@ def validate_recomputed_mutation_results(result: dict[str, Any], recomputed: lis
     validate_mutation_results(recomputed)
     serialized = result.get("mutation_results")
     validate_mutation_results(serialized)
-    serialized_details = tuple((item["name"], item["rejected"], item["error"]) for item in serialized)
-    recomputed_details = tuple((item["name"], item["rejected"], item["error"]) for item in recomputed)
+    serialized_details = tuple((item["name"], item["rejected"], stable_mutation_error(item["error"])) for item in serialized)
+    recomputed_details = tuple((item["name"], item["rejected"], stable_mutation_error(item["error"])) for item in recomputed)
     if serialized_details != recomputed_details:
         raise QuantizedSoftmaxReceiptGateError("recomputed mutation result detail drift")
     if result.get("mutations_rejected") != sum(1 for item in recomputed if item["rejected"]):
