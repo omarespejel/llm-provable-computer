@@ -439,7 +439,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "7019f1035224154cac3b49dd404315df334adcb9",
+  "git_commit": "115c12e800e661dbaf9f72b119dadbe4182f4bf6",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -506,6 +506,12 @@
     "d16_quantized_softmax_sequence_length": 8,
     "d16_quantized_softmax_table_rows": 9,
     "d16_quantized_softmax_value_width": 16,
+    "d16_softmax_edge_case_count": 7,
+    "d16_softmax_edge_max_denominator": 852,
+    "d16_softmax_edge_max_remainder_ratio": "0.842105",
+    "d16_softmax_edge_min_denominator": 256,
+    "d16_softmax_edge_route_mutations_checked": 7,
+    "d16_softmax_edge_route_mutations_rejected": 7,
     "longseq_fused_softmax_fused_envelope_size_bytes": 1050248,
     "longseq_fused_softmax_fused_proof_size_bytes": 60502,
     "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 18942,
@@ -805,6 +811,16 @@
       "rejected": true
     },
     {
+      "name": "d16_softmax_edge_corpus_claim_boundary_drift",
+      "reason": "d16 Softmax edge corpus drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_softmax_edge_corpus_route_mutation_rejections_drift",
+      "reason": "d16 Softmax edge corpus drift",
+      "rejected": true
+    },
+    {
       "name": "external_snark_route_removed",
       "reason": "route inventory drift",
       "rejected": true
@@ -980,8 +996,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 72,
-  "mutations_rejected": 72,
+  "mutations_checked": 74,
+  "mutations_rejected": 74,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -1444,7 +1460,30 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:dc3c505e15361d085b98c3a48bc3cb983c7caf38959cff218f529c4ecd98da2c",
+  "selector_commitment": "blake2b-256:fda38eefeefaff0338e4f021cee50210abce360d96a53d7f13561ef73175642c",
+  "softmax_denominator_rounding_edge_corpus": {
+    "all_clipped_denominator": 304,
+    "all_route_mutations_rejected": true,
+    "all_scores_equal_denominator": 768,
+    "claim_boundary": "DETERMINISTIC_CORPUS_FOR_BOUNDED_INTEGER_SOFTMAX_TABLE_DENOMINATORS_AND_FLOOR_DIVISION_NOT_REAL_VALUED_SOFTMAX_NOT_NEW_PROOF_NOT_MODEL_ACCURACY_EVIDENCE",
+    "decision": "GO_SOFTMAX_TABLE_DENOMINATOR_ROUNDING_EDGE_CORPUS",
+    "dominant_denominator": 304,
+    "edge_case_count": 7,
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json",
+    "max_denominator": 852,
+    "max_remainder_ratio": 0.8421052631578947,
+    "min_denominator": 256,
+    "negative_numerator_cases": [
+      "single_allowed_candidate_min_denominator",
+      "negative_numerator_floor_division",
+      "mixed_remainder_extremes"
+    ],
+    "result": "GO",
+    "route_mutations_checked": 7,
+    "route_mutations_rejected": 7,
+    "schema": "zkai-attention-kv-softmax-denominator-rounding-edge-corpus-v1",
+    "timing_policy": "not_timed_correctness_gate_only"
+  },
   "source_contract": {
     "present_public_fields": [
       "model_config_commitment",

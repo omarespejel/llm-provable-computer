@@ -152,6 +152,34 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
             ):
                 gate.validate_lookup_envelope(mutated, source_input, gate.LOOKUP_ENVELOPE_SIZE_BYTES)
 
+    def test_rejects_matching_mutated_source_denominator_pair(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        mutated_source = copy.deepcopy(source_input)
+        mutated_source["score_rows"][0]["weight_denominator"] = 0
+        mutated_envelope = copy.deepcopy(envelope)
+        mutated_envelope["source_input"] = mutated_source
+        with self.assertRaisesRegex(
+            gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+            "source input validation drift",
+        ):
+            gate.validate_lookup_envelope(mutated_envelope, mutated_source, gate.LOOKUP_ENVELOPE_SIZE_BYTES)
+
+    def test_rejects_matching_mutated_source_remainder_pair(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        mutated_source = copy.deepcopy(source_input)
+        mutated_source["score_rows"][0]["output_remainder"][0] = (
+            mutated_source["score_rows"][0]["weight_denominator"]
+        )
+        mutated_envelope = copy.deepcopy(envelope)
+        mutated_envelope["source_input"] = mutated_source
+        with self.assertRaisesRegex(
+            gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+            "source input validation drift",
+        ):
+            gate.validate_lookup_envelope(mutated_envelope, mutated_source, gate.LOOKUP_ENVELOPE_SIZE_BYTES)
+
     def test_tsv_summary_matches_payload(self):
         payload = gate.build_payload()
         tsv = gate.to_tsv(payload)

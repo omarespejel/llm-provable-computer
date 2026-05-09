@@ -1,0 +1,1002 @@
+{
+  "claim_boundary": "DETERMINISTIC_CORPUS_FOR_BOUNDED_INTEGER_SOFTMAX_TABLE_DENOMINATORS_AND_FLOOR_DIVISION_NOT_REAL_VALUED_SOFTMAX_NOT_NEW_PROOF_NOT_MODEL_ACCURACY_EVIDENCE",
+  "decision": "GO_SOFTMAX_TABLE_DENOMINATOR_ROUNDING_EDGE_CORPUS",
+  "edge_case_count": 7,
+  "edge_cases": [
+    {
+      "candidate_count": 1,
+      "clipped_gaps": [
+        0
+      ],
+      "denominator": 256,
+      "max_remainder_ratio": 0.0,
+      "name": "single_allowed_candidate_min_denominator",
+      "negative_numerator_dimensions": 1,
+      "numerators": [
+        1280,
+        -768,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        5,
+        -3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0
+      ],
+      "scores": [
+        7
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 1,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 0,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 0,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 0,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256
+      ]
+    },
+    {
+      "candidate_count": 3,
+      "clipped_gaps": [
+        0,
+        0,
+        0
+      ],
+      "denominator": 768,
+      "max_remainder_ratio": 0.0,
+      "name": "all_scores_equal",
+      "negative_numerator_dimensions": 0,
+      "numerators": [
+        3840,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        0,
+        0
+      ],
+      "scores": [
+        3,
+        3,
+        3
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 3,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 0,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 0,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 0,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        256,
+        256
+      ]
+    },
+    {
+      "candidate_count": 4,
+      "clipped_gaps": [
+        0,
+        8,
+        8,
+        8
+      ],
+      "denominator": 304,
+      "max_remainder_ratio": 0.8421052631578947,
+      "name": "all_nonmax_scores_clipped",
+      "negative_numerator_dimensions": 0,
+      "numerators": [
+        5120,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        16,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        256,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        8,
+        17,
+        20
+      ],
+      "scores": [
+        0,
+        -8,
+        -17,
+        -20
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 1,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 0,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 0,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 3,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "candidate_count": 4,
+      "clipped_gaps": [
+        0,
+        8,
+        8,
+        8
+      ],
+      "denominator": 304,
+      "max_remainder_ratio": 0.631578947368421,
+      "name": "one_dominant_key_all_others_clipped",
+      "negative_numerator_dimensions": 0,
+      "numerators": [
+        2320,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        192,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        40,
+        52,
+        61
+      ],
+      "scores": [
+        40,
+        0,
+        -12,
+        -21
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 1,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 0,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 0,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 3,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "candidate_count": 3,
+      "clipped_gaps": [
+        0,
+        0,
+        0
+      ],
+      "denominator": 768,
+      "max_remainder_ratio": 0.0,
+      "name": "negative_numerator_floor_division",
+      "negative_numerator_dimensions": 1,
+      "numerators": [
+        -1536,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        -2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        0,
+        0
+      ],
+      "scores": [
+        3,
+        3,
+        3
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 3,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 0,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 0,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 0,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        256,
+        256
+      ]
+    },
+    {
+      "candidate_count": 4,
+      "clipped_gaps": [
+        0,
+        4,
+        8,
+        1
+      ],
+      "denominator": 517,
+      "max_remainder_ratio": 0.6692456479690522,
+      "name": "mixed_remainder_extremes",
+      "negative_numerator_dimensions": 1,
+      "numerators": [
+        1641,
+        -1722,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        3,
+        -4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        90,
+        346,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        4,
+        8,
+        1
+      ],
+      "scores": [
+        5,
+        1,
+        -3,
+        4
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 1,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 1,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 0,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 0,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 1,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 0,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 0,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 0,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 1,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        64,
+        16,
+        181
+      ]
+    },
+    {
+      "candidate_count": 10,
+      "clipped_gaps": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8
+      ],
+      "denominator": 852,
+      "max_remainder_ratio": 0.13145539906103287,
+      "name": "table_entry_multiplicity_extremes",
+      "negative_numerator_dimensions": 0,
+      "numerators": [
+        2668,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "outputs": [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "remainders": [
+        112,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score_gaps": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8
+      ],
+      "scores": [
+        32,
+        31,
+        30,
+        29,
+        28,
+        27,
+        26,
+        25,
+        24,
+        24
+      ],
+      "table_multiplicities": [
+        {
+          "gap": 0,
+          "multiplicity": 1,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "multiplicity": 1,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "multiplicity": 1,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "multiplicity": 1,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "multiplicity": 1,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "multiplicity": 1,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "multiplicity": 1,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "multiplicity": 1,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "multiplicity": 2,
+          "weight": 16
+        }
+      ],
+      "weights": [
+        256,
+        181,
+        128,
+        91,
+        64,
+        45,
+        32,
+        23,
+        16,
+        16
+      ]
+    }
+  ],
+  "issue": 507,
+  "max_denominator": 852,
+  "max_remainder_ratio": 0.8421052631578947,
+  "min_denominator": 256,
+  "negative_numerator_cases": [
+    "single_allowed_candidate_min_denominator",
+    "negative_numerator_floor_division",
+    "mixed_remainder_extremes"
+  ],
+  "route_mutation_results": [
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_denominator_zero",
+      "rejected": true,
+      "route": "source"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_remainder_equal_denominator",
+      "rejected": true,
+      "route": "source"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_negative_remainder",
+      "rejected": true,
+      "route": "source"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "sidecar_matching_source_denominator_zero",
+      "rejected": true,
+      "route": "sidecar"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "sidecar_matching_source_remainder_equal_denominator",
+      "rejected": true,
+      "route": "sidecar"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "fused_matching_source_denominator_zero",
+      "rejected": true,
+      "route": "fused"
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "fused_matching_source_remainder_equal_denominator",
+      "rejected": true,
+      "route": "fused"
+    }
+  ],
+  "route_mutations_checked": 7,
+  "route_mutations_rejected": 7,
+  "schema": "zkai-attention-kv-softmax-denominator-rounding-edge-corpus-v1",
+  "score_gap_clip": 8,
+  "source_issue": 501,
+  "timing_policy": "not_timed_correctness_gate_only",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate scripts.tests.test_zkai_attention_kv_d16_air_private_softmax_table_lookup_gate scripts.tests.test_zkai_attention_kv_d16_fused_softmax_table_native_gate",
+    "python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv",
+    "just gate-fast",
+    "just gate"
+  ],
+  "weight_policy": "exp2_half_gap_table_clipped_8_floor_division"
+}

@@ -1,6 +1,6 @@
 # Publication Release Package
 
-Snapshot date: **May 8, 2026**
+Snapshot date: **May 9, 2026**
 
 Primary presentation title:
 
@@ -45,7 +45,8 @@ It supports the following presentation posture:
   single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp
   proof objects, plus a fixed-width two-head long-sequence fused proof object
   and a width-axis d16 fused proof object with a matched source-plus-sidecar control
-  plus an implementation-exact d16 quantized Softmax-table receipt
+  plus an implementation-exact d16 quantized Softmax-table receipt with
+  denominator/rounding edge-corpus hardening
   (not exact Softmax, implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
   public benchmark evidence, or
@@ -66,7 +67,8 @@ It does **not** support the following claims:
 - full verifiable-intelligence or full autoregressive-transformer proving.
 - exact exp/div Softmax, implementation-exact model Softmax, long-context
   inference, or public benchmark comparisons for the native attention/KV
-  fixtures.
+  fixtures. The denominator/rounding corpus is correctness hardening, not a new
+  proof or benchmark.
 
 ## Package hygiene
 
