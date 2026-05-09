@@ -79,6 +79,13 @@ class SixteenHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "result drift"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 
+    def test_write_tsv_rejects_overclaim(self):
+        payload = copy.deepcopy(self.result)
+        payload["claim_boundary"] = "GO_EXACT_REAL_SOFTMAX"
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "result drift"):
+                gate.write_tsv(gate.pathlib.Path(tmp) / "bad.tsv", payload)
+
     def test_validate_result_rejects_top_level_unknown_field(self):
         payload = copy.deepcopy(self.result)
         payload["extra_metric"] = "smuggled"
@@ -134,6 +141,15 @@ class SixteenHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
         with mock.patch.object(gate, "read_bounded_json", return_value=self.source):
             with mock.patch.object(gate, "read_bounded_bytes", return_value=invalid_envelope):
                 with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "fused envelope is not JSON"):
+                    gate.run_gate()
+
+    def test_run_gate_rejects_non_object_fused_envelope_json(self):
+        invalid_envelope = b"[]" + b" " * (gate.FUSED_ENVELOPE_SIZE_BYTES - 2)
+        with mock.patch.object(gate, "read_bounded_json", return_value=self.source):
+            with mock.patch.object(gate, "read_bounded_bytes", return_value=invalid_envelope):
+                with self.assertRaisesRegex(
+                    gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "fused envelope must be a JSON object"
+                ):
                     gate.run_gate()
 
 

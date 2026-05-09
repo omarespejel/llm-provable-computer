@@ -374,6 +374,10 @@ def validate_fused_envelope(
     run_native: bool = False,
     native_envelope_bytes: bytes | None = None,
 ) -> None:
+    if not isinstance(envelope, dict):
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("fused envelope must be a JSON object")
+    if not isinstance(source_input, dict):
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("source input must be a JSON object")
     validate_source_input_contract(source_input)
     assert_exact_keys(
         envelope,
@@ -526,6 +530,8 @@ def run_gate() -> dict[str, Any]:
         envelope = json.loads(envelope_bytes)
     except json.JSONDecodeError as err:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(f"fused envelope is not JSON: {err}") from err
+    if not isinstance(envelope, dict):
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("fused envelope must be a JSON object")
     validate_fused_envelope(envelope, source_input, run_native=True, native_envelope_bytes=envelope_bytes)
     result = build_result(envelope, source_input, placeholder_mutation_results())
     mutation_results = []
@@ -554,6 +560,12 @@ def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
 
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
+    source_input = read_bounded_json(SOURCE_INPUT_JSON, MAX_SOURCE_INPUT_JSON_BYTES, "source input")
+    envelope = read_bounded_json(FUSED_ENVELOPE_JSON, MAX_FUSED_ENVELOPE_JSON_BYTES, "fused envelope")
+    validate_result(result, envelope, source_input)
+    missing_tsv_columns = [column for column in TSV_COLUMNS if column not in result]
+    if missing_tsv_columns:
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(f"TSV column drift: missing={missing_tsv_columns}")
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", extrasaction="ignore")
