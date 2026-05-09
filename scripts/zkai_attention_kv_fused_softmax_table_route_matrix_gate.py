@@ -25,6 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import zkai_attention_kv_d16_fused_softmax_table_native_gate as d16_fused
+from scripts import zkai_attention_kv_d16_two_head_fused_softmax_table_native_gate as d16_two_head_fused
 from scripts import zkai_attention_kv_d8_fused_softmax_table_native_gate as d8_fused
 from scripts import zkai_attention_kv_eight_head_fused_softmax_table_native_gate as eight_head_fused
 from scripts import zkai_attention_kv_four_head_fused_softmax_table_native_gate as four_head_fused
@@ -98,9 +99,11 @@ EXPECTED_MUTATION_NAMES = (
     "matched_ratio_metric_smuggling",
     "eight_head_comparator_metric_smuggling",
     "sixteen_head_comparator_metric_smuggling",
+    "d16_two_head_combined_axis_metric_smuggling",
     "axis_summary_width_ratio_drift",
     "axis_summary_head_axis_ratio_drift",
     "axis_summary_sequence_ratio_drift",
+    "axis_summary_combined_axis_ratio_drift",
     "unknown_field_injection",
 )
 
@@ -214,6 +217,19 @@ PROFILES = (
         expected_value_width=8,
         expected_head_count=2,
         expected_steps_per_head=16,
+        comparator_required=True,
+    ),
+    Profile(
+        profile_id="d16_two_head_seq8",
+        axis_role="combined_width_head_axis",
+        label="d16 two-head seq8 fused Softmax-table route",
+        gate_module=d16_two_head_fused,
+        gate_json=d16_two_head_fused.JSON_OUT,
+        source_input_json=d16_two_head_fused.SOURCE_INPUT_JSON,
+        expected_key_width=16,
+        expected_value_width=16,
+        expected_head_count=2,
+        expected_steps_per_head=8,
         comparator_required=True,
     ),
 )
@@ -409,6 +425,7 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     eight = row_by_id(rows, "d8_eight_head_seq8")
     sixteen = row_by_id(rows, "d8_sixteen_head_seq8")
     longseq = row_by_id(rows, "d8_two_head_seq16")
+    d16_two = row_by_id(rows, "d16_two_head_seq8")
     return {
         "width_axis_d8_to_d16": {
             "held_constant": "single_head_seq8_score_rows_52_trace_rows_64",
@@ -460,6 +477,31 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "source_plus_sidecar_ratio": ratio(
                 longseq["source_plus_sidecar_raw_proof_bytes"], two["source_plus_sidecar_raw_proof_bytes"]
             ),
+        },
+        "combined_width_head_axis_seq8": {
+            "held_constant": "steps_per_head_8_bounded_softmax_table_kernel",
+            "profile_id": d16_two["profile_id"],
+            "key_width": d16_two["key_width"],
+            "head_count": d16_two["head_count"],
+            "lookup_claims": d16_two["lookup_claims"],
+            "trace_rows": d16_two["trace_rows"],
+            "vs_d16_single_head_lookup_claim_ratio": ratio(d16_two["lookup_claims"], d16["lookup_claims"]),
+            "vs_d16_single_head_trace_row_ratio": ratio(d16_two["trace_rows"], d16["trace_rows"]),
+            "vs_d16_single_head_fused_proof_size_ratio": ratio(
+                d16_two["fused_proof_size_bytes"], d16["fused_proof_size_bytes"]
+            ),
+            "vs_d16_single_head_source_plus_sidecar_ratio": ratio(
+                d16_two["source_plus_sidecar_raw_proof_bytes"], d16["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "vs_d8_two_head_lookup_claim_ratio": ratio(d16_two["lookup_claims"], two["lookup_claims"]),
+            "vs_d8_two_head_trace_row_ratio": ratio(d16_two["trace_rows"], two["trace_rows"]),
+            "vs_d8_two_head_fused_proof_size_ratio": ratio(
+                d16_two["fused_proof_size_bytes"], two["fused_proof_size_bytes"]
+            ),
+            "vs_d8_two_head_source_plus_sidecar_ratio": ratio(
+                d16_two["source_plus_sidecar_raw_proof_bytes"], two["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "matched_comparator_status": d16_two["matched_source_sidecar_status"],
         },
     }
 
@@ -565,6 +607,10 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
             ),
         ),
         (
+            "d16_two_head_combined_axis_metric_smuggling",
+            lambda v: row_by_id(v["route_rows"], "d16_two_head_seq8").__setitem__("head_count", 1),
+        ),
+        (
             "axis_summary_width_ratio_drift",
             lambda v: v["axis_summary"]["width_axis_d8_to_d16"].__setitem__("fused_proof_size_ratio", 1.0),
         ),
@@ -575,6 +621,12 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
         (
             "axis_summary_sequence_ratio_drift",
             lambda v: v["axis_summary"]["sequence_axis_two_head_d8"].__setitem__("lookup_claim_ratio", 2.0),
+        ),
+        (
+            "axis_summary_combined_axis_ratio_drift",
+            lambda v: v["axis_summary"]["combined_width_head_axis_seq8"].__setitem__(
+                "vs_d8_two_head_fused_proof_size_ratio", 1.0
+            ),
         ),
         ("unknown_field_injection", lambda v: v.__setitem__("unexpected", "claim smuggling")),
     )

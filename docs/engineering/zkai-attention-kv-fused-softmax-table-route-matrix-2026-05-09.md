@@ -3,19 +3,21 @@
 ## Question
 
 Do the checked native Stwo fused Softmax-table routes still hold when the
-fixture changes along one controlled axis at a time?
+fixture changes along controlled axes, and when width and head count are
+combined in one route?
 
 The axes are:
 
 - width: `d8` to `d16` at one head and eight steps;
 - head count: one, two, four, eight, and sixteen heads at `d8` and eight steps;
 - sequence length: two heads at `d8`, eight steps per head to sixteen steps
-  per head.
+  per head;
+- combined width/head: `d16`, two heads, eight steps per head.
 
 ## Result
 
 GO for a controlled engineering route matrix, now with matched source-plus-LogUp
-sidecar comparators for all seven profile rows.
+sidecar comparators for all eight profile rows.
 
 The checked matrix is machine-readable at:
 
@@ -24,7 +26,7 @@ The checked matrix is machine-readable at:
 
 The gate validates the existing per-route fused evidence files, checks the
 source-input dimensions, normalizes the matched source-plus-sidecar comparators,
-and rejects `22 / 22` matrix drift, provenance-drift, and overclaim mutations.
+and rejects `24 / 24` matrix drift, provenance-drift, and overclaim mutations.
 
 ## Route Matrix
 
@@ -37,6 +39,7 @@ and rejects `22 / 22` matrix drift, provenance-drift, and overclaim mutations.
 | d8 eight-head seq8 | heads | 8 | 8 | 8 | 416 | 512 | 59,375 | 74,086 | 0.801433 |
 | d8 sixteen-head seq8 | heads | 8 | 16 | 8 | 832 | 1,024 | 65,006 | 88,711 | 0.732784 |
 | d8 two-head seq16 | sequence | 8 | 2 | 16 | 336 | 512 | 60,502 | 79,444 | 0.761568 |
+| d16 two-head seq8 | combined width/head | 16 | 2 | 8 | 104 | 128 | 78,211 | 91,596 | 0.853869 |
 
 ## Axis Read
 
@@ -75,15 +78,29 @@ Sequence axis:
   matched source-plus-sidecar pair grows from `65,208` to `79,444`
   (`1.218317x`).
 
+Combined width/head row:
+
+- The `d16` two-head row combines the width and head axes in one native Stwo
+  proof object instead of checking them only independently.
+- Against the `d16` single-head row, lookup claims and trace rows double
+  (`52` to `104`, `64` to `128`), while fused proof bytes grow `1.212517x`
+  (`64,503` to `78,211`).
+- Against the `d8` two-head row, lookup claims and trace rows are held fixed
+  (`104` and `128`), while widening from `d8` to `d16` grows fused proof bytes
+  `1.579765x` (`49,508` to `78,211`).
+- The matched source-plus-sidecar control for the combined row is `91,596`
+  bytes; the fused proof is `78,211` bytes, saving `13,385` bytes
+  (`0.853869x`).
+
 ## Aggregate Read
 
-Across the seven checked rows:
+Across the eight checked rows:
 
-- total lookup claims: `2,000`;
-- total trace rows: `2,560`;
-- total fused proof bytes: `400,060`;
-- total matched source-plus-sidecar proof bytes: `516,376`;
-- total fused savings against matched source-plus-sidecar: `116,316` bytes;
+- total lookup claims: `2,104`;
+- total trace rows: `2,688`;
+- total fused proof bytes: `478,271`;
+- total matched source-plus-sidecar proof bytes: `607,972`;
+- total fused savings against matched source-plus-sidecar: `129,701` bytes;
 - matched fused ratios range from `0.717412` to `0.860487`.
 
 ## Claim Boundary
