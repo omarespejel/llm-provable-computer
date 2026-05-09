@@ -62,6 +62,24 @@ class AttentionKvD16FusedSoftmaxTableNativeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "source input split-brain"):
             gate.validate_fused_envelope(mutated, self.source_input, run_native=False)
 
+    def test_rejects_matching_mutated_source_denominator_pair(self):
+        mutated_source = copy.deepcopy(self.source_input)
+        mutated_source["score_rows"][0]["weight_denominator"] = 0
+        mutated = copy.deepcopy(self.fused_envelope)
+        mutated["source_input"] = mutated_source
+        with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "source input validation drift"):
+            gate.validate_fused_envelope(mutated, mutated_source, run_native=False)
+
+    def test_rejects_matching_mutated_source_remainder_pair(self):
+        mutated_source = copy.deepcopy(self.source_input)
+        mutated_source["score_rows"][0]["output_remainder"][0] = (
+            mutated_source["score_rows"][0]["weight_denominator"]
+        )
+        mutated = copy.deepcopy(self.fused_envelope)
+        mutated["source_input"] = mutated_source
+        with self.assertRaisesRegex(gate.AttentionKvD16FusedSoftmaxTableGateError, "source input validation drift"):
+            gate.validate_fused_envelope(mutated, mutated_source, run_native=False)
+
     def test_rejects_source_input_type_relabeling(self):
         mutated = copy.deepcopy(self.fused_envelope)
         mutated["source_input"]["score_gap_clip"] = float(mutated["source_input"]["score_gap_clip"])

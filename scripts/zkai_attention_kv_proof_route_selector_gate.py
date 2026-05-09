@@ -57,6 +57,9 @@ D16_FUSED_SOFTMAX_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_d16_fused_softm
 D16_QUANTIZED_SOFTMAX_RECEIPT_SCRIPT = (
     ROOT / "scripts" / "zkai_attention_kv_d16_quantized_softmax_receipt_gate.py"
 )
+SOFTMAX_EDGE_CORPUS_SCRIPT = (
+    ROOT / "scripts" / "zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate.py"
+)
 SOURCE_EVIDENCE_JSON = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-transition-receipt-2026-05.json"
 )
@@ -140,6 +143,13 @@ D16_QUANTIZED_SOFTMAX_RECEIPT_JSON = (
     / "evidence"
     / "zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json"
 )
+SOFTMAX_EDGE_CORPUS_JSON = (
+    ROOT
+    / "docs"
+    / "engineering"
+    / "evidence"
+    / "zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json"
+)
 STWO_NATIVE_MASKED_SEQUENCE_MAX_INPUT_JSON_BYTES = 1_048_576
 STWO_NATIVE_MASKED_SEQUENCE_MAX_ENVELOPE_JSON_BYTES = 1_048_576
 QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
@@ -151,6 +161,7 @@ D16_FUSED_SOFTMAX_MAX_JSON_BYTES = 1_048_576
 D16_FUSED_SOFTMAX_SOURCE_INPUT_MAX_JSON_BYTES = 1_048_576
 D16_FUSED_SOFTMAX_ENVELOPE_MAX_JSON_BYTES = 2_097_152
 D16_QUANTIZED_SOFTMAX_RECEIPT_MAX_JSON_BYTES = 1_048_576
+SOFTMAX_EDGE_CORPUS_MAX_JSON_BYTES = 1_048_576
 JSON_OUT = (
     ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-kv-proof-route-selector-2026-05.json"
 )
@@ -379,6 +390,8 @@ EXPECTED_MUTATION_NAMES = (
     "d16_quantized_softmax_width_drift",
     "d16_quantized_softmax_denominator_drift",
     "d16_quantized_softmax_mutation_rejections_drift",
+    "d16_softmax_edge_corpus_claim_boundary_drift",
+    "d16_softmax_edge_corpus_route_mutation_rejections_drift",
     "external_snark_route_removed",
     "external_snark_receipt_decision_drift",
     "external_snark_receipt_mutation_rejections_drift",
@@ -610,6 +623,20 @@ def _load_d16_quantized_softmax_receipt_module():
     return module
 
 
+def _load_softmax_edge_corpus_module():
+    """Load the d16 denominator/rounding edge-corpus gate."""
+
+    spec = importlib.util.spec_from_file_location(
+        "zkai_attention_kv_softmax_denominator_rounding_edge_corpus_gate",
+        SOFTMAX_EDGE_CORPUS_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        raise AttentionKvRouteSelectorError(f"failed to load Softmax edge-corpus gate: {SOFTMAX_EDGE_CORPUS_SCRIPT}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 SOURCE = _load_source_module()
 SNARK = _load_snark_module()
 RISC0 = _load_risc0_module()
@@ -622,6 +649,7 @@ MULTIHEAD_QUANTIZED_SOFTMAX = _load_multihead_quantized_softmax_receipt_module()
 LONGSEQ_FUSED_SOFTMAX = _load_longseq_fused_softmax_module()
 D16_FUSED_SOFTMAX = _load_d16_fused_softmax_module()
 D16_QUANTIZED_SOFTMAX = _load_d16_quantized_softmax_receipt_module()
+SOFTMAX_EDGE_CORPUS = _load_softmax_edge_corpus_module()
 
 
 def validate_stwo_native_masked_sequence_payload(payload: Any, label: str) -> None:
@@ -994,6 +1022,33 @@ def load_d16_quantized_softmax_receipt_payload(
     """Load the d16 implementation-exact quantized Softmax receipt payload."""
 
     return copy.deepcopy(_load_d16_quantized_softmax_receipt_payload(path, run_native))
+
+
+@functools.lru_cache(maxsize=1)
+def _load_softmax_edge_corpus_payload(path: pathlib.Path) -> dict[str, Any]:
+    """Load and validate the d16 Softmax denominator/rounding edge corpus."""
+
+    raw = read_bounded_text(
+        path,
+        SOFTMAX_EDGE_CORPUS_MAX_JSON_BYTES,
+        "d16 Softmax denominator/rounding edge corpus evidence",
+    )
+    try:
+        payload = json.loads(raw)
+        SOFTMAX_EDGE_CORPUS.validate_result(payload)
+    except SOFTMAX_EDGE_CORPUS.SoftmaxEdgeCorpusGateError as error:
+        raise AttentionKvRouteSelectorError(f"d16 Softmax edge corpus drift: {error}") from error
+    except Exception as error:
+        raise AttentionKvRouteSelectorError(f"d16 Softmax edge corpus malformed: {error}") from error
+    return payload
+
+
+def load_softmax_edge_corpus_payload(
+    path: pathlib.Path = SOFTMAX_EDGE_CORPUS_JSON,
+) -> dict[str, Any]:
+    """Load the d16 Softmax denominator/rounding edge corpus payload."""
+
+    return copy.deepcopy(_load_softmax_edge_corpus_payload(path))
 
 
 def snark_receipt_summary(snark_payload: dict[str, Any]) -> dict[str, Any]:
@@ -1440,6 +1495,38 @@ def d16_quantized_softmax_receipt_summary(softmax_payload: dict[str, Any]) -> di
     }
 
 
+def softmax_edge_corpus_summary(edge_payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract the d16 denominator/rounding edge-corpus fields."""
+
+    return {
+        "schema": edge_payload["schema"],
+        "decision": edge_payload["decision"],
+        "result": "GO",
+        "claim_boundary": edge_payload["claim_boundary"],
+        "evidence": "docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json",
+        "edge_case_count": edge_payload["edge_case_count"],
+        "route_mutations_checked": edge_payload["route_mutations_checked"],
+        "route_mutations_rejected": edge_payload["route_mutations_rejected"],
+        "all_route_mutations_rejected": (
+            edge_payload["route_mutations_checked"] == edge_payload["route_mutations_rejected"]
+        ),
+        "min_denominator": edge_payload["min_denominator"],
+        "max_denominator": edge_payload["max_denominator"],
+        "max_remainder_ratio": edge_payload["max_remainder_ratio"],
+        "negative_numerator_cases": edge_payload["negative_numerator_cases"],
+        "all_scores_equal_denominator": next(
+            case["denominator"] for case in edge_payload["edge_cases"] if case["name"] == "all_scores_equal"
+        ),
+        "all_clipped_denominator": next(
+            case["denominator"] for case in edge_payload["edge_cases"] if case["name"] == "all_nonmax_scores_clipped"
+        ),
+        "dominant_denominator": next(
+            case["denominator"] for case in edge_payload["edge_cases"] if case["name"] == "one_dominant_key_all_others_clipped"
+        ),
+        "timing_policy": edge_payload["timing_policy"],
+    }
+
+
 def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     """Return the checked route candidates as fresh dictionaries."""
 
@@ -1688,6 +1775,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     longseq_fused_softmax_payload = load_longseq_fused_softmax_payload(run_native=run_native)
     d16_fused_softmax_payload = load_d16_fused_softmax_payload(run_native=run_native)
     d16_quantized_softmax_payload = load_d16_quantized_softmax_receipt_payload(run_native=run_native)
+    softmax_edge_corpus_payload = load_softmax_edge_corpus_payload()
     summary = source_contract_summary(source_payload)
     snark_summary = snark_receipt_summary(snark_payload)
     risc0_summary = risc0_receipt_summary(risc0_payload)
@@ -1702,6 +1790,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
     longseq_fused_softmax_receipt = longseq_fused_softmax_summary(longseq_fused_softmax_payload)
     d16_fused_softmax_receipt = d16_fused_softmax_summary(d16_fused_softmax_payload)
     d16_quantized_softmax_receipt = d16_quantized_softmax_receipt_summary(d16_quantized_softmax_payload)
+    softmax_edge_corpus = softmax_edge_corpus_summary(softmax_edge_corpus_payload)
     routes = route_inventory(run_native=run_native)
     proof_backed_routes_available = [
         route["route_id"]
@@ -1731,6 +1820,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
         "longseq_fused_softmax_receipt": longseq_fused_softmax_receipt,
         "d16_fused_softmax_receipt": d16_fused_softmax_receipt,
         "d16_quantized_softmax_receipt": d16_quantized_softmax_receipt,
+        "softmax_denominator_rounding_edge_corpus": softmax_edge_corpus,
         "route_candidates": routes,
         "proof_backed_routes_available": proof_backed_routes_available,
         "metrics": {
@@ -1805,6 +1895,12 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "d16_quantized_softmax_max_observed_division_error_fraction": (
                 d16_quantized_softmax_receipt["max_observed_division_error_fraction"]
             ),
+            "d16_softmax_edge_case_count": softmax_edge_corpus["edge_case_count"],
+            "d16_softmax_edge_route_mutations_checked": softmax_edge_corpus["route_mutations_checked"],
+            "d16_softmax_edge_route_mutations_rejected": softmax_edge_corpus["route_mutations_rejected"],
+            "d16_softmax_edge_min_denominator": softmax_edge_corpus["min_denominator"],
+            "d16_softmax_edge_max_denominator": softmax_edge_corpus["max_denominator"],
+            "d16_softmax_edge_max_remainder_ratio": f"{softmax_edge_corpus['max_remainder_ratio']:.6f}",
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
@@ -1845,6 +1941,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "longseq_fused_softmax_receipt": payload["longseq_fused_softmax_receipt"],
             "d16_fused_softmax_receipt": payload["d16_fused_softmax_receipt"],
             "d16_quantized_softmax_receipt": payload["d16_quantized_softmax_receipt"],
+            "softmax_denominator_rounding_edge_corpus": payload["softmax_denominator_rounding_edge_corpus"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],
@@ -1975,6 +2072,10 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["d16_quantized_softmax_receipt"]["per_step_denominators"][0] = 0
     elif name == "d16_quantized_softmax_mutation_rejections_drift":
         out["d16_quantized_softmax_receipt"]["mutations_rejected"] -= 1
+    elif name == "d16_softmax_edge_corpus_claim_boundary_drift":
+        out["softmax_denominator_rounding_edge_corpus"]["claim_boundary"] = "GO_REAL_VALUED_SOFTMAX_EDGE_CORPUS"
+    elif name == "d16_softmax_edge_corpus_route_mutation_rejections_drift":
+        out["softmax_denominator_rounding_edge_corpus"]["route_mutations_rejected"] -= 1
     elif name == "external_snark_route_removed":
         snark_route = route_candidate_by_id(out["route_candidates"], EXTERNAL_SNARK_ROUTE_ID)
         snark_route["status"] = "NO_GO_MISSING_ATTENTION_KV_SNARK_RECEIPT"
@@ -2638,6 +2739,36 @@ def validate_d16_quantized_softmax_receipt(summary: Any) -> None:
             raise AttentionKvRouteSelectorError(f"d16 quantized Softmax {key} drift")
 
 
+def validate_softmax_edge_corpus(summary: Any) -> None:
+    """Validate the d16 denominator/rounding edge-corpus summary."""
+
+    if not isinstance(summary, dict):
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus must be an object")
+    expected = softmax_edge_corpus_summary(load_softmax_edge_corpus_payload())
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus drift")
+    if summary["decision"] != SOFTMAX_EDGE_CORPUS.DECISION:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus decision drift")
+    if summary["claim_boundary"] != SOFTMAX_EDGE_CORPUS.CLAIM_BOUNDARY:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus claim boundary drift")
+    if summary["edge_case_count"] != len(SOFTMAX_EDGE_CORPUS.EDGE_CASE_NAMES):
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus case-count drift")
+    if summary["route_mutations_checked"] != len(SOFTMAX_EDGE_CORPUS.ROUTE_MUTATION_NAMES):
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus mutation-count drift")
+    if summary["route_mutations_rejected"] != len(SOFTMAX_EDGE_CORPUS.ROUTE_MUTATION_NAMES):
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus mutation rejection drift")
+    if summary["all_route_mutations_rejected"] is not True:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus fail-closed drift")
+    if summary["min_denominator"] != 256 or summary["max_denominator"] != 852:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus denominator drift")
+    if summary["all_scores_equal_denominator"] != 768:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus equal-score denominator drift")
+    if summary["all_clipped_denominator"] != 304 or summary["dominant_denominator"] != 304:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus clipped denominator drift")
+    if "NOT_REAL_VALUED_SOFTMAX" not in summary["claim_boundary"] or "NOT_NEW_PROOF" not in summary["claim_boundary"]:
+        raise AttentionKvRouteSelectorError("d16 Softmax edge corpus overclaim drift")
+
+
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
     """Validate selector shape, commitments, non-claims, and fail-closed cases."""
 
@@ -2663,6 +2794,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "longseq_fused_softmax_receipt",
         "d16_fused_softmax_receipt",
         "d16_quantized_softmax_receipt",
+        "softmax_denominator_rounding_edge_corpus",
         "route_candidates",
         "proof_backed_routes_available",
         "metrics",
@@ -2696,6 +2828,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     validate_longseq_fused_softmax_receipt(payload.get("longseq_fused_softmax_receipt"))
     validate_d16_fused_softmax_receipt(payload.get("d16_fused_softmax_receipt"))
     validate_d16_quantized_softmax_receipt(payload.get("d16_quantized_softmax_receipt"))
+    validate_softmax_edge_corpus(payload.get("softmax_denominator_rounding_edge_corpus"))
     validate_routes(payload.get("route_candidates"))
     if tuple(payload.get("proof_backed_routes_available") or ()) != EXPECTED_PROOF_BACKED_ROUTES_AVAILABLE:
         raise AttentionKvRouteSelectorError("proof-backed route relabeling")
@@ -2775,6 +2908,18 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "d16_quantized_softmax_max_observed_division_error_fraction": (
             payload["d16_quantized_softmax_receipt"]["max_observed_division_error_fraction"]
         ),
+        "d16_softmax_edge_case_count": payload["softmax_denominator_rounding_edge_corpus"]["edge_case_count"],
+        "d16_softmax_edge_route_mutations_checked": (
+            payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_checked"]
+        ),
+        "d16_softmax_edge_route_mutations_rejected": (
+            payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_rejected"]
+        ),
+        "d16_softmax_edge_min_denominator": payload["softmax_denominator_rounding_edge_corpus"]["min_denominator"],
+        "d16_softmax_edge_max_denominator": payload["softmax_denominator_rounding_edge_corpus"]["max_denominator"],
+        "d16_softmax_edge_max_remainder_ratio": (
+            f"{payload['softmax_denominator_rounding_edge_corpus']['max_remainder_ratio']:.6f}"
+        ),
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
         "risc0_receipt_size_bytes": payload["external_risc0_receipt"]["proof_size_bytes"],
@@ -2822,6 +2967,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             "longseq_fused_softmax_receipt": payload["longseq_fused_softmax_receipt"],
             "d16_fused_softmax_receipt": payload["d16_fused_softmax_receipt"],
             "d16_quantized_softmax_receipt": payload["d16_quantized_softmax_receipt"],
+            "softmax_denominator_rounding_edge_corpus": payload["softmax_denominator_rounding_edge_corpus"],
             "route_candidates": payload["route_candidates"],
             "proof_backed_routes_available": payload["proof_backed_routes_available"],
             "metrics": payload["metrics"],

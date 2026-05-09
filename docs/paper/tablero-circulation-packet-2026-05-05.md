@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, and single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -64,7 +64,7 @@ The current paper package supports these checked claims:
 - Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
 - Do not say the native Stwo bounded weighted attention/KV proof is exact Softmax, long-context inference, full inference, a benchmark row, or recursive/PCD.
 - Do not say the native Stwo bounded Softmax-table or fused LogUp proofs are exact exp/div Softmax, full inference, public benchmark rows, private lookup privacy, recursive aggregation of independent head proofs, or recursive/PCD.
-- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, eight-head, and d16 fixtures. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
+- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, eight-head, and d16 fixtures. The d16 denominator/rounding corpus is correctness hardening, not a new proof or benchmark. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
 
 ## Validation Gate
 
@@ -124,9 +124,10 @@ causal-prefix masked integer-argmax carried-state surface. The proof checks `52`
 score rows over a `64`-row trace, emits selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, binds ten final KV rows, and has a `24394`-byte proof
 inside a `265791`-byte checked envelope. The route selector now records eleven
-proof-backed routes and rejects `72 / 72` checked mutations, including the
-single-head, multi-head, and d16 implementation-exact quantized Softmax-table receipts
-and the two-head long-sequence plus d16 width-axis fused Softmax-table/LogUp proofs. External
+proof-backed routes and rejects `74 / 74` checked mutations, including the
+single-head, multi-head, and d16 implementation-exact quantized Softmax-table receipts,
+the d16 denominator/rounding edge corpus, and the two-head long-sequence plus
+d16 width-axis fused Softmax-table/LogUp proofs. External
 `snarkjs/Groth16` and RISC Zero receipts remain useful controls for
 statement-binding and zkVM semantic transfer, but they are not the headline.
 
@@ -218,6 +219,14 @@ weighted-numerator recomputation drift. This is exact for the pinned width-16
 integer table/floor-division kernel, not real-valued exp/div Softmax, not
 implementation-exact model Softmax, not full inference, not a public benchmark,
 and not recursion/PCD.
+
+The d16 receipt now also has a denominator/rounding edge corpus. It checks seven
+deterministic integer-kernel edge cases, records denominator range `256..852`,
+observes maximum edge-corpus remainder ratio `0.842105`, and rejects `7 / 7`
+source/sidecar/fused route mutations. The important hardening is API-level:
+sidecar and fused validators now revalidate the supplied source input directly,
+so a matching malformed source/envelope pair cannot bypass denominator or
+remainder checks.
 
 The next research result should keep scaling the native Stwo surface, not add
 another metadata adapter:

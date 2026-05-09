@@ -57,8 +57,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 51. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
 52. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
 53. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-54. `docs/engineering/reproducibility.md`
-55. `git status --short --branch`
+54. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
+55. `docs/engineering/reproducibility.md`
+56. `git status --short --branch`
 
 ## What this repository is now
 
@@ -322,6 +323,17 @@ This repository currently has three live lanes.
     across checked multi-head fixtures, not real-valued Softmax, full inference,
     long-context inference, public benchmark evidence, or recursion/PCD; see
     `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
+
+  - Issue `#506` applies the same implementation-exact receipt discipline to
+    the d16 fused width-axis route, and issue `#507` hardens it with a
+    deterministic denominator/rounding edge corpus. The edge corpus checks `7`
+    integer-kernel edge cases, records denominator range `256..852`, rejects
+    `7 / 7` source/sidecar/fused denominator and remainder mutations, and
+    hardens the d16 sidecar/fused validator APIs so matching malformed
+    source/envelope pairs are rejected by direct source-input validation. This
+    is correctness hardening, not a new proof, not real-valued Softmax, and not
+    a benchmark; see
+    `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`.
 
   - Issue `#498` scales the fused route along sequence length at fixed `d=8`
     and two heads. Issue `#500` adds the matched long-sequence source-plus-

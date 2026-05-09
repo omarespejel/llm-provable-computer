@@ -432,6 +432,10 @@ def validate_source_artifacts(source_input: dict[str, Any], source_envelope: dic
 
 
 def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, Any], *, run_native: bool) -> None:
+    try:
+        SOURCE_INPUT_MODULE.validate_payload(source_input)
+    except Exception as err:
+        raise AttentionKvD16FusedSoftmaxTableGateError(f"source input validation drift: {err}") from err
     allowed_keys = {
         "proof_backend",
         "proof_backend_version",

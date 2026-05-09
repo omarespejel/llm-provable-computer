@@ -25,6 +25,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         GATE._load_longseq_fused_softmax_payload.cache_clear()
         GATE._load_d16_fused_softmax_payload.cache_clear()
         GATE._load_d16_quantized_softmax_receipt_payload.cache_clear()
+        GATE._load_softmax_edge_corpus_payload.cache_clear()
         try:
             with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
                 GATE.load_quantized_softmax_receipt_payload(run_native=True)
@@ -54,6 +55,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             GATE._load_longseq_fused_softmax_payload.cache_clear()
             GATE._load_d16_fused_softmax_payload.cache_clear()
             GATE._load_d16_quantized_softmax_receipt_payload.cache_clear()
+            GATE._load_softmax_edge_corpus_payload.cache_clear()
 
     def test_selector_default_receipt_loaders_are_structural_only(self) -> None:
         GATE._load_quantized_softmax_receipt_payload.cache_clear()
@@ -61,6 +63,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         GATE._load_longseq_fused_softmax_payload.cache_clear()
         GATE._load_d16_fused_softmax_payload.cache_clear()
         GATE._load_d16_quantized_softmax_receipt_payload.cache_clear()
+        GATE._load_softmax_edge_corpus_payload.cache_clear()
         try:
             with mock.patch.object(GATE.QUANTIZED_SOFTMAX, "validate_result") as validate_single:
                 GATE.load_quantized_softmax_receipt_payload()
@@ -90,11 +93,12 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             GATE._load_longseq_fused_softmax_payload.cache_clear()
             GATE._load_d16_fused_softmax_payload.cache_clear()
             GATE._load_d16_quantized_softmax_receipt_payload.cache_clear()
+            GATE._load_softmax_edge_corpus_payload.cache_clear()
 
     def test_regression_issue_448_records_native_stwo_and_external_control_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 72)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 74)
         self.assertEqual(payload["decision"], GATE.DECISION)
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
@@ -256,6 +260,19 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             payload["d16_quantized_softmax_receipt"]["mutations_rejected"],
             GATE.D16_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT,
         )
+        self.assertEqual(
+            payload["softmax_denominator_rounding_edge_corpus"]["decision"],
+            GATE.SOFTMAX_EDGE_CORPUS.DECISION,
+        )
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["edge_case_count"], 7)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_checked"], 7)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_rejected"], 7)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["min_denominator"], 256)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["max_denominator"], 852)
+        self.assertIn(
+            "NOT_REAL_VALUED_SOFTMAX",
+            payload["softmax_denominator_rounding_edge_corpus"]["claim_boundary"],
+        )
         self.assertEqual(payload["external_snark_receipt"]["decision"], GATE.SNARK.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["decision"], GATE.RISC0.DECISION)
         self.assertEqual(payload["external_risc0_receipt"]["next_kv_items"], 3)
@@ -344,6 +361,13 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             payload["metrics"]["d16_quantized_softmax_key_width"],
             payload["d16_quantized_softmax_receipt"]["key_width"],
         )
+        self.assertEqual(
+            payload["metrics"]["d16_softmax_edge_case_count"],
+            payload["softmax_denominator_rounding_edge_corpus"]["edge_case_count"],
+        )
+        self.assertEqual(payload["metrics"]["d16_softmax_edge_min_denominator"], 256)
+        self.assertEqual(payload["metrics"]["d16_softmax_edge_max_denominator"], 852)
+        self.assertEqual(payload["metrics"]["d16_softmax_edge_route_mutations_rejected"], 7)
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])
         self.assertEqual(

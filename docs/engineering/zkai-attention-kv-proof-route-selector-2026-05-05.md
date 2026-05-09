@@ -229,6 +229,16 @@ recomputation drift. This is exact for the pinned d16 integer table/floor-divisi
 kernel, not real-valued Softmax, not implementation-exact model
 Softmax, not full inference, and not a timing result.
 
+Issue `#507` hardens that d16 receipt with a deterministic denominator and
+rounding edge corpus. The corpus checks seven integer-kernel edge cases,
+including minimum one-candidate denominators, all-equal scores, clipped
+nonmax scores, dominant-key clipping, negative numerators, mixed remainders,
+and all table-gap multiplicities. It also fixes an API-boundary weakness: the
+d16 LogUp sidecar and fused validators now independently validate the supplied
+source input, so a caller cannot pass a matching malformed source/envelope pair
+with denominator or remainder drift. This is correctness hardening only, not a
+new proof, not real-valued Softmax, and not a benchmark row.
+
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
 each fused envelope and each fused proof byte payload. The checked strict command
@@ -352,6 +362,8 @@ Claim boundary:
 - Native quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv`
 - Native d16 quantized Softmax-table receipt gate: `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json`
 - Native d16 quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv`
+- Native d16 Softmax denominator/rounding edge corpus JSON: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json`
+- Native d16 Softmax denominator/rounding edge corpus TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`
@@ -407,15 +419,19 @@ Claim boundary:
 | d16 quantized Softmax-table lookup claims | `52` |
 | d16 quantized Softmax-table max observed division residual | `25/26` |
 | d16 quantized Softmax-table receipt mutations | `36 / 36` |
+| d16 denominator/rounding edge cases | `7` |
+| d16 denominator/rounding route mutations | `7 / 7` |
+| d16 denominator range in edge corpus | `256..852` |
+| d16 max edge-corpus remainder ratio | `0.842105` |
 | External SNARK proof size | `802` bytes |
 | External SNARK public signals | `18` |
 | RISC Zero transition semantics receipt size | `221842` bytes |
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
-| Mutations checked | 72 |
-| Mutations rejected | 72 |
-| Selector commitment | `blake2b-256:dc3c505e15361d085b98c3a48bc3cb983c7caf38959cff218f529c4ecd98da2c` |
+| Mutations checked | 74 |
+| Mutations rejected | 74 |
+| Selector commitment | `blake2b-256:fda38eefeefaff0338e4f021cee50210abce360d96a53d7f13561ef73175642c` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
