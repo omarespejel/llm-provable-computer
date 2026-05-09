@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-05-08
+Last refreshed: 2026-05-09
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `351ee765a45e1119d6508ba5e734266cbcefca31`
+Mainline reference at refresh: `248f5e22856e7ada698b0effd285107f2241334f`
 
 ## Immediate orientation
 
@@ -310,6 +310,19 @@ Tablero boundary.
   not timing evidence; see
   `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md` and
   `docs/engineering/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
+- Issue `#516` checks whether the four-to-eight-head LogUp sidecar proof-byte
+  flatness persists at a synthetic sixteen-head point. It does not persist
+  exactly: the sixteen-head sidecar constrains `832` lookup claims with a
+  `29172`-byte raw proof and a `1706907`-byte checked envelope. The useful
+  narrowed signal is eight-to-sixteen sidecar scaling: lookup claims grow
+  `2.000000x`, while sidecar raw proof bytes grow `1.344704x`. The source
+  arithmetic proof is `60649` bytes, so the matched source-plus-sidecar pair is
+  `89821` raw proof bytes. The gate rejects `31 / 31` source-binding,
+  lookup-binding, metric-smuggling, multiplicity, split-brain, unknown-field,
+  and overclaim mutations. This is sidecar-only engineering proof-byte
+  accounting, not a sixteen-head fused route, not exact Softmax, not full
+  inference, and not timing evidence; see
+  `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
 - Issue `#498` scales the fused route along sequence length at fixed `d=8` and
   fixed two-head shape: one native Stwo proof object checks two-head,
   sixteen-step-per-head bounded Softmax-table attention arithmetic and LogUp

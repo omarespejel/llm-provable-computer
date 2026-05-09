@@ -164,6 +164,12 @@ that comparator metadata into the fused proof transcript, the fused proof is
 `59375` raw bytes, the checked envelope is `1210413` bytes, and the gate rejects
 `16 / 16` proof/statement/relabeling/overclaim mutations. The fused route is
 `14711` bytes smaller than the matched source-plus-sidecar control (`0.801433x`).
+Issue `#516` then probes the detached sidecar beyond the fused matrix: a
+sixteen-head source proof plus LogUp sidecar constrains `832` lookup claims with
+a `29172`-byte sidecar proof. The four-to-eight sidecar flatness does not
+persist, but eight-to-sixteen remains sublinear in raw sidecar proof bytes
+(`2.000000x` lookup claims, `1.344704x` proof bytes). This is sidecar-only
+engineering evidence, not a sixteen-head fused route.
 
 Issue `#498` scales the fused route along sequence length at fixed `d=8` and
 fixed two-head shape. One native Stwo proof object checks two-head,

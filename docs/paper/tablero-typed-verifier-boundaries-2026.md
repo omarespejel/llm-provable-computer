@@ -961,10 +961,15 @@ proof budget (`74529` bytes). The eight-head route then checks `416` lookup
 claims over a `512`-row trace with a `59375`-byte raw proof and `16 / 16`
 mutation rejections. Its matched source-plus-sidecar control is now checked at
 `74086` raw proof bytes, so the fused proof is `14711` bytes smaller
-(`0.801433x`). A separate two-head long-sequence route keeps `d=8` and two
-heads fixed while increasing per-head sequence length to sixteen steps; it
-checks `336` lookup claims over a `512`-row trace, has a `60502`-byte raw proof
-inside a `1050248`-byte checked envelope, and rejects `19 / 19` mutations.
+(`0.801433x`). A follow-up sixteen-head sidecar probe does not build a fused
+sixteen-head proof, but it does narrow the sidecar scaling claim: `832` lookup
+claims use a `29172`-byte sidecar proof, so the exact four-to-eight flatness
+breaks while eight-to-sixteen remains sublinear in raw sidecar proof bytes
+(`2.000000x` claims, `1.344704x` proof bytes). A separate two-head
+long-sequence route keeps `d=8` and two heads fixed while increasing per-head
+sequence length to sixteen steps; it checks `336` lookup claims over a
+`512`-row trace, has a `60502`-byte raw proof inside a `1050248`-byte checked
+envelope, and rejects `19 / 19` mutations.
 Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw
 proof bytes grow `1.222064x`. The matched long-sequence source-plus-sidecar
 control is now checked at `79444` raw proof bytes, so the fused proof is `18942`
@@ -981,6 +986,7 @@ recursion/PCD. It is
 anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`,
+`docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`,
 `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json`,

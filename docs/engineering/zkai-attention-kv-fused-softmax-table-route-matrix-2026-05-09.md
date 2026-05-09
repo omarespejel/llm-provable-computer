@@ -59,8 +59,13 @@ Head axis:
   the matched LogUp sidecar proof used for the source-plus-sidecar comparator.
 - The eight-head sidecar itself is an exploratory signal: four to eight heads
   doubles lookup claims (`208` to `416`) while sidecar raw proof bytes are
-  effectively flat (`21783` to `21694`). Issue `#516` tracks a synthetic
-  higher-head capacity probe to see whether this persists or breaks.
+  effectively flat (`21783` to `21694`).
+- Issue `#516` answers the higher-head sidecar probe: the sixteen-head sidecar
+  constrains `832` lookup claims with a `29172`-byte raw proof. The
+  four-to-eight exact flatness does not persist, but eight-to-sixteen remains
+  sublinear in raw proof bytes: lookup claims grow `2.000000x` while sidecar
+  proof bytes grow `1.344704x`. This is sidecar-only engineering evidence, not
+  a sixteen-head fused-route row in this matrix.
 
 Sequence axis:
 
