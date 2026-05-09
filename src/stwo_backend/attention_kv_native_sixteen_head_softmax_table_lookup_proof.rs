@@ -628,17 +628,32 @@ fn mix_lookup_summary(
     channel: &mut Blake2sM31Channel,
     summary: &ZkAiAttentionKvNativeSixteenHeadSoftmaxTableLookupSummary,
 ) {
+    mix_lookup_summary_string(channel, &summary.source_statement_commitment);
+    mix_lookup_summary_string(channel, &summary.source_public_instance_commitment);
+    mix_lookup_summary_string(channel, &summary.source_score_row_commitment);
+    mix_lookup_summary_string(channel, &summary.source_final_kv_cache_commitment);
+    mix_lookup_summary_string(channel, &summary.source_outputs_commitment);
+    mix_lookup_summary_string(channel, &summary.source_weight_table_commitment);
     channel.mix_u64(summary.source_head_count as u64);
     channel.mix_u64(summary.score_rows as u64);
     channel.mix_u64(summary.trace_rows as u64);
     channel.mix_u64(summary.table_rows as u64);
     channel.mix_u64(summary.score_gap_clip as u64);
+    mix_lookup_summary_string(channel, &summary.weight_policy);
+    mix_lookup_summary_string(channel, &summary.lookup_relation);
     channel.mix_u64(summary.lookup_relation_width as u64);
     channel.mix_u64(summary.lookup_claims as u64);
     for entry in &summary.table_multiplicities {
         channel.mix_u64(entry.gap as u64);
         channel.mix_u64(entry.weight.rem_euclid(M31_MODULUS) as u64);
         channel.mix_u64(entry.multiplicity as u64);
+    }
+}
+
+fn mix_lookup_summary_string(channel: &mut Blake2sM31Channel, value: &str) {
+    channel.mix_u64(value.len() as u64);
+    for byte in value.as_bytes() {
+        channel.mix_u64(u64::from(*byte));
     }
 }
 
@@ -815,6 +830,29 @@ mod tests {
         let error =
             verify_zkai_attention_kv_native_sixteen_head_softmax_table_lookup_envelope(&envelope)
                 .expect_err("summary drift must reject");
+        assert!(error.to_string().contains("lookup summary"));
+    }
+
+    #[test]
+    fn attention_kv_sixteen_head_softmax_table_lookup_rejects_bound_metadata_drift() {
+        let input = source_input();
+        let mut envelope =
+            prove_zkai_attention_kv_native_sixteen_head_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
+        envelope.lookup_summary.source_statement_commitment =
+            format!("blake2b-256:{}", "33".repeat(32));
+        let error =
+            verify_zkai_attention_kv_native_sixteen_head_softmax_table_lookup_envelope(&envelope)
+                .expect_err("source statement relabeling must reject");
+        assert!(error.to_string().contains("lookup summary"));
+
+        let mut envelope =
+            prove_zkai_attention_kv_native_sixteen_head_softmax_table_lookup_envelope(&input)
+                .expect("prove lookup sidecar");
+        envelope.lookup_summary.weight_policy = "forged-weight-policy".to_owned();
+        let error =
+            verify_zkai_attention_kv_native_sixteen_head_softmax_table_lookup_envelope(&envelope)
+                .expect_err("weight-policy relabeling must reject");
         assert!(error.to_string().contains("lookup summary"));
     }
 

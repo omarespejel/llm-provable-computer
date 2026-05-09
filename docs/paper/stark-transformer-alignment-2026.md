@@ -1458,8 +1458,8 @@ with fused-envelope commitment
 The follow-up sixteen-head sidecar probe narrows the head-axis interpretation:
 the exact four-to-eight sidecar flatness does not persist, but the sidecar still
 grows sublinearly in raw proof bytes on the checked point. It constrains `832`
-lookup claims with a `29172`-byte proof, so eight-to-sixteen doubles lookup
-claims while sidecar proof bytes grow `1.344704x`. We therefore treat the
+lookup claims with a `28062`-byte proof, so eight-to-sixteen doubles lookup
+claims while sidecar proof bytes grow `1.293537x`. We therefore treat the
 sidecar data as local engineering proof-byte accounting, not an asymptotic
 flatness claim.
 

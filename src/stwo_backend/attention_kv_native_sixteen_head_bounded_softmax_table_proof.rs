@@ -271,6 +271,11 @@ impl FrameworkEval for AttentionKvNativeSixteenHeadBoundedSoftmaxTableEval {
         }
 
         let column_ids = column_ids();
+        assert_eq!(
+            column_ids.len(),
+            trace_values.len(),
+            "sixteen-head bounded Softmax-table AIR column arity drift"
+        );
         for (column_id, trace_value) in column_ids.iter().zip(trace_values) {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
@@ -1226,7 +1231,11 @@ fn attention_trace(
                 .map(field_usize),
             );
         }
-        debug_assert_eq!(values.len(), columns.len());
+        assert_eq!(
+            values.len(),
+            columns.len(),
+            "sixteen-head bounded Softmax-table trace width drift"
+        );
         for (column, value) in columns.iter_mut().zip(values) {
             column.push(value);
         }

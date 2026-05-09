@@ -27,15 +27,15 @@ attention-arithmetic-plus-LogUp proof is built in this gate.
 | Table rows | `9` |
 | Source arithmetic proof bytes | `60,649` |
 | Source arithmetic envelope bytes | `1,956,775` |
-| Sidecar proof bytes | `29,172` |
-| Sidecar envelope bytes | `1,706,907` |
-| Source + sidecar proof bytes | `89,821` |
-| Source + sidecar envelope bytes | `3,663,682` |
+| Sidecar proof bytes | `28,062` |
+| Sidecar envelope bytes | `1,698,027` |
+| Source + sidecar proof bytes | `88,711` |
+| Source + sidecar envelope bytes | `3,654,802` |
 | Source statement commitment | `blake2b-256:2399d35396eaba82de216ba44a184ff6542a078db5beaaa7461e2ccc436bff38` |
 | Source proof commitment | `blake2b-256:3018e4e8e71c1020ac3d86378b7ffd9160cb1b113976b909fffaed6b0dc42e73` |
 | Source envelope commitment | `blake2b-256:9157001588fc0face697ab4d4cd7d429143a54e15bce1771eee2fce5596541c4` |
-| Sidecar proof commitment | `blake2b-256:9e2708909d44cc25daaf741871380796e79ac44b2a83525a784a2670b3adaf8e` |
-| Sidecar envelope commitment | `blake2b-256:f3678871c4f6479eb967d9a67fc0b18f2e4e77e7fb451a1d539a1a58e9db100c` |
+| Sidecar proof commitment | `blake2b-256:228f4e5e5b050f79694872a0b68ee64c52273829f39cc72bfadfe72500cae8f6` |
+| Sidecar envelope commitment | `blake2b-256:0fa9682e68db6bbfc045ebdf127d19c69f7702a8aabade747da9cf1b0aeecf30` |
 | Timing policy | `no_new_timing_proof_existence_and_relation_gate_only` |
 | Gate mutations | `31 / 31` rejected |
 
@@ -45,12 +45,12 @@ The earlier four-to-eight-head result was unusually flat: lookup claims doubled
 from `208` to `416`, while sidecar proof bytes moved from `21,783` to `21,694`.
 
 That exact flatness does **not** persist at sixteen heads. The sixteen-head
-sidecar has `29,172` proof bytes.
+sidecar has `28,062` proof bytes.
 
 The useful signal is narrower but still positive: lookup claims double again
 from eight heads to sixteen heads (`416` to `832`), while sidecar raw proof
-bytes grow only `1.344704x` (`21,694` to `29,172`). Versus the single-head
-sidecar, lookup claims grow `16.000000x` while proof bytes grow `1.978433x`.
+bytes grow only `1.293537x` (`21,694` to `28,062`). Versus the single-head
+sidecar, lookup claims grow `16.000000x` while proof bytes grow `1.903154x`.
 
 This is local engineering proof-byte accounting for the checked fixture. It is
 not an asymptotic theorem and not public benchmark evidence.
@@ -63,14 +63,14 @@ not an asymptotic theorem and not public benchmark evidence.
 | two-head `d8` seq8 | `104` | `18,104` | `333,577` |
 | four-head `d8` seq8 | `208` | `21,783` | `543,187` |
 | eight-head `d8` seq8 | `416` | `21,694` | `907,902` |
-| sixteen-head `d8` seq8 | `832` | `29,172` | `1,706,907` |
+| sixteen-head `d8` seq8 | `832` | `28,062` | `1,698,027` |
 
 | Comparison | Lookup-claim ratio | Sidecar proof-byte ratio | Sidecar envelope-byte ratio |
 | --- | ---: | ---: | ---: |
-| single -> sixteen | `16.000000x` | `1.978433x` | `7.973034x` |
-| two -> sixteen | `8.000000x` | `1.611357x` | `5.116980x` |
-| four -> sixteen | `4.000000x` | `1.339209x` | `3.142393x` |
-| eight -> sixteen | `2.000000x` | `1.344704x` | `1.880056x` |
+| single -> sixteen | `16.000000x` | `1.903154x` | `7.931555x` |
+| two -> sixteen | `8.000000x` | `1.550044x` | `5.090360x` |
+| four -> sixteen | `4.000000x` | `1.288252x` | `3.126045x` |
+| eight -> sixteen | `2.000000x` | `1.293537x` | `1.870276x` |
 
 The proof-byte signal and the envelope-byte signal should be kept separate. The
 checked raw Stwo proof bytes grow much more slowly than lookup claims; the JSON

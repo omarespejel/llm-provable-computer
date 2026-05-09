@@ -61,10 +61,10 @@ Head axis:
   doubles lookup claims (`208` to `416`) while sidecar raw proof bytes are
   effectively flat (`21783` to `21694`).
 - Issue `#516` answers the higher-head sidecar probe: the sixteen-head sidecar
-  constrains `832` lookup claims with a `29172`-byte raw proof. The
+  constrains `832` lookup claims with a `28062`-byte raw proof. The
   four-to-eight exact flatness does not persist, but eight-to-sixteen remains
   sublinear in raw proof bytes: lookup claims grow `2.000000x` while sidecar
-  proof bytes grow `1.344704x`. This is sidecar-only engineering evidence, not
+  proof bytes grow `1.293537x`. This is sidecar-only engineering evidence, not
   a sixteen-head fused-route row in this matrix.
 
 Sequence axis:

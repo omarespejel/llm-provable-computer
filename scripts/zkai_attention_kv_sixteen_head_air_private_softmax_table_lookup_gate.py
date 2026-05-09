@@ -76,12 +76,12 @@ LOOKUP_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-sixteen-head-softma
 LOOKUP_TARGET_ID = "attention-kv-sixteen-head-d8-causal-mask-bounded-softmax-table-logup-sidecar-v1"
 LOOKUP_RELATION = "AttentionKvSixteenHeadSoftmaxTableLookupRelation"
 LOOKUP_RELATION_WIDTH = 2
-LOOKUP_PROOF_SIZE_BYTES = 29_172
-LOOKUP_ENVELOPE_SIZE_BYTES = 1_706_907
+LOOKUP_PROOF_SIZE_BYTES = 28_062
+LOOKUP_ENVELOPE_SIZE_BYTES = 1_698_027
 LOOKUP_PROOF_COMMITMENTS = 4
 LOOKUP_TRACE_COMMITMENTS = 3
-LOOKUP_PROOF_COMMITMENT = "blake2b-256:9e2708909d44cc25daaf741871380796e79ac44b2a83525a784a2670b3adaf8e"
-LOOKUP_ENVELOPE_COMMITMENT = "blake2b-256:f3678871c4f6479eb967d9a67fc0b18f2e4e77e7fb451a1d539a1a58e9db100c"
+LOOKUP_PROOF_COMMITMENT = "blake2b-256:228f4e5e5b050f79694872a0b68ee64c52273829f39cc72bfadfe72500cae8f6"
+LOOKUP_ENVELOPE_COMMITMENT = "blake2b-256:0fa9682e68db6bbfc045ebdf127d19c69f7702a8aabade747da9cf1b0aeecf30"
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + LOOKUP_PROOF_SIZE_BYTES
 SOURCE_PLUS_SIDECAR_ENVELOPE_BYTES = SOURCE_ENVELOPE_SIZE_BYTES + LOOKUP_ENVELOPE_SIZE_BYTES
 LOOKUP_TABLE_MULTIPLICITIES = (
@@ -848,7 +848,7 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     elif name == "next_backend_step_removed":
         mutated["next_backend_step"] = ""
     elif name == "source_input_split_brain":
-        receipt["source_score_row_commitment"] = "blake2b-256:" + "33" * 32
+        source_receipt["source_head_count"] += 1
     elif name == "unknown_field_injection":
         mutated["unexpected"] = True
     elif name == "lookup_receipt_unknown_field_injection":
@@ -875,6 +875,8 @@ def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
 def validate_mutation_spec() -> None:
     if len(EXPECTED_MUTATION_NAMES) != EXPECTED_MUTATION_COUNT:
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("mutation spec count drift")
+    if len(set(EXPECTED_MUTATION_NAMES)) != len(EXPECTED_MUTATION_NAMES):
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("mutation spec duplicate name drift")
 
 
 def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
@@ -925,6 +927,16 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         if not type_strict_equal(payload.get(key), expected):
             raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"{key} drift")
     source_receipt = payload.get("source_proof_receipt")
+    if not isinstance(source_receipt, dict):
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("source_proof_receipt must be an object")
+    receipt = payload.get("lookup_receipt")
+    if not isinstance(receipt, dict):
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup_receipt must be an object")
+    if (
+        source_receipt.get("source_statement_commitment") != receipt.get("source_statement_commitment")
+        or source_receipt.get("source_head_count") != receipt.get("source_head_count")
+    ):
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("source/lookup split-brain drift")
     expected_source_receipt = {
         "proof_backend": "stwo",
         "proof_version": "stwo-attention-kv-d8-causal-mask-sixteen-head-bounded-softmax-table-v1",
@@ -942,9 +954,6 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     }
     if not type_strict_equal(source_receipt, expected_source_receipt):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("source_proof_receipt drift")
-    receipt = payload.get("lookup_receipt")
-    if not isinstance(receipt, dict):
-        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup_receipt must be an object")
     expected_receipt = {
         "proof_backend": "stwo",
         "proof_version": LOOKUP_PROOF_VERSION,
