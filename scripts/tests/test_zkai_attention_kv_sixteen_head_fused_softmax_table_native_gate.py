@@ -79,6 +79,26 @@ class SixteenHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "result drift"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
 
+    def test_validate_result_rejects_top_level_unknown_field(self):
+        payload = copy.deepcopy(self.result)
+        payload["extra_metric"] = "smuggled"
+        with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "gate result key drift"):
+            gate.validate_result(payload, self.envelope, self.source)
+
+    def test_validate_result_rejects_mutation_result_unknown_field(self):
+        payload = copy.deepcopy(self.result)
+        payload["mutation_results"][0]["extra"] = "smuggled"
+        with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "mutation result key drift"):
+            gate.validate_result(payload, self.envelope, self.source)
+
+    def test_run_gate_does_not_count_harness_crashes_as_rejections(self):
+        with mock.patch.object(gate, "verify_fused_envelope_bytes_with_native_cli"):
+            with mock.patch.object(gate, "validate_result", side_effect=RuntimeError("boom")):
+                with self.assertRaisesRegex(
+                    gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "mutation harness crashed"
+                ):
+                    gate.run_gate()
+
 
 if __name__ == "__main__":
     unittest.main()
