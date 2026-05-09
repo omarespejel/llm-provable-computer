@@ -956,9 +956,11 @@ rejects `30 / 30` relabeling, split-route injection, metric-smuggling,
 proof-byte, unknown-field, and exact-Softmax-overclaim mutations, and uses
 `0.7174120141153109x` of the previous four-head arithmetic-plus-sidecar raw
 proof budget (`74529` bytes). The eight-head route then checks `416` lookup
-claims over a `512`-row trace with a `60450`-byte raw proof and `16 / 16`
-mutation rejections. A separate two-head long-sequence route keeps `d=8` and
-two heads fixed while increasing per-head sequence length to sixteen steps; it
+claims over a `512`-row trace with a `59375`-byte raw proof and `16 / 16`
+mutation rejections. Its matched source-plus-sidecar control is now checked at
+`74086` raw proof bytes, so the fused proof is `14711` bytes smaller
+(`0.801433x`). A separate two-head long-sequence route keeps `d=8` and two
+heads fixed while increasing per-head sequence length to sixteen steps; it
 checks `336` lookup claims over a `512`-row trace, has a `60502`-byte raw proof
 inside a `1050248`-byte checked envelope, and rejects `19 / 19` mutations.
 Lookup claims grow `3.230769x` versus the fixed two-head fused route while raw

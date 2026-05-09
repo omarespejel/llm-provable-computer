@@ -34,8 +34,8 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(metrics["total_heads_checked"], 14)
         self.assertEqual(result["lookup_claims_total"], 728)
         self.assertEqual(result["score_rows_total"], 728)
-        self.assertEqual(result["fused_proof_size_bytes_sum"], 163426)
-        self.assertEqual(result["max_fused_proof_size_bytes"], 60450)
+        self.assertEqual(result["fused_proof_size_bytes_sum"], 162351)
+        self.assertEqual(result["max_fused_proof_size_bytes"], 59375)
         self.assertEqual(result["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(result["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 

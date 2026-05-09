@@ -18,7 +18,7 @@ The gate consumes three backing proof objects under timing policy
 | --- | --- | ---: | ---: | ---: | ---: |
 | `two_head` | `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1` | 2 | 104 | 49,508 | 585,857 |
 | `four_head` | `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1` | 4 | 208 | 53,468 | 797,717 |
-| `eight_head` | `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1` | 8 | 416 | 60,450 | 1,219,007 |
+| `eight_head` | `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1` | 8 | 416 | 59,375 | 1,210,413 |
 
 Aggregate checked surface:
 
@@ -29,7 +29,7 @@ Aggregate checked surface:
 - Score rows / lookup claims checked: `728`.
 - Trace rows checked: `896`.
 - Shared statement-bound table rows: `9`.
-- Fused proof bytes across the three profiles: `163,426`.
+- Fused proof bytes across the three profiles: `162,351`.
 - Mutations rejected for the backing profiles and timing policy listed above:
   `64 / 64`.
 
@@ -109,9 +109,10 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend \
 ## Next Useful Research Step
 
 The next controlled scale-up is no longer "can it survive beyond four heads";
-issue `#496` answers that with an eight-head GO. The remaining research targets
-are different axes: longer sequence length, wider value/key vectors, or a
-controlled 8-head source-plus-sidecar comparator for byte accounting. Report GO
-only if the same denominator/remainder, output-order, causal-mask,
-statement-bound table, and proof-binding checks remain fail-closed after proof
-serialization.
+issue `#496` answers that with an eight-head GO, and issue `#514` adds the
+matched eight-head source-plus-sidecar comparator for byte accounting. The
+remaining research targets are different axes: longer sequence length, wider
+value/key vectors, or a synthetic head-axis capacity probe beyond eight heads.
+Report GO only if the same denominator/remainder, output-order, causal-mask,
+statement-bound table, matched-comparator, and proof-binding checks remain
+fail-closed after proof serialization.

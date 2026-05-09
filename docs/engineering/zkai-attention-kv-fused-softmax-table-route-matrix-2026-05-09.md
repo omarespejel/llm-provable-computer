@@ -14,7 +14,8 @@ The axes are:
 
 ## Result
 
-GO for a controlled engineering route matrix.
+GO for a controlled engineering route matrix, now with matched source-plus-LogUp
+sidecar comparators for all six profile rows.
 
 The checked matrix is machine-readable at:
 
@@ -33,13 +34,8 @@ and rejects `21 / 21` matrix drift, provenance-drift, and overclaim mutations.
 | d16 single-head seq8 | width | 16 | 1 | 8 | 52 | 64 | 64,503 | 74,961 | 0.860487 |
 | d8 two-head seq8 | heads | 8 | 2 | 8 | 104 | 128 | 49,508 | 65,208 | 0.759232 |
 | d8 four-head seq8 | heads | 8 | 4 | 8 | 208 | 256 | 53,468 | 74,529 | 0.717412 |
-| d8 eight-head seq8 | heads / existence only | 8 | 8 | 8 | 416 | 512 | 60,450 | n/a | n/a |
+| d8 eight-head seq8 | heads | 8 | 8 | 8 | 416 | 512 | 59,375 | 74,086 | 0.801433 |
 | d8 two-head seq16 | sequence | 8 | 2 | 16 | 336 | 512 | 60,502 | 79,444 | 0.761568 |
-
-The eight-head row is deliberately marked as proof-existence byte accounting
-only. It has no checked matched source-plus-sidecar comparator, so the matrix
-does not report a fused-versus-sidecar savings claim for that row.
-Follow-up issue `#514` tracks the matched eight-head comparator.
 
 ## Axis Read
 
@@ -55,12 +51,16 @@ Head axis:
 
 - Holding `d8` and eight steps per head fixed, lookup claims grow `8.000000x`
   from one head to eight heads (`52` to `416`), while fused proof bytes grow
-  `1.267349x` (`47,698` to `60,450`).
-- Matched source-plus-sidecar ratios improve across the rows that have checked
-  controls: `0.802497` at one head, `0.759232` at two heads, and `0.717412` at
-  four heads.
-- The eight-head row remains a proof-existence row because a matched sidecar
-  comparator is not checked.
+  `1.244811x` (`47,698` to `59,375`).
+- Matched source-plus-sidecar ratios are now available for all head-axis rows:
+  `0.802497` at one head, `0.759232` at two heads, `0.717412` at four heads,
+  and `0.801433` at eight heads.
+- The eight-head row is no longer an existence-only row: issue `#514` supplies
+  the matched LogUp sidecar proof used for the source-plus-sidecar comparator.
+- The eight-head sidecar itself is an exploratory signal: four to eight heads
+  doubles lookup claims (`208` to `416`) while sidecar raw proof bytes are
+  effectively flat (`21783` to `21694`). Issue `#516` tracks a synthetic
+  higher-head capacity probe to see whether this persists or breaks.
 
 Sequence axis:
 
@@ -70,6 +70,17 @@ Sequence axis:
 - Fused proof bytes grow from `49,508` to `60,502` (`1.222065x`), and the
   matched source-plus-sidecar pair grows from `65,208` to `79,444`
   (`1.218317x`).
+
+## Aggregate Read
+
+Across the six checked rows:
+
+- total lookup claims: `1,168`;
+- total trace rows: `1,536`;
+- total fused proof bytes: `335,054`;
+- total matched source-plus-sidecar proof bytes: `427,665`;
+- total fused savings against matched source-plus-sidecar: `92,611` bytes;
+- matched fused ratios range from `0.717412` to `0.860487`.
 
 ## Claim Boundary
 
@@ -81,8 +92,7 @@ Softmax-table/floor-division fixture family. It is not:
 - full inference;
 - timing evidence;
 - public benchmark evidence;
-- recursion or PCD;
-- a fused savings claim for the eight-head row.
+- recursion or PCD.
 
 ## Validation
 
