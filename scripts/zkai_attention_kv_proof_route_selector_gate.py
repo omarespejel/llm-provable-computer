@@ -3325,15 +3325,15 @@ def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax division-bound drift")
     if "no real-valued Softmax" not in summary.get("table_error_bound_policy", ""):
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax real-valued error-bound overclaim")
-    for key in (
-        "source_statement_commitment",
-        "source_public_instance_commitment",
-        "source_score_row_commitment",
-        "source_outputs_commitment",
-        "source_final_kv_cache_commitment",
-    ):
-        commitment = summary.get(key)
-        if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):
+    expected_source_commitment_fields = {
+        "source_statement_commitment": "blake2b-256:53ef16ba16ce365697c9f95e87cf1e4ef2a5975d04aebd03dca92792b28a5be8",
+        "source_public_instance_commitment": "blake2b-256:5ddd35aa741b465bb91f1ed2129b346839887a56e69ee44ed769fcbe97dea160",
+        "source_score_row_commitment": "blake2b-256:da24ff81018d62d7111330ffc71d432b822d88f5383d70bc7a3acb7df2ba6114",
+        "source_outputs_commitment": "blake2b-256:3a3a5ce91d1d54a89b2f0236411491085ef2d12012b97e9ac314e617ad7dc30e",
+        "source_final_kv_cache_commitment": "blake2b-256:e4c3c24f65bcb5b770a4d81be224317bcecf4b0a46bffb9692440e278a8d81a8",
+    }
+    for key, expected_value in expected_source_commitment_fields.items():
+        if summary.get(key) != expected_value:
             raise AttentionKvRouteSelectorError(f"d16 two-head quantized Softmax {key} drift")
 
 
