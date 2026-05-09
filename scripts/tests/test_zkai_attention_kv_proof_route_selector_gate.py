@@ -98,7 +98,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_regression_issue_448_records_native_stwo_and_external_control_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 74)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 75)
         self.assertEqual(payload["decision"], GATE.DECISION)
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
@@ -170,6 +170,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["head_counts_checked"], [2, 4, 8, 16])
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["lookup_claims_total"], 1560)
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["score_rows_total"], 1560)
+        self.assertEqual(payload["multihead_quantized_softmax_receipt"]["trace_rows_total"], 1920)
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["fused_proof_size_bytes_sum"], 227357)
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["max_fused_proof_size_bytes"], 65006)
         self.assertEqual(payload["multihead_quantized_softmax_receipt"]["real_softmax_status"], GATE.MULTIHEAD_QUANTIZED_SOFTMAX.REAL_SOFTMAX_STATUS)
@@ -475,6 +476,14 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
 
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "mutation rejection"):
             GATE.validate_payload(payload)
+
+    def test_multihead_quantized_softmax_rejects_trace_row_drift(self) -> None:
+        payload = GATE.build_payload()
+        summary = copy.deepcopy(payload["multihead_quantized_softmax_receipt"])
+        summary["trace_rows_total"] = 896
+
+        with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "trace-row-count drift"):
+            GATE.validate_multihead_quantized_softmax_receipt(summary)
 
     def test_gate_rejects_malformed_next_go_criteria_as_gate_error(self) -> None:
         payload = GATE.build_payload()

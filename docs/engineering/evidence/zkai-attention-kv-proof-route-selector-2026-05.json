@@ -439,7 +439,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "0673a14700a925802f59d6f7f6cec4ca98186a95",
+  "git_commit": "ae2c7748bd6a65025def537effa5a2eb7c7da5ca",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -530,6 +530,7 @@
     "multihead_quantized_softmax_max_fused_proof_size_bytes": 65006,
     "multihead_quantized_softmax_max_observed_division_error_fraction": "55/56",
     "multihead_quantized_softmax_profiles_checked": 4,
+    "multihead_quantized_softmax_trace_rows_total": 1920,
     "native_stwo_envelope_size_bytes": 265791,
     "native_stwo_proof_size_bytes": 24394,
     "native_stwo_score_row_count": 52,
@@ -724,6 +725,11 @@
     },
     {
       "name": "multihead_quantized_softmax_profile_count_drift",
+      "reason": "multi-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "multihead_quantized_softmax_trace_rows_drift",
       "reason": "multi-head quantized Softmax receipt drift",
       "rejected": true
     },
@@ -1003,8 +1009,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 74,
-  "mutations_rejected": 74,
+  "mutations_checked": 75,
+  "mutations_rejected": 75,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -1472,7 +1478,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:e3964fb568bb881375667728913ae5f279b8b28a502ff20b03f5036731a2ea50",
+  "selector_commitment": "blake2b-256:5d750ba9d3e82b9ee02a6d01abc5877b889afaf8bf028706513302903371e7fd",
   "softmax_denominator_rounding_edge_corpus": {
     "all_clipped_denominator": 304,
     "all_route_mutations_rejected": true,

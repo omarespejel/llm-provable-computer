@@ -372,6 +372,7 @@ EXPECTED_MUTATION_NAMES = (
     "multihead_quantized_softmax_receipt_mutation_rejections_drift",
     "multihead_quantized_softmax_real_softmax_overclaim",
     "multihead_quantized_softmax_profile_count_drift",
+    "multihead_quantized_softmax_trace_rows_drift",
     "multihead_quantized_softmax_output_mapping_drift",
     "longseq_fused_softmax_route_removed",
     "longseq_fused_softmax_decision_drift",
@@ -1844,6 +1845,9 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "multihead_quantized_softmax_lookup_claims_total": (
                 multihead_quantized_softmax_receipt["lookup_claims_total"]
             ),
+            "multihead_quantized_softmax_trace_rows_total": (
+                multihead_quantized_softmax_receipt["trace_rows_total"]
+            ),
             "multihead_quantized_softmax_profiles_checked": (
                 multihead_quantized_softmax_receipt["profiles_checked"]
             ),
@@ -2022,6 +2026,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["multihead_quantized_softmax_receipt"]["real_softmax_status"] = "GO_REAL_VALUED_SOFTMAX"
     elif name == "multihead_quantized_softmax_profile_count_drift":
         out["multihead_quantized_softmax_receipt"]["profiles_checked"] = 1
+    elif name == "multihead_quantized_softmax_trace_rows_drift":
+        out["multihead_quantized_softmax_receipt"]["trace_rows_total"] = 896
     elif name == "multihead_quantized_softmax_output_mapping_drift":
         out["multihead_quantized_softmax_receipt"]["profile_output_index_policies"][1] = (
             "step_index_times_head_count_plus_head"
@@ -2516,8 +2522,6 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
     if not isinstance(summary, dict):
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax receipt must be an object")
     expected = multihead_quantized_softmax_receipt_summary(load_multihead_quantized_softmax_receipt_payload())
-    if summary != expected:
-        raise AttentionKvRouteSelectorError("multi-head quantized Softmax receipt drift")
     if summary["decision"] != MULTIHEAD_QUANTIZED_SOFTMAX_DECISION:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax decision drift")
     if summary["route_id"] != MULTIHEAD_QUANTIZED_SOFTMAX_ROUTE_ID:
@@ -2538,6 +2542,8 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax profile/head-count drift")
     if summary["lookup_claims_total"] != 1560 or summary["score_rows_total"] != 1560:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax row-count drift")
+    if summary["trace_rows_total"] != 1920:
+        raise AttentionKvRouteSelectorError("multi-head quantized Softmax trace-row-count drift")
     if summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax table drift")
     if summary["fused_proof_size_bytes_sum"] != 227357 or summary["max_fused_proof_size_bytes"] != 65006:
@@ -2567,6 +2573,8 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
             raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax {key} shape drift")
         if any(not isinstance(commitment, str) or not commitment.startswith("blake2b-256:") for commitment in commitments):
             raise AttentionKvRouteSelectorError(f"multi-head quantized Softmax {key} drift")
+    if summary != expected:
+        raise AttentionKvRouteSelectorError("multi-head quantized Softmax receipt drift")
 
 
 def validate_longseq_fused_softmax_receipt(summary: Any) -> None:
@@ -2852,6 +2860,9 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         ),
         "multihead_quantized_softmax_lookup_claims_total": (
             payload["multihead_quantized_softmax_receipt"]["lookup_claims_total"]
+        ),
+        "multihead_quantized_softmax_trace_rows_total": (
+            payload["multihead_quantized_softmax_receipt"]["trace_rows_total"]
         ),
         "multihead_quantized_softmax_profiles_checked": (
             payload["multihead_quantized_softmax_receipt"]["profiles_checked"]

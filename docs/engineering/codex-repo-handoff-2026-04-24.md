@@ -468,7 +468,15 @@ Tablero boundary.
   rejects `77 / 77` semantic/proof mutations. This is exact for the pinned
   integer table/floor-division kernel across checked multi-head fixtures, not
   real-valued Softmax, full inference, long-context inference, public benchmark
-  evidence, or recursion/PCD; see
+  evidence, or recursion/PCD. Pinned backing backend IDs are
+  `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1`,
+  `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`,
+  `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1`, and
+  `stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1`; native
+  verifier reproduction uses `cargo +nightly-2025-07-14` with `--locked` and `--features stwo-backend`, and the timing mode is
+  `proof_existence_and_byte_accounting_only_not_public_benchmark`. Reproduce the
+  checked evidence with `python3 scripts/zkai_attention_kv_multihead_quantized_softmax_receipt_gate.py --run-native --write-json docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.tsv`;
+  see
   `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`.
 - Issue `#506` applies the same implementation-exact receipt discipline to the
   d16 fused width-axis route, and issue `#507` hardens it with a deterministic
