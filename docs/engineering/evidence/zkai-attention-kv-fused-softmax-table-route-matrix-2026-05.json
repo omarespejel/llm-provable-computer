@@ -1,14 +1,14 @@
 {
   "aggregate_metrics": {
-    "matched_fused_proof_size_bytes_total": 478271,
-    "matched_fused_savings_bytes_total": 129701,
-    "matched_source_plus_sidecar_raw_proof_bytes_total": 607972,
-    "max_fused_proof_size_bytes": 78211,
+    "matched_fused_proof_size_bytes_total": 563139,
+    "matched_fused_savings_bytes_total": 152991,
+    "matched_source_plus_sidecar_raw_proof_bytes_total": 716130,
+    "max_fused_proof_size_bytes": 84868,
     "max_matched_fused_to_source_plus_sidecar_ratio": 0.860487,
     "min_matched_fused_to_source_plus_sidecar_ratio": 0.717412,
-    "total_fused_proof_size_bytes": 478271,
-    "total_lookup_claims": 2104,
-    "total_trace_rows": 2688
+    "total_fused_proof_size_bytes": 563139,
+    "total_lookup_claims": 2440,
+    "total_trace_rows": 3200
   },
   "axis_summary": {
     "combined_width_head_axis_seq8": {
@@ -27,6 +27,27 @@
       "vs_d8_two_head_lookup_claim_ratio": 1.0,
       "vs_d8_two_head_source_plus_sidecar_ratio": 1.404674,
       "vs_d8_two_head_trace_row_ratio": 1.0
+    },
+    "combined_width_head_sequence_axis": {
+      "fused_proof_size_bytes": 84868,
+      "fused_to_source_plus_sidecar_ratio": 0.784667,
+      "head_count": 2,
+      "held_constant": "bounded_softmax_table_kernel_with_width_head_and_sequence_axes_combined",
+      "key_width": 16,
+      "lookup_claims": 336,
+      "matched_comparator_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "profile_id": "d16_two_head_seq16",
+      "source_plus_sidecar_raw_proof_bytes": 108158,
+      "steps_per_head": 16,
+      "trace_rows": 512,
+      "vs_d16_two_head_seq8_fused_proof_size_ratio": 1.085116,
+      "vs_d16_two_head_seq8_lookup_claim_ratio": 3.230769,
+      "vs_d16_two_head_seq8_steps_ratio": 2.0,
+      "vs_d16_two_head_seq8_trace_row_ratio": 4.0,
+      "vs_d8_two_head_seq16_fused_proof_size_ratio": 1.40273,
+      "vs_d8_two_head_seq16_key_width_ratio": 2.0,
+      "vs_d8_two_head_seq16_lookup_claim_ratio": 1.0,
+      "vs_d8_two_head_seq16_trace_row_ratio": 1.0
     },
     "head_axis_d8_seq8": {
       "eight_head_comparator_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
@@ -93,7 +114,7 @@
   "decision": "GO_NATIVE_STWO_FUSED_SOFTMAX_TABLE_CONTROLLED_ROUTE_MATRIX",
   "issue": 505,
   "kernel_scope": "bounded_integer_softmax_table_floor_division_kernel_with_fused_attention_arithmetic_and_logup_membership",
-  "matched_comparator_profiles": 8,
+  "matched_comparator_profiles": 9,
   "mutation_results": [
     {
       "error": "result drift for decision",
@@ -191,6 +212,11 @@
       "rejected": true
     },
     {
+      "error": "d16_two_head_seq16 steps per head drift",
+      "name": "d16_two_head_longseq_combined_axis_metric_smuggling",
+      "rejected": true
+    },
+    {
       "error": "axis summary drift",
       "name": "axis_summary_width_ratio_drift",
       "rejected": true
@@ -211,13 +237,18 @@
       "rejected": true
     },
     {
+      "error": "axis summary drift",
+      "name": "axis_summary_combined_longseq_axis_ratio_drift",
+      "rejected": true
+    },
+    {
       "error": "unknown result keys: ['unexpected']",
       "name": "unknown_field_injection",
       "rejected": true
     }
   ],
-  "mutations_checked": 24,
-  "mutations_rejected": 24,
+  "mutations_checked": 26,
+  "mutations_rejected": 26,
   "no_comparator_profiles": [],
   "profile_ids": [
     "d8_single_head_seq8",
@@ -227,9 +258,10 @@
     "d8_eight_head_seq8",
     "d8_sixteen_head_seq8",
     "d8_two_head_seq16",
-    "d16_two_head_seq8"
+    "d16_two_head_seq8",
+    "d16_two_head_seq16"
   ],
-  "profiles_checked": 8,
+  "profiles_checked": 9,
   "route_id": "local_stwo_attention_kv_fused_softmax_table_controlled_route_matrix",
   "route_rows": [
     {
@@ -486,6 +518,38 @@
       "steps_per_head": 8,
       "table_rows": 9,
       "trace_rows": 128,
+      "value_width": 16
+    },
+    {
+      "axis_role": "combined_width_head_sequence_axis",
+      "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_size_bytes": 1569707,
+      "fused_issue": 525,
+      "fused_over_source_proof_bytes": 1538,
+      "fused_proof_size_bytes": 84868,
+      "fused_saves_vs_source_plus_sidecar_bytes": 23290,
+      "fused_to_source_plus_sidecar_ratio": 0.784667,
+      "head_count": 2,
+      "key_width": 16,
+      "label": "d16 two-head seq16 fused Softmax-table route",
+      "lookup_claims": 336,
+      "matched_source_sidecar_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "mutations_checked": 30,
+      "mutations_rejected": 30,
+      "profile_id": "d16_two_head_seq16",
+      "route_id": "local_stwo_attention_kv_d16_two_head_longseq_fused_bounded_softmax_table_logup_proof",
+      "score_rows": 336,
+      "sidecar_issue": 525,
+      "sidecar_proof_size_bytes": 24828,
+      "source_envelope_size_bytes": 1554358,
+      "source_input_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json",
+      "source_issue": 525,
+      "source_plus_sidecar_raw_proof_bytes": 108158,
+      "source_proof_size_bytes": 83330,
+      "steps_per_head": 16,
+      "table_rows": 9,
+      "trace_rows": 512,
       "value_width": 16
     }
   ],

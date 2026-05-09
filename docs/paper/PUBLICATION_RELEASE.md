@@ -1,6 +1,6 @@
 # Publication Release Package
 
-Snapshot date: **May 9, 2026**
+Snapshot date: **May 10, 2026**
 
 Primary presentation title:
 
@@ -44,9 +44,10 @@ It supports the following presentation posture:
   bounded Softmax-table attention, LogUp table-membership sidecars, and fused
   single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp
   proof objects, plus a fixed-width two-head long-sequence fused proof object
-  and a width-axis d16 fused proof object with a matched source-plus-sidecar control
-  plus an implementation-exact d16 quantized Softmax-table receipt with
-  denominator/rounding edge-corpus hardening
+  and a width-axis d16 fused proof object with a matched source-plus-sidecar
+  control, plus a combined d16 two-head long-sequence fused proof object with a
+  matched source-plus-sidecar control, plus an implementation-exact d16
+  quantized Softmax-table receipt with denominator/rounding edge-corpus hardening
   (not exact Softmax, implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
   public benchmark evidence, or
