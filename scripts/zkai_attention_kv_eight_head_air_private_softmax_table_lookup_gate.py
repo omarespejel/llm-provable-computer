@@ -491,10 +491,13 @@ def validate_lookup_envelope(
     }
     if not type_strict_equal(summary, expected_summary):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup summary drift")
-    proof_bytes = bytes(envelope["proof"])
-    stark_proof = parse_lookup_proof(envelope["proof"])
+    proof_value = envelope.get("proof")
+    stark_proof = parse_lookup_proof(proof_value)
+    proof_bytes = bytes(proof_value)
     if envelope_bytes is None:
         envelope_bytes = json.dumps(envelope, indent=2, sort_keys=True).encode("utf-8")
+    if envelope_size_bytes != len(envelope_bytes):
+        raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope size argument drift")
     return {
         "proof_backend": envelope["proof_backend"],
         "proof_version": envelope["proof_backend_version"],
