@@ -3298,6 +3298,9 @@ def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
         "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
         "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
         "step_binding_policy": "each score row binds per-head local step_index derived from statement input_steps order",
+        "output_order_policy": (
+            "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout"
+        ),
         "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
         "weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0",
     }
@@ -3318,8 +3321,6 @@ def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax mutation rejection drift")
     if summary["all_mutations_rejected"] is not True:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax fail-closed drift")
-    if "input_steps order" not in summary.get("output_order_policy", ""):
-        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax output-order drift")
     if not isinstance(summary.get("division_error_bound"), str) or "< 1 output unit" not in summary["division_error_bound"]:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax division-bound drift")
     if "no real-valued Softmax" not in summary.get("table_error_bound_policy", ""):
