@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import shutil
 import subprocess
 import tempfile
 from types import ModuleType
@@ -161,6 +162,7 @@ TSV_COLUMNS = (
 )
 
 _NATIVE_VERIFY_CACHE: dict[tuple[str, int], dict[str, Any]] = {}
+CARGO_BIN = shutil.which("cargo")
 
 
 class AttentionKvSixteenHeadFusedSoftmaxTableGateError(ValueError):
@@ -310,6 +312,8 @@ def assert_native_verifier_summary(mapping: dict[str, Any], expected: dict[str, 
 
 
 def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes) -> None:
+    if CARGO_BIN is None:
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("missing cargo executable")
     if len(envelope_bytes) <= 0 or len(envelope_bytes) > MAX_FUSED_ENVELOPE_JSON_BYTES:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("fused envelope byte size drift")
     digest = hashlib.blake2b(envelope_bytes, digest_size=32).hexdigest()
@@ -324,7 +328,7 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes) -> None:
         envelope_path.write_bytes(envelope_bytes)
         with subprocess.Popen(
             [
-                "cargo",
+                CARGO_BIN,
                 "+nightly-2025-07-14",
                 "run",
                 "--locked",
@@ -442,6 +446,7 @@ def mutation_cases(result: dict[str, Any], envelope: dict[str, Any], source_inpu
 def validate_result(result: dict[str, Any], envelope: dict[str, Any], source_input: dict[str, Any]) -> None:
     mutation_results = result.get("mutation_results")
     expected = build_result(envelope, source_input, mutation_results if isinstance(mutation_results, list) else [])
+    assert_exact_keys(result, set(expected), "gate result")
     for key, value in expected.items():
         if key == "mutation_results":
             continue
@@ -450,6 +455,10 @@ def validate_result(result: dict[str, Any], envelope: dict[str, Any], source_inp
     validate_fused_envelope(envelope, source_input)
     if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result shape drift")
+    for item in mutation_results:
+        if not isinstance(item, dict):
+            raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result entry drift")
+        assert_exact_keys(item, {"name", "rejected", "error"}, "mutation result")
     if tuple(item.get("name") for item in mutation_results if isinstance(item, dict)) != EXPECTED_MUTATION_NAMES:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result name drift")
     if any(item.get("rejected") is not True for item in mutation_results if isinstance(item, dict)):
@@ -511,8 +520,12 @@ def run_gate() -> dict[str, Any]:
     for name, mutated_result, mutated_envelope, mutated_source in mutation_cases(result, envelope, source_input):
         try:
             validate_result(mutated_result, mutated_envelope, mutated_source)
-        except Exception as err:  # noqa: BLE001
+        except AttentionKvSixteenHeadFusedSoftmaxTableGateError as err:
             mutation_results.append({"name": name, "rejected": True, "error": str(err)})
+        except Exception as err:  # noqa: BLE001
+            raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
+                f"mutation harness crashed for {name}: {err}"
+            ) from err
         else:
             mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
     result = build_result(envelope, source_input, mutation_results)
