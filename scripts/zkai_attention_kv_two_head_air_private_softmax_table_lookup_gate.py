@@ -368,6 +368,7 @@ def validate_source_input(source_input: Any) -> None:
 
 
 def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelope_size_bytes: int) -> dict[str, Any]:
+    validate_source_input(source_input)
     if not isinstance(envelope, dict):
         raise AttentionKvAirPrivateSoftmaxTableLookupGateError("lookup envelope must be an object")
     allowed = {

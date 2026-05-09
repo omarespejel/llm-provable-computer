@@ -1,0 +1,87 @@
+{
+  "accepted_targets": [],
+  "claim_boundary": "VALIDATOR_API_HARDENING_FOR_MATCHING_MALFORMED_SOFTMAX_TABLE_SOURCE_ENVELOPE_PAIRS_NOT_NEW_PROOF_NOT_BENCHMARK_NOT_REAL_VALUED_SOFTMAX_NOT_MODEL_ACCURACY_EVIDENCE",
+  "decision": "GO_SOFTMAX_TABLE_PAIRED_SOURCE_VALIDATION_AUDIT",
+  "fused_targets_checked": 6,
+  "issue": 510,
+  "mutation": "score_rows[0].output_remainder[0] += 1",
+  "schema": "zkai-attention-kv-softmax-paired-source-validation-audit-v1",
+  "sidecar_targets_checked": 5,
+  "target_results": [
+    {
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "rejected": true,
+      "route": "sidecar",
+      "target_id": "d8_sidecar"
+    },
+    {
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "rejected": true,
+      "route": "sidecar",
+      "target_id": "two_head_sidecar"
+    },
+    {
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "rejected": true,
+      "route": "sidecar",
+      "target_id": "four_head_sidecar"
+    },
+    {
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "rejected": true,
+      "route": "sidecar",
+      "target_id": "two_head_longseq_sidecar"
+    },
+    {
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "rejected": true,
+      "route": "sidecar",
+      "target_id": "d16_sidecar"
+    },
+    {
+      "error": "AttentionKvD8FusedSoftmaxTableGateError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "d8_fused"
+    },
+    {
+      "error": "AttentionKvTwoHeadFusedSoftmaxTableGateError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "two_head_fused"
+    },
+    {
+      "error": "AttentionKvFourHeadFusedSoftmaxTableGateError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "four_head_fused"
+    },
+    {
+      "error": "AttentionKvEightHeadBoundedSoftmaxTableInputError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "eight_head_fused"
+    },
+    {
+      "error": "AttentionKvTwoHeadLongseqBoundedSoftmaxTableInputError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "two_head_longseq_fused"
+    },
+    {
+      "error": "AttentionKvD16FusedSoftmaxTableGateError",
+      "rejected": true,
+      "route": "fused",
+      "target_id": "d16_fused"
+    }
+  ],
+  "targets_checked": 11,
+  "targets_rejected": 11,
+  "timing_policy": "not_timed_correctness_gate_only",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_softmax_paired_source_validation_audit_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_softmax_paired_source_validation_audit_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}
