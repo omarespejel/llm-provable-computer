@@ -141,6 +141,30 @@ class AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputTests(unittest.TestCas
         with self.assertRaisesRegex(gate.AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError, r"score_gap\[1\] outside 16-bit range"):
             gate.build_score_rows(initial, steps)
 
+    def test_build_score_rows_rejects_derived_dot_product_overflow(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        initial[0]["key"] = [0 for _ in range(gate.KEY_WIDTH)]
+        initial[0]["key"][0] = 2
+        steps[0]["query"] = [0 for _ in range(gate.KEY_WIDTH)]
+        steps[0]["query"][0] = gate.MAX_ABS_VALUE
+        with self.assertRaisesRegex(
+            gate.AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError,
+            r"product\[0\] outside bounded fixture range",
+        ):
+            gate.build_score_rows(initial, steps)
+
+    def test_build_score_rows_rejects_derived_weighted_value_overflow(self):
+        initial = gate.fixture_initial_kv()
+        steps = gate.fixture_input_steps()
+        initial[0]["value"] = [0 for _ in range(gate.VALUE_WIDTH)]
+        initial[0]["value"][0] = gate.MAX_ABS_VALUE
+        with self.assertRaisesRegex(
+            gate.AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError,
+            r"weighted_value\[0\] outside bounded fixture range",
+        ):
+            gate.build_score_rows(initial, steps)
+
     def test_rejects_output_remainder_bit_overflow(self):
         with self.assertRaisesRegex(gate.AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError, "outside 16-bit range"):
             gate.require_nonnegative_bit_bound(

@@ -190,12 +190,16 @@ def commitment_from_parts(parts: list[tuple[str, Any]], domain: str) -> str:
     return f"blake2b-256:{digest.hexdigest()}"
 
 
-def require_int(value: Any, label: str) -> int:
+def require_bounded_int(value: Any, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError(f"{label} must be an integer")
     if abs(value) > MAX_ABS_VALUE:
         raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError(f"{label} outside bounded fixture range")
     return value
+
+
+def require_int(value: Any, label: str) -> int:
+    return require_bounded_int(value, label)
 
 
 def require_nonnegative_bit_bound(value: int, *, bits: int, label: str) -> int:
@@ -280,10 +284,17 @@ def source_payload() -> dict[str, Any]:
     return payload
 
 
-def dot(lhs: list[int], rhs: list[int]) -> int:
+def dot(lhs: list[int], rhs: list[int], *, label: str) -> int:
     if len(lhs) != KEY_WIDTH or len(rhs) != KEY_WIDTH:
         raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError("dot-product width mismatch")
-    return sum(require_int(left, "query") * require_int(right, "key") for left, right in zip(lhs, rhs, strict=True))
+    total = 0
+    for index, (left, right) in enumerate(zip(lhs, rhs, strict=True)):
+        product = require_bounded_int(
+            require_int(left, f"{label}.query[{index}]") * require_int(right, f"{label}.key[{index}]"),
+            f"{label}.product[{index}]",
+        )
+        total = require_bounded_int(total + product, f"{label}.partial_sum[{index}]")
+    return require_bounded_int(total, f"{label}.score")
 
 
 def weight_from_gap(score_gap: int) -> int:
@@ -582,7 +593,17 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
         ]
         if not allowed:
             raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError(f"input_steps[{global_step_index}] has no allowed candidates")
-        scored = [(candidate, dot(step["query"], candidate["key"])) for candidate in allowed]
+        scored = [
+            (
+                candidate,
+                dot(
+                    step["query"],
+                    candidate["key"],
+                    label=f"input_steps[{global_step_index}].candidate[{candidate_index}].dot",
+                ),
+            )
+            for candidate_index, candidate in enumerate(allowed)
+        ]
         selected_score = max(score for _, score in scored)
         score_gaps = [
             require_nonnegative_bit_bound(
@@ -610,18 +631,35 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
         ]
         if any(weight <= 0 for weight in weights):
             raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError(f"input_steps[{global_step_index}] has zero weight")
-        denominator = sum(weights)
+        denominator = require_bounded_int(sum(weights), f"input_steps[{global_step_index}].weight_denominator")
         if denominator <= 0:
             raise AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputError(f"input_steps[{global_step_index}] has invalid weight denominator")
         numerators = [0 for _ in range(VALUE_WIDTH)]
-        for (candidate, _), weight in zip(scored, weights, strict=True):
+        weighted_values_by_candidate: list[list[int]] = []
+        for candidate_index, ((candidate, _), weight) in enumerate(zip(scored, weights, strict=True)):
+            weighted_values: list[int] = []
             for dim, value in enumerate(candidate["value"]):
-                numerators[dim] += weight * value
+                weighted_value = require_bounded_int(
+                    weight * require_int(value, f"input_steps[{global_step_index}].candidate[{candidate_index}].value[{dim}]"),
+                    f"input_steps[{global_step_index}].candidate[{candidate_index}].weighted_value[{dim}]",
+                )
+                weighted_values.append(weighted_value)
+                numerators[dim] = require_bounded_int(
+                    numerators[dim] + weighted_value,
+                    f"input_steps[{global_step_index}].weighted_numerator[{dim}]",
+                )
+            weighted_values_by_candidate.append(weighted_values)
         output = [
             require_int(numerator // denominator, f"input_steps[{global_step_index}].attention_output[{dim}]")
             for dim, numerator in enumerate(numerators)
         ]
-        remainders = [numerator - out * denominator for numerator, out in zip(numerators, output, strict=True)]
+        remainders = [
+            require_bounded_int(
+                numerator - out * denominator,
+                f"input_steps[{global_step_index}].output_remainder[{dim}]",
+            )
+            for dim, (numerator, out) in enumerate(zip(numerators, output, strict=True))
+        ]
         for dim, remainder in enumerate(remainders):
             require_nonnegative_bit_bound(
                 remainder,
@@ -633,11 +671,17 @@ def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[st
                     f"input_steps[{global_step_index}].output_remainder[{dim}] outside denominator range"
                 )
         outputs.append(list(output))
-        for candidate_index, ((candidate, score), weight, score_gap, causal_gap) in enumerate(
-            zip(scored, weights, score_gaps, causal_gaps, strict=True)
+        for candidate_index, ((candidate, score), weight, score_gap, causal_gap, weighted_value) in enumerate(
+            zip(scored, weights, score_gaps, causal_gaps, weighted_values_by_candidate, strict=True)
         ):
-            products = [left * right for left, right in zip(step["query"], candidate["key"], strict=True)]
-            weighted_value = [weight * value for value in candidate["value"]]
+            products = [
+                require_bounded_int(
+                    require_int(left, f"input_steps[{global_step_index}].candidate[{candidate_index}].query[{dim}]")
+                    * require_int(right, f"input_steps[{global_step_index}].candidate[{candidate_index}].key[{dim}]"),
+                    f"input_steps[{global_step_index}].candidate[{candidate_index}].product[{dim}]",
+                )
+                for dim, (left, right) in enumerate(zip(step["query"], candidate["key"], strict=True))
+            ]
             rows.append({
                 "row_index": len(rows),
                 "head_index": head_index,

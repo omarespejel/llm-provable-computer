@@ -904,6 +904,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertFalse(d16_two_head_route["usable_today"])
         self.assertFalse(d16_two_head_route["proof_backed"])
 
+        d16_two_head_longseq_removed = GATE.mutate_payload(
+            payload,
+            "d16_two_head_longseq_fused_softmax_route_removed",
+        )
+        d16_two_head_longseq_route = GATE.route_candidate_by_id(
+            d16_two_head_longseq_removed["route_candidates"],
+            GATE.D16_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_ROUTE_ID,
+        )
+        self.assertFalse(d16_two_head_longseq_route["usable_today"])
+        self.assertFalse(d16_two_head_longseq_route["proof_backed"])
+
         d16_quantized_removed = GATE.mutate_payload(payload, "d16_quantized_softmax_route_removed")
         d16_quantized_route = GATE.route_candidate_by_id(
             d16_quantized_removed["route_candidates"], GATE.D16_QUANTIZED_SOFTMAX_ROUTE_ID
