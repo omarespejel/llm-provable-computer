@@ -943,50 +943,62 @@
   ],
   "route_mutation_results": [
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvBoundedSoftmaxTableNativeGateError",
       "name": "source_denominator_zero",
       "rejected": true,
       "route": "source"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvBoundedSoftmaxTableNativeGateError",
       "name": "source_remainder_equal_denominator",
       "rejected": true,
       "route": "source"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvBoundedSoftmaxTableNativeGateError",
       "name": "source_negative_remainder",
       "rejected": true,
       "route": "source"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
       "name": "sidecar_matching_source_denominator_zero",
       "rejected": true,
       "route": "sidecar"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
       "name": "sidecar_matching_source_remainder_equal_denominator",
       "rejected": true,
       "route": "sidecar"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvAirPrivateSoftmaxTableLookupGateError",
+      "name": "sidecar_matching_source_negative_remainder",
+      "rejected": true,
+      "route": "sidecar"
+    },
+    {
+      "error": "AttentionKvD16FusedSoftmaxTableGateError",
       "name": "fused_matching_source_denominator_zero",
       "rejected": true,
       "route": "fused"
     },
     {
-      "error": "source input validation drift: score rows drift",
+      "error": "AttentionKvD16FusedSoftmaxTableGateError",
       "name": "fused_matching_source_remainder_equal_denominator",
+      "rejected": true,
+      "route": "fused"
+    },
+    {
+      "error": "AttentionKvD16FusedSoftmaxTableGateError",
+      "name": "fused_matching_source_negative_remainder",
       "rejected": true,
       "route": "fused"
     }
   ],
-  "route_mutations_checked": 7,
-  "route_mutations_rejected": 7,
+  "route_mutations_checked": 9,
+  "route_mutations_rejected": 9,
   "schema": "zkai-attention-kv-softmax-denominator-rounding-edge-corpus-v1",
   "score_gap_clip": 8,
   "source_issue": 501,

@@ -510,8 +510,8 @@
     "d16_softmax_edge_max_denominator": 852,
     "d16_softmax_edge_max_remainder_ratio": "0.842105",
     "d16_softmax_edge_min_denominator": 256,
-    "d16_softmax_edge_route_mutations_checked": 7,
-    "d16_softmax_edge_route_mutations_rejected": 7,
+    "d16_softmax_edge_route_mutations_checked": 9,
+    "d16_softmax_edge_route_mutations_rejected": 9,
     "longseq_fused_softmax_fused_envelope_size_bytes": 1050248,
     "longseq_fused_softmax_fused_proof_size_bytes": 60502,
     "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 18942,
@@ -1460,7 +1460,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:fda38eefeefaff0338e4f021cee50210abce360d96a53d7f13561ef73175642c",
+  "selector_commitment": "blake2b-256:d62bbd3477648eb07dff5e6909727aa46085316f307796164b364cba7ab5d358",
   "softmax_denominator_rounding_edge_corpus": {
     "all_clipped_denominator": 304,
     "all_route_mutations_rejected": true,
@@ -1479,8 +1479,8 @@
       "mixed_remainder_extremes"
     ],
     "result": "GO",
-    "route_mutations_checked": 7,
-    "route_mutations_rejected": 7,
+    "route_mutations_checked": 9,
+    "route_mutations_rejected": 9,
     "schema": "zkai-attention-kv-softmax-denominator-rounding-edge-corpus-v1",
     "timing_policy": "not_timed_correctness_gate_only"
   },

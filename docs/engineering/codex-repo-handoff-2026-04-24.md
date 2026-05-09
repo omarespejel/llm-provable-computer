@@ -445,7 +445,7 @@ Tablero boundary.
 - Issue `#506` applies the same implementation-exact receipt discipline to the
   d16 fused width-axis route, and issue `#507` hardens it with a deterministic
   denominator/rounding edge corpus. The edge corpus checks `7` integer-kernel
-  edge cases, records denominator range `256..852`, rejects `7 / 7`
+  edge cases, records denominator range `256..852`, rejects `9 / 9`
   source/sidecar/fused denominator and remainder mutations, and hardens the d16
   sidecar/fused validator APIs so matching malformed source/envelope pairs are
   rejected by direct source-input validation. This is correctness hardening, not

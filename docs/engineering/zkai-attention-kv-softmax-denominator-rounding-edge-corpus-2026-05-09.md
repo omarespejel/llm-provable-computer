@@ -63,11 +63,12 @@ This PR hardens that boundary:
   `validate_fused_envelope`.
 
 The new regression tests mutate denominator and remainder fields in a matching
-source/envelope pair and require rejection with `source input validation drift`.
+source/envelope pair and require rejection through direct source-input
+validation before the paired malformed artifact is accepted.
 
 ## Route Mutations
 
-The edge-corpus gate checks and rejects `7 / 7` route mutations:
+The edge-corpus gate checks and rejects `9 / 9` route mutations:
 
 | Mutation | Route | Result |
 | --- | --- | --- |
@@ -76,8 +77,10 @@ The edge-corpus gate checks and rejects `7 / 7` route mutations:
 | `source_negative_remainder` | source | rejected |
 | `sidecar_matching_source_denominator_zero` | sidecar | rejected |
 | `sidecar_matching_source_remainder_equal_denominator` | sidecar | rejected |
+| `sidecar_matching_source_negative_remainder` | sidecar | rejected |
 | `fused_matching_source_denominator_zero` | fused | rejected |
 | `fused_matching_source_remainder_equal_denominator` | fused | rejected |
+| `fused_matching_source_negative_remainder` | fused | rejected |
 
 ## Claim Boundary
 

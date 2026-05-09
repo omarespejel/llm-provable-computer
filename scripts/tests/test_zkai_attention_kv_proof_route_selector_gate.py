@@ -265,8 +265,8 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             GATE.SOFTMAX_EDGE_CORPUS.DECISION,
         )
         self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["edge_case_count"], 7)
-        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_checked"], 7)
-        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_rejected"], 7)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_checked"], 9)
+        self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["route_mutations_rejected"], 9)
         self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["min_denominator"], 256)
         self.assertEqual(payload["softmax_denominator_rounding_edge_corpus"]["max_denominator"], 852)
         self.assertIn(
@@ -367,7 +367,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         )
         self.assertEqual(payload["metrics"]["d16_softmax_edge_min_denominator"], 256)
         self.assertEqual(payload["metrics"]["d16_softmax_edge_max_denominator"], 852)
-        self.assertEqual(payload["metrics"]["d16_softmax_edge_route_mutations_rejected"], 7)
+        self.assertEqual(payload["metrics"]["d16_softmax_edge_route_mutations_rejected"], 9)
         self.assertEqual(payload["metrics"]["snark_proof_size_bytes"], payload["external_snark_receipt"]["proof_size_bytes"])
         self.assertEqual(payload["metrics"]["risc0_receipt_size_bytes"], payload["external_risc0_receipt"]["proof_size_bytes"])
         self.assertEqual(
