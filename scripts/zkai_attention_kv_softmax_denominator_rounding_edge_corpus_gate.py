@@ -66,8 +66,10 @@ ROUTE_MUTATION_NAMES = (
     "source_negative_remainder",
     "sidecar_matching_source_denominator_zero",
     "sidecar_matching_source_remainder_equal_denominator",
+    "sidecar_matching_source_negative_remainder",
     "fused_matching_source_denominator_zero",
     "fused_matching_source_remainder_equal_denominator",
+    "fused_matching_source_negative_remainder",
 )
 
 VALIDATION_COMMANDS = (
@@ -272,7 +274,7 @@ def route_rejection_results() -> list[dict[str, Any]]:
             sidecar_gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
             fused_gate.AttentionKvD16FusedSoftmaxTableGateError,
         ) as err:
-            results.append({"name": name, "route": route, "rejected": True, "error": strip_route_error(err)})
+            results.append({"name": name, "route": route, "rejected": True, "error": type(err).__name__})
         else:
             results.append({"name": name, "route": route, "rejected": False, "error": "mutation accepted"})
 
@@ -331,6 +333,18 @@ def route_rejection_results() -> list[dict[str, Any]]:
     )
 
     mutated_source = copy.deepcopy(source_payload)
+    mutated_sidecar = copy.deepcopy(sidecar_envelope)
+    mutate_source_negative_remainder(mutated_source)
+    mutated_sidecar["source_input"] = mutated_source
+    record(
+        "sidecar_matching_source_negative_remainder",
+        "sidecar",
+        lambda: sidecar_gate.validate_lookup_envelope(
+            mutated_sidecar, mutated_source, sidecar_gate.LOOKUP_ENVELOPE_SIZE_BYTES
+        ),
+    )
+
+    mutated_source = copy.deepcopy(source_payload)
     mutated_fused = copy.deepcopy(fused_envelope)
     mutate_source_denominator_zero(mutated_source)
     mutated_fused["source_input"] = mutated_source
@@ -346,6 +360,16 @@ def route_rejection_results() -> list[dict[str, Any]]:
     mutated_fused["source_input"] = mutated_source
     record(
         "fused_matching_source_remainder_equal_denominator",
+        "fused",
+        lambda: fused_gate.validate_fused_envelope(mutated_fused, mutated_source, run_native=False),
+    )
+
+    mutated_source = copy.deepcopy(source_payload)
+    mutated_fused = copy.deepcopy(fused_envelope)
+    mutate_source_negative_remainder(mutated_source)
+    mutated_fused["source_input"] = mutated_source
+    record(
+        "fused_matching_source_negative_remainder",
         "fused",
         lambda: fused_gate.validate_fused_envelope(mutated_fused, mutated_source, run_native=False),
     )

@@ -68,9 +68,9 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
             list(gate.ROUTE_MUTATION_NAMES),
         )
         self.assertTrue(all(row["rejected"] for row in self.result["route_mutation_results"]))
-        self.assertTrue(
-            all("source input validation drift" in row["error"] for row in self.result["route_mutation_results"])
-        )
+        self.assertTrue(all(row["error"].endswith("Error") for row in self.result["route_mutation_results"]))
+        self.assertIn("sidecar_matching_source_negative_remainder", gate.ROUTE_MUTATION_NAMES)
+        self.assertIn("fused_matching_source_negative_remainder", gate.ROUTE_MUTATION_NAMES)
 
     def test_rejects_pristine_artifact_validation_drift(self):
         with mock.patch.object(

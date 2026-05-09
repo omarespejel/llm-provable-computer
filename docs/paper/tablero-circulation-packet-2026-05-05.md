@@ -223,7 +223,7 @@ and not recursion/PCD.
 
 The d16 receipt now also has a denominator/rounding edge corpus. It checks seven
 deterministic integer-kernel edge cases, records denominator range `256..852`,
-observes maximum edge-corpus remainder ratio `0.842105`, and rejects `7 / 7`
+observes maximum edge-corpus remainder ratio `0.842105`, and rejects `9 / 9`
 source/sidecar/fused route mutations. The important hardening is API-level:
 sidecar and fused validators now revalidate the supplied source input directly,
 so a matching malformed source/envelope pair cannot bypass denominator or

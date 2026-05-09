@@ -420,7 +420,7 @@ Claim boundary:
 | d16 quantized Softmax-table max observed division residual | `25/26` |
 | d16 quantized Softmax-table receipt mutations | `36 / 36` |
 | d16 denominator/rounding edge cases | `7` |
-| d16 denominator/rounding route mutations | `7 / 7` |
+| d16 denominator/rounding route mutations | `9 / 9` |
 | d16 denominator range in edge corpus | `256..852` |
 | d16 max edge-corpus remainder ratio | `0.842105` |
 | External SNARK proof size | `802` bytes |
@@ -431,7 +431,7 @@ Claim boundary:
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
 | Mutations checked | 74 |
 | Mutations rejected | 74 |
-| Selector commitment | `blake2b-256:fda38eefeefaff0338e4f021cee50210abce360d96a53d7f13561ef73175642c` |
+| Selector commitment | `blake2b-256:d62bbd3477648eb07dff5e6909727aa46085316f307796164b364cba7ab5d358` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
