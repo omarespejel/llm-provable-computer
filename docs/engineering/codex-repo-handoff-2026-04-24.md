@@ -472,7 +472,7 @@ Tablero boundary.
   Softmax-table, fused four-head Softmax-table, fused eight-head Softmax-table,
   fused long-sequence Softmax-table,
   and quantized Softmax-table receipt gates are separate native
-  scale/semantics/accounting/fusion gates. It rejects `72 / 72` selector mutations and keeps real-valued Softmax,
+  scale/semantics/accounting/fusion gates. It rejects `74 / 74` selector mutations and keeps real-valued Softmax,
   long-context inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or

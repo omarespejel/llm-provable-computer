@@ -14,6 +14,7 @@ import argparse
 import copy
 import csv
 import json
+import math
 import pathlib
 import sys
 from collections import Counter
@@ -417,10 +418,19 @@ def validate_result(result: Any) -> None:
     if result.get("route_mutations_rejected") != len(ROUTE_MUTATION_NAMES):
         raise SoftmaxEdgeCorpusGateError("route mutation rejection drift")
     denominators = [case["denominator"] for case in expected_cases]
+    expected_max_remainder_ratio = max(case["max_remainder_ratio"] for case in expected_cases)
     if result.get("min_denominator") != min(denominators):
         raise SoftmaxEdgeCorpusGateError("min denominator drift")
     if result.get("max_denominator") != max(denominators):
         raise SoftmaxEdgeCorpusGateError("max denominator drift")
+    actual_max_remainder_ratio = result.get("max_remainder_ratio")
+    if not isinstance(actual_max_remainder_ratio, (int, float)) or not math.isclose(
+        float(actual_max_remainder_ratio),
+        expected_max_remainder_ratio,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise SoftmaxEdgeCorpusGateError("max remainder ratio drift")
     if result.get("negative_numerator_cases") != [
         case["name"] for case in expected_cases if case["negative_numerator_dimensions"] > 0
     ]:
