@@ -407,31 +407,34 @@ Tablero boundary.
   long-sequence/d16 sidecar and fused validators reject the paired malformed
   object. This is validator hardening only; see
   `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
-- Issue `#505` plus issues `#514` and `#519` record the controlled fused
-  Softmax-table route matrix across width, head-count, and sequence-length
-  axes. The checked matrix covers seven native Stwo fused rows: d8 single-head
-  seq8, d16 single-head seq8, d8 two-head seq8, d8 four-head seq8, d8
-  eight-head seq8, d8 sixteen-head seq8, and d8 two-head seq16. Matched
-  source-plus-sidecar controls now exist for all seven rows. The useful
-  engineering signal is separated by axis: d8 to d16 grows fused proof bytes
-  `1.352321x` at fixed `52` lookup claims; one to sixteen heads grows lookup
-  claims `16.000000x` while fused proof bytes grow `1.362866x`; eight to
-  sixteen heads doubles lookup claims while fused proof bytes grow `1.094838x`;
-  two-head seq8 to seq16 grows lookup claims `3.230769x` while fused proof
-  bytes grow `1.222065x`. The matrix rejects `22 / 22` drift, provenance-drift,
-  and overclaim mutations and remains not timing, not real-valued Softmax, not
-  full inference, and not recursion/PCD; see
+- Issue `#505` plus issues `#514`, `#519`, and `#521` record the controlled
+  fused Softmax-table route matrix across width, head-count, sequence-length,
+  and combined width/head axes. The checked matrix covers eight native Stwo
+  fused rows: d8 single-head seq8, d16 single-head seq8, d8 two-head seq8, d8
+  four-head seq8, d8 eight-head seq8, d8 sixteen-head seq8, d8 two-head seq16,
+  and d16 two-head seq8. Matched source-plus-sidecar controls now exist for all
+  eight rows. The combined d16 two-head route checks `104` lookup claims over
+  `128` trace rows with a `78211`-byte fused proof, `13385` bytes smaller than
+  the matched source-plus-sidecar control (`91596` bytes, `0.853869x`). The
+  matrix rejects `24 / 24` drift, provenance-drift, and overclaim mutations and
+  remains not timing, not real-valued Softmax, not full inference, and not
+  recursion/PCD; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`.
+  Follow-up issues are now registered for the next three research branches:
+  issue `#524` for a d16 two-head implementation-exact quantized Softmax-table
+  receipt, issue `#525` for a combined d16 two-head long-sequence fused route,
+  and issue `#526` for a fused Softmax-table proof-size microprofile.
 
 
 - The attention/KV proof-route selector records a narrow
-  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
-  for eleven proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
+  `GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_TWO_HEAD_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS`
+  for twelve proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
   the native Stwo single-head implementation-exact quantized Softmax-table kernel
   receipt, the native Stwo multi-head implementation-exact quantized
   Softmax-table kernel receipt, the native Stwo two-head long-sequence fused
   Softmax-table/LogUp route, the native Stwo d16 fused Softmax-table/LogUp
-  width-axis route, the native Stwo d16 implementation-exact quantized
+  width-axis route, the native Stwo d16 two-head fused Softmax-table/LogUp
+  combined width/head route, the native Stwo d16 implementation-exact quantized
   Softmax-table kernel receipt, the external SNARK statement-receipt route, the RISC
   Zero transition semantics route, the RISC Zero three-step sequence semantics
   route, the RISC Zero fixed eight-step sequence semantics route, and the RISC
@@ -441,9 +444,9 @@ Tablero boundary.
   Softmax-table, Softmax-table proof-byte accounting, LogUp sidecar, fused
   single-head Softmax-table, fused d16 Softmax-table, fused two-head
   Softmax-table, fused four-head Softmax-table, fused eight-head Softmax-table,
-  fused long-sequence Softmax-table,
+  fused long-sequence Softmax-table, fused d16 two-head Softmax-table,
   and quantized Softmax-table receipt gates are separate native
-  scale/semantics/accounting/fusion gates. It rejects `65 / 65` selector mutations and keeps real-valued Softmax,
+  scale/semantics/accounting/fusion gates. It rejects `80 / 80` selector mutations and keeps real-valued Softmax,
   long-context inference, full inference, and recursion/PCD out of scope; see
   `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.
 - Recursive/PCD compression remains a bounded no-go until a real recursive or

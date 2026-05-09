@@ -1,16 +1,33 @@
 {
   "aggregate_metrics": {
-    "matched_fused_proof_size_bytes_total": 400060,
-    "matched_fused_savings_bytes_total": 116316,
-    "matched_source_plus_sidecar_raw_proof_bytes_total": 516376,
-    "max_fused_proof_size_bytes": 65006,
+    "matched_fused_proof_size_bytes_total": 478271,
+    "matched_fused_savings_bytes_total": 129701,
+    "matched_source_plus_sidecar_raw_proof_bytes_total": 607972,
+    "max_fused_proof_size_bytes": 78211,
     "max_matched_fused_to_source_plus_sidecar_ratio": 0.860487,
     "min_matched_fused_to_source_plus_sidecar_ratio": 0.717412,
-    "total_fused_proof_size_bytes": 400060,
-    "total_lookup_claims": 2000,
-    "total_trace_rows": 2560
+    "total_fused_proof_size_bytes": 478271,
+    "total_lookup_claims": 2104,
+    "total_trace_rows": 2688
   },
   "axis_summary": {
+    "combined_width_head_axis_seq8": {
+      "head_count": 2,
+      "held_constant": "steps_per_head_8_bounded_softmax_table_kernel",
+      "key_width": 16,
+      "lookup_claims": 104,
+      "matched_comparator_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "profile_id": "d16_two_head_seq8",
+      "trace_rows": 128,
+      "vs_d16_single_head_fused_proof_size_ratio": 1.212517,
+      "vs_d16_single_head_lookup_claim_ratio": 2.0,
+      "vs_d16_single_head_source_plus_sidecar_ratio": 1.221915,
+      "vs_d16_single_head_trace_row_ratio": 2.0,
+      "vs_d8_two_head_fused_proof_size_ratio": 1.579765,
+      "vs_d8_two_head_lookup_claim_ratio": 1.0,
+      "vs_d8_two_head_source_plus_sidecar_ratio": 1.404674,
+      "vs_d8_two_head_trace_row_ratio": 1.0
+    },
     "head_axis_d8_seq8": {
       "eight_head_comparator_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
       "fused_proof_ratio_1_to_16": 1.362866,
@@ -76,7 +93,7 @@
   "decision": "GO_NATIVE_STWO_FUSED_SOFTMAX_TABLE_CONTROLLED_ROUTE_MATRIX",
   "issue": 505,
   "kernel_scope": "bounded_integer_softmax_table_floor_division_kernel_with_fused_attention_arithmetic_and_logup_membership",
-  "matched_comparator_profiles": 7,
+  "matched_comparator_profiles": 8,
   "mutation_results": [
     {
       "error": "result drift for decision",
@@ -169,6 +186,11 @@
       "rejected": true
     },
     {
+      "error": "d16_two_head_seq8 head count drift",
+      "name": "d16_two_head_combined_axis_metric_smuggling",
+      "rejected": true
+    },
+    {
       "error": "axis summary drift",
       "name": "axis_summary_width_ratio_drift",
       "rejected": true
@@ -184,13 +206,18 @@
       "rejected": true
     },
     {
+      "error": "axis summary drift",
+      "name": "axis_summary_combined_axis_ratio_drift",
+      "rejected": true
+    },
+    {
       "error": "unknown result keys: ['unexpected']",
       "name": "unknown_field_injection",
       "rejected": true
     }
   ],
-  "mutations_checked": 22,
-  "mutations_rejected": 22,
+  "mutations_checked": 24,
+  "mutations_rejected": 24,
   "no_comparator_profiles": [],
   "profile_ids": [
     "d8_single_head_seq8",
@@ -199,9 +226,10 @@
     "d8_four_head_seq8",
     "d8_eight_head_seq8",
     "d8_sixteen_head_seq8",
-    "d8_two_head_seq16"
+    "d8_two_head_seq16",
+    "d16_two_head_seq8"
   ],
-  "profiles_checked": 7,
+  "profiles_checked": 8,
   "route_id": "local_stwo_attention_kv_fused_softmax_table_controlled_route_matrix",
   "route_rows": [
     {
@@ -427,6 +455,38 @@
       "table_rows": 9,
       "trace_rows": 512,
       "value_width": 8
+    },
+    {
+      "axis_role": "combined_width_head_axis",
+      "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_size_bytes": 921008,
+      "fused_issue": 521,
+      "fused_over_source_proof_bytes": 4703,
+      "fused_proof_size_bytes": 78211,
+      "fused_saves_vs_source_plus_sidecar_bytes": 13385,
+      "fused_to_source_plus_sidecar_ratio": 0.853869,
+      "head_count": 2,
+      "key_width": 16,
+      "label": "d16 two-head seq8 fused Softmax-table route",
+      "lookup_claims": 104,
+      "matched_source_sidecar_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "mutations_checked": 30,
+      "mutations_rejected": 30,
+      "profile_id": "d16_two_head_seq8",
+      "route_id": "local_stwo_attention_kv_d16_two_head_fused_bounded_softmax_table_logup_proof",
+      "score_rows": 104,
+      "sidecar_issue": 521,
+      "sidecar_proof_size_bytes": 18088,
+      "source_envelope_size_bytes": 880372,
+      "source_input_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-bounded-softmax-table-proof-2026-05.json",
+      "source_issue": 521,
+      "source_plus_sidecar_raw_proof_bytes": 91596,
+      "source_proof_size_bytes": 73508,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 128,
+      "value_width": 16
     }
   ],
   "schema": "zkai-attention-kv-fused-softmax-table-route-matrix-v1",

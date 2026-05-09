@@ -883,7 +883,7 @@ score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
 proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
-The route selector now records eleven proof-backed routes and rejects `74 / 74`
+The route selector now records twelve proof-backed routes and rejects `80 / 80`
 route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and
@@ -891,7 +891,7 @@ claim-boundary mutations. This includes single-head plus two-head/four-head/
 eight-head/sixteen-head implementation-exact quantized Softmax-table receipts
 over the pinned integer table/floor-division kernel, a separate d16
 implementation-exact quantized Softmax-table receipt, and separate two-head
-long-sequence plus d16 width-axis fused Softmax-table/LogUp proofs, not
+long-sequence, d16 width-axis, and d16 two-head fused Softmax-table/LogUp proofs, not
 real-valued exp/div Softmax. It is anchored to
 `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.

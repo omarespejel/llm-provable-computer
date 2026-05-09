@@ -1313,8 +1313,9 @@ directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 current route selector now also includes single-head plus two-head/four-head/
 eight-head/sixteen-head implementation-exact quantized Softmax-table receipts, a
 separate two-head long-sequence fused Softmax-table/LogUp proof, and a d16
-width-axis fused Softmax-table/LogUp proof plus a d16 implementation-exact
-quantized Softmax-table receipt; it rejects `74 / 74`
+width-axis fused Softmax-table/LogUp proof, a d16 two-head fused
+Softmax-table/LogUp proof, plus a d16 implementation-exact quantized
+Softmax-table receipt; it rejects `80 / 80`
 route-selector mutations. Evidence is the checked envelope
 at `docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`;
 the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_masked_sequence_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json`.
@@ -1481,7 +1482,7 @@ LogUp sidecar is `79444` raw proof bytes, so the fused proof is `18942` bytes
 smaller (`0.761568x` of the matched control). This is now one of the strongest native Stwo attention signals in the artifact
 set: lookup membership no longer has to live as a detached sidecar for the
 checked bounded fixture, and the fused object survives sixteen-head, longer-
-sequence, and width-axis scale points.
+sequence, width-axis, and combined width/head scale points.
 
 A width-axis follow-up keeps the score-row count fixed at `52` and doubles
 key/value width from `8` to `16`. The d16 source arithmetic proof is `61516`
@@ -1493,6 +1494,17 @@ This adds a separate width-scaling check to the native attention ladder. It is
 not a claim that proof size is independent of width; it says the same fused
 attention-arithmetic-plus-table-membership construction still works after the
 width increase and still removes the second proof object.
+
+The newest native Stwo follow-up combines width and head count in one checked
+fixture. The `d16` two-head fused route checks `104` lookup claims over a
+`128`-row trace, with a `73508`-byte source arithmetic proof, an `18088`-byte
+LogUp sidecar, and a `78211`-byte fused proof inside a `921008`-byte checked
+envelope. The fused proof is `13385` bytes smaller than the matched
+source-plus-sidecar control (`91596` bytes, `0.853869x`) and rejects `30 / 30`
+statement, source-input, table-multiplicity, proof-byte, proof-injection, and
+exact-Softmax-overclaim mutations. This is not a full transformer proof or a
+public benchmark row; it is evidence that the bounded attention/lookup route can
+compose two transformer-relevant axes in one native Stwo proof object.
 
 The fused ladder remains opt-in native Stwo backend evidence and bounded table
 evidence, not default-lane shipped behavior, not real-valued Softmax, not
