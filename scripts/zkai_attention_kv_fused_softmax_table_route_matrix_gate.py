@@ -236,7 +236,8 @@ def parse_integer_dimension(value: Any) -> int:
         raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like")
     if isinstance(value, str):
         stripped = value.strip()
-        if stripped and stripped.lstrip("+-").isdigit():
+        digits = stripped[1:] if stripped[:1] in ("+", "-") else stripped
+        if digits.isdigit():
             return int(stripped, 10)
     raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like")
 
@@ -291,6 +292,8 @@ def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
     key_width_int = parse_integer_dimension(key_width)
     value_width_int = parse_integer_dimension(value_width)
     trace_rows_int = parse_integer_dimension(trace_rows)
+    if key_width_int <= 0 or value_width_int <= 0 or trace_rows_int <= 0:
+        raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be positive")
     return {
         "key_width": key_width_int,
         "value_width": value_width_int,
@@ -544,7 +547,10 @@ def build_result() -> dict[str, Any]:
     mutation_results = []
     for name, mutator in mutation_cases(base):
         mutated = copy.deepcopy(base)
-        mutator(mutated)
+        try:
+            mutator(mutated)
+        except Exception as err:  # noqa: BLE001 - a broken mutator invalidates the gate.
+            raise FusedSoftmaxTableRouteMatrixGateError(f"mutation mutator failed: {name}: {err}") from err
         try:
             validate_core(mutated)
         except Exception as err:  # noqa: BLE001 - gate records exact rejection surface.
