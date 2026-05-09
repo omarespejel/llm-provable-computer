@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import copy
 import csv
+import io
 import json
 import math
 import os
@@ -250,8 +251,8 @@ def mutate_source_negative_remainder(source_payload: dict[str, Any]) -> None:
 
 
 def route_rejection_results() -> list[dict[str, Any]]:
-    source_payload, source_envelope, sidecar_envelope, fused_envelope = load_source_artifacts()
     try:
+        source_payload, source_envelope, sidecar_envelope, fused_envelope = load_source_artifacts()
         source_gate.validate_source_pair(source_payload, source_envelope)
         sidecar_gate.validate_lookup_envelope(
             sidecar_envelope,
@@ -259,11 +260,7 @@ def route_rejection_results() -> list[dict[str, Any]]:
             sidecar_gate.LOOKUP_ENVELOPE_SIZE_BYTES,
         )
         fused_gate.validate_fused_envelope(fused_envelope, source_payload, run_native=False)
-    except (
-        source_gate.AttentionKvBoundedSoftmaxTableNativeGateError,
-        sidecar_gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
-        fused_gate.AttentionKvD16FusedSoftmaxTableGateError,
-    ) as err:
+    except Exception as err:
         raise SoftmaxEdgeCorpusGateError(f"pristine artifact validation drift: {err}") from err
     results: list[dict[str, Any]] = []
 
@@ -469,8 +466,6 @@ def to_tsv(result: dict[str, Any]) -> str:
         "all_clipped_denominator": by_name["all_nonmax_scores_clipped"]["denominator"],
         "dominant_denominator": by_name["one_dominant_key_all_others_clipped"]["denominator"],
     }
-    import io
-
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
@@ -485,6 +480,7 @@ def atomic_write_text(path: pathlib.Path, text: str) -> None:
         with tempfile.NamedTemporaryFile(
             "w",
             encoding="utf-8",
+            newline="",
             dir=path.parent,
             prefix=f".{path.name}.",
             suffix=".tmp",
