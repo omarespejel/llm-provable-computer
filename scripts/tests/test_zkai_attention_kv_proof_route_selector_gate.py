@@ -643,6 +643,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             "rounding_rule": "truncate_toward_zero",
             "head_binding_policy": "metadata only",
             "step_binding_policy": "metadata only",
+            "output_order_policy": "derived from input_steps order, but heads may be shuffled",
             "causal_mask_policy": "not checked",
             "weight_table_commitment": "blake2b-256:" + "55" * 32,
         }
