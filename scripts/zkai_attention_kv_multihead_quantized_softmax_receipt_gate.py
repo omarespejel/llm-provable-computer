@@ -38,7 +38,7 @@ TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-multihead-quantized-softmax-receipt-
 
 SCHEMA = "zkai-attention-kv-multihead-quantized-softmax-receipt-gate-v1"
 ISSUE = 520
-SOURCE_ISSUES = (489, 491, 496, 520)
+SOURCE_ISSUES = (489, 491, 496, 519)
 SOURCE_ARITHMETIC_ISSUES = (471, 482, 496, 519)
 DECISION = "GO_SCALED_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT"
 ROUTE_ID = "local_stwo_attention_kv_multihead_quantized_softmax_table_kernel_receipt"
@@ -131,7 +131,7 @@ PROFILES = (
     Profile(
         profile_id="sixteen_head",
         label="sixteen-head d8 causal-prefix fused Softmax-table proof",
-        source_issue=520,
+        source_issue=519,
         source_arithmetic_issue=519,
         fused_gate=sixteen_head_fused_gate,
         evidence="docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json",
@@ -690,6 +690,19 @@ def validate_receipt(
     validate_mutation_results(receipt.get("mutation_results"))
 
 
+def placeholder_mutation_results() -> list[dict[str, Any]]:
+    """Seed self-validation so inner mutation checks cannot fail on empty results."""
+
+    return [
+        {
+            "name": name,
+            "rejected": True,
+            "error": "placeholder for inner mutation validation",
+        }
+        for name in EXPECTED_MUTATION_NAMES
+    ]
+
+
 def mutate_same_size_fused_proof(profile: Profile, envelope: dict[str, Any]) -> None:
     profile.fused_gate.mutate_same_size_stark_proof_commitment(envelope)
 
@@ -738,6 +751,10 @@ def mutation_cases(
         for row in source["score_rows"]:
             if (row["head_index"], row["step_index"]) == head_step:
                 row["token_position"] += 1
+
+    def swap_attention_outputs(source: dict[str, Any]) -> None:
+        outputs = source["attention_outputs"]
+        outputs[0], outputs[1] = outputs[1], outputs[0]
 
     def truncate_output_vectors(source: dict[str, Any]) -> None:
         first = source["score_rows"][0]
@@ -876,21 +893,21 @@ def mutation_cases(
         5,
         4,
         output_mutation_name="source_input_four_head_output_order_swap",
-        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
+        output_mutator=swap_attention_outputs,
     )
     add_source_profile_mutations(
         "eight_head",
         9,
         8,
         output_mutation_name="source_input_eight_head_output_order_swap",
-        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
+        output_mutator=swap_attention_outputs,
     )
     add_source_profile_mutations(
         "sixteen_head",
         17,
         16,
         output_mutation_name="source_input_sixteen_head_output_order_swap",
-        output_mutator=lambda source: source["attention_outputs"].__setitem__(0, source["attention_outputs"][1]),
+        output_mutator=swap_attention_outputs,
     )
     for profile_id in profile_ids():
         add_fused_profile_mutations(profile_id)
@@ -918,6 +935,7 @@ def run_gate() -> dict[str, Any]:
     sources = load_sources()
     envelopes = load_envelopes()
     receipt = build_base_receipt(sources, envelopes)
+    receipt["mutation_results"] = placeholder_mutation_results()
     mutation_results = []
     for name, mutated_receipt, mutated_sources, mutated_envelopes, native_profile_ids in mutation_cases(
         receipt, sources, envelopes

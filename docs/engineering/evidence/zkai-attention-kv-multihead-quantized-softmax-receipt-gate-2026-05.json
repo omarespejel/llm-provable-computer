@@ -2603,7 +2603,7 @@
         "sequence_length_per_head": 8,
         "source_arithmetic_issue": 519,
         "source_final_kv_cache_commitment": "blake2b-256:a63420ac0614d2506972827b2712106e7a847af92d7e1b44d02420e02c9a7e12",
-        "source_issue": 520,
+        "source_issue": 519,
         "source_outputs_commitment": "blake2b-256:819b0b89742a75949f5e48c26fc78488d6e848d3ff7477db1f153aeb5cee355d",
         "source_public_instance_commitment": "blake2b-256:b7f67c7a99771905bcd95b633f3d9b427de83afa1abf8c774c51e408a72b9126",
         "source_score_row_commitment": "blake2b-256:1f7f7016999e19675292d977a5edd197d4b51282310db083b4a8325747c51c8e",
@@ -3067,7 +3067,7 @@
     489,
     491,
     496,
-    520
+    519
   ],
   "table_rows": 9,
   "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",

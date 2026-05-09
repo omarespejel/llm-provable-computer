@@ -13,10 +13,7 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         cls.sources = gate.load_sources()
         cls.envelopes = gate.load_envelopes()
         cls.result = gate.build_base_receipt(cls.sources, cls.envelopes)
-        cls.result["mutation_results"] = [
-            {"name": name, "rejected": True, "error": "covered by mutation-specific unit tests"}
-            for name in gate.EXPECTED_MUTATION_NAMES
-        ]
+        cls.result["mutation_results"] = gate.placeholder_mutation_results()
         gate.validate_receipt(cls.result, cls.sources, cls.envelopes)
 
     def test_records_multihead_exact_integer_kernel_without_real_softmax_overclaim(self):
@@ -34,6 +31,7 @@ class MultiheadQuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         self.assertEqual(metrics["total_heads_checked"], 30)
         self.assertEqual(result["lookup_claims_total"], 1560)
         self.assertEqual(result["score_rows_total"], 1560)
+        self.assertEqual(result["trace_rows_total"], 1920)
         self.assertEqual(result["fused_proof_size_bytes_sum"], 227357)
         self.assertEqual(result["max_fused_proof_size_bytes"], 65006)
         self.assertEqual(result["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
