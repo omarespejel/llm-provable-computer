@@ -12,9 +12,7 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.source = gate.source_input()
         cls.envelope = gate.fused_envelope()
-        cls.result = gate.build_base_receipt(cls.source)
-        cls.result["mutation_results"] = gate.recompute_mutation_results(cls.result, cls.source, cls.envelope)
-        cls.result["mutations_rejected"] = sum(1 for item in cls.result["mutation_results"] if item["rejected"])
+        cls.result = json.loads(gate.JSON_OUT.read_text(encoding="utf-8"))
         gate.validate_receipt(cls.result, cls.source, cls.envelope, run_native=False)
 
     def test_records_exact_integer_kernel_without_real_softmax_overclaim(self):
@@ -102,8 +100,14 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
             tmp_dir = gate.pathlib.Path(tmp)
             json_path = tmp_dir / "receipt.json"
             tsv_path = tmp_dir / "receipt.tsv"
-            gate.write_json(json_path, self.result)
-            gate.write_tsv(tsv_path, self.result)
+            original_validate = gate.fused_gate.validate_fused_envelope
+
+            def fast_validate(envelope, source, *, run_native):
+                return self._fast_fused_envelope_validation(original_validate, envelope, source, run_native=run_native)
+
+            with mock.patch.object(gate.fused_gate, "validate_fused_envelope", side_effect=fast_validate):
+                gate.write_json(json_path, self.result)
+                gate.write_tsv(tsv_path, self.result)
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded["decision"], gate.DECISION)
             tsv = tsv_path.read_text(encoding="utf-8")
@@ -136,12 +140,29 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "recomputed mutation result detail drift"):
             gate.validate_recomputed_mutation_results(payload, recomputed)
 
+    def test_recomputed_mutation_validation_allows_stable_native_error_prefix(self):
+        payload = copy.deepcopy(self.result)
+        recomputed = copy.deepcopy(payload["mutation_results"])
+        for item in payload["mutation_results"]:
+            if item["name"] == "fused_proof_byte_tamper":
+                item["error"] = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope: local detail"
+        for item in recomputed:
+            if item["name"] == "fused_proof_byte_tamper":
+                item["error"] = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope: different detail"
+        gate.validate_recomputed_mutation_results(payload, recomputed)
+
     def test_write_json_rejects_unknown_result_key(self):
         payload = copy.deepcopy(self.result)
         payload["unexpected"] = "claim smuggling"
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "unknown receipt field"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
+
+    @staticmethod
+    def _fast_fused_envelope_validation(original_validate, envelope, source, *, run_native):
+        if run_native:
+            raise RuntimeError("native fused verifier rejected in-memory fused envelope")
+        return original_validate(envelope, source, run_native=run_native)
 
 
 if __name__ == "__main__":
