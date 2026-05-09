@@ -37,6 +37,36 @@ class AttentionKvSoftmaxPairedSourceValidationAuditGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.PairedSourceValidationAuditGateError, "target result order drift"):
             gate.validate_result(mutated)
 
+    def test_unexpected_validator_exception_fails_gate(self):
+        class CrashModule:
+            class ExpectedValidationError(ValueError):
+                pass
+
+            SOURCE_INPUT_JSON = "source.json"
+            MAX_SOURCE_INPUT_JSON_BYTES = 1024
+            LOOKUP_ENVELOPE_JSON = "lookup.json"
+            MAX_LOOKUP_ENVELOPE_JSON_BYTES = 1024
+            LOOKUP_ENVELOPE_SIZE_BYTES = 1
+
+            @staticmethod
+            def read_bounded_json(path, _max_bytes, _label):
+                if path == CrashModule.SOURCE_INPUT_JSON:
+                    return {"score_rows": [{"output_remainder": [0]}]}
+                return {}
+
+            @staticmethod
+            def validate_lookup_envelope(_envelope, _source_input, _envelope_size_bytes):
+                raise KeyError("internal crash")
+
+        target = gate.Target(
+            "crash_sidecar",
+            "sidecar",
+            CrashModule,
+            (CrashModule.ExpectedValidationError,),
+        )
+        with self.assertRaisesRegex(gate.PairedSourceValidationAuditGateError, "unexpected exception: KeyError"):
+            gate.run_target(target)
+
     def test_sidecar_direct_validator_rejects_matching_malformed_pair(self):
         source_input = d8_sidecar.read_bounded_json(
             d8_sidecar.SOURCE_INPUT_JSON, d8_sidecar.MAX_SOURCE_INPUT_JSON_BYTES, "source input"

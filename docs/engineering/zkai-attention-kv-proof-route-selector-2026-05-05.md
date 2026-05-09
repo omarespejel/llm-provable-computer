@@ -372,6 +372,23 @@ Claim boundary:
 - Native d16 Softmax denominator/rounding edge corpus TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv`
 - Native Softmax-table paired-source validation audit JSON: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.json`
 - Native Softmax-table paired-source validation audit TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.tsv`
+
+Reproduce the paired-source validation audit artifacts:
+
+```bash
+python3 scripts/zkai_attention_kv_softmax_paired_source_validation_audit_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.tsv
+python3 -m unittest scripts.tests.test_zkai_attention_kv_softmax_paired_source_validation_audit_gate
+```
+
+This audit is a correctness-only validator API gate. It uses the checked source
+inputs and envelopes already recorded by each target route, records timing
+policy `not_timed_correctness_gate_only`, and performs no fresh Stwo prover or
+verifier timing run. Backend version and step/head/width counts are not free
+parameters of this audit; they are inherited from each target's checked
+source/envelope artifact and revalidated through the target validator.
+
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`

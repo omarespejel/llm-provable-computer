@@ -78,20 +78,76 @@ class Target:
     target_id: str
     route: str
     module: Any
+    expected_errors: tuple[type[BaseException], ...]
+
+    @property
+    def expected_error_names(self) -> set[str]:
+        return {error.__name__ for error in self.expected_errors}
 
 
 TARGETS = (
-    Target("d8_sidecar", "sidecar", d8_sidecar),
-    Target("two_head_sidecar", "sidecar", two_sidecar),
-    Target("four_head_sidecar", "sidecar", four_sidecar),
-    Target("two_head_longseq_sidecar", "sidecar", longseq_sidecar),
-    Target("d16_sidecar", "sidecar", d16_sidecar),
-    Target("d8_fused", "fused", d8_fused),
-    Target("two_head_fused", "fused", two_fused),
-    Target("four_head_fused", "fused", four_fused),
-    Target("eight_head_fused", "fused", eight_fused),
-    Target("two_head_longseq_fused", "fused", longseq_fused),
-    Target("d16_fused", "fused", d16_fused),
+    Target(
+        "d8_sidecar",
+        "sidecar",
+        d8_sidecar,
+        (d8_sidecar.AttentionKvAirPrivateSoftmaxTableLookupGateError,),
+    ),
+    Target(
+        "two_head_sidecar",
+        "sidecar",
+        two_sidecar,
+        (two_sidecar.AttentionKvAirPrivateSoftmaxTableLookupGateError,),
+    ),
+    Target(
+        "four_head_sidecar",
+        "sidecar",
+        four_sidecar,
+        (four_sidecar.AttentionKvAirPrivateSoftmaxTableLookupGateError,),
+    ),
+    Target(
+        "two_head_longseq_sidecar",
+        "sidecar",
+        longseq_sidecar,
+        (longseq_sidecar.AttentionKvAirPrivateSoftmaxTableLookupGateError,),
+    ),
+    Target(
+        "d16_sidecar",
+        "sidecar",
+        d16_sidecar,
+        (d16_sidecar.AttentionKvAirPrivateSoftmaxTableLookupGateError,),
+    ),
+    Target("d8_fused", "fused", d8_fused, (d8_fused.AttentionKvD8FusedSoftmaxTableGateError,)),
+    Target(
+        "two_head_fused",
+        "fused",
+        two_fused,
+        (two_fused.AttentionKvTwoHeadFusedSoftmaxTableGateError,),
+    ),
+    Target(
+        "four_head_fused",
+        "fused",
+        four_fused,
+        (four_fused.AttentionKvFourHeadFusedSoftmaxTableGateError,),
+    ),
+    Target(
+        "eight_head_fused",
+        "fused",
+        eight_fused,
+        (
+            eight_fused.AttentionKvEightHeadFusedSoftmaxTableGateError,
+            eight_fused.SOURCE_INPUT_MODULE.AttentionKvEightHeadBoundedSoftmaxTableInputError,
+        ),
+    ),
+    Target(
+        "two_head_longseq_fused",
+        "fused",
+        longseq_fused,
+        (
+            longseq_fused.AttentionKvTwoHeadLongseqFusedSoftmaxTableGateError,
+            longseq_fused.SOURCE_INPUT_MODULE.AttentionKvTwoHeadLongseqBoundedSoftmaxTableInputError,
+        ),
+    ),
+    Target("d16_fused", "fused", d16_fused, (d16_fused.AttentionKvD16FusedSoftmaxTableGateError,)),
 )
 
 
@@ -115,13 +171,17 @@ def run_sidecar_target(target: Target) -> dict[str, Any]:
     mutated_envelope["source_input"] = mutated_source
     try:
         module.validate_lookup_envelope(mutated_envelope, mutated_source, module.LOOKUP_ENVELOPE_SIZE_BYTES)
-    except Exception as err:
+    except target.expected_errors as err:
         return {
             "target_id": target.target_id,
             "route": target.route,
             "rejected": True,
             "error": type(err).__name__,
         }
+    except Exception as err:
+        raise PairedSourceValidationAuditGateError(
+            f"{target.target_id} unexpected exception: {type(err).__name__}: {err}"
+        ) from err
     return {
         "target_id": target.target_id,
         "route": target.route,
@@ -139,13 +199,17 @@ def run_fused_target(target: Target) -> dict[str, Any]:
     mutated_envelope["source_input"] = mutated_source
     try:
         module.validate_fused_envelope(mutated_envelope, mutated_source, run_native=False)
-    except Exception as err:
+    except target.expected_errors as err:
         return {
             "target_id": target.target_id,
             "route": target.route,
             "rejected": True,
             "error": type(err).__name__,
         }
+    except Exception as err:
+        raise PairedSourceValidationAuditGateError(
+            f"{target.target_id} unexpected exception: {type(err).__name__}: {err}"
+        ) from err
     return {
         "target_id": target.target_id,
         "route": target.route,
@@ -231,7 +295,7 @@ def validate_result(result: Any) -> None:
             raise PairedSourceValidationAuditGateError("target route drift")
         if row["rejected"] is not True:
             raise PairedSourceValidationAuditGateError("paired source mutation accepted")
-        if not isinstance(row["error"], str) or not row["error"].endswith("Error"):
+        if row["error"] not in target.expected_error_names:
             raise PairedSourceValidationAuditGateError("target rejection code drift")
 
 
