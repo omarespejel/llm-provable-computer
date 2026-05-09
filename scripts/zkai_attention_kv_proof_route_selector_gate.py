@@ -2542,7 +2542,7 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax profile/head-count drift")
     if summary["lookup_claims_total"] != 1560 or summary["score_rows_total"] != 1560:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax row-count drift")
-    if summary["trace_rows_total"] != 1920:
+    if summary.get("trace_rows_total") != 1920:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax trace-row-count drift")
     if summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax table drift")
@@ -2862,7 +2862,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
             payload["multihead_quantized_softmax_receipt"]["lookup_claims_total"]
         ),
         "multihead_quantized_softmax_trace_rows_total": (
-            payload["multihead_quantized_softmax_receipt"]["trace_rows_total"]
+            payload["multihead_quantized_softmax_receipt"].get("trace_rows_total")
         ),
         "multihead_quantized_softmax_profiles_checked": (
             payload["multihead_quantized_softmax_receipt"]["profiles_checked"]
