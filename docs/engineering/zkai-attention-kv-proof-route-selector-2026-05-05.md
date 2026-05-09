@@ -416,9 +416,9 @@ python3 -m unittest scripts.tests.test_zkai_attention_kv_fused_softmax_table_rou
 ```
 
 This route matrix is proof-byte accounting only. It validates the existing
-fused evidence files and source-input dimensions, but it does not run timing,
-does not promote exact real-valued Softmax, and does not report eight-head
-fused savings without a matched sidecar comparator.
+fused evidence files, matched source-plus-sidecar controls, and source-input
+dimensions, but it does not run timing and does not promote exact real-valued
+Softmax.
 
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
@@ -619,13 +619,13 @@ python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.tsv
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_masked_sequence_proof -- \
   prove \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.json \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_masked_sequence_proof -- \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05.envelope.json
@@ -941,60 +941,60 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_multihead_quantized_softmax_receipt_gate scripts.tests.test_zkai_attention_kv_d16_quantized_softmax_receipt_gate \
   scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
 
-cargo +nightly-2025-07-14 test attention_kv_native_masked_sequence_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_masked_sequence_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_weighted_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_d8_bounded_weighted_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_weighted_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_two_head_bounded_weighted_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_d8_bounded_softmax_table_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_d8_bounded_softmax_table_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_two_head_bounded_softmax_table_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_two_head_bounded_softmax_table_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_d8_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_d8_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_two_head_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_four_head_bounded_softmax_table_proof \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_four_head_bounded_softmax_table_proof \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_four_head_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_four_head_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_eight_head_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_d8_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_d8_fused_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_two_head_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_fused_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_four_head_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_four_head_fused_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_eight_head_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_two_head_longseq_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_fused_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_two_head_longseq_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_two_head_longseq_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_d16_bounded_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_d16_bounded_softmax_table \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_d16_softmax_table_lookup \
+cargo +nightly-2025-07-14 test --locked attention_kv_d16_softmax_table_lookup \
   --lib --features stwo-backend
 
-cargo +nightly-2025-07-14 test attention_kv_native_d16_fused_softmax_table \
+cargo +nightly-2025-07-14 test --locked attention_kv_native_d16_fused_softmax_table \
   --lib --features stwo-backend
 ```
