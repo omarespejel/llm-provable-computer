@@ -492,6 +492,13 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "trace-row-count drift"):
             GATE.validate_payload(payload, allow_missing_mutation_summary=True)
 
+    def test_multihead_quantized_softmax_rejects_float_trace_rows_as_gate_error(self) -> None:
+        payload = GATE.build_payload()
+        payload["multihead_quantized_softmax_receipt"]["trace_rows_total"] = 1920.0
+
+        with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "trace-row-count drift"):
+            GATE.validate_payload(payload, allow_missing_mutation_summary=True)
+
     def test_gate_rejects_malformed_next_go_criteria_as_gate_error(self) -> None:
         payload = GATE.build_payload()
         payload.pop("mutation_cases")

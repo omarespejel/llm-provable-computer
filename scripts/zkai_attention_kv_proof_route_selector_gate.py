@@ -2542,7 +2542,8 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax profile/head-count drift")
     if summary["lookup_claims_total"] != 1560 or summary["score_rows_total"] != 1560:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax row-count drift")
-    if summary.get("trace_rows_total") != 1920:
+    trace_rows_total = summary.get("trace_rows_total")
+    if type(trace_rows_total) is not int or trace_rows_total != 1920:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax trace-row-count drift")
     if summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax table drift")
