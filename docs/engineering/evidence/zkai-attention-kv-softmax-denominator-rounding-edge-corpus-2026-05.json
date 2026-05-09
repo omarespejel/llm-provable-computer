@@ -9,7 +9,7 @@
         0
       ],
       "denominator": 256,
-      "max_remainder_ratio": 0.0,
+      "max_remainder_ratio": "0.000000",
       "name": "single_allowed_candidate_min_denominator",
       "negative_numerator_dimensions": 1,
       "numerators": [
@@ -131,7 +131,7 @@
         0
       ],
       "denominator": 768,
-      "max_remainder_ratio": 0.0,
+      "max_remainder_ratio": "0.000000",
       "name": "all_scores_equal",
       "negative_numerator_dimensions": 0,
       "numerators": [
@@ -260,7 +260,7 @@
         8
       ],
       "denominator": 304,
-      "max_remainder_ratio": 0.8421052631578947,
+      "max_remainder_ratio": "0.842105",
       "name": "all_nonmax_scores_clipped",
       "negative_numerator_dimensions": 0,
       "numerators": [
@@ -392,7 +392,7 @@
         8
       ],
       "denominator": 304,
-      "max_remainder_ratio": 0.631578947368421,
+      "max_remainder_ratio": "0.631579",
       "name": "one_dominant_key_all_others_clipped",
       "negative_numerator_dimensions": 0,
       "numerators": [
@@ -523,7 +523,7 @@
         0
       ],
       "denominator": 768,
-      "max_remainder_ratio": 0.0,
+      "max_remainder_ratio": "0.000000",
       "name": "negative_numerator_floor_division",
       "negative_numerator_dimensions": 1,
       "numerators": [
@@ -652,7 +652,7 @@
         1
       ],
       "denominator": 517,
-      "max_remainder_ratio": 0.6692456479690522,
+      "max_remainder_ratio": "0.669246",
       "name": "mixed_remainder_extremes",
       "negative_numerator_dimensions": 1,
       "numerators": [
@@ -790,7 +790,7 @@
         8
       ],
       "denominator": 852,
-      "max_remainder_ratio": 0.13145539906103287,
+      "max_remainder_ratio": "0.131455",
       "name": "table_entry_multiplicity_extremes",
       "negative_numerator_dimensions": 0,
       "numerators": [
@@ -934,7 +934,7 @@
   ],
   "issue": 507,
   "max_denominator": 852,
-  "max_remainder_ratio": 0.8421052631578947,
+  "max_remainder_ratio": "0.842105",
   "min_denominator": 256,
   "negative_numerator_cases": [
     "single_allowed_candidate_min_denominator",

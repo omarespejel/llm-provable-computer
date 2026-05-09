@@ -1900,7 +1900,7 @@ def build_payload(*, run_native: bool = False) -> dict[str, Any]:
             "d16_softmax_edge_route_mutations_rejected": softmax_edge_corpus["route_mutations_rejected"],
             "d16_softmax_edge_min_denominator": softmax_edge_corpus["min_denominator"],
             "d16_softmax_edge_max_denominator": softmax_edge_corpus["max_denominator"],
-            "d16_softmax_edge_max_remainder_ratio": f"{softmax_edge_corpus['max_remainder_ratio']:.6f}",
+            "d16_softmax_edge_max_remainder_ratio": softmax_edge_corpus["max_remainder_ratio"],
             "snark_proof_size_bytes": snark_summary["proof_size_bytes"],
             "snark_public_signal_count": snark_summary["public_signal_count"],
             "risc0_receipt_size_bytes": risc0_summary["proof_size_bytes"],
@@ -2918,7 +2918,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "d16_softmax_edge_min_denominator": payload["softmax_denominator_rounding_edge_corpus"]["min_denominator"],
         "d16_softmax_edge_max_denominator": payload["softmax_denominator_rounding_edge_corpus"]["max_denominator"],
         "d16_softmax_edge_max_remainder_ratio": (
-            f"{payload['softmax_denominator_rounding_edge_corpus']['max_remainder_ratio']:.6f}"
+            payload["softmax_denominator_rounding_edge_corpus"]["max_remainder_ratio"]
         ),
         "snark_proof_size_bytes": payload["external_snark_receipt"]["proof_size_bytes"],
         "snark_public_signal_count": payload["external_snark_receipt"]["public_signal_count"],
