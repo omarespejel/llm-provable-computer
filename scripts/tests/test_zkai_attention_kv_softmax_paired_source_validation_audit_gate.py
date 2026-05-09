@@ -104,7 +104,10 @@ class AttentionKvSoftmaxPairedSourceValidationAuditGateTests(unittest.TestCase):
             gate.validate_result(loaded)
             tsv = tsv_path.read_text(encoding="utf-8")
             self.assertIn(gate.DECISION, tsv)
-            self.assertIn("11", tsv)
+            header, row = [line.split("\t") for line in tsv.strip().splitlines()]
+            fields = dict(zip(header, row, strict=True))
+            self.assertEqual(fields["targets_checked"], "11")
+            self.assertEqual(fields["targets_rejected"], "11")
             self.assertIn(gate.MUTATION, tsv)
 
 
