@@ -222,6 +222,22 @@ def validate_existing_gate(profile: Profile, gate_result: dict[str, Any]) -> Non
     module.validate_result(gate_result, envelope, source_input)
 
 
+def parse_integer_dimension(value: Any) -> int:
+    if isinstance(value, bool):
+        raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like")
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped and stripped.lstrip("+-").isdigit():
+            return int(stripped, 10)
+    raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like")
+
+
 def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
     score_rows = source_input.get("score_rows")
     if not isinstance(score_rows, list) or not score_rows:
@@ -246,12 +262,9 @@ def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
     trace_rows = source_input.get("trace_row_count", source_input.get("trace_rows"))
     if trace_rows is None:
         raise FusedSoftmaxTableRouteMatrixGateError("source trace_rows missing")
-    try:
-        key_width_int = int(key_width)
-        value_width_int = int(value_width)
-        trace_rows_int = int(trace_rows)
-    except (TypeError, ValueError) as err:
-        raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like") from err
+    key_width_int = parse_integer_dimension(key_width)
+    value_width_int = parse_integer_dimension(value_width)
+    trace_rows_int = parse_integer_dimension(trace_rows)
     return {
         "key_width": key_width_int,
         "value_width": value_width_int,
