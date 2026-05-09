@@ -646,6 +646,11 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             "output_order_policy": "derived from input_steps order, but heads may be shuffled",
             "causal_mask_policy": "not checked",
             "weight_table_commitment": "blake2b-256:" + "55" * 32,
+            "source_statement_commitment": "blake2b-256:" + "44" * 32,
+            "source_public_instance_commitment": "blake2b-256:" + "43" * 32,
+            "source_score_row_commitment": "blake2b-256:" + "42" * 32,
+            "source_outputs_commitment": "blake2b-256:" + "41" * 32,
+            "source_final_kv_cache_commitment": "blake2b-256:" + "40" * 32,
         }
         try:
             for field, value in cases.items():
@@ -826,6 +831,17 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         )
         self.assertFalse(d16_quantized_route["usable_today"])
         self.assertFalse(d16_quantized_route["proof_backed"])
+
+        d16_two_head_quantized_removed = GATE.mutate_payload(
+            payload,
+            "d16_two_head_quantized_softmax_route_removed",
+        )
+        d16_two_head_quantized_route = GATE.route_candidate_by_id(
+            d16_two_head_quantized_removed["route_candidates"],
+            GATE.D16_TWO_HEAD_QUANTIZED_SOFTMAX_ROUTE_ID,
+        )
+        self.assertFalse(d16_two_head_quantized_route["usable_today"])
+        self.assertFalse(d16_two_head_quantized_route["proof_backed"])
 
         snark_removed = GATE.mutate_payload(payload, "external_snark_route_removed")
         snark_route = GATE.route_candidate_by_id(snark_removed["route_candidates"], GATE.EXTERNAL_SNARK_ROUTE_ID)
