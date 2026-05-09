@@ -633,7 +633,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "mutation rejection"):
             GATE.validate_payload(payload)
 
-    def test_d16_two_head_quantized_validator_pins_kernel_policy_fields(self) -> None:
+    def test_d16_two_head_quantized_validator_pins_scope_policy_and_commitment_fields(self) -> None:
         payload = GATE.build_payload()
         base_summary = payload["d16_two_head_quantized_softmax_receipt"]
         original_summary_fn = GATE.d16_two_head_quantized_softmax_receipt_summary
@@ -645,6 +645,8 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             "step_binding_policy": "metadata only",
             "output_order_policy": "derived from input_steps order, but heads may be shuffled",
             "causal_mask_policy": "not checked",
+            "claim_boundary": "GO_REAL_VALUED_SOFTMAX_FULL_INFERENCE",
+            "fused_gate_decision": "GO_DIFFERENT_FUSED_GATE",
             "weight_table_commitment": "blake2b-256:" + "55" * 32,
             "source_statement_commitment": "blake2b-256:" + "44" * 32,
             "source_public_instance_commitment": "blake2b-256:" + "43" * 32,

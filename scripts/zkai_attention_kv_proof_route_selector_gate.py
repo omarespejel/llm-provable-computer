@@ -3274,6 +3274,10 @@ def validate_d16_two_head_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax result drift")
     if summary["proof_system"] != "Stwo" or summary["proof_backend"] != "stwo":
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax backend drift")
+    if summary["claim_boundary"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.CLAIM_BOUNDARY:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax claim_boundary drift")
+    if summary["fused_gate_decision"] != D16_TWO_HEAD_FUSED_SOFTMAX.DECISION:
+        raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax fused_gate_decision drift")
     if summary["kernel_name"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.KERNEL_NAME:
         raise AttentionKvRouteSelectorError("d16 two-head quantized Softmax kernel-name drift")
     if summary["kernel_status"] != D16_TWO_HEAD_QUANTIZED_SOFTMAX.KERNEL_STATUS:
