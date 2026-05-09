@@ -49,8 +49,8 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertEqual(receipt["source_head_count"], 16)
         self.assertEqual(receipt["lookup_relation"], gate.LOOKUP_RELATION)
         self.assertEqual(receipt["lookup_relation_width"], 2)
-        self.assertEqual(receipt["lookup_proof_size_bytes"], 29172)
-        self.assertEqual(receipt["lookup_envelope_size_bytes"], 1706907)
+        self.assertEqual(receipt["lookup_proof_size_bytes"], 28062)
+        self.assertEqual(receipt["lookup_envelope_size_bytes"], 1698027)
         self.assertEqual(receipt["lookup_proof_commitments"], 4)
         self.assertEqual(receipt["lookup_trace_commitments"], 3)
         self.assertEqual(receipt["lookup_proof_commitment"], gate.LOOKUP_PROOF_COMMITMENT)
@@ -61,9 +61,9 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertEqual(payload["head_axis_comparison"]["two_head_lookup_claims"], 104)
         self.assertEqual(payload["head_axis_comparison"]["four_head_lookup_claims"], 208)
         self.assertEqual(payload["head_axis_comparison"]["eight_head_lookup_claims"], 416)
-        self.assertEqual(payload["head_axis_comparison"]["single_to_sixteen_proof_size_ratio"], "1.978433")
-        self.assertEqual(payload["head_axis_comparison"]["four_to_sixteen_proof_size_ratio"], "1.339209")
-        self.assertEqual(payload["head_axis_comparison"]["eight_to_sixteen_proof_size_ratio"], "1.344704")
+        self.assertEqual(payload["head_axis_comparison"]["single_to_sixteen_proof_size_ratio"], "1.903154")
+        self.assertEqual(payload["head_axis_comparison"]["four_to_sixteen_proof_size_ratio"], "1.288252")
+        self.assertEqual(payload["head_axis_comparison"]["eight_to_sixteen_proof_size_ratio"], "1.293537")
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertTrue(payload["all_mutations_rejected"])
@@ -93,7 +93,7 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
     def test_rejects_source_statement_relabeling(self):
         payload = self.strip_mutation_summary(gate.build_payload())
         payload["lookup_receipt"]["source_statement_commitment"] = "blake2b-256:" + "aa" * 32
-        self.assert_rejects(payload, "lookup_receipt drift")
+        self.assert_rejects(payload, "source/lookup split-brain drift")
 
     def test_rejects_lookup_receipt_unknown_field(self):
         payload = self.strip_mutation_summary(gate.build_payload())
@@ -214,10 +214,10 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertIn("18104", tsv)
         self.assertIn("21783", tsv)
         self.assertIn("21694", tsv)
-        self.assertIn("29172", tsv)
-        self.assertIn("1.978433", tsv)
-        self.assertIn("1.339209", tsv)
-        self.assertIn("1.344704", tsv)
+        self.assertIn("28062", tsv)
+        self.assertIn("1.903154", tsv)
+        self.assertIn("1.288252", tsv)
+        self.assertIn("1.293537", tsv)
         self.assertIn(gate.SOURCE_STATEMENT_COMMITMENT, tsv)
 
     def test_write_json_validates_before_writing(self):

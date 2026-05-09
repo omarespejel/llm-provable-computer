@@ -312,11 +312,11 @@ This repository currently has three live lanes.
   - Issue `#516` checks whether the four-to-eight-head LogUp sidecar
     proof-byte flatness persists at a synthetic sixteen-head point. It does not
     persist exactly: the sixteen-head sidecar constrains `832` lookup claims
-    with a `29172`-byte raw proof and a `1706907`-byte checked envelope. The
+    with a `28062`-byte raw proof and a `1698027`-byte checked envelope. The
     useful narrowed signal is eight-to-sixteen sidecar scaling: lookup claims
-    grow `2.000000x`, while sidecar raw proof bytes grow `1.344704x`. The
+    grow `2.000000x`, while sidecar raw proof bytes grow `1.293537x`. The
     source arithmetic proof is `60649` bytes, so the matched
-    source-plus-sidecar pair is `89821` raw proof bytes. The gate rejects
+    source-plus-sidecar pair is `88711` raw proof bytes. The gate rejects
     `31 / 31` source-binding, lookup-binding, metric-smuggling, multiplicity,
     split-brain, unknown-field, and overclaim mutations. This is sidecar-only
     engineering proof-byte accounting, not a sixteen-head fused route, not

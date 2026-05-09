@@ -3,44 +3,44 @@
   "claim_boundary": "NATIVE_STWO_SIXTEEN_HEAD_D8_BOUNDED_SOFTMAX_TABLE_LOOKUP_MEMBERSHIP_CONSTRAINED_BY_LOGUP_SIDECAR_NOT_FUSED_ATTENTION_LOOKUP_COMPONENT_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_RECURSION_OR_PCD",
   "decision": "GO_NATIVE_STWO_AIR_CONSTRAINED_SIXTEEN_HEAD_SOFTMAX_TABLE_LOOKUP_RELATION_SIDECAR",
   "fused_component_status": "NO_GO_FUSED_ATTENTION_ARITHMETIC_AND_LOOKUP_COMPONENT_NOT_BUILT",
-  "gate_commitment": "blake2b-256:719fe521e7bdb368d3107b7d888e09221c21233cfe19ba02db3f14a6c8bfd035",
+  "gate_commitment": "blake2b-256:1bcf29edd3a80737b93609bcb83babd9398835ac9afbff193fc7f160bce92b5f",
   "head_axis_comparison": {
     "eight_head_lookup_claims": 416,
     "eight_head_lookup_envelope_size_bytes": 907902,
     "eight_head_lookup_proof_size_bytes": 21694,
     "eight_to_sixteen_claim_count_ratio": "2.000000",
-    "eight_to_sixteen_envelope_size_ratio": "1.880056",
-    "eight_to_sixteen_proof_size_ratio": "1.344704",
+    "eight_to_sixteen_envelope_size_ratio": "1.870276",
+    "eight_to_sixteen_proof_size_ratio": "1.293537",
     "four_head_lookup_claims": 208,
     "four_head_lookup_envelope_size_bytes": 543187,
     "four_head_lookup_proof_size_bytes": 21783,
     "four_to_sixteen_claim_count_ratio": "4.000000",
-    "four_to_sixteen_envelope_size_ratio": "3.142393",
-    "four_to_sixteen_proof_size_ratio": "1.339209",
+    "four_to_sixteen_envelope_size_ratio": "3.126045",
+    "four_to_sixteen_proof_size_ratio": "1.288252",
     "single_head_lookup_claims": 52,
     "single_head_lookup_envelope_size_bytes": 214085,
     "single_head_lookup_proof_size_bytes": 14745,
     "single_to_sixteen_claim_count_ratio": "16.000000",
-    "single_to_sixteen_envelope_size_ratio": "7.973034",
-    "single_to_sixteen_proof_size_ratio": "1.978433",
+    "single_to_sixteen_envelope_size_ratio": "7.931555",
+    "single_to_sixteen_proof_size_ratio": "1.903154",
     "sixteen_head_lookup_claims": 832,
-    "sixteen_head_lookup_envelope_size_bytes": 1706907,
-    "sixteen_head_lookup_proof_size_bytes": 29172,
+    "sixteen_head_lookup_envelope_size_bytes": 1698027,
+    "sixteen_head_lookup_proof_size_bytes": 28062,
     "two_head_lookup_claims": 104,
     "two_head_lookup_envelope_size_bytes": 333577,
     "two_head_lookup_proof_size_bytes": 18104,
     "two_to_sixteen_claim_count_ratio": "8.000000",
-    "two_to_sixteen_envelope_size_ratio": "5.116980",
-    "two_to_sixteen_proof_size_ratio": "1.611357"
+    "two_to_sixteen_envelope_size_ratio": "5.090360",
+    "two_to_sixteen_proof_size_ratio": "1.550044"
   },
   "issue": 516,
   "lookup_receipt": {
     "lookup_claims": 832,
-    "lookup_envelope_commitment": "blake2b-256:f3678871c4f6479eb967d9a67fc0b18f2e4e77e7fb451a1d539a1a58e9db100c",
-    "lookup_envelope_size_bytes": 1706907,
-    "lookup_proof_commitment": "blake2b-256:9e2708909d44cc25daaf741871380796e79ac44b2a83525a784a2670b3adaf8e",
+    "lookup_envelope_commitment": "blake2b-256:0fa9682e68db6bbfc045ebdf127d19c69f7702a8aabade747da9cf1b0aeecf30",
+    "lookup_envelope_size_bytes": 1698027,
+    "lookup_proof_commitment": "blake2b-256:228f4e5e5b050f79694872a0b68ee64c52273829f39cc72bfadfe72500cae8f6",
     "lookup_proof_commitments": 4,
-    "lookup_proof_size_bytes": 29172,
+    "lookup_proof_size_bytes": 28062,
     "lookup_relation": "AttentionKvSixteenHeadSoftmaxTableLookupRelation",
     "lookup_relation_width": 2,
     "lookup_trace_commitments": 3,
@@ -138,7 +138,7 @@
       "rejected": true
     },
     {
-      "error": "lookup_receipt drift",
+      "error": "source/lookup split-brain drift",
       "name": "source_statement_commitment_relabeling",
       "rejected": true
     },
@@ -168,7 +168,7 @@
       "rejected": true
     },
     {
-      "error": "lookup_receipt drift",
+      "error": "source/lookup split-brain drift",
       "name": "source_head_count_relabeling",
       "rejected": true
     },
@@ -253,7 +253,7 @@
       "rejected": true
     },
     {
-      "error": "lookup_receipt drift",
+      "error": "source/lookup split-brain drift",
       "name": "source_input_split_brain",
       "rejected": true
     },

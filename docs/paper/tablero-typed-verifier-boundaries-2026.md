@@ -963,9 +963,9 @@ mutation rejections. Its matched source-plus-sidecar control is now checked at
 `74086` raw proof bytes, so the fused proof is `14711` bytes smaller
 (`0.801433x`). A follow-up sixteen-head sidecar probe does not build a fused
 sixteen-head proof, but it does narrow the sidecar scaling claim: `832` lookup
-claims use a `29172`-byte sidecar proof, so the exact four-to-eight flatness
+claims use a `28062`-byte sidecar proof, so the exact four-to-eight flatness
 breaks while eight-to-sixteen remains sublinear in raw sidecar proof bytes
-(`2.000000x` claims, `1.344704x` proof bytes). A separate two-head
+(`2.000000x` claims, `1.293537x` proof bytes). A separate two-head
 long-sequence route keeps `d=8` and two heads fixed while increasing per-head
 sequence length to sixteen steps; it checks `336` lookup claims over a
 `512`-row trace, has a `60502`-byte raw proof inside a `1050248`-byte checked

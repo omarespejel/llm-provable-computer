@@ -166,10 +166,12 @@ that comparator metadata into the fused proof transcript, the fused proof is
 `14711` bytes smaller than the matched source-plus-sidecar control (`0.801433x`).
 Issue `#516` then probes the detached sidecar beyond the fused matrix: a
 sixteen-head source proof plus LogUp sidecar constrains `832` lookup claims with
-a `29172`-byte sidecar proof. The four-to-eight sidecar flatness does not
+a `28062`-byte sidecar proof. The four-to-eight sidecar flatness does not
 persist, but eight-to-sixteen remains sublinear in raw sidecar proof bytes
-(`2.000000x` lookup claims, `1.344704x` proof bytes). This is sidecar-only
-engineering evidence, not a sixteen-head fused route.
+(`2.000000x` lookup claims, `1.293537x` proof bytes). This is sidecar-only
+engineering evidence, not a sixteen-head fused route. The authoritative
+artifact index and exact commands for this head-axis probe are recorded in
+`docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
 
 Issue `#498` scales the fused route along sequence length at fixed `d=8` and
 fixed two-head shape. One native Stwo proof object checks two-head,
@@ -374,6 +376,12 @@ Claim boundary:
 - Native eight-head bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.json`
 - Native eight-head bounded Softmax-table LogUp sidecar TSV: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.tsv`
 - Native eight-head bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
+- Native sixteen-head bounded Softmax-table source input: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.json`
+- Native sixteen-head bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json`
+- Native sixteen-head bounded Softmax-table LogUp sidecar gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.json`
+- Native sixteen-head bounded Softmax-table LogUp sidecar TSV: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.tsv`
+- Native sixteen-head bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
+- Native sixteen-head head-axis gate note: `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`
 - Native eight-head fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 - Native eight-head fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`
 - Native two-head long-sequence fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`
@@ -622,6 +630,37 @@ LogUp membership relation into one native Stwo proof object. It keeps `8`
 heads, `8` steps per head, width `8`, score gap clip `8`, `416` lookup claims,
 and the same proof-existence/byte-accounting-only timing policy; it is not an
 exact Softmax or public benchmark row.
+
+The issue `#516` head-axis sidecar probe is reproduced by regenerating the
+sixteen-head source fixture, proving and verifying the source proof, proving
+and verifying the LogUp sidecar, and then running the gate:
+
+```bash
+python3 scripts/zkai_attention_kv_stwo_native_sixteen_head_bounded_softmax_table_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.tsv
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_sixteen_head_bounded_softmax_table_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_sixteen_head_bounded_softmax_table_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_sixteen_head_softmax_table_lookup_proof -- \
+  prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_sixteen_head_softmax_table_lookup_proof -- \
+  verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+python3 scripts/zkai_attention_kv_sixteen_head_air_private_softmax_table_lookup_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.tsv
+```
 
 ```bash
 python3 scripts/zkai_attention_kv_stwo_native_masked_sequence_proof_input.py \
