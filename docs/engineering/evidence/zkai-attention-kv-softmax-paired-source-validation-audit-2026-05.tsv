@@ -1,0 +1,2 @@
+decision	targets_checked	targets_rejected	accepted_targets	sidecar_targets_checked	fused_targets_checked	mutation
+GO_SOFTMAX_TABLE_PAIRED_SOURCE_VALIDATION_AUDIT	11	11		5	6	score_rows[0].output_remainder[0] += 1

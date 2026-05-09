@@ -239,6 +239,12 @@ source input, so a caller cannot pass a matching malformed source/envelope pair
 with denominator or remainder drift. This is correctness hardening only, not a
 new proof, not real-valued Softmax, and not a benchmark row.
 
+Issue `#510` applies the same paired-source API audit across the adjacent
+d8/two-head/four-head/long-sequence sidecar and fused Softmax-table validators.
+The checked audit gate mirrors an `output_remainder` mutation into both the
+caller-provided source input and the envelope's `source_input` field; all `11 /
+11` inspected validators reject the paired malformed object.
+
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
 each fused envelope and each fused proof byte payload. The checked strict command
@@ -364,6 +370,8 @@ Claim boundary:
 - Native d16 quantized Softmax-table receipt TSV: `docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv`
 - Native d16 Softmax denominator/rounding edge corpus JSON: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json`
 - Native d16 Softmax denominator/rounding edge corpus TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.tsv`
+- Native Softmax-table paired-source validation audit JSON: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.json`
+- Native Softmax-table paired-source validation audit TSV: `docs/engineering/evidence/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05.tsv`
 - Source receipt evidence: `docs/engineering/evidence/zkai-attention-kv-transition-receipt-2026-05.json`
 - External SNARK receipt evidence: `docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json`
 - External RISC Zero semantics receipt evidence: `docs/engineering/evidence/zkai-attention-kv-risc0-semantics-receipt-2026-05.json`

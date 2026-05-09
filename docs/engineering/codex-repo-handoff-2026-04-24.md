@@ -451,6 +451,13 @@ Tablero boundary.
   rejected by direct source-input validation. This is correctness hardening, not
   a new proof, not real-valued Softmax, and not a benchmark; see
   `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`.
+- Issue `#510` applies the same paired-source API audit across adjacent
+  Softmax-table validators. The checked gate mirrors an `output_remainder`
+  mutation into both the caller-provided source input and the envelope
+  `source_input`, and all `11 / 11` inspected d8/two-head/four-head/
+  long-sequence/d16 sidecar and fused validators reject the paired malformed
+  object. This is validator hardening only; see
+  `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
 
 
 - The attention/KV proof-route selector records a narrow

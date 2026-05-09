@@ -358,12 +358,19 @@ Tablero boundary.
 - Issue `#506` applies the same implementation-exact receipt discipline to the
   d16 fused width-axis route, and issue `#507` hardens it with a deterministic
   denominator/rounding edge corpus. The edge corpus checks `7` integer-kernel
-  edge cases, records denominator range `256..852`, rejects `7 / 7`
+  edge cases, records denominator range `256..852`, rejects `9 / 9`
   source/sidecar/fused denominator and remainder mutations, and hardens the d16
   sidecar/fused validator APIs so matching malformed source/envelope pairs are
   rejected by direct source-input validation. This is correctness hardening, not
   a new proof, not real-valued Softmax, and not a benchmark; see
   `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`.
+- Issue `#510` applies the same paired-source API audit across adjacent
+  Softmax-table validators. The checked gate mirrors an `output_remainder`
+  mutation into both the caller-provided source input and the envelope
+  `source_input`, and all `11 / 11` inspected d8/two-head/four-head/
+  long-sequence/d16 sidecar and fused validators reject the paired malformed
+  object. This is validator hardening only; see
+  `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
 
 
 - The attention/KV proof-route selector records a narrow
