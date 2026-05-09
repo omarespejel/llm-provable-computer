@@ -3,8 +3,8 @@
 ## Question
 
 Do the checked native Stwo fused Softmax-table routes still hold when the
-fixture changes along controlled axes, and when width and head count are
-combined in one route?
+fixture changes along controlled axes, when width and head count are combined,
+and when width, head count, and sequence length are combined in one route?
 
 The axes are:
 
@@ -12,12 +12,13 @@ The axes are:
 - head count: one, two, four, eight, and sixteen heads at `d8` and eight steps;
 - sequence length: two heads at `d8`, eight steps per head to sixteen steps
   per head;
-- combined width/head: `d16`, two heads, eight steps per head.
+- combined width/head: `d16`, two heads, eight steps per head;
+- combined width/head/sequence: `d16`, two heads, sixteen steps per head.
 
 ## Result
 
 GO for a controlled engineering route matrix, now with matched source-plus-LogUp
-sidecar comparators for all eight profile rows.
+sidecar comparators for all nine profile rows.
 
 The checked matrix is machine-readable at:
 
@@ -26,7 +27,7 @@ The checked matrix is machine-readable at:
 
 The gate validates the existing per-route fused evidence files, checks the
 source-input dimensions, normalizes the matched source-plus-sidecar comparators,
-and rejects `24 / 24` matrix drift, provenance-drift, and overclaim mutations.
+and rejects `26 / 26` matrix drift, provenance-drift, and overclaim mutations.
 
 ## Route Matrix
 
@@ -40,6 +41,7 @@ and rejects `24 / 24` matrix drift, provenance-drift, and overclaim mutations.
 | d8 sixteen-head seq8 | heads | 8 | 16 | 8 | 832 | 1,024 | 65,006 | 88,711 | 0.732784 |
 | d8 two-head seq16 | sequence | 8 | 2 | 16 | 336 | 512 | 60,502 | 79,444 | 0.761568 |
 | d16 two-head seq8 | combined width/head | 16 | 2 | 8 | 104 | 128 | 78,211 | 91,596 | 0.853869 |
+| d16 two-head seq16 | combined width/head/sequence | 16 | 2 | 16 | 336 | 512 | 84,868 | 108,158 | 0.784667 |
 
 ## Axis Read
 
@@ -92,15 +94,29 @@ Combined width/head row:
   bytes; the fused proof is `78,211` bytes, saving `13,385` bytes
   (`0.853869x`).
 
+Combined width/head/sequence row:
+
+- The `d16` two-head seq16 row combines all three checked pressure axes in one
+  native Stwo proof object.
+- Against the `d16` two-head seq8 row, steps per head double, lookup claims grow
+  `3.230769x` (`104` to `336`), trace rows grow `4.000000x` (`128` to `512`),
+  while fused proof bytes grow `1.085116x` (`78,211` to `84,868`).
+- Against the `d8` two-head seq16 row, lookup claims and trace rows are held
+  fixed (`336` and `512`), while widening from `d8` to `d16` grows fused proof
+  bytes `1.402730x` (`60,502` to `84,868`).
+- The matched source-plus-sidecar control for the combined width/head/sequence
+  row is `108,158` bytes; the fused proof is `84,868` bytes, saving `23,290`
+  bytes (`0.784667x`).
+
 ## Aggregate Read
 
-Across the eight checked rows:
+Across the nine checked rows:
 
-- total lookup claims: `2,104`;
-- total trace rows: `2,688`;
-- total fused proof bytes: `478,271`;
-- total matched source-plus-sidecar proof bytes: `607,972`;
-- total fused savings against matched source-plus-sidecar: `129,701` bytes;
+- total lookup claims: `2,440`;
+- total trace rows: `3,200`;
+- total fused proof bytes: `563,139`;
+- total matched source-plus-sidecar proof bytes: `716,130`;
+- total fused savings against matched source-plus-sidecar: `152,991` bytes;
 - matched fused ratios range from `0.717412` to `0.860487`.
 
 ## Claim Boundary

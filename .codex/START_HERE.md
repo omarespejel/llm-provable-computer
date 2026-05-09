@@ -60,11 +60,12 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 54. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
 55. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`
 56. `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`
-57. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-58. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
-59. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
-60. `docs/engineering/reproducibility.md`
-61. `git status --short --branch`
+57. `docs/engineering/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05-10.md`
+58. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+59. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
+60. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+61. `docs/engineering/reproducibility.md`
+62. `git status --short --branch`
 
 ## What this repository is now
 
@@ -386,15 +387,16 @@ This repository currently has three live lanes.
     and
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
 
-  - The attention/KV proof-route selector is now a narrow GO for thirteen
+  - The attention/KV proof-route selector is now a narrow GO for fourteen
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
     the native Stwo single-head implementation-exact quantized Softmax-table
     receipt, the native Stwo multi-head implementation-exact quantized
     Softmax-table receipt, the native Stwo two-head long-sequence fused
     Softmax-table proof, the native Stwo d16 fused Softmax-table width-axis
     route, the native Stwo d16 two-head fused Softmax-table route, the native
-    Stwo d16 implementation-exact quantized Softmax-table receipt, the native
-    Stwo d16 two-head implementation-exact quantized Softmax-table receipt, the
+    Stwo d16 two-head long-sequence fused Softmax-table route, the native Stwo
+    d16 implementation-exact quantized Softmax-table receipt, the native Stwo
+    d16 two-head implementation-exact quantized Softmax-table receipt, the
     external SNARK statement-receipt route, RISC Zero transition receipt, RISC
     Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
     receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
@@ -404,7 +406,8 @@ This repository currently has three live lanes.
     single-head Softmax-table, fused two-head Softmax-table, fused four-head
     Softmax-table, fused eight-head Softmax-table, fused sixteen-head Softmax-table, fused
     long-sequence Softmax-table, fused d16 Softmax-table, fused d16 two-head
-    Softmax-table, and quantized Softmax-table receipt gates are separate
+    Softmax-table, fused d16 two-head long-sequence Softmax-table, and
+    quantized Softmax-table receipt gates are separate
     native scale/semantics/accounting/fusion gates.
     Real-valued Softmax, long-context inference, full inference, and
     recursion/PCD remain out of scope; see
