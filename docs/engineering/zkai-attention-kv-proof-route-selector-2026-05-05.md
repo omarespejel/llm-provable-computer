@@ -634,13 +634,13 @@ python3 scripts/zkai_attention_kv_stwo_native_d8_bounded_weighted_proof_input.py
   --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.tsv
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- \
   prove \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.json \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_d8_bounded_weighted_proof -- \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-weighted-proof-2026-05.envelope.json
@@ -819,13 +819,13 @@ python3 scripts/zkai_attention_kv_quantized_softmax_receipt_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.tsv
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- \
   prove \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.json \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
 
-cargo +nightly-2025-07-14 run --features stwo-backend \
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- \
   verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json
