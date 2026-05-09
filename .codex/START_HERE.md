@@ -58,8 +58,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 52. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
 53. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 54. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
-55. `docs/engineering/reproducibility.md`
-56. `git status --short --branch`
+55. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+56. `docs/engineering/reproducibility.md`
+57. `git status --short --branch`
 
 ## What this repository is now
 
