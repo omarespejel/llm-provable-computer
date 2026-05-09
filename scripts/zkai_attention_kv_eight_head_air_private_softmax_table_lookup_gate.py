@@ -98,15 +98,21 @@ TWO_HEAD_LOOKUP_ENVELOPE_SIZE_BYTES = 333_577
 FOUR_HEAD_LOOKUP_CLAIMS = 208
 FOUR_HEAD_LOOKUP_PROOF_SIZE_BYTES = 21_783
 FOUR_HEAD_LOOKUP_ENVELOPE_SIZE_BYTES = 543_187
-SINGLE_TO_EIGHT_CLAIM_COUNT_RATIO = "8.000000"
-SINGLE_TO_EIGHT_PROOF_SIZE_RATIO = "1.471278"
-SINGLE_TO_EIGHT_ENVELOPE_SIZE_RATIO = "4.240848"
-TWO_TO_EIGHT_CLAIM_COUNT_RATIO = "4.000000"
-TWO_TO_EIGHT_PROOF_SIZE_RATIO = "1.198299"
-TWO_TO_EIGHT_ENVELOPE_SIZE_RATIO = "2.721716"
-FOUR_TO_EIGHT_CLAIM_COUNT_RATIO = "2.000000"
-FOUR_TO_EIGHT_PROOF_SIZE_RATIO = "0.995914"
-FOUR_TO_EIGHT_ENVELOPE_SIZE_RATIO = "1.671435"
+
+
+def _ratio_str(numerator: int, denominator: int) -> str:
+    return f"{numerator / denominator:.6f}"
+
+
+SINGLE_TO_EIGHT_CLAIM_COUNT_RATIO = _ratio_str(SOURCE_SCORE_ROWS, SINGLE_HEAD_LOOKUP_CLAIMS)
+SINGLE_TO_EIGHT_PROOF_SIZE_RATIO = _ratio_str(LOOKUP_PROOF_SIZE_BYTES, SINGLE_HEAD_LOOKUP_PROOF_SIZE_BYTES)
+SINGLE_TO_EIGHT_ENVELOPE_SIZE_RATIO = _ratio_str(LOOKUP_ENVELOPE_SIZE_BYTES, SINGLE_HEAD_LOOKUP_ENVELOPE_SIZE_BYTES)
+TWO_TO_EIGHT_CLAIM_COUNT_RATIO = _ratio_str(SOURCE_SCORE_ROWS, TWO_HEAD_LOOKUP_CLAIMS)
+TWO_TO_EIGHT_PROOF_SIZE_RATIO = _ratio_str(LOOKUP_PROOF_SIZE_BYTES, TWO_HEAD_LOOKUP_PROOF_SIZE_BYTES)
+TWO_TO_EIGHT_ENVELOPE_SIZE_RATIO = _ratio_str(LOOKUP_ENVELOPE_SIZE_BYTES, TWO_HEAD_LOOKUP_ENVELOPE_SIZE_BYTES)
+FOUR_TO_EIGHT_CLAIM_COUNT_RATIO = _ratio_str(SOURCE_SCORE_ROWS, FOUR_HEAD_LOOKUP_CLAIMS)
+FOUR_TO_EIGHT_PROOF_SIZE_RATIO = _ratio_str(LOOKUP_PROOF_SIZE_BYTES, FOUR_HEAD_LOOKUP_PROOF_SIZE_BYTES)
+FOUR_TO_EIGHT_ENVELOPE_SIZE_RATIO = _ratio_str(LOOKUP_ENVELOPE_SIZE_BYTES, FOUR_HEAD_LOOKUP_ENVELOPE_SIZE_BYTES)
 
 NON_CLAIMS = (
     "not a fused attention-arithmetic-plus-lookup component",
@@ -150,6 +156,7 @@ EXPECTED_MUTATION_NAMES = (
     "lookup_proof_commitment_relabeling",
     "lookup_envelope_commitment_relabeling",
     "single_head_comparison_metric_smuggling",
+    "single_head_comparison_float_metric_smuggling",
     "table_multiplicity_drift",
     "non_claim_removed",
     "next_backend_step_removed",
@@ -157,7 +164,7 @@ EXPECTED_MUTATION_NAMES = (
     "unknown_field_injection",
     "lookup_receipt_unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 26
+EXPECTED_MUTATION_COUNT = 27
 
 TSV_COLUMNS = (
     "decision",
@@ -635,6 +642,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         receipt["lookup_envelope_commitment"] = "blake2b-256:" + "55" * 32
     elif name == "single_head_comparison_metric_smuggling":
         mutated["single_head_comparison"]["single_to_eight_proof_size_ratio"] = "1.000000"
+    elif name == "single_head_comparison_float_metric_smuggling":
+        mutated["single_head_comparison"]["single_head_lookup_claims"] = 52.0
     elif name == "table_multiplicity_drift":
         receipt["table_multiplicities"][0]["multiplicity"] += 1
     elif name == "non_claim_removed":
@@ -715,7 +724,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         "single_head_comparison": single_head_comparison(),
     }
     for key, expected in expected_scalars.items():
-        if payload.get(key) != expected:
+        if not type_strict_equal(payload.get(key), expected):
             raise AttentionKvAirPrivateSoftmaxTableLookupGateError(f"{key} drift")
     receipt = payload.get("lookup_receipt")
     if not isinstance(receipt, dict):

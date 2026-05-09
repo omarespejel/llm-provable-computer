@@ -184,6 +184,11 @@
       "rejected": true
     },
     {
+      "error": "single_head_comparison drift",
+      "name": "single_head_comparison_float_metric_smuggling",
+      "rejected": true
+    },
+    {
       "error": "lookup_receipt drift",
       "name": "table_multiplicity_drift",
       "rejected": true
@@ -214,8 +219,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 26,
-  "mutations_rejected": 26,
+  "mutations_checked": 27,
+  "mutations_rejected": 27,
   "next_backend_step": "use this matched eight-head sidecar as the source-plus-sidecar comparator for the fused route matrix; the sidecar now reproduces across single-head, two-head, four-head, and eight-head source families",
   "non_claims": [
     "not a fused attention-arithmetic-plus-lookup component",
