@@ -118,6 +118,26 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         tampered_gate_commitment = gate.gate_commitment_for(mutated, mutated["lookup_receipt"])
         self.assertNotEqual(payload["gate_commitment"], tampered_gate_commitment)
 
+    def test_rejects_malformed_lookup_proof_as_gate_error(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        envelope = json.loads(gate.LOOKUP_ENVELOPE_JSON.read_text(encoding="utf-8"))
+        envelope["proof"] = {"not": "a byte list"}
+        with self.assertRaisesRegex(
+            gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+            "lookup proof must be a byte list",
+        ):
+            gate.validate_lookup_envelope(envelope, source_input, gate.LOOKUP_ENVELOPE_SIZE_BYTES)
+
+    def test_rejects_lookup_envelope_size_argument_drift(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        envelope_raw = gate.LOOKUP_ENVELOPE_JSON.read_bytes()
+        envelope = json.loads(envelope_raw.decode("utf-8"))
+        with self.assertRaisesRegex(
+            gate.AttentionKvAirPrivateSoftmaxTableLookupGateError,
+            "lookup envelope size argument drift",
+        ):
+            gate.validate_lookup_envelope(envelope, source_input, gate.LOOKUP_ENVELOPE_SIZE_BYTES + 1, envelope_raw)
+
     def test_rejects_mutation_summary_drift(self):
         payload = gate.build_payload()
         payload["mutation_cases"][0]["rejected"] = False
