@@ -1,0 +1,520 @@
+{
+  "claim_boundary": "ONE_NATIVE_STWO_FUSED_D16_TWO_HEAD_ATTENTION_RECEIPT_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_PUBLIC_BENCHMARK",
+  "decision": "GO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+  "fused_envelope_size_bytes": 921008,
+  "fused_gate_decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+  "fused_proof_size_bytes": 78211,
+  "issue": 524,
+  "kernel_contract": {
+    "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
+    "clip_policy": "clipped_gap = min(max_score - score, 8)",
+    "denominator_nonzero_bound": "1 <= denominator < 2^9 * per_head_step_score_row_count",
+    "denominator_policy": "sum_positive_statement_bound_table_weights_per_head_step",
+    "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
+    "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
+    "fused_proof_backend_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
+    "fused_proof_schema_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+    "fused_statement_version": "zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-logup-statement-v1",
+    "fused_target_id": "attention-kv-d16-two-head-causal-mask-fused-bounded-softmax-table-logup-v1",
+    "fused_verifier_domain": "ptvm:zkai:attention-kv-stwo-native-d16-two-head-fused-bounded-softmax-table-logup:v1",
+    "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
+    "head_count": 2,
+    "kernel_metrics": {
+      "denominator_sum": 7618,
+      "fused_envelope_commitment": "blake2b-256:225d7ba1452771877e9851c48780175eb5291b9e4eeb3f1ffe0749f8942f571d",
+      "fused_envelope_size_bytes": 921008,
+      "fused_proof_backend_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
+      "fused_proof_commitment": "blake2b-256:501e5fa868f5d2f977055670928726e4d474eb4129644b7deff4fb8d3ba5c058",
+      "fused_proof_schema_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+      "fused_proof_size_bytes": 78211,
+      "fused_statement_version": "zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-logup-statement-v1",
+      "fused_target_id": "attention-kv-d16-two-head-causal-mask-fused-bounded-softmax-table-logup-v1",
+      "fused_verifier_domain": "ptvm:zkai:attention-kv-stwo-native-d16-two-head-fused-bounded-softmax-table-logup:v1",
+      "head_count": 2,
+      "input_steps": 16,
+      "key_width": 16,
+      "lookup_claims": 104,
+      "max_observed_division_error_decimal": 0.975,
+      "max_observed_division_error_fraction": "39/40",
+      "max_rows_per_head_step": 10,
+      "output_index_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+      "outputs": 16,
+      "per_head_step_denominators": [
+        {
+          "denominator": 288,
+          "head_index": 0,
+          "step_index": 0
+        },
+        {
+          "denominator": 304,
+          "head_index": 0,
+          "step_index": 1
+        },
+        {
+          "denominator": 320,
+          "head_index": 0,
+          "step_index": 2
+        },
+        {
+          "denominator": 336,
+          "head_index": 0,
+          "step_index": 3
+        },
+        {
+          "denominator": 352,
+          "head_index": 0,
+          "step_index": 4
+        },
+        {
+          "denominator": 368,
+          "head_index": 0,
+          "step_index": 5
+        },
+        {
+          "denominator": 549,
+          "head_index": 0,
+          "step_index": 6
+        },
+        {
+          "denominator": 400,
+          "head_index": 0,
+          "step_index": 7
+        },
+        {
+          "denominator": 453,
+          "head_index": 1,
+          "step_index": 0
+        },
+        {
+          "denominator": 379,
+          "head_index": 1,
+          "step_index": 1
+        },
+        {
+          "denominator": 320,
+          "head_index": 1,
+          "step_index": 2
+        },
+        {
+          "denominator": 336,
+          "head_index": 1,
+          "step_index": 3
+        },
+        {
+          "denominator": 1792,
+          "head_index": 1,
+          "step_index": 4
+        },
+        {
+          "denominator": 368,
+          "head_index": 1,
+          "step_index": 5
+        },
+        {
+          "denominator": 413,
+          "head_index": 1,
+          "step_index": 6
+        },
+        {
+          "denominator": 640,
+          "head_index": 1,
+          "step_index": 7
+        }
+      ],
+      "per_head_step_row_counts": [
+        {
+          "head_index": 0,
+          "rows": 3,
+          "step_index": 0
+        },
+        {
+          "head_index": 0,
+          "rows": 4,
+          "step_index": 1
+        },
+        {
+          "head_index": 0,
+          "rows": 5,
+          "step_index": 2
+        },
+        {
+          "head_index": 0,
+          "rows": 6,
+          "step_index": 3
+        },
+        {
+          "head_index": 0,
+          "rows": 7,
+          "step_index": 4
+        },
+        {
+          "head_index": 0,
+          "rows": 8,
+          "step_index": 5
+        },
+        {
+          "head_index": 0,
+          "rows": 9,
+          "step_index": 6
+        },
+        {
+          "head_index": 0,
+          "rows": 10,
+          "step_index": 7
+        },
+        {
+          "head_index": 1,
+          "rows": 3,
+          "step_index": 0
+        },
+        {
+          "head_index": 1,
+          "rows": 4,
+          "step_index": 1
+        },
+        {
+          "head_index": 1,
+          "rows": 5,
+          "step_index": 2
+        },
+        {
+          "head_index": 1,
+          "rows": 6,
+          "step_index": 3
+        },
+        {
+          "head_index": 1,
+          "rows": 7,
+          "step_index": 4
+        },
+        {
+          "head_index": 1,
+          "rows": 8,
+          "step_index": 5
+        },
+        {
+          "head_index": 1,
+          "rows": 9,
+          "step_index": 6
+        },
+        {
+          "head_index": 1,
+          "rows": 10,
+          "step_index": 7
+        }
+      ],
+      "score_rows": 104,
+      "sequence_length_per_head": 8,
+      "source_final_kv_cache_commitment": "blake2b-256:e4c3c24f65bcb5b770a4d81be224317bcecf4b0a46bffb9692440e278a8d81a8",
+      "source_outputs_commitment": "blake2b-256:3a3a5ce91d1d54a89b2f0236411491085ef2d12012b97e9ac314e617ad7dc30e",
+      "source_public_instance_commitment": "blake2b-256:5ddd35aa741b465bb91f1ed2129b346839887a56e69ee44ed769fcbe97dea160",
+      "source_score_row_commitment": "blake2b-256:da24ff81018d62d7111330ffc71d432b822d88f5383d70bc7a3acb7df2ba6114",
+      "source_statement_commitment": "blake2b-256:53ef16ba16ce365697c9f95e87cf1e4ef2a5975d04aebd03dca92792b28a5be8",
+      "source_weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0",
+      "table_rows": 9,
+      "trace_rows": 128,
+      "value_width": 16
+    },
+    "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ON_D16_TWO_HEAD_FIXTURE",
+    "key_width": 16,
+    "max_subtraction_policy": "per_step_max_allowed_score_subtracted_before_table_lookup",
+    "model_binding_status": "no separate trainable model weights in this fixture; public query/key/value/KV rows are statement-bound",
+    "numerator_policy": "per_output_dim_sum_over_allowed_candidates(weight * value_dim)",
+    "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+    "output_scale": 1,
+    "output_scale_policy": "same_integer_units_as_value_vectors",
+    "proof_binding_status": "GO_NATIVE_STWO_FUSED_D16_TWO_HEAD_ATTENTION_ARITHMETIC_AND_LOGUP_TABLE_MEMBERSHIP_PROOF_BACKS_RECEIPT",
+    "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+    "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
+    "score_domain": "signed_i64_query_key_dot_products_over_d16_public_two_head_fixture_rows",
+    "score_gap_clip": 8,
+    "score_scale": 1,
+    "sequence_length_per_head": 8,
+    "source_final_kv_cache_commitment": "blake2b-256:e4c3c24f65bcb5b770a4d81be224317bcecf4b0a46bffb9692440e278a8d81a8",
+    "source_outputs_commitment": "blake2b-256:3a3a5ce91d1d54a89b2f0236411491085ef2d12012b97e9ac314e617ad7dc30e",
+    "source_proof_native_parameter_commitment": "blake2b-256:7803aed5d86cc39e25234372b2620a5774f646a51ef6fbfb915107a10a3e0619",
+    "source_public_instance_commitment": "blake2b-256:5ddd35aa741b465bb91f1ed2129b346839887a56e69ee44ed769fcbe97dea160",
+    "source_score_row_commitment": "blake2b-256:da24ff81018d62d7111330ffc71d432b822d88f5383d70bc7a3acb7df2ba6114",
+    "source_statement_commitment": "blake2b-256:53ef16ba16ce365697c9f95e87cf1e4ef2a5975d04aebd03dca92792b28a5be8",
+    "step_binding_policy": "each score row binds per-head local step_index derived from statement input_steps order",
+    "table_error_bound_policy": "no real-valued Softmax approximation error bound is claimed; the literal integer table is the kernel",
+    "table_generation_rule": "literal table: round(256 * 2^(-gap/2)) for gaps 0..8, committed as statement data",
+    "value_width": 16,
+    "weight_policy": "exp2_half_gap_table_clipped_8_floor_division",
+    "weight_table": [
+      {
+        "gap": 0,
+        "weight": 256
+      },
+      {
+        "gap": 1,
+        "weight": 181
+      },
+      {
+        "gap": 2,
+        "weight": 128
+      },
+      {
+        "gap": 3,
+        "weight": 91
+      },
+      {
+        "gap": 4,
+        "weight": 64
+      },
+      {
+        "gap": 5,
+        "weight": 45
+      },
+      {
+        "gap": 6,
+        "weight": 32
+      },
+      {
+        "gap": 7,
+        "weight": 23
+      },
+      {
+        "gap": 8,
+        "weight": 16
+      }
+    ],
+    "weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0"
+  },
+  "lookup_claims": 104,
+  "mutation_results": [
+    {
+      "error": "kernel contract drift",
+      "name": "kernel_status_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "kernel_name_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "receipt drift for claim_boundary",
+      "name": "claim_boundary_real_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "real_softmax_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "head_count_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "key_width_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "value_width_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "sequence_length_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "score_scale_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "max_subtraction_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "clip_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "score_gap_clip_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "weight_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "weight_table_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "weight_table_value_drift",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "denominator_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "denominator_nonzero_bound_removed",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "division_rule_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "rounding_rule_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "output_order_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "causal_mask_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "head_binding_policy_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "output_scale_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "division_error_bound_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "table_error_bound_policy_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "model_binding_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: head_count drift",
+      "name": "source_input_head_count_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: key_width drift",
+      "name": "source_input_key_width_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: value_width drift",
+      "name": "source_input_value_width_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_head_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_step_index_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_token_position_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_mask_allowed_false",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_denominator_zero",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_selected_score_gap_coherent_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_output_vector_truncation",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_remainder_drift",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: score rows drift",
+      "name": "source_input_attention_output_split_brain",
+      "rejected": true
+    },
+    {
+      "error": "source input validation drift: attention outputs drift",
+      "name": "source_input_output_order_swap",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "fused_verifier_domain_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "fused_statement_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "fused_proof_byte_tamper",
+      "rejected": true
+    },
+    {
+      "error": "unknown receipt field(s): ['unexpected']",
+      "name": "unknown_receipt_key_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 43,
+  "mutations_rejected": 43,
+  "route_id": "local_stwo_attention_kv_d16_two_head_quantized_softmax_table_kernel_receipt",
+  "schema": "zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-v1",
+  "source_arithmetic_issue": 521,
+  "source_issue": 521,
+  "table_rows": 9,
+  "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_native_d16_two_head_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+    "just lib",
+    "just gate-fast",
+    "just gate"
+  ]
+}

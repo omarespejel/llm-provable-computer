@@ -59,11 +59,12 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 53. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
 54. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
 55. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`
-56. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-57. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
-58. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
-59. `docs/engineering/reproducibility.md`
-60. `git status --short --branch`
+56. `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`
+57. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+58. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
+59. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+60. `docs/engineering/reproducibility.md`
+61. `git status --short --branch`
 
 ## What this repository is now
 
@@ -360,8 +361,11 @@ This repository currently has three live lanes.
     `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`.
 
   - Issue `#506` applies the same implementation-exact receipt discipline to
-    the d16 fused width-axis route, and issue `#507` hardens it with a
-    deterministic denominator/rounding edge corpus. The edge corpus checks `7`
+    the d16 fused width-axis route. Issue `#524` applies it to the combined
+    d16/two-head fused route: `104` lookup claims over a `128`-row trace,
+    `78211` raw fused proof bytes, `921008` checked envelope bytes, and `43 /
+    43` semantic/proof mutations rejected. Issue `#507` hardens the d16 lane
+    with a deterministic denominator/rounding edge corpus. The edge corpus checks `7`
     integer-kernel edge cases, records denominator range `256..852`, rejects
     `7 / 7` source/sidecar/fused denominator and remainder mutations, and
     hardens the d16 sidecar/fused validator APIs so matching malformed
@@ -382,21 +386,26 @@ This repository currently has three live lanes.
     and
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
 
-  - The attention/KV proof-route selector is now a narrow GO for ten
+  - The attention/KV proof-route selector is now a narrow GO for thirteen
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
     the native Stwo single-head implementation-exact quantized Softmax-table
     receipt, the native Stwo multi-head implementation-exact quantized
     Softmax-table receipt, the native Stwo two-head long-sequence fused
     Softmax-table proof, the native Stwo d16 fused Softmax-table width-axis
-    route, the external SNARK statement-receipt route, RISC Zero transition
-    receipt, RISC Zero three-step sequence receipt, RISC Zero fixed eight-step
-    sequence receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked
-    sequence receipt. The native seq16, d16, two-head,
+    route, the native Stwo d16 two-head fused Softmax-table route, the native
+    Stwo d16 implementation-exact quantized Softmax-table receipt, the native
+    Stwo d16 two-head implementation-exact quantized Softmax-table receipt, the
+    external SNARK statement-receipt route, RISC Zero transition receipt, RISC
+    Zero three-step sequence receipt, RISC Zero fixed eight-step sequence
+    receipt, and RISC Zero fixed eight-step `d=8` causal-prefix masked sequence
+    receipt. The native seq16, d16, two-head,
     bounded weighted, d8 bounded weighted, two-head bounded weighted,
     proof-size profile, and bounded Softmax-table, LogUp sidecar, fused
     single-head Softmax-table, fused two-head Softmax-table, fused four-head
-    Softmax-table, fused eight-head Softmax-table, and quantized Softmax-table receipt gates are separate native
-    scale/semantics/accounting/fusion gates for the first route family.
+    Softmax-table, fused eight-head Softmax-table, fused sixteen-head Softmax-table, fused
+    long-sequence Softmax-table, fused d16 Softmax-table, fused d16 two-head
+    Softmax-table, and quantized Softmax-table receipt gates are separate
+    native scale/semantics/accounting/fusion gates.
     Real-valued Softmax, long-context inference, full inference, and
     recursion/PCD remain out of scope; see
     `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`.

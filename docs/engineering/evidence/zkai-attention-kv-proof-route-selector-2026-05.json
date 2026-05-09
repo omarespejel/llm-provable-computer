@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_TWO_HEAD_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
+  "claim_boundary": "NATIVE_STWO_D8_CAUSAL_MASKED_INTEGER_ARGMAX_ATTENTION_KV_SEQUENCE_PROOF_AND_NATIVE_STWO_D8_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_MULTIHEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_TWO_HEAD_FUSED_SOFTMAX_TABLE_PROOF_AND_NATIVE_STWO_D16_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_NATIVE_STWO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT_AND_EXTERNAL_SNARK_RISC0_CONTROLS_NOT_REAL_VALUED_SOFTMAX_NOT_LONG_CONTEXT_OR_FULL_INFERENCE_NOT_RECURSION_OR_PCD_NOT_AGENT_CORRECTNESS",
   "d16_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_D16_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -151,7 +151,137 @@
     "trace_rows": 128,
     "value_width": 16
   },
-  "decision": "GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_TWO_HEAD_FUSED_D16_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
+  "d16_two_head_quantized_softmax_receipt": {
+    "all_mutations_rejected": true,
+    "causal_mask_policy": "causal_prefix_position_lte_query_token checked on every emitted score row",
+    "claim_boundary": "ONE_NATIVE_STWO_FUSED_D16_TWO_HEAD_ATTENTION_RECEIPT_FOR_A_FIXED_INTEGER_SOFTMAX_TABLE_KERNEL_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD_NOT_PUBLIC_BENCHMARK",
+    "decision": "GO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+    "denominator_policy": "sum_positive_statement_bound_table_weights_per_head_step",
+    "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
+    "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
+    "envelope_size_bytes": 921008,
+    "evidence": "docs/engineering/evidence/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.json",
+    "fused_gate_decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+    "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
+    "head_count": 2,
+    "input_steps": 16,
+    "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+    "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ON_D16_TWO_HEAD_FIXTURE",
+    "key_width": 16,
+    "lookup_claims": 104,
+    "max_observed_division_error_fraction": "39/40",
+    "mutations_checked": 43,
+    "mutations_rejected": 43,
+    "output_order_policy": "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
+    "per_head_step_denominators": [
+      {
+        "denominator": 288,
+        "head_index": 0,
+        "step_index": 0
+      },
+      {
+        "denominator": 304,
+        "head_index": 0,
+        "step_index": 1
+      },
+      {
+        "denominator": 320,
+        "head_index": 0,
+        "step_index": 2
+      },
+      {
+        "denominator": 336,
+        "head_index": 0,
+        "step_index": 3
+      },
+      {
+        "denominator": 352,
+        "head_index": 0,
+        "step_index": 4
+      },
+      {
+        "denominator": 368,
+        "head_index": 0,
+        "step_index": 5
+      },
+      {
+        "denominator": 549,
+        "head_index": 0,
+        "step_index": 6
+      },
+      {
+        "denominator": 400,
+        "head_index": 0,
+        "step_index": 7
+      },
+      {
+        "denominator": 453,
+        "head_index": 1,
+        "step_index": 0
+      },
+      {
+        "denominator": 379,
+        "head_index": 1,
+        "step_index": 1
+      },
+      {
+        "denominator": 320,
+        "head_index": 1,
+        "step_index": 2
+      },
+      {
+        "denominator": 336,
+        "head_index": 1,
+        "step_index": 3
+      },
+      {
+        "denominator": 1792,
+        "head_index": 1,
+        "step_index": 4
+      },
+      {
+        "denominator": 368,
+        "head_index": 1,
+        "step_index": 5
+      },
+      {
+        "denominator": 413,
+        "head_index": 1,
+        "step_index": 6
+      },
+      {
+        "denominator": 640,
+        "head_index": 1,
+        "step_index": 7
+      }
+    ],
+    "proof_backend": "stwo",
+    "proof_size_bytes": 78211,
+    "proof_system": "Stwo",
+    "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+    "result": "GO",
+    "rounding_rule": "floor_toward_negative_infinity_via_euclidean_division_positive_denominator",
+    "route_id": "local_stwo_attention_kv_d16_two_head_quantized_softmax_table_kernel_receipt",
+    "schema": "zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-v1",
+    "score_gap_clip": 8,
+    "score_rows": 104,
+    "score_scale": 1,
+    "sequence_length_per_head": 8,
+    "source_final_kv_cache_commitment": "blake2b-256:e4c3c24f65bcb5b770a4d81be224317bcecf4b0a46bffb9692440e278a8d81a8",
+    "source_outputs_commitment": "blake2b-256:3a3a5ce91d1d54a89b2f0236411491085ef2d12012b97e9ac314e617ad7dc30e",
+    "source_public_instance_commitment": "blake2b-256:5ddd35aa741b465bb91f1ed2129b346839887a56e69ee44ed769fcbe97dea160",
+    "source_score_row_commitment": "blake2b-256:da24ff81018d62d7111330ffc71d432b822d88f5383d70bc7a3acb7df2ba6114",
+    "source_statement_commitment": "blake2b-256:53ef16ba16ce365697c9f95e87cf1e4ef2a5975d04aebd03dca92792b28a5be8",
+    "step_binding_policy": "each score row binds per-head local step_index derived from statement input_steps order",
+    "table_error_bound_policy": "no real-valued Softmax approximation error bound is claimed; the literal integer table is the kernel",
+    "table_rows": 9,
+    "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
+    "trace_rows": 128,
+    "value_width": 16,
+    "weight_policy": "exp2_half_gap_table_clipped_8_floor_division",
+    "weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0"
+  },
+  "decision": "GO_NATIVE_STWO_SINGLE_MULTIHEAD_LONGSEQ_D16_FUSED_D16_TWO_HEAD_FUSED_D16_QUANTIZED_D16_TWO_HEAD_QUANTIZED_SOFTMAX_AND_EXTERNAL_SNARK_RISC0_ATTENTION_KV_RECEIPTS",
   "external_risc0_receipt": {
     "all_mutations_rejected": true,
     "attention_output": [
@@ -489,7 +619,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "1232665c7999c0c1996d0e3ef957361995d62494",
+  "git_commit": "5eb137faa95d0f05d6d65aae76936dd4be06c640",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -572,6 +702,16 @@
     "d16_two_head_fused_softmax_source_plus_sidecar_raw_proof_bytes": 91596,
     "d16_two_head_fused_softmax_trace_rows": 128,
     "d16_two_head_fused_softmax_value_width": 16,
+    "d16_two_head_quantized_softmax_envelope_size_bytes": 921008,
+    "d16_two_head_quantized_softmax_head_count": 2,
+    "d16_two_head_quantized_softmax_input_steps": 16,
+    "d16_two_head_quantized_softmax_key_width": 16,
+    "d16_two_head_quantized_softmax_lookup_claims": 104,
+    "d16_two_head_quantized_softmax_max_observed_division_error_fraction": "39/40",
+    "d16_two_head_quantized_softmax_proof_size_bytes": 78211,
+    "d16_two_head_quantized_softmax_sequence_length_per_head": 8,
+    "d16_two_head_quantized_softmax_table_rows": 9,
+    "d16_two_head_quantized_softmax_value_width": 16,
     "longseq_fused_softmax_fused_envelope_size_bytes": 1050248,
     "longseq_fused_softmax_fused_proof_size_bytes": 60502,
     "longseq_fused_softmax_fused_saves_vs_source_plus_sidecar_bytes": 18942,
@@ -909,6 +1049,46 @@
       "rejected": true
     },
     {
+      "name": "d16_two_head_quantized_softmax_route_removed",
+      "reason": "route inventory drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_receipt_decision_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_receipt_route_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_real_softmax_overclaim",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_width_or_head_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_denominator_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_output_order_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
+      "name": "d16_two_head_quantized_softmax_mutation_rejections_drift",
+      "reason": "d16 two-head quantized Softmax receipt drift",
+      "rejected": true
+    },
+    {
       "name": "d16_softmax_edge_corpus_claim_boundary_drift",
       "reason": "d16 Softmax edge corpus drift",
       "rejected": true
@@ -1094,8 +1274,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 80,
-  "mutations_rejected": 80,
+  "mutations_checked": 88,
+  "mutations_rejected": 88,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
@@ -1241,6 +1421,7 @@
     "local_stwo_attention_kv_d16_fused_bounded_softmax_table_logup_proof",
     "local_stwo_attention_kv_d16_two_head_fused_bounded_softmax_table_logup_proof",
     "local_stwo_attention_kv_d16_quantized_softmax_table_kernel_receipt",
+    "local_stwo_attention_kv_d16_two_head_quantized_softmax_table_kernel_receipt",
     "external_snark_attention_kv_statement_receipt",
     "external_zkvm_attention_kv_semantics_receipt",
     "external_zkvm_attention_kv_sequence_semantics_receipt",
@@ -1494,6 +1675,32 @@
     },
     {
       "blocker": null,
+      "envelope_size_bytes": 921008,
+      "evidence": "docs/engineering/evidence/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05.json",
+      "head_count": 2,
+      "input_steps": 16,
+      "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+      "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ON_D16_TWO_HEAD_FIXTURE",
+      "key_width": 16,
+      "lookup_claims": 104,
+      "proof_backed": true,
+      "proof_backend": "stwo",
+      "proof_size_bytes": 78211,
+      "proof_system": "Stwo",
+      "real_softmax_status": "NO_REAL_VALUED_EXP_DIV_SOFTMAX_ERROR_BOUND_CLAIMED",
+      "route_id": "local_stwo_attention_kv_d16_two_head_quantized_softmax_table_kernel_receipt",
+      "score_gap_clip": 8,
+      "score_scale": 1,
+      "sequence_length_per_head": 8,
+      "source_statement_commitment": "blake2b-256:53ef16ba16ce365697c9f95e87cf1e4ef2a5975d04aebd03dca92792b28a5be8",
+      "status": "GO_D16_TWO_HEAD_IMPLEMENTATION_EXACT_QUANTIZED_SOFTMAX_TABLE_RECEIPT",
+      "table_rows": 9,
+      "usable_today": true,
+      "value_width": 16,
+      "weight_table_commitment": "blake2b-256:852c06058232d0c0871d2559e57b55c85ab30932cf07ef1814b01143209706f0"
+    },
+    {
+      "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-snark-statement-receipt-2026-05.json",
       "proof_backed": true,
       "proof_size_bytes": 802,
@@ -1588,7 +1795,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:104aa97945810140a16806f9d79bce3702ce7d59b40330e70781356c22db4000",
+  "selector_commitment": "blake2b-256:e138784b3f6aee71b1365c2d45816ec33f66d54a61c2c6593e6a9e5af6c4365a",
   "softmax_denominator_rounding_edge_corpus": {
     "all_clipped_denominator": 304,
     "all_route_mutations_rejected": true,

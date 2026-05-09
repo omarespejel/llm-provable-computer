@@ -883,13 +883,14 @@ score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
 proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
-The route selector now records twelve proof-backed routes and rejects `80 / 80`
+The route selector now records thirteen proof-backed routes and rejects `88 / 88`
 route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This includes single-head plus two-head/four-head/
 eight-head/sixteen-head implementation-exact quantized Softmax-table receipts
 over the pinned integer table/floor-division kernel, a separate d16
+implementation-exact quantized Softmax-table receipt, a d16 two-head
 implementation-exact quantized Softmax-table receipt, and separate two-head
 long-sequence, d16 width-axis, and d16 two-head fused Softmax-table/LogUp proofs, not
 real-valued exp/div Softmax. It is anchored to
@@ -981,7 +982,11 @@ bytes smaller (`0.761568x`). A separate d16 width-axis check keeps score rows
 fixed at `52`, doubles key/value width from `8` to `16`, and records a `64503`
 byte fused proof versus a matched `74961` byte source-plus-sidecar pair
 (`0.860487x`, `10458` bytes saved), with `26 / 26` fused-gate mutations
-rejected. This remains supporting transformer/STARK evidence, not a Tablero
+rejected. The combined d16/two-head route checks `104` lookup claims over a
+`128`-row trace with a `78211` byte fused proof, `921008` checked envelope
+bytes, and `43 / 43` implementation-exact receipt mutations rejected; it pins
+width, head count, per-head denominators, output order from `input_steps`, and
+quotient/remainder semantics for the integer table kernel. This remains supporting transformer/STARK evidence, not a Tablero
 performance row: it is bounded table attention, not exact
 real-valued Softmax, not exp/div semantics, not implementation-exact model
 Softmax, not full inference, not a public long-context benchmark, not on-chain
@@ -995,6 +1000,7 @@ anchored to
 `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json`,
+`docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`,
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`.
 
