@@ -107,7 +107,7 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
             gate.write_json(json_path, self.result)
             gate.write_tsv(tsv_path, self.result)
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
-            self.assertEqual(loaded["decision"], gate.DECISION)
+            gate.validate_result(loaded)
             tsv = tsv_path.read_text(encoding="utf-8")
             self.assertIn(gate.DECISION, tsv)
             self.assertIn("304", tsv)
