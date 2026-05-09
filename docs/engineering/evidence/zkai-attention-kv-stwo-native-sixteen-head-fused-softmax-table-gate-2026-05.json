@@ -134,6 +134,7 @@
     "python3 scripts/zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate",
     "just lib",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

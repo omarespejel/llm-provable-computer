@@ -883,7 +883,7 @@ score rows over a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, proof size `24394` bytes, and a
 proof envelope of `265791` bytes. The statement commitment is
 `blake2b-256:dcb688e7e2d7076b2f2fe35c6aa3a12af57d676101c300b48cbda66797e4f232`.
-The route selector now records eleven proof-backed routes and rejects `72 / 72`
+The route selector now records eleven proof-backed routes and rejects `74 / 74`
 route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and

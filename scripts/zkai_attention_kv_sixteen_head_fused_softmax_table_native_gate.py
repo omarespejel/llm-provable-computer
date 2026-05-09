@@ -30,7 +30,8 @@ SOURCE_INPUT_SCRIPT = ROOT / "scripts" / "zkai_attention_kv_stwo_native_sixteen_
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.tsv"
 
-MAX_SOURCE_INPUT_JSON_BYTES = 2_097_152
+# Match the Rust source-input reader contract for the sixteen-head bounded source fixture.
+MAX_SOURCE_INPUT_JSON_BYTES = 4_194_304
 MAX_FUSED_ENVELOPE_JSON_BYTES = 4_194_304
 FUSED_VERIFY_TIMEOUT_SECONDS = 300
 
@@ -139,6 +140,7 @@ VALIDATION_COMMANDS = (
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate",
     "just lib",
     "just gate-fast",
+    "just gate",
 )
 
 TSV_COLUMNS = (
@@ -339,7 +341,14 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes) -> None:
             stderr=subprocess.PIPE,
             text=True,
         ) as proc:
-            stdout, stderr = proc.communicate(timeout=FUSED_VERIFY_TIMEOUT_SECONDS)
+            try:
+                stdout, stderr = proc.communicate(timeout=FUSED_VERIFY_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired as err:
+                proc.kill()
+                stdout, stderr = proc.communicate()
+                raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
+                    f"native fused verifier timed out after {FUSED_VERIFY_TIMEOUT_SECONDS}s: {stderr[-1000:]}"
+                ) from err
     if proc.returncode != 0:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
             f"native fused verifier failed with {proc.returncode}: {stderr[-1000:]}"
