@@ -2540,7 +2540,7 @@ def validate_multihead_quantized_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax row-count drift")
     if summary["table_rows"] != 9:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax table drift")
-    if summary["fused_proof_size_bytes_sum"] != 163426 or summary["max_fused_proof_size_bytes"] != 60450:
+    if summary["fused_proof_size_bytes_sum"] != 162351 or summary["max_fused_proof_size_bytes"] != 59375:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax proof metric drift")
     if summary["mutations_checked"] != MULTIHEAD_QUANTIZED_SOFTMAX.EXPECTED_MUTATION_COUNT:
         raise AttentionKvRouteSelectorError("multi-head quantized Softmax mutation count drift")

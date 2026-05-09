@@ -29,14 +29,17 @@ kernel. It is not exact real-valued Softmax.
 | Table rows | `9` |
 | Source arithmetic proof bytes | `52,392` |
 | Source arithmetic envelope bytes | `1,151,543` |
-| Fused proof bytes | `60,450` |
-| Fused envelope bytes | `1,219,007` |
-| Fused delta versus source proof | `8,058` bytes |
+| Fused proof bytes | `59,375` |
+| Fused envelope bytes | `1,210,413` |
+| Fused delta versus source proof | `6,983` bytes |
+| Matched source + sidecar proof bytes | `74,086` |
+| Fused savings versus source + sidecar | `14,711` bytes |
+| Fused/source+sidecar ratio | `0.801433` |
 | Gate mutations | `16 / 16` rejected |
 
-There is no checked eight-head source-plus-sidecar comparator in this route.
-Therefore this note records a head-count scale GO and proof-existence byte row,
-not an eight-head fused-versus-sidecar savings claim.
+Issue `#514` adds the matched eight-head source-plus-LogUp sidecar comparator.
+This note now records both the head-count scale GO and a matched fused-versus-
+source-plus-sidecar byte-accounting row for the eight-head fixture.
 
 ## What Is Bound
 
@@ -132,8 +135,8 @@ The next controlled research targets are:
 
 1. longer sequence length for the same fused integer table kernel;
 2. wider value/key vectors for the same fused integer table kernel;
-3. a controlled eight-head source-plus-sidecar comparator if we want a savings
-   ratio at eight heads rather than only proof-existence byte accounting.
+3. a longer-sequence or wider eight-head comparator if we want to see whether
+   the matched fused ratio remains stable outside this fixed seq8 fixture.
 
 ## Evidence
 
@@ -143,6 +146,8 @@ The next controlled research targets are:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.envelope.json`
 - Fused proof envelope:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`
+- Matched sidecar proof envelope:
+  `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Fused gate JSON:
   `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 - Fused gate TSV:
@@ -155,6 +160,10 @@ The next controlled research targets are:
   `scripts/zkai_attention_kv_eight_head_fused_softmax_table_native_gate.py`
 - Fused gate tests:
   `scripts/tests/test_zkai_attention_kv_eight_head_fused_softmax_table_native_gate.py`
+- Sidecar gate script:
+  `scripts/zkai_attention_kv_eight_head_air_private_softmax_table_lookup_gate.py`
+- Sidecar gate tests:
+  `scripts/tests/test_zkai_attention_kv_eight_head_air_private_softmax_table_lookup_gate.py`
 - Source Rust module:
   `src/stwo_backend/attention_kv_native_eight_head_bounded_softmax_table_proof.rs`
 - Fused Rust module:

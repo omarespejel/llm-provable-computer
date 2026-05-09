@@ -1438,10 +1438,13 @@ split-route-injection, metric-smuggling, proof-byte, and exact-Softmax-overclaim
 mutations. Before fusion, the corresponding arithmetic proof plus LogUp sidecar
 used `74529` raw proof bytes; the fused route uses `0.7174120141153109x` of that
 source-plus-sidecar budget. The next head-count point checks eight heads:
-`416` lookup claims over a `512`-row trace, a `60450`-byte raw proof, a
-`1219007`-byte checked envelope, and `16 / 16` gate mutation rejections. There
-is no eight-head source-plus-sidecar comparator in that route, so it is
-proof-existence and byte-accounting evidence, not a savings claim.
+`416` lookup claims over a `512`-row trace, a `59375`-byte raw proof, a
+`1210413`-byte checked envelope, and `16 / 16` gate mutation rejections. Issue
+`#514` adds the matched eight-head source-plus-sidecar comparator: the source
+proof plus LogUp sidecar is `74086` raw proof bytes, so the fused proof is
+`14711` bytes smaller (`0.801433x` of the matched control). This converts the
+eight-head route from proof-existence evidence into checked matched-comparator
+evidence.
 
 The same fusion also survives a separate sequence-axis point. Holding `d=8` and
 two heads fixed, the long-sequence route doubles per-head sequence length to

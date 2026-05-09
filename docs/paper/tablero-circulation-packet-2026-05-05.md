@@ -185,8 +185,11 @@ paper: table membership no longer has to live as a detached sidecar for the
 checked bounded fixture.
 
 That fused route now also survives two harder scale points. The eight-head route
-checks `416` lookup claims over a `512`-row trace with a `60450`-byte raw proof
-inside a `1219007`-byte checked envelope and rejects `16 / 16` gate mutations.
+checks `416` lookup claims over a `512`-row trace with a `59375`-byte raw proof
+inside a `1210413`-byte checked envelope and rejects `16 / 16` gate mutations.
+Issue `#514` adds the matched eight-head source-plus-sidecar control:
+`74086` raw proof bytes for the source proof plus LogUp sidecar, so the fused
+route is `14711` bytes smaller (`0.801433x`).
 The two-head long-sequence route keeps `d=8` and two heads fixed, doubles the
 per-head sequence length to sixteen steps, checks `336` lookup claims over a
 `512`-row trace, has a `60502`-byte raw proof inside a `1050248`-byte checked

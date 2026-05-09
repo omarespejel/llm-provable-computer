@@ -42,7 +42,7 @@ ROUTE_ID = "local_stwo_attention_kv_fused_softmax_table_controlled_route_matrix"
 CLAIM_BOUNDARY = (
     "ENGINEERING_PROOF_BYTE_ACCOUNTING_FOR_NATIVE_STWO_FUSED_BOUNDED_SOFTMAX_TABLE_FIXTURE_FAMILY_"
     "NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_TIMING_NOT_RECURSION_OR_PCD_"
-    "NOT_A_PUBLIC_BENCHMARK_AND_NO_EIGHT_HEAD_SAVINGS_CLAIM_WITHOUT_MATCHED_SIDECAR"
+    "NOT_A_PUBLIC_BENCHMARK_WITH_MATCHED_SOURCE_PLUS_SIDECAR_COMPARATORS_FOR_ALL_PROFILE_ROWS"
 )
 TIMING_POLICY = "proof_existence_and_byte_accounting_only_not_public_benchmark"
 KERNEL_SCOPE = "bounded_integer_softmax_table_floor_division_kernel_with_fused_attention_arithmetic_and_logup_membership"
@@ -95,7 +95,7 @@ EXPECTED_MUTATION_NAMES = (
     "longseq_steps_metric_smuggling",
     "fused_proof_size_metric_smuggling",
     "matched_ratio_metric_smuggling",
-    "eight_head_comparator_overclaim",
+    "eight_head_comparator_metric_smuggling",
     "axis_summary_width_ratio_drift",
     "axis_summary_head_axis_ratio_drift",
     "axis_summary_sequence_ratio_drift",
@@ -177,8 +177,8 @@ PROFILES = (
     ),
     Profile(
         profile_id="d8_eight_head_seq8",
-        axis_role="head_axis_existence_only",
-        label="d8 eight-head seq8 fused Softmax-table route",
+        axis_role="head_axis_extension",
+        label="d8 eight-head seq8 fused Softmax-table route with matched sidecar comparator",
         gate_module=eight_head_fused,
         gate_json=eight_head_fused.JSON_OUT,
         source_input_json=eight_head_fused.SOURCE_INPUT_JSON,
@@ -186,7 +186,7 @@ PROFILES = (
         expected_value_width=8,
         expected_head_count=8,
         expected_steps_per_head=8,
-        comparator_required=False,
+        comparator_required=True,
     ),
     Profile(
         profile_id="d8_two_head_seq16",
@@ -415,11 +415,12 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             ],
             "fused_proof_ratio_1_to_8": ratio(eight["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]),
             "lookup_claim_ratio_1_to_8": ratio(eight["lookup_claims"], d8["lookup_claims"]),
-            "matched_comparator_head_counts": [1, 2, 4],
+            "matched_comparator_head_counts": [1, 2, 4, 8],
             "matched_fused_to_source_plus_sidecar_ratios": [
                 d8["fused_to_source_plus_sidecar_ratio"],
                 two["fused_to_source_plus_sidecar_ratio"],
                 four["fused_to_source_plus_sidecar_ratio"],
+                eight["fused_to_source_plus_sidecar_ratio"],
             ],
             "eight_head_comparator_status": eight["matched_source_sidecar_status"],
         },
@@ -525,7 +526,7 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
             ),
         ),
         (
-            "eight_head_comparator_overclaim",
+            "eight_head_comparator_metric_smuggling",
             lambda v: row_by_id(v["route_rows"], "d8_eight_head_seq8").__setitem__(
                 "source_plus_sidecar_raw_proof_bytes", 1
             ),
@@ -728,8 +729,8 @@ def validate_core(result: Any) -> None:
         "timing_policy": TIMING_POLICY,
         "profile_ids": list(PROFILE_IDS),
         "profiles_checked": len(PROFILES),
-        "matched_comparator_profiles": 5,
-        "no_comparator_profiles": ["d8_eight_head_seq8"],
+        "matched_comparator_profiles": 6,
+        "no_comparator_profiles": [],
         "validation_commands": list(VALIDATION_COMMANDS),
     }
     for key, expected in exact.items():

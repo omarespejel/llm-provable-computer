@@ -439,7 +439,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "115c12e800e661dbaf9f72b119dadbe4182f4bf6",
+  "git_commit": "e368e11c15f7ceef285b789ae526516b7c0cc05b",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -519,14 +519,14 @@
     "longseq_fused_softmax_lookup_claims": 336,
     "longseq_fused_softmax_source_plus_sidecar_raw_proof_bytes": 79444,
     "longseq_fused_softmax_trace_rows": 512,
-    "multihead_quantized_softmax_fused_proof_size_bytes_sum": 163426,
+    "multihead_quantized_softmax_fused_proof_size_bytes_sum": 162351,
     "multihead_quantized_softmax_head_counts_checked": [
       2,
       4,
       8
     ],
     "multihead_quantized_softmax_lookup_claims_total": 728,
-    "multihead_quantized_softmax_max_fused_proof_size_bytes": 60450,
+    "multihead_quantized_softmax_max_fused_proof_size_bytes": 59375,
     "multihead_quantized_softmax_max_observed_division_error_fraction": "55/56",
     "multihead_quantized_softmax_profiles_checked": 3,
     "native_stwo_envelope_size_bytes": 265791,
@@ -566,7 +566,7 @@
     "division_error_bound": "0 <= weighted_rational - output < 1 output unit for every emitted output coordinate",
     "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
     "evidence": "docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json",
-    "fused_proof_size_bytes_sum": 163426,
+    "fused_proof_size_bytes_sum": 162351,
     "head_binding_policy": "each score row binds head_index; outputs are keyed by (head_index, local_step_index)",
     "head_counts_checked": [
       2,
@@ -576,7 +576,7 @@
     "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
     "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_AND_EIGHT_HEAD_FIXTURES",
     "lookup_claims_total": 728,
-    "max_fused_proof_size_bytes": 60450,
+    "max_fused_proof_size_bytes": 59375,
     "max_observed_division_error_fraction": "55/56",
     "mutations_checked": 64,
     "mutations_rejected": 64,
@@ -584,12 +584,12 @@
     "profile_fused_envelope_commitments": [
       "blake2b-256:0e7aa999643e024087c7fea479d3b66b2762f2212419c840cfdde048f7bcaea4",
       "blake2b-256:b7d589848fef687ff8224d676d5509d8a5e68d4b83f071b594ce50ced10f4fd4",
-      "blake2b-256:c77b57d94fd89bcf4e728d3d3801f476b692ad89500ca55e2075c909e00fa203"
+      "blake2b-256:3dc2baac1aea885fd10366aa509a3f2e68bf1c3a9cd6d9bd6df6b34c73101917"
     ],
     "profile_fused_proof_commitments": [
       "blake2b-256:baec9f001c631451517360f74920074302ad94bbb144845992fdc0b003b1a6a9",
       "blake2b-256:01e2b9f9a17f0fc510f7dea46b839f17ac2119275002824f5abde00cc085420b",
-      "blake2b-256:8e1b18be5e453b88806a45a5393859056bdc059a4de2ce929d855750c5eb8f3e"
+      "blake2b-256:44c6f57b9a2457c29db7301501a0d128477fc678443536320307b25d8872a7dc"
     ],
     "profile_output_index_policies": [
       "attention_outputs index is derived from statement input_steps order, not from a hard-coded head layout",
@@ -1252,7 +1252,7 @@
     {
       "blocker": null,
       "evidence": "docs/engineering/evidence/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05.json",
-      "fused_proof_size_bytes_sum": 163426,
+      "fused_proof_size_bytes_sum": 162351,
       "head_counts_checked": [
         2,
         4,
@@ -1261,16 +1261,16 @@
       "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
       "kernel_status": "GO_EXACT_FOR_THIS_INTEGER_TABLE_FLOOR_DIVISION_KERNEL_ACROSS_CHECKED_TWO_FOUR_AND_EIGHT_HEAD_FIXTURES",
       "lookup_claims_total": 728,
-      "max_fused_proof_size_bytes": 60450,
+      "max_fused_proof_size_bytes": 59375,
       "profile_fused_envelope_commitments": [
         "blake2b-256:0e7aa999643e024087c7fea479d3b66b2762f2212419c840cfdde048f7bcaea4",
         "blake2b-256:b7d589848fef687ff8224d676d5509d8a5e68d4b83f071b594ce50ced10f4fd4",
-        "blake2b-256:c77b57d94fd89bcf4e728d3d3801f476b692ad89500ca55e2075c909e00fa203"
+        "blake2b-256:3dc2baac1aea885fd10366aa509a3f2e68bf1c3a9cd6d9bd6df6b34c73101917"
       ],
       "profile_fused_proof_commitments": [
         "blake2b-256:baec9f001c631451517360f74920074302ad94bbb144845992fdc0b003b1a6a9",
         "blake2b-256:01e2b9f9a17f0fc510f7dea46b839f17ac2119275002824f5abde00cc085420b",
-        "blake2b-256:8e1b18be5e453b88806a45a5393859056bdc059a4de2ce929d855750c5eb8f3e"
+        "blake2b-256:44c6f57b9a2457c29db7301501a0d128477fc678443536320307b25d8872a7dc"
       ],
       "profile_statement_commitments": [
         "blake2b-256:3430a919e3cede8302e11a7b182c3e85f1c0b894abe3a6c67f474fa83331fe2b",
@@ -1460,7 +1460,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:1c13bc35a27c8fa37135640d6c82be026bdf851872e03c03ba6a0f3a7f6dcc2c",
+  "selector_commitment": "blake2b-256:b145522f940f2a7d8c027e5c0211abce5db05a5681ed3d0bd2931ec30093ed0a",
   "softmax_denominator_rounding_edge_corpus": {
     "all_clipped_denominator": 304,
     "all_route_mutations_rejected": true,
