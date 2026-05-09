@@ -48,20 +48,21 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 42. `docs/engineering/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
 43. `docs/engineering/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-gate-2026-05-07.md`
 44. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05-09.md`
-45. `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`
-46. `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`
-47. `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
-48. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
-49. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
-50. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`
-51. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
-52. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-53. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
-54. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-55. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
-56. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
-57. `docs/engineering/reproducibility.md`
-58. `git status --short --branch`
+45. `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`
+46. `docs/engineering/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05-07.md`
+47. `docs/engineering/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05-07.md`
+48. `docs/engineering/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05-08.md`
+49. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
+50. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
+51. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`
+52. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
+53. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+54. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`
+55. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+56. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
+57. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+58. `docs/engineering/reproducibility.md`
+59. `git status --short --branch`
 
 ## What this repository is now
 
@@ -307,6 +308,20 @@ This repository currently has three live lanes.
     inference, and not timing evidence; see
     `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md` and
     `docs/engineering/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
+
+  - Issue `#516` checks whether the four-to-eight-head LogUp sidecar
+    proof-byte flatness persists at a synthetic sixteen-head point. It does not
+    persist exactly: the sixteen-head sidecar constrains `832` lookup claims
+    with a `29172`-byte raw proof and a `1706907`-byte checked envelope. The
+    useful narrowed signal is eight-to-sixteen sidecar scaling: lookup claims
+    grow `2.000000x`, while sidecar raw proof bytes grow `1.344704x`. The
+    source arithmetic proof is `60649` bytes, so the matched
+    source-plus-sidecar pair is `89821` raw proof bytes. The gate rejects
+    `31 / 31` source-binding, lookup-binding, metric-smuggling, multiplicity,
+    split-brain, unknown-field, and overclaim mutations. This is sidecar-only
+    engineering proof-byte accounting, not a sixteen-head fused route, not
+    exact Softmax, not full inference, and not timing evidence; see
+    `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
 
   - Issue `#485` pins the single-head fused route as an implementation-exact
     quantized Softmax-table kernel receipt. The backing object is the issue

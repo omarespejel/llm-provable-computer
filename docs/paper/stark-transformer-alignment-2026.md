@@ -1455,6 +1455,13 @@ the fused gate is
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 with fused-envelope commitment
 `blake2b-256:3dc2baac1aea885fd10366aa509a3f2e68bf1c3a9cd6d9bd6df6b34c73101917`.
+The follow-up sixteen-head sidecar probe narrows the head-axis interpretation:
+the exact four-to-eight sidecar flatness does not persist, but the sidecar still
+grows sublinearly in raw proof bytes on the checked point. It constrains `832`
+lookup claims with a `29172`-byte proof, so eight-to-sixteen doubles lookup
+claims while sidecar proof bytes grow `1.344704x`. We therefore treat the
+sidecar data as local engineering proof-byte accounting, not an asymptotic
+flatness claim.
 
 The same fusion also survives a separate sequence-axis point. Holding `d=8` and
 two heads fixed, the long-sequence route doubles per-head sequence length to
@@ -1503,6 +1510,14 @@ The eight-head sidecar verifier command is
 `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`;
 the eight-head fused verifier command is
 `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`.
+The sixteen-head sidecar probe evidence paths are
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.json`.
+The sixteen-head sidecar verifier command is
+`cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_sixteen_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`.
 The long-sequence evidence paths are
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json`,
