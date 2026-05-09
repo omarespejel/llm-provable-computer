@@ -293,6 +293,7 @@ def verify_lookup_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: s
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",

@@ -170,3 +170,10 @@ cargo +nightly-2025-07-14 test attention_kv_native_d16_two_head_longseq_bounded_
 cargo +nightly-2025-07-14 test attention_kv_d16_two_head_longseq_softmax_table_lookup --lib --features stwo-backend
 cargo +nightly-2025-07-14 test attention_kv_d16_two_head_longseq_fused_softmax_table --lib --features stwo-backend
 ```
+
+Run final repo gates:
+
+```bash
+just gate-fast
+just gate
+```

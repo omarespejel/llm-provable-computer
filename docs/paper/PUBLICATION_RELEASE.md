@@ -48,7 +48,7 @@ It supports the following presentation posture:
   control, plus a combined d16 two-head long-sequence fused proof object with a
   matched source-plus-sidecar control, plus an implementation-exact d16
   quantized Softmax-table receipt with denominator/rounding edge-corpus hardening
-  (not exact Softmax, implementation-exact model Softmax, long-context
+  (not exact Softmax, not implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
   public benchmark evidence, or
   recursion) show that proof validity, statement binding, numeric range

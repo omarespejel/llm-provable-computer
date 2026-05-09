@@ -13,72 +13,72 @@
   "lookup_relation_width": 2,
   "mutation_results": [
     {
-      "error": "fused decision drift",
+      "error": "fused envelope drift for decision: got 'GO_EXACT_SOFTMAX_FUSED_PROOF'",
       "name": "fused_decision_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "fusion_status_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "non_fused_status_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "claim_boundary_exact_softmax_overclaim",
       "rejected": true
     },
     {
-      "error": "fused semantic scope drift",
+      "error": "fused envelope drift for semantic_scope: got 'exact_real_valued_softmax_attention'",
       "name": "semantic_scope_exact_softmax_overclaim",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_statement_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_weight_table_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_score_row_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_final_kv_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_outputs_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_head_count_metric_smuggling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "lookup_relation_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "lookup_claim_count_metric_smuggling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "source_plus_sidecar_metric_smuggling",
       "rejected": true
     },
@@ -88,32 +88,32 @@
       "rejected": true
     },
     {
-      "error": "fused source input split-brain drift",
+      "error": "fused source input split-brain drift: got dict(keys=['attention_outputs', 'causal_gap_bits', 'decision', 'final_kv_cache', 'final_kv_cache_commitment', 'final_kv_items', 'head_count', 'initial_kv_cache'], len=46)",
       "name": "source_input_statement_commitment_relabeling",
       "rejected": true
     },
     {
-      "error": "fused source input split-brain drift",
+      "error": "fused source input split-brain drift: got dict(keys=['attention_outputs', 'causal_gap_bits', 'decision', 'final_kv_cache', 'final_kv_cache_commitment', 'final_kv_items', 'head_count', 'initial_kv_cache'], len=46)",
       "name": "source_input_head_index_relabeling",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "table_multiplicity_drift",
       "rejected": true
     },
     {
-      "error": "fused summary drift",
+      "error": "fused summary drift: got dict(keys=['fusion_status', 'issue', 'lookup_claims', 'lookup_relation', 'lookup_relation_width', 'non_claims', 'non_fused_status', 'score_gap_clip'], len=24)",
       "name": "non_claim_removed",
       "rejected": true
     },
     {
-      "error": "fused source input split-brain drift",
+      "error": "fused source input split-brain drift: got dict(keys=['attention_outputs', 'causal_gap_bits', 'decision', 'final_kv_cache', 'final_kv_cache_commitment', 'final_kv_items', 'head_count', 'initial_kv_cache'], len=46)",
       "name": "source_input_split_brain_weight",
       "rejected": true
     },
     {
-      "error": "fused source input split-brain drift",
+      "error": "fused source input split-brain drift: got dict(keys=['attention_outputs', 'causal_gap_bits', 'decision', 'final_kv_cache', 'final_kv_cache_commitment', 'final_kv_items', 'head_count', 'initial_kv_cache'], len=46)",
       "name": "source_input_output_remainder_drift",
       "rejected": true
     },
@@ -123,27 +123,27 @@
       "rejected": true
     },
     {
-      "error": "fused target id drift",
+      "error": "fused envelope drift for target_id: got 'different-target'",
       "name": "target_id_relabeling",
       "rejected": true
     },
     {
-      "error": "fused verifier domain drift",
+      "error": "fused envelope drift for verifier_domain: got 'different-domain'",
       "name": "verifier_domain_relabeling",
       "rejected": true
     },
     {
-      "error": "fused statement version drift",
+      "error": "fused envelope drift for statement_version: got 'different-statement'",
       "name": "statement_version_relabeling",
       "rejected": true
     },
     {
-      "error": "fused proof backend version drift",
+      "error": "fused envelope drift for proof_backend_version: got 'different-stwo-backend'",
       "name": "proof_backend_version_relabeling",
       "rejected": true
     },
     {
-      "error": "fused proof schema version drift",
+      "error": "fused envelope drift for proof_schema_version: got 'different-fused-proof-schema'",
       "name": "proof_schema_version_relabeling",
       "rejected": true
     },
@@ -243,9 +243,9 @@
   "timing_policy": "proof_existence_and_byte_accounting_only_not_public_benchmark",
   "trace_rows": 512,
   "validation_commands": [
-    "cargo +nightly-2025-07-14 test attention_kv_d16_two_head_longseq_fused_softmax_table --lib --features stwo-backend",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_d16_two_head_longseq_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate",
     "just lib",

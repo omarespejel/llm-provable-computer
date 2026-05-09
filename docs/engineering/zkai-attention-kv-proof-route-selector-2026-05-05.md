@@ -327,6 +327,52 @@ rejects `30 / 30` fused-gate mutations. This is combined-axis proof-existence
 and byte-accounting evidence, not exact Softmax, implementation-exact model
 Softmax, full inference, timing evidence, recursion, or PCD.
 
+Reproduce issue `#525` (`d16/two-head/seq16`) with the fused route/check names
+used in this report:
+
+```bash
+python3 scripts/zkai_attention_kv_stwo_native_d16_two_head_longseq_bounded_softmax_table_proof_input.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.tsv
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_bounded_softmax_table_proof \
+  -- prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_softmax_table_lookup_proof \
+  -- prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof \
+  -- prove \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof \
+  -- verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json
+
+python3 scripts/zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate.py \
+  --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.json \
+  --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.tsv
+```
+
+The checked backend versions are
+`stwo-attention-kv-d16-two-head-longseq-causal-mask-bounded-softmax-table-v1`
+for the source arithmetic proof,
+`stwo-attention-kv-d16-two-head-longseq-softmax-table-logup-sidecar-proof-v1`
+for the sidecar, and
+`stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1`
+for the fused proof. Timing policy is proof-existence and byte accounting only,
+not a public benchmark. The fused route checks `512` trace rows and `336`
+lookup claims.
+
 The boundary remains strict. The earlier argmax and bounded-weighted selectors
 are not Softmax, not long-context inference, not a full transformer block, and
 not recursion/PCD. The bounded Softmax-table gates are closer to transformer
@@ -527,7 +573,7 @@ Softmax.
 
 | Surface | Result |
 | --- | ---: |
-| Proof-backed routes available | 13 |
+| Proof-backed routes available | 14 |
 | Routes checked by selector evidence | 15 |
 | Additional native Softmax-table scale gates summarized | 3 |
 | Additional fused Softmax-table routes summarized | 7 |

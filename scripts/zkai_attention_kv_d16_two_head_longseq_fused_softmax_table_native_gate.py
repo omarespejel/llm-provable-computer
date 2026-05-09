@@ -143,9 +143,9 @@ EXPECTED_MUTATION_NAMES = (
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 
 VALIDATION_COMMANDS = (
-    "cargo +nightly-2025-07-14 test attention_kv_d16_two_head_longseq_fused_softmax_table --lib --features stwo-backend",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_d16_two_head_longseq_fused_softmax_table --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_d16_two_head_longseq_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate",
     "just lib",
@@ -291,11 +291,38 @@ def mutate_same_size_stark_proof_commitment(envelope: dict[str, Any]) -> None:
     envelope["proof"] = list(proof_bytes)
 
 
+def type_strict_equal(actual: Any, expected: Any) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(type_strict_equal(actual[key], expected[key]) for key in expected)
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            type_strict_equal(left, right) for left, right in zip(actual, expected, strict=True)
+        )
+    return actual == expected
+
+
+def describe_value(value: Any) -> str:
+    if isinstance(value, dict):
+        return f"dict(keys={sorted(value)[:8]!r}, len={len(value)})"
+    if isinstance(value, list):
+        return f"list(len={len(value)})"
+    return repr(value)
+
+
+def assert_strict_equal(actual: Any, expected: Any, label: str) -> None:
+    if not type_strict_equal(actual, expected):
+        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"{label} drift: got {describe_value(actual)}")
+
+
 def assert_fields(mapping: dict[str, Any], expected: dict[str, Any], label: str) -> None:
+    if not isinstance(mapping, dict):
+        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"{label} must be an object")
     for key, expected_value in expected.items():
-        if mapping.get(key) != expected_value:
+        if key not in mapping or not type_strict_equal(mapping[key], expected_value):
             raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(
-                f"{label} drift for {key}: got {mapping.get(key)!r}"
+                f"{label} drift for {key}: got {describe_value(mapping.get(key))}"
             )
 
 
@@ -335,6 +362,7 @@ def verify_envelope_bytes_with_native_cli(
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",
@@ -394,6 +422,7 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes, label: st
         "cargo",
         "+nightly-2025-07-14",
         "run",
+        "--locked",
         "--features",
         "stwo-backend",
         "--bin",
@@ -511,17 +540,11 @@ def validate_source_artifacts(
     source_envelope_bytes: bytes,
     sidecar_envelope_bytes: bytes,
 ) -> None:
-    if (
-        parse_bounded_json_bytes(source_envelope_bytes, "source envelope bytes")
-        != source_envelope
-    ):
+    if not type_strict_equal(parse_bounded_json_bytes(source_envelope_bytes, "source envelope bytes"), source_envelope):
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(
             "source envelope bytes/dict split-brain drift"
         )
-    if (
-        parse_bounded_json_bytes(sidecar_envelope_bytes, "sidecar envelope bytes")
-        != sidecar_envelope
-    ):
+    if not type_strict_equal(parse_bounded_json_bytes(sidecar_envelope_bytes, "sidecar envelope bytes"), sidecar_envelope):
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(
             "sidecar envelope bytes/dict split-brain drift"
         )
@@ -543,8 +566,7 @@ def validate_source_artifacts(
         },
         "source envelope",
     )
-    if source_envelope.get("input") != source_input:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("source envelope/input split-brain drift")
+    assert_strict_equal(source_envelope.get("input"), source_input, "source envelope/input split-brain")
     assert_fields(
         source_envelope,
         {
@@ -604,8 +626,7 @@ def validate_source_artifacts(
         },
         "sidecar envelope",
     )
-    if sidecar_envelope.get("source_input") != source_input:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("sidecar source input split-brain drift")
+    assert_strict_equal(sidecar_envelope.get("source_input"), source_input, "sidecar source input split-brain")
     parse_stark_proof(
         sidecar_envelope.get("proof"),
         SIDECAR_PROOF_SIZE_BYTES,
@@ -634,9 +655,7 @@ def validate_source_artifacts(
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
     }
     assert_exact_keys(lookup_summary, set(expected_sidecar), "sidecar lookup summary")
-    for key, expected_value in expected_sidecar.items():
-        if lookup_summary.get(key) != expected_value:
-            raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"sidecar summary drift for {key}")
+    assert_fields(lookup_summary, expected_sidecar, "sidecar summary")
     verify_envelope_bytes_with_native_cli(
         sidecar_envelope_bytes,
         "sidecar",
@@ -676,26 +695,22 @@ def validate_fused_envelope(envelope: dict[str, Any], source_input: dict[str, An
     extra_keys = set(envelope) - allowed_keys
     if extra_keys:
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"unknown fused envelope field(s): {sorted(extra_keys)}")
-    if envelope.get("proof_backend") != "stwo":
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof backend drift")
-    if envelope.get("proof_backend_version") != FUSED_BACKEND_VERSION:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof backend version drift")
-    if envelope.get("proof_schema_version") != FUSED_PROOF_SCHEMA_VERSION:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof schema version drift")
-    if envelope.get("statement_version") != FUSED_STATEMENT_VERSION:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused statement version drift")
-    if envelope.get("semantic_scope") != FUSED_SEMANTIC_SCOPE:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused semantic scope drift")
-    if envelope.get("decision") != DECISION:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused decision drift")
-    if envelope.get("target_id") != FUSED_TARGET_ID:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused target id drift")
-    if envelope.get("verifier_domain") != FUSED_VERIFIER_DOMAIN:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused verifier domain drift")
-    if envelope.get("source_input") != source_input:
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused source input split-brain drift")
-    if envelope.get("fused_summary") != expected_summary(source_input):
-        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused summary drift")
+    assert_fields(
+        envelope,
+        {
+            "proof_backend": "stwo",
+            "proof_backend_version": FUSED_BACKEND_VERSION,
+            "proof_schema_version": FUSED_PROOF_SCHEMA_VERSION,
+            "statement_version": FUSED_STATEMENT_VERSION,
+            "semantic_scope": FUSED_SEMANTIC_SCOPE,
+            "decision": DECISION,
+            "target_id": FUSED_TARGET_ID,
+            "verifier_domain": FUSED_VERIFIER_DOMAIN,
+        },
+        "fused envelope",
+    )
+    assert_strict_equal(envelope.get("source_input"), source_input, "fused source input split-brain")
+    assert_strict_equal(envelope.get("fused_summary"), expected_summary(source_input), "fused summary")
     parse_stark_proof(
         envelope.get("proof"),
         FUSED_PROOF_SIZE_BYTES,
@@ -969,9 +984,7 @@ def validate_result(result: dict[str, Any]) -> None:
     extra = set(result) - required
     if extra:
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"unknown result keys: {sorted(extra)}")
-    for key, expected_value in expected_exact.items():
-        if result.get(key) != expected_value:
-            raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"result drift for {key}")
+    assert_fields(result, expected_exact, "result")
     mutation_results = result["mutation_results"]
     if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("mutation result shape drift")
