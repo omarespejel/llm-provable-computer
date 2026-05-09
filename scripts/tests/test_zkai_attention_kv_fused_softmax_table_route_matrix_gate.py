@@ -106,15 +106,33 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "result drift for claim_boundary"):
             gate.validate_result(bad)
 
+        bad = copy.deepcopy(self.result)
+        bad["route_rows"][0]["label"] = "different label"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "label drift"):
+            gate.validate_result(bad)
+
+        bad = copy.deepcopy(self.result)
+        bad["route_rows"][0]["decision"] = "GO_DIFFERENT_GATE"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "decision drift"):
+            gate.validate_result(bad)
+
+        bad = copy.deepcopy(self.result)
+        bad["route_rows"][0]["evidence_json"] = "other.json"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "evidence path drift"):
+            gate.validate_result(bad)
+
     def test_source_dimensions_rejects_malformed_dimensions_with_gate_errors(self):
         base = {
             "score_rows": [
                 {
                     "head_index": 0,
                     "step_index": 0,
+                    "candidate_index": 0,
                     "key": [1, 2],
                     "value": [3, 4],
-                }
+                },
+                {"head_index": 0, "step_index": 0, "candidate_index": 1, "key": [1, 2], "value": [3, 4]},
+                {"head_index": 0, "step_index": 0, "candidate_index": 2, "key": [1, 2], "value": [3, 4]},
             ],
             "trace_rows": 8,
         }
@@ -159,6 +177,38 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         good["key_width"] = "2"
         good["value_width"] = 2.0
         self.assertEqual(gate.source_dimensions(good)["value_width"], 2)
+
+    def test_source_dimensions_rejects_head_step_grid_drift(self):
+        source = {
+            "score_rows": [
+                {
+                    "head_index": head_index,
+                    "step_index": step_index,
+                    "candidate_index": candidate_index,
+                    "key": [1, 2],
+                    "value": [3, 4],
+                }
+                for head_index in (0, 1)
+                for step_index in (0, 1)
+                for candidate_index in range(step_index + 3)
+            ],
+            "trace_rows": 8,
+        }
+        self.assertEqual(gate.source_dimensions(source)["head_count"], 2)
+
+        bad = copy.deepcopy(source)
+        for row in bad["score_rows"]:
+            if row["head_index"] == 1 and row["step_index"] == 1:
+                row["head_index"] = 0
+                row["step_index"] = 0
+                row["candidate_index"] += 3
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source head/step grid incomplete"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(source)
+        bad["score_rows"][0]["candidate_index"] = 1
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source duplicate candidate row"):
+            gate.source_dimensions(bad)
 
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:

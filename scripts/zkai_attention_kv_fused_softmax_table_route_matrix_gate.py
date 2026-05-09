@@ -87,6 +87,9 @@ EXPECTED_MUTATION_NAMES = (
     "comparator_policy_relabeling",
     "row_count_metric_smuggling",
     "route_row_order_drift",
+    "route_row_label_relabeling",
+    "route_row_decision_relabeling",
+    "route_row_evidence_path_relabeling",
     "d16_width_metric_smuggling",
     "two_head_head_count_metric_smuggling",
     "longseq_steps_metric_smuggling",
@@ -242,13 +245,36 @@ def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
     score_rows = source_input.get("score_rows")
     if not isinstance(score_rows, list) or not score_rows:
         raise FusedSoftmaxTableRouteMatrixGateError("source score_rows missing")
-    heads = sorted({row.get("head_index", 0) for row in score_rows if isinstance(row, dict)})
-    steps = sorted({row.get("step_index") for row in score_rows if isinstance(row, dict) and "step_index" in row})
+    grid: dict[tuple[int, int], set[int]] = {}
+    for index, row in enumerate(score_rows):
+        if not isinstance(row, dict):
+            raise FusedSoftmaxTableRouteMatrixGateError("source score row shape drift")
+        if "step_index" not in row:
+            raise FusedSoftmaxTableRouteMatrixGateError("source step_index missing")
+        if "candidate_index" not in row:
+            raise FusedSoftmaxTableRouteMatrixGateError("source candidate_index missing")
+        head_index = parse_integer_dimension(row.get("head_index", 0))
+        step_index = parse_integer_dimension(row["step_index"])
+        candidate_index = parse_integer_dimension(row["candidate_index"])
+        if head_index < 0 or step_index < 0 or candidate_index < 0:
+            raise FusedSoftmaxTableRouteMatrixGateError("source indices must be non-negative")
+        candidates = grid.setdefault((head_index, step_index), set())
+        if candidate_index in candidates:
+            raise FusedSoftmaxTableRouteMatrixGateError(f"source duplicate candidate row: {index}")
+        candidates.add(candidate_index)
+    heads = sorted({head_index for head_index, _step_index in grid})
+    steps = sorted({step_index for _head_index, step_index in grid})
     if not steps:
         raise FusedSoftmaxTableRouteMatrixGateError("source step_index missing")
+    missing_pairs = [(head_index, step_index) for head_index in heads for step_index in steps if (head_index, step_index) not in grid]
+    if missing_pairs:
+        raise FusedSoftmaxTableRouteMatrixGateError("source head/step grid incomplete")
+    for head_index in heads:
+        for step_index in steps:
+            expected_candidates = set(range(step_index + 3))
+            if grid[(head_index, step_index)] != expected_candidates:
+                raise FusedSoftmaxTableRouteMatrixGateError("source candidate grid drift")
     first = score_rows[0]
-    if not isinstance(first, dict):
-        raise FusedSoftmaxTableRouteMatrixGateError("source score row shape drift")
     key_width = source_input.get("key_width")
     if key_width is None and isinstance(first.get("key"), list):
         key_width = len(first["key"])
@@ -458,6 +484,18 @@ def mutation_cases(result: dict[str, Any]) -> tuple[tuple[str, Any], ...]:
         ("row_count_metric_smuggling", lambda v: v.__setitem__("profiles_checked", v["profiles_checked"] + 1)),
         ("route_row_order_drift", lambda v: v.__setitem__("route_rows", list(reversed(v["route_rows"])))),
         (
+            "route_row_label_relabeling",
+            lambda v: row_by_id(v["route_rows"], "d8_single_head_seq8").__setitem__("label", "different label"),
+        ),
+        (
+            "route_row_decision_relabeling",
+            lambda v: row_by_id(v["route_rows"], "d8_single_head_seq8").__setitem__("decision", "GO_DIFFERENT_GATE"),
+        ),
+        (
+            "route_row_evidence_path_relabeling",
+            lambda v: row_by_id(v["route_rows"], "d8_single_head_seq8").__setitem__("evidence_json", "other.json"),
+        ),
+        (
             "d16_width_metric_smuggling",
             lambda v: row_by_id(v["route_rows"], "d16_single_head_seq8").__setitem__("key_width", 8),
         ),
@@ -565,6 +603,16 @@ def validate_route_rows(rows: Any) -> None:
             raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} route row schema drift")
         if row["profile_id"] != profile.profile_id or row["axis_role"] != profile.axis_role:
             raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} identity drift")
+        if row["label"] != profile.label:
+            raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} label drift")
+        if row["route_id"] != profile.gate_module.ROUTE_ID:
+            raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} route id drift")
+        if row["decision"] != profile.gate_module.DECISION:
+            raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} decision drift")
+        if row["evidence_json"] != str(profile.gate_json.relative_to(ROOT)):
+            raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} evidence path drift")
+        if row["source_input_json"] != str(profile.source_input_json.relative_to(ROOT)):
+            raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} source input path drift")
         if row["key_width"] != profile.expected_key_width:
             raise FusedSoftmaxTableRouteMatrixGateError(f"{profile.profile_id} key width drift")
         if row["value_width"] != profile.expected_value_width:

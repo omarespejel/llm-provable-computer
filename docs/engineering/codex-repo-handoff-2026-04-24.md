@@ -468,8 +468,8 @@ Tablero boundary.
   d16 grows fused proof bytes `1.352321x` at fixed `52` lookup claims; one to
   eight heads grows lookup claims `8.000000x` while fused proof bytes grow
   `1.267349x`; two-head seq8 to seq16 grows lookup claims `3.230769x` while
-  fused proof bytes grow `1.222065x`. The matrix rejects `18 / 18`
-  drift/overclaim mutations and remains not timing, not real-valued Softmax,
+  fused proof bytes grow `1.222065x`. The matrix rejects `21 / 21`
+  drift, provenance-drift, and overclaim mutations and remains not timing, not real-valued Softmax,
   not full inference, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`.
 
