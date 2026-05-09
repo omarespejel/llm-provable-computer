@@ -320,9 +320,19 @@ Tablero boundary.
   `88711` raw proof bytes. The gate rejects `31 / 31` source-binding,
   lookup-binding, metric-smuggling, multiplicity, split-brain, unknown-field,
   and overclaim mutations. This is sidecar-only engineering proof-byte
-  accounting, not a sixteen-head fused route, not exact Softmax, not full
-  inference, and not timing evidence; see
+  accounting for issue `#516`, not exact Softmax, not full inference, and not
+  timing evidence; see
   `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
+- Issue `#519` turns the issue `#516` sixteen-head source-plus-sidecar control
+  into a matched fused native Stwo row. One proof object checks the sixteen-head
+  `d=8` bounded Softmax-table attention arithmetic and LogUp table membership
+  for `832` lookup claims over a `1024`-row trace. The fused proof is `65006`
+  raw bytes inside a `1994648`-byte checked envelope, rejects `16 / 16`
+  gate mutations, and is `23705` bytes smaller than the matched source-plus-
+  sidecar pair (`88711` raw bytes, `0.732784x`). This is a larger head-axis
+  fused proof-existence and byte-accounting GO, not exact Softmax, not full
+  inference, not timing evidence, and not recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05-09.md`.
 - Issue `#498` scales the fused route along sequence length at fixed `d=8` and
   fixed two-head shape: one native Stwo proof object checks two-head,
   sixteen-step-per-head bounded Softmax-table attention arithmetic and LogUp
@@ -388,16 +398,18 @@ Tablero boundary.
   long-sequence/d16 sidecar and fused validators reject the paired malformed
   object. This is validator hardening only; see
   `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
-- Issue `#505` plus issue `#514` record the controlled fused Softmax-table
-  route matrix across width, head-count, and sequence-length axes. The checked
-  matrix covers six native Stwo fused rows: d8 single-head seq8, d16
-  single-head seq8, d8 two-head seq8, d8 four-head seq8, d8 eight-head seq8,
-  and d8 two-head seq16. Matched source-plus-sidecar controls now exist for all
-  six rows. The useful engineering signal is separated by axis: d8 to d16 grows
-  fused proof bytes `1.352321x` at fixed `52` lookup claims; one to eight heads
-  grows lookup claims `8.000000x` while fused proof bytes grow `1.244811x`;
+- Issue `#505` plus issues `#514` and `#519` record the controlled fused
+  Softmax-table route matrix across width, head-count, and sequence-length
+  axes. The checked matrix covers seven native Stwo fused rows: d8 single-head
+  seq8, d16 single-head seq8, d8 two-head seq8, d8 four-head seq8, d8
+  eight-head seq8, d8 sixteen-head seq8, and d8 two-head seq16. Matched
+  source-plus-sidecar controls now exist for all seven rows. The useful
+  engineering signal is separated by axis: d8 to d16 grows fused proof bytes
+  `1.352321x` at fixed `52` lookup claims; one to sixteen heads grows lookup
+  claims `16.000000x` while fused proof bytes grow `1.362866x`; eight to
+  sixteen heads doubles lookup claims while fused proof bytes grow `1.094838x`;
   two-head seq8 to seq16 grows lookup claims `3.230769x` while fused proof
-  bytes grow `1.222065x`. The matrix rejects `21 / 21` drift, provenance-drift,
+  bytes grow `1.222065x`. The matrix rejects `22 / 22` drift, provenance-drift,
   and overclaim mutations and remains not timing, not real-valued Softmax, not
   full inference, and not recursion/PCD; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`.
