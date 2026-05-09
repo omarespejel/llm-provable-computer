@@ -8,14 +8,14 @@ fixture changes along one controlled axis at a time?
 The axes are:
 
 - width: `d8` to `d16` at one head and eight steps;
-- head count: one, two, four, and eight heads at `d8` and eight steps;
+- head count: one, two, four, eight, and sixteen heads at `d8` and eight steps;
 - sequence length: two heads at `d8`, eight steps per head to sixteen steps
   per head.
 
 ## Result
 
 GO for a controlled engineering route matrix, now with matched source-plus-LogUp
-sidecar comparators for all six profile rows.
+sidecar comparators for all seven profile rows.
 
 The checked matrix is machine-readable at:
 
@@ -24,7 +24,7 @@ The checked matrix is machine-readable at:
 
 The gate validates the existing per-route fused evidence files, checks the
 source-input dimensions, normalizes the matched source-plus-sidecar comparators,
-and rejects `21 / 21` matrix drift, provenance-drift, and overclaim mutations.
+and rejects `22 / 22` matrix drift, provenance-drift, and overclaim mutations.
 
 ## Route Matrix
 
@@ -35,6 +35,7 @@ and rejects `21 / 21` matrix drift, provenance-drift, and overclaim mutations.
 | d8 two-head seq8 | heads | 8 | 2 | 8 | 104 | 128 | 49,508 | 65,208 | 0.759232 |
 | d8 four-head seq8 | heads | 8 | 4 | 8 | 208 | 256 | 53,468 | 74,529 | 0.717412 |
 | d8 eight-head seq8 | heads | 8 | 8 | 8 | 416 | 512 | 59,375 | 74,086 | 0.801433 |
+| d8 sixteen-head seq8 | heads | 8 | 16 | 8 | 832 | 1,024 | 65,006 | 88,711 | 0.732784 |
 | d8 two-head seq16 | sequence | 8 | 2 | 16 | 336 | 512 | 60,502 | 79,444 | 0.761568 |
 
 ## Axis Read
@@ -49,23 +50,21 @@ Width axis:
 
 Head axis:
 
-- Holding `d8` and eight steps per head fixed, lookup claims grow `8.000000x`
-  from one head to eight heads (`52` to `416`), while fused proof bytes grow
-  `1.244811x` (`47,698` to `59,375`).
+- Holding `d8` and eight steps per head fixed, lookup claims grow `16.000000x`
+  from one head to sixteen heads (`52` to `832`), while fused proof bytes grow
+  `1.362866x` (`47,698` to `65,006`).
+- The eight-to-sixteen step is the most useful new stress point: lookup claims
+  double from `416` to `832`, while fused proof bytes grow only `1.094838x`
+  (`59,375` to `65,006`).
 - Matched source-plus-sidecar ratios are now available for all head-axis rows:
   `0.802497` at one head, `0.759232` at two heads, `0.717412` at four heads,
-  and `0.801433` at eight heads.
-- The eight-head row is no longer an existence-only row: issue `#514` supplies
-  the matched LogUp sidecar proof used for the source-plus-sidecar comparator.
-- The eight-head sidecar itself is an exploratory signal: four to eight heads
-  doubles lookup claims (`208` to `416`) while sidecar raw proof bytes are
-  effectively flat (`21783` to `21694`).
-- Issue `#516` answers the higher-head sidecar probe: the sixteen-head sidecar
-  constrains `832` lookup claims with a `28062`-byte raw proof. The
-  four-to-eight exact flatness does not persist, but eight-to-sixteen remains
-  sublinear in raw proof bytes: lookup claims grow `2.000000x` while sidecar
-  proof bytes grow `1.293537x`. This is sidecar-only engineering evidence, not
-  a sixteen-head fused-route row in this matrix.
+  `0.801433` at eight heads, and `0.732784` at sixteen heads.
+- Issue `#519` turns the earlier sixteen-head sidecar probe from issue `#516`
+  into a full matched fused row: the fused proof is `23,705` bytes smaller than
+  the matched source-plus-sidecar control (`88,711` bytes).
+- The sixteen-head sidecar itself remains an exploratory signal: eight to
+  sixteen heads doubles lookup claims (`416` to `832`) while sidecar raw proof
+  bytes grow `1.293537x` (`21,694` to `28,062`).
 
 Sequence axis:
 
@@ -78,13 +77,13 @@ Sequence axis:
 
 ## Aggregate Read
 
-Across the six checked rows:
+Across the seven checked rows:
 
-- total lookup claims: `1,168`;
-- total trace rows: `1,536`;
-- total fused proof bytes: `335,054`;
-- total matched source-plus-sidecar proof bytes: `427,665`;
-- total fused savings against matched source-plus-sidecar: `92,611` bytes;
+- total lookup claims: `2,000`;
+- total trace rows: `2,560`;
+- total fused proof bytes: `400,060`;
+- total matched source-plus-sidecar proof bytes: `516,376`;
+- total fused savings against matched source-plus-sidecar: `116,316` bytes;
 - matched fused ratios range from `0.717412` to `0.860487`.
 
 ## Claim Boundary

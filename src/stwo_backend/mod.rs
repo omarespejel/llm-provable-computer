@@ -36,6 +36,8 @@ mod attention_kv_native_masked_sequence_proof;
 #[cfg(feature = "stwo-backend")]
 mod attention_kv_native_sixteen_head_bounded_softmax_table_proof;
 #[cfg(feature = "stwo-backend")]
+mod attention_kv_native_sixteen_head_fused_softmax_table_proof;
+#[cfg(feature = "stwo-backend")]
 mod attention_kv_native_sixteen_head_softmax_table_lookup_proof;
 #[cfg(feature = "stwo-backend")]
 mod attention_kv_native_two_head_bounded_softmax_table_proof;
@@ -474,6 +476,25 @@ pub use attention_kv_native_sixteen_head_bounded_softmax_table_proof::{
     ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_BOUNDED_SOFTMAX_TABLE_STATEMENT_VERSION,
     ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_BOUNDED_SOFTMAX_TABLE_TARGET_ID,
     ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_BOUNDED_SOFTMAX_TABLE_VERIFIER_DOMAIN,
+};
+#[cfg(feature = "stwo-backend")]
+pub use attention_kv_native_sixteen_head_fused_softmax_table_proof::{
+    prove_zkai_attention_kv_native_sixteen_head_fused_softmax_table_envelope,
+    verify_zkai_attention_kv_native_sixteen_head_fused_softmax_table_envelope,
+    zkai_attention_kv_native_sixteen_head_fused_softmax_table_envelope_from_json_slice,
+    zkai_attention_kv_native_sixteen_head_fused_softmax_table_source_input_from_json_str,
+    AttentionKvSixteenHeadFusedSoftmaxTableMultiplicity,
+    ZkAiAttentionKvNativeSixteenHeadFusedSoftmaxTableEnvelope,
+    ZkAiAttentionKvNativeSixteenHeadFusedSoftmaxTableSummary,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_BACKEND_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_DECISION,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_MAX_PROOF_BYTES,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_PROOF_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_SEMANTIC_SCOPE,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_STATEMENT_VERSION,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_TARGET_ID,
+    ZKAI_ATTENTION_KV_NATIVE_SIXTEEN_HEAD_FUSED_SOFTMAX_TABLE_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use attention_kv_native_sixteen_head_softmax_table_lookup_proof::{

@@ -28,6 +28,7 @@ from scripts import zkai_attention_kv_d16_fused_softmax_table_native_gate as d16
 from scripts import zkai_attention_kv_d8_fused_softmax_table_native_gate as d8_fused
 from scripts import zkai_attention_kv_eight_head_fused_softmax_table_native_gate as eight_head_fused
 from scripts import zkai_attention_kv_four_head_fused_softmax_table_native_gate as four_head_fused
+from scripts import zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate as sixteen_head_fused
 from scripts import zkai_attention_kv_two_head_fused_softmax_table_native_gate as two_head_fused
 from scripts import zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate as longseq_fused
 
@@ -96,6 +97,7 @@ EXPECTED_MUTATION_NAMES = (
     "fused_proof_size_metric_smuggling",
     "matched_ratio_metric_smuggling",
     "eight_head_comparator_metric_smuggling",
+    "sixteen_head_comparator_metric_smuggling",
     "axis_summary_width_ratio_drift",
     "axis_summary_head_axis_ratio_drift",
     "axis_summary_sequence_ratio_drift",
@@ -185,6 +187,19 @@ PROFILES = (
         expected_key_width=8,
         expected_value_width=8,
         expected_head_count=8,
+        expected_steps_per_head=8,
+        comparator_required=True,
+    ),
+    Profile(
+        profile_id="d8_sixteen_head_seq8",
+        axis_role="head_axis_extension",
+        label="d8 sixteen-head seq8 fused Softmax-table route with matched sidecar comparator",
+        gate_module=sixteen_head_fused,
+        gate_json=sixteen_head_fused.JSON_OUT,
+        source_input_json=sixteen_head_fused.SOURCE_INPUT_JSON,
+        expected_key_width=8,
+        expected_value_width=8,
+        expected_head_count=16,
         expected_steps_per_head=8,
         comparator_required=True,
     ),
@@ -392,6 +407,7 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     two = row_by_id(rows, "d8_two_head_seq8")
     four = row_by_id(rows, "d8_four_head_seq8")
     eight = row_by_id(rows, "d8_eight_head_seq8")
+    sixteen = row_by_id(rows, "d8_sixteen_head_seq8")
     longseq = row_by_id(rows, "d8_two_head_seq16")
     return {
         "width_axis_d8_to_d16": {
@@ -405,24 +421,35 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "head_axis_d8_seq8": {
             "held_constant": "key_width_8_value_width_8_steps_per_head_8",
-            "head_counts": [1, 2, 4, 8],
-            "lookup_claims": [d8["lookup_claims"], two["lookup_claims"], four["lookup_claims"], eight["lookup_claims"]],
+            "head_counts": [1, 2, 4, 8, 16],
+            "lookup_claims": [
+                d8["lookup_claims"],
+                two["lookup_claims"],
+                four["lookup_claims"],
+                eight["lookup_claims"],
+                sixteen["lookup_claims"],
+            ],
             "fused_proof_size_bytes": [
                 d8["fused_proof_size_bytes"],
                 two["fused_proof_size_bytes"],
                 four["fused_proof_size_bytes"],
                 eight["fused_proof_size_bytes"],
+                sixteen["fused_proof_size_bytes"],
             ],
-            "fused_proof_ratio_1_to_8": ratio(eight["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]),
-            "lookup_claim_ratio_1_to_8": ratio(eight["lookup_claims"], d8["lookup_claims"]),
-            "matched_comparator_head_counts": [1, 2, 4, 8],
+            "fused_proof_ratio_1_to_16": ratio(sixteen["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]),
+            "fused_proof_ratio_8_to_16": ratio(sixteen["fused_proof_size_bytes"], eight["fused_proof_size_bytes"]),
+            "lookup_claim_ratio_1_to_16": ratio(sixteen["lookup_claims"], d8["lookup_claims"]),
+            "lookup_claim_ratio_8_to_16": ratio(sixteen["lookup_claims"], eight["lookup_claims"]),
+            "matched_comparator_head_counts": [1, 2, 4, 8, 16],
             "matched_fused_to_source_plus_sidecar_ratios": [
                 d8["fused_to_source_plus_sidecar_ratio"],
                 two["fused_to_source_plus_sidecar_ratio"],
                 four["fused_to_source_plus_sidecar_ratio"],
                 eight["fused_to_source_plus_sidecar_ratio"],
+                sixteen["fused_to_source_plus_sidecar_ratio"],
             ],
             "eight_head_comparator_status": eight["matched_source_sidecar_status"],
+            "sixteen_head_comparator_status": sixteen["matched_source_sidecar_status"],
         },
         "sequence_axis_two_head_d8": {
             "held_constant": "key_width_8_value_width_8_head_count_2",
@@ -532,12 +559,18 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
             ),
         ),
         (
+            "sixteen_head_comparator_metric_smuggling",
+            lambda v: row_by_id(v["route_rows"], "d8_sixteen_head_seq8").__setitem__(
+                "source_plus_sidecar_raw_proof_bytes", 1
+            ),
+        ),
+        (
             "axis_summary_width_ratio_drift",
             lambda v: v["axis_summary"]["width_axis_d8_to_d16"].__setitem__("fused_proof_size_ratio", 1.0),
         ),
         (
             "axis_summary_head_axis_ratio_drift",
-            lambda v: v["axis_summary"]["head_axis_d8_seq8"].__setitem__("fused_proof_ratio_1_to_8", 8.0),
+            lambda v: v["axis_summary"]["head_axis_d8_seq8"].__setitem__("fused_proof_ratio_1_to_16", 16.0),
         ),
         (
             "axis_summary_sequence_ratio_drift",
@@ -729,7 +762,7 @@ def validate_core(result: Any) -> None:
         "timing_policy": TIMING_POLICY,
         "profile_ids": list(PROFILE_IDS),
         "profiles_checked": len(PROFILES),
-        "matched_comparator_profiles": 6,
+        "matched_comparator_profiles": len(PROFILES),
         "no_comparator_profiles": [],
         "validation_commands": list(VALIDATION_COMMANDS),
     }

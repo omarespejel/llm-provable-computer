@@ -164,14 +164,18 @@ that comparator metadata into the fused proof transcript, the fused proof is
 `59375` raw bytes, the checked envelope is `1210413` bytes, and the gate rejects
 `16 / 16` proof/statement/relabeling/overclaim mutations. The fused route is
 `14711` bytes smaller than the matched source-plus-sidecar control (`0.801433x`).
-Issue `#516` then probes the detached sidecar beyond the fused matrix: a
-sixteen-head source proof plus LogUp sidecar constrains `832` lookup claims with
-a `28062`-byte sidecar proof. The four-to-eight sidecar flatness does not
+Issue `#516` then probes the detached sidecar beyond the eight-head fused row:
+a sixteen-head source proof plus LogUp sidecar constrains `832` lookup claims
+with a `28062`-byte sidecar proof. The four-to-eight sidecar flatness does not
 persist, but eight-to-sixteen remains sublinear in raw sidecar proof bytes
-(`2.000000x` lookup claims, `1.293537x` proof bytes). This is sidecar-only
-engineering evidence, not a sixteen-head fused route. The authoritative
-artifact index and exact commands for this head-axis probe are recorded in
-`docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`.
+(`2.000000x` lookup claims, `1.293537x` proof bytes). Issue `#519` turns that
+same sixteen-head source-plus-sidecar control into a matched fused row: the
+fused proof is `65006` raw bytes, the checked envelope is `1994648` bytes, and
+the fused route is `23705` bytes smaller than the matched control (`0.732784x`).
+This is larger head-axis proof-existence and byte-accounting evidence, not exact
+Softmax, not full inference, and not timing evidence. The authoritative artifact
+index and exact commands are recorded in
+`docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05-09.md`.
 
 Issue `#498` scales the fused route along sequence length at fixed `d=8` and
 fixed two-head shape. One native Stwo proof object checks two-head,
@@ -255,16 +259,18 @@ The checked audit gate mirrors an `output_remainder` mutation into both the
 caller-provided source input and the envelope's `source_input` field; all `11 /
 11` inspected validators reject the paired malformed object.
 
-Issue `#505` plus issue `#514` record the controlled fused Softmax-table route
-matrix across width, head-count, and sequence-length axes. The checked matrix
-covers six native Stwo fused rows: d8 single-head seq8, d16 single-head seq8,
-d8 two-head seq8, d8 four-head seq8, d8 eight-head seq8, and d8 two-head seq16.
-Matched source-plus-sidecar controls now exist for all six rows. The useful
-axis-level signal is: d8 to d16 grows fused proof bytes `1.352321x` at fixed
-`52` lookup claims; one to eight heads grows lookup claims `8.000000x` while
-fused proof bytes grow `1.244811x`; and two-head seq8 to seq16 grows lookup
-claims `3.230769x` while fused proof bytes grow `1.222065x`. It rejects `21 /
-21` matrix drift, provenance-drift, and overclaim mutations. This is still not
+Issue `#505` plus issues `#514` and `#519` record the controlled fused
+Softmax-table route matrix across width, head-count, and sequence-length axes.
+The checked matrix covers seven native Stwo fused rows: d8 single-head seq8,
+d16 single-head seq8, d8 two-head seq8, d8 four-head seq8, d8 eight-head seq8,
+d8 sixteen-head seq8, and d8 two-head seq16. Matched source-plus-sidecar
+controls now exist for all seven rows. The useful axis-level signal is: d8 to
+d16 grows fused proof bytes `1.352321x` at fixed `52` lookup claims; one to
+sixteen heads grows lookup claims `16.000000x` while fused proof bytes grow
+`1.362866x`; eight to sixteen heads doubles lookup claims while fused proof
+bytes grow `1.094838x`; and two-head seq8 to seq16 grows lookup claims
+`3.230769x` while fused proof bytes grow `1.222065x`. It rejects `22 / 22`
+matrix drift, provenance-drift, and overclaim mutations. This is still not
 timing, real-valued Softmax, full inference, public benchmark evidence, or
 recursion/PCD.
 
@@ -382,6 +388,9 @@ Claim boundary:
 - Native sixteen-head bounded Softmax-table LogUp sidecar TSV: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05.tsv`
 - Native sixteen-head bounded Softmax-table LogUp sidecar proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`
 - Native sixteen-head head-axis gate note: `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-gate-2026-05-09.md`
+- Native sixteen-head fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json`
+- Native sixteen-head fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json`
+- Native sixteen-head fused bounded Softmax-table gate note: `docs/engineering/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05-09.md`
 - Native eight-head fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
 - Native eight-head fused bounded Softmax-table proof envelope: `docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`
 - Native two-head long-sequence fused bounded Softmax-table gate: `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json`

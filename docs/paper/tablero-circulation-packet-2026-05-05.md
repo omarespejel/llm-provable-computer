@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head/sixteen-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -64,7 +64,7 @@ The current paper package supports these checked claims:
 - Do not say the attention/KV RISC Zero transition or sequence receipts are native Stwo proofs, Softmax proofs, full inference proofs, long-context benchmarks, or recursive/PCD results.
 - Do not say the native Stwo bounded weighted attention/KV proof is exact Softmax, long-context inference, full inference, a benchmark row, or recursive/PCD.
 - Do not say the native Stwo bounded Softmax-table or fused LogUp proofs are exact exp/div Softmax, full inference, public benchmark rows, private lookup privacy, recursive aggregation of independent head proofs, or recursive/PCD.
-- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, eight-head, and d16 fixtures. The d16 denominator/rounding corpus is correctness hardening, not a new proof or benchmark. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
+- Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, eight-head, and d16 receipt fixtures; the sixteen-head fused proof is not yet promoted into that quantized receipt family. The d16 denominator/rounding corpus is correctness hardening, not a new proof or benchmark. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
 
 ## Validation Gate
 
@@ -190,7 +190,12 @@ eight-head route checks `416` lookup claims over a `512`-row trace with a
 `16 / 16` gate mutations.
 Issue `#514` adds the matched eight-head source-plus-sidecar control:
 `74086` raw proof bytes for the source proof plus LogUp sidecar, so the fused
-route is `14711` bytes smaller (`0.801433x`).
+route is `14711` bytes smaller (`0.801433x`). Issue `#519` extends the same
+matched head-axis control to sixteen heads: the fused proof checks `832` lookup
+claims over a `1024`-row trace, is `65006` raw bytes inside a `1994648`-byte
+checked envelope, rejects `16 / 16` gate mutations, and is `23705` bytes smaller
+than the matched source-plus-sidecar control (`88711` raw proof bytes,
+`0.732784x`).
 The two-head long-sequence route keeps `d=8` and two heads fixed, doubles the
 per-head sequence length to sixteen steps, checks `336` lookup claims over a
 `512`-row trace, has a `60502`-byte raw proof inside a `1050248`-byte checked
