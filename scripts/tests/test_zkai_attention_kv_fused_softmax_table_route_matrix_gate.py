@@ -3,6 +3,7 @@ import csv
 import json
 import tempfile
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_fused_softmax_table_route_matrix_gate as gate
 
@@ -164,6 +165,11 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
             gate.source_dimensions(bad)
 
         bad = copy.deepcopy(base)
+        bad["key_width"] = "+-1"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
         bad["key_width"] = 8.5
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
             gate.source_dimensions(bad)
@@ -177,6 +183,11 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         good["key_width"] = "2"
         good["value_width"] = 2.0
         self.assertEqual(gate.source_dimensions(good)["value_width"], 2)
+
+        bad = copy.deepcopy(base)
+        bad["key_width"] = -1
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be positive"):
+            gate.source_dimensions(bad)
 
     def test_source_dimensions_rejects_head_step_grid_drift(self):
         source = {
@@ -209,6 +220,14 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         bad["score_rows"][0]["candidate_index"] = 1
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source duplicate candidate row"):
             gate.source_dimensions(bad)
+
+    def test_mutator_failures_are_gate_failures_not_rejections(self):
+        def broken_mutator(_result):
+            raise RuntimeError("boom")
+
+        with mock.patch.object(gate, "mutation_cases", return_value=(("broken_mutator", broken_mutator),)):
+            with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "mutation mutator failed"):
+                gate.build_result()
 
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
