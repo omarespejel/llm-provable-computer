@@ -228,23 +228,37 @@ def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
         raise FusedSoftmaxTableRouteMatrixGateError("source score_rows missing")
     heads = sorted({row.get("head_index", 0) for row in score_rows if isinstance(row, dict)})
     steps = sorted({row.get("step_index") for row in score_rows if isinstance(row, dict) and "step_index" in row})
+    if not steps:
+        raise FusedSoftmaxTableRouteMatrixGateError("source step_index missing")
     first = score_rows[0]
     if not isinstance(first, dict):
         raise FusedSoftmaxTableRouteMatrixGateError("source score row shape drift")
     key_width = source_input.get("key_width")
     if key_width is None and isinstance(first.get("key"), list):
         key_width = len(first["key"])
+    if key_width is None:
+        raise FusedSoftmaxTableRouteMatrixGateError("source key_width missing")
     value_width = source_input.get("value_width")
     if value_width is None and isinstance(first.get("value"), list):
         value_width = len(first["value"])
+    if value_width is None:
+        raise FusedSoftmaxTableRouteMatrixGateError("source value_width missing")
     trace_rows = source_input.get("trace_row_count", source_input.get("trace_rows"))
+    if trace_rows is None:
+        raise FusedSoftmaxTableRouteMatrixGateError("source trace_rows missing")
+    try:
+        key_width_int = int(key_width)
+        value_width_int = int(value_width)
+        trace_rows_int = int(trace_rows)
+    except (TypeError, ValueError) as err:
+        raise FusedSoftmaxTableRouteMatrixGateError("source dimensions must be integer-like") from err
     return {
-        "key_width": int(key_width),
-        "value_width": int(value_width),
+        "key_width": key_width_int,
+        "value_width": value_width_int,
         "head_count": len(heads) if heads else 1,
         "steps_per_head": len(steps),
         "score_rows": len(score_rows),
-        "trace_rows": int(trace_rows),
+        "trace_rows": trace_rows_int,
     }
 
 

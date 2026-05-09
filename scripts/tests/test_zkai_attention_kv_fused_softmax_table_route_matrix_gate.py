@@ -106,6 +106,45 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "result drift for claim_boundary"):
             gate.validate_result(bad)
 
+    def test_source_dimensions_rejects_malformed_dimensions_with_gate_errors(self):
+        base = {
+            "score_rows": [
+                {
+                    "head_index": 0,
+                    "step_index": 0,
+                    "key": [1, 2],
+                    "value": [3, 4],
+                }
+            ],
+            "trace_rows": 8,
+        }
+        self.assertEqual(gate.source_dimensions(base)["key_width"], 2)
+
+        bad = copy.deepcopy(base)
+        bad["score_rows"][0].pop("key")
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source key_width missing"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
+        bad["score_rows"][0].pop("value")
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source value_width missing"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
+        bad.pop("trace_rows")
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source trace_rows missing"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
+        bad["score_rows"][0].pop("step_index")
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source step_index missing"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
+        bad["key_width"] = "not-an-int"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
+            gate.source_dimensions(bad)
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = gate.pathlib.Path(tmp)
