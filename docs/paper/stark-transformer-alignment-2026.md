@@ -1447,7 +1447,14 @@ source-plus-sidecar budget. The next head-count point checks eight heads:
 proof plus LogUp sidecar is `74086` raw proof bytes, so the fused proof is
 `14711` bytes smaller (`0.801433x` of the matched control). This converts the
 eight-head route from proof-existence evidence into checked matched-comparator
-evidence.
+evidence. The matched sidecar control is checked by
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.json`
+with gate commitment
+`blake2b-256:e28e54c56958f7df36fb694ad66f9a35fb136cc3fa4e926224c49c99dcbbbbbd`;
+the fused gate is
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`
+with fused-envelope commitment
+`blake2b-256:3dc2baac1aea885fd10366aa509a3f2e68bf1c3a9cd6d9bd6df6b34c73101917`.
 
 The same fusion also survives a separate sequence-axis point. Holding `d=8` and
 two heads fixed, the long-sequence route doubles per-head sequence length to
@@ -1483,8 +1490,20 @@ public benchmark row, not a timing result, and not recursion/PCD.
 Reproducibility anchors for these follow-ups are deliberately local and concrete:
 backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,
 Cargo.lock-pinned CLI verification via `--locked`, and timing mode
-`proof_existence_and_byte_accounting_only_not_public_benchmark`. The long-sequence
-evidence paths are
+`proof_existence_and_byte_accounting_only_not_public_benchmark`. The eight-head
+matched-control evidence paths are
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.json`,
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`,
+and
+`docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json`.
+The eight-head sidecar verifier command is
+`cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json`;
+the eight-head fused verifier command is
+`cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json`.
+The long-sequence evidence paths are
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.json`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json`,
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json`,

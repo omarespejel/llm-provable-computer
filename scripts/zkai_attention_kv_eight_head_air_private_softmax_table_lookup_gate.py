@@ -118,9 +118,9 @@ NON_CLAIMS = (
 )
 
 VALIDATION_COMMANDS = (
-    "cargo +nightly-2025-07-14 test attention_kv_eight_head_softmax_table_lookup --lib --features stwo-backend",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_softmax_table_lookup --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_attention_kv_native_eight_head_softmax_table_lookup_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_kv_eight_head_air_private_softmax_table_lookup_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-gate-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_eight_head_air_private_softmax_table_lookup_gate",
     "just gate-fast",
