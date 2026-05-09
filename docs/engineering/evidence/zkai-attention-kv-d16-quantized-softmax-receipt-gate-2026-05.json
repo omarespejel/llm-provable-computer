@@ -270,7 +270,7 @@
       "rejected": true
     },
     {
-      "error": "fused proof receipt drift: native fused verifier rejected in-memory fused envelope: unsupported proof construction: attention/KV native d16 fused bounded Softmax-table proof: fused proof commitment 0 does not match recomputed source rows",
+      "error": "fused proof receipt drift: native fused verifier rejected in-memory fused envelope",
       "name": "fused_proof_byte_tamper",
       "rejected": true
     },

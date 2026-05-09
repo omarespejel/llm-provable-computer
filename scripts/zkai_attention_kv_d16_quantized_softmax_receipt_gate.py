@@ -121,6 +121,9 @@ EXPECTED_MUTATION_NAMES = (
     "unknown_receipt_key_injection",
 )
 EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
+NATIVE_FUSED_PROOF_TAMPER_ERROR = (
+    "fused proof receipt drift: native fused verifier rejected in-memory fused envelope"
+)
 
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_d16_quantized_softmax_receipt_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-d16-quantized-softmax-receipt-gate-2026-05.tsv",
@@ -470,10 +473,9 @@ def validate_mutation_results(mutation_results: Any) -> None:
             raise QuantizedSoftmaxReceiptGateError("mutation result rejection drift")
 
 
-def stable_mutation_error(error: str) -> str:
-    native_rejection_prefix = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope"
-    if error.startswith(native_rejection_prefix):
-        return native_rejection_prefix
+def canonical_mutation_error(name: str, error: str) -> str:
+    if name == "fused_proof_byte_tamper" and error.startswith(NATIVE_FUSED_PROOF_TAMPER_ERROR):
+        return NATIVE_FUSED_PROOF_TAMPER_ERROR
     return error
 
 
@@ -487,7 +489,7 @@ def recompute_mutation_results(
         try:
             validate_receipt(mutated_receipt, mutated_source, mutated_envelope, run_native=run_native)
         except QuantizedSoftmaxReceiptGateError as err:
-            mutation_results.append({"name": name, "rejected": True, "error": str(err)})
+            mutation_results.append({"name": name, "rejected": True, "error": canonical_mutation_error(name, str(err))})
         else:
             mutation_results.append({"name": name, "rejected": False, "error": "mutation accepted"})
     return mutation_results
@@ -497,8 +499,8 @@ def validate_recomputed_mutation_results(result: dict[str, Any], recomputed: lis
     validate_mutation_results(recomputed)
     serialized = result.get("mutation_results")
     validate_mutation_results(serialized)
-    serialized_details = tuple((item["name"], item["rejected"], stable_mutation_error(item["error"])) for item in serialized)
-    recomputed_details = tuple((item["name"], item["rejected"], stable_mutation_error(item["error"])) for item in recomputed)
+    serialized_details = tuple((item["name"], item["rejected"], item["error"]) for item in serialized)
+    recomputed_details = tuple((item["name"], item["rejected"], item["error"]) for item in recomputed)
     if serialized_details != recomputed_details:
         raise QuantizedSoftmaxReceiptGateError("recomputed mutation result detail drift")
     if result.get("mutations_rejected") != sum(1 for item in recomputed if item["rejected"]):
