@@ -99,6 +99,11 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         payload = GATE.build_payload()
 
         self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 75)
+        self.assertIn("multihead_quantized_softmax_trace_rows_drift", GATE.EXPECTED_MUTATION_NAMES)
+        self.assertIn(
+            "multihead_quantized_softmax_trace_rows_drift",
+            [case["name"] for case in payload["mutation_cases"]],
+        )
         self.assertEqual(payload["decision"], GATE.DECISION)
         self.assertEqual(payload["first_blocker"], GATE.FIRST_BLOCKER)
         self.assertEqual(payload["claim_boundary"], GATE.CLAIM_BOUNDARY)
