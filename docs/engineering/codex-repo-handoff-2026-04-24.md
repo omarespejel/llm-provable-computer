@@ -459,16 +459,17 @@ Tablero boundary.
   table/floor-division kernel, not real-valued Softmax and not full inference;
   see
   `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`.
-- Issue `#494` and issue `#496` extend that implementation-exact receipt
-  discipline across the two-head, four-head, and eight-head fused native Stwo
-  routes. The gate checks head counts `[2, 4, 8]`, `728` total lookup claims /
-  score rows, `896` trace rows, `162351` fused proof bytes across profiles,
-  output indices derived from the statement `input_steps` order, fused
-  envelope/proof-byte commitments, and rejects `64 / 64` semantic/proof
-  mutations. This is exact for the pinned integer table/floor-division kernel
-  across checked multi-head fixtures, not real-valued Softmax, full inference,
-  long-context inference, public benchmark evidence, or recursion/PCD; see
-  `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-08.md`.
+- Issue `#494`, issue `#496`, and issue `#520` extend that
+  implementation-exact receipt discipline across the two-head, four-head,
+  eight-head, and sixteen-head fused native Stwo routes. The gate checks head
+  counts `[2, 4, 8, 16]`, `1560` total lookup claims / score rows, `1920` trace
+  rows, `227357` fused proof bytes across profiles, output indices derived from
+  the statement `input_steps` order, fused envelope/proof-byte commitments, and
+  rejects `77 / 77` semantic/proof mutations. This is exact for the pinned
+  integer table/floor-division kernel across checked multi-head fixtures, not
+  real-valued Softmax, full inference, long-context inference, public benchmark
+  evidence, or recursion/PCD; see
+  `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`.
 - Issue `#506` applies the same implementation-exact receipt discipline to the
   d16 fused width-axis route, and issue `#507` hardens it with a deterministic
   denominator/rounding edge corpus. The edge corpus checks `7` integer-kernel

@@ -1,17 +1,17 @@
-# zkAI Attention/KV Multi-Head Quantized Softmax Receipt Gate - 2026-05-08
+# zkAI Attention/KV Multi-Head Quantized Softmax Receipt Gate - 2026-05-09
 
 ## Question
 
 Can the implementation-exact quantized Softmax-table receipt scale from the
-checked two-head and four-head fixtures to an eight-head fixture without
-weakening the kernel contract?
+checked two-head, four-head, and eight-head fixtures to the sixteen-head fused
+route from issue `#519` without weakening the kernel contract?
 
 ## Result
 
 GO for a bounded multi-head receipt over the checked fused native Stwo
-Softmax-table proofs.
+Softmax-table proofs, now including the sixteen-head route.
 
-The gate consumes three backing proof objects under timing policy
+The gate consumes four backing proof objects under timing policy
 `proof_existence_and_byte_accounting_only_not_public_benchmark`:
 
 | Profile ID | Backing backend/profile ID | Head count | Lookup claims | Fused proof bytes | Checked envelope bytes |
@@ -19,19 +19,21 @@ The gate consumes three backing proof objects under timing policy
 | `two_head` | `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1` | 2 | 104 | 49,508 | 585,857 |
 | `four_head` | `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1` | 4 | 208 | 53,468 | 797,717 |
 | `eight_head` | `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1` | 8 | 416 | 59,375 | 1,210,413 |
+| `sixteen_head` | `stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1` | 16 | 832 | 65,006 | 1,994,648 |
 
 Aggregate checked surface:
 
-- Profiles checked: `3`.
-- Head counts checked: `2, 4, 8`.
-- Heads checked in total: `14`.
-- Input steps checked: `112`.
-- Score rows / lookup claims checked: `728`.
-- Trace rows checked: `896`.
+- Profiles checked: `4`.
+- Head counts checked: `2, 4, 8, 16`.
+- Heads checked in total: `30`.
+- Input steps checked: `240`.
+- Score rows / lookup claims checked: `1,560`.
+- Trace rows checked: `1,920`.
 - Shared statement-bound table rows: `9`.
-- Fused proof bytes across the three profiles: `162,351`.
+- Fused proof bytes across the four profiles: `227,357`.
+- Maximum fused proof size: `65,006` bytes.
 - Mutations rejected for the backing profiles and timing policy listed above:
-  `64 / 64`.
+  `77 / 77`.
 
 The receipt records stable `blake2b-256` commitments for each backing fused
 envelope and each fused proof byte payload. Fast selector loads can therefore
@@ -64,8 +66,9 @@ This is exact for the pinned integer table/floor-division kernel:
 The important multi-head hardening is output binding: the gate derives the
 `attention_outputs` index from the statement `input_steps` order. It does not
 assume a simple `step_index * head_count + head_index` layout. That matters for
-the four-head and eight-head fixtures, whose outputs are ordered by the source
-input-step schedule rather than a naive dense head-major or step-major formula.
+the four-head, eight-head, and sixteen-head fixtures, whose outputs are ordered
+by the source input-step schedule rather than a naive dense head-major or
+step-major formula.
 
 ## Non-Claims
 
@@ -104,15 +107,21 @@ cargo +nightly-2025-07-14 test --locked attention_kv_eight_head_fused_softmax_ta
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_eight_head_fused_softmax_table_proof -- \
   verify docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 test --locked attention_kv_sixteen_head_fused_softmax_table --lib --features stwo-backend
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_sixteen_head_fused_softmax_table_proof -- \
+  verify docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json
 ```
 
 ## Next Useful Research Step
 
-The next controlled scale-up is no longer "can it survive beyond four heads";
-issue `#496` answers that with an eight-head GO, and issue `#514` adds the
-matched eight-head source-plus-sidecar comparator for byte accounting. The
-remaining research targets are different axes: longer sequence length, wider
-value/key vectors, or a synthetic head-axis capacity probe beyond eight heads.
-Report GO only if the same denominator/remainder, output-order, causal-mask,
-statement-bound table, matched-comparator, and proof-binding checks remain
-fail-closed after proof serialization.
+Issue `#520` closes the immediate sixteen-head semantic-receipt gap. The next
+controlled scale-up is no longer "can the exact integer kernel survive the
+sixteen-head fused route"; it can. The remaining research targets are different
+axes: a combined `d=16` multi-head fused route, longer sequence length under the
+same receipt discipline, or a wider table/error-policy audit if we want to move
+closer to implementation-exact model kernels. Report GO only if the same
+denominator/remainder, output-order, causal-mask, statement-bound table,
+matched-comparator, and proof-binding checks remain fail-closed after proof
+serialization.

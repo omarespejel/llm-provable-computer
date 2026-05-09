@@ -888,10 +888,11 @@ route-removal, native-statement-drift, quantized-receipt drift,
 multi-head-output-mapping drift, external-adapter-drift, sequence-drift,
 fake-metric, next-go weakening, missing-field, blocker-removal, and
 claim-boundary mutations. This includes single-head plus two-head/four-head/
-eight-head implementation-exact quantized Softmax-table receipts over the pinned
-integer table/floor-division kernel, a separate d16 implementation-exact
-quantized Softmax-table receipt, and separate two-head long-sequence plus d16
-width-axis fused Softmax-table/LogUp proofs, not real-valued exp/div Softmax. It is anchored to
+eight-head/sixteen-head implementation-exact quantized Softmax-table receipts
+over the pinned integer table/floor-division kernel, a separate d16
+implementation-exact quantized Softmax-table receipt, and separate two-head
+long-sequence plus d16 width-axis fused Softmax-table/LogUp proofs, not
+real-valued exp/div Softmax. It is anchored to
 `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md` and
 `docs/engineering/evidence/zkai-attention-kv-proof-route-selector-2026-05.json`.
 
