@@ -357,7 +357,12 @@ def verify_fused_envelope_bytes_with_native_cli(envelope_bytes: bytes) -> None:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
             f"native fused verifier failed with {proc.returncode}: {stderr[-1000:]}"
         )
-    summary = json.loads(stdout)
+    try:
+        summary = json.loads(stdout)
+    except json.JSONDecodeError as err:
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
+            f"native fused verifier returned non-JSON summary: {err}: {stdout[-1000:]}"
+        ) from err
     assert_native_verifier_summary(summary, expected, "native fused verifier summary")
     _NATIVE_VERIFY_CACHE[cache_key] = summary
 
@@ -443,8 +448,18 @@ def mutation_cases(result: dict[str, Any], envelope: dict[str, Any], source_inpu
     return cases
 
 
+def placeholder_mutation_results() -> list[dict[str, Any]]:
+    return [{"name": name, "rejected": True, "error": "mutation-corpus placeholder"} for name in EXPECTED_MUTATION_NAMES]
+
+
 def validate_result(result: dict[str, Any], envelope: dict[str, Any], source_input: dict[str, Any]) -> None:
     mutation_results = result.get("mutation_results")
+    if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result shape drift")
+    for item in mutation_results:
+        if not isinstance(item, dict):
+            raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result entry drift")
+        assert_exact_keys(item, {"name", "rejected", "error"}, "mutation result")
     expected = build_result(envelope, source_input, mutation_results if isinstance(mutation_results, list) else [])
     assert_exact_keys(result, set(expected), "gate result")
     for key, value in expected.items():
@@ -453,12 +468,6 @@ def validate_result(result: dict[str, Any], envelope: dict[str, Any], source_inp
         if result.get(key) != value:
             raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(f"result drift for {key}")
     validate_fused_envelope(envelope, source_input)
-    if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:
-        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result shape drift")
-    for item in mutation_results:
-        if not isinstance(item, dict):
-            raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result entry drift")
-        assert_exact_keys(item, {"name", "rejected", "error"}, "mutation result")
     if tuple(item.get("name") for item in mutation_results if isinstance(item, dict)) != EXPECTED_MUTATION_NAMES:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError("mutation result name drift")
     if any(item.get("rejected") is not True for item in mutation_results if isinstance(item, dict)):
@@ -502,7 +511,7 @@ def build_result(envelope: dict[str, Any], _source_input: dict[str, Any], mutati
         "validation_commands": list(VALIDATION_COMMANDS),
         "mutation_results": mutation_results,
         "mutations_checked": EXPECTED_MUTATION_COUNT,
-        "mutations_rejected": sum(1 for item in mutation_results if item.get("rejected")),
+        "mutations_rejected": sum(1 for item in mutation_results if isinstance(item, dict) and item.get("rejected")),
     }
 
 
@@ -513,9 +522,12 @@ def run_gate() -> dict[str, Any]:
         raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(
             f"fused envelope file size drift: got {len(envelope_bytes)}, expected {FUSED_ENVELOPE_SIZE_BYTES}"
         )
-    envelope = json.loads(envelope_bytes)
+    try:
+        envelope = json.loads(envelope_bytes)
+    except json.JSONDecodeError as err:
+        raise AttentionKvSixteenHeadFusedSoftmaxTableGateError(f"fused envelope is not JSON: {err}") from err
     validate_fused_envelope(envelope, source_input, run_native=True, native_envelope_bytes=envelope_bytes)
-    result = build_result(envelope, source_input, [])
+    result = build_result(envelope, source_input, placeholder_mutation_results())
     mutation_results = []
     for name, mutated_result, mutated_envelope, mutated_source in mutation_cases(result, envelope, source_input):
         try:

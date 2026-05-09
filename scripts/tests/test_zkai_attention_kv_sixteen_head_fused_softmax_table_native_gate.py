@@ -91,12 +91,49 @@ class SixteenHeadFusedSoftmaxTableNativeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "mutation result key drift"):
             gate.validate_result(payload, self.envelope, self.source)
 
+    def test_validate_result_rejects_non_dict_mutation_result_without_crashing(self):
+        payload = copy.deepcopy(self.result)
+        payload["mutation_results"][0] = "not-a-dict"
+        with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "mutation result entry drift"):
+            gate.validate_result(payload, self.envelope, self.source)
+
     def test_run_gate_does_not_count_harness_crashes_as_rejections(self):
         with mock.patch.object(gate, "verify_fused_envelope_bytes_with_native_cli"):
             with mock.patch.object(gate, "validate_result", side_effect=RuntimeError("boom")):
                 with self.assertRaisesRegex(
                     gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "mutation harness crashed"
                 ):
+                    gate.run_gate()
+
+    def test_native_verifier_wraps_non_json_summary(self):
+        class FakePopen:
+            returncode = 0
+
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def communicate(self, timeout=None):
+                return "not-json", ""
+
+        gate._NATIVE_VERIFY_CACHE.clear()
+        with mock.patch.object(gate, "CARGO_BIN", "/bin/cargo"):
+            with mock.patch.object(gate.subprocess, "Popen", FakePopen):
+                with self.assertRaisesRegex(
+                    gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "non-JSON summary"
+                ):
+                    gate.verify_fused_envelope_bytes_with_native_cli(b"{\"proof\":[]}")
+
+    def test_run_gate_wraps_invalid_fused_envelope_json(self):
+        invalid_envelope = b"{" * gate.FUSED_ENVELOPE_SIZE_BYTES
+        with mock.patch.object(gate, "read_bounded_json", return_value=self.source):
+            with mock.patch.object(gate, "read_bounded_bytes", return_value=invalid_envelope):
+                with self.assertRaisesRegex(gate.AttentionKvSixteenHeadFusedSoftmaxTableGateError, "fused envelope is not JSON"):
                     gate.run_gate()
 
 
