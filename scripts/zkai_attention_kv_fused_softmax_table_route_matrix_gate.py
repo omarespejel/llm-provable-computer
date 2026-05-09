@@ -265,6 +265,10 @@ def source_dimensions(source_input: dict[str, Any]) -> dict[str, int]:
         candidates.add(candidate_index)
     heads = sorted({head_index for head_index, _step_index in grid})
     steps = sorted({step_index for _head_index, step_index in grid})
+    if heads != list(range(len(heads))):
+        raise FusedSoftmaxTableRouteMatrixGateError("source head_index grid drift")
+    if steps != list(range(len(steps))):
+        raise FusedSoftmaxTableRouteMatrixGateError("source step_index grid drift")
     if not steps:
         raise FusedSoftmaxTableRouteMatrixGateError("source step_index missing")
     missing_pairs = [(head_index, step_index) for head_index in heads for step_index in steps if (head_index, step_index) not in grid]
@@ -476,7 +480,7 @@ def build_base_result() -> dict[str, Any]:
     return result
 
 
-def mutation_cases(result: dict[str, Any]) -> tuple[tuple[str, Any], ...]:
+def mutation_cases() -> tuple[tuple[str, Any], ...]:
     return (
         ("decision_relabeling", lambda v: v.__setitem__("decision", "GO_PUBLIC_BENCHMARK")),
         ("route_id_relabeling", lambda v: v.__setitem__("route_id", "different-route")),
@@ -545,7 +549,7 @@ def mutation_cases(result: dict[str, Any]) -> tuple[tuple[str, Any], ...]:
 def build_result() -> dict[str, Any]:
     base = build_base_result()
     mutation_results = []
-    for name, mutator in mutation_cases(base):
+    for name, mutator in mutation_cases():
         mutated = copy.deepcopy(base)
         try:
             mutator(mutated)

@@ -217,6 +217,18 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
             gate.source_dimensions(bad)
 
         bad = copy.deepcopy(source)
+        for row in bad["score_rows"]:
+            row["head_index"] += 1
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source head_index grid drift"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(source)
+        for row in bad["score_rows"]:
+            row["step_index"] += 1
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source step_index grid drift"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(source)
         bad["score_rows"][0]["candidate_index"] = 1
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source duplicate candidate row"):
             gate.source_dimensions(bad)
