@@ -140,16 +140,26 @@ class D16QuantizedSoftmaxReceiptGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "recomputed mutation result detail drift"):
             gate.validate_recomputed_mutation_results(payload, recomputed)
 
-    def test_recomputed_mutation_validation_allows_stable_native_error_prefix(self):
+    def test_recomputed_mutation_validation_canonicalizes_native_error_at_source(self):
+        payload = copy.deepcopy(self.result)
+        original_validate = gate.fused_gate.validate_fused_envelope
+
+        def fast_validate(envelope, source, *, run_native):
+            return self._fast_fused_envelope_validation(original_validate, envelope, source, run_native=run_native)
+
+        with mock.patch.object(gate.fused_gate, "validate_fused_envelope", side_effect=fast_validate):
+            recomputed = gate.recompute_mutation_results(payload, self.source, self.envelope)
+        native_errors = [item["error"] for item in recomputed if item["name"] == "fused_proof_byte_tamper"]
+        self.assertEqual(native_errors, [gate.NATIVE_FUSED_PROOF_TAMPER_ERROR])
+
+    def test_recomputed_mutation_validation_rejects_native_error_suffix_drift(self):
         payload = copy.deepcopy(self.result)
         recomputed = copy.deepcopy(payload["mutation_results"])
         for item in payload["mutation_results"]:
             if item["name"] == "fused_proof_byte_tamper":
-                item["error"] = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope: local detail"
-        for item in recomputed:
-            if item["name"] == "fused_proof_byte_tamper":
-                item["error"] = "fused proof receipt drift: native fused verifier rejected in-memory fused envelope: different detail"
-        gate.validate_recomputed_mutation_results(payload, recomputed)
+                item["error"] = f"{gate.NATIVE_FUSED_PROOF_TAMPER_ERROR}: tampered detail"
+        with self.assertRaisesRegex(gate.QuantizedSoftmaxReceiptGateError, "recomputed mutation result detail drift"):
+            gate.validate_recomputed_mutation_results(payload, recomputed)
 
     def test_write_json_rejects_unknown_result_key(self):
         payload = copy.deepcopy(self.result)
