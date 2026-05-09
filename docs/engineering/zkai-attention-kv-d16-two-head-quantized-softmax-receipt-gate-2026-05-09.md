@@ -154,6 +154,9 @@ python3 scripts/zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate.py
 python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_d16_two_head_quantized_softmax_receipt_gate
 
+python3 -m unittest \
+  scripts.tests.test_zkai_attention_kv_proof_route_selector_gate
+
 cargo +nightly-2025-07-14 test --locked attention_kv_native_d16_two_head_fused_softmax_table \
   --lib --features stwo-backend
 

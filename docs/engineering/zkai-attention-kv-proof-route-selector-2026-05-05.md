@@ -502,11 +502,11 @@ Softmax.
 
 | Surface | Result |
 | --- | ---: |
-| Proof-backed routes available | 12 |
-| Routes checked by selector evidence | 14 |
+| Proof-backed routes available | 13 |
+| Routes checked by selector evidence | 15 |
 | Additional native Softmax-table scale gates summarized | 3 |
 | Additional fused Softmax-table routes summarized | 7 |
-| Additional implementation-exact quantized Softmax-table receipts summarized | 3 |
+| Additional implementation-exact quantized Softmax-table receipts summarized | 4 |
 | Required public fields | 10 |
 | Native Stwo proof size | `24394` bytes |
 | Native Stwo proof envelope size | `265791` bytes |

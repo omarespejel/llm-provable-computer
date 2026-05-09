@@ -3,14 +3,15 @@
 
 This gate consumes the existing source-backed and external proof-backed
 attention/KV evidence and asks which route is usable today. The current answer
-has twelve narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
+has thirteen narrow GO routes: one native Stwo AIR proof for the d=8 causal-prefix
 integer-argmax attention/KV sequence, one native Stwo proof-backed single-head
 implementation-exact quantized Softmax-table receipt, one native Stwo
 proof-backed multi-head implementation-exact quantized Softmax-table receipt,
 one native Stwo two-head long-sequence fused Softmax-table/LogUp proof, one
 native Stwo d16 fused Softmax-table/LogUp proof, one native Stwo d16
 two-head fused Softmax-table/LogUp proof, one native Stwo d16
-implementation-exact quantized Softmax-table receipt, one external
+implementation-exact quantized Softmax-table receipt, one native Stwo d16
+two-head implementation-exact quantized Softmax-table receipt, one external
 snarkjs/Groth16 statement receipt, and four RISC Zero controls that re-execute the
 transition/sequence semantics in a zkVM. Real-valued Softmax, public
 long-context benchmarks, full inference, and recursion/PCD remain explicitly
