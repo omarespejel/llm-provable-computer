@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked native AIR for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, single-head, multi-head, plus d16 implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -184,9 +184,10 @@ the relevant Stwo-native breakthrough signal for the next transformer/STARK
 paper: table membership no longer has to live as a detached sidecar for the
 checked bounded fixture.
 
-That fused route now also survives two harder scale points. The eight-head route
-checks `416` lookup claims over a `512`-row trace with a `59375`-byte raw proof
-inside a `1210413`-byte checked envelope and rejects `16 / 16` gate mutations.
+That opt-in fused route now also survives two harder scale points. The
+eight-head route checks `416` lookup claims over a `512`-row trace with a
+`59375`-byte raw proof inside a `1210413`-byte checked envelope and rejects
+`16 / 16` gate mutations.
 Issue `#514` adds the matched eight-head source-plus-sidecar control:
 `74086` raw proof bytes for the source proof plus LogUp sidecar, so the fused
 route is `14711` bytes smaller (`0.801433x`).
