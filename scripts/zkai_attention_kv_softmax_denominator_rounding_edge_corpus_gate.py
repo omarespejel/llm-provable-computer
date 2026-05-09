@@ -20,6 +20,7 @@ import pathlib
 import sys
 import tempfile
 from collections import Counter
+from decimal import Decimal, ROUND_HALF_UP, localcontext
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -78,6 +79,15 @@ VALIDATION_COMMANDS = (
     "just gate-fast",
     "just gate",
 )
+
+
+def canonical_ratio(numerator: int, denominator: int) -> str:
+    if denominator <= 0:
+        raise SoftmaxEdgeCorpusGateError("ratio denominator must be positive")
+    with localcontext() as ctx:
+        ctx.prec = 50
+        value = Decimal(numerator) / Decimal(denominator)
+    return str(value.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP))
 
 TSV_COLUMNS = (
     "decision",
@@ -194,6 +204,7 @@ def summarize_edge_case(name: str) -> dict[str, Any]:
             raise SoftmaxEdgeCorpusGateError(f"{name} remainder outside Euclidean bound")
     clipped_gaps = [min(row["score_gap"], SCORE_GAP_CLIP) for row in rows]
     multiplicities = Counter(clipped_gaps)
+    max_remainder = max(remainders, default=0)
     return {
         "name": name,
         "candidate_count": len(rows),
@@ -206,7 +217,7 @@ def summarize_edge_case(name: str) -> dict[str, Any]:
         "outputs": output,
         "remainders": remainders,
         "negative_numerator_dimensions": sum(1 for numerator in numerators if numerator < 0),
-        "max_remainder_ratio": max((remainder / denominator for remainder in remainders), default=0.0),
+        "max_remainder_ratio": canonical_ratio(max_remainder, denominator),
         "table_multiplicities": [
             {"gap": gap, "weight": table[gap], "multiplicity": multiplicities.get(gap, 0)}
             for gap in range(SCORE_GAP_CLIP + 1)
@@ -384,7 +395,7 @@ def build_result() -> dict[str, Any]:
     cases = [summarize_edge_case(name) for name in EDGE_CASE_NAMES]
     route_results = route_rejection_results()
     denominators = [case["denominator"] for case in cases]
-    max_remainder_ratio = max(case["max_remainder_ratio"] for case in cases)
+    max_remainder_ratio = max(cases, key=lambda case: Decimal(case["max_remainder_ratio"]))["max_remainder_ratio"]
     result = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -454,11 +465,15 @@ def validate_result(result: Any) -> None:
     if result.get("route_mutations_rejected") != len(ROUTE_MUTATION_NAMES):
         raise SoftmaxEdgeCorpusGateError("route mutation rejection drift")
     denominators = [case["denominator"] for case in expected_cases]
-    expected_max_remainder_ratio = max(case["max_remainder_ratio"] for case in expected_cases)
+    expected_max_remainder_ratio = max(
+        expected_cases, key=lambda case: Decimal(case["max_remainder_ratio"])
+    )["max_remainder_ratio"]
     if result.get("min_denominator") != min(denominators):
         raise SoftmaxEdgeCorpusGateError("min denominator drift")
     if result.get("max_denominator") != max(denominators):
         raise SoftmaxEdgeCorpusGateError("max denominator drift")
+    # This is a reporting projection of exact integer remainders, so commit a
+    # canonical decimal string instead of validating platform-dependent floats.
     if result.get("max_remainder_ratio") != expected_max_remainder_ratio:
         raise SoftmaxEdgeCorpusGateError("max remainder ratio drift")
     if result.get("negative_numerator_cases") != [
@@ -477,7 +492,7 @@ def to_tsv(result: dict[str, Any]) -> str:
         "route_mutations_rejected": result["route_mutations_rejected"],
         "min_denominator": result["min_denominator"],
         "max_denominator": result["max_denominator"],
-        "max_remainder_ratio": f"{result['max_remainder_ratio']:.6f}",
+        "max_remainder_ratio": result["max_remainder_ratio"],
         "negative_numerator_cases": ",".join(result["negative_numerator_cases"]),
         "all_scores_equal_denominator": by_name["all_scores_equal"]["denominator"],
         "all_clipped_denominator": by_name["all_nonmax_scores_clipped"]["denominator"],

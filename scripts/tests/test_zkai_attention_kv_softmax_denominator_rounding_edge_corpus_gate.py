@@ -39,7 +39,7 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
         self.assertEqual(case["clipped_gaps"], [0, 8, 8, 8])
         self.assertEqual(case["weights"], [256, 16, 16, 16])
         self.assertEqual(case["denominator"], 304)
-        self.assertGreater(case["max_remainder_ratio"], 0.84)
+        self.assertEqual(case["max_remainder_ratio"], "0.842105")
 
     def test_dominant_key_matches_clipped_denominator_family(self):
         case = self.by_name["one_dominant_key_all_others_clipped"]
@@ -95,7 +95,7 @@ class AttentionKvSoftmaxDenominatorRoundingEdgeCorpusGateTests(unittest.TestCase
 
     def test_rejects_max_remainder_ratio_drift(self):
         mutated = copy.deepcopy(self.result)
-        mutated["max_remainder_ratio"] = 0
+        mutated["max_remainder_ratio"] = "0.842106"
         with self.assertRaisesRegex(gate.SoftmaxEdgeCorpusGateError, "max remainder ratio drift"):
             gate.validate_result(mutated)
 

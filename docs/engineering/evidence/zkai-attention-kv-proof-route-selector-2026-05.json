@@ -1460,7 +1460,7 @@
     }
   ],
   "schema": "zkai-attention-kv-proof-route-selector-gate-v1",
-  "selector_commitment": "blake2b-256:d62bbd3477648eb07dff5e6909727aa46085316f307796164b364cba7ab5d358",
+  "selector_commitment": "blake2b-256:1c13bc35a27c8fa37135640d6c82be026bdf851872e03c03ba6a0f3a7f6dcc2c",
   "softmax_denominator_rounding_edge_corpus": {
     "all_clipped_denominator": 304,
     "all_route_mutations_rejected": true,
@@ -1471,7 +1471,7 @@
     "edge_case_count": 7,
     "evidence": "docs/engineering/evidence/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05.json",
     "max_denominator": 852,
-    "max_remainder_ratio": 0.8421052631578947,
+    "max_remainder_ratio": "0.842105",
     "min_denominator": 256,
     "negative_numerator_cases": [
       "single_allowed_candidate_min_denominator",

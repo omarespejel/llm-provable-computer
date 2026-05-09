@@ -431,7 +431,7 @@ Claim boundary:
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
 | Mutations checked | 74 |
 | Mutations rejected | 74 |
-| Selector commitment | `blake2b-256:d62bbd3477648eb07dff5e6909727aa46085316f307796164b364cba7ab5d358` |
+| Selector commitment | `blake2b-256:1c13bc35a27c8fa37135640d6c82be026bdf851872e03c03ba6a0f3a7f6dcc2c` |
 
 The mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
