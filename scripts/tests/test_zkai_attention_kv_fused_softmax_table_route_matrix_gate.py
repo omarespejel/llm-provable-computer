@@ -145,6 +145,21 @@ class AttentionKvFusedSoftmaxTableRouteMatrixGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
             gate.source_dimensions(bad)
 
+        bad = copy.deepcopy(base)
+        bad["key_width"] = 8.5
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
+            gate.source_dimensions(bad)
+
+        bad = copy.deepcopy(base)
+        bad["key_width"] = True
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableRouteMatrixGateError, "source dimensions must be integer-like"):
+            gate.source_dimensions(bad)
+
+        good = copy.deepcopy(base)
+        good["key_width"] = "2"
+        good["value_width"] = 2.0
+        self.assertEqual(gate.source_dimensions(good)["value_width"], 2)
+
     def test_write_json_and_tsv_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = gate.pathlib.Path(tmp)
