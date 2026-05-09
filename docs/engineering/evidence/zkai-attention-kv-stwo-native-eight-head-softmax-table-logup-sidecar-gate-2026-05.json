@@ -3,11 +3,13 @@
   "claim_boundary": "NATIVE_STWO_EIGHT_HEAD_D8_BOUNDED_SOFTMAX_TABLE_LOOKUP_MEMBERSHIP_CONSTRAINED_BY_LOGUP_SIDECAR_NOT_FUSED_ATTENTION_LOOKUP_COMPONENT_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_RECURSION_OR_PCD",
   "decision": "GO_NATIVE_STWO_AIR_CONSTRAINED_EIGHT_HEAD_SOFTMAX_TABLE_LOOKUP_RELATION_SIDECAR",
   "fused_component_status": "NO_GO_FUSED_ATTENTION_ARITHMETIC_AND_LOOKUP_COMPONENT_NOT_BUILT",
-  "gate_commitment": "blake2b-256:e28e54c56958f7df36fb694ad66f9a35fb136cc3fa4e926224c49c99dcbbbbbd",
+  "gate_commitment": "blake2b-256:c2fd393134133fd36e8dfa7f583ea1a12fd09287707851242c34fad43d66ad9f",
   "issue": 514,
   "lookup_receipt": {
     "lookup_claims": 416,
+    "lookup_envelope_commitment": "blake2b-256:3e9cc4e898dc141068a444ce697fee27bfe11fd1d0e408658fcd2f5bb0a4f769",
     "lookup_envelope_size_bytes": 907902,
+    "lookup_proof_commitment": "blake2b-256:ad9dbf2cb78f25c2411a843eeea2d5f22fcd31930fe50c3d01728d91514959f1",
     "lookup_proof_commitments": 4,
     "lookup_proof_size_bytes": 21694,
     "lookup_relation": "AttentionKvEightHeadSoftmaxTableLookupRelation",
@@ -167,6 +169,16 @@
       "rejected": true
     },
     {
+      "error": "lookup_receipt drift",
+      "name": "lookup_proof_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "lookup_receipt drift",
+      "name": "lookup_envelope_commitment_relabeling",
+      "rejected": true
+    },
+    {
       "error": "single_head_comparison drift",
       "name": "single_head_comparison_metric_smuggling",
       "rejected": true
@@ -202,8 +214,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 24,
-  "mutations_rejected": 24,
+  "mutations_checked": 26,
+  "mutations_rejected": 26,
   "next_backend_step": "use this matched eight-head sidecar as the source-plus-sidecar comparator for the fused route matrix; the sidecar now reproduces across single-head, two-head, four-head, and eight-head source families",
   "non_claims": [
     "not a fused attention-arithmetic-plus-lookup component",

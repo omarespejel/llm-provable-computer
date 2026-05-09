@@ -29,7 +29,9 @@ proof is still the separate fused route.
 | Sidecar proof bytes | `21,694` |
 | Sidecar envelope bytes | `907,902` |
 | Source + sidecar proof bytes | `74,086` |
-| Gate mutations | `24 / 24` rejected |
+| Sidecar proof commitment | `blake2b-256:ad9dbf2cb78f25c2411a843eeea2d5f22fcd31930fe50c3d01728d91514959f1` |
+| Sidecar envelope commitment | `blake2b-256:3e9cc4e898dc141068a444ce697fee27bfe11fd1d0e408658fcd2f5bb0a4f769` |
+| Gate mutations | `26 / 26` rejected |
 
 ## What Is Interesting
 

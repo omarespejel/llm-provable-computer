@@ -53,6 +53,8 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertEqual(receipt["lookup_envelope_size_bytes"], 907902)
         self.assertEqual(receipt["lookup_proof_commitments"], 4)
         self.assertEqual(receipt["lookup_trace_commitments"], 3)
+        self.assertEqual(receipt["lookup_proof_commitment"], gate.LOOKUP_PROOF_COMMITMENT)
+        self.assertEqual(receipt["lookup_envelope_commitment"], gate.LOOKUP_ENVELOPE_COMMITMENT)
         self.assertEqual(sum(row["multiplicity"] for row in receipt["table_multiplicities"]), 416)
         self.assertEqual(receipt["table_multiplicities"][-1]["multiplicity"], 323)
         self.assertEqual(payload["single_head_comparison"]["single_head_lookup_claims"], 52)
@@ -95,6 +97,26 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         payload = self.strip_mutation_summary(gate.build_payload())
         payload["lookup_receipt"]["unexpected"] = True
         self.assert_rejects(payload, "lookup_receipt drift")
+
+    def test_exact_artifact_commitments_change_on_same_size_proof_tamper(self):
+        source_input = json.loads(gate.SOURCE_INPUT_JSON.read_text(encoding="utf-8"))
+        tampered_serialized = self.same_size_tampered_envelope_json()
+        tampered_envelope = json.loads(tampered_serialized)
+        tampered_receipt = gate.validate_lookup_envelope(
+            tampered_envelope,
+            source_input,
+            gate.LOOKUP_ENVELOPE_SIZE_BYTES,
+            tampered_serialized.encode("utf-8"),
+        )
+        self.assertNotEqual(tampered_receipt["lookup_proof_commitment"], gate.LOOKUP_PROOF_COMMITMENT)
+        self.assertNotEqual(tampered_receipt["lookup_envelope_commitment"], gate.LOOKUP_ENVELOPE_COMMITMENT)
+
+        payload = self.strip_mutation_summary(gate.build_payload())
+        mutated = copy.deepcopy(payload)
+        mutated["lookup_receipt"]["lookup_proof_commitment"] = tampered_receipt["lookup_proof_commitment"]
+        mutated["lookup_receipt"]["lookup_envelope_commitment"] = tampered_receipt["lookup_envelope_commitment"]
+        tampered_gate_commitment = gate.gate_commitment_for(mutated, mutated["lookup_receipt"])
+        self.assertNotEqual(payload["gate_commitment"], tampered_gate_commitment)
 
     def test_rejects_mutation_summary_drift(self):
         payload = gate.build_payload()
