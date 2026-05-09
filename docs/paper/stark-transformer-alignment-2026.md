@@ -1305,8 +1305,9 @@ Those zkVM rows reject deletion, reordering, and intermediate-state relabeling,
 but they remain controls: they are not native Stwo attention arithmetic,
 Softmax, long-context inference, recursion/PCD, or agent correctness.
 
-The next step is now no longer just a plan. A native Stwo follow-up proves a
-fixed eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
+The next step is now no longer just a plan. In the opt-in native Stwo backend
+lane, built with `--features stwo-backend`, a follow-up proves a fixed
+eight-step `d=8` causal-prefix masked integer-argmax attention/KV sequence
 directly as an AIR: `52` public score rows, a `64`-row trace, selected positions
 `0, 2, 3, 3, 5, 5, 7, 9`, ten final KV rows, and a `24394`-byte proof. The
 current route selector now also includes single-head plus two-head/four-head/
@@ -1320,7 +1321,8 @@ the minimal verifier command is `cargo +nightly-2025-07-14 run --locked --featur
 Backend identity is `stwo-attention-kv-d8-causal-mask-sequence-v1`, proof version
 is `stwo-attention-kv-d8-causal-mask-sequence-air-proof-v1`, and timings are
 single-run local engineering measurements rather than benchmark rows. This is
-still tiny, not real-valued Softmax, not long-context inference, and not a
+still tiny, feature-gated engineering evidence rather than default-lane shipped
+behavior, not real-valued Softmax, not long-context inference, and not a
 benchmark row. But it is important because it moves the carried-state attention
 result from external controls into the STARK-native lane and then checks the
 pinned integer table/floor-division kernel across single-head, two-head,
@@ -1429,8 +1431,9 @@ inference, not full transformer inference, and not recursion/PCD. Its value is
 that the native STARK surface now supports multi-head carried KV state and a
 monotone weighted-read policy in the same checked proof object.
 
-The sixth follow-up now fuses the bounded Softmax-table attention arithmetic and
-LogUp table-membership relation into single native Stwo proof objects. The
+The sixth follow-up, again in the opt-in `stwo-backend` lane, now fuses the
+bounded Softmax-table attention arithmetic and LogUp table-membership relation
+into single native Stwo proof objects. The
 four-head route checks `208` lookup claims against the same nine-row
 statement-bound table, has a `53468`-byte raw proof inside a `797717`-byte
 checked envelope, and rejects `30 / 30` relabeling, commitment-drift,
@@ -1471,11 +1474,11 @@ not a claim that proof size is independent of width; it says the same fused
 attention-arithmetic-plus-table-membership construction still works after the
 width increase and still removes the second proof object.
 
-The fused ladder remains
-bounded table evidence, not real-valued Softmax, not exp/div semantics, not
-implementation-exact model Softmax, not full inference, not a public long-context
-benchmark, not on-chain verifier evidence, not a public benchmark row, not a
-timing result, and not recursion/PCD.
+The fused ladder remains opt-in native Stwo backend evidence and bounded table
+evidence, not default-lane shipped behavior, not real-valued Softmax, not
+exp/div semantics, not implementation-exact model Softmax, not full inference,
+not a public long-context benchmark, not on-chain verifier evidence, not a
+public benchmark row, not a timing result, and not recursion/PCD.
 
 Reproducibility anchors for these follow-ups are deliberately local and concrete:
 backend/profile is Rust `nightly-2025-07-14` with `--features stwo-backend`,

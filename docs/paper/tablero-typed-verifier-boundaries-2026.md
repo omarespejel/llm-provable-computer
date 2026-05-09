@@ -948,8 +948,10 @@ coexist inside one native Stwo proof surface. It is anchored to
 and
 `docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-weighted-gate-2026-05.json`.
 
-The current strongest native attention/KV follow-ups fuse bounded Softmax-table
-attention arithmetic and LogUp table-membership into one Stwo proof object. The
+The current strongest native attention/KV follow-ups are opt-in native Stwo
+backend results, built with `--features stwo-backend`; they are not default-lane
+shipped behavior. In that lane, they fuse bounded Softmax-table attention
+arithmetic and LogUp table-membership into one Stwo proof object. The
 four-head route checks `208` lookup claims against a statement-bound nine-row
 table, has a `53468`-byte raw proof inside a `797717`-byte checked envelope,
 rejects `30 / 30` relabeling, split-route injection, metric-smuggling,
