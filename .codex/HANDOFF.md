@@ -458,6 +458,15 @@ Tablero boundary.
   stable binary proof serialization and not fine-grained binary commitment or
   FRI-witness attribution; see
   `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
+  Issue `#534` follows with a public-field traversal of Stwo `2.2.0`
+  `StarkProof` internals. Across the same nine matched profiles, fusion still
+  saves `42492` typed-estimate bytes, now split into fine-grained public-field
+  component buckets. The largest saved buckets are FRI decommitment Merkle paths
+  (`17312`) and trace decommitment Merkle paths (`16448`). This is a GO for a
+  fine-grained typed component schema and still a NO-GO for stable canonical
+  verifier-facing binary proof bytes or backend-internal source-vs-lookup
+  attribution; see
+  `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow
