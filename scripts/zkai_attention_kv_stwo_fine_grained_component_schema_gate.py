@@ -336,6 +336,24 @@ def run_stwo_component_schema(paths: list[str]) -> dict[str, Any]:
         raise StwoFineGrainedComponentSchemaGateError(f"Stwo proof component schema CLI did not emit JSON: {err}") from err
 
 
+def artifact_proof_sha256(path: str) -> str:
+    resolved = (ROOT / path).resolve()
+    try:
+        envelope = json.loads(resolved.read_text(encoding="utf-8"))
+    except OSError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"failed to read artifact envelope {path}: {err}") from err
+    except json.JSONDecodeError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"failed to parse artifact envelope {path}: {err}") from err
+    proof = envelope.get("proof") if isinstance(envelope, dict) else None
+    if not isinstance(proof, list) or not proof:
+        raise StwoFineGrainedComponentSchemaGateError(f"artifact envelope {path} missing proof byte array")
+    try:
+        proof_bytes = bytes(require_int(value, f"{path} proof byte") for value in proof)
+    except ValueError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"artifact envelope {path} has non-byte proof value") from err
+    return hashlib.sha256(proof_bytes).hexdigest()
+
+
 def build_rows() -> list[dict[str, Any]]:
     specs = artifact_specs(section_delta_rows())
     cli = run_stwo_component_schema([spec["path"] for spec in specs])
@@ -359,11 +377,14 @@ def build_rows() -> list[dict[str, Any]]:
             raise StwoFineGrainedComponentSchemaGateError("CLI row field drift")
         if cli_row["path"] != spec["path"]:
             raise StwoFineGrainedComponentSchemaGateError("CLI row path drift")
+        proof_sha256 = artifact_proof_sha256(spec["path"])
+        if cli_row["proof_sha256"] != proof_sha256:
+            raise StwoFineGrainedComponentSchemaGateError("CLI proof_sha256 drift")
         row = {
             "profile_id": spec["profile_id"],
             "role": spec["role"],
             "path": spec["path"],
-            "proof_sha256": cli_row["proof_sha256"],
+            "proof_sha256": proof_sha256,
             "json_proof_size_bytes": cli_row["json_proof_size_bytes"],
             "typed_size_estimate_bytes": cli_row["typed_size_estimate_bytes"],
             "component_bytes": cli_row["component_bytes"],

@@ -191,6 +191,43 @@ fn component_schema_row(path: &Path) -> Result<serde_json::Value, String> {
             typed_size_estimate
         ));
     }
+    let stwo_grouped_known_bytes = stwo_grouped
+        .oods_samples
+        .checked_add(stwo_grouped.queries_values)
+        .and_then(|sum| sum.checked_add(stwo_grouped.fri_samples))
+        .and_then(|sum| sum.checked_add(stwo_grouped.fri_decommitments))
+        .and_then(|sum| sum.checked_add(stwo_grouped.trace_decommitments))
+        .ok_or_else(|| format!("Stwo grouped breakdown overflows for {}", path.display()))?;
+    let stwo_grouped_fixed_overhead = typed_size_estimate
+        .checked_sub(stwo_grouped_known_bytes)
+        .ok_or_else(|| {
+            format!(
+                "Stwo grouped breakdown exceeds typed estimate for {}",
+                path.display()
+            )
+        })?;
+    let grouped_reconstruction = serde_json::json!({
+        "oods_samples": components.sampled_opened_value_bytes,
+        "queries_values": components.queried_value_bytes,
+        "fri_samples": components.fri_layer_witness_bytes + components.fri_last_layer_poly_bytes,
+        "fri_decommitments": components.fri_commitment_bytes + components.fri_decommitment_merkle_path_bytes,
+        "trace_decommitments": components.trace_commitment_bytes + components.trace_decommitment_merkle_path_bytes,
+        "fixed_overhead": components.proof_of_work_bytes + components.config_bytes,
+    });
+    let stwo_grouped_breakdown = serde_json::json!({
+        "oods_samples": stwo_grouped.oods_samples,
+        "queries_values": stwo_grouped.queries_values,
+        "fri_samples": stwo_grouped.fri_samples,
+        "fri_decommitments": stwo_grouped.fri_decommitments,
+        "trace_decommitments": stwo_grouped.trace_decommitments,
+        "fixed_overhead": stwo_grouped_fixed_overhead,
+    });
+    if grouped_reconstruction != stwo_grouped_breakdown {
+        return Err(format!(
+            "grouped reconstruction drift for {}",
+            path.display()
+        ));
+    }
 
     Ok(serde_json::json!({
         "path": path.to_string_lossy(),
@@ -199,27 +236,8 @@ fn component_schema_row(path: &Path) -> Result<serde_json::Value, String> {
         "typed_size_estimate_bytes": typed_size_estimate,
         "component_bytes": components.to_json(),
         "component_sum_bytes": component_sum_bytes,
-        "grouped_reconstruction": {
-            "oods_samples": components.sampled_opened_value_bytes,
-            "queries_values": components.queried_value_bytes,
-            "fri_samples": components.fri_layer_witness_bytes + components.fri_last_layer_poly_bytes,
-            "fri_decommitments": components.fri_commitment_bytes + components.fri_decommitment_merkle_path_bytes,
-            "trace_decommitments": components.trace_commitment_bytes + components.trace_decommitment_merkle_path_bytes,
-            "fixed_overhead": components.proof_of_work_bytes + components.config_bytes,
-        },
-        "stwo_grouped_breakdown": {
-            "oods_samples": stwo_grouped.oods_samples,
-            "queries_values": stwo_grouped.queries_values,
-            "fri_samples": stwo_grouped.fri_samples,
-            "fri_decommitments": stwo_grouped.fri_decommitments,
-            "trace_decommitments": stwo_grouped.trace_decommitments,
-            "fixed_overhead": typed_size_estimate
-                - stwo_grouped.oods_samples
-                - stwo_grouped.queries_values
-                - stwo_grouped.fri_samples
-                - stwo_grouped.fri_decommitments
-                - stwo_grouped.trace_decommitments,
-        },
+        "grouped_reconstruction": grouped_reconstruction,
+        "stwo_grouped_breakdown": stwo_grouped_breakdown,
         "json_over_typed_size_ratio": ratio(proof_bytes.len(), typed_size_estimate)?,
         "json_minus_typed_size_bytes": proof_bytes.len() as i64 - typed_size_estimate as i64,
     }))
