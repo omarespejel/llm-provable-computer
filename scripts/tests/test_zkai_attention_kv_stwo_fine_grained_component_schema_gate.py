@@ -173,7 +173,25 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         finally:
             gate.run_stwo_component_schema = original
 
-    def test_artifact_proof_sha256_rejects_oversized_and_non_utf8_envelopes(self):
+    def test_rejects_cli_reported_json_proof_size_drift(self):
+        original = gate.run_stwo_component_schema
+
+        def fake_cli(paths):
+            payload = original(paths)
+            payload["rows"][0]["json_proof_size_bytes"] += 1
+            return payload
+
+        gate.run_stwo_component_schema = fake_cli
+        try:
+            with self.assertRaisesRegex(
+                gate.StwoFineGrainedComponentSchemaGateError,
+                "CLI json_proof_size_bytes drift",
+            ):
+                gate.build_rows()
+        finally:
+            gate.run_stwo_component_schema = original
+
+    def test_artifact_proof_metadata_rejects_oversized_and_non_utf8_envelopes(self):
         original_cap = gate.MAX_ENVELOPE_JSON_BYTES
         with tempfile.TemporaryDirectory() as tmp:
             oversized = pathlib.Path(tmp) / "oversized.json"
@@ -181,14 +199,14 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
             gate.MAX_ENVELOPE_JSON_BYTES = 4
             try:
                 with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "artifact envelope exceeds"):
-                    gate.artifact_proof_sha256(str(oversized))
+                    gate.artifact_proof_metadata(str(oversized))
             finally:
                 gate.MAX_ENVELOPE_JSON_BYTES = original_cap
 
             non_utf8 = pathlib.Path(tmp) / "non-utf8.json"
             non_utf8.write_bytes(b"\xff")
             with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "not valid UTF-8"):
-                gate.artifact_proof_sha256(str(non_utf8))
+                gate.artifact_proof_metadata(str(non_utf8))
 
     def test_rust_cli_rejects_malformed_envelope(self):
         with tempfile.TemporaryDirectory() as tmp:
