@@ -174,6 +174,9 @@ EXPECTED_JSON_OVER_TYPED_RATIO_BY_ROLE = {
 }
 EXPECTED_TYPED_SAVING_SHARE = 0.167376
 EXPECTED_JSON_SAVING_SHARE = 0.213636
+EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT = (
+    "blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06"
+)
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
     "binary_serializer_overclaim",
@@ -183,6 +186,7 @@ EXPECTED_MUTATION_NAMES = (
     "size_constants_smuggling",
     "typed_estimate_smuggling",
     "json_size_smuggling",
+    "proof_sha256_smuggling",
     "component_bucket_smuggling",
     "grouped_reconstruction_smuggling",
     "aggregate_delta_smuggling",
@@ -254,11 +258,36 @@ def section_delta_rows() -> list[dict[str, Any]]:
     return payload["profile_rows"]
 
 
+def evidence_relative_path(raw_path: Any, profile_id: str, role: str) -> str:
+    path = pathlib.Path(require_str(raw_path, f"{profile_id}/{role} artifact path"))
+    resolved = (path if path.is_absolute() else ROOT / path).resolve()
+    try:
+        relative = resolved.relative_to(EVIDENCE_DIR.resolve())
+    except ValueError as err:
+        raise StwoFineGrainedComponentSchemaGateError(
+            f"artifact path for {profile_id}/{role} escapes docs/engineering/evidence: {path}"
+        ) from err
+    return (pathlib.Path("docs") / "engineering" / "evidence" / relative).as_posix()
+
+
 def artifact_specs(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     specs = []
     for row in rows:
+        profile_id = require_str(row.get("profile_id"), "profile_id")
         for role in ROLES:
-            specs.append({"profile_id": row["profile_id"], "role": role, "path": row["artifacts"][role]["path"]})
+            try:
+                raw_path = row["artifacts"][role]["path"]
+            except (KeyError, TypeError) as err:
+                raise StwoFineGrainedComponentSchemaGateError(
+                    f"artifact path missing for {profile_id}/{role}"
+                ) from err
+            specs.append(
+                {
+                    "profile_id": profile_id,
+                    "role": role,
+                    "path": evidence_relative_path(raw_path, profile_id, role),
+                }
+            )
     return specs
 
 
@@ -603,6 +632,15 @@ def validate_payload(
     validate_aggregate(payload["aggregate"])
     if payload_commitment(payload) != payload["fine_grained_component_schema_commitment"]:
         raise StwoFineGrainedComponentSchemaGateError("commitment drift")
+    if (
+        not allow_missing_mutation_summary
+        and payload["fine_grained_component_schema_commitment"] != EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT
+    ):
+        raise StwoFineGrainedComponentSchemaGateError(
+            "published commitment drift: "
+            f"got {payload['fine_grained_component_schema_commitment']} "
+            f"expected {EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT}"
+        )
     if not allow_missing_mutation_summary or any(key in payload for key in mutation_keys):
         if not mutation_keys <= set(payload):
             raise StwoFineGrainedComponentSchemaGateError("mutation summary missing")
@@ -642,6 +680,7 @@ def mutation_cases_for(payload: dict[str, Any], *, expected_rows: list[dict[str,
     add("size_constants_smuggling", lambda p: p["size_constants"].__setitem__("secure_field_bytes", 15))
     add("typed_estimate_smuggling", lambda p: p["rows"][0].__setitem__("typed_size_estimate_bytes", p["rows"][0]["typed_size_estimate_bytes"] + 1))
     add("json_size_smuggling", lambda p: p["rows"][0].__setitem__("json_proof_size_bytes", p["rows"][0]["json_proof_size_bytes"] + 1))
+    add("proof_sha256_smuggling", lambda p: p["rows"][0].__setitem__("proof_sha256", "0" * 64))
     add("component_bucket_smuggling", lambda p: p["rows"][0]["component_bytes"].__setitem__("fri_decommitment_merkle_path_bytes", p["rows"][0]["component_bytes"]["fri_decommitment_merkle_path_bytes"] + 1))
     add("grouped_reconstruction_smuggling", lambda p: p["rows"][0]["grouped_reconstruction"].__setitem__("fri_decommitments", p["rows"][0]["grouped_reconstruction"]["fri_decommitments"] + 1))
     add("aggregate_delta_smuggling", lambda p: p["aggregate"]["source_plus_sidecar_minus_fused_delta"].__setitem__("typed_size_estimate_bytes", p["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] + 1))
