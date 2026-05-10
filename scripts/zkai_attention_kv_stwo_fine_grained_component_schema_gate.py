@@ -70,6 +70,8 @@ NON_CLAIMS = (
     "not recursion or PCD",
 )
 STWO_COMPONENT_SCHEMA_TIMEOUT_SECONDS = 900
+MAX_ENVELOPE_JSON_BYTES = 16 * 1024 * 1024
+MAX_PROOF_JSON_BYTES = 2 * 1024 * 1024
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_stwo_fine_grained_component_schema_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fine_grained_component_schema_gate",
@@ -336,17 +338,31 @@ def run_stwo_component_schema(paths: list[str]) -> dict[str, Any]:
         raise StwoFineGrainedComponentSchemaGateError(f"Stwo proof component schema CLI did not emit JSON: {err}") from err
 
 
+def read_bounded_utf8(path: pathlib.Path, label: str, max_bytes: int) -> str:
+    try:
+        with path.open("rb") as handle:
+            data = handle.read(max_bytes + 1)
+    except OSError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"failed to read {label} {path}: {err}") from err
+    if len(data) > max_bytes:
+        raise StwoFineGrainedComponentSchemaGateError(f"{label} exceeds {max_bytes} byte cap: {path}")
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"{label} is not valid UTF-8: {path}") from err
+
+
 def artifact_proof_sha256(path: str) -> str:
     resolved = (ROOT / path).resolve()
     try:
-        envelope = json.loads(resolved.read_text(encoding="utf-8"))
-    except OSError as err:
-        raise StwoFineGrainedComponentSchemaGateError(f"failed to read artifact envelope {path}: {err}") from err
+        envelope = json.loads(read_bounded_utf8(resolved, "artifact envelope", MAX_ENVELOPE_JSON_BYTES))
     except json.JSONDecodeError as err:
         raise StwoFineGrainedComponentSchemaGateError(f"failed to parse artifact envelope {path}: {err}") from err
     proof = envelope.get("proof") if isinstance(envelope, dict) else None
     if not isinstance(proof, list) or not proof:
         raise StwoFineGrainedComponentSchemaGateError(f"artifact envelope {path} missing proof byte array")
+    if len(proof) > MAX_PROOF_JSON_BYTES:
+        raise StwoFineGrainedComponentSchemaGateError(f"artifact envelope {path} proof byte array exceeds cap")
     try:
         proof_bytes = bytes(require_int(value, f"{path} proof byte") for value in proof)
     except ValueError as err:
