@@ -147,6 +147,10 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         self.assert_rejects(payload, "aggregate JSON wrapper bucket drift")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["aggregate"]["missing_relation_width_profiles"] = []
+        self.assert_rejects(payload, "missing relation-width profile drift")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["claim_boundary"] = "GO_BINARY_PCS_FRI_INTERNAL_ACCOUNTING"
         self.assert_rejects(payload, "claim_boundary drift")
 
@@ -285,6 +289,30 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
                     gate.write_tsv(gate.pathlib.Path(tmp) / "bad-value.tsv", self.payload)
         finally:
             gate.to_tsv = original_to_tsv
+
+    def test_write_outputs_atomically_does_not_publish_json_when_tsv_fails(self):
+        original_write_tsv = gate.write_tsv
+
+        def fail_tsv(*_args, **_kwargs):
+            raise gate.FusedSoftmaxTableMicroprofileGateError("forced TSV failure")
+
+        try:
+            gate.write_tsv = fail_tsv
+            with tempfile.TemporaryDirectory() as tmp:
+                out_dir = gate.pathlib.Path(tmp)
+                json_path = out_dir / "microprofile.json"
+                tsv_path = out_dir / "microprofile.tsv"
+                json_path.write_text('{"old": true}\n', encoding="utf-8")
+                tsv_path.write_text("old\n", encoding="utf-8")
+
+                with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "forced TSV failure"):
+                    gate.write_outputs_atomically(json_path, tsv_path, self.payload)
+
+                self.assertEqual(json_path.read_text(encoding="utf-8"), '{"old": true}\n')
+                self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old\n")
+                self.assertEqual(list(out_dir.glob("*.tmp")), [])
+        finally:
+            gate.write_tsv = original_write_tsv
 
 
 if __name__ == "__main__":
