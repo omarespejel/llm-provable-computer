@@ -128,6 +128,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
                 "validate_fused_envelope",
             ) as validate_d16_two_head_longseq:
                 GATE.load_d16_two_head_longseq_fused_softmax_payload()
+            validate_d16_two_head_longseq.assert_called()
             self.assertFalse(
                 any(call.kwargs.get("run_native") is True for call in validate_d16_two_head_longseq.call_args_list)
             )
@@ -158,8 +159,10 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
     def test_regression_issue_448_records_native_stwo_and_external_control_routes(self) -> None:
         payload = GATE.build_payload()
 
-        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 93)
+        self.assertEqual(len(GATE.EXPECTED_MUTATION_NAMES), 95)
         self.assertIn("multihead_quantized_softmax_trace_rows_drift", GATE.EXPECTED_MUTATION_NAMES)
+        self.assertIn("d16_two_head_longseq_fused_softmax_width_tamper", GATE.EXPECTED_MUTATION_NAMES)
+        self.assertIn("d16_two_head_longseq_fused_softmax_headcount_tamper", GATE.EXPECTED_MUTATION_NAMES)
         self.assertIn(
             "multihead_quantized_softmax_trace_rows_drift",
             [case["name"] for case in payload["mutation_cases"]],
