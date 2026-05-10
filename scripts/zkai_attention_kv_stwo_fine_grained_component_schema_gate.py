@@ -352,7 +352,7 @@ def read_bounded_utf8(path: pathlib.Path, label: str, max_bytes: int) -> str:
         raise StwoFineGrainedComponentSchemaGateError(f"{label} is not valid UTF-8: {path}") from err
 
 
-def artifact_proof_sha256(path: str) -> str:
+def artifact_proof_metadata(path: str) -> tuple[str, int]:
     resolved = (ROOT / path).resolve()
     try:
         envelope = json.loads(read_bounded_utf8(resolved, "artifact envelope", MAX_ENVELOPE_JSON_BYTES))
@@ -367,7 +367,7 @@ def artifact_proof_sha256(path: str) -> str:
         proof_bytes = bytes(require_int(value, f"{path} proof byte") for value in proof)
     except ValueError as err:
         raise StwoFineGrainedComponentSchemaGateError(f"artifact envelope {path} has non-byte proof value") from err
-    return hashlib.sha256(proof_bytes).hexdigest()
+    return hashlib.sha256(proof_bytes).hexdigest(), len(proof_bytes)
 
 
 def build_rows() -> list[dict[str, Any]]:
@@ -393,15 +393,17 @@ def build_rows() -> list[dict[str, Any]]:
             raise StwoFineGrainedComponentSchemaGateError("CLI row field drift")
         if cli_row["path"] != spec["path"]:
             raise StwoFineGrainedComponentSchemaGateError("CLI row path drift")
-        proof_sha256 = artifact_proof_sha256(spec["path"])
+        proof_sha256, json_proof_size = artifact_proof_metadata(spec["path"])
         if cli_row["proof_sha256"] != proof_sha256:
             raise StwoFineGrainedComponentSchemaGateError("CLI proof_sha256 drift")
+        if cli_row["json_proof_size_bytes"] != json_proof_size:
+            raise StwoFineGrainedComponentSchemaGateError("CLI json_proof_size_bytes drift")
         row = {
             "profile_id": spec["profile_id"],
             "role": spec["role"],
             "path": spec["path"],
             "proof_sha256": proof_sha256,
-            "json_proof_size_bytes": cli_row["json_proof_size_bytes"],
+            "json_proof_size_bytes": json_proof_size,
             "typed_size_estimate_bytes": cli_row["typed_size_estimate_bytes"],
             "component_bytes": cli_row["component_bytes"],
             "component_sum_bytes": cli_row["component_sum_bytes"],
