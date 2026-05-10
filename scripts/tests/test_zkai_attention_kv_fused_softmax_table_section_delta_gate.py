@@ -54,6 +54,7 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
         self.assertEqual(aggregate["largest_delta_section"], "fri_proof")
         self.assertEqual(aggregate["largest_delta_section_bytes"], 82882)
         self.assertEqual(aggregate["opening_bucket_savings_share"], 0.92244)
+        self.assertEqual(aggregate["proof_schema_versions_by_role"], gate.EXPECTED_PROOF_SCHEMA_VERSIONS_BY_ROLE)
 
     def test_profile_rows_bind_matched_source_sidecar_and_fused_sections(self):
         rows = {row["profile_id"]: row for row in self.payload["profile_rows"]}
@@ -109,11 +110,31 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
         self.assert_rejects(payload, "backend attribution overclaim")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["axis_role"] = "head_axis_extension"
+        self.assert_rejects(payload, "axis_role drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["head_count"] += 1
+        self.assert_rejects(payload, "head_count drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["artifacts"]["fused"]["proof_schema_version"] = "different-schema"
+        self.assert_rejects(payload, "fused proof_schema_version drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["artifacts"]["source"]["proof_schema_version"] = "legacy-retcon"
+        self.assert_rejects(payload, "source proof_schema_version drift")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] += 1
         self.assert_rejects(payload, "aggregate drift")
 
         payload = self.strip_mutation_summary(self.payload)
         payload["aggregate"]["section_totals_by_role"]["delta"]["fri_proof"] += 1
+        self.assert_rejects(payload, "aggregate drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["aggregate"]["proof_schema_versions_by_role"]["fused"].append("different-schema")
         self.assert_rejects(payload, "aggregate drift")
 
         payload = self.strip_mutation_summary(self.payload)
@@ -147,6 +168,17 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
             self.assertTrue(all(case["rejected"] is True for case in cases))
         finally:
             gate.build_section_delta_row = original_build_row
+
+    def test_static_metadata_rejects_tautological_expected_rows(self):
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["trace_rows"] += 1
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableSectionDeltaGateError, "trace_rows drift"):
+            gate.validate_payload(payload, allow_missing_mutation_summary=True, expected_rows=payload["profile_rows"])
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["artifacts"]["fused"]["proof_schema_version"] = "different-schema"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableSectionDeltaGateError, "fused proof_schema_version drift"):
+            gate.validate_payload(payload, allow_missing_mutation_summary=True, expected_rows=payload["profile_rows"])
 
     def test_rejects_non_object_envelope_before_backend_reads(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -33,7 +33,7 @@ surface-level delta and keeps the backend-internal split as a non-claim.
 
 Section-delta commitment:
 
-`blake2b-256:22cdad8911d7b29204b535cc39683a46de3f3c0924565eebb0e3fddea5e55221`
+`blake2b-256:def3cfd7aeed2ef2ddbb48fadef9fb1c919095ddb4fe4f21a63bef6140baf209`
 
 ## Aggregate Read
 
@@ -95,6 +95,10 @@ This gate is not:
 - exact real-valued Softmax;
 - full inference;
 - recursion or PCD.
+
+The validation also freezes route metadata and proof-schema inventories for the
+nine checked profiles, including the legacy `null` schema status on source and
+sidecar envelopes and the explicit fused proof schema for each fused route.
 
 ## Validation
 
