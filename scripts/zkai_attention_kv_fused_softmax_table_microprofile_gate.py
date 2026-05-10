@@ -945,7 +945,74 @@ def staged_output_path(path: pathlib.Path) -> pathlib.Path:
         return pathlib.Path(handle.name)
 
 
+def backup_output_path(path: pathlib.Path) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="",
+        dir=path.parent,
+        prefix=f".{path.name}.backup.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        return pathlib.Path(handle.name)
+
+
+def require_evidence_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
+    resolved = path.expanduser().resolve()
+    evidence_root = EVIDENCE_DIR.resolve()
+    try:
+        resolved.relative_to(evidence_root)
+    except ValueError as exc:
+        raise FusedSoftmaxTableMicroprofileGateError(f"{label} must stay under {evidence_root}") from exc
+    return resolved
+
+
+def replace_staged_outputs_with_rollback(
+    staged_json: pathlib.Path,
+    json_path: pathlib.Path,
+    staged_tsv: pathlib.Path,
+    tsv_path: pathlib.Path,
+) -> None:
+    backup_json: pathlib.Path | None = None
+    backup_tsv: pathlib.Path | None = None
+    json_replaced = False
+    tsv_replaced = False
+    try:
+        if json_path.exists():
+            backup_json = backup_output_path(json_path)
+            backup_json.unlink(missing_ok=True)
+            json_path.replace(backup_json)
+        if tsv_path.exists():
+            backup_tsv = backup_output_path(tsv_path)
+            backup_tsv.unlink(missing_ok=True)
+            tsv_path.replace(backup_tsv)
+
+        staged_json.replace(json_path)
+        json_replaced = True
+        staged_tsv.replace(tsv_path)
+        tsv_replaced = True
+    except Exception:
+        if json_replaced:
+            json_path.unlink(missing_ok=True)
+        if tsv_replaced:
+            tsv_path.unlink(missing_ok=True)
+        if backup_json is not None:
+            backup_json.replace(json_path)
+        if backup_tsv is not None:
+            backup_tsv.replace(tsv_path)
+        raise
+    else:
+        if backup_json is not None:
+            backup_json.unlink(missing_ok=True)
+        if backup_tsv is not None:
+            backup_tsv.unlink(missing_ok=True)
+
+
 def write_outputs_atomically(json_path: pathlib.Path, tsv_path: pathlib.Path, payload: dict[str, Any]) -> None:
+    if json_path == tsv_path:
+        raise FusedSoftmaxTableMicroprofileGateError("JSON and TSV output paths must differ")
     staged_json = staged_output_path(json_path)
     staged_tsv = staged_output_path(tsv_path)
     staged_json.unlink(missing_ok=True)
@@ -953,8 +1020,7 @@ def write_outputs_atomically(json_path: pathlib.Path, tsv_path: pathlib.Path, pa
     try:
         write_json(staged_json, payload)
         write_tsv(staged_tsv, payload)
-        staged_json.replace(json_path)
-        staged_tsv.replace(tsv_path)
+        replace_staged_outputs_with_rollback(staged_json, json_path, staged_tsv, tsv_path)
     except Exception:
         staged_json.unlink(missing_ok=True)
         staged_tsv.unlink(missing_ok=True)
@@ -976,7 +1042,9 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     if not args.no_write:
-        write_outputs_atomically(args.write_json, args.write_tsv, payload)
+        write_json_path = require_evidence_output_path(args.write_json, "write-json")
+        write_tsv_path = require_evidence_output_path(args.write_tsv, "write-tsv")
+        write_outputs_atomically(write_json_path, write_tsv_path, payload)
     return 0
 
 
