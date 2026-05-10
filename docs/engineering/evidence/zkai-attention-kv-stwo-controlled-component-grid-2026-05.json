@@ -94,7 +94,7 @@
     }
   },
   "claim_boundary": "ENGINEERING_TYPED_COMPONENT_GRID_FOR_NINE_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE",
-  "component_grid_commitment": "blake2b-256:36f1d66e2371d4b51233e915b01bf0b1502c25246e2c585b3fdedc7d9f5e129f",
+  "component_grid_commitment": "blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8",
   "component_savings_totals": {
     "config_bytes": 360,
     "fri_commitment_bytes": 2272,
@@ -468,6 +468,16 @@
       "rejected": true
     },
     {
+      "error": "d8_single_head_seq8 axis_role metadata drift",
+      "name": "metadata_axis_role_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 trace_rows metadata drift",
+      "name": "metadata_trace_rows_smuggling",
+      "rejected": true
+    },
+    {
       "error": "typed savings drift",
       "name": "typed_savings_smuggling",
       "rejected": true
@@ -508,8 +518,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 16,
-  "mutations_rejected": 16,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "non_claims": [
     "not a full factorial d8/d16/d32 by 1/2/4/8/16 heads by seq8/seq16/seq32 grid",
     "not stable canonical binary Stwo proof serialization",
