@@ -122,6 +122,9 @@ This gate is not:
 - stable verifier-facing binary proof bytes;
 - backend-internal source arithmetic versus LogUp lookup column attribution;
 - exact public benchmark proof bytes;
+- publication-grade generalization across head count, sequence length, and
+  width; that requires a controlled grid with the same component accounting
+  policy before making broader public claims;
 - timing evidence;
 - exact real-valued Softmax;
 - full inference;
