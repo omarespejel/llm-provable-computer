@@ -113,9 +113,9 @@ This gate may be cited internally as:
 
 > Across nine checked native Stwo attention/table profiles, fusing attention
 > arithmetic with Softmax-table LogUp membership reduced fine-grained typed
-> proof-component size by `9.1%` to `23.3%` per profile, with a `16.7%`
-> aggregate saving. The saving is dominated by shared FRI and trace
-> opening/decommitment structure.
+> proof-component size by `9.1035%` to `23.2606%` per profile, with a
+> `42,492`-byte (`16.7376%`) aggregate saving. The saving is dominated by
+> shared FRI and trace opening/decommitment structure.
 
 Do not cite it as:
 
