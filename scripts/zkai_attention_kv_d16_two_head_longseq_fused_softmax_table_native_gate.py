@@ -51,12 +51,12 @@ NON_FUSED_STATUS = "GO_MATCHED_D16_TWO_HEAD_LONGSEQ_SOURCE_PLUS_LOGUP_SIDECAR_CO
 TIMING_POLICY = "proof_existence_and_byte_accounting_only_not_public_benchmark"
 
 SOURCE_PROOF_SIZE_BYTES = 83_330
-SOURCE_ENVELOPE_SIZE_BYTES = 1_554_358
+SOURCE_ENVELOPE_SIZE_BYTES = 1_554_385
 SIDECAR_PROOF_SIZE_BYTES = 24_828
-SIDECAR_ENVELOPE_SIZE_BYTES = 1_088_299
+SIDECAR_ENVELOPE_SIZE_BYTES = 1_088_326
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + SIDECAR_PROOF_SIZE_BYTES
 FUSED_PROOF_SIZE_BYTES = 84_868
-FUSED_ENVELOPE_SIZE_BYTES = 1_569_707
+FUSED_ENVELOPE_SIZE_BYTES = 1_569_734
 FUSED_OVER_SOURCE_PROOF_BYTES = FUSED_PROOF_SIZE_BYTES - SOURCE_PROOF_SIZE_BYTES
 FUSED_SAVES_VS_SOURCE_PLUS_SIDECAR_BYTES = SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES - FUSED_PROOF_SIZE_BYTES
 FUSED_TO_SOURCE_PLUS_SIDECAR_RATIO = FUSED_PROOF_SIZE_BYTES / SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES
@@ -335,6 +335,29 @@ def assert_exact_keys(mapping: dict[str, Any], expected_keys: set[str], label: s
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(
             f"{label} field set drift: extra={sorted(extra_keys)}, missing={sorted(missing_keys)}"
         )
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def proof_bytes(envelope: dict[str, Any]) -> bytes:
+    proof = envelope.get("proof")
+    if not isinstance(proof, list):
+        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof must be a byte list")
+    if len(proof) != FUSED_PROOF_SIZE_BYTES:
+        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof byte length drift")
+    if any(not isinstance(byte, int) or isinstance(byte, bool) or byte < 0 or byte > 255 for byte in proof):
+        raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("fused proof bytes must be uint8 values")
+    return bytes(proof)
+
+
+def fused_artifact_commitments(envelope: dict[str, Any]) -> tuple[str, str]:
+    envelope_commitment = "blake2b-256:" + hashlib.blake2b(
+        canonical_json_bytes(envelope), digest_size=32
+    ).hexdigest()
+    proof_commitment = "blake2b-256:" + hashlib.blake2b(proof_bytes(envelope), digest_size=32).hexdigest()
+    return envelope_commitment, proof_commitment
 
 
 def verify_envelope_bytes_with_native_cli(
@@ -878,6 +901,7 @@ def run_gate() -> dict[str, Any]:
     rejected = sum(1 for result in mutation_results if result["rejected"])
     if rejected != EXPECTED_MUTATION_COUNT:
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"mutation rejection drift: got {rejected}")
+    fused_envelope_commitment, fused_proof_commitment = fused_artifact_commitments(fused_envelope)
 
     result = {
         "schema": SCHEMA,
@@ -911,6 +935,8 @@ def run_gate() -> dict[str, Any]:
         "source_final_kv_cache_commitment": SOURCE_FINAL_KV_CACHE_COMMITMENT,
         "source_outputs_commitment": SOURCE_OUTPUTS_COMMITMENT,
         "source_weight_table_commitment": SOURCE_WEIGHT_TABLE_COMMITMENT,
+        "fused_envelope_commitment": fused_envelope_commitment,
+        "fused_proof_commitment": fused_proof_commitment,
         "source_head_count": SOURCE_HEAD_COUNT,
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
         "non_claims": list(NON_CLAIMS),
@@ -938,6 +964,13 @@ def evaluate_mutation_results(fused_envelope: dict[str, Any], source_input: dict
 def validate_result(result: dict[str, Any]) -> None:
     if not isinstance(result, dict):
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError("result must be an object")
+    fused_envelope, _fused_raw = read_sized_envelope(
+        FUSED_ENVELOPE_JSON,
+        MAX_FUSED_ENVELOPE_JSON_BYTES,
+        FUSED_ENVELOPE_SIZE_BYTES,
+        "fused envelope",
+    )
+    fused_envelope_commitment, fused_proof_commitment = fused_artifact_commitments(fused_envelope)
     expected_exact: dict[str, Any] = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -970,6 +1003,8 @@ def validate_result(result: dict[str, Any]) -> None:
         "source_final_kv_cache_commitment": SOURCE_FINAL_KV_CACHE_COMMITMENT,
         "source_outputs_commitment": SOURCE_OUTPUTS_COMMITMENT,
         "source_weight_table_commitment": SOURCE_WEIGHT_TABLE_COMMITMENT,
+        "fused_envelope_commitment": fused_envelope_commitment,
+        "fused_proof_commitment": fused_proof_commitment,
         "source_head_count": SOURCE_HEAD_COUNT,
         "table_multiplicities": list(TABLE_MULTIPLICITIES),
         "non_claims": list(NON_CLAIMS),
@@ -984,6 +1019,10 @@ def validate_result(result: dict[str, Any]) -> None:
     extra = set(result) - required
     if extra:
         raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"unknown result keys: {sorted(extra)}")
+    for key in ("fused_envelope_commitment", "fused_proof_commitment"):
+        value = expected_exact[key]
+        if not isinstance(value, str) or not value.startswith("blake2b-256:"):
+            raise AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError(f"{key} drift")
     assert_fields(result, expected_exact, "result")
     mutation_results = result["mutation_results"]
     if not isinstance(mutation_results, list) or len(mutation_results) != EXPECTED_MUTATION_COUNT:

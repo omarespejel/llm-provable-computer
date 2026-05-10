@@ -288,6 +288,10 @@ matched source-plus-sidecar control (`108158` bytes, `0.784667x`). It rejects
 still not timing, real-valued Softmax, full inference, public benchmark
 evidence, or recursion/PCD.
 
+The `26 / 26` result above is the route-matrix gate's own drift and provenance
+mutation surface across the checked fused-route table. It is separate from the
+per-route fused-gate mutation counts below.
+
 The selector's default receipt load is structural and cheap, but it is not blind
 to proof-file edits: the multi-head receipt records `blake2b-256` commitments to
 each fused envelope and each fused proof byte payload. The checked strict command
@@ -321,11 +325,15 @@ native Stwo fused route. The checked proof uses `d=16`, two heads, and sixteen
 steps per head, constraining `336` lookup claims over a `512`-row trace. The
 source arithmetic proof is `83330` raw bytes, the matched LogUp sidecar is
 `24828` raw bytes, and the fused proof is `84868` raw bytes inside a
-`1569707`-byte checked envelope. The fused route is `23290` bytes smaller than
+`1569734`-byte checked envelope. The fused route is `23290` bytes smaller than
 the matched source-plus-sidecar pair (`108158` raw bytes, `0.784667x`) and
 rejects `30 / 30` fused-gate mutations. This is combined-axis proof-existence
 and byte-accounting evidence, not exact Softmax, implementation-exact model
 Softmax, full inference, timing evidence, recursion, or PCD.
+
+The `30 / 30` count is the issue `#525` fused Softmax-table gate's local
+artifact and semantic mutation suite. It is intentionally not the same gate as
+the `26 / 26` route-matrix drift suite above.
 
 Reproduce issue `#525` (`d16/two-head/seq16`) with the fused route/check names
 used in this report:
@@ -342,9 +350,19 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json
 
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_bounded_softmax_table_proof \
+  -- verify \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
   --bin zkai_attention_kv_native_d16_two_head_longseq_softmax_table_lookup_proof \
   -- prove \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.json \
+  docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json
+
+cargo +nightly-2025-07-14 run --locked --features stwo-backend \
+  --bin zkai_attention_kv_native_d16_two_head_longseq_softmax_table_lookup_proof \
+  -- verify \
   docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json
 
 cargo +nightly-2025-07-14 run --locked --features stwo-backend \
@@ -612,7 +630,7 @@ Softmax.
 | d16 two-head fused bytes saved versus source-plus-sidecar | `13385` bytes |
 | d16 two-head long-sequence fused Softmax-table lookup claims | `336` |
 | d16 two-head long-sequence fused Softmax-table proof size | `84868` bytes |
-| d16 two-head long-sequence fused Softmax-table envelope size | `1569707` bytes |
+| d16 two-head long-sequence fused Softmax-table envelope size | `1569734` bytes |
 | d16 two-head long-sequence fused versus source-plus-sidecar bytes | `84868` / `108158` |
 | d16 two-head long-sequence fused bytes saved versus source-plus-sidecar | `23290` bytes |
 | d16 quantized Softmax-table proof size | `64503` bytes |

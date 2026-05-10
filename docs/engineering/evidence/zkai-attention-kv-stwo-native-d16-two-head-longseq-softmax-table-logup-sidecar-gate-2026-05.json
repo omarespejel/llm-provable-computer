@@ -9,13 +9,13 @@
     "fixed_d16_two_head_lookup_envelope_size_bytes": 438961,
     "fixed_d16_two_head_lookup_proof_size_bytes": 18088,
     "longseq_lookup_claims": 336,
-    "longseq_lookup_envelope_size_bytes": 1088299,
+    "longseq_lookup_envelope_size_bytes": 1088326,
     "longseq_lookup_proof_size_bytes": 24828,
     "proof_size_ratio": "1.372623"
   },
   "fused_comparator": {
     "comparison_scope": "raw proof bytes only; no timing, no full inference, no real-valued Softmax claim",
-    "fused_envelope_size_bytes": 1569707,
+    "fused_envelope_size_bytes": 1569734,
     "fused_proof_size_bytes": 84868,
     "fused_saves_vs_source_plus_sidecar_bytes": 23290,
     "fused_to_source_plus_sidecar_ratio": "0.784667",
@@ -28,7 +28,7 @@
   "issue": 525,
   "lookup_receipt": {
     "lookup_claims": 336,
-    "lookup_envelope_size_bytes": 1088299,
+    "lookup_envelope_size_bytes": 1088326,
     "lookup_proof_commitments": 4,
     "lookup_proof_size_bytes": 24828,
     "lookup_relation": "AttentionKvD16TwoHeadLongseqSoftmaxTableLookupRelation",

@@ -25,6 +25,9 @@ class AttentionKvD16TwoHeadLongseqBoundedSoftmaxTableInputTests(unittest.TestCas
         self.assertEqual(payload["score_rows"][0]["attention_weight"], 16)
         self.assertEqual(payload["score_rows"][3]["head_index"], 1)
         self.assertEqual(payload["score_rows"][2]["attention_weight"], 16)
+        cargo_commands = [command for command in payload["validation_commands"] if command.startswith("cargo ")]
+        self.assertTrue(cargo_commands)
+        self.assertTrue(all(" --locked " in f" {command} " for command in cargo_commands))
 
     def test_rejects_weight_policy_drift(self):
         payload = gate.build_payload()

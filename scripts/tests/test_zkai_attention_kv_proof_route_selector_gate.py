@@ -361,7 +361,7 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
             108158,
         )
         self.assertEqual(payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_proof_size_bytes"], 84868)
-        self.assertEqual(payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"], 1569707)
+        self.assertEqual(payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_envelope_size_bytes"], 1569734)
         self.assertEqual(
             payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_saves_vs_source_plus_sidecar_bytes"],
             23290,
@@ -369,6 +369,16 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         self.assertEqual(
             payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_to_source_plus_sidecar_ratio"],
             "0.784667",
+        )
+        self.assertTrue(
+            payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_envelope_commitment"].startswith(
+                "blake2b-256:"
+            )
+        )
+        self.assertTrue(
+            payload["d16_two_head_longseq_fused_softmax_receipt"]["fused_proof_commitment"].startswith(
+                "blake2b-256:"
+            )
         )
         self.assertIn("not exact Softmax attention", payload["d16_two_head_longseq_fused_softmax_receipt"]["non_claims"])
         self.assertEqual(
