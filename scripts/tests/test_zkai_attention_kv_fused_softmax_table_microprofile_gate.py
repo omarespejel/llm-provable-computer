@@ -167,6 +167,23 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         finally:
             gate.validate_payload = original_validate_payload
 
+    def test_expected_rows_can_skip_reloading_source_artifacts(self):
+        original_build_microprofile_row = gate.build_microprofile_row
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("source artifacts were reloaded")
+
+        try:
+            gate.build_microprofile_row = boom
+            gate.validate_payload(self.payload, expected_rows=self.payload["profile_rows"])
+            gate.to_tsv(self.payload, expected_rows=self.payload["profile_rows"])
+            gate.to_tsv(self.payload, validate=False)
+            cases = gate.mutation_cases_for(self.payload, expected_rows=self.payload["profile_rows"])
+            self.assertEqual(len(cases), gate.EXPECTED_MUTATION_COUNT)
+            self.assertTrue(all(case["rejected"] is True for case in cases))
+        finally:
+            gate.build_microprofile_row = original_build_microprofile_row
+
     def test_rejects_mutation_spec_count_drift(self):
         original_count = gate.EXPECTED_MUTATION_COUNT
         try:
