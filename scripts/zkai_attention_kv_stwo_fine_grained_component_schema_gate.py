@@ -340,6 +340,16 @@ def run_stwo_component_schema(paths: list[str]) -> dict[str, Any]:
 
 def read_bounded_utf8(path: pathlib.Path, label: str, max_bytes: int) -> str:
     try:
+        stat = path.stat()
+    except OSError as err:
+        raise StwoFineGrainedComponentSchemaGateError(f"failed to stat {label} {path}: {err}") from err
+    if not path.is_file():
+        raise StwoFineGrainedComponentSchemaGateError(f"{label} is not a regular file: {path}")
+    if stat.st_size <= 0:
+        raise StwoFineGrainedComponentSchemaGateError(f"{label} is empty: {path}")
+    if stat.st_size > max_bytes:
+        raise StwoFineGrainedComponentSchemaGateError(f"{label} exceeds {max_bytes} byte cap: {path}")
+    try:
         with path.open("rb") as handle:
             data = handle.read(max_bytes + 1)
     except OSError as err:

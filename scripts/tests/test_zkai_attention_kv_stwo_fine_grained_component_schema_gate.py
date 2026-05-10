@@ -208,6 +208,14 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "not valid UTF-8"):
                 gate.artifact_proof_metadata(str(non_utf8))
 
+            empty = pathlib.Path(tmp) / "empty.json"
+            empty.touch()
+            with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "artifact envelope is empty"):
+                gate.artifact_proof_metadata(str(empty))
+
+            with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "not a regular file"):
+                gate.artifact_proof_metadata(tmp)
+
     def test_rust_cli_rejects_malformed_envelope(self):
         with tempfile.TemporaryDirectory() as tmp:
             bad = pathlib.Path(tmp) / "bad-envelope.json"
