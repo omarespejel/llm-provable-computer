@@ -552,6 +552,15 @@ Tablero boundary.
   size-estimate accounting, not stable binary proof serialization and not
   fine-grained binary commitment or FRI-witness attribution; see
   `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
+  Issue `#534` then traverses public Stwo `2.2.0` proof fields to split that
+  typed estimate into smaller component buckets while keeping stable binary
+  serialization as NO-GO. The same matched profiles still show `42492`
+  typed-estimate bytes saved by fusion; the largest fine-grained saved buckets
+  are FRI decommitment Merkle paths (`17312`) and trace decommitment Merkle
+  paths (`16448`). This is public-field typed component-schema accounting, not
+  verifier-facing binary proof bytes and not backend-internal source-vs-lookup
+  attribution; see
+  `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow

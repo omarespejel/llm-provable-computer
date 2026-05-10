@@ -1,0 +1,1293 @@
+{
+  "accounting_source": "public_stwo_2_2_0_stark_proof_field_traversal_and_mem_size_estimates",
+  "aggregate": {
+    "artifacts_checked": 27,
+    "json_over_typed_ratio_by_role": {
+      "fused": 2.664107,
+      "sidecar": 3.56977,
+      "source": 2.62503
+    },
+    "json_saving_share_vs_source_plus_sidecar": 0.213636,
+    "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+    "largest_component_saving_bucket_bytes": 17312,
+    "profiles_checked": 9,
+    "role_totals": {
+      "fused": {
+        "config_bytes": 360,
+        "fri_commitment_bytes": 2272,
+        "fri_decommitment_merkle_path_bytes": 19104,
+        "fri_last_layer_poly_bytes": 144,
+        "fri_layer_witness_bytes": 2976,
+        "json_minus_typed_size_bytes": 351759,
+        "json_proof_size_bytes": 563139,
+        "proof_of_work_bytes": 72,
+        "queried_value_bytes": 68964,
+        "sampled_opened_value_bytes": 92528,
+        "trace_commitment_bytes": 1152,
+        "trace_decommitment_merkle_path_bytes": 23808,
+        "typed_size_estimate_bytes": 211380
+      },
+      "sidecar": {
+        "config_bytes": 360,
+        "fri_commitment_bytes": 2272,
+        "fri_decommitment_merkle_path_bytes": 17888,
+        "fri_last_layer_poly_bytes": 144,
+        "fri_layer_witness_bytes": 2832,
+        "json_minus_typed_size_bytes": 135211,
+        "json_proof_size_bytes": 187827,
+        "proof_of_work_bytes": 72,
+        "queried_value_bytes": 1944,
+        "sampled_opened_value_bytes": 3168,
+        "trace_commitment_bytes": 1152,
+        "trace_decommitment_merkle_path_bytes": 22784,
+        "typed_size_estimate_bytes": 52616
+      },
+      "source": {
+        "config_bytes": 360,
+        "fri_commitment_bytes": 2272,
+        "fri_decommitment_merkle_path_bytes": 18528,
+        "fri_last_layer_poly_bytes": 144,
+        "fri_layer_witness_bytes": 2896,
+        "json_minus_typed_size_bytes": 327047,
+        "json_proof_size_bytes": 528303,
+        "proof_of_work_bytes": 72,
+        "queried_value_bytes": 67992,
+        "sampled_opened_value_bytes": 90656,
+        "trace_commitment_bytes": 864,
+        "trace_decommitment_merkle_path_bytes": 17472,
+        "typed_size_estimate_bytes": 201256
+      }
+    },
+    "source_plus_sidecar_minus_fused_delta": {
+      "config_bytes": 360,
+      "fri_commitment_bytes": 2272,
+      "fri_decommitment_merkle_path_bytes": 17312,
+      "fri_last_layer_poly_bytes": 144,
+      "fri_layer_witness_bytes": 2752,
+      "json_minus_typed_size_bytes": 110499,
+      "json_proof_size_bytes": 152991,
+      "proof_of_work_bytes": 72,
+      "queried_value_bytes": 972,
+      "sampled_opened_value_bytes": 1296,
+      "trace_commitment_bytes": 864,
+      "trace_decommitment_merkle_path_bytes": 16448,
+      "typed_size_estimate_bytes": 42492
+    },
+    "source_plus_sidecar_totals": {
+      "config_bytes": 720,
+      "fri_commitment_bytes": 4544,
+      "fri_decommitment_merkle_path_bytes": 36416,
+      "fri_last_layer_poly_bytes": 288,
+      "fri_layer_witness_bytes": 5728,
+      "json_minus_typed_size_bytes": 462258,
+      "json_proof_size_bytes": 716130,
+      "proof_of_work_bytes": 144,
+      "queried_value_bytes": 69936,
+      "sampled_opened_value_bytes": 93824,
+      "trace_commitment_bytes": 2016,
+      "trace_decommitment_merkle_path_bytes": 40256,
+      "typed_size_estimate_bytes": 253872
+    },
+    "typed_saving_share_vs_source_plus_sidecar": 0.167376
+  },
+  "all_mutations_rejected": true,
+  "claim_boundary": "FINE_GRAINED_TYPED_STWO_PROOF_COMPONENT_SCHEMA_FOR_MATCHED_SOURCE_SIDECAR_AND_FUSED_SOFTMAX_TABLE_ROUTES_NOT_STABLE_BINARY_SERIALIZATION_NOT_SOURCE_VS_LOOKUP_COLUMN_ATTRIBUTION_NOT_TIMING",
+  "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_STABLE_BINARY_SERIALIZER_NO_GO",
+  "decision": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
+  "fine_grained_component_schema_commitment": "blake2b-256:bf6acc8377fc36eb5151c4dcf6428d8bd7ffeba9b5507fd8c1db0145d8e5e127",
+  "grouped_reconstruction_status": "GO_GROUPED_STWO_TYPED_BREAKDOWN_RECONSTRUCTED_FROM_FINE_GRAINED_COMPONENTS",
+  "issue": 534,
+  "mutation_cases": [
+    {
+      "error": "decision drift",
+      "name": "decision_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "stable_binary_serializer_status drift",
+      "name": "binary_serializer_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "component_schema_status drift",
+      "name": "component_schema_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "grouped_reconstruction_status drift",
+      "name": "grouped_reconstruction_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "open_component_questions drift",
+      "name": "open_component_questions_removed",
+      "rejected": true
+    },
+    {
+      "error": "size_constants drift",
+      "name": "size_constants_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "component sum drift",
+      "name": "typed_estimate_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "json-minus-typed drift",
+      "name": "json_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "component sum drift",
+      "name": "component_bucket_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "grouped reconstruction drift",
+      "name": "grouped_reconstruction_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "aggregate_delta_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "role_total_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "row order drift",
+      "name": "row_order_drift",
+      "rejected": true
+    },
+    {
+      "error": "profile_id drift",
+      "name": "profile_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "role drift",
+      "name": "role_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 17,
+  "mutations_rejected": 17,
+  "non_claims": [
+    "not stable canonical binary Stwo proof serialization",
+    "not verifier-facing binary proof bytes",
+    "not backend-internal source arithmetic versus LogUp lookup column attribution",
+    "not exact public benchmark proof bytes",
+    "not timing evidence",
+    "not exact real-valued Softmax",
+    "not full inference",
+    "not recursion or PCD"
+  ],
+  "open_component_questions": [
+    "stable canonical binary Stwo proof serialization",
+    "verifier-facing binary byte encoding for every component",
+    "backend-internal source arithmetic versus LogUp lookup column attribution"
+  ],
+  "profile_ids": [
+    "d8_single_head_seq8",
+    "d16_single_head_seq8",
+    "d8_two_head_seq8",
+    "d8_four_head_seq8",
+    "d8_eight_head_seq8",
+    "d8_sixteen_head_seq8",
+    "d8_two_head_seq16",
+    "d16_two_head_seq8",
+    "d16_two_head_seq16"
+  ],
+  "proof_payload_kind": "utf8_json_object_with_single_stark_proof_field",
+  "rows": [
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1120,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6000,
+        "sampled_opened_value_bytes": 8000,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1536
+      },
+      "component_sum_bytes": 17264,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 8000,
+        "queries_values": 6000,
+        "trace_decommitments": 1632
+      },
+      "json_minus_typed_size_bytes": 27428,
+      "json_over_typed_size_ratio": 2.58874,
+      "json_proof_size_bytes": 44692,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_single_head_seq8",
+      "proof_sha256": "50a4c739d1ee76f8cc65e29fc2ddf984161da6714ffa66df45a85dd9ff5724fe",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 8000,
+        "queries_values": 6000,
+        "trace_decommitments": 1632
+      },
+      "typed_size_estimate_bytes": 17264
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1024,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 240,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 1920
+      },
+      "component_sum_bytes": 4136,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1216,
+        "fri_samples": 256,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2048
+      },
+      "json_minus_typed_size_bytes": 10609,
+      "json_over_typed_size_ratio": 3.565039,
+      "json_proof_size_bytes": 14745,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_single_head_seq8",
+      "proof_sha256": "e7d76deed4cf96ba2380275d73d0f3eeac213e973533068dd862d4a9f86fa15e",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1216,
+        "fri_samples": 256,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2048
+      },
+      "typed_size_estimate_bytes": 4136
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1120,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6108,
+        "sampled_opened_value_bytes": 8208,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2048
+      },
+      "component_sum_bytes": 18124,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 8208,
+        "queries_values": 6108,
+        "trace_decommitments": 2176
+      },
+      "json_minus_typed_size_bytes": 29574,
+      "json_over_typed_size_ratio": 2.631759,
+      "json_proof_size_bytes": 47698,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_single_head_seq8",
+      "proof_sha256": "c984047e967f3d6ccf2b6fb34688684899199133c1aa10d2796b5a43ede86453",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 8208,
+        "queries_values": 6108,
+        "trace_decommitments": 2176
+      },
+      "typed_size_estimate_bytes": 18124
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1120,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10608,
+        "sampled_opened_value_bytes": 14144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1536
+      },
+      "component_sum_bytes": 28016,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 14144,
+        "queries_values": 10608,
+        "trace_decommitments": 1632
+      },
+      "json_minus_typed_size_bytes": 33500,
+      "json_over_typed_size_ratio": 2.195745,
+      "json_proof_size_bytes": 61516,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_single_head_seq8",
+      "proof_sha256": "eb96c2551612ef4b226f8cf4897d449beba5b364e02be38309fa1668bf2e74fb",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 14144,
+        "queries_values": 10608,
+        "trace_decommitments": 1632
+      },
+      "typed_size_estimate_bytes": 28016
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 928,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 208,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 1664
+      },
+      "component_sum_bytes": 3752,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1120,
+        "fri_samples": 224,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 1792
+      },
+      "json_minus_typed_size_bytes": 9693,
+      "json_over_typed_size_ratio": 3.583422,
+      "json_proof_size_bytes": 13445,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d16_single_head_seq8",
+      "proof_sha256": "22a7beee3ede81edc58fb18f3ce29644efaf5b51d7400048369d10eee6b54469",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1120,
+        "fri_samples": 224,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 1792
+      },
+      "typed_size_estimate_bytes": 3752
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1120,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10716,
+        "sampled_opened_value_bytes": 14352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2048
+      },
+      "component_sum_bytes": 28876,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 14352,
+        "queries_values": 10716,
+        "trace_decommitments": 2176
+      },
+      "json_minus_typed_size_bytes": 35627,
+      "json_over_typed_size_ratio": 2.233793,
+      "json_proof_size_bytes": 64503,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_single_head_seq8",
+      "proof_sha256": "46a88043d6751296f9e12fb9b45af0d7e3a987a94120f81725d6266d23c2e18f",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1312,
+        "fri_samples": 272,
+        "oods_samples": 14352,
+        "queries_values": 10716,
+        "trace_decommitments": 2176
+      },
+      "typed_size_estimate_bytes": 28876
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1408,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 272,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6024,
+        "sampled_opened_value_bytes": 8032,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1632
+      },
+      "component_sum_bytes": 17752,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1632,
+        "fri_samples": 288,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 1728
+      },
+      "json_minus_typed_size_bytes": 29352,
+      "json_over_typed_size_ratio": 2.653447,
+      "json_proof_size_bytes": 47104,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq8",
+      "proof_sha256": "f4f1c692773d3c39def6090b52e96e11b7e18539d21351b4da7a180886d058bd",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1632,
+        "fri_samples": 288,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 1728
+      },
+      "typed_size_estimate_bytes": 17752
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1504,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 288,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2304
+      },
+      "component_sum_bytes": 5080,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2432
+      },
+      "json_minus_typed_size_bytes": 13024,
+      "json_over_typed_size_ratio": 3.56378,
+      "json_proof_size_bytes": 18104,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq8",
+      "proof_sha256": "1f071ec96b74a5023f62dda043734ed297c9426fd2b6388458589613aaf72e92",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2432
+      },
+      "typed_size_estimate_bytes": 5080
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1344,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6132,
+        "sampled_opened_value_bytes": 8240,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2048
+      },
+      "component_sum_bytes": 18436,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1568,
+        "fri_samples": 272,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 2176
+      },
+      "json_minus_typed_size_bytes": 31072,
+      "json_over_typed_size_ratio": 2.685398,
+      "json_proof_size_bytes": 49508,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq8",
+      "proof_sha256": "f2ffccc36305a1612c97e4f9c260102e11acdaba92d9de58bdf0a0d467ac91d0",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1568,
+        "fri_samples": 272,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 2176
+      },
+      "typed_size_estimate_bytes": 18436
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 256,
+        "fri_decommitment_merkle_path_bytes": 2240,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 352,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6024,
+        "sampled_opened_value_bytes": 8032,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2112
+      },
+      "component_sum_bytes": 19176,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2496,
+        "fri_samples": 368,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2208
+      },
+      "json_minus_typed_size_bytes": 33570,
+      "json_over_typed_size_ratio": 2.750626,
+      "json_proof_size_bytes": 52746,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_four_head_seq8",
+      "proof_sha256": "7e220945dd788703b2079f81a2d948f9d8bf8db7bf42129b5efce92de842512b",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2496,
+        "fri_samples": 368,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2208
+      },
+      "typed_size_estimate_bytes": 19176
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 256,
+        "fri_decommitment_merkle_path_bytes": 2080,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 336,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2688
+      },
+      "component_sum_bytes": 6120,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2336,
+        "fri_samples": 352,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2816
+      },
+      "json_minus_typed_size_bytes": 15663,
+      "json_over_typed_size_ratio": 3.559314,
+      "json_proof_size_bytes": 21783,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_four_head_seq8",
+      "proof_sha256": "ade92bf10c928ea12f50289b812ad02ae11fcabf941de2fb8fabe8f450738b07",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2336,
+        "fri_samples": 352,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2816
+      },
+      "typed_size_estimate_bytes": 6120
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 256,
+        "fri_decommitment_merkle_path_bytes": 1856,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 304,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6132,
+        "sampled_opened_value_bytes": 8240,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2432
+      },
+      "component_sum_bytes": 19412,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2112,
+        "fri_samples": 320,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 2560
+      },
+      "json_minus_typed_size_bytes": 34056,
+      "json_over_typed_size_ratio": 2.754379,
+      "json_proof_size_bytes": 53468,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_four_head_seq8",
+      "proof_sha256": "6c53af659a0197ff994de776e61bef3138aef4b14e3dc945625cb5d6e32753be",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2112,
+        "fri_samples": 320,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 2560
+      },
+      "typed_size_estimate_bytes": 19412
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2240,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 320,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6024,
+        "sampled_opened_value_bytes": 8032,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2016
+      },
+      "component_sum_bytes": 19080,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2528,
+        "fri_samples": 336,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2112
+      },
+      "json_minus_typed_size_bytes": 33312,
+      "json_over_typed_size_ratio": 2.745912,
+      "json_proof_size_bytes": 52392,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_eight_head_seq8",
+      "proof_sha256": "dfb2fdbacd603b4688e68b9b98f3e82ef6a881d17843a8f8316cc83c07d25414",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2528,
+        "fri_samples": 336,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2112
+      },
+      "typed_size_estimate_bytes": 19080
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2144,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 304,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2560
+      },
+      "component_sum_bytes": 6056,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2432,
+        "fri_samples": 320,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2688
+      },
+      "json_minus_typed_size_bytes": 15638,
+      "json_over_typed_size_ratio": 3.582232,
+      "json_proof_size_bytes": 21694,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_eight_head_seq8",
+      "proof_sha256": "9188899557d661a9426d76bcfadc06a8c01009a4b1ace81b9cc3d41c0abb8a26",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2432,
+        "fri_samples": 320,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2688
+      },
+      "typed_size_estimate_bytes": 6056
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2752,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 384,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6132,
+        "sampled_opened_value_bytes": 8240,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 3072
+      },
+      "component_sum_bytes": 21060,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3040,
+        "fri_samples": 400,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3200
+      },
+      "json_minus_typed_size_bytes": 38315,
+      "json_over_typed_size_ratio": 2.819326,
+      "json_proof_size_bytes": 59375,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_eight_head_seq8",
+      "proof_sha256": "9c30d91990257d18665f70ec70f868139c4cf5cedca117379e0b508be7b8cfce",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3040,
+        "fri_samples": 400,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3200
+      },
+      "typed_size_estimate_bytes": 21060
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 320,
+        "fri_decommitment_merkle_path_bytes": 3744,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 448,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6024,
+        "sampled_opened_value_bytes": 8032,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2688
+      },
+      "component_sum_bytes": 21416,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 4064,
+        "fri_samples": 464,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2784
+      },
+      "json_minus_typed_size_bytes": 39233,
+      "json_over_typed_size_ratio": 2.831948,
+      "json_proof_size_bytes": 60649,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_sixteen_head_seq8",
+      "proof_sha256": "5449aa409665bebf6e60dba13b96c1db6f7e2129c02fdd020b87c2cca45200f4",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 4064,
+        "fri_samples": 464,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2784
+      },
+      "typed_size_estimate_bytes": 21416
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 320,
+        "fri_decommitment_merkle_path_bytes": 3168,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 3200
+      },
+      "component_sum_bytes": 7848,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3488,
+        "fri_samples": 416,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3328
+      },
+      "json_minus_typed_size_bytes": 20214,
+      "json_over_typed_size_ratio": 3.575688,
+      "json_proof_size_bytes": 28062,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_sixteen_head_seq8",
+      "proof_sha256": "446bff2e8f7f18e6e281056ddacb7ef353bb98087aeffcd11c476922071c55c2",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3488,
+        "fri_samples": 416,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3328
+      },
+      "typed_size_estimate_bytes": 7848
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 320,
+        "fri_decommitment_merkle_path_bytes": 3744,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 448,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6132,
+        "sampled_opened_value_bytes": 8240,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 3584
+      },
+      "component_sum_bytes": 22660,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 4064,
+        "fri_samples": 464,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3712
+      },
+      "json_minus_typed_size_bytes": 42346,
+      "json_over_typed_size_ratio": 2.868756,
+      "json_proof_size_bytes": 65006,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_sixteen_head_seq8",
+      "proof_sha256": "23f64b6e0f6cc0f8dddf7e38979c90aa68e168e32c43bbb1cf809db4eae79516",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 4064,
+        "fri_samples": 464,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3712
+      },
+      "typed_size_estimate_bytes": 22660
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2304,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 320,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6024,
+        "sampled_opened_value_bytes": 8032,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1920
+      },
+      "component_sum_bytes": 19048,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2592,
+        "fri_samples": 336,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2016
+      },
+      "json_minus_typed_size_bytes": 33318,
+      "json_over_typed_size_ratio": 2.74916,
+      "json_proof_size_bytes": 52366,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq16",
+      "proof_sha256": "f5905f76363f61b2a171e44be1d9649b54e73d5c5148128d36d5e6999440cdfa",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2592,
+        "fri_samples": 336,
+        "oods_samples": 8032,
+        "queries_values": 6024,
+        "trace_decommitments": 2016
+      },
+      "typed_size_estimate_bytes": 19048
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2944,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 3200
+      },
+      "component_sum_bytes": 7592,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3328
+      },
+      "json_minus_typed_size_bytes": 19486,
+      "json_over_typed_size_ratio": 3.566649,
+      "json_proof_size_bytes": 27078,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq16",
+      "proof_sha256": "dc4bb1852ee155f87f652b6adc62d99d731e1d7b78cde56c539b18950050a1bb",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3328
+      },
+      "typed_size_estimate_bytes": 7592
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2944,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 6132,
+        "sampled_opened_value_bytes": 8240,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 3200
+      },
+      "component_sum_bytes": 21396,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3328
+      },
+      "json_minus_typed_size_bytes": 39106,
+      "json_over_typed_size_ratio": 2.827725,
+      "json_proof_size_bytes": 60502,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d8_two_head_seq16",
+      "proof_sha256": "a36f4aef0479f7ea01e16fbdd4aa15a1ad31a97c49630fc9e90b3a8012ad6de5",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 8240,
+        "queries_values": 6132,
+        "trace_decommitments": 3328
+      },
+      "typed_size_estimate_bytes": 21396
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1408,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 272,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10632,
+        "sampled_opened_value_bytes": 14176,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1632
+      },
+      "component_sum_bytes": 28504,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1632,
+        "fri_samples": 288,
+        "oods_samples": 14176,
+        "queries_values": 10632,
+        "trace_decommitments": 1728
+      },
+      "json_minus_typed_size_bytes": 45004,
+      "json_over_typed_size_ratio": 2.578866,
+      "json_proof_size_bytes": 73508,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq8",
+      "proof_sha256": "e866d6774148629f6d507613dbc13943668fc085b10df915cc3225ef1d1d698d",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1632,
+        "fri_samples": 288,
+        "oods_samples": 14176,
+        "queries_values": 10632,
+        "trace_decommitments": 1728
+      },
+      "typed_size_estimate_bytes": 28504
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1504,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 288,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2304
+      },
+      "component_sum_bytes": 5080,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2432
+      },
+      "json_minus_typed_size_bytes": 13008,
+      "json_over_typed_size_ratio": 3.56063,
+      "json_proof_size_bytes": 18088,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq8",
+      "proof_sha256": "64c3465d714e212a01bd63efbda69bdb92930104c05dd6eb0a6a8c1e48616e2e",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 2432
+      },
+      "typed_size_estimate_bytes": 5080
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1632,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 304,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10740,
+        "sampled_opened_value_bytes": 14384,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2432
+      },
+      "component_sum_bytes": 29908,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1856,
+        "fri_samples": 320,
+        "oods_samples": 14384,
+        "queries_values": 10740,
+        "trace_decommitments": 2560
+      },
+      "json_minus_typed_size_bytes": 48303,
+      "json_over_typed_size_ratio": 2.615053,
+      "json_proof_size_bytes": 78211,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq8",
+      "proof_sha256": "dbe8725ea19eed80d83d7b2d84fe41d92d4f5ec04b4c70cefb728f4596f250b9",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1856,
+        "fri_samples": 320,
+        "oods_samples": 14384,
+        "queries_values": 10740,
+        "trace_decommitments": 2560
+      },
+      "typed_size_estimate_bytes": 29908
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2944,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10632,
+        "sampled_opened_value_bytes": 14176,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2400
+      },
+      "component_sum_bytes": 31000,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 14176,
+        "queries_values": 10632,
+        "trace_decommitments": 2496
+      },
+      "json_minus_typed_size_bytes": 52330,
+      "json_over_typed_size_ratio": 2.688065,
+      "json_proof_size_bytes": 83330,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq16",
+      "proof_sha256": "613783b5ff31140c9b5a68eaa8f684de9fea8ae9ab68ee78c3bc92bd82d34e3a",
+      "role": "source",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 14176,
+        "queries_values": 10632,
+        "trace_decommitments": 2496
+      },
+      "typed_size_estimate_bytes": 31000
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2592,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 368,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 216,
+        "sampled_opened_value_bytes": 352,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2944
+      },
+      "component_sum_bytes": 6952,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2880,
+        "fri_samples": 384,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3072
+      },
+      "json_minus_typed_size_bytes": 17876,
+      "json_over_typed_size_ratio": 3.571346,
+      "json_proof_size_bytes": 24828,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq16",
+      "proof_sha256": "3923282749f8c4c2a5a4e829478ba1bdc60a2c73d4c4c32f35a6828c50620e0c",
+      "role": "sidecar",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2880,
+        "fri_samples": 384,
+        "oods_samples": 352,
+        "queries_values": 216,
+        "trace_decommitments": 3072
+      },
+      "typed_size_estimate_bytes": 6952
+    },
+    {
+      "component_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2592,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 368,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 10740,
+        "sampled_opened_value_bytes": 14384,
+        "trace_commitment_bytes": 128,
+        "trace_decommitment_merkle_path_bytes": 2944
+      },
+      "component_sum_bytes": 31508,
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2880,
+        "fri_samples": 384,
+        "oods_samples": 14384,
+        "queries_values": 10740,
+        "trace_decommitments": 3072
+      },
+      "json_minus_typed_size_bytes": 53360,
+      "json_over_typed_size_ratio": 2.693538,
+      "json_proof_size_bytes": 84868,
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+      "profile_id": "d16_two_head_seq16",
+      "proof_sha256": "b0b7dd137d048ff7a20e3a2a2d80f391bf5beabb0c93c16403aa53ec7f9ee559",
+      "role": "fused",
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 2880,
+        "fri_samples": 384,
+        "oods_samples": 14384,
+        "queries_values": 10740,
+        "trace_decommitments": 3072
+      },
+      "typed_size_estimate_bytes": 31508
+    }
+  ],
+  "schema": "zkai-attention-kv-stwo-fine-grained-component-schema-gate-v1",
+  "size_constants": {
+    "base_field_bytes": 4,
+    "blake2s_hash_bytes": 32,
+    "pcs_config_bytes": 40,
+    "proof_of_work_bytes": 8,
+    "secure_field_bytes": 16
+  },
+  "source_issues": [
+    469,
+    476,
+    531
+  ],
+  "stable_binary_serializer_status": "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED",
+  "timing_policy": "proof_size_estimate_only_not_timing_not_public_benchmark",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_fine_grained_component_schema_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fine_grained_component_schema_gate",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_component_schema -- <envelope.json>...",
+    "just gate-fast",
+    "just gate"
+  ]
+}

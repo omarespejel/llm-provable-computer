@@ -1,0 +1,4 @@
+role	json_proof_size_bytes	typed_size_estimate_bytes	json_over_typed_size_ratio	json_minus_typed_size_bytes	sampled_opened_value_bytes	queried_value_bytes	fri_layer_witness_bytes	fri_last_layer_poly_bytes	fri_commitment_bytes	fri_decommitment_merkle_path_bytes	trace_commitment_bytes	trace_decommitment_merkle_path_bytes	proof_of_work_bytes	config_bytes
+source	528303	201256	2.62503	327047	90656	67992	2896	144	2272	18528	864	17472	72	360
+sidecar	187827	52616	3.56977	135211	3168	1944	2832	144	2272	17888	1152	22784	72	360
+fused	563139	211380	2.664107	351759	92528	68964	2976	144	2272	19104	1152	23808	72	360
