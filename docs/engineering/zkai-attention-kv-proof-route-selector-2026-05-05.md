@@ -657,9 +657,10 @@ Softmax.
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
 | Mutations checked | 95 |
 | Mutations rejected | 95 |
+| Selector mutations rejected | `95 / 95` |
 | Selector commitment | `blake2b-256:c2be58d94ff3a75d3ade4c12ae347743e6a8fd27e4b8d344ae5669f611fd2877` |
 
-The mutation suite rejects source-contract drift, required-field removal, native
+The selector mutation suite rejects source-contract drift, required-field removal, native
 Stwo route removal, native Stwo statement drift, quantized Softmax receipt
 drift, d16 quantized Softmax receipt drift, d16 two-head quantized Softmax receipt
 drift, long-sequence, d16, d16 two-head, and d16 two-head long-sequence fused-route drift, external SNARK

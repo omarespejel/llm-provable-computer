@@ -755,6 +755,24 @@ class AttentionKvProofRouteSelectorGateTests(unittest.TestCase):
         finally:
             GATE.d16_two_head_quantized_softmax_receipt_summary = original_summary_fn
 
+    def test_d16_two_head_longseq_summary_uses_evidence_axes(self) -> None:
+        payload = GATE.load_d16_two_head_longseq_fused_softmax_payload()
+        cases = {
+            "evidence_key_width": ("key_width", 8),
+            "evidence_value_width": ("value_width", 8),
+            "evidence_head_count": ("head_count", 1),
+            "evidence_sequence_length_per_head": ("sequence_length_per_head", 8),
+        }
+
+        for evidence_field, (summary_field, tampered_value) in cases.items():
+            mutated = copy.deepcopy(payload)
+            mutated[evidence_field] = tampered_value
+            summary = GATE.d16_two_head_longseq_fused_softmax_summary(mutated)
+            with self.subTest(evidence_field=evidence_field):
+                self.assertEqual(summary[summary_field], tampered_value)
+                with self.assertRaisesRegex(GATE.AttentionKvRouteSelectorError, "receipt drift"):
+                    GATE.validate_d16_two_head_longseq_fused_softmax_receipt(summary)
+
     def test_multihead_quantized_softmax_rejects_trace_row_drift(self) -> None:
         payload = GATE.build_payload()
         summary = copy.deepcopy(payload["multihead_quantized_softmax_receipt"])
