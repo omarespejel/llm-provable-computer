@@ -182,6 +182,8 @@ def require_str(value: Any, label: str) -> str:
 def read_fused_proof_sections(profile: matrix.Profile) -> dict[str, Any]:
     module = profile.gate_module
     envelope = module.read_bounded_json(module.FUSED_ENVELOPE_JSON, module.MAX_FUSED_ENVELOPE_JSON_BYTES, profile.profile_id)
+    if not isinstance(envelope, dict):
+        raise FusedSoftmaxTableMicroprofileGateError(f"{profile.profile_id} fused envelope must be object")
     proof_backend = require_str(envelope.get("proof_backend"), f"{profile.profile_id} proof_backend")
     proof_backend_version = require_str(
         envelope.get("proof_backend_version"),
