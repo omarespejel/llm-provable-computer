@@ -112,15 +112,15 @@ TSV_COLUMNS = (
     "backend_internal_split_status",
 )
 EXPECTED_PROFILE_IDS = matrix.PROFILE_IDS
-EXPECTED_TOTAL_FUSED_PROOF_BYTES = 563_139
-EXPECTED_TOTAL_SECTION_PAYLOAD_BYTES = 562_014
-EXPECTED_TOTAL_WRAPPER_BYTES = 1_125
+EXPECTED_TOTAL_FUSED_PROOF_BYTES = 629_466
+EXPECTED_TOTAL_SECTION_PAYLOAD_BYTES = 628_216
+EXPECTED_TOTAL_WRAPPER_BYTES = 1_250
 EXPECTED_LARGEST_PROFILE_ID = "d16_two_head_seq16"
 EXPECTED_LARGEST_PROFILE_PROOF_BYTES = 84_868
-EXPECTED_TOTAL_LOOKUP_CLAIMS = 2_440
-EXPECTED_TOTAL_TRACE_ROWS = 3_200
-EXPECTED_TOTAL_SOURCE_PLUS_SIDECAR_BYTES = 716_130
-EXPECTED_TOTAL_FUSED_SAVINGS_BYTES = 152_991
+EXPECTED_TOTAL_LOOKUP_CLAIMS = 3_624
+EXPECTED_TOTAL_TRACE_ROWS = 5_248
+EXPECTED_TOTAL_SOURCE_PLUS_SIDECAR_BYTES = 814_142
+EXPECTED_TOTAL_FUSED_SAVINGS_BYTES = 184_676
 EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES = (
     "d8_single_head_seq8",
     "d16_single_head_seq8",
@@ -131,6 +131,18 @@ EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES = (
 )
 EXPECTED_MISSING_RELATION_WIDTH_PROFILES = tuple(
     profile_id for profile_id in EXPECTED_PROFILE_IDS if profile_id not in EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES
+)
+EXPECTED_PROOF_BACKEND_VERSIONS = (
+    "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-two-head-seq32-fused-bounded-softmax-table-logup-v1",
 )
 EXPECTED_MUTATION_NAMES = (
     "decision_relabeling",
@@ -149,10 +161,11 @@ EXPECTED_MUTATION_NAMES = (
     "trace_column_count_smuggling",
     "aggregate_total_smuggling",
     "largest_profile_smuggling",
+    "proof_backend_version_inventory_drift",
     "non_claim_removed",
     "unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 18
+EXPECTED_MUTATION_COUNT = 19
 
 
 class FusedSoftmaxTableMicroprofileGateError(ValueError):
@@ -556,10 +569,8 @@ def validate_aggregate(aggregate: Any) -> None:
         raise FusedSoftmaxTableMicroprofileGateError("largest profile drift")
     if aggregate["largest_profile_fused_proof_size_bytes"] != EXPECTED_LARGEST_PROFILE_PROOF_BYTES:
         raise FusedSoftmaxTableMicroprofileGateError("largest profile bytes drift")
-    if not isinstance(aggregate["proof_backend_versions"], list) or not aggregate["proof_backend_versions"]:
+    if tuple(aggregate["proof_backend_versions"]) != EXPECTED_PROOF_BACKEND_VERSIONS:
         raise FusedSoftmaxTableMicroprofileGateError("proof backend version inventory drift")
-    for version in aggregate["proof_backend_versions"]:
-        require_str(version, "proof_backend_version")
     if tuple(aggregate["exposed_relation_width_profiles"]) != EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES:
         raise FusedSoftmaxTableMicroprofileGateError("exposed relation-width profile drift")
     if tuple(aggregate["missing_relation_width_profiles"]) != EXPECTED_MISSING_RELATION_WIDTH_PROFILES:
@@ -697,6 +708,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["aggregate"]["total_fused_proof_size_bytes"] += 1
     elif name == "largest_profile_smuggling":
         out["aggregate"]["largest_profile_id"] = "d8_single_head_seq8"
+    elif name == "proof_backend_version_inventory_drift":
+        out["aggregate"]["proof_backend_versions"] = out["aggregate"]["proof_backend_versions"][:-1]
     elif name == "non_claim_removed":
         out["non_claims"] = out["non_claims"][:-1]
     elif name == "unknown_field_injection":

@@ -10,13 +10,14 @@ across the checked Stwo attention/table profiles?
 
 `GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO`
 
-The checked grid supports a bounded engineering claim: across the nine existing
+The checked grid supports a bounded engineering claim: across the ten existing
 native Stwo fused attention/table profiles, every fused proof object is smaller
 than the matched source-plus-LogUp-sidecar route under the fine-grained typed
 component estimate.
 
-This is **not** a full factorial benchmark. This gate does not include `seq32`,
-`d32`, all width/head/sequence crossings, timing, stable binary proof bytes,
+This is **not** a full factorial benchmark. This gate now includes one `seq32`
+sequence-axis extension, but it still does not include `d32`, all width/head/
+sequence crossings, timing, stable binary proof bytes,
 real-valued Softmax, full inference, recursion, or PCD.
 
 ## Evidence
@@ -30,7 +31,7 @@ real-valued Softmax, full inference, recursion, or PCD.
 - TSV evidence:
   `docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv`
 - Evidence commitment:
-  `blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8`
+  `blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d`
 
 The gate is derived from already checked artifacts:
 
@@ -43,35 +44,35 @@ The gate is derived from already checked artifacts:
 - Operator/session: Omar Espejel local research checkout with Codex-assisted
   gate implementation.
 - Repo/branch: `provable-transformer-vm`, branch
-  `issue-536-controlled-grid`, PR `#538`.
+  `issue-537-seq32`.
 - Base checked from: `origin/main` at
-  `0680c2440835160bcf52172fa786fa7a5a875e29`.
+  `432845269bae497c37c8d565a1bdee6b6b66d2d7`.
 - Rust/Stwo surface: Rust `nightly-2025-07-14`, Cargo.lock-pinned Stwo
   `2.2.0`, native `stwo-backend` proof artifacts already checked by the source
   gates.
 - Timing policy: `proof_component_size_accounting_only_not_timing_not_public_benchmark`.
-- Profile controls: nine checked profiles with lookup-claim counts from `52`
-  to `832` and trace rows from `64` to `1024`; row-level controls are in the
+- Profile controls: ten checked profiles with lookup-claim counts from `52`
+  to `1,184` and trace rows from `64` to `2,048`; row-level controls are in the
   JSON/TSV evidence.
 
 ## Result
 
-Across the nine checked profiles:
+Across the ten checked profiles:
 
 | Metric | Value |
 |---|---:|
-| Source + sidecar typed estimate | `253,872` bytes |
-| Fused typed estimate | `211,380` bytes |
-| Typed saving | `42,492` bytes |
-| Typed saving share | `16.7376%` |
-| Source + sidecar JSON proof bytes | `716,130` bytes |
-| Fused JSON proof bytes | `563,139` bytes |
-| JSON proof-byte saving | `152,991` bytes |
-| JSON proof-byte saving share | `21.3636%` |
-| Per-profile typed saving range | `9.1035%` to `23.2606%` |
+| Source + sidecar typed estimate | `285,584` bytes |
+| Fused typed estimate | `234,296` bytes |
+| Typed saving | `51,288` bytes |
+| Typed saving share | `17.9590%` |
+| Source + sidecar JSON proof bytes | `814,142` bytes |
+| Fused JSON proof bytes | `629,466` bytes |
+| JSON proof-byte saving | `184,676` bytes |
+| JSON proof-byte saving share | `22.6835%` |
+| Per-profile typed saving range | `9.1035%` to `27.7371%` |
 
-All nine checked profiles save typed component bytes. The strongest per-profile
-typed saving is the `d8_four_head_seq8` route at `23.2606%`. The weakest is the
+All ten checked profiles save typed component bytes. The strongest per-profile
+typed saving is now the `d8_two_head_seq32` route at `27.7371%`. The weakest is the
 `d16_single_head_seq8` route at `9.1035%`.
 
 ## Where the saving comes from
@@ -80,16 +81,16 @@ The typed saving is dominated by shared opening/decommitment structure:
 
 | Component family | Saving | Share of typed saving |
 |---|---:|---:|
-| FRI + trace Merkle path bytes | `33,760` bytes | `79.4502%` |
-| Opening plumbing including commitments | `36,896` bytes | `86.8305%` |
+| FRI + trace Merkle path bytes | `41,312` bytes | `80.5491%` |
+| Opening plumbing including commitments | `44,896` bytes | `87.5370%` |
 
 The largest single component bucket is:
 
-`fri_decommitment_merkle_path_bytes = 17,312` bytes.
+`fri_decommitment_merkle_path_bytes = 21,824` bytes.
 
 The next largest bucket is:
 
-`trace_decommitment_merkle_path_bytes = 16,448` bytes.
+`trace_decommitment_merkle_path_bytes = 19,488` bytes.
 
 ## Interpretation
 
@@ -111,10 +112,10 @@ before any higher-level composition pattern is applied.
 
 This gate may be cited internally as:
 
-> Across nine checked native Stwo attention/table profiles, fusing attention
+> Across ten checked native Stwo attention/table profiles, fusing attention
 > arithmetic with Softmax-table LogUp membership reduced fine-grained typed
-> proof-component size by `9.1035%` to `23.2606%` per profile, with a
-> `42,492`-byte (`16.7376%`) aggregate saving. The saving is dominated by
+> proof-component size by `9.1035%` to `27.7371%` per profile, with a
+> `51,288`-byte (`17.9590%`) aggregate saving. The saving is dominated by
 > shared FRI and trace opening/decommitment structure.
 
 Do not cite it as:
@@ -131,15 +132,14 @@ Do not cite it as:
 
 The next step for a stronger paper claim is to add:
 
-1. `seq32` source/sidecar/fused proof artifacts;
-2. `d32` source/sidecar/fused proof artifacts;
-3. a fuller crossing of width, head count, and sequence length;
-4. timing only after the proof-object grid is stable.
+1. `d32` source/sidecar/fused proof artifacts;
+2. a fuller crossing of width, head count, and sequence length;
+3. timing only after the proof-object grid is stable.
 
-This follow-up is tracked as issue `#537`.
-
-If these controls preserve positive fused savings, the paper claim can move
-from "checked profile family" to a stronger scaling statement.
+Issue `#537` closes the first follow-up by adding the `seq32` sequence-axis
+extension. If `d32` and additional crossings preserve positive fused savings,
+the paper claim can move from "checked profile family" to a stronger scaling
+statement.
 
 ## Validation
 

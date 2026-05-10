@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-10
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `ee81a6384166ae20176308aea24dce71e9aa8eb4`
+Mainline reference at refresh: `432845269bae497c37c8d565a1bdee6b6b66d2d7`
 
 ## Immediate orientation
 
@@ -407,21 +407,22 @@ Tablero boundary.
   long-sequence/d16 sidecar and fused validators reject the paired malformed
   object. This is validator hardening only; see
   `docs/engineering/zkai-attention-kv-softmax-paired-source-validation-audit-2026-05-09.md`.
-- Issue `#505` plus issues `#514`, `#519`, `#521`, and `#525` record the
+- Issue `#505` plus issues `#514`, `#519`, `#521`, `#525`, and `#537` record the
   controlled fused Softmax-table route matrix across width, head-count,
   sequence-length, combined width/head, and combined width/head/sequence axes.
-  The checked matrix covers nine native Stwo fused rows: d8 single-head seq8,
+  The checked matrix covers ten native Stwo fused rows: d8 single-head seq8,
   d16 single-head seq8, d8 two-head seq8, d8 four-head seq8, d8 eight-head
-  seq8, d8 sixteen-head seq8, d8 two-head seq16, d16 two-head seq8, and d16
-  two-head seq16. Matched source-plus-sidecar controls now exist for all nine
-  rows. The new d16 two-head seq16 route checks `336` lookup claims over `512`
-  trace rows with an `84868`-byte fused proof, `23290` bytes smaller than the
-  matched source-plus-sidecar control (`108158` bytes, `0.784667x`). The matrix
-  rejects `26 / 26` drift, provenance-drift, and overclaim mutations and
+  seq8, d8 sixteen-head seq8, d8 two-head seq16, d8 two-head seq32, d16
+  two-head seq8, and d16 two-head seq16. Matched source-plus-sidecar controls
+  now exist for all ten rows. The new d8 two-head seq32 route checks `1184`
+  lookup claims over `2048` trace rows with a `66327`-byte fused proof,
+  `31685` bytes smaller than the matched source-plus-sidecar control (`98012`
+  bytes, `0.676723x`). The matrix rejects `28 / 28` drift, provenance-drift,
+  and overclaim mutations and
   remains not timing, not real-valued Softmax, not full inference, and not
   recursion/PCD; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
-  and `docs/engineering/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05-10.md`.
+  and `docs/engineering/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05-10.md`.
   Issue `#524` promotes the issue `#521` d16 two-head fused proof into an
   implementation-exact quantized Softmax-table receipt: the checked route binds
   key/value width `16`, head count `2`, eight steps per head, `104` lookup
@@ -434,35 +435,35 @@ Tablero boundary.
   recursion, or PCD; see
   `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`.
   Issue `#526` turns that matrix into a checked fused proof-size
-  microprofile. Across the same nine profiles, the gate records `563139` total
-  fused proof bytes, `2440` lookup claims, `3200` trace rows, and top-level
-  proof-byte buckets dominated by query material (`382029` bytes) and opening
-  material (`174664` bytes). It explicitly records a NO-GO for backend-internal
+  microprofile. Across the same ten profiles, the gate records `629466` total
+  fused proof bytes, `3624` lookup claims, `5248` trace rows, and top-level
+  proof-byte buckets dominated by query material (`417575` bytes) and opening
+  material (`204728` bytes). It explicitly records a NO-GO for backend-internal
   source-arithmetic-vs-LogUp column/byte attribution because the current fused
   gates do not expose stable component counters; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`.
   Issue `#531` extends that result into a matched source-plus-sidecar versus
-  fused proof-section delta. Across the same nine profiles, source proofs total
-  `528303` bytes, LogUp sidecar proofs total `187827` bytes, fused proofs total
-  `563139` bytes, and fusion saves `152991` bytes. The checked delta shows
-  `141125` saved bytes (`92.244%`) in the opening bucket, split mainly across
-  `fri_proof` (`82882`) and `decommitments` (`58243`). This is a GO for
+  fused proof-section delta. Across the same ten profiles, source proofs total
+  `591286` bytes, LogUp sidecar proofs total `222856` bytes, fused proofs total
+  `629466` bytes, and fusion saves `184676` bytes. The checked delta shows
+  `171328` saved bytes (`92.7722%`) in the opening bucket, split mainly across
+  `fri_proof` (`102304`) and `decommitments` (`69024`). This is a GO for
   serialized proof-section deltas and still a NO-GO for backend-internal
   source-arithmetic-vs-lookup attribution; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`.
   Issue `#476` follows up with Stwo's typed `StarkProof::size_estimate()` hook:
-  source-plus-sidecar proofs total `253872` typed-estimate bytes, fused proofs
-  total `211380`, and fusion still saves `42492` typed-estimate bytes. The
-  largest typed saving buckets are FRI decommitments (`19584`) and trace
-  decommitments (`17312`). This is typed Stwo size-estimate accounting, not
+  source-plus-sidecar proofs total `285584` typed-estimate bytes, fused proofs
+  total `234296`, and fusion still saves `51288` typed-estimate bytes. The
+  largest typed saving buckets are FRI decommitments (`21824`) and trace
+  decommitments (`19488`). This is typed Stwo size-estimate accounting, not
   stable binary proof serialization and not fine-grained binary commitment or
   FRI-witness attribution; see
   `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
   Issue `#534` follows with a public-field traversal of Stwo `2.2.0`
-  `StarkProof` internals. Across the same nine matched profiles, fusion still
-  saves `42492` typed-estimate bytes, now split into fine-grained public-field
+  `StarkProof` internals. Across the same ten matched profiles, fusion still
+  saves `51288` typed-estimate bytes, now split into fine-grained public-field
   component buckets. The largest saved buckets are FRI decommitment Merkle paths
-  (`17312`) and trace decommitment Merkle paths (`16448`). This is a GO for a
+  (`21824`) and trace decommitment Merkle paths (`19488`). This is a GO for a
   fine-grained typed component schema and still a NO-GO for stable canonical
   verifier-facing binary proof bytes or backend-internal source-vs-lookup
   attribution; see

@@ -33,6 +33,7 @@ from scripts import zkai_attention_kv_four_head_fused_softmax_table_native_gate 
 from scripts import zkai_attention_kv_sixteen_head_fused_softmax_table_native_gate as sixteen_head_fused
 from scripts import zkai_attention_kv_two_head_fused_softmax_table_native_gate as two_head_fused
 from scripts import zkai_attention_kv_two_head_longseq_fused_softmax_table_native_gate as longseq_fused
+from scripts import zkai_attention_kv_two_head_seq32_fused_softmax_table_native_gate as seq32_fused
 
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json"
@@ -56,8 +57,6 @@ MATCHED_COMPARATOR_STATUS = "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_REC
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_fused_softmax_table_route_matrix_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_fused_softmax_table_route_matrix_gate",
-    "just gate-fast",
-    "just gate",
 )
 
 TSV_COLUMNS = (
@@ -96,6 +95,7 @@ EXPECTED_MUTATION_NAMES = (
     "d16_width_metric_smuggling",
     "two_head_head_count_metric_smuggling",
     "longseq_steps_metric_smuggling",
+    "seq32_steps_metric_smuggling",
     "fused_proof_size_metric_smuggling",
     "matched_ratio_metric_smuggling",
     "eight_head_comparator_metric_smuggling",
@@ -105,6 +105,7 @@ EXPECTED_MUTATION_NAMES = (
     "axis_summary_width_ratio_drift",
     "axis_summary_head_axis_ratio_drift",
     "axis_summary_sequence_ratio_drift",
+    "axis_summary_sequence_seq32_ratio_drift",
     "axis_summary_combined_axis_ratio_drift",
     "axis_summary_combined_longseq_axis_ratio_drift",
     "unknown_field_injection",
@@ -220,6 +221,19 @@ PROFILES = (
         expected_value_width=8,
         expected_head_count=2,
         expected_steps_per_head=16,
+        comparator_required=True,
+    ),
+    Profile(
+        profile_id="d8_two_head_seq32",
+        axis_role="sequence_axis_extension",
+        label="d8 two-head seq32 fused Softmax-table route",
+        gate_module=seq32_fused,
+        gate_json=seq32_fused.JSON_OUT,
+        source_input_json=seq32_fused.SOURCE_INPUT_JSON,
+        expected_key_width=8,
+        expected_value_width=8,
+        expected_head_count=2,
+        expected_steps_per_head=32,
         comparator_required=True,
     ),
     Profile(
@@ -441,6 +455,7 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     eight = row_by_id(rows, "d8_eight_head_seq8")
     sixteen = row_by_id(rows, "d8_sixteen_head_seq8")
     longseq = row_by_id(rows, "d8_two_head_seq16")
+    seq32 = row_by_id(rows, "d8_two_head_seq32")
     d16_two = row_by_id(rows, "d16_two_head_seq8")
     d16_two_longseq = row_by_id(rows, "d16_two_head_seq16")
     return {
@@ -487,12 +502,42 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "sequence_axis_two_head_d8": {
             "held_constant": "key_width_8_value_width_8_head_count_2",
-            "steps_per_head_ratio": ratio(longseq["steps_per_head"], two["steps_per_head"]),
-            "lookup_claim_ratio": ratio(longseq["lookup_claims"], two["lookup_claims"]),
-            "trace_row_ratio": ratio(longseq["trace_rows"], two["trace_rows"]),
-            "fused_proof_size_ratio": ratio(longseq["fused_proof_size_bytes"], two["fused_proof_size_bytes"]),
-            "source_plus_sidecar_ratio": ratio(
+            "profile_ids": ["d8_two_head_seq8", "d8_two_head_seq16", "d8_two_head_seq32"],
+            "steps_per_head": [two["steps_per_head"], longseq["steps_per_head"], seq32["steps_per_head"]],
+            "lookup_claims": [two["lookup_claims"], longseq["lookup_claims"], seq32["lookup_claims"]],
+            "trace_rows": [two["trace_rows"], longseq["trace_rows"], seq32["trace_rows"]],
+            "fused_proof_size_bytes": [
+                two["fused_proof_size_bytes"],
+                longseq["fused_proof_size_bytes"],
+                seq32["fused_proof_size_bytes"],
+            ],
+            "source_plus_sidecar_raw_proof_bytes": [
+                two["source_plus_sidecar_raw_proof_bytes"],
+                longseq["source_plus_sidecar_raw_proof_bytes"],
+                seq32["source_plus_sidecar_raw_proof_bytes"],
+            ],
+            "fused_to_source_plus_sidecar_ratios": [
+                two["fused_to_source_plus_sidecar_ratio"],
+                longseq["fused_to_source_plus_sidecar_ratio"],
+                seq32["fused_to_source_plus_sidecar_ratio"],
+            ],
+            "seq8_to_seq16_steps_ratio": ratio(longseq["steps_per_head"], two["steps_per_head"]),
+            "seq8_to_seq16_lookup_claim_ratio": ratio(longseq["lookup_claims"], two["lookup_claims"]),
+            "seq8_to_seq16_trace_row_ratio": ratio(longseq["trace_rows"], two["trace_rows"]),
+            "seq8_to_seq16_fused_proof_size_ratio": ratio(
+                longseq["fused_proof_size_bytes"], two["fused_proof_size_bytes"]
+            ),
+            "seq8_to_seq16_source_plus_sidecar_ratio": ratio(
                 longseq["source_plus_sidecar_raw_proof_bytes"], two["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "seq16_to_seq32_steps_ratio": ratio(seq32["steps_per_head"], longseq["steps_per_head"]),
+            "seq16_to_seq32_lookup_claim_ratio": ratio(seq32["lookup_claims"], longseq["lookup_claims"]),
+            "seq16_to_seq32_trace_row_ratio": ratio(seq32["trace_rows"], longseq["trace_rows"]),
+            "seq16_to_seq32_fused_proof_size_ratio": ratio(
+                seq32["fused_proof_size_bytes"], longseq["fused_proof_size_bytes"]
+            ),
+            "seq16_to_seq32_source_plus_sidecar_ratio": ratio(
+                seq32["source_plus_sidecar_raw_proof_bytes"], longseq["source_plus_sidecar_raw_proof_bytes"]
             ),
         },
         "combined_width_head_axis_seq8": {
@@ -631,6 +676,10 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
             lambda v: row_by_id(v["route_rows"], "d8_two_head_seq16").__setitem__("steps_per_head", 8),
         ),
         (
+            "seq32_steps_metric_smuggling",
+            lambda v: row_by_id(v["route_rows"], "d8_two_head_seq32").__setitem__("steps_per_head", 16),
+        ),
+        (
             "fused_proof_size_metric_smuggling",
             lambda v: row_by_id(v["route_rows"], "d8_four_head_seq8").__setitem__("fused_proof_size_bytes", 1),
         ),
@@ -670,7 +719,15 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
         ),
         (
             "axis_summary_sequence_ratio_drift",
-            lambda v: v["axis_summary"]["sequence_axis_two_head_d8"].__setitem__("lookup_claim_ratio", 2.0),
+            lambda v: v["axis_summary"]["sequence_axis_two_head_d8"].__setitem__(
+                "seq8_to_seq16_lookup_claim_ratio", 2.0
+            ),
+        ),
+        (
+            "axis_summary_sequence_seq32_ratio_drift",
+            lambda v: v["axis_summary"]["sequence_axis_two_head_d8"].__setitem__(
+                "seq16_to_seq32_lookup_claim_ratio", 2.0
+            ),
         ),
         (
             "axis_summary_combined_axis_ratio_drift",

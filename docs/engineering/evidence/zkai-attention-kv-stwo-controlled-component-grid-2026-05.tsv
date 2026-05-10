@@ -6,5 +6,6 @@ d8_four_head_seq8	head_axis_extension	8	8	4	8	208	256	25296	19412	5884	0.232606	
 d8_eight_head_seq8	head_axis_extension	8	8	8	8	416	512	25136	21060	4076	0.162158	74086	59375	14711	0.198567	fri_decommitment_merkle_path_bytes	1632	3136	3520
 d8_sixteen_head_seq8	head_axis_extension	8	8	16	8	832	1024	29264	22660	6604	0.22567	88711	65006	23705	0.267216	fri_decommitment_merkle_path_bytes	3168	5472	5888
 d8_two_head_seq16	sequence_axis	8	8	2	16	336	512	26640	21396	5244	0.196847	79444	60502	18942	0.238432	fri_decommitment_merkle_path_bytes	2304	4224	4608
+d8_two_head_seq32	sequence_axis_extension	8	8	2	32	1184	2048	31712	22916	8796	0.277371	98012	66327	31685	0.323277	fri_decommitment_merkle_path_bytes	4512	7552	8000
 d16_two_head_seq8	combined_width_head_axis	16	16	2	8	104	128	33584	29908	3676	0.109457	91596	78211	13385	0.146131	trace_decommitment_merkle_path_bytes	1504	2784	3104
 d16_two_head_seq16	combined_width_head_sequence_axis	16	16	2	16	336	512	37952	31508	6444	0.169793	108158	84868	23290	0.215333	fri_decommitment_merkle_path_bytes	2944	5344	5728

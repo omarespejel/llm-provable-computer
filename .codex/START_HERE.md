@@ -56,20 +56,22 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 50. `docs/engineering/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05-08.md`
 51. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
 52. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`
-53. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
-54. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
-55. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`
-56. `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`
-57. `docs/engineering/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05-10.md`
-58. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-59. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
-60. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
-61. `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`
-62. `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`
-63. `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`
-64. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
-65. `docs/engineering/reproducibility.md`
-66. `git status --short --branch`
+53. `docs/engineering/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05-10.md`
+54. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
+55. `docs/engineering/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05-08.md`
+56. `docs/engineering/zkai-attention-kv-multihead-quantized-softmax-receipt-gate-2026-05-09.md`
+57. `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`
+58. `docs/engineering/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05-10.md`
+59. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+60. `docs/engineering/zkai-attention-kv-softmax-denominator-rounding-edge-corpus-2026-05-09.md`
+61. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+62. `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`
+63. `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`
+64. `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`
+65. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
+66. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
+67. `docs/engineering/reproducibility.md`
+68. `git status --short --branch`
 
 ## What this repository is now
 
@@ -390,6 +392,18 @@ This repository currently has three live lanes.
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
     and
     `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-gate-2026-05-08.md`.
+
+  - Issue `#537` extends the same fixed `d=8`, two-head sequence axis to
+    `seq32`: the native Stwo source proof checks `1184` lookup claims over a
+    `2048`-row trace, the matched source-plus-sidecar route is `98012` raw
+    proof bytes, and the fused proof is `66327` raw bytes inside a `2448150`
+    byte checked envelope. The fused route saves `31685` bytes against the
+    matched source-plus-sidecar control (`0.676723x`) and rejects the checked
+    source, sidecar, fused, route-matrix, microprofile, section-delta,
+    fine-grained component, and controlled-grid mutations. This is one
+    sequence-axis control point, not a full factorial grid, not timing, not
+    real-valued Softmax, not full inference, and not recursion/PCD; see
+    `docs/engineering/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05-10.md`.
 
   - The attention/KV proof-route selector is now a narrow GO for fourteen
     proof-backed route families: the native Stwo d8 masked-sequence AIR proof,
