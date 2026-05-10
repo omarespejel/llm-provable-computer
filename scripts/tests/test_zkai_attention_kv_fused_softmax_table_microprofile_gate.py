@@ -62,11 +62,20 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
                 "json_wrapper_bytes": 1125,
             },
         )
+        self.assertIn(
+            "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+            aggregate["proof_backend_versions"],
+        )
 
     def test_profile_rows_bind_source_artifacts_and_exposed_missing_relation_widths(self):
         rows = {row["profile_id"]: row for row in self.payload["profile_rows"]}
 
         baseline = rows["d8_single_head_seq8"]
+        self.assertEqual(baseline["proof_backend"], "stwo")
+        self.assertEqual(
+            baseline["proof_backend_version"],
+            "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
+        )
         self.assertEqual(baseline["lookup_relation_width"], 2)
         self.assertEqual(baseline["lookup_relation_width_status"], gate.RELATION_WIDTH_STATUS_EXPOSED)
         self.assertEqual(baseline["proof_section_bytes"]["sampled_values"], 20546)
@@ -199,6 +208,23 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "trace-row total drift"):
                 gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
+
+    def test_write_tsv_validates_header_and_values_before_replacing(self):
+        original_to_tsv = gate.to_tsv
+        valid_tsv = original_to_tsv(self.payload)
+
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                gate.to_tsv = lambda *_args, **_kwargs: valid_tsv.replace("profile_id", "profile", 1)
+                with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "TSV header drift"):
+                    gate.write_tsv(gate.pathlib.Path(tmp) / "bad-header.tsv", self.payload)
+
+            with tempfile.TemporaryDirectory() as tmp:
+                gate.to_tsv = lambda *_args, **_kwargs: valid_tsv.replace("47698", "47699", 1)
+                with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "TSV row projection drift"):
+                    gate.write_tsv(gate.pathlib.Path(tmp) / "bad-value.tsv", self.payload)
+        finally:
+            gate.to_tsv = original_to_tsv
 
 
 if __name__ == "__main__":
