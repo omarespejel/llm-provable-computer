@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-10
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `248f5e22856e7ada698b0effd285107f2241334f`
+Mainline reference at refresh: `ee81a6384166ae20176308aea24dce71e9aa8eb4`
 
 ## Immediate orientation
 
@@ -450,6 +450,14 @@ Tablero boundary.
   serialized proof-section deltas and still a NO-GO for backend-internal
   source-arithmetic-vs-lookup attribution; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`.
+  Issue `#476` follows up with Stwo's typed `StarkProof::size_estimate()` hook:
+  source-plus-sidecar proofs total `253872` typed-estimate bytes, fused proofs
+  total `211380`, and fusion still saves `42492` typed-estimate bytes. The
+  largest typed saving buckets are FRI decommitments (`19584`) and trace
+  decommitments (`17312`). This is typed Stwo size-estimate accounting, not
+  stable binary proof serialization and not fine-grained binary commitment or
+  FRI-witness attribution; see
+  `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow

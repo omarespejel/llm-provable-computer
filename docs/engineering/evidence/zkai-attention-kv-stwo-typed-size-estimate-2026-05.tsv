@@ -1,0 +1,4 @@
+role	json_proof_size_bytes	typed_size_estimate_bytes	json_over_typed_size_ratio	json_minus_typed_size_bytes	oods_samples	queries_values	fri_samples	fri_decommitments	trace_decommitments	fixed_unclassified_overhead
+source	528303	201256	2.62503	327047	90656	67992	3040	20800	18336	432
+sidecar	187827	52616	3.56977	135211	3168	1944	2976	20160	23936	432
+fused	563139	211380	2.664107	351759	92528	68964	3120	21376	24960	432

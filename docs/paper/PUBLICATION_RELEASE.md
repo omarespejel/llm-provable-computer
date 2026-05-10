@@ -48,7 +48,8 @@ It supports the following presentation posture:
   control, plus a combined d16 two-head long-sequence fused proof object with a
   matched source-plus-sidecar control and checked top-level proof-byte
   microprofile and matched proof-section delta showing that `141,125` of
-  `152,991` saved bytes are in the opening bucket, plus an implementation-exact d16
+  `152,991` saved bytes are in the opening bucket, plus an engineering-only
+  Stwo typed-size estimate follow-up kept outside the paper result table, plus an implementation-exact d16
   quantized Softmax-table receipt with denominator/rounding edge-corpus hardening
   (not exact Softmax, not implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
@@ -75,7 +76,9 @@ It does **not** support the following claims:
   proof-byte accounting, not binary PCS/FRI internals or source-vs-lookup
   column attribution. The matched section-delta result explains exposed
   source-plus-sidecar versus fused proof-section savings, not backend-internal
-  source-arithmetic-vs-lookup byte attribution.
+  source-arithmetic-vs-lookup byte attribution. The Stwo typed-size estimate
+  follow-up uses Stwo's own `StarkProof` estimate hook; it is still not stable
+  canonical verifier-facing binary proof bytes.
 
 ## Package hygiene
 

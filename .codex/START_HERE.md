@@ -66,8 +66,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 60. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
 61. `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`
 62. `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`
-63. `docs/engineering/reproducibility.md`
-64. `git status --short --branch`
+63. `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`
+64. `docs/engineering/reproducibility.md`
+65. `git status --short --branch`
 
 ## What this repository is now
 
