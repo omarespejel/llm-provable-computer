@@ -991,6 +991,16 @@ evidence, not stable binary proof serialization, not fine-grained binary
 commitment or FRI-witness attribution, and not backend-internal
 source-vs-lookup column attribution. It is anchored to
 `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
+A controlled component-grid follow-up checks the fine-grained typed estimate
+across the same nine native Stwo attention/table profiles. Every checked fused
+route saves typed component bytes versus the matched source-plus-LogUp-sidecar
+route, with per-profile savings from `9.1035%` to `23.2606%` and an aggregate
+typed saving of `42492` bytes (`16.7376%`). The dominant mechanism is shared
+opening/decommitment structure: FRI plus trace Merkle-path savings account for
+`33760` bytes (`79.4502%`) of the typed saving. This remains engineering-only
+evidence, not a full factorial grid, not timing evidence, and not stable binary
+proof serialization. It is anchored to
+`docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`.
 A separate two-head
 long-sequence route keeps `d=8` and two heads fixed while increasing per-head
 sequence length to sixteen steps; it checks `336` lookup claims over a

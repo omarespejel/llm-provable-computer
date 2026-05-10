@@ -1,0 +1,10 @@
+profile_id	axis_role	key_width	value_width	head_count	steps_per_head	lookup_claims	trace_rows	source_plus_sidecar_typed_size_bytes	fused_typed_size_bytes	typed_savings_bytes	typed_saving_share	source_plus_sidecar_json_proof_size_bytes	fused_json_proof_size_bytes	json_savings_bytes	json_saving_share	dominant_component_saving_bucket	dominant_component_saving_bytes	fri_trace_merkle_path_savings_bytes	opening_plumbing_savings_bytes
+d8_single_head_seq8	baseline	8	8	1	8	52	64	21400	18124	3276	0.153084	59437	47698	11739	0.197503	trace_decommitment_merkle_path_bytes	1408	2432	2720
+d16_single_head_seq8	width_axis	16	16	1	8	52	64	31768	28876	2892	0.091035	74961	64503	10458	0.139513	trace_decommitment_merkle_path_bytes	1152	2080	2368
+d8_two_head_seq8	head_axis	8	8	2	8	104	128	22832	18436	4396	0.192537	65208	49508	15700	0.240768	trace_decommitment_merkle_path_bytes	1888	3456	3776
+d8_four_head_seq8	head_axis_extension	8	8	4	8	208	256	25296	19412	5884	0.232606	74529	53468	21061	0.282588	fri_decommitment_merkle_path_bytes	2464	4832	5184
+d8_eight_head_seq8	head_axis_extension	8	8	8	8	416	512	25136	21060	4076	0.162158	74086	59375	14711	0.198567	fri_decommitment_merkle_path_bytes	1632	3136	3520
+d8_sixteen_head_seq8	head_axis_extension	8	8	16	8	832	1024	29264	22660	6604	0.22567	88711	65006	23705	0.267216	fri_decommitment_merkle_path_bytes	3168	5472	5888
+d8_two_head_seq16	sequence_axis	8	8	2	16	336	512	26640	21396	5244	0.196847	79444	60502	18942	0.238432	fri_decommitment_merkle_path_bytes	2304	4224	4608
+d16_two_head_seq8	combined_width_head_axis	16	16	2	8	104	128	33584	29908	3676	0.109457	91596	78211	13385	0.146131	trace_decommitment_merkle_path_bytes	1504	2784	3104
+d16_two_head_seq16	combined_width_head_sequence_axis	16	16	2	16	336	512	37952	31508	6444	0.169793	108158	84868	23290	0.215333	fri_decommitment_merkle_path_bytes	2944	5344	5728
