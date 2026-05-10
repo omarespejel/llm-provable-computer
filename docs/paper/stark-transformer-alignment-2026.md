@@ -1518,10 +1518,21 @@ is still not backend-internal source-arithmetic-versus-lookup attribution.
 
 A stricter engineering-only typed-size follow-up uses Stwo's own
 `StarkProof::size_estimate()` and `size_breakdown_estimate()` hooks rather than
-JSON section lengths. It supports the same narrow interpretation, but it remains
-outside this paper's public result table: it is typed Stwo size-estimate
-evidence, not stable binary proof bytes, not fine-grained binary commitment or
-FRI-witness attribution, and not semantic source-vs-lookup column attribution.
+JSON section lengths. The controlled component-grid follow-up makes the result
+less dependent on one aggregate row: across the nine checked native Stwo
+attention/table profiles, every fused proof object is smaller than the matched
+source-plus-LogUp-sidecar route under the fine-grained typed component estimate.
+The aggregate typed saving is `42492` bytes (`16.7376%`), with per-profile
+savings ranging from `9.1035%` to `23.2606%`. The saving is dominated by shared
+FRI and trace opening/decommitment structure: FRI plus trace Merkle-path savings
+account for `33760` bytes (`79.4502%`) of the typed saving, and opening plumbing
+including commitments accounts for `36896` bytes (`86.8305%`).
+
+This remains outside this paper's public result table: it is typed Stwo
+size-estimate evidence over a checked profile family, not stable binary proof
+bytes, not a full factorial `d8/d16/d32` by head-count by sequence-length grid,
+not fine-grained binary commitment or FRI-witness attribution, and not semantic
+source-vs-lookup column attribution.
 
 The fused ladder remains opt-in native Stwo backend evidence and bounded table
 evidence, not default-lane shipped behavior, not real-valued Softmax, not

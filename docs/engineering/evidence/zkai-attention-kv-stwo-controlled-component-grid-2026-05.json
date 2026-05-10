@@ -1,0 +1,554 @@
+{
+  "aggregate": {
+    "all_profiles_save_typed_components": true,
+    "fri_trace_merkle_path_savings_bytes_total": 33760,
+    "fri_trace_merkle_path_share_of_typed_savings": 0.794502,
+    "fused_json_proof_size_bytes_total": 563139,
+    "fused_typed_size_bytes_total": 211380,
+    "json_saving_share_total": 0.213636,
+    "json_savings_bytes_total": 152991,
+    "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+    "largest_component_saving_bucket_bytes": 17312,
+    "max_json_saving_share": 0.282588,
+    "max_typed_saving_share": 0.232606,
+    "mean_json_saving_share": 0.214006,
+    "mean_typed_saving_share": 0.170354,
+    "min_json_saving_share": 0.139513,
+    "min_typed_saving_share": 0.091035,
+    "opening_plumbing_savings_bytes_total": 36896,
+    "opening_plumbing_share_of_typed_savings": 0.868305,
+    "profiles_checked": 9,
+    "source_plus_sidecar_json_proof_size_bytes_total": 716130,
+    "source_plus_sidecar_typed_size_bytes_total": 253872,
+    "typed_saving_share_total": 0.167376,
+    "typed_savings_bytes_total": 42492
+  },
+  "all_mutations_rejected": true,
+  "axis_summary": {
+    "combined_width_head_sequence_axis": {
+      "mean_typed_saving_share": 0.139625,
+      "profile_ids": [
+        "d16_two_head_seq8",
+        "d16_two_head_seq16"
+      ],
+      "typed_saving_shares": [
+        0.109457,
+        0.169793
+      ]
+    },
+    "head_axis_d8_seq8": {
+      "head_counts": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "max_typed_saving_share": 0.232606,
+      "mean_typed_saving_share": 0.193211,
+      "min_typed_saving_share": 0.153084,
+      "profile_ids": [
+        "d8_single_head_seq8",
+        "d8_two_head_seq8",
+        "d8_four_head_seq8",
+        "d8_eight_head_seq8",
+        "d8_sixteen_head_seq8"
+      ],
+      "typed_saving_shares": [
+        0.153084,
+        0.192537,
+        0.232606,
+        0.162158,
+        0.22567
+      ]
+    },
+    "sequence_axis_d8_two_head": {
+      "mean_typed_saving_share": 0.194692,
+      "profile_ids": [
+        "d8_two_head_seq8",
+        "d8_two_head_seq16"
+      ],
+      "steps_per_head": [
+        8,
+        16
+      ],
+      "typed_saving_shares": [
+        0.192537,
+        0.196847
+      ]
+    },
+    "width_axis_single_head_seq8": {
+      "key_widths": [
+        8,
+        16
+      ],
+      "mean_typed_saving_share": 0.12206,
+      "profile_ids": [
+        "d8_single_head_seq8",
+        "d16_single_head_seq8"
+      ],
+      "typed_saving_shares": [
+        0.153084,
+        0.091035
+      ]
+    }
+  },
+  "claim_boundary": "ENGINEERING_TYPED_COMPONENT_GRID_FOR_NINE_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE",
+  "component_grid_commitment": "blake2b-256:36f1d66e2371d4b51233e915b01bf0b1502c25246e2c585b3fdedc7d9f5e129f",
+  "component_savings_totals": {
+    "config_bytes": 360,
+    "fri_commitment_bytes": 2272,
+    "fri_decommitment_merkle_path_bytes": 17312,
+    "fri_last_layer_poly_bytes": 144,
+    "fri_layer_witness_bytes": 2752,
+    "proof_of_work_bytes": 72,
+    "queried_value_bytes": 972,
+    "sampled_opened_value_bytes": 1296,
+    "trace_commitment_bytes": 864,
+    "trace_decommitment_merkle_path_bytes": 16448
+  },
+  "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
+  "decision": "GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO",
+  "full_factorial_grid_status": "NO_GO_NO_SEQ32_OR_D32_PROOF_ARTIFACTS_IN_THIS_GATE",
+  "grid_rows": [
+    {
+      "axis_role": "baseline",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 1024,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 240,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1408
+      },
+      "dominant_component_saving_bucket": "trace_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 1408,
+      "fri_trace_merkle_path_savings_bytes": 2432,
+      "fused_json_proof_size_bytes": 47698,
+      "fused_typed_size_bytes": 18124,
+      "head_count": 1,
+      "json_saving_share": 0.197503,
+      "json_savings_bytes": 11739,
+      "key_width": 8,
+      "lookup_claims": 52,
+      "opening_plumbing_savings_bytes": 2720,
+      "profile_id": "d8_single_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 59437,
+      "source_plus_sidecar_typed_size_bytes": 21400,
+      "steps_per_head": 8,
+      "trace_rows": 64,
+      "typed_saving_share": 0.153084,
+      "typed_savings_bytes": 3276,
+      "value_width": 8
+    },
+    {
+      "axis_role": "width_axis",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 192,
+        "fri_decommitment_merkle_path_bytes": 928,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 208,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1152
+      },
+      "dominant_component_saving_bucket": "trace_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 1152,
+      "fri_trace_merkle_path_savings_bytes": 2080,
+      "fused_json_proof_size_bytes": 64503,
+      "fused_typed_size_bytes": 28876,
+      "head_count": 1,
+      "json_saving_share": 0.139513,
+      "json_savings_bytes": 10458,
+      "key_width": 16,
+      "lookup_claims": 52,
+      "opening_plumbing_savings_bytes": 2368,
+      "profile_id": "d16_single_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 74961,
+      "source_plus_sidecar_typed_size_bytes": 31768,
+      "steps_per_head": 8,
+      "trace_rows": 64,
+      "typed_saving_share": 0.091035,
+      "typed_savings_bytes": 2892,
+      "value_width": 16
+    },
+    {
+      "axis_role": "head_axis",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1568,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 304,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1888
+      },
+      "dominant_component_saving_bucket": "trace_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 1888,
+      "fri_trace_merkle_path_savings_bytes": 3456,
+      "fused_json_proof_size_bytes": 49508,
+      "fused_typed_size_bytes": 18436,
+      "head_count": 2,
+      "json_saving_share": 0.240768,
+      "json_savings_bytes": 15700,
+      "key_width": 8,
+      "lookup_claims": 104,
+      "opening_plumbing_savings_bytes": 3776,
+      "profile_id": "d8_two_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 65208,
+      "source_plus_sidecar_typed_size_bytes": 22832,
+      "steps_per_head": 8,
+      "trace_rows": 128,
+      "typed_saving_share": 0.192537,
+      "typed_savings_bytes": 4396,
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 256,
+        "fri_decommitment_merkle_path_bytes": 2464,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 384,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2368
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 2464,
+      "fri_trace_merkle_path_savings_bytes": 4832,
+      "fused_json_proof_size_bytes": 53468,
+      "fused_typed_size_bytes": 19412,
+      "head_count": 4,
+      "json_saving_share": 0.282588,
+      "json_savings_bytes": 21061,
+      "key_width": 8,
+      "lookup_claims": 208,
+      "opening_plumbing_savings_bytes": 5184,
+      "profile_id": "d8_four_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 74529,
+      "source_plus_sidecar_typed_size_bytes": 25296,
+      "steps_per_head": 8,
+      "trace_rows": 256,
+      "typed_saving_share": 0.232606,
+      "typed_savings_bytes": 5884,
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 1632,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 240,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1504
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 1632,
+      "fri_trace_merkle_path_savings_bytes": 3136,
+      "fused_json_proof_size_bytes": 59375,
+      "fused_typed_size_bytes": 21060,
+      "head_count": 8,
+      "json_saving_share": 0.198567,
+      "json_savings_bytes": 14711,
+      "key_width": 8,
+      "lookup_claims": 416,
+      "opening_plumbing_savings_bytes": 3520,
+      "profile_id": "d8_eight_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 74086,
+      "source_plus_sidecar_typed_size_bytes": 25136,
+      "steps_per_head": 8,
+      "trace_rows": 512,
+      "typed_saving_share": 0.162158,
+      "typed_savings_bytes": 4076,
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 320,
+        "fri_decommitment_merkle_path_bytes": 3168,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2304
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 3168,
+      "fri_trace_merkle_path_savings_bytes": 5472,
+      "fused_json_proof_size_bytes": 65006,
+      "fused_typed_size_bytes": 22660,
+      "head_count": 16,
+      "json_saving_share": 0.267216,
+      "json_savings_bytes": 23705,
+      "key_width": 8,
+      "lookup_claims": 832,
+      "opening_plumbing_savings_bytes": 5888,
+      "profile_id": "d8_sixteen_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 88711,
+      "source_plus_sidecar_typed_size_bytes": 29264,
+      "steps_per_head": 8,
+      "trace_rows": 1024,
+      "typed_saving_share": 0.22567,
+      "typed_savings_bytes": 6604,
+      "value_width": 8
+    },
+    {
+      "axis_role": "sequence_axis",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2304,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 320,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1920
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 2304,
+      "fri_trace_merkle_path_savings_bytes": 4224,
+      "fused_json_proof_size_bytes": 60502,
+      "fused_typed_size_bytes": 21396,
+      "head_count": 2,
+      "json_saving_share": 0.238432,
+      "json_savings_bytes": 18942,
+      "key_width": 8,
+      "lookup_claims": 336,
+      "opening_plumbing_savings_bytes": 4608,
+      "profile_id": "d8_two_head_seq16",
+      "source_plus_sidecar_json_proof_size_bytes": 79444,
+      "source_plus_sidecar_typed_size_bytes": 26640,
+      "steps_per_head": 16,
+      "trace_rows": 512,
+      "typed_saving_share": 0.196847,
+      "typed_savings_bytes": 5244,
+      "value_width": 8
+    },
+    {
+      "axis_role": "combined_width_head_axis",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 224,
+        "fri_decommitment_merkle_path_bytes": 1280,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 256,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 1504
+      },
+      "dominant_component_saving_bucket": "trace_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 1504,
+      "fri_trace_merkle_path_savings_bytes": 2784,
+      "fused_json_proof_size_bytes": 78211,
+      "fused_typed_size_bytes": 29908,
+      "head_count": 2,
+      "json_saving_share": 0.146131,
+      "json_savings_bytes": 13385,
+      "key_width": 16,
+      "lookup_claims": 104,
+      "opening_plumbing_savings_bytes": 3104,
+      "profile_id": "d16_two_head_seq8",
+      "source_plus_sidecar_json_proof_size_bytes": 91596,
+      "source_plus_sidecar_typed_size_bytes": 33584,
+      "steps_per_head": 8,
+      "trace_rows": 128,
+      "typed_saving_share": 0.109457,
+      "typed_savings_bytes": 3676,
+      "value_width": 16
+    },
+    {
+      "axis_role": "combined_width_head_sequence_axis",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 288,
+        "fri_decommitment_merkle_path_bytes": 2944,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 400,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 2400
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 2944,
+      "fri_trace_merkle_path_savings_bytes": 5344,
+      "fused_json_proof_size_bytes": 84868,
+      "fused_typed_size_bytes": 31508,
+      "head_count": 2,
+      "json_saving_share": 0.215333,
+      "json_savings_bytes": 23290,
+      "key_width": 16,
+      "lookup_claims": 336,
+      "opening_plumbing_savings_bytes": 5728,
+      "profile_id": "d16_two_head_seq16",
+      "source_plus_sidecar_json_proof_size_bytes": 108158,
+      "source_plus_sidecar_typed_size_bytes": 37952,
+      "steps_per_head": 16,
+      "trace_rows": 512,
+      "typed_saving_share": 0.169793,
+      "typed_savings_bytes": 6444,
+      "value_width": 16
+    }
+  ],
+  "grid_status": "GO_NINE_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS",
+  "issue": 536,
+  "missing_controls": [
+    "seq32 fused/source/sidecar proof artifacts",
+    "d32 fused/source/sidecar proof artifacts",
+    "full factorial crossing of width, head count, and sequence length",
+    "publication-grade timing repetitions"
+  ],
+  "mutation_cases": [
+    {
+      "error": "decision drift",
+      "name": "decision_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "grid_status drift",
+      "name": "grid_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "full_factorial_grid_status drift",
+      "name": "full_factorial_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "missing_controls drift",
+      "name": "missing_controls_removed",
+      "rejected": true
+    },
+    {
+      "error": "stable_binary_serializer_status drift",
+      "name": "binary_serializer_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "component_schema_status drift",
+      "name": "component_schema_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "profile order drift",
+      "name": "profile_order_drift",
+      "rejected": true
+    },
+    {
+      "error": "profile_id drift",
+      "name": "profile_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "typed savings drift",
+      "name": "typed_savings_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "component savings sum drift",
+      "name": "component_delta_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate row drift",
+      "name": "aggregate_share_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "axis summary drift",
+      "name": "axis_summary_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate row drift",
+      "name": "all_profiles_save_flag_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "upstream commitment drift",
+      "name": "upstream_commitment_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 16,
+  "mutations_rejected": 16,
+  "non_claims": [
+    "not a full factorial d8/d16/d32 by 1/2/4/8/16 heads by seq8/seq16/seq32 grid",
+    "not stable canonical binary Stwo proof serialization",
+    "not verifier-facing binary proof bytes",
+    "not backend-internal source arithmetic versus LogUp lookup column attribution",
+    "not timing evidence",
+    "not exact real-valued Softmax",
+    "not implementation-exact model Softmax",
+    "not full inference",
+    "not recursion or PCD"
+  ],
+  "profile_ids": [
+    "d8_single_head_seq8",
+    "d16_single_head_seq8",
+    "d8_two_head_seq8",
+    "d8_four_head_seq8",
+    "d8_eight_head_seq8",
+    "d8_sixteen_head_seq8",
+    "d8_two_head_seq16",
+    "d16_two_head_seq8",
+    "d16_two_head_seq16"
+  ],
+  "route_id": "local_stwo_attention_kv_controlled_component_grid",
+  "schema": "zkai-attention-kv-stwo-controlled-component-grid-v1",
+  "source_issues": [
+    505,
+    531,
+    534
+  ],
+  "stable_binary_serializer_status": "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED",
+  "timing_policy": "proof_component_size_accounting_only_not_timing_not_public_benchmark",
+  "upstream_commitments": {
+    "fine_grained_component_schema_commitment": "blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_controlled_component_grid_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_controlled_component_grid_gate",
+    "python3 scripts/zkai_attention_kv_stwo_fine_grained_component_schema_gate.py --no-write",
+    "just gate-fast",
+    "just gate"
+  ]
+}
