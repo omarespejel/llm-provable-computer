@@ -127,6 +127,14 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         self.assert_rejects(payload, "opening bucket drift")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["proof_byte_buckets"]["config_and_pow_bytes"] += 1
+        self.assert_rejects(payload, "config-and-pow bucket drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["proof_byte_buckets"]["json_wrapper_bytes"] += 1
+        self.assert_rejects(payload, "JSON wrapper bucket drift")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["aggregate"]["total_fused_proof_size_bytes"] += 1
         self.assert_rejects(payload, "fused-proof total drift")
 
@@ -148,6 +156,27 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         row["lookup_relation_width"] = 2
         row["lookup_relation_width_status"] = gate.RELATION_WIDTH_STATUS_EXPOSED
         self.assert_rejects(payload, "microprofile row drift")
+
+    def test_rejects_trace_component_row_field_and_status_drift(self):
+        payload = self.strip_mutation_summary(self.payload)
+        del payload["profile_rows"][0]["trace_rows_by_component"]["lookup_claim_rows"]
+        self.assert_rejects(payload, "trace component row field drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["trace_rows_by_component"]["unexpected"] = 1
+        self.assert_rejects(payload, "trace component row field drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["trace_rows_by_component"][
+            "source_arithmetic_rows_status"
+        ] = "GO_SOURCE_ARITHMETIC_ROWS_EXPOSED"
+        self.assert_rejects(payload, "source arithmetic row status drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0]["trace_rows_by_component"][
+            "logup_lookup_rows_status"
+        ] = "GO_LOGUP_LOOKUP_ROWS_EXPOSED"
+        self.assert_rejects(payload, "logup lookup row status drift")
 
     def test_rejects_malformed_profile_rows_and_mutation_cases_with_gate_error(self):
         payload = self.strip_mutation_summary(self.payload)
