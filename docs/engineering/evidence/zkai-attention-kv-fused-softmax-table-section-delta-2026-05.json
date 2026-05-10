@@ -79,6 +79,25 @@
       "stwo-attention-kv-two-head-longseq-softmax-table-logup-sidecar-proof-v1",
       "stwo-attention-kv-two-head-softmax-table-logup-sidecar-proof-v1"
     ],
+    "proof_schema_versions_by_role": {
+      "fused": [
+        "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1"
+      ],
+      "sidecar": [
+        null
+      ],
+      "source": [
+        null
+      ]
+    },
     "role_totals": {
       "fused_proof_size_bytes": 563139,
       "fused_saves_vs_source_plus_sidecar_bytes": 152991,
@@ -188,6 +207,31 @@
       "rejected": true
     },
     {
+      "error": "d8_single_head_seq8 axis_role drift",
+      "name": "axis_role_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 head_count drift",
+      "name": "head_count_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 trace_rows drift",
+      "name": "trace_rows_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 fused proof_schema_version drift",
+      "name": "fused_proof_schema_version_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "d8_single_head_seq8 source proof_schema_version drift",
+      "name": "legacy_source_schema_version_smuggling",
+      "rejected": true
+    },
+    {
       "error": "section delta drift",
       "name": "section_delta_smuggling",
       "rejected": true
@@ -209,6 +253,11 @@
     },
     {
       "error": "aggregate drift",
+      "name": "aggregate_schema_inventory_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
       "name": "largest_delta_section_smuggling",
       "rejected": true
     },
@@ -223,8 +272,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 16,
-  "mutations_rejected": 16,
+  "mutations_checked": 22,
+  "mutations_rejected": 22,
   "non_claims": [
     "not backend-internal source arithmetic versus lookup byte attribution",
     "not binary PCS/FRI internal accounting",
@@ -1213,7 +1262,7 @@
   "proof_object_scope": "matched_serialized_stark_proof_json_sections_for_source_sidecar_and_fused_envelopes",
   "route_id": "local_stwo_attention_kv_fused_softmax_table_section_delta",
   "schema": "zkai-attention-kv-fused-softmax-table-section-delta-v1",
-  "section_delta_commitment": "blake2b-256:22cdad8911d7b29204b535cc39683a46de3f3c0924565eebb0e3fddea5e55221",
+  "section_delta_commitment": "blake2b-256:def3cfd7aeed2ef2ddbb48fadef9fb1c919095ddb4fe4f21a63bef6140baf209",
   "section_delta_status": "GO_MATCHED_SERIALIZED_STARK_PROOF_SECTION_DELTA",
   "source_issue": 505,
   "timing_policy": "proof_bytes_only_not_timing_not_public_benchmark",

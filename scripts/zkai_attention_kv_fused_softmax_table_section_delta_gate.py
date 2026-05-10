@@ -22,7 +22,6 @@ import json
 import pathlib
 import sys
 import tempfile
-import uuid
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -100,6 +99,160 @@ TSV_COLUMNS = (
     "backend_internal_split_status",
 )
 EXPECTED_PROFILE_IDS = matrix.PROFILE_IDS
+EXPECTED_ROUTE_METADATA = {
+    "d8_single_head_seq8": {
+        "axis_role": "baseline",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 1,
+        "steps_per_head": 8,
+        "lookup_claims": 52,
+        "trace_rows": 64,
+        "table_rows": 9,
+    },
+    "d16_single_head_seq8": {
+        "axis_role": "width_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 1,
+        "steps_per_head": 8,
+        "lookup_claims": 52,
+        "trace_rows": 64,
+        "table_rows": 9,
+    },
+    "d8_two_head_seq8": {
+        "axis_role": "head_axis",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 8,
+        "lookup_claims": 104,
+        "trace_rows": 128,
+        "table_rows": 9,
+    },
+    "d8_four_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 4,
+        "steps_per_head": 8,
+        "lookup_claims": 208,
+        "trace_rows": 256,
+        "table_rows": 9,
+    },
+    "d8_eight_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 8,
+        "steps_per_head": 8,
+        "lookup_claims": 416,
+        "trace_rows": 512,
+        "table_rows": 9,
+    },
+    "d8_sixteen_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 16,
+        "steps_per_head": 8,
+        "lookup_claims": 832,
+        "trace_rows": 1024,
+        "table_rows": 9,
+    },
+    "d8_two_head_seq16": {
+        "axis_role": "sequence_axis",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 16,
+        "lookup_claims": 336,
+        "trace_rows": 512,
+        "table_rows": 9,
+    },
+    "d16_two_head_seq8": {
+        "axis_role": "combined_width_head_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 2,
+        "steps_per_head": 8,
+        "lookup_claims": 104,
+        "trace_rows": 128,
+        "table_rows": 9,
+    },
+    "d16_two_head_seq16": {
+        "axis_role": "combined_width_head_sequence_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 2,
+        "steps_per_head": 16,
+        "lookup_claims": 336,
+        "trace_rows": 512,
+        "table_rows": 9,
+    },
+}
+EXPECTED_PROOF_SCHEMA_VERSIONS = {
+    "d8_single_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d16_single_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d8_two_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d8_four_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d8_eight_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d8_sixteen_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d8_two_head_seq16": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d16_two_head_seq8": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+    },
+    "d16_two_head_seq16": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+    },
+}
+EXPECTED_PROOF_SCHEMA_VERSIONS_BY_ROLE = {
+    "source": [None],
+    "sidecar": [None],
+    "fused": [
+        "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+    ],
+}
 EXPECTED_TOTALS = {
     "source_proof_size_bytes": 528_303,
     "sidecar_proof_size_bytes": 187_827,
@@ -145,10 +298,16 @@ EXPECTED_MUTATION_NAMES = (
     "source_proof_size_smuggling",
     "sidecar_proof_size_smuggling",
     "fused_proof_size_smuggling",
+    "axis_role_smuggling",
+    "head_count_smuggling",
+    "trace_rows_smuggling",
+    "fused_proof_schema_version_smuggling",
+    "legacy_source_schema_version_smuggling",
     "section_delta_smuggling",
     "opening_bucket_delta_smuggling",
     "wrapper_delta_smuggling",
     "aggregate_savings_smuggling",
+    "aggregate_schema_inventory_smuggling",
     "largest_delta_section_smuggling",
     "non_claim_removed",
     "unknown_field_injection",
@@ -386,6 +545,12 @@ def validate_section_delta_row(row: Any) -> None:
         raise FusedSoftmaxTableSectionDeltaGateError("section delta row field drift")
     if row["profile_id"] not in EXPECTED_PROFILE_IDS:
         raise FusedSoftmaxTableSectionDeltaGateError("profile_id drift")
+    if set(EXPECTED_ROUTE_METADATA) != set(EXPECTED_PROFILE_IDS):
+        raise FusedSoftmaxTableSectionDeltaGateError("expected route metadata inventory drift")
+    route_metadata = EXPECTED_ROUTE_METADATA[row["profile_id"]]
+    for key, expected_value in route_metadata.items():
+        if row[key] != expected_value:
+            raise FusedSoftmaxTableSectionDeltaGateError(f"{row['profile_id']} {key} drift")
     for key in ("key_width", "value_width", "head_count", "steps_per_head", "lookup_claims", "trace_rows", "table_rows"):
         if require_int(row[key], f"{row['profile_id']} {key}") <= 0:
             raise FusedSoftmaxTableSectionDeltaGateError(f"{row['profile_id']} {key} must be positive")
@@ -414,6 +579,11 @@ def validate_section_delta_row(row: Any) -> None:
             raise FusedSoftmaxTableSectionDeltaGateError("artifact backend drift")
         require_str(artifact["proof_backend_version"], f"{role} proof_backend_version")
         require_str(artifact["statement_version"], f"{role} statement_version")
+        expected_schema_version = EXPECTED_PROOF_SCHEMA_VERSIONS[row["profile_id"]][role]
+        if artifact["proof_schema_version"] != expected_schema_version:
+            raise FusedSoftmaxTableSectionDeltaGateError(f"{row['profile_id']} {role} proof_schema_version drift")
+        if expected_schema_version is not None:
+            require_str(artifact["proof_schema_version"], f"{role} proof_schema_version")
         for key in ("proof_size_bytes", "envelope_size_bytes", "section_payload_bytes_total", "json_wrapper_bytes"):
             if require_int(artifact[key], f"{role} {key}") <= 0:
                 raise FusedSoftmaxTableSectionDeltaGateError(f"{role} {key} must be positive")
@@ -526,6 +696,16 @@ def build_aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     bucket_totals["delta"] = subtract_buckets(bucket_totals["source"], bucket_totals["sidecar"], bucket_totals["fused"])
     largest_row = max(rows, key=lambda row: row["proof_size_bytes"]["delta"])
     largest_section = max(section_totals["delta"], key=section_totals["delta"].get)
+    proof_schema_versions_by_role = {
+        role: sorted(
+            {
+                row["artifacts"][role]["proof_schema_version"]
+                for row in rows
+            },
+            key=lambda value: "" if value is None else value,
+        )
+        for role in ("source", "sidecar", "fused")
+    }
     aggregate = {
         "profiles_checked": len(rows),
         "role_totals": role_totals,
@@ -547,6 +727,7 @@ def build_aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 for role in ("source", "sidecar", "fused")
             }
         ),
+        "proof_schema_versions_by_role": proof_schema_versions_by_role,
     }
     validate_aggregate(aggregate)
     return aggregate
@@ -567,6 +748,7 @@ def validate_aggregate(aggregate: Any) -> None:
         "largest_delta_section_bytes",
         "opening_bucket_savings_share",
         "proof_backend_versions",
+        "proof_schema_versions_by_role",
     }
     if set(aggregate) != expected:
         raise FusedSoftmaxTableSectionDeltaGateError("aggregate field drift")
@@ -606,6 +788,8 @@ def validate_aggregate(aggregate: Any) -> None:
         raise FusedSoftmaxTableSectionDeltaGateError("opening bucket savings share drift")
     if not isinstance(aggregate["proof_backend_versions"], list) or len(aggregate["proof_backend_versions"]) < 3:
         raise FusedSoftmaxTableSectionDeltaGateError("proof backend version inventory drift")
+    if aggregate["proof_schema_versions_by_role"] != EXPECTED_PROOF_SCHEMA_VERSIONS_BY_ROLE:
+        raise FusedSoftmaxTableSectionDeltaGateError("proof schema version inventory drift")
     if sum(sections["delta"].values()) + wrappers["delta"] != aggregate["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"]:
         raise FusedSoftmaxTableSectionDeltaGateError("aggregate section savings sum drift")
     if sum(buckets["delta"].values()) != aggregate["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"]:
@@ -757,10 +941,16 @@ def mutation_cases_for(payload: dict[str, Any], *, expected_rows: list[dict[str,
     add("source_proof_size_smuggling", lambda p: p["profile_rows"][0]["proof_size_bytes"].__setitem__("source", p["profile_rows"][0]["proof_size_bytes"]["source"] + 1))
     add("sidecar_proof_size_smuggling", lambda p: p["profile_rows"][0]["proof_size_bytes"].__setitem__("sidecar", p["profile_rows"][0]["proof_size_bytes"]["sidecar"] + 1))
     add("fused_proof_size_smuggling", lambda p: p["profile_rows"][0]["proof_size_bytes"].__setitem__("fused", p["profile_rows"][0]["proof_size_bytes"]["fused"] + 1))
+    add("axis_role_smuggling", lambda p: p["profile_rows"][0].__setitem__("axis_role", "head_axis_extension"))
+    add("head_count_smuggling", lambda p: p["profile_rows"][0].__setitem__("head_count", p["profile_rows"][0]["head_count"] + 1))
+    add("trace_rows_smuggling", lambda p: p["profile_rows"][0].__setitem__("trace_rows", p["profile_rows"][0]["trace_rows"] + 1))
+    add("fused_proof_schema_version_smuggling", lambda p: p["profile_rows"][0]["artifacts"]["fused"].__setitem__("proof_schema_version", "different-schema"))
+    add("legacy_source_schema_version_smuggling", lambda p: p["profile_rows"][0]["artifacts"]["source"].__setitem__("proof_schema_version", "legacy-retcon"))
     add("section_delta_smuggling", lambda p: p["profile_rows"][0]["section_delta_bytes"].__setitem__("fri_proof", p["profile_rows"][0]["section_delta_bytes"]["fri_proof"] + 1))
     add("opening_bucket_delta_smuggling", lambda p: p["profile_rows"][0]["bucket_delta_bytes"].__setitem__("opening_bucket_bytes", p["profile_rows"][0]["bucket_delta_bytes"]["opening_bucket_bytes"] + 1))
     add("wrapper_delta_smuggling", lambda p: p["profile_rows"][0].__setitem__("json_wrapper_delta_bytes", p["profile_rows"][0]["json_wrapper_delta_bytes"] + 1))
     add("aggregate_savings_smuggling", lambda p: p["aggregate"]["role_totals"].__setitem__("fused_saves_vs_source_plus_sidecar_bytes", p["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] + 1))
+    add("aggregate_schema_inventory_smuggling", lambda p: p["aggregate"]["proof_schema_versions_by_role"]["fused"].append("different-schema"))
     add("largest_delta_section_smuggling", lambda p: p["aggregate"].__setitem__("largest_delta_section", "decommitments"))
     add("non_claim_removed", lambda p: p["non_claims"].pop(0))
     add("unknown_field_injection", lambda p: p.__setitem__("unexpected", True))
