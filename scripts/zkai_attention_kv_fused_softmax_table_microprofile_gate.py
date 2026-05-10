@@ -182,6 +182,18 @@ def require_str(value: Any, label: str) -> str:
 def read_fused_proof_sections(profile: matrix.Profile) -> dict[str, Any]:
     module = profile.gate_module
     envelope = module.read_bounded_json(module.FUSED_ENVELOPE_JSON, module.MAX_FUSED_ENVELOPE_JSON_BYTES, profile.profile_id)
+    proof_backend = require_str(envelope.get("proof_backend"), f"{profile.profile_id} proof_backend")
+    proof_backend_version = require_str(
+        envelope.get("proof_backend_version"),
+        f"{profile.profile_id} proof_backend_version",
+    )
+    proof_schema_version = require_str(
+        envelope.get("proof_schema_version"),
+        f"{profile.profile_id} proof_schema_version",
+    )
+    statement_version = require_str(envelope.get("statement_version"), f"{profile.profile_id} statement_version")
+    if proof_backend != "stwo":
+        raise FusedSoftmaxTableMicroprofileGateError(f"{profile.profile_id} proof backend drift")
     proof = envelope.get("proof")
     if not isinstance(proof, list) or not proof:
         raise FusedSoftmaxTableMicroprofileGateError(f"{profile.profile_id} proof byte array missing")
@@ -205,6 +217,10 @@ def read_fused_proof_sections(profile: matrix.Profile) -> dict[str, Any]:
     if wrapper_bytes <= 0:
         raise FusedSoftmaxTableMicroprofileGateError(f"{profile.profile_id} wrapper byte accounting drift")
     return {
+        "proof_backend": proof_backend,
+        "proof_backend_version": proof_backend_version,
+        "proof_schema_version": proof_schema_version,
+        "statement_version": statement_version,
         "proof_section_bytes": section_bytes,
         "proof_section_payload_bytes_total": payload_total,
         "proof_json_wrapper_bytes": wrapper_bytes,
@@ -243,6 +259,10 @@ def build_microprofile_row(profile: matrix.Profile) -> dict[str, Any]:
         "proof_section_bytes": section_bytes,
         "proof_section_payload_bytes_total": proof_sections["proof_section_payload_bytes_total"],
         "proof_json_wrapper_bytes": proof_sections["proof_json_wrapper_bytes"],
+        "proof_backend": proof_sections["proof_backend"],
+        "proof_backend_version": proof_sections["proof_backend_version"],
+        "proof_schema_version": proof_sections["proof_schema_version"],
+        "statement_version": proof_sections["statement_version"],
         "proof_config": proof_sections["proof_config"],
         "proof_byte_buckets": {
             "commitment_bucket_bytes": section_bytes["commitments"],
@@ -306,6 +326,10 @@ def validate_microprofile_row(row: Any) -> None:
         "proof_section_bytes",
         "proof_section_payload_bytes_total",
         "proof_json_wrapper_bytes",
+        "proof_backend",
+        "proof_backend_version",
+        "proof_schema_version",
+        "statement_version",
         "proof_config",
         "proof_byte_buckets",
         "trace_rows_by_component",
@@ -343,6 +367,11 @@ def validate_microprofile_row(row: Any) -> None:
             raise FusedSoftmaxTableMicroprofileGateError(f"{row['profile_id']} {key} bytes must be positive")
     if row["proof_config"] != PROOF_CONFIG:
         raise FusedSoftmaxTableMicroprofileGateError("proof config drift")
+    if row["proof_backend"] != "stwo":
+        raise FusedSoftmaxTableMicroprofileGateError("proof backend drift")
+    require_str(row["proof_backend_version"], "proof_backend_version")
+    require_str(row["proof_schema_version"], "proof_schema_version")
+    require_str(row["statement_version"], "statement_version")
     if row["fused_proof_size_bytes"] != row["proof_section_payload_bytes_total"] + row["proof_json_wrapper_bytes"]:
         raise FusedSoftmaxTableMicroprofileGateError("proof byte total drift")
     buckets = row["proof_byte_buckets"]
@@ -449,6 +478,7 @@ def build_aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "bucket_totals": bucket_totals,
         "largest_profile_id": largest["profile_id"],
         "largest_profile_fused_proof_size_bytes": largest["fused_proof_size_bytes"],
+        "proof_backend_versions": sorted({row["proof_backend_version"] for row in rows}),
         "exposed_relation_width_profiles": [
             row["profile_id"] for row in rows if row["lookup_relation_width_status"] == RELATION_WIDTH_STATUS_EXPOSED
         ],
@@ -477,6 +507,7 @@ def validate_aggregate(aggregate: Any) -> None:
         "bucket_totals",
         "largest_profile_id",
         "largest_profile_fused_proof_size_bytes",
+        "proof_backend_versions",
         "exposed_relation_width_profiles",
         "missing_relation_width_profiles",
     }
@@ -502,6 +533,10 @@ def validate_aggregate(aggregate: Any) -> None:
         raise FusedSoftmaxTableMicroprofileGateError("largest profile drift")
     if aggregate["largest_profile_fused_proof_size_bytes"] != EXPECTED_LARGEST_PROFILE_PROOF_BYTES:
         raise FusedSoftmaxTableMicroprofileGateError("largest profile bytes drift")
+    if not isinstance(aggregate["proof_backend_versions"], list) or not aggregate["proof_backend_versions"]:
+        raise FusedSoftmaxTableMicroprofileGateError("proof backend version inventory drift")
+    for version in aggregate["proof_backend_versions"]:
+        require_str(version, "proof_backend_version")
     if tuple(aggregate["exposed_relation_width_profiles"]) != EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES:
         raise FusedSoftmaxTableMicroprofileGateError("exposed relation-width profile drift")
     section_totals = aggregate["section_totals"]
@@ -772,6 +807,36 @@ def tsv_value(value: Any) -> str:
     return str(value)
 
 
+def tsv_row_projection(row: dict[str, Any]) -> dict[str, str]:
+    return {
+        "profile_id": tsv_value(row["profile_id"]),
+        "axis_role": tsv_value(row["axis_role"]),
+        "key_width": tsv_value(row["key_width"]),
+        "value_width": tsv_value(row["value_width"]),
+        "head_count": tsv_value(row["head_count"]),
+        "steps_per_head": tsv_value(row["steps_per_head"]),
+        "lookup_claims": tsv_value(row["lookup_claims"]),
+        "trace_rows": tsv_value(row["trace_rows"]),
+        "table_rows": tsv_value(row["table_rows"]),
+        "lookup_relation_width": tsv_value(row["lookup_relation_width"]),
+        "lookup_relation_width_status": tsv_value(row["lookup_relation_width_status"]),
+        "fused_proof_size_bytes": tsv_value(row["fused_proof_size_bytes"]),
+        "proof_section_payload_bytes_total": tsv_value(row["proof_section_payload_bytes_total"]),
+        "proof_json_wrapper_bytes": tsv_value(row["proof_json_wrapper_bytes"]),
+        "config_bytes": tsv_value(row["proof_section_bytes"]["config"]),
+        "commitments_bytes": tsv_value(row["proof_section_bytes"]["commitments"]),
+        "sampled_values_bytes": tsv_value(row["proof_section_bytes"]["sampled_values"]),
+        "decommitments_bytes": tsv_value(row["proof_section_bytes"]["decommitments"]),
+        "queried_values_bytes": tsv_value(row["proof_section_bytes"]["queried_values"]),
+        "proof_of_work_bytes": tsv_value(row["proof_section_bytes"]["proof_of_work"]),
+        "fri_proof_bytes": tsv_value(row["proof_section_bytes"]["fri_proof"]),
+        "commitment_bucket_bytes": tsv_value(row["proof_byte_buckets"]["commitment_bucket_bytes"]),
+        "query_bucket_bytes": tsv_value(row["proof_byte_buckets"]["query_bucket_bytes"]),
+        "opening_bucket_bytes": tsv_value(row["proof_byte_buckets"]["opening_bucket_bytes"]),
+        "backend_internal_split_status": tsv_value(row["backend_internal_split_status"]),
+    }
+
+
 def to_tsv(payload: dict[str, Any], *, validate: bool = True, expected_rows: list[dict[str, Any]] | None = None) -> str:
     if validate:
         validate_payload(payload, expected_rows=expected_rows)
@@ -779,35 +844,7 @@ def to_tsv(payload: dict[str, Any], *, validate: bool = True, expected_rows: lis
     writer = csv.DictWriter(_ListWriter(rows), fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
     for row in payload["profile_rows"]:
-        writer.writerow(
-            {
-                "profile_id": row["profile_id"],
-                "axis_role": row["axis_role"],
-                "key_width": row["key_width"],
-                "value_width": row["value_width"],
-                "head_count": row["head_count"],
-                "steps_per_head": row["steps_per_head"],
-                "lookup_claims": row["lookup_claims"],
-                "trace_rows": row["trace_rows"],
-                "table_rows": row["table_rows"],
-                "lookup_relation_width": tsv_value(row["lookup_relation_width"]),
-                "lookup_relation_width_status": row["lookup_relation_width_status"],
-                "fused_proof_size_bytes": row["fused_proof_size_bytes"],
-                "proof_section_payload_bytes_total": row["proof_section_payload_bytes_total"],
-                "proof_json_wrapper_bytes": row["proof_json_wrapper_bytes"],
-                "config_bytes": row["proof_section_bytes"]["config"],
-                "commitments_bytes": row["proof_section_bytes"]["commitments"],
-                "sampled_values_bytes": row["proof_section_bytes"]["sampled_values"],
-                "decommitments_bytes": row["proof_section_bytes"]["decommitments"],
-                "queried_values_bytes": row["proof_section_bytes"]["queried_values"],
-                "proof_of_work_bytes": row["proof_section_bytes"]["proof_of_work"],
-                "fri_proof_bytes": row["proof_section_bytes"]["fri_proof"],
-                "commitment_bucket_bytes": row["proof_byte_buckets"]["commitment_bucket_bytes"],
-                "query_bucket_bytes": row["proof_byte_buckets"]["query_bucket_bytes"],
-                "opening_bucket_bytes": row["proof_byte_buckets"]["opening_bucket_bytes"],
-                "backend_internal_split_status": row["backend_internal_split_status"],
-            }
-        )
+        writer.writerow(tsv_row_projection(row))
     return "".join(rows)
 
 
@@ -844,9 +881,15 @@ def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
         tmp = pathlib.Path(handle.name)
         handle.write(text)
     try:
-        loaded_rows = list(csv.DictReader(tmp.read_text(encoding="utf-8").splitlines(), delimiter="\t"))
-        if len(loaded_rows) != len(payload["profile_rows"]):
+        reader = csv.DictReader(tmp.read_text(encoding="utf-8").splitlines(), delimiter="\t")
+        if reader.fieldnames != list(TSV_COLUMNS):
+            raise FusedSoftmaxTableMicroprofileGateError("TSV header drift")
+        loaded_rows = list(reader)
+        expected_rows = [tsv_row_projection(row) for row in payload["profile_rows"]]
+        if len(loaded_rows) != len(expected_rows):
             raise FusedSoftmaxTableMicroprofileGateError("TSV row count drift")
+        if loaded_rows != expected_rows:
+            raise FusedSoftmaxTableMicroprofileGateError("TSV row projection drift")
         tmp.replace(path)
     except Exception:
         tmp.unlink(missing_ok=True)

@@ -36,7 +36,19 @@ strings so downstream tools can distinguish "not exposed" from "forgotten."
 
 Microprofile commitment:
 
-`blake2b-256:c7738de43028106c2c5235a9c77cb4c7463f429da27a1e61f77feb6845d87730`
+`blake2b-256:7a6d6b0b32845c18e4f11a0c78ba915056ed1108575e87878c6927b1ae65769b`
+
+Backend versions pinned from the serialized fused proof envelopes:
+
+- `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1`
 
 ## Aggregate Read
 
