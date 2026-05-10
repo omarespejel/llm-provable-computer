@@ -51,7 +51,7 @@ The current paper package supports these checked claims:
 | Supporting second boundary | A distinct emitted-source surface clears as supporting evidence on the conservative publication row. |
 | Compactness no-go | A smaller handoff object is not promoted as replay avoidance because it does not remove the replay dependency. |
 | Statement-binding extension | External adapters and receipt gates support the distinction between proof validity and application statement validity. |
-| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head/sixteen-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, a combined d16 two-head fused proof object, single-head, multi-head through sixteen heads, plus d16 and d16 two-head implementation-exact quantized Softmax-table kernel receipts, and a d16 denominator/rounding edge corpus; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
+| Native Stwo attention/KV bridge | Checked opt-in native AIR results built with `--features stwo-backend` for fixed causal-prefix attention/KV carried state, now with d8 baseline, seq16 sequence scaling, d16 width scaling, two-head scaling, d4/d8 bounded weighted semantics, bounded Softmax-table semantics, LogUp table-membership sidecars, fused single-head/two-head/four-head/eight-head/sixteen-head bounded Softmax-table-plus-LogUp proof objects, a two-head long-sequence fused proof object, a d16 fused width-axis proof object, combined d16 two-head and d16 two-head long-sequence fused proof objects, single-head, multi-head through sixteen heads, d16 and d16 two-head implementation-exact quantized Softmax-table kernel receipts, a d16 denominator/rounding edge corpus, and a checked top-level fused proof-byte microprofile; experimental bridge for the next transformer/STARK paper, not default-lane shipped behavior and not a Tablero performance row. |
 
 ## Do Not Say
 
@@ -65,6 +65,9 @@ The current paper package supports these checked claims:
 - Do not say the native Stwo bounded weighted attention/KV proof is exact Softmax, long-context inference, full inference, a benchmark row, or recursive/PCD.
 - Do not say the native Stwo bounded Softmax-table or fused LogUp proofs are exact exp/div Softmax, full inference, public benchmark rows, private lookup privacy, recursive aggregation of independent head proofs, or recursive/PCD.
 - Do not say the quantized Softmax-table receipts are real-valued Softmax or implementation-exact model Softmax. They are exact only for the pinned integer table/floor-division kernel over the checked single-head, two-head, four-head, eight-head, sixteen-head, and d16 receipt fixtures. The d16 denominator/rounding corpus is correctness hardening, not a new proof or benchmark. The two-head long-sequence fused proof is sequence-axis proof-existence evidence, not a public long-context benchmark.
+- Do not say the fused Softmax-table proof-size microprofile decomposes binary
+  PCS/FRI internals or attributes bytes to source arithmetic versus lookup
+  columns. It is top-level serialized `stark_proof` JSON section accounting.
 
 ## Validation Gate
 
@@ -245,6 +248,17 @@ proof-byte, proof-injection, and exact-Softmax-overclaim mutations. This is the
 first combined width/head fused Stwo row, not exact Softmax, not full inference,
 not timing evidence, and not recursion/PCD.
 
+The route matrix now also has a combined width/head/sequence row and a checked
+microprofile. The `d16` two-head seq16 fused route checks `336` lookup claims
+over a `512`-row trace with an `84868`-byte raw proof, versus `108158` bytes
+for the matched source-plus-sidecar route (`0.784667x`). Across the nine fused
+matrix rows, the microprofile accounts for `563139` total fused proof bytes at
+the exposed serialized `stark_proof` JSON boundary: query material is `382029`
+bytes, opening material is `174664` bytes, commitments are `4064` bytes, and
+wrapper/config/proof-of-work material is small. This makes the proof-size story
+less black-box, but it is still not binary PCS/FRI internal accounting and not
+source-arithmetic-vs-lookup column attribution.
+
 The d16 receipt now also has a denominator/rounding edge corpus. It checks seven
 deterministic integer-kernel edge cases, records denominator range `256..852`,
 observes maximum edge-corpus remainder ratio `0.842105`, and rejects `9 / 9`
@@ -265,8 +279,8 @@ another metadata adapter:
    in one fixed fixture. It is not a full scaling law, not real-valued Softmax,
    and not proof aggregation across independent heads.
 4. Work the next controlled scale grid if the goal is paper-grade scaling:
-   produce matched head-count and sequence-length profiles with the same
-   semantics and mutation surfaces, so proof-size behavior is not inferred from
+   produce the next larger route only after the current top-level proof-byte
+   microprofile remains stable, so proof-size behavior is not inferred from
    isolated fixtures.
 5. Work the denominator/rounding audit next if the goal is semantic precision:
    keep the exact integer Softmax-table kernel pinned while checking zero
