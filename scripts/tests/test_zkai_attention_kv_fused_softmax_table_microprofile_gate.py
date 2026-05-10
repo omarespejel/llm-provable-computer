@@ -139,6 +139,14 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         self.assert_rejects(payload, "fused-proof total drift")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["aggregate"]["bucket_totals"]["config_and_pow_bytes"] += 1
+        self.assert_rejects(payload, "aggregate config-and-pow bucket drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["aggregate"]["bucket_totals"]["json_wrapper_bytes"] += 1
+        self.assert_rejects(payload, "aggregate JSON wrapper bucket drift")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["claim_boundary"] = "GO_BINARY_PCS_FRI_INTERNAL_ACCOUNTING"
         self.assert_rejects(payload, "claim_boundary drift")
 

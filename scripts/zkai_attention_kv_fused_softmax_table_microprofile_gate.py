@@ -564,14 +564,25 @@ def validate_aggregate(aggregate: Any) -> None:
     if sum(section_totals.values()) != aggregate["total_section_payload_bytes"]:
         raise FusedSoftmaxTableMicroprofileGateError("section total sum drift")
     buckets = aggregate["bucket_totals"]
-    if not isinstance(buckets, dict):
-        raise FusedSoftmaxTableMicroprofileGateError("bucket totals must be object")
+    expected_bucket_keys = {
+        "commitment_bucket_bytes",
+        "query_bucket_bytes",
+        "opening_bucket_bytes",
+        "config_and_pow_bytes",
+        "json_wrapper_bytes",
+    }
+    if not isinstance(buckets, dict) or set(buckets) != expected_bucket_keys:
+        raise FusedSoftmaxTableMicroprofileGateError("aggregate bucket total field drift")
     if buckets["commitment_bucket_bytes"] != section_totals["commitments"]:
         raise FusedSoftmaxTableMicroprofileGateError("aggregate commitment bucket drift")
     if buckets["query_bucket_bytes"] != section_totals["sampled_values"] + section_totals["queried_values"]:
         raise FusedSoftmaxTableMicroprofileGateError("aggregate query bucket drift")
     if buckets["opening_bucket_bytes"] != section_totals["decommitments"] + section_totals["fri_proof"]:
         raise FusedSoftmaxTableMicroprofileGateError("aggregate opening bucket drift")
+    if buckets["config_and_pow_bytes"] != section_totals["config"] + section_totals["proof_of_work"]:
+        raise FusedSoftmaxTableMicroprofileGateError("aggregate config-and-pow bucket drift")
+    if buckets["json_wrapper_bytes"] != aggregate["total_json_wrapper_bytes"]:
+        raise FusedSoftmaxTableMicroprofileGateError("aggregate JSON wrapper bucket drift")
     if aggregate["total_section_payload_bytes"] + aggregate["total_json_wrapper_bytes"] != aggregate[
         "total_fused_proof_size_bytes"
     ]:
