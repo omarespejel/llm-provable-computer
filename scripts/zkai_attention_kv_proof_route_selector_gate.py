@@ -500,6 +500,7 @@ EXPECTED_MUTATION_NAMES = (
     "d16_two_head_longseq_fused_softmax_decision_drift",
     "d16_two_head_longseq_fused_softmax_shape_drift",
     "d16_two_head_longseq_fused_softmax_width_tamper",
+    "d16_two_head_longseq_fused_softmax_value_width_tamper",
     "d16_two_head_longseq_fused_softmax_headcount_tamper",
     "d16_two_head_longseq_fused_softmax_exact_softmax_overclaim",
     "d16_two_head_longseq_fused_softmax_mutation_rejections_drift",
@@ -2769,6 +2770,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["d16_two_head_longseq_fused_softmax_receipt"]["sequence_length_per_head"] = 8
     elif name == "d16_two_head_longseq_fused_softmax_width_tamper":
         out["d16_two_head_longseq_fused_softmax_receipt"]["key_width"] = 8
+    elif name == "d16_two_head_longseq_fused_softmax_value_width_tamper":
+        out["d16_two_head_longseq_fused_softmax_receipt"]["value_width"] = 8
     elif name == "d16_two_head_longseq_fused_softmax_headcount_tamper":
         out["d16_two_head_longseq_fused_softmax_receipt"]["head_count"] = 1
     elif name == "d16_two_head_longseq_fused_softmax_exact_softmax_overclaim":

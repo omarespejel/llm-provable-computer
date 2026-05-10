@@ -672,7 +672,7 @@
   },
   "first_blocker": "NO_REAL_VALUED_SOFTMAX_LONG_CONTEXT_FULL_INFERENCE_OR_RECURSION_PCD_PROOF",
   "generated_at": "1970-01-01T00:00:00Z",
-  "git_commit": "1e436d2cc0ce3a6c19507f6cffe759e5640610de",
+  "git_commit": "3d9c0327d99ac5eca785dad15d17b3f0abcaca95",
   "longseq_fused_softmax_receipt": {
     "all_mutations_rejected": true,
     "claim_boundary": "ONE_NATIVE_STWO_TWO_HEAD_LONGSEQ_BOUNDED_SOFTMAX_TABLE_ATTENTION_PROOF_WITH_LOGUP_TABLE_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_LONG_CONTEXT_NOT_RECURSION_OR_PCD",
@@ -1098,6 +1098,11 @@
       "rejected": true
     },
     {
+      "name": "d16_two_head_longseq_fused_softmax_value_width_tamper",
+      "reason": "d16 two-head long-sequence fused Softmax receipt drift",
+      "rejected": true
+    },
+    {
       "name": "d16_two_head_longseq_fused_softmax_headcount_tamper",
       "reason": "d16 two-head long-sequence fused Softmax receipt drift",
       "rejected": true
@@ -1373,8 +1378,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 95,
-  "mutations_rejected": 95,
+  "mutations_checked": 96,
+  "mutations_rejected": 96,
   "native_stwo_masked_sequence_receipt": {
     "attention_outputs": [
       [
