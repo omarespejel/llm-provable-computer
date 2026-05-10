@@ -19,6 +19,7 @@ import json
 import pathlib
 import sys
 import tempfile
+import uuid
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -947,16 +948,7 @@ def staged_output_path(path: pathlib.Path) -> pathlib.Path:
 
 def backup_output_path(path: pathlib.Path) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        newline="",
-        dir=path.parent,
-        prefix=f".{path.name}.backup.",
-        suffix=".tmp",
-        delete=False,
-    ) as handle:
-        return pathlib.Path(handle.name)
+    return path.parent / f".{path.name}.backup.{uuid.uuid4().hex}.tmp"
 
 
 def require_evidence_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
@@ -982,11 +974,9 @@ def replace_staged_outputs_with_rollback(
     try:
         if json_path.exists():
             backup_json = backup_output_path(json_path)
-            backup_json.unlink(missing_ok=True)
             json_path.replace(backup_json)
         if tsv_path.exists():
             backup_tsv = backup_output_path(tsv_path)
-            backup_tsv.unlink(missing_ok=True)
             tsv_path.replace(backup_tsv)
 
         staged_json.replace(json_path)
@@ -998,9 +988,9 @@ def replace_staged_outputs_with_rollback(
             json_path.unlink(missing_ok=True)
         if tsv_replaced:
             tsv_path.unlink(missing_ok=True)
-        if backup_json is not None:
+        if backup_json is not None and backup_json.exists():
             backup_json.replace(json_path)
-        if backup_tsv is not None:
+        if backup_tsv is not None and backup_tsv.exists():
             backup_tsv.replace(tsv_path)
         raise
     else:

@@ -344,6 +344,32 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
             self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old\n")
             self.assertFalse(any(entry.name.endswith(".tmp") for entry in out_dir.iterdir()))
 
+    def test_write_outputs_atomically_preserves_root_error_if_backup_move_fails(self):
+        original_replace = gate.pathlib.Path.replace
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = gate.pathlib.Path(tmp)
+            json_path = out_dir / "microprofile.json"
+            tsv_path = out_dir / "microprofile.tsv"
+            json_path.write_text('{"old": true}\n', encoding="utf-8")
+            tsv_path.write_text("old\n", encoding="utf-8")
+
+            def fail_json_backup(path, target):
+                if path == json_path and gate.pathlib.Path(target).name.startswith(f".{json_path.name}.backup."):
+                    raise OSError("forced JSON backup failure")
+                return original_replace(path, target)
+
+            try:
+                gate.pathlib.Path.replace = fail_json_backup
+                with self.assertRaisesRegex(OSError, "forced JSON backup failure"):
+                    gate.write_outputs_atomically(json_path, tsv_path, self.payload)
+            finally:
+                gate.pathlib.Path.replace = original_replace
+
+            self.assertEqual(json_path.read_text(encoding="utf-8"), '{"old": true}\n')
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old\n")
+            self.assertFalse(any(entry.name.endswith(".tmp") for entry in out_dir.iterdir()))
+
     def test_cli_output_paths_must_stay_under_evidence_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
             outside = gate.pathlib.Path(tmp) / "microprofile.json"
