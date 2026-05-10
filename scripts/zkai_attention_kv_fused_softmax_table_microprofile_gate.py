@@ -390,6 +390,10 @@ def validate_microprofile_row(row: Any) -> None:
         raise FusedSoftmaxTableMicroprofileGateError("query bucket drift")
     if buckets["opening_bucket_bytes"] != section_bytes["decommitments"] + section_bytes["fri_proof"]:
         raise FusedSoftmaxTableMicroprofileGateError("opening bucket drift")
+    if buckets["config_and_pow_bytes"] != section_bytes["config"] + section_bytes["proof_of_work"]:
+        raise FusedSoftmaxTableMicroprofileGateError("config-and-pow bucket drift")
+    if buckets["json_wrapper_bytes"] != row["proof_json_wrapper_bytes"]:
+        raise FusedSoftmaxTableMicroprofileGateError("JSON wrapper bucket drift")
     if row["lookup_relation_width"] is None:
         if row["lookup_relation_width_status"] != RELATION_WIDTH_STATUS_INFERRED_MISSING:
             raise FusedSoftmaxTableMicroprofileGateError("lookup relation width status drift")
@@ -398,14 +402,27 @@ def validate_microprofile_row(row: Any) -> None:
         if row["lookup_relation_width_status"] != RELATION_WIDTH_STATUS_EXPOSED:
             raise FusedSoftmaxTableMicroprofileGateError("lookup relation width status drift")
     component_rows = row["trace_rows_by_component"]
+    expected_component_row_keys = {
+        "fused_trace_rows",
+        "lookup_claim_rows",
+        "multiplicity_table_rows",
+        "source_arithmetic_rows_status",
+        "logup_lookup_rows_status",
+    }
     if not isinstance(component_rows, dict):
         raise FusedSoftmaxTableMicroprofileGateError("trace component rows must be object")
+    if set(component_rows) != expected_component_row_keys:
+        raise FusedSoftmaxTableMicroprofileGateError("trace component row field drift")
     if component_rows.get("fused_trace_rows") != row["trace_rows"]:
         raise FusedSoftmaxTableMicroprofileGateError("fused trace-row component drift")
     if component_rows.get("lookup_claim_rows") != row["lookup_claims"]:
         raise FusedSoftmaxTableMicroprofileGateError("lookup claim component drift")
     if component_rows.get("multiplicity_table_rows") != row["table_rows"]:
         raise FusedSoftmaxTableMicroprofileGateError("multiplicity table component drift")
+    if component_rows["source_arithmetic_rows_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
+        raise FusedSoftmaxTableMicroprofileGateError("source arithmetic row status drift")
+    if component_rows["logup_lookup_rows_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
+        raise FusedSoftmaxTableMicroprofileGateError("logup lookup row status drift")
     component_columns = row["trace_columns_by_component"]
     expected_column_keys = {
         "fused_trace_columns",
