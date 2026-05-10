@@ -36,10 +36,10 @@ ISSUE = 536
 SOURCE_ISSUES = (505, 531, 534)
 DECISION = "GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO"
 ROUTE_ID = "local_stwo_attention_kv_controlled_component_grid"
-GRID_STATUS = "GO_NINE_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS"
-FULL_FACTORIAL_GRID_STATUS = "NO_GO_NO_SEQ32_OR_D32_PROOF_ARTIFACTS_IN_THIS_GATE"
+GRID_STATUS = "GO_TEN_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS"
+FULL_FACTORIAL_GRID_STATUS = "NO_GO_NO_D32_PROOF_ARTIFACTS_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE"
 CLAIM_BOUNDARY = (
-    "ENGINEERING_TYPED_COMPONENT_GRID_FOR_NINE_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_"
+    "ENGINEERING_TYPED_COMPONENT_GRID_FOR_TEN_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_"
     "WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_"
     "NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE"
 )
@@ -58,7 +58,6 @@ NON_CLAIMS = (
     "not recursion or PCD",
 )
 MISSING_CONTROLS = (
-    "seq32 fused/source/sidecar proof artifacts",
     "d32 fused/source/sidecar proof artifacts",
     "full factorial crossing of width, head count, and sequence length",
     "publication-grade timing repetitions",
@@ -191,6 +190,20 @@ EXPECTED_PROFILE_SAVINGS = {
         "fri_trace_merkle_path_savings_bytes": 4_224,
         "opening_plumbing_savings_bytes": 4_608,
     },
+    "d8_two_head_seq32": {
+        "source_plus_sidecar_typed_size_bytes": 31_712,
+        "fused_typed_size_bytes": 22_916,
+        "typed_savings_bytes": 8_796,
+        "typed_saving_share": 0.277371,
+        "source_plus_sidecar_json_proof_size_bytes": 98_012,
+        "fused_json_proof_size_bytes": 66_327,
+        "json_savings_bytes": 31_685,
+        "json_saving_share": 0.323277,
+        "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+        "dominant_component_saving_bytes": 4_512,
+        "fri_trace_merkle_path_savings_bytes": 7_552,
+        "opening_plumbing_savings_bytes": 8_000,
+    },
     "d16_two_head_seq8": {
         "source_plus_sidecar_typed_size_bytes": 33_584,
         "fused_typed_size_bytes": 29_908,
@@ -284,6 +297,15 @@ EXPECTED_PROFILE_METADATA = {
         "lookup_claims": 336,
         "trace_rows": 512,
     },
+    "d8_two_head_seq32": {
+        "axis_role": "sequence_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 32,
+        "lookup_claims": 1184,
+        "trace_rows": 2048,
+    },
     "d16_two_head_seq8": {
         "axis_role": "combined_width_head_axis",
         "key_width": 16,
@@ -304,28 +326,28 @@ EXPECTED_PROFILE_METADATA = {
     },
 }
 EXPECTED_AGGREGATE = {
-    "profiles_checked": 9,
+    "profiles_checked": 10,
     "all_profiles_save_typed_components": True,
-    "source_plus_sidecar_typed_size_bytes_total": 253_872,
-    "fused_typed_size_bytes_total": 211_380,
-    "typed_savings_bytes_total": 42_492,
-    "typed_saving_share_total": 0.167376,
+    "source_plus_sidecar_typed_size_bytes_total": 285_584,
+    "fused_typed_size_bytes_total": 234_296,
+    "typed_savings_bytes_total": 51_288,
+    "typed_saving_share_total": 0.17959,
     "min_typed_saving_share": 0.091035,
-    "max_typed_saving_share": 0.232606,
-    "mean_typed_saving_share": 0.170354,
-    "source_plus_sidecar_json_proof_size_bytes_total": 716_130,
-    "fused_json_proof_size_bytes_total": 563_139,
-    "json_savings_bytes_total": 152_991,
-    "json_saving_share_total": 0.213636,
+    "max_typed_saving_share": 0.277371,
+    "mean_typed_saving_share": 0.181056,
+    "source_plus_sidecar_json_proof_size_bytes_total": 814_142,
+    "fused_json_proof_size_bytes_total": 629_466,
+    "json_savings_bytes_total": 184_676,
+    "json_saving_share_total": 0.226835,
     "min_json_saving_share": 0.139513,
-    "max_json_saving_share": 0.282588,
-    "mean_json_saving_share": 0.214006,
-    "fri_trace_merkle_path_savings_bytes_total": 33_760,
-    "fri_trace_merkle_path_share_of_typed_savings": 0.794502,
-    "opening_plumbing_savings_bytes_total": 36_896,
-    "opening_plumbing_share_of_typed_savings": 0.868305,
+    "max_json_saving_share": 0.323277,
+    "mean_json_saving_share": 0.224933,
+    "fri_trace_merkle_path_savings_bytes_total": 41_312,
+    "fri_trace_merkle_path_share_of_typed_savings": 0.805491,
+    "opening_plumbing_savings_bytes_total": 44_896,
+    "opening_plumbing_share_of_typed_savings": 0.87537,
     "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
-    "largest_component_saving_bucket_bytes": 17_312,
+    "largest_component_saving_bucket_bytes": 21_824,
 }
 EXPECTED_AXIS_SUMMARY = {
     "head_axis_d8_seq8": {
@@ -343,10 +365,12 @@ EXPECTED_AXIS_SUMMARY = {
         "mean_typed_saving_share": 0.193211,
     },
     "sequence_axis_d8_two_head": {
-        "profile_ids": ["d8_two_head_seq8", "d8_two_head_seq16"],
-        "steps_per_head": [8, 16],
-        "typed_saving_shares": [0.192537, 0.196847],
-        "mean_typed_saving_share": 0.194692,
+        "profile_ids": ["d8_two_head_seq8", "d8_two_head_seq16", "d8_two_head_seq32"],
+        "steps_per_head": [8, 16, 32],
+        "typed_saving_shares": [0.192537, 0.196847, 0.277371],
+        "mean_typed_saving_share": 0.222252,
+        "min_typed_saving_share": 0.192537,
+        "max_typed_saving_share": 0.277371,
     },
     "width_axis_single_head_seq8": {
         "profile_ids": ["d8_single_head_seq8", "d16_single_head_seq8"],
@@ -360,7 +384,7 @@ EXPECTED_AXIS_SUMMARY = {
         "mean_typed_saving_share": 0.139625,
     },
 }
-EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8"
+EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d"
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
     "grid_status_overclaim",
@@ -641,7 +665,10 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             ],
             "head_count",
         ),
-        "sequence_axis_d8_two_head": axis(["d8_two_head_seq8", "d8_two_head_seq16"], "steps_per_head"),
+        "sequence_axis_d8_two_head": axis(
+            ["d8_two_head_seq8", "d8_two_head_seq16", "d8_two_head_seq32"],
+            "steps_per_head",
+        ),
         "width_axis_single_head_seq8": axis(["d8_single_head_seq8", "d16_single_head_seq8"], "key_width"),
         "combined_width_head_sequence_axis": {
             "profile_ids": ["d16_two_head_seq8", "d16_two_head_seq16"],

@@ -46,17 +46,17 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         )
         self.assertEqual(payload["size_constants"], gate.SIZE_CONSTANTS)
         self.assertEqual(payload["open_component_questions"], list(gate.OPEN_COMPONENT_QUESTIONS))
-        self.assertEqual(len(payload["rows"]), 27)
+        self.assertEqual(len(payload["rows"]), 30)
         self.assertEqual(payload["mutations_checked"], gate.EXPECTED_MUTATION_COUNT)
         self.assertEqual(payload["mutations_rejected"], gate.EXPECTED_MUTATION_COUNT)
         self.assertTrue(payload["all_mutations_rejected"])
 
         self.assertEqual(aggregate["role_totals"], gate.EXPECTED_ROLE_TOTALS)
         self.assertEqual(aggregate["source_plus_sidecar_minus_fused_delta"], gate.EXPECTED_DELTA_TOTALS)
-        self.assertEqual(aggregate["typed_saving_share_vs_source_plus_sidecar"], 0.167376)
-        self.assertEqual(aggregate["json_saving_share_vs_source_plus_sidecar"], 0.213636)
+        self.assertEqual(aggregate["typed_saving_share_vs_source_plus_sidecar"], 0.17959)
+        self.assertEqual(aggregate["json_saving_share_vs_source_plus_sidecar"], 0.226835)
         self.assertEqual(aggregate["largest_component_saving_bucket"], "fri_decommitment_merkle_path_bytes")
-        self.assertEqual(aggregate["largest_component_saving_bucket_bytes"], 17312)
+        self.assertEqual(aggregate["largest_component_saving_bucket_bytes"], 21824)
 
     def test_rows_bind_component_sums_and_grouped_reconstruction(self):
         rows = {(row["profile_id"], row["role"]): row for row in self.payload["rows"]}
@@ -72,6 +72,11 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         self.assertEqual(sixteen["typed_size_estimate_bytes"], 22660)
         self.assertEqual(sixteen["component_bytes"]["fri_decommitment_merkle_path_bytes"], 3744)
         self.assertEqual(sixteen["component_bytes"]["trace_decommitment_merkle_path_bytes"], 3584)
+
+        seq32 = rows[("d8_two_head_seq32", "fused")]
+        self.assertEqual(seq32["typed_size_estimate_bytes"], 22916)
+        self.assertEqual(seq32["component_bytes"]["fri_decommitment_merkle_path_bytes"], 3968)
+        self.assertEqual(seq32["component_bytes"]["trace_decommitment_merkle_path_bytes"], 3584)
 
     def test_declared_mutations_reject(self):
         self.assertEqual([item["name"] for item in self.payload["mutation_cases"]], list(gate.EXPECTED_MUTATION_NAMES))
@@ -135,9 +140,9 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
     def test_tsv_summary_matches_payload(self):
         tsv = gate.to_tsv(self.payload, expected_rows=self.payload["rows"])
         self.assertIn("source", tsv)
-        self.assertIn("201256", tsv)
+        self.assertIn("223152", tsv)
         self.assertIn("fused", tsv)
-        self.assertIn("211380", tsv)
+        self.assertIn("234296", tsv)
         self.assertIn("fri_decommitment_merkle_path_bytes", tsv)
 
     def test_write_paths_are_constrained_to_evidence_dir(self):

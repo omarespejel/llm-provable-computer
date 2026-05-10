@@ -110,75 +110,75 @@ TSV_COLUMNS = (
 )
 EXPECTED_ROLE_TOTALS = {
     "source": {
-        "json_proof_size_bytes": 528_303,
-        "typed_size_estimate_bytes": 201_256,
-        "json_minus_typed_size_bytes": 327_047,
-        "sampled_opened_value_bytes": 90_656,
-        "queried_value_bytes": 67_992,
-        "fri_layer_witness_bytes": 2_896,
-        "fri_last_layer_poly_bytes": 144,
-        "fri_commitment_bytes": 2_272,
-        "fri_decommitment_merkle_path_bytes": 18_528,
-        "trace_commitment_bytes": 864,
-        "trace_decommitment_merkle_path_bytes": 17_472,
-        "proof_of_work_bytes": 72,
-        "config_bytes": 360,
+        "json_proof_size_bytes": 591_286,
+        "typed_size_estimate_bytes": 223_152,
+        "json_minus_typed_size_bytes": 368_134,
+        "sampled_opened_value_bytes": 98_688,
+        "queried_value_bytes": 74_016,
+        "fri_layer_witness_bytes": 3_344,
+        "fri_last_layer_poly_bytes": 160,
+        "fri_commitment_bytes": 2_624,
+        "fri_decommitment_merkle_path_bytes": 22_624,
+        "trace_commitment_bytes": 960,
+        "trace_decommitment_merkle_path_bytes": 20_256,
+        "proof_of_work_bytes": 80,
+        "config_bytes": 400,
     },
     "sidecar": {
-        "json_proof_size_bytes": 187_827,
-        "typed_size_estimate_bytes": 52_616,
-        "json_minus_typed_size_bytes": 135_211,
-        "sampled_opened_value_bytes": 3_168,
-        "queried_value_bytes": 1_944,
-        "fri_layer_witness_bytes": 2_832,
-        "fri_last_layer_poly_bytes": 144,
-        "fri_commitment_bytes": 2_272,
-        "fri_decommitment_merkle_path_bytes": 17_888,
-        "trace_commitment_bytes": 1_152,
-        "trace_decommitment_merkle_path_bytes": 22_784,
-        "proof_of_work_bytes": 72,
-        "config_bytes": 360,
+        "json_proof_size_bytes": 222_856,
+        "typed_size_estimate_bytes": 62_432,
+        "json_minus_typed_size_bytes": 160_424,
+        "sampled_opened_value_bytes": 3_520,
+        "queried_value_bytes": 2_160,
+        "fri_layer_witness_bytes": 3_312,
+        "fri_last_layer_poly_bytes": 160,
+        "fri_commitment_bytes": 2_624,
+        "fri_decommitment_merkle_path_bytes": 22_272,
+        "trace_commitment_bytes": 1_280,
+        "trace_decommitment_merkle_path_bytes": 26_624,
+        "proof_of_work_bytes": 80,
+        "config_bytes": 400,
     },
     "fused": {
-        "json_proof_size_bytes": 563_139,
-        "typed_size_estimate_bytes": 211_380,
-        "json_minus_typed_size_bytes": 351_759,
-        "sampled_opened_value_bytes": 92_528,
-        "queried_value_bytes": 68_964,
-        "fri_layer_witness_bytes": 2_976,
-        "fri_last_layer_poly_bytes": 144,
-        "fri_commitment_bytes": 2_272,
-        "fri_decommitment_merkle_path_bytes": 19_104,
-        "trace_commitment_bytes": 1_152,
-        "trace_decommitment_merkle_path_bytes": 23_808,
-        "proof_of_work_bytes": 72,
-        "config_bytes": 360,
+        "json_proof_size_bytes": 629_466,
+        "typed_size_estimate_bytes": 234_296,
+        "json_minus_typed_size_bytes": 395_170,
+        "sampled_opened_value_bytes": 100_768,
+        "queried_value_bytes": 75_096,
+        "fri_layer_witness_bytes": 3_424,
+        "fri_last_layer_poly_bytes": 160,
+        "fri_commitment_bytes": 2_624,
+        "fri_decommitment_merkle_path_bytes": 23_072,
+        "trace_commitment_bytes": 1_280,
+        "trace_decommitment_merkle_path_bytes": 27_392,
+        "proof_of_work_bytes": 80,
+        "config_bytes": 400,
     },
 }
 EXPECTED_DELTA_TOTALS = {
-    "json_proof_size_bytes": 152_991,
-    "typed_size_estimate_bytes": 42_492,
-    "json_minus_typed_size_bytes": 110_499,
-    "sampled_opened_value_bytes": 1_296,
-    "queried_value_bytes": 972,
-    "fri_layer_witness_bytes": 2_752,
-    "fri_last_layer_poly_bytes": 144,
-    "fri_commitment_bytes": 2_272,
-    "fri_decommitment_merkle_path_bytes": 17_312,
-    "trace_commitment_bytes": 864,
-    "trace_decommitment_merkle_path_bytes": 16_448,
-    "proof_of_work_bytes": 72,
-    "config_bytes": 360,
+    "json_proof_size_bytes": 184_676,
+    "typed_size_estimate_bytes": 51_288,
+    "json_minus_typed_size_bytes": 133_388,
+    "sampled_opened_value_bytes": 1_440,
+    "queried_value_bytes": 1_080,
+    "fri_layer_witness_bytes": 3_232,
+    "fri_last_layer_poly_bytes": 160,
+    "fri_commitment_bytes": 2_624,
+    "fri_decommitment_merkle_path_bytes": 21_824,
+    "trace_commitment_bytes": 960,
+    "trace_decommitment_merkle_path_bytes": 19_488,
+    "proof_of_work_bytes": 80,
+    "config_bytes": 400,
 }
 EXPECTED_JSON_OVER_TYPED_RATIO_BY_ROLE = {
-    "source": 2.62503,
-    "sidecar": 3.56977,
-    "fused": 2.664107,
+    "source": 2.649701,
+    "sidecar": 3.56958,
+    "fused": 2.686627,
 }
-EXPECTED_TYPED_SAVING_SHARE = 0.167376
-EXPECTED_JSON_SAVING_SHARE = 0.213636
+EXPECTED_TYPED_SAVING_SHARE = 0.17959
+EXPECTED_JSON_SAVING_SHARE = 0.226835
 EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT = (
-    "blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1"
+    "blake2b-256:5132bbdbfeec169d7b578bfb4e1d94272a0923cf372e8175c40a78bff89eb6ce"
 )
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
@@ -575,7 +575,8 @@ def validate_aggregate(aggregate: Any) -> None:
         raise StwoFineGrainedComponentSchemaGateError("json saving share drift")
     if aggregate["largest_component_saving_bucket"] != "fri_decommitment_merkle_path_bytes":
         raise StwoFineGrainedComponentSchemaGateError("largest component saving bucket drift")
-    if aggregate["largest_component_saving_bucket_bytes"] != 17_312:
+    expected_largest_bucket_bytes = EXPECTED_DELTA_TOTALS["fri_decommitment_merkle_path_bytes"]
+    if aggregate["largest_component_saving_bucket_bytes"] != expected_largest_bucket_bytes:
         raise StwoFineGrainedComponentSchemaGateError("largest component saving bucket bytes drift")
 
 

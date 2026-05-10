@@ -4,10 +4,10 @@ Issue: `#534`
 
 ## Question
 
-Issue `#476` showed that the fused Softmax-table route still saves `42,492`
-bytes against matched source-plus-sidecar controls when measured through Stwo's
-own typed proof-size estimator. That route still used Stwo's grouped typed
-breakdown.
+The expanded fused Softmax-table route matrix now saves `51,288`
+typed-estimate bytes against matched source-plus-sidecar controls when measured
+through Stwo's own typed proof-size estimator. That route still used Stwo's
+grouped typed breakdown.
 
 This gate asks the next stricter engineering question: can we split the typed
 estimate into smaller public Stwo proof components without claiming stable
@@ -35,7 +35,7 @@ has no stable Stwo binary serializer exposed for these proof objects.
 
 Fine-grained component-schema commitment:
 
-`blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1`
+`blake2b-256:5132bbdbfeec169d7b578bfb4e1d94272a0923cf372e8175c40a78bff89eb6ce`
 
 ## Exact Reproduction Surface
 
@@ -61,46 +61,46 @@ Size constants checked by the gate:
 | proof-of-work scalar | 8 |
 | `PcsConfig` | 40 |
 
-The gate checks the same nine matched profiles as issue `#476`, with three roles
+The gate checks the same ten matched profiles as the route matrix, with three roles
 per profile: source arithmetic proof, LogUp sidecar proof, and fused proof.
 
 ## Aggregate Read
 
-Across the same nine matched profiles:
+Across the same ten matched profiles:
 
 | Role | JSON proof bytes | Stwo typed estimate bytes | JSON / typed |
 |---|---:|---:|---:|
-| Source arithmetic proofs | 528,303 | 201,256 | 2.625030x |
-| LogUp sidecar proofs | 187,827 | 52,616 | 3.569770x |
-| Source + sidecar total | 716,130 | 253,872 | 2.820831x |
-| Fused proofs | 563,139 | 211,380 | 2.664107x |
-| Fused saving | 152,991 | 42,492 | - |
+| Source arithmetic proofs | 591,286 | 223,152 | 2.649701x |
+| LogUp sidecar proofs | 222,856 | 62,432 | 3.569580x |
+| Source + sidecar total | 814,142 | 285,584 | 2.850793x |
+| Fused proofs | 629,466 | 234,296 | 2.686627x |
+| Fused saving | 184,676 | 51,288 | - |
 
-The fine-grained component schema preserves the issue `#476` headline: fusion
-still saves `42,492` typed-estimate bytes (`16.7376%`) against the matched
-source-plus-sidecar typed estimate.
+The fine-grained component schema preserves the important headline after adding
+the `seq32` row: fusion still saves `51,288` typed-estimate bytes (`17.9590%`)
+against the matched source-plus-sidecar typed estimate.
 
-Where the `42,492` typed-estimate saved bytes appear:
+Where the `51,288` typed-estimate saved bytes appear:
 
 | Fine-grained typed component | Saved bytes |
 |---|---:|
-| FRI decommitment Merkle paths | 17,312 |
-| Trace decommitment Merkle paths | 16,448 |
-| FRI layer witnesses | 2,752 |
-| FRI commitments | 2,272 |
-| Sampled opened values | 1,296 |
-| Queried values | 972 |
-| Trace commitments | 864 |
-| Config bytes | 360 |
-| FRI last-layer polynomial | 144 |
-| Proof-of-work scalar | 72 |
+| FRI decommitment Merkle paths | 21,824 |
+| Trace decommitment Merkle paths | 19,488 |
+| FRI layer witnesses | 3,232 |
+| FRI commitments | 2,624 |
+| Sampled opened values | 1,440 |
+| Queried values | 1,080 |
+| Trace commitments | 960 |
+| Config bytes | 400 |
+| FRI last-layer polynomial | 160 |
+| Proof-of-work scalar | 80 |
 
 ## Interpretation
 
 The useful engineering result is narrower and stronger than the previous grouped
 read: the fused proof saves typed-estimate bytes mostly by removing repeated
 Merkle-path material in the separate source and sidecar proofs. FRI Merkle paths
-and trace Merkle paths account for `33,760` of the `42,492` saved bytes.
+and trace Merkle paths account for `41,312` of the `51,288` saved bytes.
 
 This supports the current STARK-engineering direction: when source arithmetic
 and table-membership checks are fused into one proof, they share commitment and
@@ -122,9 +122,8 @@ This gate is not:
 - stable verifier-facing binary proof bytes;
 - backend-internal source arithmetic versus LogUp lookup column attribution;
 - exact public benchmark proof bytes;
-- publication-grade generalization across head count, sequence length, and
-  width; that requires a controlled grid with the same component accounting
-  policy before making broader public claims;
+- publication-grade timing or a full factorial grid across head count, sequence
+  length, and width;
 - timing evidence;
 - exact real-valued Softmax;
 - full inference;

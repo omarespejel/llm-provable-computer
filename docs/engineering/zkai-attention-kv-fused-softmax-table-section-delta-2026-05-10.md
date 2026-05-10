@@ -5,7 +5,7 @@ Issue: `#531`
 ## Question
 
 The fused Softmax-table route matrix showed that one native Stwo proof object is
-smaller than the matched source-plus-LogUp-sidecar pair across nine checked
+smaller than the matched source-plus-LogUp-sidecar pair across ten checked
 profiles. The microprofile accounted for the fused proof bytes themselves.
 
 This gate asks the next narrower question: where does the matched source+sidecar
@@ -17,7 +17,7 @@ boundary?
 `GO_MATCHED_SOURCE_SIDECAR_VS_FUSED_STARK_PROOF_SECTION_DELTA_WITH_BACKEND_INTERNAL_SPLIT_NO_GO`
 
 GO for matched source/sidecar/fused proof-section delta accounting across the
-nine checked native Stwo fused Softmax-table routes.
+ten checked native Stwo fused Softmax-table routes.
 
 NO-GO for backend-internal attribution between source arithmetic columns and
 LogUp lookup columns. The checked proof envelopes expose serialized STARK proof
@@ -33,42 +33,42 @@ surface-level delta and keeps the backend-internal split as a non-claim.
 
 Section-delta commitment:
 
-`blake2b-256:def3cfd7aeed2ef2ddbb48fadef9fb1c919095ddb4fe4f21a63bef6140baf209`
+`blake2b-256:cebba20d83321af95c77af424422dcbc8850b0a16543df24cd7ed1ec0a977448`
 
 ## Aggregate Read
 
-Across the nine checked matched profiles:
+Across the ten checked matched profiles:
 
 | Role | Proof bytes |
 |---|---:|
-| Source arithmetic proofs | 528,303 |
-| LogUp sidecar proofs | 187,827 |
-| Source + sidecar total | 716,130 |
-| Fused proofs | 563,139 |
-| Fused saving | 152,991 |
+| Source arithmetic proofs | 591,286 |
+| LogUp sidecar proofs | 222,856 |
+| Source + sidecar total | 814,142 |
+| Fused proofs | 629,466 |
+| Fused saving | 184,676 |
 
-Where the `152,991` saved bytes appear:
+Where the `184,676` saved bytes appear:
 
 | Bucket | Saved bytes | Share of saving |
 |---|---:|---:|
-| Opening bucket (`decommitments` + `fri_proof`) | 141,125 | 92.244% |
-| Query bucket (`sampled_values` + `queried_values`) | 6,408 | 4.189% |
-| Commitment bucket | 3,083 | 2.015% |
-| Config + proof-of-work | 1,250 | 0.817% |
-| JSON wrapper | 1,125 | 0.735% |
+| Opening bucket (`decommitments` + `fri_proof`) | 171,328 | 92.7722% |
+| Query bucket (`sampled_values` + `queried_values`) | 7,254 | 3.928% |
+| Commitment bucket | 3,456 | 1.871% |
+| Config + proof-of-work | 1,388 | 0.752% |
+| JSON wrapper | 1,250 | 0.677% |
 
 The opening bucket splits as:
 
 | Section | Saved bytes |
 |---|---:|
-| `fri_proof` | 82,882 |
-| `decommitments` | 58,243 |
+| `fri_proof` | 102,304 |
+| `decommitments` | 69,024 |
 
 ## Interpretation
 
 The useful result is not just that the fused proof is smaller. The checked delta
 shows why it is smaller at the proof-object boundary: the fused route mostly
-avoids carrying a second opening surface. In this artifact, `92.244%` of the
+avoids carrying a second opening surface. In this artifact, `92.7722%` of the
 saved bytes come from the opening bucket, dominated by FRI proof and
 decommitment material.
 
@@ -81,7 +81,7 @@ separate opening surfaces for the source and lookup sidecar.
 This gate is:
 
 - matched source-plus-sidecar versus fused proof-section accounting;
-- checked over the same nine route-matrix profiles as issue `#526`;
+- checked over the same ten profiles as the route matrix;
 - proof-byte evidence only;
 - a GO for exposed serialized STARK proof-section deltas;
 - a NO-GO for backend-internal source-vs-lookup attribution.
@@ -97,7 +97,7 @@ This gate is not:
 - recursion or PCD.
 
 The validation also freezes route metadata and proof-schema inventories for the
-nine checked profiles, including the legacy `null` schema status on source and
+ten checked profiles, including the legacy `null` schema status on source and
 sidecar envelopes and the explicit fused proof schema for each fused route.
 
 ## Validation

@@ -39,20 +39,21 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
         self.assertEqual(payload["full_factorial_grid_status"], gate.FULL_FACTORIAL_GRID_STATUS)
         self.assertIn("NOT_FULL_FACTORIAL_GRID", payload["claim_boundary"])
         self.assertIn("not a full factorial", payload["non_claims"][0])
-        self.assertIn("seq32", payload["missing_controls"][0])
+        self.assertNotIn("seq32 fused/source/sidecar proof artifacts", payload["missing_controls"])
+        self.assertIn("d32", payload["missing_controls"][0])
         self.assertEqual(payload["component_grid_commitment"], gate.EXPECTED_COMPONENT_GRID_COMMITMENT)
         self.assertEqual(payload["mutations_checked"], gate.EXPECTED_MUTATION_COUNT)
         self.assertEqual(payload["mutations_rejected"], gate.EXPECTED_MUTATION_COUNT)
         self.assertTrue(payload["all_mutations_rejected"])
 
-        self.assertEqual(aggregate["profiles_checked"], 9)
+        self.assertEqual(aggregate["profiles_checked"], 10)
         self.assertTrue(aggregate["all_profiles_save_typed_components"])
-        self.assertEqual(aggregate["typed_savings_bytes_total"], 42492)
-        self.assertEqual(aggregate["typed_saving_share_total"], 0.167376)
+        self.assertEqual(aggregate["typed_savings_bytes_total"], 51288)
+        self.assertEqual(aggregate["typed_saving_share_total"], 0.17959)
         self.assertEqual(aggregate["min_typed_saving_share"], 0.091035)
-        self.assertEqual(aggregate["max_typed_saving_share"], 0.232606)
-        self.assertEqual(aggregate["fri_trace_merkle_path_share_of_typed_savings"], 0.794502)
-        self.assertEqual(aggregate["opening_plumbing_share_of_typed_savings"], 0.868305)
+        self.assertEqual(aggregate["max_typed_saving_share"], 0.277371)
+        self.assertEqual(aggregate["fri_trace_merkle_path_share_of_typed_savings"], 0.805491)
+        self.assertEqual(aggregate["opening_plumbing_share_of_typed_savings"], 0.87537)
 
     def test_profile_rows_bind_savings_and_component_decomposition(self):
         rows = {row["profile_id"]: row for row in self.payload["grid_rows"]}
@@ -81,6 +82,14 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
         self.assertEqual(d16_long["typed_savings_bytes"], 6444)
         self.assertEqual(d16_long["opening_plumbing_savings_bytes"], 5728)
 
+        seq32 = rows["d8_two_head_seq32"]
+        self.assertEqual(seq32["steps_per_head"], 32)
+        self.assertEqual(seq32["lookup_claims"], 1184)
+        self.assertEqual(seq32["typed_savings_bytes"], 8796)
+        self.assertEqual(seq32["typed_saving_share"], 0.277371)
+        self.assertEqual(seq32["json_saving_share"], 0.323277)
+        self.assertEqual(seq32["opening_plumbing_savings_bytes"], 8000)
+
     def test_axis_summary_records_robust_positive_savings(self):
         summary = self.payload["axis_summary"]
 
@@ -90,8 +99,9 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
         self.assertEqual(head["mean_typed_saving_share"], 0.193211)
 
         sequence = summary["sequence_axis_d8_two_head"]
-        self.assertEqual(sequence["steps_per_head"], [8, 16])
-        self.assertEqual(sequence["typed_saving_shares"], [0.192537, 0.196847])
+        self.assertEqual(sequence["steps_per_head"], [8, 16, 32])
+        self.assertEqual(sequence["typed_saving_shares"], [0.192537, 0.196847, 0.277371])
+        self.assertEqual(sequence["mean_typed_saving_share"], 0.222252)
 
         width = summary["width_axis_single_head_seq8"]
         self.assertEqual(width["key_widths"], [8, 16])
@@ -136,6 +146,12 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
         payload["aggregate"]["typed_saving_share_total"] = 1.0
         payload["component_grid_commitment"] = gate.payload_commitment(payload)
         self.assert_rejects(payload, "aggregate row drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        seq32 = next(row for row in payload["grid_rows"] if row["profile_id"] == "d8_two_head_seq32")
+        seq32["typed_savings_bytes"] += 1
+        payload["component_grid_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, "typed savings drift")
 
     def test_tsv_summary_matches_payload(self):
         tsv = gate.to_tsv(self.payload)

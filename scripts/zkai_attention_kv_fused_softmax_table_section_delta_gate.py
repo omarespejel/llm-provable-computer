@@ -170,6 +170,16 @@ EXPECTED_ROUTE_METADATA = {
         "trace_rows": 512,
         "table_rows": 9,
     },
+    "d8_two_head_seq32": {
+        "axis_role": "sequence_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 32,
+        "lookup_claims": 1184,
+        "trace_rows": 2048,
+        "table_rows": 9,
+    },
     "d16_two_head_seq8": {
         "axis_role": "combined_width_head_axis",
         "key_width": 16,
@@ -227,6 +237,11 @@ EXPECTED_PROOF_SCHEMA_VERSIONS = {
         "sidecar": None,
         "fused": "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
     },
+    "d8_two_head_seq32": {
+        "source": None,
+        "sidecar": None,
+        "fused": "stwo-attention-kv-two-head-seq32-fused-bounded-softmax-table-logup-proof-v1",
+    },
     "d16_two_head_seq8": {
         "source": None,
         "sidecar": None,
@@ -251,43 +266,44 @@ EXPECTED_PROOF_SCHEMA_VERSIONS_BY_ROLE = {
         "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
         "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
         "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+        "stwo-attention-kv-two-head-seq32-fused-bounded-softmax-table-logup-proof-v1",
     ],
 }
 EXPECTED_TOTALS = {
-    "source_proof_size_bytes": 528_303,
-    "sidecar_proof_size_bytes": 187_827,
-    "source_plus_sidecar_raw_proof_bytes": 716_130,
-    "fused_proof_size_bytes": 563_139,
-    "fused_saves_vs_source_plus_sidecar_bytes": 152_991,
+    "source_proof_size_bytes": 591_286,
+    "sidecar_proof_size_bytes": 222_856,
+    "source_plus_sidecar_raw_proof_bytes": 814_142,
+    "fused_proof_size_bytes": 629_466,
+    "fused_saves_vs_source_plus_sidecar_bytes": 184_676,
 }
 EXPECTED_WRAPPER_TOTALS = {
-    "source": 1_125,
-    "sidecar": 1_125,
-    "source_plus_sidecar": 2_250,
-    "fused": 1_125,
-    "delta": 1_125,
+    "source": 1_250,
+    "sidecar": 1_250,
+    "source_plus_sidecar": 2_500,
+    "fused": 1_250,
+    "delta": 1_250,
 }
 EXPECTED_SECTION_DELTA_TOTALS = {
-    "config": 1_224,
-    "commitments": 3_083,
-    "sampled_values": 3_764,
-    "decommitments": 58_243,
-    "queried_values": 2_644,
-    "proof_of_work": 26,
-    "fri_proof": 82_882,
+    "config": 1_360,
+    "commitments": 3_456,
+    "sampled_values": 4_291,
+    "decommitments": 69_024,
+    "queried_values": 2_963,
+    "proof_of_work": 28,
+    "fri_proof": 102_304,
 }
 EXPECTED_BUCKET_DELTA_TOTALS = {
-    "commitment_bucket_bytes": 3_083,
-    "query_bucket_bytes": 6_408,
-    "opening_bucket_bytes": 141_125,
-    "config_and_pow_bytes": 1_250,
-    "json_wrapper_bytes": 1_125,
+    "commitment_bucket_bytes": 3_456,
+    "query_bucket_bytes": 7_254,
+    "opening_bucket_bytes": 171_328,
+    "config_and_pow_bytes": 1_388,
+    "json_wrapper_bytes": 1_250,
 }
-EXPECTED_LARGEST_SAVINGS_PROFILE_ID = "d8_sixteen_head_seq8"
-EXPECTED_LARGEST_SAVINGS_BYTES = 23_705
+EXPECTED_LARGEST_SAVINGS_PROFILE_ID = "d8_two_head_seq32"
+EXPECTED_LARGEST_SAVINGS_BYTES = 31_685
 EXPECTED_LARGEST_DELTA_SECTION = "fri_proof"
-EXPECTED_LARGEST_DELTA_SECTION_BYTES = 82_882
-EXPECTED_OPENING_BUCKET_SAVINGS_SHARE = 0.92244
+EXPECTED_LARGEST_DELTA_SECTION_BYTES = 102_304
+EXPECTED_OPENING_BUCKET_SAVINGS_SHARE = 0.927722
 EXPECTED_MUTATION_NAMES = (
     "decision_relabeling",
     "claim_boundary_overclaim",

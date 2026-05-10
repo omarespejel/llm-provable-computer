@@ -1,27 +1,27 @@
 {
   "aggregate": {
     "all_profiles_save_typed_components": true,
-    "fri_trace_merkle_path_savings_bytes_total": 33760,
-    "fri_trace_merkle_path_share_of_typed_savings": 0.794502,
-    "fused_json_proof_size_bytes_total": 563139,
-    "fused_typed_size_bytes_total": 211380,
-    "json_saving_share_total": 0.213636,
-    "json_savings_bytes_total": 152991,
+    "fri_trace_merkle_path_savings_bytes_total": 41312,
+    "fri_trace_merkle_path_share_of_typed_savings": 0.805491,
+    "fused_json_proof_size_bytes_total": 629466,
+    "fused_typed_size_bytes_total": 234296,
+    "json_saving_share_total": 0.226835,
+    "json_savings_bytes_total": 184676,
     "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
-    "largest_component_saving_bucket_bytes": 17312,
-    "max_json_saving_share": 0.282588,
-    "max_typed_saving_share": 0.232606,
-    "mean_json_saving_share": 0.214006,
-    "mean_typed_saving_share": 0.170354,
+    "largest_component_saving_bucket_bytes": 21824,
+    "max_json_saving_share": 0.323277,
+    "max_typed_saving_share": 0.277371,
+    "mean_json_saving_share": 0.224933,
+    "mean_typed_saving_share": 0.181056,
     "min_json_saving_share": 0.139513,
     "min_typed_saving_share": 0.091035,
-    "opening_plumbing_savings_bytes_total": 36896,
-    "opening_plumbing_share_of_typed_savings": 0.868305,
-    "profiles_checked": 9,
-    "source_plus_sidecar_json_proof_size_bytes_total": 716130,
-    "source_plus_sidecar_typed_size_bytes_total": 253872,
-    "typed_saving_share_total": 0.167376,
-    "typed_savings_bytes_total": 42492
+    "opening_plumbing_savings_bytes_total": 44896,
+    "opening_plumbing_share_of_typed_savings": 0.87537,
+    "profiles_checked": 10,
+    "source_plus_sidecar_json_proof_size_bytes_total": 814142,
+    "source_plus_sidecar_typed_size_bytes_total": 285584,
+    "typed_saving_share_total": 0.17959,
+    "typed_savings_bytes_total": 51288
   },
   "all_mutations_rejected": true,
   "axis_summary": {
@@ -63,18 +63,23 @@
       ]
     },
     "sequence_axis_d8_two_head": {
-      "mean_typed_saving_share": 0.194692,
+      "max_typed_saving_share": 0.277371,
+      "mean_typed_saving_share": 0.222252,
+      "min_typed_saving_share": 0.192537,
       "profile_ids": [
         "d8_two_head_seq8",
-        "d8_two_head_seq16"
+        "d8_two_head_seq16",
+        "d8_two_head_seq32"
       ],
       "steps_per_head": [
         8,
-        16
+        16,
+        32
       ],
       "typed_saving_shares": [
         0.192537,
-        0.196847
+        0.196847,
+        0.277371
       ]
     },
     "width_axis_single_head_seq8": {
@@ -93,23 +98,23 @@
       ]
     }
   },
-  "claim_boundary": "ENGINEERING_TYPED_COMPONENT_GRID_FOR_NINE_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE",
-  "component_grid_commitment": "blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8",
+  "claim_boundary": "ENGINEERING_TYPED_COMPONENT_GRID_FOR_TEN_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE",
+  "component_grid_commitment": "blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d",
   "component_savings_totals": {
-    "config_bytes": 360,
-    "fri_commitment_bytes": 2272,
-    "fri_decommitment_merkle_path_bytes": 17312,
-    "fri_last_layer_poly_bytes": 144,
-    "fri_layer_witness_bytes": 2752,
-    "proof_of_work_bytes": 72,
-    "queried_value_bytes": 972,
-    "sampled_opened_value_bytes": 1296,
-    "trace_commitment_bytes": 864,
-    "trace_decommitment_merkle_path_bytes": 16448
+    "config_bytes": 400,
+    "fri_commitment_bytes": 2624,
+    "fri_decommitment_merkle_path_bytes": 21824,
+    "fri_last_layer_poly_bytes": 160,
+    "fri_layer_witness_bytes": 3232,
+    "proof_of_work_bytes": 80,
+    "queried_value_bytes": 1080,
+    "sampled_opened_value_bytes": 1440,
+    "trace_commitment_bytes": 960,
+    "trace_decommitment_merkle_path_bytes": 19488
   },
   "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
   "decision": "GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO",
-  "full_factorial_grid_status": "NO_GO_NO_SEQ32_OR_D32_PROOF_ARTIFACTS_IN_THIS_GATE",
+  "full_factorial_grid_status": "NO_GO_NO_D32_PROOF_ARTIFACTS_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE",
   "grid_rows": [
     {
       "axis_role": "baseline",
@@ -350,6 +355,40 @@
       "value_width": 8
     },
     {
+      "axis_role": "sequence_axis_extension",
+      "component_savings_bytes": {
+        "config_bytes": 40,
+        "fri_commitment_bytes": 352,
+        "fri_decommitment_merkle_path_bytes": 4512,
+        "fri_last_layer_poly_bytes": 16,
+        "fri_layer_witness_bytes": 480,
+        "proof_of_work_bytes": 8,
+        "queried_value_bytes": 108,
+        "sampled_opened_value_bytes": 144,
+        "trace_commitment_bytes": 96,
+        "trace_decommitment_merkle_path_bytes": 3040
+      },
+      "dominant_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+      "dominant_component_saving_bytes": 4512,
+      "fri_trace_merkle_path_savings_bytes": 7552,
+      "fused_json_proof_size_bytes": 66327,
+      "fused_typed_size_bytes": 22916,
+      "head_count": 2,
+      "json_saving_share": 0.323277,
+      "json_savings_bytes": 31685,
+      "key_width": 8,
+      "lookup_claims": 1184,
+      "opening_plumbing_savings_bytes": 8000,
+      "profile_id": "d8_two_head_seq32",
+      "source_plus_sidecar_json_proof_size_bytes": 98012,
+      "source_plus_sidecar_typed_size_bytes": 31712,
+      "steps_per_head": 32,
+      "trace_rows": 2048,
+      "typed_saving_share": 0.277371,
+      "typed_savings_bytes": 8796,
+      "value_width": 8
+    },
+    {
       "axis_role": "combined_width_head_axis",
       "component_savings_bytes": {
         "config_bytes": 40,
@@ -418,10 +457,9 @@
       "value_width": 16
     }
   ],
-  "grid_status": "GO_NINE_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS",
+  "grid_status": "GO_TEN_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS",
   "issue": 536,
   "missing_controls": [
-    "seq32 fused/source/sidecar proof artifacts",
     "d32 fused/source/sidecar proof artifacts",
     "full factorial crossing of width, head count, and sequence length",
     "publication-grade timing repetitions"
@@ -539,6 +577,7 @@
     "d8_eight_head_seq8",
     "d8_sixteen_head_seq8",
     "d8_two_head_seq16",
+    "d8_two_head_seq32",
     "d16_two_head_seq8",
     "d16_two_head_seq16"
   ],
@@ -552,7 +591,7 @@
   "stable_binary_serializer_status": "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED",
   "timing_policy": "proof_component_size_accounting_only_not_timing_not_public_benchmark",
   "upstream_commitments": {
-    "fine_grained_component_schema_commitment": "blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1"
+    "fine_grained_component_schema_commitment": "blake2b-256:5132bbdbfeec169d7b578bfb4e1d94272a0923cf372e8175c40a78bff89eb6ce"
   },
   "validation_commands": [
     "python3 scripts/zkai_attention_kv_stwo_controlled_component_grid_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv",

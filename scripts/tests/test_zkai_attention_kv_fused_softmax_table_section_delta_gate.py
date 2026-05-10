@@ -38,22 +38,22 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
         self.assertEqual(payload["section_delta_status"], gate.SECTION_DELTA_STATUS)
         self.assertEqual(payload["backend_internal_split_status"], gate.BACKEND_INTERNAL_SPLIT_STATUS)
         self.assertEqual(payload["profile_ids"], list(gate.EXPECTED_PROFILE_IDS))
-        self.assertEqual(len(payload["profile_rows"]), 9)
+        self.assertEqual(len(payload["profile_rows"]), 10)
         self.assertIn("not backend-internal source arithmetic versus lookup byte attribution", payload["non_claims"])
         self.assertEqual(payload["mutations_checked"], gate.EXPECTED_MUTATION_COUNT)
         self.assertEqual(payload["mutations_rejected"], gate.EXPECTED_MUTATION_COUNT)
         self.assertTrue(payload["all_mutations_rejected"])
 
-        self.assertEqual(aggregate["profiles_checked"], 9)
+        self.assertEqual(aggregate["profiles_checked"], 10)
         self.assertEqual(aggregate["role_totals"], gate.EXPECTED_TOTALS)
         self.assertEqual(aggregate["section_totals_by_role"]["delta"], gate.EXPECTED_SECTION_DELTA_TOTALS)
         self.assertEqual(aggregate["bucket_totals_by_role"]["delta"], gate.EXPECTED_BUCKET_DELTA_TOTALS)
         self.assertEqual(aggregate["json_wrapper_totals_by_role"], gate.EXPECTED_WRAPPER_TOTALS)
-        self.assertEqual(aggregate["largest_savings_profile_id"], "d8_sixteen_head_seq8")
-        self.assertEqual(aggregate["largest_savings_profile_bytes"], 23705)
+        self.assertEqual(aggregate["largest_savings_profile_id"], "d8_two_head_seq32")
+        self.assertEqual(aggregate["largest_savings_profile_bytes"], 31685)
         self.assertEqual(aggregate["largest_delta_section"], "fri_proof")
-        self.assertEqual(aggregate["largest_delta_section_bytes"], 82882)
-        self.assertEqual(aggregate["opening_bucket_savings_share"], 0.92244)
+        self.assertEqual(aggregate["largest_delta_section_bytes"], 102304)
+        self.assertEqual(aggregate["opening_bucket_savings_share"], 0.927722)
         self.assertEqual(aggregate["proof_schema_versions_by_role"], gate.EXPECTED_PROOF_SCHEMA_VERSIONS_BY_ROLE)
 
     def test_profile_rows_bind_matched_source_sidecar_and_fused_sections(self):
@@ -77,6 +77,16 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
         self.assertEqual(sixteen["proof_size_bytes"]["delta"], 23705)
         self.assertEqual(sixteen["bucket_delta_bytes"]["opening_bucket_bytes"], 22366)
 
+        seq32 = rows["d8_two_head_seq32"]
+        self.assertEqual(seq32["steps_per_head"], 32)
+        self.assertEqual(seq32["lookup_claims"], 1184)
+        self.assertEqual(seq32["trace_rows"], 2048)
+        self.assertEqual(seq32["proof_size_bytes"]["source_plus_sidecar"], 98012)
+        self.assertEqual(seq32["proof_size_bytes"]["fused"], 66327)
+        self.assertEqual(seq32["proof_size_bytes"]["delta"], 31685)
+        self.assertEqual(seq32["section_delta_bytes"]["fri_proof"], 19422)
+        self.assertEqual(seq32["section_delta_bytes"]["decommitments"], 10781)
+
         combined = rows["d16_two_head_seq16"]
         self.assertEqual(combined["key_width"], 16)
         self.assertEqual(combined["head_count"], 2)
@@ -99,6 +109,11 @@ class AttentionKvFusedSoftmaxTableSectionDeltaGateTests(unittest.TestCase):
 
         payload = self.strip_mutation_summary(self.payload)
         payload["profile_rows"][0]["section_delta_bytes"]["fri_proof"] += 1
+        self.assert_rejects(payload, "section delta drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        seq32 = next(row for row in payload["profile_rows"] if row["profile_id"] == "d8_two_head_seq32")
+        seq32["section_delta_bytes"]["fri_proof"] += 1
         self.assert_rejects(payload, "section delta drift")
 
         payload = self.strip_mutation_summary(self.payload)
