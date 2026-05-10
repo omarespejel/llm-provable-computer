@@ -105,6 +105,10 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         self.assertIn("commitment drift", str(ctx.exception))
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["rows"][0]["proof_sha256"] = "A" * 64
+        self.assert_rejects(payload, "proof_sha256 must be a 64-char lowercase hex SHA-256 digest")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["rows"][0]["component_bytes"]["fri_decommitment_merkle_path_bytes"] += 1
         self.assert_rejects(payload, "component sum drift")
 

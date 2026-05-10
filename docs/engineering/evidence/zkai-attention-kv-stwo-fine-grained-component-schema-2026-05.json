@@ -92,9 +92,9 @@
   },
   "all_mutations_rejected": true,
   "claim_boundary": "FINE_GRAINED_TYPED_STWO_PROOF_COMPONENT_SCHEMA_FOR_MATCHED_SOURCE_SIDECAR_AND_FUSED_SOFTMAX_TABLE_ROUTES_NOT_STABLE_BINARY_SERIALIZATION_NOT_SOURCE_VS_LOOKUP_COLUMN_ATTRIBUTION_NOT_TIMING",
-  "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_STABLE_BINARY_SERIALIZER_NO_GO",
+  "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
   "decision": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
-  "fine_grained_component_schema_commitment": "blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06",
+  "fine_grained_component_schema_commitment": "blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1",
   "grouped_reconstruction_status": "GO_GROUPED_STWO_TYPED_BREAKDOWN_RECONSTRUCTED_FROM_FINE_GRAINED_COMPONENTS",
   "issue": 534,
   "mutation_cases": [
@@ -144,6 +144,11 @@
       "rejected": true
     },
     {
+      "error": "proof_sha256 must be a 64-char lowercase hex SHA-256 digest",
+      "name": "malformed_proof_sha256",
+      "rejected": true
+    },
+    {
       "error": "component sum drift",
       "name": "component_bucket_smuggling",
       "rejected": true
@@ -189,8 +194,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 18,
-  "mutations_rejected": 18,
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
   "non_claims": [
     "not stable canonical binary Stwo proof serialization",
     "not verifier-facing binary proof bytes",

@@ -35,7 +35,7 @@ has no stable Stwo binary serializer exposed for these proof objects.
 
 Fine-grained component-schema commitment:
 
-`blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06`
+`blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1`
 
 ## Exact Reproduction Surface
 
@@ -49,7 +49,7 @@ Backend/accounting source:
 - stable binary serializer status:
   `NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED`
 - component schema status:
-  `GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_STABLE_BINARY_SERIALIZER_NO_GO`
+  `GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO`
 
 Size constants checked by the gate:
 

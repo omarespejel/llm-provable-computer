@@ -16,6 +16,7 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -42,7 +43,7 @@ CLAIM_BOUNDARY = (
 )
 ACCOUNTING_SOURCE = "public_stwo_2_2_0_stark_proof_field_traversal_and_mem_size_estimates"
 PROOF_PAYLOAD_KIND = "utf8_json_object_with_single_stark_proof_field"
-COMPONENT_SCHEMA_STATUS = "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_STABLE_BINARY_SERIALIZER_NO_GO"
+COMPONENT_SCHEMA_STATUS = "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO"
 STABLE_BINARY_SERIALIZER_STATUS = "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED"
 GROUPED_RECONSTRUCTION_STATUS = "GO_GROUPED_STWO_TYPED_BREAKDOWN_RECONSTRUCTED_FROM_FINE_GRAINED_COMPONENTS"
 TIMING_POLICY = "proof_size_estimate_only_not_timing_not_public_benchmark"
@@ -175,7 +176,7 @@ EXPECTED_JSON_OVER_TYPED_RATIO_BY_ROLE = {
 EXPECTED_TYPED_SAVING_SHARE = 0.167376
 EXPECTED_JSON_SAVING_SHARE = 0.213636
 EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT = (
-    "blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06"
+    "blake2b-256:77920e7954ede483264329abf5f11b7312f5a1825bb27470630418c743a636f1"
 )
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
@@ -187,6 +188,7 @@ EXPECTED_MUTATION_NAMES = (
     "typed_estimate_smuggling",
     "json_size_smuggling",
     "proof_sha256_smuggling",
+    "malformed_proof_sha256",
     "component_bucket_smuggling",
     "grouped_reconstruction_smuggling",
     "aggregate_delta_smuggling",
@@ -426,7 +428,11 @@ def validate_row(row: Any) -> None:
     if row["role"] not in ROLES:
         raise StwoFineGrainedComponentSchemaGateError("role drift")
     require_str(row["path"], "path")
-    require_str(row["proof_sha256"], "proof_sha256")
+    proof_sha256 = require_str(row["proof_sha256"], "proof_sha256")
+    if not re.fullmatch(r"[0-9a-f]{64}", proof_sha256):
+        raise StwoFineGrainedComponentSchemaGateError(
+            "proof_sha256 must be a 64-char lowercase hex SHA-256 digest"
+        )
     json_size = require_int(row["json_proof_size_bytes"], "json_proof_size_bytes")
     typed_size = require_int(row["typed_size_estimate_bytes"], "typed_size_estimate_bytes")
     component_sum = require_int(row["component_sum_bytes"], "component_sum_bytes")
@@ -681,6 +687,7 @@ def mutation_cases_for(payload: dict[str, Any], *, expected_rows: list[dict[str,
     add("typed_estimate_smuggling", lambda p: p["rows"][0].__setitem__("typed_size_estimate_bytes", p["rows"][0]["typed_size_estimate_bytes"] + 1))
     add("json_size_smuggling", lambda p: p["rows"][0].__setitem__("json_proof_size_bytes", p["rows"][0]["json_proof_size_bytes"] + 1))
     add("proof_sha256_smuggling", lambda p: p["rows"][0].__setitem__("proof_sha256", "0" * 64))
+    add("malformed_proof_sha256", lambda p: p["rows"][0].__setitem__("proof_sha256", "A" * 64))
     add("component_bucket_smuggling", lambda p: p["rows"][0]["component_bytes"].__setitem__("fri_decommitment_merkle_path_bytes", p["rows"][0]["component_bytes"]["fri_decommitment_merkle_path_bytes"] + 1))
     add("grouped_reconstruction_smuggling", lambda p: p["rows"][0]["grouped_reconstruction"].__setitem__("fri_decommitments", p["rows"][0]["grouped_reconstruction"]["fri_decommitments"] + 1))
     add("aggregate_delta_smuggling", lambda p: p["aggregate"]["source_plus_sidecar_minus_fused_delta"].__setitem__("typed_size_estimate_bytes", p["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] + 1))
