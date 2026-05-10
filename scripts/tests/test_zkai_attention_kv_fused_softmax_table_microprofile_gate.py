@@ -310,9 +310,48 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
 
                 self.assertEqual(json_path.read_text(encoding="utf-8"), '{"old": true}\n')
                 self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old\n")
-                self.assertEqual(list(out_dir.glob("*.tmp")), [])
+                self.assertFalse(any(entry.name.endswith(".tmp") for entry in out_dir.iterdir()))
         finally:
             gate.write_tsv = original_write_tsv
+
+    def test_write_outputs_atomically_rolls_back_if_final_tsv_replace_fails(self):
+        original_replace = gate.pathlib.Path.replace
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = gate.pathlib.Path(tmp)
+            json_path = out_dir / "microprofile.json"
+            tsv_path = out_dir / "microprofile.tsv"
+            json_path.write_text('{"old": true}\n', encoding="utf-8")
+            tsv_path.write_text("old\n", encoding="utf-8")
+
+            def fail_tsv_publish(path, target):
+                if (
+                    gate.pathlib.Path(target) == tsv_path
+                    and path.name.startswith(f".{tsv_path.name}.staged.")
+                    and path.name.endswith(".tmp")
+                ):
+                    raise OSError("forced final TSV replace failure")
+                return original_replace(path, target)
+
+            try:
+                gate.pathlib.Path.replace = fail_tsv_publish
+                with self.assertRaisesRegex(OSError, "forced final TSV replace failure"):
+                    gate.write_outputs_atomically(json_path, tsv_path, self.payload)
+            finally:
+                gate.pathlib.Path.replace = original_replace
+
+            self.assertEqual(json_path.read_text(encoding="utf-8"), '{"old": true}\n')
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old\n")
+            self.assertFalse(any(entry.name.endswith(".tmp") for entry in out_dir.iterdir()))
+
+    def test_cli_output_paths_must_stay_under_evidence_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = gate.pathlib.Path(tmp) / "microprofile.json"
+            with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "write-json must stay under"):
+                gate.require_evidence_output_path(outside, "write-json")
+
+        inside = gate.require_evidence_output_path(gate.EVIDENCE_DIR / "microprofile.json", "write-json")
+        self.assertTrue(str(inside).startswith(str(gate.EVIDENCE_DIR.resolve())))
 
 
 if __name__ == "__main__":
