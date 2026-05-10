@@ -655,9 +655,9 @@ Softmax.
 | RISC Zero sequence receipt size | `246730` bytes |
 | RISC Zero scaled sequence receipt size | `264146` bytes |
 | RISC Zero wide masked sequence receipt size | `305266` bytes |
-| Mutations checked | 95 |
-| Mutations rejected | 95 |
-| Selector mutations rejected | `95 / 95` |
+| Mutations checked | 96 |
+| Mutations rejected | 96 |
+| Selector mutations rejected | `96 / 96` |
 | Selector commitment | `blake2b-256:c2be58d94ff3a75d3ade4c12ae347743e6a8fd27e4b8d344ae5669f611fd2877` |
 
 The selector mutation suite rejects source-contract drift, required-field removal, native
