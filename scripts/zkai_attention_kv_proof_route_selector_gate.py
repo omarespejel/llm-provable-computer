@@ -1246,6 +1246,21 @@ def _load_d16_two_head_longseq_fused_softmax_payload(path: pathlib.Path, run_nat
         D16_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX.SOURCE_INPUT_MODULE.validate_payload(envelope.get("source_input"))
         D16_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX.validate_result(payload)
         D16_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX.validate_fused_envelope(envelope, source_input, run_native=run_native)
+        envelope_source_input = envelope["source_input"]
+        for field in ("key_width", "value_width", "head_count", "sequence_length"):
+            source_value = source_input[field]
+            envelope_value = envelope_source_input[field]
+            if type(source_value) is not int or type(envelope_value) is not int or source_value != envelope_value:
+                raise AttentionKvRouteSelectorError(f"d16 two-head long-sequence fused Softmax {field} axis drift")
+        if payload["source_head_count"] != source_input["head_count"]:
+            raise AttentionKvRouteSelectorError("d16 two-head long-sequence fused Softmax head-count axis drift")
+        payload = dict(payload)
+        payload["evidence_key_width"] = source_input["key_width"]
+        payload["evidence_value_width"] = source_input["value_width"]
+        payload["evidence_head_count"] = source_input["head_count"]
+        payload["evidence_sequence_length_per_head"] = source_input["sequence_length"]
+    except AttentionKvRouteSelectorError:
+        raise
     except D16_TWO_HEAD_LONGSEQ_FUSED_SOFTMAX.AttentionKvD16TwoHeadLongseqFusedSoftmaxTableGateError as error:
         raise AttentionKvRouteSelectorError(f"d16 two-head long-sequence fused Softmax-table drift: {error}") from error
     except Exception as error:
@@ -1805,10 +1820,10 @@ def d16_two_head_longseq_fused_softmax_summary(payload: dict[str, Any]) -> dict[
         "proof_backend": "stwo",
         "fusion_status": payload["fusion_status"],
         "non_fused_status": payload["non_fused_status"],
-        "key_width": 16,
-        "value_width": 16,
-        "head_count": payload["source_head_count"],
-        "sequence_length_per_head": 16,
+        "key_width": payload["evidence_key_width"],
+        "value_width": payload["evidence_value_width"],
+        "head_count": payload["evidence_head_count"],
+        "sequence_length_per_head": payload["evidence_sequence_length_per_head"],
         "lookup_claims": payload["lookup_claims"],
         "score_rows": payload["lookup_claims"],
         "trace_rows": payload["trace_rows"],
