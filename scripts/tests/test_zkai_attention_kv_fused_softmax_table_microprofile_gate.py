@@ -8,7 +8,10 @@ from scripts import zkai_attention_kv_fused_softmax_table_microprofile_gate as g
 class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.payload = gate.build_payload()
+        cls.payload_base = gate.build_payload()
+
+    def setUp(self) -> None:
+        self.payload = copy.deepcopy(self.payload_base)
 
     def strip_mutation_summary(self, payload):
         payload = copy.deepcopy(payload)
@@ -206,8 +209,10 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         payload = self.strip_mutation_summary(self.payload)
         payload["aggregate"]["total_trace_rows"] = 1
         with tempfile.TemporaryDirectory() as tmp:
+            out_path = gate.pathlib.Path(tmp) / "bad.json"
             with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "trace-row total drift"):
-                gate.write_json(gate.pathlib.Path(tmp) / "bad.json", payload)
+                gate.write_json(out_path, payload)
+            self.assertFalse(out_path.exists())
 
     def test_write_tsv_validates_header_and_values_before_replacing(self):
         original_to_tsv = gate.to_tsv
