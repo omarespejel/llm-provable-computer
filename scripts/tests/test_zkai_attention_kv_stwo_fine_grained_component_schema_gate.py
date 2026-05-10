@@ -40,6 +40,10 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         self.assertEqual(payload["component_schema_status"], gate.COMPONENT_SCHEMA_STATUS)
         self.assertEqual(payload["stable_binary_serializer_status"], gate.STABLE_BINARY_SERIALIZER_STATUS)
         self.assertEqual(payload["grouped_reconstruction_status"], gate.GROUPED_RECONSTRUCTION_STATUS)
+        self.assertEqual(
+            payload["fine_grained_component_schema_commitment"],
+            gate.EXPECTED_FINE_GRAINED_COMPONENT_SCHEMA_COMMITMENT,
+        )
         self.assertEqual(payload["size_constants"], gate.SIZE_CONSTANTS)
         self.assertEqual(payload["open_component_questions"], list(gate.OPEN_COMPONENT_QUESTIONS))
         self.assertEqual(len(payload["rows"]), 27)
@@ -95,6 +99,12 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         self.assert_rejects(payload, "component sum drift")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["rows"][0]["proof_sha256"] = "0" * 64
+        with self.assertRaises(gate.StwoFineGrainedComponentSchemaGateError) as ctx:
+            gate.validate_payload(payload, allow_missing_mutation_summary=True)
+        self.assertIn("commitment drift", str(ctx.exception))
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["rows"][0]["component_bytes"]["fri_decommitment_merkle_path_bytes"] += 1
         self.assert_rejects(payload, "component sum drift")
 
@@ -134,6 +144,15 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
             outside = pathlib.Path(tmp) / "out.json"
             with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "output path"):
                 gate.write_outputs(self.payload, outside, gate.TSV_OUT)
+
+    def test_artifact_specs_reject_paths_outside_evidence_dir(self):
+        rows = copy.deepcopy(gate.section_delta_rows()[:1])
+        rows[0]["artifacts"]["source"]["path"] = "../Cargo.toml"
+        with self.assertRaisesRegex(
+            gate.StwoFineGrainedComponentSchemaGateError,
+            "d8_single_head_seq8/source escapes docs/engineering/evidence",
+        ):
+            gate.artifact_specs(rows)
 
     def test_rust_cli_rejects_malformed_envelope(self):
         with tempfile.TemporaryDirectory() as tmp:

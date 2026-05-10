@@ -35,7 +35,7 @@ has no stable Stwo binary serializer exposed for these proof objects.
 
 Fine-grained component-schema commitment:
 
-`blake2b-256:bf6acc8377fc36eb5151c4dcf6428d8bd7ffeba9b5507fd8c1db0145d8e5e127`
+`blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06`
 
 ## Exact Reproduction Surface
 

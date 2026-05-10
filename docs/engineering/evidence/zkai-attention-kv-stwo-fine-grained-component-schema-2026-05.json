@@ -94,7 +94,7 @@
   "claim_boundary": "FINE_GRAINED_TYPED_STWO_PROOF_COMPONENT_SCHEMA_FOR_MATCHED_SOURCE_SIDECAR_AND_FUSED_SOFTMAX_TABLE_ROUTES_NOT_STABLE_BINARY_SERIALIZATION_NOT_SOURCE_VS_LOOKUP_COLUMN_ATTRIBUTION_NOT_TIMING",
   "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_STABLE_BINARY_SERIALIZER_NO_GO",
   "decision": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
-  "fine_grained_component_schema_commitment": "blake2b-256:bf6acc8377fc36eb5151c4dcf6428d8bd7ffeba9b5507fd8c1db0145d8e5e127",
+  "fine_grained_component_schema_commitment": "blake2b-256:8450ce76db4e38771f98e8653e3fa2ef38be1e1ef253a12402f50f691c21ab06",
   "grouped_reconstruction_status": "GO_GROUPED_STWO_TYPED_BREAKDOWN_RECONSTRUCTED_FROM_FINE_GRAINED_COMPONENTS",
   "issue": 534,
   "mutation_cases": [
@@ -136,6 +136,11 @@
     {
       "error": "json-minus-typed drift",
       "name": "json_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "row drift",
+      "name": "proof_sha256_smuggling",
       "rejected": true
     },
     {
@@ -184,8 +189,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 17,
-  "mutations_rejected": 17,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "non_claims": [
     "not stable canonical binary Stwo proof serialization",
     "not verifier-facing binary proof bytes",
