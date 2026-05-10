@@ -47,7 +47,8 @@ It supports the following presentation posture:
   and a width-axis d16 fused proof object with a matched source-plus-sidecar
   control, plus a combined d16 two-head long-sequence fused proof object with a
   matched source-plus-sidecar control and checked top-level proof-byte
-  microprofile, plus an implementation-exact d16
+  microprofile and matched proof-section delta showing that `141,125` of
+  `152,991` saved bytes are in the opening bucket, plus an implementation-exact d16
   quantized Softmax-table receipt with denominator/rounding edge-corpus hardening
   (not exact Softmax, not implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
@@ -72,7 +73,9 @@ It does **not** support the following claims:
   fixtures. The denominator/rounding corpus is correctness hardening, not a new
   proof or benchmark. The fused Softmax-table microprofile is top-level JSON
   proof-byte accounting, not binary PCS/FRI internals or source-vs-lookup
-  column attribution.
+  column attribution. The matched section-delta result explains exposed
+  source-plus-sidecar versus fused proof-section savings, not backend-internal
+  source-arithmetic-vs-lookup byte attribution.
 
 ## Package hygiene
 

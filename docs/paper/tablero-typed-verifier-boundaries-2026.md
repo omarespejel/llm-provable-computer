@@ -968,7 +968,12 @@ native Stwo proof checks `832` lookup claims over a `1024`-row trace with a
 `65006`-byte raw proof, a `1994648`-byte checked envelope, and `16 / 16`
 mutation rejections. Its matched source-plus-sidecar control is `88711` raw
 proof bytes, so the fused route is `23705` bytes smaller (`0.732784x`). This
-also narrows the sidecar scaling claim: the exact four-to-eight flatness breaks
+line now has a checked section-delta read across the route matrix: fusion saves
+`152991` bytes against matched source-plus-sidecar proofs, and `141125` of those
+bytes are in the opening bucket. The useful claim is that fusion mostly removes a
+second opening surface, not that the backend exposes source-vs-lookup byte
+attribution. This also narrows the sidecar scaling claim: the exact
+four-to-eight flatness breaks
 while eight-to-sixteen remains sublinear in raw sidecar proof bytes
 (`2.000000x` claims, `1.293537x` proof bytes). A separate two-head
 long-sequence route keeps `d=8` and two heads fixed while increasing per-head

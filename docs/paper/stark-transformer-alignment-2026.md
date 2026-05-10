@@ -1507,6 +1507,15 @@ exact-Softmax-overclaim mutations. This is not a full transformer proof or a
 public benchmark row; it is evidence that the bounded attention/lookup route can
 compose two transformer-relevant axes in one native Stwo proof object.
 
+The section-delta follow-up makes the fusion result less black-box. Across the
+nine checked route-matrix profiles, source arithmetic proofs total `528303`
+bytes, LogUp sidecar proofs total `187827` bytes, and fused proofs total
+`563139` bytes, saving `152991` bytes against the matched source-plus-sidecar
+surface. Of that saving, `141125` bytes (`92.244%`) come from the opening bucket,
+mostly `fri_proof` (`82882`) and `decommitments` (`58243`). The interpretation
+is narrow but useful: fusion mostly avoids paying a second opening surface. This
+is still not backend-internal source-arithmetic-versus-lookup attribution.
+
 The fused ladder remains opt-in native Stwo backend evidence and bounded table
 evidence, not default-lane shipped behavior, not real-valued Softmax, not
 exp/div semantics, not implementation-exact model Softmax, not full inference,

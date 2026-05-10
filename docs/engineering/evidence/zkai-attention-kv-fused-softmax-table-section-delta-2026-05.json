@@ -1,0 +1,1226 @@
+{
+  "aggregate": {
+    "bucket_totals_by_role": {
+      "delta": {
+        "commitment_bucket_bytes": 3083,
+        "config_and_pow_bytes": 1250,
+        "json_wrapper_bytes": 1125,
+        "opening_bucket_bytes": 141125,
+        "query_bucket_bytes": 6408
+      },
+      "fused": {
+        "commitment_bucket_bytes": 4064,
+        "config_and_pow_bytes": 1257,
+        "json_wrapper_bytes": 1125,
+        "opening_bucket_bytes": 174664,
+        "query_bucket_bytes": 382029
+      },
+      "sidecar": {
+        "commitment_bucket_bytes": 4037,
+        "config_and_pow_bytes": 1255,
+        "json_wrapper_bytes": 1125,
+        "opening_bucket_bytes": 166028,
+        "query_bucket_bytes": 15382
+      },
+      "source": {
+        "commitment_bucket_bytes": 3110,
+        "config_and_pow_bytes": 1252,
+        "json_wrapper_bytes": 1125,
+        "opening_bucket_bytes": 149761,
+        "query_bucket_bytes": 373055
+      },
+      "source_plus_sidecar": {
+        "commitment_bucket_bytes": 7147,
+        "config_and_pow_bytes": 2507,
+        "json_wrapper_bytes": 2250,
+        "opening_bucket_bytes": 315789,
+        "query_bucket_bytes": 388437
+      }
+    },
+    "json_wrapper_totals_by_role": {
+      "delta": 1125,
+      "fused": 1125,
+      "sidecar": 1125,
+      "source": 1125,
+      "source_plus_sidecar": 2250
+    },
+    "largest_delta_section": "fri_proof",
+    "largest_delta_section_bytes": 82882,
+    "largest_savings_profile_bytes": 23705,
+    "largest_savings_profile_id": "d8_sixteen_head_seq8",
+    "opening_bucket_savings_share": 0.92244,
+    "profiles_checked": 9,
+    "proof_backend_versions": [
+      "stwo-attention-kv-d16-causal-mask-bounded-softmax-table-v1",
+      "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-d16-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-d16-two-head-causal-mask-bounded-softmax-table-v1",
+      "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-d16-two-head-longseq-causal-mask-bounded-softmax-table-v1",
+      "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-d16-two-head-longseq-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-d16-two-head-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-d8-causal-mask-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-causal-mask-eight-head-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-causal-mask-four-head-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-causal-mask-sixteen-head-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-causal-mask-two-head-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-causal-mask-two-head-longseq-bounded-softmax-table-v1",
+      "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-d8-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-eight-head-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-four-head-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-sixteen-head-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+      "stwo-attention-kv-two-head-longseq-softmax-table-logup-sidecar-proof-v1",
+      "stwo-attention-kv-two-head-softmax-table-logup-sidecar-proof-v1"
+    ],
+    "role_totals": {
+      "fused_proof_size_bytes": 563139,
+      "fused_saves_vs_source_plus_sidecar_bytes": 152991,
+      "sidecar_proof_size_bytes": 187827,
+      "source_plus_sidecar_raw_proof_bytes": 716130,
+      "source_proof_size_bytes": 528303
+    },
+    "section_totals_by_role": {
+      "delta": {
+        "commitments": 3083,
+        "config": 1224,
+        "decommitments": 58243,
+        "fri_proof": 82882,
+        "proof_of_work": 26,
+        "queried_values": 2644,
+        "sampled_values": 3764
+      },
+      "fused": {
+        "commitments": 4064,
+        "config": 1224,
+        "decommitments": 84688,
+        "fri_proof": 89976,
+        "proof_of_work": 33,
+        "queried_values": 149801,
+        "sampled_values": 232228
+      },
+      "sidecar": {
+        "commitments": 4037,
+        "config": 1224,
+        "decommitments": 80842,
+        "fri_proof": 85186,
+        "proof_of_work": 31,
+        "queried_values": 5501,
+        "sampled_values": 9881
+      },
+      "source": {
+        "commitments": 3110,
+        "config": 1224,
+        "decommitments": 62089,
+        "fri_proof": 87672,
+        "proof_of_work": 28,
+        "queried_values": 146944,
+        "sampled_values": 226111
+      },
+      "source_plus_sidecar": {
+        "commitments": 7147,
+        "config": 2448,
+        "decommitments": 142931,
+        "fri_proof": 172858,
+        "proof_of_work": 59,
+        "queried_values": 152445,
+        "sampled_values": 235992
+      }
+    }
+  },
+  "all_mutations_rejected": true,
+  "attribution_blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+  "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+  "claim_boundary": "ENGINEERING_PROOF_SECTION_DELTA_FOR_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_VS_FUSED_NATIVE_STWO_BOUNDED_SOFTMAX_TABLE_ROUTES_NOT_BACKEND_INTERNAL_SOURCE_VS_LOOKUP_ATTRIBUTION_NOT_TIMING",
+  "decision": "GO_MATCHED_SOURCE_SIDECAR_VS_FUSED_STARK_PROOF_SECTION_DELTA_WITH_BACKEND_INTERNAL_SPLIT_NO_GO",
+  "issue": 531,
+  "microprofile_issue": 526,
+  "mutation_cases": [
+    {
+      "error": "decision drift",
+      "name": "decision_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "section_delta_status drift",
+      "name": "section_delta_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "backend_internal_split_status drift",
+      "name": "backend_internal_split_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "profile row order drift",
+      "name": "route_row_order_drift",
+      "rejected": true
+    },
+    {
+      "error": "profile row order drift",
+      "name": "profile_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "source proof size drift",
+      "name": "source_proof_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "sidecar proof size drift",
+      "name": "sidecar_proof_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "fused proof size drift",
+      "name": "fused_proof_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "section delta drift",
+      "name": "section_delta_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "opening bucket delta drift",
+      "name": "opening_bucket_delta_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "JSON wrapper delta drift",
+      "name": "wrapper_delta_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "aggregate_savings_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "largest_delta_section_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "non_claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 16,
+  "mutations_rejected": 16,
+  "non_claims": [
+    "not backend-internal source arithmetic versus lookup byte attribution",
+    "not binary PCS/FRI internal accounting",
+    "not timing evidence",
+    "not a public benchmark",
+    "not exact real-valued Softmax",
+    "not full inference",
+    "not recursion or PCD"
+  ],
+  "profile_ids": [
+    "d8_single_head_seq8",
+    "d16_single_head_seq8",
+    "d8_two_head_seq8",
+    "d8_four_head_seq8",
+    "d8_eight_head_seq8",
+    "d8_sixteen_head_seq8",
+    "d8_two_head_seq16",
+    "d16_two_head_seq8",
+    "d16_two_head_seq16"
+  ],
+  "profile_rows": [
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 478713,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 47698,
+          "section_bytes": {
+            "commitments": 455,
+            "config": 136,
+            "decommitments": 7328,
+            "fri_proof": 5901,
+            "proof_of_work": 4,
+            "queried_values": 13203,
+            "sampled_values": 20546
+          },
+          "section_payload_bytes_total": 47573,
+          "statement_version": "zkai-attention-kv-stwo-native-d8-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 214085,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 14745,
+          "section_bytes": {
+            "commitments": 454,
+            "config": 136,
+            "decommitments": 6822,
+            "fri_proof": 5497,
+            "proof_of_work": 3,
+            "queried_values": 606,
+            "sampled_values": 1102
+          },
+          "section_payload_bytes_total": 14620,
+          "statement_version": "zkai-attention-kv-stwo-native-d8-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 451982,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 44692,
+          "section_bytes": {
+            "commitments": 340,
+            "config": 136,
+            "decommitments": 5494,
+            "fri_proof": 5896,
+            "proof_of_work": 3,
+            "queried_values": 12868,
+            "sampled_values": 19830
+          },
+          "section_payload_bytes_total": 44567,
+          "statement_version": "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "baseline",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 339,
+        "config_and_pow_bytes": 138,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 10480,
+        "query_bucket_bytes": 657
+      },
+      "head_count": 1,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 5492,
+      "lookup_claims": 52,
+      "profile_id": "d8_single_head_seq8",
+      "proof_size_bytes": {
+        "delta": 11739,
+        "fused": 47698,
+        "sidecar": 14745,
+        "source": 44692,
+        "source_plus_sidecar": 59437
+      },
+      "section_delta_bytes": {
+        "commitments": 339,
+        "config": 136,
+        "decommitments": 4988,
+        "fri_proof": 5492,
+        "proof_of_work": 2,
+        "queried_values": 271,
+        "sampled_values": 386
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 666515,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 64503,
+          "section_bytes": {
+            "commitments": 453,
+            "config": 136,
+            "decommitments": 7307,
+            "fri_proof": 5909,
+            "proof_of_work": 3,
+            "queried_values": 19574,
+            "sampled_values": 30996
+          },
+          "section_payload_bytes_total": 64378,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 257041,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 13445,
+          "section_bytes": {
+            "commitments": 447,
+            "config": 136,
+            "decommitments": 5946,
+            "fri_proof": 5073,
+            "proof_of_work": 4,
+            "queried_values": 616,
+            "sampled_values": 1098
+          },
+          "section_payload_bytes_total": 13320,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 639928,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-causal-mask-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 61516,
+          "section_bytes": {
+            "commitments": 362,
+            "config": 136,
+            "decommitments": 5445,
+            "fri_proof": 5908,
+            "proof_of_work": 3,
+            "queried_values": 19206,
+            "sampled_values": 30331
+          },
+          "section_payload_bytes_total": 61391,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "width_axis",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 356,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 9156,
+        "query_bucket_bytes": 681
+      },
+      "head_count": 1,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 16,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 5072,
+      "lookup_claims": 52,
+      "profile_id": "d16_single_head_seq8",
+      "proof_size_bytes": {
+        "delta": 10458,
+        "fused": 64503,
+        "sidecar": 13445,
+        "source": 61516,
+        "source_plus_sidecar": 74961
+      },
+      "section_delta_bytes": {
+        "commitments": 356,
+        "config": 136,
+        "decommitments": 4084,
+        "fri_proof": 5072,
+        "proof_of_work": 4,
+        "queried_values": 248,
+        "sampled_values": 433
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "value_width": 16
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 585857,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 49508,
+          "section_bytes": {
+            "commitments": 453,
+            "config": 136,
+            "decommitments": 7280,
+            "fri_proof": 6859,
+            "proof_of_work": 3,
+            "queried_values": 13601,
+            "sampled_values": 21051
+          },
+          "section_payload_bytes_total": 49383,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 333577,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-two-head-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 18104,
+          "section_bytes": {
+            "commitments": 452,
+            "config": 136,
+            "decommitments": 8143,
+            "fri_proof": 7541,
+            "proof_of_work": 3,
+            "queried_values": 607,
+            "sampled_values": 1097
+          },
+          "section_payload_bytes_total": 17979,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 563637,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-two-head-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 47104,
+          "section_bytes": {
+            "commitments": 346,
+            "config": 136,
+            "decommitments": 5798,
+            "fri_proof": 7113,
+            "proof_of_work": 4,
+            "queried_values": 13214,
+            "sampled_values": 20368
+          },
+          "section_payload_bytes_total": 46979,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "head_axis",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 345,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 14456,
+        "query_bucket_bytes": 634
+      },
+      "head_count": 2,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 7795,
+      "lookup_claims": 104,
+      "profile_id": "d8_two_head_seq8",
+      "proof_size_bytes": {
+        "delta": 15700,
+        "fused": 49508,
+        "sidecar": 18104,
+        "source": 47104,
+        "source_plus_sidecar": 65208
+      },
+      "section_delta_bytes": {
+        "commitments": 345,
+        "config": 136,
+        "decommitments": 6661,
+        "fri_proof": 7795,
+        "proof_of_work": 4,
+        "queried_values": 220,
+        "sampled_values": 414
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 128,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 797717,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 53468,
+          "section_bytes": {
+            "commitments": 447,
+            "config": 136,
+            "decommitments": 8635,
+            "fri_proof": 8990,
+            "proof_of_work": 4,
+            "queried_values": 13835,
+            "sampled_values": 21296
+          },
+          "section_payload_bytes_total": 53343,
+          "statement_version": "zkai-attention-kv-stwo-native-four-head-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 543187,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-four-head-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 21783,
+          "section_bytes": {
+            "commitments": 458,
+            "config": 136,
+            "decommitments": 9511,
+            "fri_proof": 9839,
+            "proof_of_work": 4,
+            "queried_values": 613,
+            "sampled_values": 1097
+          },
+          "section_payload_bytes_total": 21658,
+          "statement_version": "zkai-attention-kv-stwo-native-four-head-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 788949,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-four-head-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 52746,
+          "section_bytes": {
+            "commitments": 342,
+            "config": 136,
+            "decommitments": 7466,
+            "fri_proof": 10551,
+            "proof_of_work": 3,
+            "queried_values": 13472,
+            "sampled_values": 20651
+          },
+          "section_payload_bytes_total": 52621,
+          "statement_version": "zkai-attention-kv-stwo-native-four-head-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "head_axis_extension",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 353,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 19742,
+        "query_bucket_bytes": 702
+      },
+      "head_count": 4,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 11400,
+      "lookup_claims": 208,
+      "profile_id": "d8_four_head_seq8",
+      "proof_size_bytes": {
+        "delta": 21061,
+        "fused": 53468,
+        "sidecar": 21783,
+        "source": 52746,
+        "source_plus_sidecar": 74529
+      },
+      "section_delta_bytes": {
+        "commitments": 353,
+        "config": 136,
+        "decommitments": 8342,
+        "fri_proof": 11400,
+        "proof_of_work": 3,
+        "queried_values": 250,
+        "sampled_values": 452
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 256,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 1210413,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 59375,
+          "section_bytes": {
+            "commitments": 440,
+            "config": 136,
+            "decommitments": 10924,
+            "fri_proof": 12596,
+            "proof_of_work": 4,
+            "queried_values": 13834,
+            "sampled_values": 21316
+          },
+          "section_payload_bytes_total": 59250,
+          "statement_version": "zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 907902,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-eight-head-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 21694,
+          "section_bytes": {
+            "commitments": 448,
+            "config": 136,
+            "decommitments": 9107,
+            "fri_proof": 10173,
+            "proof_of_work": 4,
+            "queried_values": 608,
+            "sampled_values": 1093
+          },
+          "section_payload_bytes_total": 21569,
+          "statement_version": "zkai-attention-kv-stwo-native-eight-head-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 1151543,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-eight-head-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 52392,
+          "section_bytes": {
+            "commitments": 335,
+            "config": 136,
+            "decommitments": 7171,
+            "fri_proof": 10578,
+            "proof_of_work": 3,
+            "queried_values": 13506,
+            "sampled_values": 20538
+          },
+          "section_payload_bytes_total": 52267,
+          "statement_version": "zkai-attention-kv-stwo-native-eight-head-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "head_axis_extension",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 343,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 13509,
+        "query_bucket_bytes": 595
+      },
+      "head_count": 8,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 8155,
+      "lookup_claims": 416,
+      "profile_id": "d8_eight_head_seq8",
+      "proof_size_bytes": {
+        "delta": 14711,
+        "fused": 59375,
+        "sidecar": 21694,
+        "source": 52392,
+        "source_plus_sidecar": 74086
+      },
+      "section_delta_bytes": {
+        "commitments": 343,
+        "config": 136,
+        "decommitments": 5354,
+        "fri_proof": 8155,
+        "proof_of_work": 3,
+        "queried_values": 280,
+        "sampled_values": 315
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 1994648,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-sixteen-head-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 65006,
+          "section_bytes": {
+            "commitments": 451,
+            "config": 136,
+            "decommitments": 12726,
+            "fri_proof": 16440,
+            "proof_of_work": 3,
+            "queried_values": 13783,
+            "sampled_values": 21342
+          },
+          "section_payload_bytes_total": 64881,
+          "statement_version": "zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 1698027,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-sixteen-head-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 28062,
+          "section_bytes": {
+            "commitments": 450,
+            "config": 136,
+            "decommitments": 11388,
+            "fri_proof": 14253,
+            "proof_of_work": 4,
+            "queried_values": 614,
+            "sampled_values": 1092
+          },
+          "section_payload_bytes_total": 27937,
+          "statement_version": "zkai-attention-kv-stwo-native-sixteen-head-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 1956775,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-sixteen-head-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 60649,
+          "section_bytes": {
+            "commitments": 347,
+            "config": 136,
+            "decommitments": 9519,
+            "fri_proof": 16372,
+            "proof_of_work": 2,
+            "queried_values": 13461,
+            "sampled_values": 20687
+          },
+          "section_payload_bytes_total": 60524,
+          "statement_version": "zkai-attention-kv-stwo-native-sixteen-head-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "head_axis_extension",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 346,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 22366,
+        "query_bucket_bytes": 729
+      },
+      "head_count": 16,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 14185,
+      "lookup_claims": 832,
+      "profile_id": "d8_sixteen_head_seq8",
+      "proof_size_bytes": {
+        "delta": 23705,
+        "fused": 65006,
+        "sidecar": 28062,
+        "source": 60649,
+        "source_plus_sidecar": 88711
+      },
+      "section_delta_bytes": {
+        "commitments": 346,
+        "config": 136,
+        "decommitments": 8181,
+        "fri_proof": 14185,
+        "proof_of_work": 3,
+        "queried_values": 292,
+        "sampled_values": 437
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 1024,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 1050248,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 60502,
+          "section_bytes": {
+            "commitments": 454,
+            "config": 136,
+            "decommitments": 11397,
+            "fri_proof": 13270,
+            "proof_of_work": 4,
+            "queried_values": 13828,
+            "sampled_values": 21288
+          },
+          "section_payload_bytes_total": 60377,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 781775,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-two-head-longseq-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 27078,
+          "section_bytes": {
+            "commitments": 441,
+            "config": 136,
+            "decommitments": 11317,
+            "fri_proof": 13341,
+            "proof_of_work": 3,
+            "queried_values": 613,
+            "sampled_values": 1102
+          },
+          "section_payload_bytes_total": 26953,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-longseq-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 982131,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d8-causal-mask-two-head-longseq-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 52366,
+          "section_bytes": {
+            "commitments": 345,
+            "config": 136,
+            "decommitments": 6870,
+            "fri_proof": 10782,
+            "proof_of_work": 4,
+            "queried_values": 13466,
+            "sampled_values": 20638
+          },
+          "section_payload_bytes_total": 52241,
+          "statement_version": "zkai-attention-kv-stwo-native-two-head-longseq-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "sequence_axis",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 332,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 17643,
+        "query_bucket_bytes": 703
+      },
+      "head_count": 2,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 8,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 10853,
+      "lookup_claims": 336,
+      "profile_id": "d8_two_head_seq16",
+      "proof_size_bytes": {
+        "delta": 18942,
+        "fused": 60502,
+        "sidecar": 27078,
+        "source": 52366,
+        "source_plus_sidecar": 79444
+      },
+      "section_delta_bytes": {
+        "commitments": 332,
+        "config": 136,
+        "decommitments": 6790,
+        "fri_proof": 10853,
+        "proof_of_work": 3,
+        "queried_values": 251,
+        "sampled_values": 452
+      },
+      "steps_per_head": 16,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "value_width": 8
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 921008,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 78211,
+          "section_bytes": {
+            "commitments": 453,
+            "config": 136,
+            "decommitments": 8657,
+            "fri_proof": 8034,
+            "proof_of_work": 4,
+            "queried_values": 23873,
+            "sampled_values": 36929
+          },
+          "section_payload_bytes_total": 78086,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 438961,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 18088,
+          "section_bytes": {
+            "commitments": 444,
+            "config": 136,
+            "decommitments": 8155,
+            "fri_proof": 7508,
+            "proof_of_work": 3,
+            "queried_values": 616,
+            "sampled_values": 1101
+          },
+          "section_payload_bytes_total": 17963,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 880372,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-causal-mask-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 73508,
+          "section_bytes": {
+            "commitments": 351,
+            "config": 136,
+            "decommitments": 5814,
+            "fri_proof": 7160,
+            "proof_of_work": 3,
+            "queried_values": 23623,
+            "sampled_values": 36296
+          },
+          "section_payload_bytes_total": 73383,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "combined_width_head_axis",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 342,
+        "config_and_pow_bytes": 138,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 11946,
+        "query_bucket_bytes": 834
+      },
+      "head_count": 2,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 16,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 6634,
+      "lookup_claims": 104,
+      "profile_id": "d16_two_head_seq8",
+      "proof_size_bytes": {
+        "delta": 13385,
+        "fused": 78211,
+        "sidecar": 18088,
+        "source": 73508,
+        "source_plus_sidecar": 91596
+      },
+      "section_delta_bytes": {
+        "commitments": 342,
+        "config": 136,
+        "decommitments": 5312,
+        "fri_proof": 6634,
+        "proof_of_work": 2,
+        "queried_values": 366,
+        "sampled_values": 468
+      },
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 128,
+      "value_width": 16
+    },
+    {
+      "artifacts": {
+        "fused": {
+          "envelope_size_bytes": 1569734,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+          "proof_schema_version": "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-proof-v1",
+          "proof_size_bytes": 84868,
+          "section_bytes": {
+            "commitments": 458,
+            "config": 136,
+            "decommitments": 10434,
+            "fri_proof": 11977,
+            "proof_of_work": 4,
+            "queried_values": 24270,
+            "sampled_values": 37464
+          },
+          "section_payload_bytes_total": 84743,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-logup-statement-v1"
+        },
+        "sidecar": {
+          "envelope_size_bytes": 1088326,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-longseq-softmax-table-logup-sidecar-proof-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 24828,
+          "section_bytes": {
+            "commitments": 443,
+            "config": 136,
+            "decommitments": 10453,
+            "fri_proof": 11961,
+            "proof_of_work": 3,
+            "queried_values": 608,
+            "sampled_values": 1099
+          },
+          "section_payload_bytes_total": 24703,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-longseq-softmax-table-logup-sidecar-statement-v1"
+        },
+        "source": {
+          "envelope_size_bytes": 1554385,
+          "json_wrapper_bytes": 125,
+          "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-proof-2026-05.envelope.json",
+          "proof_backend": "stwo",
+          "proof_backend_version": "stwo-attention-kv-d16-two-head-longseq-causal-mask-bounded-softmax-table-v1",
+          "proof_schema_version": null,
+          "proof_size_bytes": 83330,
+          "section_bytes": {
+            "commitments": 342,
+            "config": 136,
+            "decommitments": 8512,
+            "fri_proof": 13312,
+            "proof_of_work": 3,
+            "queried_values": 24128,
+            "sampled_values": 36772
+          },
+          "section_payload_bytes_total": 83205,
+          "statement_version": "zkai-attention-kv-stwo-native-d16-two-head-longseq-bounded-softmax-table-statement-v1"
+        }
+      },
+      "axis_role": "combined_width_head_sequence_axis",
+      "backend_internal_attribution": {
+        "blocker": "The checked envelopes expose serialized STARK proof sections, but not semantic column labels or byte spans for source arithmetic versus LogUp lookup. Only source/sidecar/fused section deltas are claimed.",
+        "logup_lookup_bytes": null,
+        "shared_pcs_fri_bytes": null,
+        "source_arithmetic_bytes": null,
+        "status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES"
+      },
+      "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+      "bucket_delta_bytes": {
+        "commitment_bucket_bytes": 327,
+        "config_and_pow_bytes": 138,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 21827,
+        "query_bucket_bytes": 873
+      },
+      "head_count": 2,
+      "json_wrapper_delta_bytes": 125,
+      "key_width": 16,
+      "largest_delta_section": "fri_proof",
+      "largest_delta_section_bytes": 13296,
+      "lookup_claims": 336,
+      "profile_id": "d16_two_head_seq16",
+      "proof_size_bytes": {
+        "delta": 23290,
+        "fused": 84868,
+        "sidecar": 24828,
+        "source": 83330,
+        "source_plus_sidecar": 108158
+      },
+      "section_delta_bytes": {
+        "commitments": 327,
+        "config": 136,
+        "decommitments": 8531,
+        "fri_proof": 13296,
+        "proof_of_work": 2,
+        "queried_values": 466,
+        "sampled_values": 407
+      },
+      "steps_per_head": 16,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "value_width": 16
+    }
+  ],
+  "proof_object_scope": "matched_serialized_stark_proof_json_sections_for_source_sidecar_and_fused_envelopes",
+  "route_id": "local_stwo_attention_kv_fused_softmax_table_section_delta",
+  "schema": "zkai-attention-kv-fused-softmax-table-section-delta-v1",
+  "section_delta_commitment": "blake2b-256:22cdad8911d7b29204b535cc39683a46de3f3c0924565eebb0e3fddea5e55221",
+  "section_delta_status": "GO_MATCHED_SERIALIZED_STARK_PROOF_SECTION_DELTA",
+  "source_issue": 505,
+  "timing_policy": "proof_bytes_only_not_timing_not_public_benchmark",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_fused_softmax_table_section_delta_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-section-delta-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-section-delta-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_fused_softmax_table_section_delta_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}

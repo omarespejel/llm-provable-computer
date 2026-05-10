@@ -441,6 +441,15 @@ Tablero boundary.
   source-arithmetic-vs-LogUp column/byte attribution because the current fused
   gates do not expose stable component counters; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`.
+  Issue `#531` extends that result into a matched source-plus-sidecar versus
+  fused proof-section delta. Across the same nine profiles, source proofs total
+  `528303` bytes, LogUp sidecar proofs total `187827` bytes, fused proofs total
+  `563139` bytes, and fusion saves `152991` bytes. The checked delta shows
+  `141125` saved bytes (`92.244%`) in the opening bucket, split mainly across
+  `fri_proof` (`82882`) and `decommitments` (`58243`). This is a GO for
+  serialized proof-section deltas and still a NO-GO for backend-internal
+  source-arithmetic-vs-lookup attribution; see
+  `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow
