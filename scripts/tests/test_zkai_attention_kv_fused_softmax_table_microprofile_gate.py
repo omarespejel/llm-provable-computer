@@ -72,6 +72,11 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         self.assertEqual(baseline["proof_section_bytes"]["sampled_values"], 20546)
         self.assertEqual(baseline["proof_byte_buckets"]["opening_bucket_bytes"], 13229)
         self.assertEqual(baseline["proof_config"], gate.PROOF_CONFIG)
+        self.assertIsNone(baseline["trace_columns_by_component"]["fused_trace_columns"])
+        self.assertEqual(
+            baseline["trace_columns_by_component"]["fused_trace_columns_status"],
+            gate.COLUMN_BREAKDOWN_STATUS,
+        )
 
         sixteen = rows["d8_sixteen_head_seq8"]
         self.assertIsNone(sixteen["lookup_relation_width"])
@@ -131,6 +136,16 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         row["lookup_relation_width"] = 2
         row["lookup_relation_width_status"] = gate.RELATION_WIDTH_STATUS_EXPOSED
         self.assert_rejects(payload, "microprofile row drift")
+
+    def test_rejects_malformed_profile_rows_and_mutation_cases_with_gate_error(self):
+        payload = self.strip_mutation_summary(self.payload)
+        payload["profile_rows"][0] = "not-a-row"
+        self.assert_rejects(payload, "profile row must be object")
+
+        payload = copy.deepcopy(self.payload)
+        payload["mutation_cases"][0] = "not-a-case"
+        with self.assertRaisesRegex(gate.FusedSoftmaxTableMicroprofileGateError, "mutation case must be object"):
+            gate.validate_payload(payload, expected_rows=self.payload["profile_rows"])
 
     def test_tsv_summary_matches_payload(self):
         tsv = gate.to_tsv(self.payload)

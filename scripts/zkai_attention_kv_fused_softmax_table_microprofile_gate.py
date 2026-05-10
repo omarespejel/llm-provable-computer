@@ -142,12 +142,13 @@ EXPECTED_MUTATION_NAMES = (
     "proof_section_bucket_smuggling",
     "query_bucket_smuggling",
     "opening_bucket_smuggling",
+    "trace_column_count_smuggling",
     "aggregate_total_smuggling",
     "largest_profile_smuggling",
     "non_claim_removed",
     "unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 17
+EXPECTED_MUTATION_COUNT = 18
 
 
 class FusedSoftmaxTableMicroprofileGateError(ValueError):
@@ -257,6 +258,20 @@ def build_microprofile_row(profile: matrix.Profile) -> dict[str, Any]:
             "source_arithmetic_rows_status": BACKEND_INTERNAL_SPLIT_STATUS,
             "logup_lookup_rows_status": BACKEND_INTERNAL_SPLIT_STATUS,
         },
+        "trace_columns_by_component": {
+            "fused_trace_columns": None,
+            "fused_trace_columns_status": COLUMN_BREAKDOWN_STATUS,
+            "source_arithmetic_columns": None,
+            "source_arithmetic_columns_status": BACKEND_INTERNAL_SPLIT_STATUS,
+            "logup_lookup_columns": None,
+            "logup_lookup_columns_status": BACKEND_INTERNAL_SPLIT_STATUS,
+            "preprocessed_columns": None,
+            "preprocessed_columns_status": COLUMN_BREAKDOWN_STATUS,
+            "base_columns": None,
+            "base_columns_status": COLUMN_BREAKDOWN_STATUS,
+            "extension_columns": None,
+            "extension_columns_status": COLUMN_BREAKDOWN_STATUS,
+        },
         "backend_internal_split_status": BACKEND_INTERNAL_SPLIT_STATUS,
         "column_breakdown_status": COLUMN_BREAKDOWN_STATUS,
         "evidence_json": route_row["evidence_json"],
@@ -294,6 +309,7 @@ def validate_microprofile_row(row: Any) -> None:
         "proof_config",
         "proof_byte_buckets",
         "trace_rows_by_component",
+        "trace_columns_by_component",
         "backend_internal_split_status",
         "column_breakdown_status",
         "evidence_json",
@@ -361,6 +377,42 @@ def validate_microprofile_row(row: Any) -> None:
         raise FusedSoftmaxTableMicroprofileGateError("lookup claim component drift")
     if component_rows.get("multiplicity_table_rows") != row["table_rows"]:
         raise FusedSoftmaxTableMicroprofileGateError("multiplicity table component drift")
+    component_columns = row["trace_columns_by_component"]
+    expected_column_keys = {
+        "fused_trace_columns",
+        "fused_trace_columns_status",
+        "source_arithmetic_columns",
+        "source_arithmetic_columns_status",
+        "logup_lookup_columns",
+        "logup_lookup_columns_status",
+        "preprocessed_columns",
+        "preprocessed_columns_status",
+        "base_columns",
+        "base_columns_status",
+        "extension_columns",
+        "extension_columns_status",
+    }
+    if not isinstance(component_columns, dict) or set(component_columns) != expected_column_keys:
+        raise FusedSoftmaxTableMicroprofileGateError("trace column component field drift")
+    for key in (
+        "fused_trace_columns",
+        "source_arithmetic_columns",
+        "logup_lookup_columns",
+        "preprocessed_columns",
+        "base_columns",
+        "extension_columns",
+    ):
+        if component_columns[key] is not None:
+            raise FusedSoftmaxTableMicroprofileGateError("trace column component count overclaim")
+    if component_columns["fused_trace_columns_status"] != COLUMN_BREAKDOWN_STATUS:
+        raise FusedSoftmaxTableMicroprofileGateError("fused trace column status drift")
+    if component_columns["source_arithmetic_columns_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
+        raise FusedSoftmaxTableMicroprofileGateError("source arithmetic column status drift")
+    if component_columns["logup_lookup_columns_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
+        raise FusedSoftmaxTableMicroprofileGateError("logup lookup column status drift")
+    for key in ("preprocessed_columns_status", "base_columns_status", "extension_columns_status"):
+        if component_columns[key] != COLUMN_BREAKDOWN_STATUS:
+            raise FusedSoftmaxTableMicroprofileGateError("backend column status drift")
     if row["backend_internal_split_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
         raise FusedSoftmaxTableMicroprofileGateError("backend internal split status drift")
     if row["column_breakdown_status"] != COLUMN_BREAKDOWN_STATUS:
@@ -493,7 +545,7 @@ def build_base_payload() -> dict[str, Any]:
         "validation_commands": list(VALIDATION_COMMANDS),
     }
     payload["microprofile_commitment"] = microprofile_commitment(payload)
-    validate_payload(payload, allow_missing_mutation_summary=True)
+    validate_payload(payload, allow_missing_mutation_summary=True, expected_rows=rows)
     return payload
 
 
@@ -522,7 +574,7 @@ def microprofile_commitment(payload: dict[str, Any]) -> str:
 
 def build_payload() -> dict[str, Any]:
     payload = build_base_payload()
-    cases = mutation_cases_for(payload)
+    cases = mutation_cases_for(payload, expected_rows=payload["profile_rows"])
     payload["mutation_cases"] = cases
     payload["mutations_checked"] = len(cases)
     payload["mutations_rejected"] = sum(1 for case in cases if case["rejected"] is True)
@@ -568,6 +620,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         out["profile_rows"][0]["proof_byte_buckets"]["query_bucket_bytes"] += 1
     elif name == "opening_bucket_smuggling":
         out["profile_rows"][0]["proof_byte_buckets"]["opening_bucket_bytes"] += 1
+    elif name == "trace_column_count_smuggling":
+        out["profile_rows"][0]["trace_columns_by_component"]["fused_trace_columns"] = 12
     elif name == "aggregate_total_smuggling":
         out["aggregate"]["total_fused_proof_size_bytes"] += 1
     elif name == "largest_profile_smuggling":
@@ -581,13 +635,15 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
     return out
 
 
-def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
+def mutation_cases_for(payload: dict[str, Any], *, expected_rows: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     validate_mutation_spec()
+    if expected_rows is None:
+        expected_rows = payload["profile_rows"]
     cases = []
     for name in EXPECTED_MUTATION_NAMES:
         mutated = mutate_payload(payload, name)
         try:
-            validate_payload(mutated, allow_missing_mutation_summary=True)
+            validate_payload(mutated, allow_missing_mutation_summary=True, expected_rows=expected_rows)
         except FusedSoftmaxTableMicroprofileGateError as err:
             cases.append({"name": name, "rejected": True, "error": str(err)})
         else:
@@ -595,7 +651,34 @@ def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return cases
 
 
-def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = False) -> None:
+def profile_row_ids(rows: Any) -> list[str]:
+    if not isinstance(rows, list):
+        raise FusedSoftmaxTableMicroprofileGateError("profile rows must be list")
+    ids = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise FusedSoftmaxTableMicroprofileGateError("profile row must be object")
+        ids.append(row.get("profile_id"))
+    return ids
+
+
+def mutation_case_names(cases: Any) -> list[str]:
+    if not isinstance(cases, list):
+        raise FusedSoftmaxTableMicroprofileGateError("mutation cases must be list")
+    names = []
+    for case in cases:
+        if not isinstance(case, dict):
+            raise FusedSoftmaxTableMicroprofileGateError("mutation case must be object")
+        names.append(case.get("name"))
+    return names
+
+
+def validate_payload(
+    payload: Any,
+    *,
+    allow_missing_mutation_summary: bool = False,
+    expected_rows: list[dict[str, Any]] | None = None,
+) -> None:
     validate_mutation_spec()
     if not isinstance(payload, dict):
         raise FusedSoftmaxTableMicroprofileGateError("payload must be object")
@@ -643,11 +726,12 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     if tuple(payload.get("profile_ids") or ()) != EXPECTED_PROFILE_IDS:
         raise FusedSoftmaxTableMicroprofileGateError("profile id inventory drift")
     rows = payload.get("profile_rows")
-    if not isinstance(rows, list) or [row.get("profile_id") for row in rows] != list(EXPECTED_PROFILE_IDS):
+    if profile_row_ids(rows) != list(EXPECTED_PROFILE_IDS):
         raise FusedSoftmaxTableMicroprofileGateError("profile row order drift")
     for row in rows:
         validate_microprofile_row(row)
-    expected_rows = [build_microprofile_row(profile) for profile in matrix.PROFILES]
+    if expected_rows is None:
+        expected_rows = [build_microprofile_row(profile) for profile in matrix.PROFILES]
     if rows != expected_rows:
         raise FusedSoftmaxTableMicroprofileGateError("microprofile row drift against source artifacts")
     validate_aggregate(payload.get("aggregate"))
@@ -663,7 +747,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     if allow_missing_mutation_summary:
         return
     cases = payload.get("mutation_cases")
-    if not isinstance(cases, list) or [case.get("name") for case in cases] != list(EXPECTED_MUTATION_NAMES):
+    if mutation_case_names(cases) != list(EXPECTED_MUTATION_NAMES):
         raise FusedSoftmaxTableMicroprofileGateError("mutation case inventory drift")
     if any(case.get("rejected") is not True for case in cases):
         raise FusedSoftmaxTableMicroprofileGateError("mutation rejection drift")
@@ -688,8 +772,9 @@ def tsv_value(value: Any) -> str:
     return str(value)
 
 
-def to_tsv(payload: dict[str, Any]) -> str:
-    validate_payload(payload)
+def to_tsv(payload: dict[str, Any], *, validate: bool = True, expected_rows: list[dict[str, Any]] | None = None) -> str:
+    if validate:
+        validate_payload(payload, expected_rows=expected_rows)
     rows = []
     writer = csv.DictWriter(_ListWriter(rows), fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
@@ -744,7 +829,7 @@ def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
         handle.write("\n")
     try:
         loaded = json.loads(tmp.read_text(encoding="utf-8"))
-        validate_payload(loaded)
+        validate_payload(loaded, expected_rows=payload["profile_rows"])
         tmp.replace(path)
     except Exception:
         tmp.unlink(missing_ok=True)
@@ -754,7 +839,7 @@ def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
 def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
     validate_payload(payload)
     path.parent.mkdir(parents=True, exist_ok=True)
-    text = to_tsv(payload)
+    text = to_tsv(payload, validate=False)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as handle:
         tmp = pathlib.Path(handle.name)
         handle.write(text)

@@ -47,7 +47,7 @@
   "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
   "decision": "GO_TOP_LEVEL_FUSED_SOFTMAX_TABLE_PROOF_BYTE_MICROPROFILE_WITH_BACKEND_INTERNAL_SPLIT_NO_GO",
   "issue": 526,
-  "microprofile_commitment": "blake2b-256:3d924db95308d9ee6a93a7262e0e1995286fe43ac3d00403a4b6d010578dcd79",
+  "microprofile_commitment": "blake2b-256:c7738de43028106c2c5235a9c77cb4c7463f429da27a1e61f77feb6845d87730",
   "mutation_cases": [
     {
       "error": "decision drift",
@@ -115,6 +115,11 @@
       "rejected": true
     },
     {
+      "error": "trace column component count overclaim",
+      "name": "trace_column_count_smuggling",
+      "rejected": true
+    },
+    {
       "error": "fused-proof total drift",
       "name": "aggregate_total_smuggling",
       "rejected": true
@@ -135,8 +140,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 17,
-  "mutations_rejected": 17,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "non_claims": [
     "not real-valued Softmax",
     "not implementation-exact model Softmax",
@@ -206,6 +211,20 @@
       "source_plus_sidecar_raw_proof_bytes": 59437,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 64,
       "trace_rows_by_component": {
         "fused_trace_rows": 64,
@@ -263,6 +282,20 @@
       "source_plus_sidecar_raw_proof_bytes": 74961,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 64,
       "trace_rows_by_component": {
         "fused_trace_rows": 64,
@@ -320,6 +353,20 @@
       "source_plus_sidecar_raw_proof_bytes": 65208,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 128,
       "trace_rows_by_component": {
         "fused_trace_rows": 128,
@@ -377,6 +424,20 @@
       "source_plus_sidecar_raw_proof_bytes": 74529,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 256,
       "trace_rows_by_component": {
         "fused_trace_rows": 256,
@@ -434,6 +495,20 @@
       "source_plus_sidecar_raw_proof_bytes": 74086,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 512,
       "trace_rows_by_component": {
         "fused_trace_rows": 512,
@@ -491,6 +566,20 @@
       "source_plus_sidecar_raw_proof_bytes": 88711,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 1024,
       "trace_rows_by_component": {
         "fused_trace_rows": 1024,
@@ -548,6 +637,20 @@
       "source_plus_sidecar_raw_proof_bytes": 79444,
       "steps_per_head": 16,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 512,
       "trace_rows_by_component": {
         "fused_trace_rows": 512,
@@ -605,6 +708,20 @@
       "source_plus_sidecar_raw_proof_bytes": 91596,
       "steps_per_head": 8,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 128,
       "trace_rows_by_component": {
         "fused_trace_rows": 128,
@@ -662,6 +779,20 @@
       "source_plus_sidecar_raw_proof_bytes": 108158,
       "steps_per_head": 16,
       "table_rows": 9,
+      "trace_columns_by_component": {
+        "base_columns": null,
+        "base_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "extension_columns": null,
+        "extension_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "fused_trace_columns": null,
+        "fused_trace_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "logup_lookup_columns": null,
+        "logup_lookup_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "preprocessed_columns": null,
+        "preprocessed_columns_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+        "source_arithmetic_columns": null,
+        "source_arithmetic_columns_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
       "trace_rows": 512,
       "trace_rows_by_component": {
         "fused_trace_rows": 512,
