@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `248f5e22856e7ada698b0effd285107f2241334f` (matches
+**Mainline tip at last refresh:** `ee81a6384166ae20176308aea24dce71e9aa8eb4` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -544,6 +544,14 @@ Tablero boundary.
   opening bucket, mostly `fri_proof` (`82882`) and `decommitments` (`58243`).
   This is proof-section delta evidence, not backend-internal attribution; see
   `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`.
+  Issue `#476` then checks the same matched profiles through Stwo's typed
+  `StarkProof::size_estimate()` hook: source-plus-sidecar proofs total `253872`
+  typed-estimate bytes, fused proofs total `211380`, and fusion still saves
+  `42492` typed-estimate bytes. The largest typed saving buckets are FRI
+  decommitments (`19584`) and trace decommitments (`17312`). This is typed Stwo
+  size-estimate accounting, not stable binary proof serialization and not
+  fine-grained binary commitment or FRI-witness attribution; see
+  `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow

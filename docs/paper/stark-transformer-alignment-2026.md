@@ -1516,6 +1516,13 @@ mostly `fri_proof` (`82882`) and `decommitments` (`58243`). The interpretation
 is narrow but useful: fusion mostly avoids paying a second opening surface. This
 is still not backend-internal source-arithmetic-versus-lookup attribution.
 
+A stricter engineering-only typed-size follow-up uses Stwo's own
+`StarkProof::size_estimate()` and `size_breakdown_estimate()` hooks rather than
+JSON section lengths. It supports the same narrow interpretation, but it remains
+outside this paper's public result table: it is typed Stwo size-estimate
+evidence, not stable binary proof bytes, not fine-grained binary commitment or
+FRI-witness attribution, and not semantic source-vs-lookup column attribution.
+
 The fused ladder remains opt-in native Stwo backend evidence and bounded table
 evidence, not default-lane shipped behavior, not real-valued Softmax, not
 exp/div semantics, not implementation-exact model Softmax, not full inference,
