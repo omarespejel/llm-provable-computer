@@ -225,6 +225,24 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         finally:
             gate.build_microprofile_row = original_build_microprofile_row
 
+    def test_rejects_non_object_fused_envelope_before_backend_reads(self):
+        profile = gate.matrix.PROFILES[0]
+        module = profile.gate_module
+        original_read_bounded_json = module.read_bounded_json
+
+        def read_non_object(*_args, **_kwargs):
+            return []
+
+        try:
+            module.read_bounded_json = read_non_object
+            with self.assertRaisesRegex(
+                gate.FusedSoftmaxTableMicroprofileGateError,
+                f"{profile.profile_id} fused envelope must be object",
+            ):
+                gate.read_fused_proof_sections(profile)
+        finally:
+            module.read_bounded_json = original_read_bounded_json
+
     def test_rejects_mutation_spec_count_drift(self):
         original_count = gate.EXPECTED_MUTATION_COUNT
         try:
