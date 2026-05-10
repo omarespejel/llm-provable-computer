@@ -23,7 +23,9 @@ NO-GO for backend-internal attribution between source arithmetic columns and
 LogUp lookup columns. The current checked gates do not expose a stable
 preprocessed/base/extension column breakdown or a source-arithmetic-vs-lookup
 byte split. The evidence records that absence explicitly instead of inferring
-one from proof size.
+one from proof size. Each profile row includes a structured
+`trace_columns_by_component` field with `null` counts and explicit status
+strings so downstream tools can distinguish "not exposed" from "forgotten."
 
 ## Artifacts
 
@@ -34,7 +36,7 @@ one from proof size.
 
 Microprofile commitment:
 
-`blake2b-256:3d924db95308d9ee6a93a7262e0e1995286fe43ac3d00403a4b6d010578dcd79`
+`blake2b-256:c7738de43028106c2c5235a9c77cb4c7463f429da27a1e61f77feb6845d87730`
 
 ## Aggregate Read
 
