@@ -529,8 +529,14 @@ Tablero boundary.
   division kernel, not real-valued Softmax, full inference, timing evidence,
   recursion, or PCD; see
   `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`.
-  Follow-up issue `#526` remains registered for a fused Softmax-table proof-size
-  microprofile.
+  Issue `#526` turns that matrix into a checked fused proof-size
+  microprofile. Across the same nine profiles, the gate records `563139` total
+  fused proof bytes, `2440` lookup claims, `3200` trace rows, and top-level
+  proof-byte buckets dominated by query material (`382029` bytes) and opening
+  material (`174664` bytes). It explicitly records a NO-GO for backend-internal
+  source-arithmetic-vs-LogUp column/byte attribution because the current fused
+  gates do not expose stable component counters; see
+  `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`.
 
 
 - The attention/KV proof-route selector records a narrow

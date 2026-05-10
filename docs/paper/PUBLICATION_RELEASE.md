@@ -46,7 +46,8 @@ It supports the following presentation posture:
   proof objects, plus a fixed-width two-head long-sequence fused proof object
   and a width-axis d16 fused proof object with a matched source-plus-sidecar
   control, plus a combined d16 two-head long-sequence fused proof object with a
-  matched source-plus-sidecar control, plus an implementation-exact d16
+  matched source-plus-sidecar control and checked top-level proof-byte
+  microprofile, plus an implementation-exact d16
   quantized Softmax-table receipt with denominator/rounding edge-corpus hardening
   (not exact Softmax, not implementation-exact model Softmax, long-context
   inference, full inference, recursive aggregation of independent head proofs,
@@ -69,7 +70,9 @@ It does **not** support the following claims:
 - exact exp/div Softmax, implementation-exact model Softmax, long-context
   inference, or public benchmark comparisons for the native attention/KV
   fixtures. The denominator/rounding corpus is correctness hardening, not a new
-  proof or benchmark.
+  proof or benchmark. The fused Softmax-table microprofile is top-level JSON
+  proof-byte accounting, not binary PCS/FRI internals or source-vs-lookup
+  column attribution.
 
 ## Package hygiene
 

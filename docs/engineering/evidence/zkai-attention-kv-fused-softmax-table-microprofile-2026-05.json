@@ -1,0 +1,689 @@
+{
+  "aggregate": {
+    "bucket_totals": {
+      "commitment_bucket_bytes": 4064,
+      "config_and_pow_bytes": 1257,
+      "json_wrapper_bytes": 1125,
+      "opening_bucket_bytes": 174664,
+      "query_bucket_bytes": 382029
+    },
+    "exposed_relation_width_profiles": [
+      "d8_single_head_seq8",
+      "d16_single_head_seq8",
+      "d8_two_head_seq8",
+      "d8_four_head_seq8",
+      "d16_two_head_seq8",
+      "d16_two_head_seq16"
+    ],
+    "largest_profile_fused_proof_size_bytes": 84868,
+    "largest_profile_id": "d16_two_head_seq16",
+    "missing_relation_width_profiles": [
+      "d8_eight_head_seq8",
+      "d8_sixteen_head_seq8",
+      "d8_two_head_seq16"
+    ],
+    "profiles_checked": 9,
+    "section_totals": {
+      "commitments": 4064,
+      "config": 1224,
+      "decommitments": 84688,
+      "fri_proof": 89976,
+      "proof_of_work": 33,
+      "queried_values": 149801,
+      "sampled_values": 232228
+    },
+    "total_fused_proof_size_bytes": 563139,
+    "total_fused_savings_vs_source_plus_sidecar_bytes": 152991,
+    "total_json_wrapper_bytes": 1125,
+    "total_lookup_claims": 2440,
+    "total_section_payload_bytes": 562014,
+    "total_source_plus_sidecar_raw_proof_bytes": 716130,
+    "total_table_rows": 81,
+    "total_trace_rows": 3200
+  },
+  "all_mutations_rejected": true,
+  "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+  "claim_boundary": "ENGINEERING_MICROPROFILE_FOR_TOP_LEVEL_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROOF_BYTE_BUCKETS_NOT_BINARY_PCS_FRI_INTERNAL_ACCOUNTING_NOT_SOURCE_VS_LOOKUP_COLUMN_SPLIT_NOT_TIMING_NOT_BENCHMARK",
+  "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+  "decision": "GO_TOP_LEVEL_FUSED_SOFTMAX_TABLE_PROOF_BYTE_MICROPROFILE_WITH_BACKEND_INTERNAL_SPLIT_NO_GO",
+  "issue": 526,
+  "microprofile_commitment": "blake2b-256:3d924db95308d9ee6a93a7262e0e1995286fe43ac3d00403a4b6d010578dcd79",
+  "mutation_cases": [
+    {
+      "error": "decision drift",
+      "name": "decision_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "timing_policy drift",
+      "name": "timing_policy_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "proof_bucket_status drift",
+      "name": "proof_bucket_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "backend_internal_split_status drift",
+      "name": "backend_internal_split_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "column_breakdown_status drift",
+      "name": "column_breakdown_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "profile row order drift",
+      "name": "route_row_order_drift",
+      "rejected": true
+    },
+    {
+      "error": "profile row order drift",
+      "name": "profile_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "microprofile row drift against source artifacts",
+      "name": "lookup_relation_width_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "proof byte total drift",
+      "name": "fused_proof_size_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "opening bucket drift",
+      "name": "proof_section_bucket_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "query bucket drift",
+      "name": "query_bucket_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "opening bucket drift",
+      "name": "opening_bucket_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "fused-proof total drift",
+      "name": "aggregate_total_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "largest profile drift",
+      "name": "largest_profile_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "non-claim drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "unknown field",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 17,
+  "mutations_rejected": 17,
+  "non_claims": [
+    "not real-valued Softmax",
+    "not implementation-exact model Softmax",
+    "not full inference",
+    "not timing evidence",
+    "not a public benchmark",
+    "not binary PCS/FRI internal accounting",
+    "not source-arithmetic versus lookup column attribution",
+    "not recursion or PCD"
+  ],
+  "profile_ids": [
+    "d8_single_head_seq8",
+    "d16_single_head_seq8",
+    "d8_two_head_seq8",
+    "d8_four_head_seq8",
+    "d8_eight_head_seq8",
+    "d8_sixteen_head_seq8",
+    "d8_two_head_seq16",
+    "d16_two_head_seq8",
+    "d16_two_head_seq16"
+  ],
+  "profile_rows": [
+    {
+      "axis_role": "baseline",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 478713,
+      "fused_proof_size_bytes": 47698,
+      "fused_to_source_plus_sidecar_ratio": 0.802497,
+      "head_count": 1,
+      "key_width": 8,
+      "lookup_claims": 52,
+      "lookup_relation": "AttentionKvD8FusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d8_single_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 455,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 13229,
+        "query_bucket_bytes": 33749
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 455,
+        "config": 136,
+        "decommitments": 7328,
+        "fri_proof": 5901,
+        "proof_of_work": 4,
+        "queried_values": 13203,
+        "sampled_values": 20546
+      },
+      "proof_section_payload_bytes_total": 47573,
+      "source_plus_sidecar_raw_proof_bytes": 59437,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 64,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 52,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "width_axis",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 666515,
+      "fused_proof_size_bytes": 64503,
+      "fused_to_source_plus_sidecar_ratio": 0.860487,
+      "head_count": 1,
+      "key_width": 16,
+      "lookup_claims": 52,
+      "lookup_relation": "AttentionKvD16FusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d16_single_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 453,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 13216,
+        "query_bucket_bytes": 50570
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 453,
+        "config": 136,
+        "decommitments": 7307,
+        "fri_proof": 5909,
+        "proof_of_work": 3,
+        "queried_values": 19574,
+        "sampled_values": 30996
+      },
+      "proof_section_payload_bytes_total": 64378,
+      "source_plus_sidecar_raw_proof_bytes": 74961,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 64,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 52,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 16
+    },
+    {
+      "axis_role": "head_axis",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 585857,
+      "fused_proof_size_bytes": 49508,
+      "fused_to_source_plus_sidecar_ratio": 0.759232,
+      "head_count": 2,
+      "key_width": 8,
+      "lookup_claims": 104,
+      "lookup_relation": "AttentionKvTwoHeadFusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d8_two_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 453,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 14139,
+        "query_bucket_bytes": 34652
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 453,
+        "config": 136,
+        "decommitments": 7280,
+        "fri_proof": 6859,
+        "proof_of_work": 3,
+        "queried_values": 13601,
+        "sampled_values": 21051
+      },
+      "proof_section_payload_bytes_total": 49383,
+      "source_plus_sidecar_raw_proof_bytes": 65208,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 128,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 128,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 104,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-four-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 797717,
+      "fused_proof_size_bytes": 53468,
+      "fused_to_source_plus_sidecar_ratio": 0.717412,
+      "head_count": 4,
+      "key_width": 8,
+      "lookup_claims": 208,
+      "lookup_relation": "AttentionKvFourHeadFusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d8_four_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 447,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 17625,
+        "query_bucket_bytes": 35131
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 447,
+        "config": 136,
+        "decommitments": 8635,
+        "fri_proof": 8990,
+        "proof_of_work": 4,
+        "queried_values": 13835,
+        "sampled_values": 21296
+      },
+      "proof_section_payload_bytes_total": 53343,
+      "source_plus_sidecar_raw_proof_bytes": 74529,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 256,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 256,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 208,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-eight-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 1210413,
+      "fused_proof_size_bytes": 59375,
+      "fused_to_source_plus_sidecar_ratio": 0.801433,
+      "head_count": 8,
+      "key_width": 8,
+      "lookup_claims": 416,
+      "lookup_relation": null,
+      "lookup_relation_width": null,
+      "lookup_relation_width_status": "NOT_EXPOSED_BY_GATE_DO_NOT_INFER",
+      "profile_id": "d8_eight_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 440,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 23520,
+        "query_bucket_bytes": 35150
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 440,
+        "config": 136,
+        "decommitments": 10924,
+        "fri_proof": 12596,
+        "proof_of_work": 4,
+        "queried_values": 13834,
+        "sampled_values": 21316
+      },
+      "proof_section_payload_bytes_total": 59250,
+      "source_plus_sidecar_raw_proof_bytes": 74086,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 512,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 416,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "head_axis_extension",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-sixteen-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 1994648,
+      "fused_proof_size_bytes": 65006,
+      "fused_to_source_plus_sidecar_ratio": 0.732784,
+      "head_count": 16,
+      "key_width": 8,
+      "lookup_claims": 832,
+      "lookup_relation": null,
+      "lookup_relation_width": null,
+      "lookup_relation_width_status": "NOT_EXPOSED_BY_GATE_DO_NOT_INFER",
+      "profile_id": "d8_sixteen_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 451,
+        "config_and_pow_bytes": 139,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 29166,
+        "query_bucket_bytes": 35125
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 451,
+        "config": 136,
+        "decommitments": 12726,
+        "fri_proof": 16440,
+        "proof_of_work": 3,
+        "queried_values": 13783,
+        "sampled_values": 21342
+      },
+      "proof_section_payload_bytes_total": 64881,
+      "source_plus_sidecar_raw_proof_bytes": 88711,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 1024,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 1024,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 832,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "sequence_axis",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 1050248,
+      "fused_proof_size_bytes": 60502,
+      "fused_to_source_plus_sidecar_ratio": 0.761568,
+      "head_count": 2,
+      "key_width": 8,
+      "lookup_claims": 336,
+      "lookup_relation": null,
+      "lookup_relation_width": null,
+      "lookup_relation_width_status": "NOT_EXPOSED_BY_GATE_DO_NOT_INFER",
+      "profile_id": "d8_two_head_seq16",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 454,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 24667,
+        "query_bucket_bytes": 35116
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 454,
+        "config": 136,
+        "decommitments": 11397,
+        "fri_proof": 13270,
+        "proof_of_work": 4,
+        "queried_values": 13828,
+        "sampled_values": 21288
+      },
+      "proof_section_payload_bytes_total": 60377,
+      "source_plus_sidecar_raw_proof_bytes": 79444,
+      "steps_per_head": 16,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 512,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 336,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 8
+    },
+    {
+      "axis_role": "combined_width_head_axis",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 921008,
+      "fused_proof_size_bytes": 78211,
+      "fused_to_source_plus_sidecar_ratio": 0.853869,
+      "head_count": 2,
+      "key_width": 16,
+      "lookup_claims": 104,
+      "lookup_relation": "AttentionKvD16TwoHeadFusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d16_two_head_seq8",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 453,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 16691,
+        "query_bucket_bytes": 60802
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 453,
+        "config": 136,
+        "decommitments": 8657,
+        "fri_proof": 8034,
+        "proof_of_work": 4,
+        "queried_values": 23873,
+        "sampled_values": 36929
+      },
+      "proof_section_payload_bytes_total": 78086,
+      "source_plus_sidecar_raw_proof_bytes": 91596,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 128,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 128,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 104,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 16
+    },
+    {
+      "axis_role": "combined_width_head_sequence_axis",
+      "backend_internal_split_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+      "column_breakdown_status": "NO_GO_PREPROCESSED_BASE_EXTENSION_COLUMN_COUNTS_NOT_EXPOSED_BY_CURRENT_FUSED_GATES",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-proof-2026-05.envelope.json",
+      "fused_envelope_size_bytes": 1569734,
+      "fused_proof_size_bytes": 84868,
+      "fused_to_source_plus_sidecar_ratio": 0.784667,
+      "head_count": 2,
+      "key_width": 16,
+      "lookup_claims": 336,
+      "lookup_relation": "AttentionKvD16TwoHeadLongseqFusedSoftmaxTableRelation",
+      "lookup_relation_width": 2,
+      "lookup_relation_width_status": "EXPOSED_BY_GATE",
+      "profile_id": "d16_two_head_seq16",
+      "proof_byte_buckets": {
+        "commitment_bucket_bytes": 458,
+        "config_and_pow_bytes": 140,
+        "json_wrapper_bytes": 125,
+        "opening_bucket_bytes": 22411,
+        "query_bucket_bytes": 61734
+      },
+      "proof_config": {
+        "fri_config": {
+          "fold_step": 1,
+          "log_blowup_factor": 1,
+          "log_last_layer_degree_bound": 0,
+          "n_queries": 3
+        },
+        "lifting_log_size": null,
+        "pow_bits": 10
+      },
+      "proof_json_wrapper_bytes": 125,
+      "proof_section_bytes": {
+        "commitments": 458,
+        "config": 136,
+        "decommitments": 10434,
+        "fri_proof": 11977,
+        "proof_of_work": 4,
+        "queried_values": 24270,
+        "sampled_values": 37464
+      },
+      "proof_section_payload_bytes_total": 84743,
+      "source_plus_sidecar_raw_proof_bytes": 108158,
+      "steps_per_head": 16,
+      "table_rows": 9,
+      "trace_rows": 512,
+      "trace_rows_by_component": {
+        "fused_trace_rows": 512,
+        "logup_lookup_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT",
+        "lookup_claim_rows": 336,
+        "multiplicity_table_rows": 9,
+        "source_arithmetic_rows_status": "NO_GO_BACKEND_DOES_NOT_EXPOSE_SOURCE_ARITHMETIC_VS_LOGUP_COLUMN_BYTE_SPLIT"
+      },
+      "value_width": 16
+    }
+  ],
+  "proof_bucket_status": "GO_TOP_LEVEL_STARK_PROOF_JSON_SECTION_BUCKETS_EXTRACTED_FROM_FUSED_ENVELOPES",
+  "proof_object_scope": "serialized_stark_proof_json_sections_inside_checked_fused_envelopes",
+  "route_id": "local_stwo_attention_kv_fused_softmax_table_microprofile",
+  "schema": "zkai-attention-kv-fused-softmax-table-microprofile-v1",
+  "source_issue": 505,
+  "timing_policy": "no_timing_microprofile_proof_bytes_only",
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_fused_softmax_table_route_matrix_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.tsv",
+    "python3 scripts/zkai_attention_kv_fused_softmax_table_microprofile_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-microprofile-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-microprofile-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_fused_softmax_table_microprofile_gate",
+    "just gate-fast",
+    "just gate"
+  ]
+}
