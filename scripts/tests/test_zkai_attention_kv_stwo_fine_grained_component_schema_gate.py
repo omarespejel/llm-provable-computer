@@ -158,6 +158,21 @@ class AttentionKvStwoFineGrainedComponentSchemaGateTests(unittest.TestCase):
         ):
             gate.artifact_specs(rows)
 
+    def test_rejects_cli_reported_proof_sha256_drift(self):
+        original = gate.run_stwo_component_schema
+
+        def fake_cli(paths):
+            payload = original(paths)
+            payload["rows"][0]["proof_sha256"] = "0" * 64
+            return payload
+
+        gate.run_stwo_component_schema = fake_cli
+        try:
+            with self.assertRaisesRegex(gate.StwoFineGrainedComponentSchemaGateError, "CLI proof_sha256 drift"):
+                gate.build_rows()
+        finally:
+            gate.run_stwo_component_schema = original
+
     def test_rust_cli_rejects_malformed_envelope(self):
         with tempfile.TemporaryDirectory() as tmp:
             bad = pathlib.Path(tmp) / "bad-envelope.json"
