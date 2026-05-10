@@ -1828,6 +1828,8 @@ def d16_two_head_longseq_fused_softmax_summary(payload: dict[str, Any]) -> dict[
         "source_final_kv_cache_commitment": payload["source_final_kv_cache_commitment"],
         "source_outputs_commitment": payload["source_outputs_commitment"],
         "source_weight_table_commitment": payload["source_weight_table_commitment"],
+        "fused_envelope_commitment": payload["fused_envelope_commitment"],
+        "fused_proof_commitment": payload["fused_proof_commitment"],
         "mutations_checked": payload["mutations_checked"],
         "mutations_rejected": payload["mutations_rejected"],
         "all_mutations_rejected": payload["mutations_checked"] == payload["mutations_rejected"],
@@ -2181,6 +2183,12 @@ def route_inventory(*, run_native: bool = False) -> list[dict[str, Any]]:
     ]
     d16_two_head_longseq_fused_softmax_route["source_weight_table_commitment"] = d16_two_head_longseq_fused_softmax[
         "source_weight_table_commitment"
+    ]
+    d16_two_head_longseq_fused_softmax_route["fused_envelope_commitment"] = d16_two_head_longseq_fused_softmax[
+        "fused_envelope_commitment"
+    ]
+    d16_two_head_longseq_fused_softmax_route["fused_proof_commitment"] = d16_two_head_longseq_fused_softmax[
+        "fused_proof_commitment"
     ]
     d16_quantized_softmax_route = route_candidate_by_id(routes, D16_QUANTIZED_SOFTMAX_ROUTE_ID)
     d16_quantized_softmax_route["evidence"] = d16_quantized_softmax["evidence"]
@@ -3492,7 +3500,7 @@ def validate_d16_two_head_longseq_fused_softmax_receipt(summary: Any) -> None:
         raise AttentionKvRouteSelectorError("d16 two-head long-sequence fused Softmax source/sidecar proof-size drift")
     if summary["fused_proof_size_bytes"] != 84868:
         raise AttentionKvRouteSelectorError("d16 two-head long-sequence fused Softmax proof-size drift")
-    if summary["fused_envelope_size_bytes"] != 1569707:
+    if summary["fused_envelope_size_bytes"] != 1569734:
         raise AttentionKvRouteSelectorError("d16 two-head long-sequence fused Softmax envelope-size drift")
     if summary["source_plus_sidecar_raw_proof_bytes"] != 108158:
         raise AttentionKvRouteSelectorError("d16 two-head long-sequence fused Softmax source-plus-sidecar drift")
@@ -3517,6 +3525,8 @@ def validate_d16_two_head_longseq_fused_softmax_receipt(summary: Any) -> None:
         "source_final_kv_cache_commitment",
         "source_outputs_commitment",
         "source_weight_table_commitment",
+        "fused_envelope_commitment",
+        "fused_proof_commitment",
     ):
         commitment = summary.get(key)
         if not isinstance(commitment, str) or not commitment.startswith("blake2b-256:"):

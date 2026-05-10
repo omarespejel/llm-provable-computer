@@ -39,6 +39,8 @@ class AttentionKvD16TwoHeadLongseqFusedSoftmaxTableNativeGateTests(unittest.Test
         self.assertEqual(payload["fused_over_source_proof_bytes"], 1538)
         self.assertEqual(payload["fused_saves_vs_source_plus_sidecar_bytes"], 23290)
         self.assertLess(payload["fused_to_source_plus_sidecar_ratio"], 0.86)
+        self.assertTrue(payload["fused_envelope_commitment"].startswith("blake2b-256:"))
+        self.assertTrue(payload["fused_proof_commitment"].startswith("blake2b-256:"))
         self.assertEqual(payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
 
