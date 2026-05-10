@@ -220,6 +220,89 @@ EXPECTED_PROFILE_SAVINGS = {
         "opening_plumbing_savings_bytes": 5_728,
     },
 }
+EXPECTED_PROFILE_METADATA = {
+    "d8_single_head_seq8": {
+        "axis_role": "baseline",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 1,
+        "steps_per_head": 8,
+        "lookup_claims": 52,
+        "trace_rows": 64,
+    },
+    "d16_single_head_seq8": {
+        "axis_role": "width_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 1,
+        "steps_per_head": 8,
+        "lookup_claims": 52,
+        "trace_rows": 64,
+    },
+    "d8_two_head_seq8": {
+        "axis_role": "head_axis",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 8,
+        "lookup_claims": 104,
+        "trace_rows": 128,
+    },
+    "d8_four_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 4,
+        "steps_per_head": 8,
+        "lookup_claims": 208,
+        "trace_rows": 256,
+    },
+    "d8_eight_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 8,
+        "steps_per_head": 8,
+        "lookup_claims": 416,
+        "trace_rows": 512,
+    },
+    "d8_sixteen_head_seq8": {
+        "axis_role": "head_axis_extension",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 16,
+        "steps_per_head": 8,
+        "lookup_claims": 832,
+        "trace_rows": 1024,
+    },
+    "d8_two_head_seq16": {
+        "axis_role": "sequence_axis",
+        "key_width": 8,
+        "value_width": 8,
+        "head_count": 2,
+        "steps_per_head": 16,
+        "lookup_claims": 336,
+        "trace_rows": 512,
+    },
+    "d16_two_head_seq8": {
+        "axis_role": "combined_width_head_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 2,
+        "steps_per_head": 8,
+        "lookup_claims": 104,
+        "trace_rows": 128,
+    },
+    "d16_two_head_seq16": {
+        "axis_role": "combined_width_head_sequence_axis",
+        "key_width": 16,
+        "value_width": 16,
+        "head_count": 2,
+        "steps_per_head": 16,
+        "lookup_claims": 336,
+        "trace_rows": 512,
+    },
+}
 EXPECTED_AGGREGATE = {
     "profiles_checked": 9,
     "all_profiles_save_typed_components": True,
@@ -277,7 +360,7 @@ EXPECTED_AXIS_SUMMARY = {
         "mean_typed_saving_share": 0.139625,
     },
 }
-EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:36f1d66e2371d4b51233e915b01bf0b1502c25246e2c585b3fdedc7d9f5e129f"
+EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8"
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
     "grid_status_overclaim",
@@ -287,6 +370,8 @@ EXPECTED_MUTATION_NAMES = (
     "component_schema_status_overclaim",
     "profile_order_drift",
     "profile_relabeling",
+    "metadata_axis_role_smuggling",
+    "metadata_trace_rows_smuggling",
     "typed_savings_smuggling",
     "component_delta_smuggling",
     "aggregate_share_smuggling",
@@ -334,8 +419,19 @@ def require_int(value: Any, label: str) -> int:
 
 
 def read_checked_fine_grained_payload() -> dict[str, Any]:
-    payload = json.loads(components.JSON_OUT.read_text(encoding="utf-8"))
-    components.validate_payload(payload, expected_rows=payload["rows"])
+    try:
+        payload = json.loads(components.JSON_OUT.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise StwoControlledComponentGridGateError(
+            f"failed to read fine-grained component schema evidence: {components.JSON_OUT}: {err}"
+        ) from err
+    try:
+        rows = payload["rows"]
+    except (KeyError, TypeError) as err:
+        raise StwoControlledComponentGridGateError(
+            "fine-grained component schema evidence missing rows"
+        ) from err
+    components.validate_payload(payload, expected_rows=rows)
     return payload
 
 
@@ -447,6 +543,10 @@ def validate_grid_row(row: Any) -> None:
     profile_id = row["profile_id"]
     if profile_id not in EXPECTED_PROFILE_SAVINGS:
         raise StwoControlledComponentGridGateError("profile_id drift")
+    expected_metadata = EXPECTED_PROFILE_METADATA[profile_id]
+    for key, expected_value in expected_metadata.items():
+        if row[key] != expected_value:
+            raise StwoControlledComponentGridGateError(f"{profile_id} {key} metadata drift")
     for key in (
         "key_width",
         "value_width",
@@ -774,6 +874,8 @@ def mutation_cases_for(payload: dict[str, Any]) -> list[dict[str, Any]]:
     add("component_schema_status_overclaim", lambda p: p.__setitem__("component_schema_status", "GO_VERIFIER_BINARY_COMPONENTS"))
     add("profile_order_drift", lambda p: p["grid_rows"].reverse())
     add("profile_relabeling", lambda p: p["grid_rows"][0].__setitem__("profile_id", "different"))
+    add("metadata_axis_role_smuggling", lambda p: p["grid_rows"][0].__setitem__("axis_role", "full_factorial_axis"))
+    add("metadata_trace_rows_smuggling", lambda p: p["grid_rows"][0].__setitem__("trace_rows", p["grid_rows"][0]["trace_rows"] + 1))
     add("typed_savings_smuggling", lambda p: p["grid_rows"][0].__setitem__("typed_savings_bytes", p["grid_rows"][0]["typed_savings_bytes"] + 1))
     add("component_delta_smuggling", lambda p: p["grid_rows"][0]["component_savings_bytes"].__setitem__("fri_decommitment_merkle_path_bytes", p["grid_rows"][0]["component_savings_bytes"]["fri_decommitment_merkle_path_bytes"] + 1))
     add("aggregate_share_smuggling", lambda p: p["aggregate"].__setitem__("typed_saving_share_total", 1.0))
@@ -834,6 +936,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
     json_out = require_output_path(json_path)
     tsv_out = require_output_path(tsv_path)
     json_out.parent.mkdir(parents=True, exist_ok=True)
+    tsv_out.parent.mkdir(parents=True, exist_ok=True)
     json_out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     tsv_out.write_text(to_tsv(payload), encoding="utf-8")
 

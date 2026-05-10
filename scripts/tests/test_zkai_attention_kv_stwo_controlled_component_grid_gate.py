@@ -118,6 +118,16 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
         self.assert_rejects(payload, "typed savings drift")
 
         payload = self.strip_mutation_summary(self.payload)
+        payload["grid_rows"][0]["axis_role"] = "full_factorial_axis"
+        payload["component_grid_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, "axis_role metadata drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["grid_rows"][0]["trace_rows"] += 1
+        payload["component_grid_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, "trace_rows metadata drift")
+
+        payload = self.strip_mutation_summary(self.payload)
         payload["grid_rows"][0]["component_savings_bytes"]["fri_decommitment_merkle_path_bytes"] += 1
         payload["component_grid_commitment"] = gate.payload_commitment(payload)
         self.assert_rejects(payload, "component savings sum drift")
@@ -142,6 +152,27 @@ class AttentionKvStwoControlledComponentGridGateTests(unittest.TestCase):
             outside = pathlib.Path(tmp) / "out.json"
             with self.assertRaisesRegex(gate.StwoControlledComponentGridGateError, "output path"):
                 gate.write_outputs(self.payload, outside, gate.TSV_OUT)
+
+    def test_write_outputs_creates_both_output_directories(self):
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            root = pathlib.Path(tmp)
+            json_out = root / "json" / "out.json"
+            tsv_out = root / "tsv" / "out.tsv"
+            gate.write_outputs(self.payload, json_out, tsv_out)
+            self.assertTrue(json_out.is_file())
+            self.assertTrue(tsv_out.is_file())
+
+    def test_missing_upstream_component_schema_has_gate_error(self):
+        original = gate.components.JSON_OUT
+        try:
+            gate.components.JSON_OUT = gate.EVIDENCE_DIR / "missing-controlled-grid-upstream.json"
+            with self.assertRaisesRegex(
+                gate.StwoControlledComponentGridGateError,
+                "failed to read fine-grained component schema evidence",
+            ):
+                gate.read_checked_fine_grained_payload()
+        finally:
+            gate.components.JSON_OUT = original
 
 
 if __name__ == "__main__":

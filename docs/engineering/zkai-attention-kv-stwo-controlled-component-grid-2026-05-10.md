@@ -30,13 +30,29 @@ real-valued Softmax, full inference, recursion, or PCD.
 - TSV evidence:
   `docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv`
 - Evidence commitment:
-  `blake2b-256:36f1d66e2371d4b51233e915b01bf0b1502c25246e2c585b3fdedc7d9f5e129f`
+  `blake2b-256:3d7c9c0b786315900a7ebfc54fe210e80c844c3a58373a7111896b1aec2290c8`
 
 The gate is derived from already checked artifacts:
 
 - route matrix issue `#505`
 - section-delta issue `#531`
 - fine-grained typed component schema issue `#534`
+
+## Reproduction Metadata
+
+- Operator/session: Omar Espejel local research checkout with Codex-assisted
+  gate implementation.
+- Repo/branch: `provable-transformer-vm`, branch
+  `issue-536-controlled-grid`, PR `#538`.
+- Base checked from: `origin/main` at
+  `0680c2440835160bcf52172fa786fa7a5a875e29`.
+- Rust/Stwo surface: Rust `nightly-2025-07-14`, Cargo.lock-pinned Stwo
+  `2.2.0`, native `stwo-backend` proof artifacts already checked by the source
+  gates.
+- Timing policy: `proof_component_size_accounting_only_not_timing_not_public_benchmark`.
+- Profile controls: nine checked profiles with lookup-claim counts from `52`
+  to `832` and trace rows from `64` to `1024`; row-level controls are in the
+  JSON/TSV evidence.
 
 ## Result
 
@@ -135,4 +151,8 @@ python3 scripts/zkai_attention_kv_stwo_controlled_component_grid_gate.py \
 python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_controlled_component_grid_gate
 
 python3 scripts/zkai_attention_kv_stwo_fine_grained_component_schema_gate.py --no-write
+
+just gate-fast
+
+just gate
 ```
