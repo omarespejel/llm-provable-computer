@@ -128,6 +128,9 @@ EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES = (
     "d16_two_head_seq8",
     "d16_two_head_seq16",
 )
+EXPECTED_MISSING_RELATION_WIDTH_PROFILES = tuple(
+    profile_id for profile_id in EXPECTED_PROFILE_IDS if profile_id not in EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES
+)
 EXPECTED_MUTATION_NAMES = (
     "decision_relabeling",
     "claim_boundary_overclaim",
@@ -558,6 +561,8 @@ def validate_aggregate(aggregate: Any) -> None:
         require_str(version, "proof_backend_version")
     if tuple(aggregate["exposed_relation_width_profiles"]) != EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES:
         raise FusedSoftmaxTableMicroprofileGateError("exposed relation-width profile drift")
+    if tuple(aggregate["missing_relation_width_profiles"]) != EXPECTED_MISSING_RELATION_WIDTH_PROFILES:
+        raise FusedSoftmaxTableMicroprofileGateError("missing relation-width profile drift")
     section_totals = aggregate["section_totals"]
     if not isinstance(section_totals, dict) or set(section_totals) != set(PROOF_SECTION_KEYS):
         raise FusedSoftmaxTableMicroprofileGateError("section total field drift")
@@ -926,6 +931,36 @@ def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
         raise
 
 
+def staged_output_path(path: pathlib.Path) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="",
+        dir=path.parent,
+        prefix=f".{path.name}.staged.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        return pathlib.Path(handle.name)
+
+
+def write_outputs_atomically(json_path: pathlib.Path, tsv_path: pathlib.Path, payload: dict[str, Any]) -> None:
+    staged_json = staged_output_path(json_path)
+    staged_tsv = staged_output_path(tsv_path)
+    staged_json.unlink(missing_ok=True)
+    staged_tsv.unlink(missing_ok=True)
+    try:
+        write_json(staged_json, payload)
+        write_tsv(staged_tsv, payload)
+        staged_json.replace(json_path)
+        staged_tsv.replace(tsv_path)
+    except Exception:
+        staged_json.unlink(missing_ok=True)
+        staged_tsv.unlink(missing_ok=True)
+        raise
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-json", type=pathlib.Path, default=JSON_OUT)
@@ -941,8 +976,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     if not args.no_write:
-        write_json(args.write_json, payload)
-        write_tsv(args.write_tsv, payload)
+        write_outputs_atomically(args.write_json, args.write_tsv, payload)
     return 0
 
 
