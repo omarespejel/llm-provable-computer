@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "schema": "zkai-competitor-landscape-v1",
+  "created_at": "2026-05-12",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "git_commit": "d50c300d4c76428ecfe2df41462ce02988ad2697",
+  "systems_commitment_domain": "ptvm:zkai:competitor-landscape:systems:v1",
+  "systems_commitment": "blake2b-256:2e547d2d302aca970e48e526c9e6a3d1aa280d2f5116577815a09d2ebecc6260",
+  "positioning": {
+    "repo_lane": "STARK-native fused proof architecture for transformer attention/table membership",
+    "compete_on": [
+      "native STARK composition",
+      "fused attention arithmetic plus lookup membership",
+      "shared FRI/opening/decommitment plumbing",
+      "checked artifacts and mutation rejection",
+      "future Starknet/S-two production path"
+    ],
+    "do_not_compete_on_yet": [
+      "first full LLM proof",
+      "smallest generic zkML proof",
+      "public speed benchmark",
+      "production deployment"
+    ]
+  },
+  "validation_commands": [
+    "just gate-fast",
+    "python3 -m json.tool docs/engineering/evidence/zkai-competitor-landscape-2026-05.json >/dev/null",
+    "python3 scripts/zkai_competitor_landscape_commitment_check.py",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 -m unittest scripts.tests.test_research_issue_lint",
+    "python3 -m unittest scripts.tests.test_zkai_competitor_landscape_commitment_check",
+    "git diff --check",
+    "just gate-no-nightly"
+  ],
+  "systems": [
+    {
+      "name": "NANOZK",
+      "claim_type": "layerwise zero-knowledge proofs for verifiable LLM inference",
+      "why_it_matters": "Directly competes with broad LLM-verification narratives.",
+      "repo_position": "Do not claim first LLM verification; differentiate on native STARK fused component architecture.",
+      "id": "nanozk",
+      "sources": [
+        {
+          "label": "paper",
+          "url": "https://arxiv.org/abs/2603.18046",
+          "used_for": "external full-LLM verification lane context"
+        }
+      ]
+    },
+    {
+      "name": "Jolt Atlas",
+      "claim_type": "lookup-argument zkML framework for model inference",
+      "why_it_matters": "Lookup-centric zkML is close to the repo's Softmax-table/LogUp theme.",
+      "repo_position": "Compare lookup philosophy, but keep claim scoped to native Stwo attention/table fusion.",
+      "id": "jolt_atlas",
+      "sources": [
+        {
+          "label": "paper",
+          "url": "https://arxiv.org/abs/2602.17452",
+          "used_for": "lookup-centric zkML comparison lane"
+        }
+      ]
+    },
+    {
+      "name": "zkLLM / zkAttn",
+      "claim_type": "specialized zero-knowledge protocols for LLMs and attention",
+      "why_it_matters": "Attention-specific proof systems are the closest conceptual competitor.",
+      "repo_position": "Use as attention-specialization context; do not imply current fixtures prove full LLM attention exactly.",
+      "id": "zkllm_zkattn",
+      "sources": [
+        {
+          "label": "paper",
+          "url": "https://arxiv.org/abs/2404.16109",
+          "used_for": "attention-specialized zkML comparison lane"
+        }
+      ]
+    },
+    {
+      "name": "DeepProve-1",
+      "claim_type": "full LLM inference proof claim for GPT-2-style inference",
+      "why_it_matters": "Dominates the headline lane for full-model zkML demos.",
+      "repo_position": "Do not compete on full inference; use as reason to focus the paper on architecture mechanism.",
+      "id": "deepprove_1",
+      "sources": [
+        {
+          "label": "blog",
+          "url": "https://www.lagrange.dev/blog/deepprove-1",
+          "used_for": "full-model LLM proof claim context"
+        }
+      ]
+    },
+    {
+      "name": "EZKL",
+      "claim_type": "ONNX-to-ZKML tooling using circuit-oriented proving backends",
+      "why_it_matters": "Represents generic model compilation workflows.",
+      "repo_position": "Differentiate from generic compilation by showing transformer-aware STARK proof fusion.",
+      "id": "ezkl",
+      "sources": [
+        {
+          "label": "docs",
+          "url": "https://docs.ezkl.xyz/",
+          "used_for": "generic ONNX-to-ZKML tooling comparison"
+        }
+      ]
+    },
+    {
+      "name": "RISC Zero",
+      "claim_type": "zkVM computational receipts for arbitrary guest programs",
+      "why_it_matters": "Useful baseline for statement receipts and semantic checks.",
+      "repo_position": "Repo already uses zkVM receipts as control surfaces; native Stwo fusion is the distinct lane.",
+      "id": "risc_zero",
+      "sources": [
+        {
+          "label": "proof-system-docs",
+          "url": "https://dev.risczero.com/proof-system-in-detail.pdf",
+          "used_for": "zkVM receipt baseline context"
+        }
+      ]
+    },
+    {
+      "name": "StarkWare S-two / LogUp",
+      "claim_type": "open STARK prover stack with LogUp lookup machinery",
+      "why_it_matters": "Primary ecosystem and mechanism alignment for the repo.",
+      "repo_position": "Use as the production-path anchor for native lookup-heavy transformer components.",
+      "id": "stwo_logup",
+      "sources": [
+        {
+          "label": "stwo-crate-version",
+          "url": "https://docs.rs/crate/stwo/2.2.0",
+          "used_for": "pinned stwo 2.2.0 backend-version context"
+        },
+        {
+          "label": "logup-docs",
+          "url": "https://docs.starknet.io/learn/S-two-book/how-it-works/lookups",
+          "used_for": "LogUp lookup mechanism context"
+        },
+        {
+          "label": "release-blog",
+          "url": "https://starkware.co/blog/s-two-2-0-0-prover-for-developers/",
+          "used_for": "S-two developer-toolkit and production-path context"
+        }
+      ]
+    }
+  ]
+}
