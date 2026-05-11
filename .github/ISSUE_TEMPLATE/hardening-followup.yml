@@ -1,0 +1,52 @@
+name: Hardening Follow-Up
+description: Preserve a concrete hardening concern found while working.
+title: "[hardening-followup]: "
+labels:
+  - hardening-followup
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when an agent finds a relevant risk outside the current PR scope.
+  - type: textarea
+    id: observed_risk
+    attributes:
+      label: Observed risk
+      description: What specific verifier, artifact, path-safety, resource, or claim-drift risk was observed?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence_or_location
+    attributes:
+      label: Evidence or location
+      description: Link files, docs, logs, bot comments, or commands that exposed the risk.
+    validations:
+      required: true
+  - type: textarea
+    id: why_not_current_pr
+    attributes:
+      label: Why not current PR
+      description: Explain why this should be tracked separately instead of widening the current PR.
+    validations:
+      required: true
+  - type: textarea
+    id: smallest_fix_or_test
+    attributes:
+      label: Smallest fix or test
+      description: What is the smallest local change that would close or measure this risk?
+    validations:
+      required: true
+  - type: textarea
+    id: go_no_go
+    attributes:
+      label: GO / NO-GO
+      description: What makes this worth fixing now, and what makes it safe to park or kill?
+    validations:
+      required: true
+  - type: textarea
+    id: local_validation_plan
+    attributes:
+      label: Local validation plan
+      description: List expected local commands. Do not use GitHub CI as the research loop.
+    validations:
+      required: true

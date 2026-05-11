@@ -1,0 +1,77 @@
+name: Research Frontier
+description: Open a hypothesis-driven frontier track with explicit GO/NO-GO gates.
+title: "[research-frontier]: "
+labels:
+  - research-frontier
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for exploration that could strengthen, narrow, or kill the STARK-native zkML thesis.
+  - type: dropdown
+    id: owner_role
+    attributes:
+      label: Owner role
+      options:
+        - scout
+        - experimenter
+        - skeptic
+        - integrator
+    validations:
+      required: true
+  - type: textarea
+    id: thesis
+    attributes:
+      label: Thesis
+      description: What might be true?
+    validations:
+      required: true
+  - type: textarea
+    id: why_it_matters_for_serious_paper
+    attributes:
+      label: Why it matters for a serious paper
+      description: Explain the paper upside in concrete terms.
+    validations:
+      required: true
+  - type: textarea
+    id: smallest_falsifying_experiment
+    attributes:
+      label: Smallest falsifying experiment
+      description: What is the smallest local experiment that can kill or narrow this?
+    validations:
+      required: true
+  - type: textarea
+    id: go_gate
+    attributes:
+      label: GO gate
+      description: What exact evidence would make this worth executing further?
+    validations:
+      required: true
+  - type: textarea
+    id: no_go_gate
+    attributes:
+      label: NO-GO gate
+      description: What exact evidence kills this path or narrows the claim?
+    validations:
+      required: true
+  - type: textarea
+    id: required_artifacts
+    attributes:
+      label: Required artifacts
+      description: List gate notes, JSON/TSV evidence, tests, figures, or reproduction outputs.
+    validations:
+      required: true
+  - type: textarea
+    id: non_claims
+    attributes:
+      label: Non-claims
+      description: What must not be inferred from this issue?
+    validations:
+      required: true
+  - type: textarea
+    id: local_validation_plan
+    attributes:
+      label: Local validation plan
+      description: List expected local commands. Do not use GitHub CI as the research loop.
+    validations:
+      required: true

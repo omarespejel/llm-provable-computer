@@ -1,0 +1,59 @@
+name: Paper Claim
+description: Promote a checked engineering result toward paper-facing language.
+title: "[paper-claim]: "
+labels:
+  - paper-claim
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only when a claim has checked evidence and explicit non-claims.
+  - type: textarea
+    id: claim
+    attributes:
+      label: Claim
+      description: State the exact claim in one bounded sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence_paths
+    attributes:
+      label: Evidence paths
+      description: List checked docs, JSON/TSV artifacts, scripts, tests, and reproduction commands.
+    validations:
+      required: true
+  - type: textarea
+    id: claim_boundary
+    attributes:
+      label: Claim boundary
+      description: Explain the scope, fixture, backend, timing policy, and artifact layer.
+    validations:
+      required: true
+  - type: textarea
+    id: non_claims
+    attributes:
+      label: Non-claims
+      description: What readers must not infer from this claim.
+    validations:
+      required: true
+  - type: textarea
+    id: competitor_context
+    attributes:
+      label: Competitor context
+      description: External systems or papers this claim could be compared against.
+    validations:
+      required: true
+  - type: textarea
+    id: promotion_gate
+    attributes:
+      label: Promotion gate
+      description: What must pass before this enters docs/paper?
+    validations:
+      required: true
+  - type: textarea
+    id: local_validation_plan
+    attributes:
+      label: Local validation plan
+      description: List expected local commands. Do not use GitHub CI as the research loop.
+    validations:
+      required: true
