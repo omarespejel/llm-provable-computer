@@ -1,13 +1,14 @@
 # Local-only release gate
 
-GitHub Actions is intentionally disabled at the repository level for cost
-reasons. The release gate runs entirely on a workstation. Server-side
+GitHub Actions is intentionally not part of the release gate for cost reasons.
+Automatic `pull_request`, `push`, and `schedule` triggers are disabled in the
+workflow files. The release gate runs entirely on a workstation. Server-side
 enforcement is reduced to repository policy that does not consume Actions
-minutes: a pull request must exist before a merge into `main`, the merge
-must be a fast-forward / linear-history merge, and the branch cannot be
-deleted or rewritten. Review approval and signed commits are intentionally
-NOT required because this is a solo-maintainer repository where requiring
-either would block every merge without adding meaningful security.
+minutes: a pull request must exist before a merge into `main`, the merge must
+be a fast-forward / linear-history merge, and the branch cannot be deleted or
+rewritten. Review approval and signed commits are intentionally NOT required
+because this is a solo-maintainer repository where requiring either would block
+every merge without adding meaningful security.
 
 ## What enforces what
 
@@ -19,9 +20,9 @@ either would block every merge without adding meaningful security.
 | linear history                               | `main` ruleset                                                |
 | pull request required before merge           | `main` ruleset (review approval not required)                 |
 | Dependabot security alerts                   | repository security & analysis settings                       |
-| AI commenter pre-merge review                | CodeRabbit, Greptile, pr-agent webhooks (do not use Actions) |
+| AI commenter pre-merge review                | CodeRabbit, Qodo, Greptile, pr-agent webhooks (do not use Actions) |
 
-The AI commenters (CodeRabbit, Greptile, pr-agent) run via GitHub App
+The AI commenters (CodeRabbit, Qodo, Greptile, pr-agent) run via GitHub App
 webhooks and are unaffected by Actions being disabled. They will continue
 to comment on every PR, including PRs that propose changes to the local gate
 itself.
@@ -70,14 +71,15 @@ ln -sf ../../docs/engineering/release-gates/pre-push-hook.sh .git/hooks/pre-push
 
 ## Why workflow files are still in `.github/workflows/`
 
-The CI workflows are kept on disk so that:
+The CI workflows are kept on disk with `workflow_dispatch` only so that:
 
-1. Re-enabling Actions (or migrating to a different runner) is one repository
-   setting change away.
+1. A repository owner can intentionally dispatch a rare release, paper-bundle,
+   security, or final-review run if local evidence needs a GitHub-hosted
+   cross-check.
 2. `zizmor` still has something to lint, which keeps the workflow files from
    bit-rotting.
-3. The cost / hardening posture is a documented, reversible policy decision
-   rather than a code-deletion event.
+3. Re-enabling automatic Actions (or migrating to a different runner) remains a
+   documented, reversible policy decision rather than a code-deletion event.
 
 If Actions is later re-enabled, restore the `required_status_checks` rule in
 `branch-protection-ruleset.json` (the prior version listed

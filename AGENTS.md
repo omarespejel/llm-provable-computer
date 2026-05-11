@@ -32,6 +32,7 @@
 - Use `gh pr merge --rebase`; do not create merge commits in this repository.
 - Do not merge while review threads are still actionable. Clear human and bot threads or explicitly confirm they are stale before merging.
 - After the latest AI-reviewer activity, wait at least `5` minutes before merging, then recheck that no actionable bot threads or findings appeared during the quiet window.
+- GitHub Actions are not part of the research, debugging, or merge-readiness loop. Workflows are manual-only dormant guardrails for rare owner-directed release, paper-bundle, security, or final-review checks; routine PRs must rely on scoped local validation plus bot review.
 
 ## Trusted-core paths
 
@@ -56,6 +57,7 @@ Review and edit with extra caution:
 
 - If proof semantics, carried-state structure, manifest schemas, version constants, or backend routing change, add or update at least one negative, tamper-path, or compatibility test.
 - Start with the narrowest relevant test or workflow surface first, then expand only as needed.
+- For PRs, list the exact local validation commands in the PR body. Qodo and CodeRabbit feedback is part of the normal cheap review loop; fix relevant findings, push again, and restart the merge quiet window.
 - For trusted-core changes, consult `docs/engineering/hardening-policy.md` and `docs/security/threat-model.md` before widening claims.
 - For docs or handoff changes that move claim boundaries, lane status, or merge policy, update exact backend versions, timing modes, evidence paths, and reproduction commands where relevant.
 

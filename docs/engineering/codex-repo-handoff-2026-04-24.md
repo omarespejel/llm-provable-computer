@@ -756,7 +756,9 @@ Tablero boundary.
 - Use `gh pr merge --rebase`.
 - Do not merge while review threads remain actionable.
 - When a bot leaves only a summary comment, check whether it actually opened review threads before treating it as a blocker.
-- After the latest AI-reviewer activity, wait at least `5` minutes, then recheck the review surface before merging.
+- Qodo and CodeRabbit are cheap adversarial reviewers. Fix relevant findings locally, push again, and restart the merge quiet window.
+- GitHub Actions are not part of the research/debugging/merge-readiness loop. Workflows are manual-only dormant guardrails for rare owner-directed release, paper-bundle, security, or final-review checks; routine PRs use scoped local validation as the proof of readiness.
+- After the latest relevant AI-reviewer activity, wait at least `5` minutes, then recheck the review surface before merging.
 
 ## Research and evidence culture
 

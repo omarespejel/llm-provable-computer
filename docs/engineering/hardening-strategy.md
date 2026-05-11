@@ -12,8 +12,8 @@ work.
 - Catch verifier drift before a malformed artifact can be accepted.
 - Catch parser/decoder failures before malformed or adversarial input can panic,
   trigger UB, or silently decode to the wrong value.
-- Catch supply-chain and workflow drift before new advisories or CI regressions
-  land unnoticed.
+- Catch supply-chain and workflow drift before new advisories or workflow
+  regressions land unnoticed.
 - Tie every merge decision to reproducible local evidence rather than reviewer
   opinion.
 
@@ -27,8 +27,8 @@ The repository treats the following as primary failure modes:
 | Verifier acceptance bug | malformed proof/artifact/manifest is accepted | tamper-path unit tests, CLI rejection tests, schema/statement checks |
 | Parser/decoder unsoundness | malformed input panics, misdecodes, or triggers UB | unit tests, fuzzing, Miri, UB checks, ASAN, no-panic fallbacks |
 | Statement drift | code and documented public statement stop matching | statement-spec contract tests, manifest schema checks, proof claim round-trips |
-| Workflow drift | CI or merge policy stops enforcing the intended guarantees | workflow audit, shellcheck, local merge gate evidence |
-| Dependency drift | new RustSec/license/source risk lands without code changes | dependency audit on PR deltas plus scheduled and `main`-branch audit |
+| Workflow drift | workflow files or merge policy stop matching the intended local-only guarantees | workflow audit, shellcheck, local merge gate evidence |
+| Dependency drift | new RustSec/license/source risk lands without code changes | local dependency audit and Dependabot security alerts |
 | Overclaiming from AI review | bots approve while the artifact is still weak | zero unresolved threads plus local evidence and merge gate |
 
 ## Assurance Tiers
@@ -41,7 +41,7 @@ do not let trusted-core changes merge on smoke alone.
 | `smoke` | Fast confidence on ordinary PRs | `git diff --check`, `cargo fmt --check`, shellcheck/workflow audit when touched, statement-spec contract, allowlisted smoke targets, exact pinned-nightly `stwo` smokes |
 | `full` | Merge proof for most code changes | `smoke` plus `cargo test -q --lib`, `cargo test -q --lib --tests`, `cargo test -q --workspace --doc`, dependency audit, exact pinned-nightly `stwo` smokes |
 | `hardening` | Adversarial confidence for parser/verifier/trusted-core changes | `full` plus mutation, fuzz smoke, UB checks, ASAN, Miri, formal contracts |
-| scheduled baseline | Detect drift that diff-scoped PR checks cannot see | scheduled or `main`-branch dependency audit, manually dispatched heavy CI baselines when needed |
+| owner-dispatched baseline | Rare GitHub-hosted cross-check outside the normal merge loop | manually dispatched dormant workflows only when owner-directed |
 
 The merge gate in `scripts/local_merge_gate.sh` enforces the first three tiers.
 Mutation-testing evidence is tracked through
@@ -166,7 +166,7 @@ This is the minimum expected evidence for each change class.
 | --- | --- | --- |
 | docs-only publication edits | `smoke` | format and policy/doc consistency |
 | ordinary runtime logic | `full` | unit/integration coverage for changed behavior |
-| workflow or merge-gate logic | `full` | workflow audit, shellcheck, clean GitHub check rollup |
+| workflow or merge-gate logic | `full` | workflow audit, shellcheck, no unexpected GitHub check failures |
 | dependency or vendored third-party patch | `full` | dependency audit, targeted regression tests, documented exception policy if any |
 | parser/decoder/verifier path | `hardening` preferred | tamper tests, fuzz coverage, no-panic behavior, UB/ASAN/Miri when applicable |
 | public statement/schema/manifest change | `full` minimum | round-trip tests, mismatch detection, CLI/load/verify rejection tests |
@@ -252,7 +252,7 @@ Do not do these:
 - merge parser/verifier changes without tamper-path tests,
 - add `unsafe` or vendor patches without targeted coverage,
 - widen dependency exceptions without an owner and exit condition,
-- rely only on diff-scoped PR audits for advisory drift,
+- rely only on diff-scoped or GitHub-hosted audits for advisory drift,
 - claim a hardening tier ran when it did not.
 
 ## Current Default
@@ -263,7 +263,7 @@ For this repository today:
 - `full` is the normal merge gate for code changes,
 - `hardening` is the preferred gate for parser/verifier/trusted-core boundary
   work,
-- scheduled and `main`-branch dependency audit covers advisory drift that PR
-  diff-gating cannot catch.
+- local dependency audit plus Dependabot security alerts cover advisory drift
+  without scheduled or `main`-branch GitHub Actions runs.
 
 When in doubt, choose the stricter tier and record the evidence.
