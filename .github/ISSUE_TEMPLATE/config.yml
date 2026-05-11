@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Research OS source of truth
+    url: https://github.com/omarespejel/provable-transformer-vm/tree/main/.codex/research
+    about: Read the structured north star and operating model before opening frontier issues.
