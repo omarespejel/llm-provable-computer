@@ -27,6 +27,7 @@ if str(ROOT) not in sys.path:
 from scripts import zkai_attention_kv_d16_fused_softmax_table_native_gate as d16_fused
 from scripts import zkai_attention_kv_d16_two_head_fused_softmax_table_native_gate as d16_two_head_fused
 from scripts import zkai_attention_kv_d16_two_head_longseq_fused_softmax_table_native_gate as d16_two_head_longseq_fused
+from scripts import zkai_attention_kv_d32_fused_softmax_table_native_gate as d32_fused
 from scripts import zkai_attention_kv_d8_fused_softmax_table_native_gate as d8_fused
 from scripts import zkai_attention_kv_eight_head_fused_softmax_table_native_gate as eight_head_fused
 from scripts import zkai_attention_kv_four_head_fused_softmax_table_native_gate as four_head_fused
@@ -93,6 +94,7 @@ EXPECTED_MUTATION_NAMES = (
     "route_row_decision_relabeling",
     "route_row_evidence_path_relabeling",
     "d16_width_metric_smuggling",
+    "d32_width_metric_smuggling",
     "two_head_head_count_metric_smuggling",
     "longseq_steps_metric_smuggling",
     "seq32_steps_metric_smuggling",
@@ -103,6 +105,7 @@ EXPECTED_MUTATION_NAMES = (
     "d16_two_head_combined_axis_metric_smuggling",
     "d16_two_head_longseq_combined_axis_metric_smuggling",
     "axis_summary_width_ratio_drift",
+    "axis_summary_width_extension_ratio_drift",
     "axis_summary_head_axis_ratio_drift",
     "axis_summary_sequence_ratio_drift",
     "axis_summary_sequence_seq32_ratio_drift",
@@ -154,6 +157,19 @@ PROFILES = (
         source_input_json=d16_fused.SOURCE_INPUT_JSON,
         expected_key_width=16,
         expected_value_width=16,
+        expected_head_count=1,
+        expected_steps_per_head=8,
+        comparator_required=True,
+    ),
+    Profile(
+        profile_id="d32_single_head_seq8",
+        axis_role="width_axis_extension",
+        label="d32 single-head seq8 fused Softmax-table route",
+        gate_module=d32_fused,
+        gate_json=d32_fused.JSON_OUT,
+        source_input_json=d32_fused.SOURCE_INPUT_JSON,
+        expected_key_width=32,
+        expected_value_width=32,
         expected_head_count=1,
         expected_steps_per_head=8,
         comparator_required=True,
@@ -450,6 +466,7 @@ def row_by_id(rows: list[dict[str, Any]], profile_id: str) -> dict[str, Any]:
 def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     d8 = row_by_id(rows, "d8_single_head_seq8")
     d16 = row_by_id(rows, "d16_single_head_seq8")
+    d32 = row_by_id(rows, "d32_single_head_seq8")
     two = row_by_id(rows, "d8_two_head_seq8")
     four = row_by_id(rows, "d8_four_head_seq8")
     eight = row_by_id(rows, "d8_eight_head_seq8")
@@ -466,6 +483,49 @@ def build_axis_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "fused_proof_size_ratio": ratio(d16["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]),
             "source_plus_sidecar_ratio": ratio(
                 d16["source_plus_sidecar_raw_proof_bytes"], d8["source_plus_sidecar_raw_proof_bytes"]
+            ),
+        },
+        "width_axis_single_head_seq8": {
+            "held_constant": "single_head_seq8_score_rows_52_trace_rows_64",
+            "profile_ids": ["d8_single_head_seq8", "d16_single_head_seq8", "d32_single_head_seq8"],
+            "key_widths": [d8["key_width"], d16["key_width"], d32["key_width"]],
+            "lookup_claims": [d8["lookup_claims"], d16["lookup_claims"], d32["lookup_claims"]],
+            "trace_rows": [d8["trace_rows"], d16["trace_rows"], d32["trace_rows"]],
+            "fused_proof_size_bytes": [
+                d8["fused_proof_size_bytes"],
+                d16["fused_proof_size_bytes"],
+                d32["fused_proof_size_bytes"],
+            ],
+            "source_plus_sidecar_raw_proof_bytes": [
+                d8["source_plus_sidecar_raw_proof_bytes"],
+                d16["source_plus_sidecar_raw_proof_bytes"],
+                d32["source_plus_sidecar_raw_proof_bytes"],
+            ],
+            "fused_to_source_plus_sidecar_ratios": [
+                d8["fused_to_source_plus_sidecar_ratio"],
+                d16["fused_to_source_plus_sidecar_ratio"],
+                d32["fused_to_source_plus_sidecar_ratio"],
+            ],
+            "d8_to_d16_key_width_ratio": ratio(d16["key_width"], d8["key_width"]),
+            "d8_to_d16_fused_proof_size_ratio": ratio(
+                d16["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]
+            ),
+            "d8_to_d16_source_plus_sidecar_ratio": ratio(
+                d16["source_plus_sidecar_raw_proof_bytes"], d8["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "d16_to_d32_key_width_ratio": ratio(d32["key_width"], d16["key_width"]),
+            "d16_to_d32_fused_proof_size_ratio": ratio(
+                d32["fused_proof_size_bytes"], d16["fused_proof_size_bytes"]
+            ),
+            "d16_to_d32_source_plus_sidecar_ratio": ratio(
+                d32["source_plus_sidecar_raw_proof_bytes"], d16["source_plus_sidecar_raw_proof_bytes"]
+            ),
+            "d8_to_d32_key_width_ratio": ratio(d32["key_width"], d8["key_width"]),
+            "d8_to_d32_fused_proof_size_ratio": ratio(
+                d32["fused_proof_size_bytes"], d8["fused_proof_size_bytes"]
+            ),
+            "d8_to_d32_source_plus_sidecar_ratio": ratio(
+                d32["source_plus_sidecar_raw_proof_bytes"], d8["source_plus_sidecar_raw_proof_bytes"]
             ),
         },
         "head_axis_d8_seq8": {
@@ -668,6 +728,10 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
             lambda v: row_by_id(v["route_rows"], "d16_single_head_seq8").__setitem__("key_width", 8),
         ),
         (
+            "d32_width_metric_smuggling",
+            lambda v: row_by_id(v["route_rows"], "d32_single_head_seq8").__setitem__("key_width", 16),
+        ),
+        (
             "two_head_head_count_metric_smuggling",
             lambda v: row_by_id(v["route_rows"], "d8_two_head_seq8").__setitem__("head_count", 1),
         ),
@@ -712,6 +776,12 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
         (
             "axis_summary_width_ratio_drift",
             lambda v: v["axis_summary"]["width_axis_d8_to_d16"].__setitem__("fused_proof_size_ratio", 1.0),
+        ),
+        (
+            "axis_summary_width_extension_ratio_drift",
+            lambda v: v["axis_summary"]["width_axis_single_head_seq8"].__setitem__(
+                "d16_to_d32_fused_proof_size_ratio", 1.0
+            ),
         ),
         (
             "axis_summary_head_axis_ratio_drift",
