@@ -98,7 +98,18 @@ TSV_COLUMNS = (
     "commitment_bucket_savings_bytes",
     "backend_internal_split_status",
 )
-EXPECTED_PROFILE_IDS = matrix.PROFILE_IDS
+EXPECTED_PROFILE_IDS = (
+    "d8_single_head_seq8",
+    "d16_single_head_seq8",
+    "d8_two_head_seq8",
+    "d8_four_head_seq8",
+    "d8_eight_head_seq8",
+    "d8_sixteen_head_seq8",
+    "d8_two_head_seq16",
+    "d8_two_head_seq32",
+    "d16_two_head_seq8",
+    "d16_two_head_seq16",
+)
 EXPECTED_ROUTE_METADATA = {
     "d8_single_head_seq8": {
         "axis_role": "baseline",
@@ -333,6 +344,13 @@ EXPECTED_MUTATION_COUNT = len(EXPECTED_MUTATION_NAMES)
 
 class FusedSoftmaxTableSectionDeltaGateError(ValueError):
     pass
+
+
+def expected_profiles() -> tuple[matrix.Profile, ...]:
+    profiles = tuple(profile for profile in matrix.PROFILES if profile.profile_id in EXPECTED_PROFILE_IDS)
+    if tuple(profile.profile_id for profile in profiles) != EXPECTED_PROFILE_IDS:
+        raise FusedSoftmaxTableSectionDeltaGateError("section-delta profile inventory drift")
+    return profiles
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -819,7 +837,7 @@ def section_delta_commitment(payload: dict[str, Any]) -> str:
 
 
 def build_base_payload() -> dict[str, Any]:
-    rows = [build_section_delta_row(profile) for profile in matrix.PROFILES]
+    rows = [build_section_delta_row(profile) for profile in expected_profiles()]
     payload = {
         "schema": SCHEMA,
         "issue": ISSUE,
@@ -906,7 +924,7 @@ def validate_payload(
     for row in rows:
         validate_section_delta_row(row)
     if expected_rows is None:
-        expected_rows = [build_section_delta_row(profile) for profile in matrix.PROFILES]
+        expected_rows = [build_section_delta_row(profile) for profile in expected_profiles()]
     if rows != expected_rows:
         raise FusedSoftmaxTableSectionDeltaGateError("section delta row drift")
     expected_aggregate = build_aggregate(expected_rows)

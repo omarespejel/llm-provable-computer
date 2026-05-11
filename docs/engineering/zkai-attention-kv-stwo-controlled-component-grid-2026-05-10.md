@@ -16,7 +16,8 @@ than the matched source-plus-LogUp-sidecar route under the fine-grained typed
 component estimate.
 
 This is **not** a full factorial benchmark. This gate now includes one `seq32`
-sequence-axis extension, but it still does not include `d32`, all width/head/
+sequence-axis extension, but it still does not include a `d32` fine-grained
+component-schema row or controlled component-grid row, all width/head/
 sequence crossings, timing, stable binary proof bytes,
 real-valued Softmax, full inference, recursion, or PCD.
 
@@ -31,7 +32,7 @@ real-valued Softmax, full inference, recursion, or PCD.
 - TSV evidence:
   `docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv`
 - Evidence commitment:
-  `blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d`
+  `blake2b-256:99c3f07e4cf271d4437048d04057a66c7bec05a607d1b919a8422f3a01940e00`
 
 The gate is derived from already checked artifacts:
 
@@ -132,14 +133,16 @@ Do not cite it as:
 
 The next step for a stronger paper claim is to add:
 
-1. `d32` source/sidecar/fused proof artifacts;
+1. a `d32` fine-grained component-schema row and controlled component-grid row;
 2. a fuller crossing of width, head count, and sequence length;
 3. timing only after the proof-object grid is stable.
 
 Issue `#537` closes the first follow-up by adding the `seq32` sequence-axis
-extension. If `d32` and additional crossings preserve positive fused savings,
-the paper claim can move from "checked profile family" to a stronger scaling
-statement.
+extension. PR6 adds the `d32` source, sidecar, fused proof route, and route
+matrix row, but this component grid remains bounded to the ten profiles with
+checked fine-grained typed-component rows. If `d32` component rows and
+additional crossings preserve positive fused savings, the paper claim can move
+from "checked profile family" to a stronger scaling statement.
 
 ## Validation
 

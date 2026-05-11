@@ -1,14 +1,14 @@
 {
   "aggregate_metrics": {
-    "matched_fused_proof_size_bytes_total": 629466,
-    "matched_fused_savings_bytes_total": 184676,
-    "matched_source_plus_sidecar_raw_proof_bytes_total": 814142,
-    "max_fused_proof_size_bytes": 84868,
-    "max_matched_fused_to_source_plus_sidecar_ratio": 0.860487,
+    "matched_fused_proof_size_bytes_total": 736727,
+    "matched_fused_savings_bytes_total": 194097,
+    "matched_source_plus_sidecar_raw_proof_bytes_total": 930824,
+    "max_fused_proof_size_bytes": 107261,
+    "max_matched_fused_to_source_plus_sidecar_ratio": 0.919259,
     "min_matched_fused_to_source_plus_sidecar_ratio": 0.676723,
-    "total_fused_proof_size_bytes": 629466,
-    "total_lookup_claims": 3624,
-    "total_trace_rows": 5248
+    "total_fused_proof_size_bytes": 736727,
+    "total_lookup_claims": 3676,
+    "total_trace_rows": 5312
   },
   "axis_summary": {
     "combined_width_head_axis_seq8": {
@@ -147,6 +147,53 @@
       "key_width_ratio": 2.0,
       "lookup_claim_ratio": 1.0,
       "source_plus_sidecar_ratio": 1.261184
+    },
+    "width_axis_single_head_seq8": {
+      "d16_to_d32_fused_proof_size_ratio": 1.662884,
+      "d16_to_d32_key_width_ratio": 2.0,
+      "d16_to_d32_source_plus_sidecar_ratio": 1.556569,
+      "d8_to_d16_fused_proof_size_ratio": 1.352321,
+      "d8_to_d16_key_width_ratio": 2.0,
+      "d8_to_d16_source_plus_sidecar_ratio": 1.261184,
+      "d8_to_d32_fused_proof_size_ratio": 2.248753,
+      "d8_to_d32_key_width_ratio": 4.0,
+      "d8_to_d32_source_plus_sidecar_ratio": 1.963121,
+      "fused_proof_size_bytes": [
+        47698,
+        64503,
+        107261
+      ],
+      "fused_to_source_plus_sidecar_ratios": [
+        0.802497,
+        0.860487,
+        0.919259
+      ],
+      "held_constant": "single_head_seq8_score_rows_52_trace_rows_64",
+      "key_widths": [
+        8,
+        16,
+        32
+      ],
+      "lookup_claims": [
+        52,
+        52,
+        52
+      ],
+      "profile_ids": [
+        "d8_single_head_seq8",
+        "d16_single_head_seq8",
+        "d32_single_head_seq8"
+      ],
+      "source_plus_sidecar_raw_proof_bytes": [
+        59437,
+        74961,
+        116682
+      ],
+      "trace_rows": [
+        64,
+        64,
+        64
+      ]
     }
   },
   "claim_boundary": "ENGINEERING_PROOF_BYTE_ACCOUNTING_FOR_NATIVE_STWO_FUSED_BOUNDED_SOFTMAX_TABLE_FIXTURE_FAMILY_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_TIMING_NOT_RECURSION_OR_PCD_NOT_A_PUBLIC_BENCHMARK_WITH_MATCHED_SOURCE_PLUS_SIDECAR_COMPARATORS_FOR_ALL_PROFILE_ROWS",
@@ -154,7 +201,7 @@
   "decision": "GO_NATIVE_STWO_FUSED_SOFTMAX_TABLE_CONTROLLED_ROUTE_MATRIX",
   "issue": 505,
   "kernel_scope": "bounded_integer_softmax_table_floor_division_kernel_with_fused_attention_arithmetic_and_logup_membership",
-  "matched_comparator_profiles": 10,
+  "matched_comparator_profiles": 11,
   "mutation_results": [
     {
       "error": "result drift for decision",
@@ -217,6 +264,11 @@
       "rejected": true
     },
     {
+      "error": "d32_single_head_seq8 key width drift",
+      "name": "d32_width_metric_smuggling",
+      "rejected": true
+    },
+    {
       "error": "d8_two_head_seq8 head count drift",
       "name": "two_head_head_count_metric_smuggling",
       "rejected": true
@@ -268,6 +320,11 @@
     },
     {
       "error": "axis summary drift",
+      "name": "axis_summary_width_extension_ratio_drift",
+      "rejected": true
+    },
+    {
+      "error": "axis summary drift",
       "name": "axis_summary_head_axis_ratio_drift",
       "rejected": true
     },
@@ -297,12 +354,13 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 28,
-  "mutations_rejected": 28,
+  "mutations_checked": 30,
+  "mutations_rejected": 30,
   "no_comparator_profiles": [],
   "profile_ids": [
     "d8_single_head_seq8",
     "d16_single_head_seq8",
+    "d32_single_head_seq8",
     "d8_two_head_seq8",
     "d8_four_head_seq8",
     "d8_eight_head_seq8",
@@ -312,7 +370,7 @@
     "d16_two_head_seq8",
     "d16_two_head_seq16"
   ],
-  "profiles_checked": 10,
+  "profiles_checked": 11,
   "route_id": "local_stwo_attention_kv_fused_softmax_table_controlled_route_matrix",
   "route_rows": [
     {
@@ -378,6 +436,38 @@
       "table_rows": 9,
       "trace_rows": 64,
       "value_width": 16
+    },
+    {
+      "axis_role": "width_axis_extension",
+      "decision": "GO_NATIVE_STWO_FUSED_ATTENTION_ARITHMETIC_AND_SOFTMAX_TABLE_LOGUP_MEMBERSHIP",
+      "evidence_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-fused-softmax-table-gate-2026-05.json",
+      "fused_envelope_size_bytes": 1113806,
+      "fused_issue": 6,
+      "fused_over_source_proof_bytes": 6141,
+      "fused_proof_size_bytes": 107261,
+      "fused_saves_vs_source_plus_sidecar_bytes": 9421,
+      "fused_to_source_plus_sidecar_ratio": 0.919259,
+      "head_count": 1,
+      "key_width": 32,
+      "label": "d32 single-head seq8 fused Softmax-table route",
+      "lookup_claims": 52,
+      "matched_source_sidecar_status": "GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED",
+      "mutations_checked": 26,
+      "mutations_rejected": 26,
+      "profile_id": "d32_single_head_seq8",
+      "route_id": "local_stwo_attention_kv_d32_fused_bounded_softmax_table_logup_proof",
+      "score_rows": 52,
+      "sidecar_issue": 6,
+      "sidecar_proof_size_bytes": 15562,
+      "source_envelope_size_bytes": 1061990,
+      "source_input_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.json",
+      "source_issue": 6,
+      "source_plus_sidecar_raw_proof_bytes": 116682,
+      "source_proof_size_bytes": 101120,
+      "steps_per_head": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "value_width": 32
     },
     {
       "axis_role": "head_axis",

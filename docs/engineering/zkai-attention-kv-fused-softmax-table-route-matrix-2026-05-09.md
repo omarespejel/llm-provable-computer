@@ -3,12 +3,13 @@
 ## Question
 
 Do the checked native Stwo fused Softmax-table routes still hold when the
-fixture changes along controlled axes, when width and head count are combined,
-when sequence length extends to `seq32`, and when width, head count, and sequence length are combined in one route?
+fixture changes along controlled axes, when the single-head width axis extends
+to `d32`, when width and head count are combined, when sequence length extends
+to `seq32`, and when width, head count, and sequence length are combined in one route?
 
 The axes are:
 
-- width: `d8` to `d16` at one head and eight steps;
+- width: `d8` to `d16` to `d32` at one head and eight steps;
 - head count: one, two, four, eight, and sixteen heads at `d8` and eight steps;
 - sequence length: two heads at `d8`, eight steps per head to sixteen and
   thirty-two steps per head;
@@ -18,7 +19,7 @@ The axes are:
 ## Result
 
 GO for a controlled engineering route matrix, now with matched source-plus-LogUp
-sidecar comparators for all ten profile rows.
+sidecar comparators for all eleven profile rows.
 
 The checked matrix is machine-readable at:
 
@@ -27,7 +28,7 @@ The checked matrix is machine-readable at:
 
 The gate validates the existing per-route fused evidence files, checks the
 source-input dimensions, normalizes the matched source-plus-sidecar comparators,
-and rejects `28 / 28` matrix drift, provenance-drift, and overclaim mutations.
+and rejects `30 / 30` matrix drift, provenance-drift, and overclaim mutations.
 
 ## Route Matrix
 
@@ -35,6 +36,7 @@ and rejects `28 / 28` matrix drift, provenance-drift, and overclaim mutations.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | d8 single-head seq8 | baseline | 8 | 1 | 8 | 52 | 64 | 47,698 | 59,437 | 0.802497 |
 | d16 single-head seq8 | width | 16 | 1 | 8 | 52 | 64 | 64,503 | 74,961 | 0.860487 |
+| d32 single-head seq8 | width extension | 32 | 1 | 8 | 52 | 64 | 107,261 | 116,682 | 0.919259 |
 | d8 two-head seq8 | heads | 8 | 2 | 8 | 104 | 128 | 49,508 | 65,208 | 0.759232 |
 | d8 four-head seq8 | heads | 8 | 4 | 8 | 208 | 256 | 53,468 | 74,529 | 0.717412 |
 | d8 eight-head seq8 | heads | 8 | 8 | 8 | 416 | 512 | 59,375 | 74,086 | 0.801433 |
@@ -51,6 +53,9 @@ Width axis:
 - Holding one head, eight steps, `52` lookup claims, and `64` trace rows fixed,
   doubling width from `d8` to `d16` grows fused proof bytes from `47,698` to
   `64,503` (`1.352321x`).
+- Extending the same held-constant row from `d16` to `d32` grows fused proof
+  bytes from `64,503` to `107,261` (`1.662884x`) and matched
+  source-plus-sidecar bytes from `74,961` to `116,682` (`1.556569x`).
 - This is width-axis proof-existence and byte-accounting evidence, not a claim
   that fused proof size is independent of width.
 
@@ -118,14 +123,14 @@ Combined width/head/sequence row:
 
 ## Aggregate Read
 
-Across the ten checked rows:
+Across the eleven checked rows:
 
-- total lookup claims: `3,624`;
-- total trace rows: `5,248`;
-- total fused proof bytes: `629,466`;
-- total matched source-plus-sidecar proof bytes: `814,142`;
-- total fused savings against matched source-plus-sidecar: `184,676` bytes;
-- matched fused ratios range from `0.676723` to `0.860487`.
+- total lookup claims: `3,676`;
+- total trace rows: `5,312`;
+- total fused proof bytes: `736,727`;
+- total matched source-plus-sidecar proof bytes: `930,824`;
+- total fused savings against matched source-plus-sidecar: `194,097` bytes;
+- matched fused ratios range from `0.676723` to `0.919259`.
 
 ## Claim Boundary
 

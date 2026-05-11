@@ -25,6 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import zkai_attention_kv_fused_softmax_table_route_matrix_gate as matrix
+from scripts import zkai_attention_kv_fused_softmax_table_section_delta_gate as section_delta
 from scripts import zkai_attention_kv_stwo_fine_grained_component_schema_gate as components
 
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
@@ -37,7 +38,7 @@ SOURCE_ISSUES = (505, 531, 534)
 DECISION = "GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO"
 ROUTE_ID = "local_stwo_attention_kv_controlled_component_grid"
 GRID_STATUS = "GO_TEN_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS"
-FULL_FACTORIAL_GRID_STATUS = "NO_GO_NO_D32_PROOF_ARTIFACTS_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE"
+FULL_FACTORIAL_GRID_STATUS = "NO_GO_NO_D32_COMPONENT_GRID_ROW_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE"
 CLAIM_BOUNDARY = (
     "ENGINEERING_TYPED_COMPONENT_GRID_FOR_TEN_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_"
     "WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_"
@@ -58,10 +59,11 @@ NON_CLAIMS = (
     "not recursion or PCD",
 )
 MISSING_CONTROLS = (
-    "d32 fused/source/sidecar proof artifacts",
+    "d32 fine-grained component-schema row and controlled component-grid row",
     "full factorial crossing of width, head count, and sequence length",
     "publication-grade timing repetitions",
 )
+COMPONENT_GRID_PROFILE_IDS = section_delta.EXPECTED_PROFILE_IDS
 VALIDATION_COMMANDS = (
     "python3 scripts/zkai_attention_kv_stwo_controlled_component_grid_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_controlled_component_grid_gate",
@@ -384,7 +386,7 @@ EXPECTED_AXIS_SUMMARY = {
         "mean_typed_saving_share": 0.139625,
     },
 }
-EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d"
+EXPECTED_COMPONENT_GRID_COMMITMENT = "blake2b-256:99c3f07e4cf271d4437048d04057a66c7bec05a607d1b919a8422f3a01940e00"
 EXPECTED_MUTATION_NAMES = (
     "decision_overclaim",
     "grid_status_overclaim",
@@ -469,7 +471,7 @@ def row_by_role(payload: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]
     rows = {}
     for row in payload["rows"]:
         rows[(row["profile_id"], row["role"])] = row
-    expected_pairs = {(profile_id, role) for profile_id in matrix.PROFILE_IDS for role in components.ROLES}
+    expected_pairs = {(profile_id, role) for profile_id in COMPONENT_GRID_PROFILE_IDS for role in components.ROLES}
     if set(rows) != expected_pairs:
         raise StwoControlledComponentGridGateError("fine-grained row pair drift")
     return rows
@@ -618,8 +620,9 @@ def validate_grid_row(row: Any) -> None:
 
 def build_grid_rows(route_result: dict[str, Any], fine_payload: dict[str, Any]) -> list[dict[str, Any]]:
     fine_rows = row_by_role(fine_payload)
-    rows = [build_grid_row(route_row, fine_rows) for route_row in route_result["route_rows"]]
-    if [row["profile_id"] for row in rows] != list(matrix.PROFILE_IDS):
+    route_rows = [row for row in route_result["route_rows"] if row["profile_id"] in COMPONENT_GRID_PROFILE_IDS]
+    rows = [build_grid_row(route_row, fine_rows) for route_row in route_rows]
+    if [row["profile_id"] for row in rows] != list(COMPONENT_GRID_PROFILE_IDS):
         raise StwoControlledComponentGridGateError("profile order drift")
     return rows
 
@@ -775,7 +778,7 @@ def build_base_payload() -> dict[str, Any]:
             "fine_grained_component_schema_commitment": fine_payload["fine_grained_component_schema_commitment"],
         },
         "missing_controls": list(MISSING_CONTROLS),
-        "profile_ids": list(matrix.PROFILE_IDS),
+        "profile_ids": list(COMPONENT_GRID_PROFILE_IDS),
         "grid_rows": rows,
         "component_savings_totals": component_totals(rows),
         "axis_summary": build_axis_summary(rows),
@@ -830,7 +833,7 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
         ("component_schema_status", COMPONENT_SCHEMA_STATUS),
         ("stable_binary_serializer_status", STABLE_BINARY_SERIALIZER_STATUS),
         ("missing_controls", list(MISSING_CONTROLS)),
-        ("profile_ids", list(matrix.PROFILE_IDS)),
+        ("profile_ids", list(COMPONENT_GRID_PROFILE_IDS)),
         ("non_claims", list(NON_CLAIMS)),
         ("validation_commands", list(VALIDATION_COMMANDS)),
     ):
@@ -841,11 +844,11 @@ def validate_payload(payload: Any, *, allow_missing_mutation_summary: bool = Fal
     }:
         raise StwoControlledComponentGridGateError("upstream commitment drift")
     rows = payload["grid_rows"]
-    if not isinstance(rows, list) or len(rows) != len(matrix.PROFILE_IDS):
+    if not isinstance(rows, list) or len(rows) != len(COMPONENT_GRID_PROFILE_IDS):
         raise StwoControlledComponentGridGateError("grid row count drift")
     for row in rows:
         validate_grid_row(row)
-    if [row["profile_id"] for row in rows] != list(matrix.PROFILE_IDS):
+    if [row["profile_id"] for row in rows] != list(COMPONENT_GRID_PROFILE_IDS):
         raise StwoControlledComponentGridGateError("profile order drift")
     if payload["component_savings_totals"] != component_totals(rows):
         raise StwoControlledComponentGridGateError("component totals drift")

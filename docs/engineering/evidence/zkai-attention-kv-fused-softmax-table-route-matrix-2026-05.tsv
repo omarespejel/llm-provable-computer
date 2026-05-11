@@ -1,6 +1,7 @@
 profile_id	axis_role	key_width	value_width	head_count	steps_per_head	lookup_claims	trace_rows	source_proof_size_bytes	sidecar_proof_size_bytes	source_plus_sidecar_raw_proof_bytes	fused_proof_size_bytes	fused_envelope_size_bytes	fused_saves_vs_source_plus_sidecar_bytes	fused_to_source_plus_sidecar_ratio	matched_source_sidecar_status	mutations_checked	mutations_rejected
 d8_single_head_seq8	baseline	8	8	1	8	52	64	44692	14745	59437	47698	478713	11739	0.802497	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	26	26
 d16_single_head_seq8	width_axis	16	16	1	8	52	64	61516	13445	74961	64503	666515	10458	0.860487	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	26	26
+d32_single_head_seq8	width_axis_extension	32	32	1	8	52	64	101120	15562	116682	107261	1113806	9421	0.919259	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	26	26
 d8_two_head_seq8	head_axis	8	8	2	8	104	128	47104	18104	65208	49508	585857	15700	0.759232	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	30	30
 d8_four_head_seq8	head_axis_extension	8	8	4	8	208	256	52746	21783	74529	53468	797717	21061	0.717412	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	30	30
 d8_eight_head_seq8	head_axis_extension	8	8	8	8	416	512	52392	21694	74086	59375	1210413	14711	0.801433	GO_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_COMPARATOR_RECORDED	16	16

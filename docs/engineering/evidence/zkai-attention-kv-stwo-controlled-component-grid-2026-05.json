@@ -99,7 +99,7 @@
     }
   },
   "claim_boundary": "ENGINEERING_TYPED_COMPONENT_GRID_FOR_TEN_CHECKED_NATIVE_STWO_FUSED_SOFTMAX_TABLE_PROFILES_WIDTH_HEAD_SEQUENCE_AND_COMBINED_AXIS_CONTROLS_NOT_FULL_FACTORIAL_GRID_NOT_TIMING_NOT_STABLE_BINARY_SERIALIZATION_NOT_EXACT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE",
-  "component_grid_commitment": "blake2b-256:9ada5fedb11764ad301c51bc84d78bfceb1a36444a41c9fedc21fd296453238d",
+  "component_grid_commitment": "blake2b-256:99c3f07e4cf271d4437048d04057a66c7bec05a607d1b919a8422f3a01940e00",
   "component_savings_totals": {
     "config_bytes": 400,
     "fri_commitment_bytes": 2624,
@@ -114,7 +114,7 @@
   },
   "component_schema_status": "GO_FINE_GRAINED_TYPED_COMPONENT_SCHEMA_WITH_STABLE_BINARY_SERIALIZER_NO_GO",
   "decision": "GO_CHECKED_STWO_COMPONENT_GRID_WITH_FULL_FACTORIAL_GRID_NO_GO",
-  "full_factorial_grid_status": "NO_GO_NO_D32_PROOF_ARTIFACTS_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE",
+  "full_factorial_grid_status": "NO_GO_NO_D32_COMPONENT_GRID_ROW_OR_FULL_FACTORIAL_CROSSING_IN_THIS_GATE",
   "grid_rows": [
     {
       "axis_role": "baseline",
@@ -460,7 +460,7 @@
   "grid_status": "GO_TEN_PROFILE_CONTROLLED_COMPONENT_GRID_FROM_CHECKED_STWO_ARTIFACTS",
   "issue": 536,
   "missing_controls": [
-    "d32 fused/source/sidecar proof artifacts",
+    "d32 fine-grained component-schema row and controlled component-grid row",
     "full factorial crossing of width, head count, and sequence length",
     "publication-grade timing repetitions"
   ],

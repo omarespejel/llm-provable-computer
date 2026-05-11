@@ -1,0 +1,710 @@
+#!/usr/bin/env python3
+"""Build the native Stwo d=32 bounded Softmax-table attention/KV proof input.
+
+This PR6 route keeps the d16 single-head bounded Softmax-table semantics and
+widens the deterministic fixture to key/value width 32:
+
+    clipped_gap = min(max_score - score, 8)
+    weight = WEIGHT_TABLE[clipped_gap]
+
+The resulting output is the integer floor of the weighted value average. This is
+Softmax-like in shape because every allowed candidate contributes with a
+monotone score-derived weight, but it is not exact Softmax and does not claim
+exp/div semantics or AIR-private lookup arguments.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import pathlib
+from collections.abc import Sequence
+from typing import Any
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
+JSON_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.json"
+TSV_OUT = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.tsv"
+
+SCHEMA = "zkai-attention-kv-stwo-native-d32-bounded-softmax-table-air-proof-input-v1"
+DECISION = "GO_INPUT_FOR_STWO_NATIVE_ATTENTION_KV_D32_BOUNDED_SOFTMAX_TABLE_AIR_PROOF"
+ISSUE = 6
+SOURCE_ISSUE = 501
+TARGET_ID = "attention-kv-d32-causal-mask-bounded-softmax-table-v1"
+REQUIRED_BACKEND_VERSION = "stwo-attention-kv-d32-causal-mask-bounded-softmax-table-v1"
+PROOF_VERSION = "stwo-attention-kv-d32-causal-mask-bounded-softmax-table-air-proof-v1"
+STATEMENT_VERSION = "zkai-attention-kv-stwo-native-d32-bounded-softmax-table-statement-v1"
+SEMANTIC_SCOPE = "d32_bounded_table_softmax_approx_attention_kv_causal_mask_rows_bound_to_statement_receipt"
+VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table:v1"
+SEMANTICS = "bounded_table_softmax_approx_attention"
+WEIGHT_POLICY = "exp2_half_gap_table_clipped_8_floor_division"
+SCORE_SCALE = 1
+SCORE_GAP_CLIP = 8
+WEIGHT_TABLE = [
+    {"gap": 0, "weight": 256},
+    {"gap": 1, "weight": 181},
+    {"gap": 2, "weight": 128},
+    {"gap": 3, "weight": 91},
+    {"gap": 4, "weight": 64},
+    {"gap": 5, "weight": 45},
+    {"gap": 6, "weight": 32},
+    {"gap": 7, "weight": 23},
+    {"gap": 8, "weight": 16},
+]
+MASKING_POLICY = "causal_prefix_position_lte_query_token"
+KEY_WIDTH = 32
+VALUE_WIDTH = 32
+SEQUENCE_LENGTH = 8
+INITIAL_KV_ITEMS = 2
+FINAL_KV_ITEMS = INITIAL_KV_ITEMS + SEQUENCE_LENGTH
+TRACE_ROW_COUNT = 64
+SCORE_ROW_COUNT = sum(INITIAL_KV_ITEMS + step + 1 for step in range(SEQUENCE_LENGTH))
+SCORE_GAP_BITS = 16
+CAUSAL_GAP_BITS = 16
+WEIGHT_BITS = 9
+OUTPUT_REMAINDER_BITS = 16
+MAX_ABS_VALUE = 1_000_000
+
+ROW_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-score-rows:v1"
+INITIAL_KV_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-initial-kv:v1"
+INPUT_STEPS_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-input-steps:v1"
+FINAL_KV_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-final-kv:v1"
+OUTPUTS_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-outputs:v1"
+PUBLIC_INSTANCE_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-public-instance:v1"
+PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-proof-parameters:v1"
+WEIGHT_TABLE_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-bounded-softmax-table-weight-table:v1"
+
+NON_CLAIMS = [
+    "not exact Softmax attention",
+    "not exp/div Softmax semantics",
+    "not full transformer inference",
+    "not recursive verification or PCD",
+    "not private witness privacy",
+    "not long-context benchmark evidence",
+    "not on-chain verification evidence",
+    "not AIR-private lookup arguments; table membership is verifier-recomputed over public rows before proof verification",
+    "bounded table score-to-weight policy and weighted averages are verifier-recomputed from public rows before proof verification",
+]
+
+PROOF_VERIFIER_HARDENING = [
+    "native Stwo AIR proves query-key dot-product rows for every checked candidate",
+    "native Stwo AIR proves selected-score dominance gaps are nonnegative via bit decomposition",
+    "native Stwo AIR proves causal-prefix mask gaps are nonnegative via bit decomposition",
+    "native Stwo AIR proves table-derived weight times value products for every checked candidate and dimension",
+    "native Stwo AIR proves output quotient/remainder rows against the verifier-recomputed weighted numerator and denominator",
+    "verifier recomputes append-only KV carry, max score, clipped score gaps, table-derived weights, weighted numerators, denominators, and outputs before proof verification",
+    "score-row, initial-KV, input-step, final-KV, output, public-instance, and statement commitments are recomputed before proof verification",
+    "fixed publication-v1 PCS verifier profile before commitment-root recomputation",
+    "bounded envelope JSON before deserialization and bounded proof bytes before proof parsing",
+    "commitment-vector length check before commitment indexing",
+]
+
+NEXT_BACKEND_STEP = "fuse this d32 bounded Softmax-table source with AIR-private LogUp table membership, then compare against a matched d32 source-plus-sidecar route"
+
+VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_attention_kv_stwo_native_d32_bounded_softmax_table_proof_input.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_native_d32_bounded_softmax_table_proof_input",
+    "cargo +nightly-2025-07-14 test attention_kv_native_d32_bounded_softmax_table_proof --lib --features stwo-backend",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d32_bounded_softmax_table_proof -- prove docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --features stwo-backend --bin zkai_attention_kv_native_d32_bounded_softmax_table_proof -- verify docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_kv_d32_bounded_softmax_table_native_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_d32_bounded_softmax_table_native_gate",
+    "just lib",
+    "just gate-fast",
+    "just gate",
+]
+
+TSV_COLUMNS = (
+    "issue",
+    "decision",
+    "proof_version",
+    "key_width",
+    "value_width",
+    "sequence_length",
+    "score_row_count",
+    "trace_row_count",
+    "weight_policy",
+    "score_gap_clip",
+    "weight_table_commitment",
+    "attention_outputs",
+    "score_row_commitment",
+    "final_kv_cache_commitment",
+    "outputs_commitment",
+    "statement_commitment",
+    "non_claims",
+)
+
+
+class AttentionKvBoundedSoftmaxTableInputError(ValueError):
+    pass
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def sha256_hex_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def commitment_from_parts(parts: list[tuple[str, Any]], domain: str) -> str:
+    encoded = b"".join(
+        str(label).encode("utf-8") + b"=" + canonical_json_bytes(value) + b"\n" for label, value in parts
+    )
+    digest = hashlib.blake2b(digest_size=32)
+    digest.update(domain.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(encoded)
+    return f"blake2b-256:{digest.hexdigest()}"
+
+
+def require_int(value: Any, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be an integer")
+    if abs(value) > MAX_ABS_VALUE:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} outside bounded fixture range")
+    return value
+
+
+def require_vector(value: Any, *, width: int, label: str) -> list[int]:
+    if not isinstance(value, list):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be a list")
+    if len(value) != width:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} width drift")
+    return [require_int(item, f"{label}[{index}]") for index, item in enumerate(value)]
+
+
+def require_kv_item(value: Any, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be an object")
+    return {
+        "position": require_int(value.get("position"), f"{label}.position"),
+        "key": require_vector(value.get("key"), width=KEY_WIDTH, label=f"{label}.key"),
+        "value": require_vector(value.get("value"), width=VALUE_WIDTH, label=f"{label}.value"),
+    }
+
+
+def require_input_step(value: Any, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be an object")
+    return {
+        "token_position": require_int(value.get("token_position"), f"{label}.token_position"),
+        "query": require_vector(value.get("query"), width=KEY_WIDTH, label=f"{label}.query"),
+        "new_key": require_vector(value.get("new_key"), width=KEY_WIDTH, label=f"{label}.new_key"),
+        "new_value": require_vector(value.get("new_value"), width=VALUE_WIDTH, label=f"{label}.new_value"),
+    }
+
+
+def require_sequence(value: Any, *, label: str) -> Sequence[Any]:
+    if not isinstance(value, list):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be a list")
+    return value
+
+
+def initial_kv_cache() -> list[dict[str, Any]]:
+    return [
+        {
+            "position": 0,
+            "key": [(3 * (index + 1)) % 9 - 4 for index in range(KEY_WIDTH)],
+            "value": [(5 * (index + 2)) % 11 - 5 for index in range(VALUE_WIDTH)],
+        },
+        {
+            "position": 1,
+            "key": [(5 * (index + 2) + index) % 9 - 4 for index in range(KEY_WIDTH)],
+            "value": [(7 * (index + 1) - 2 * index) % 11 - 5 for index in range(VALUE_WIDTH)],
+        },
+    ]
+
+
+def input_step(step_index: int) -> dict[str, Any]:
+    token_position = INITIAL_KV_ITEMS + step_index
+    return {
+        "token_position": token_position,
+        "query": [((step_index + 2) * (index + 3) + step_index) % 9 - 4 for index in range(KEY_WIDTH)],
+        "new_key": [((step_index + 5) * (index + 1) + index) % 7 - 3 for index in range(KEY_WIDTH)],
+        "new_value": [((step_index + 7) * (index + 2) - index) % 11 - 5 for index in range(VALUE_WIDTH)],
+    }
+
+
+def source_journal() -> dict[str, Any]:
+    return {
+        "initial_kv_cache": initial_kv_cache(),
+        "input_steps": [input_step(step_index) for step_index in range(SEQUENCE_LENGTH)],
+    }
+
+
+def dot(lhs: list[int], rhs: list[int]) -> int:
+    if len(lhs) != KEY_WIDTH or len(rhs) != KEY_WIDTH:
+        raise AttentionKvBoundedSoftmaxTableInputError("dot-product width mismatch")
+    return sum(require_int(left, "query") * require_int(right, "key") for left, right in zip(lhs, rhs, strict=True))
+
+
+def weight_from_gap(score_gap: int) -> int:
+    if score_gap < 0:
+        raise AttentionKvBoundedSoftmaxTableInputError("negative score gap")
+    clipped = min(score_gap, SCORE_GAP_CLIP)
+    table = {entry["gap"]: entry["weight"] for entry in WEIGHT_TABLE}
+    return table[clipped]
+
+
+def require_unsigned_bits(value: int, bits: int, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} must be a nonnegative integer")
+    if value >= (1 << bits):
+        raise AttentionKvBoundedSoftmaxTableInputError(f"{label} exceeds {bits}-bit budget")
+
+
+def validate_row_metadata(rows: list[dict[str, Any]], payload: dict[str, Any]) -> None:
+    expected = {
+        "score_row_count": len(rows),
+        "score_gap_bits": SCORE_GAP_BITS,
+        "causal_gap_bits": CAUSAL_GAP_BITS,
+        "weight_bits": WEIGHT_BITS,
+        "output_remainder_bits": OUTPUT_REMAINDER_BITS,
+    }
+    for key, value in expected.items():
+        if payload.get(key) != value:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"{key} drift")
+    for index, row in enumerate(rows):
+        require_unsigned_bits(row["score_gap"], payload["score_gap_bits"], f"score_rows[{index}].score_gap")
+        require_unsigned_bits(row["causal_gap"], payload["causal_gap_bits"], f"score_rows[{index}].causal_gap")
+        require_unsigned_bits(row["attention_weight"], payload["weight_bits"], f"score_rows[{index}].attention_weight")
+        for dim, remainder in enumerate(row["output_remainder"]):
+            require_unsigned_bits(
+                remainder,
+                payload["output_remainder_bits"],
+                f"score_rows[{index}].output_remainder[{dim}]",
+            )
+
+
+def weight_table_commitment() -> str:
+    return commitment_from_parts(
+        [
+            ("encoding", "bounded_softmax_table_weight_table_v1"),
+            ("score_scale", SCORE_SCALE),
+            ("score_gap_clip", SCORE_GAP_CLIP),
+            ("weight_policy", WEIGHT_POLICY),
+            ("weight_table", WEIGHT_TABLE),
+        ],
+        WEIGHT_TABLE_DOMAIN,
+    )
+
+
+def weight_table_payload() -> list[dict[str, int]]:
+    return [dict(entry) for entry in WEIGHT_TABLE]
+
+
+def vector_material_kv(cache: list[dict[str, Any]]) -> list[list[int]]:
+    return [[item["position"], *item["key"], *item["value"]] for item in cache]
+
+
+def input_steps_material(steps: list[dict[str, Any]]) -> list[list[int]]:
+    return [[step["token_position"], *step["query"], *step["new_key"], *step["new_value"]] for step in steps]
+
+
+def score_rows_material(rows: list[dict[str, Any]]) -> list[list[int]]:
+    material: list[list[int]] = []
+    for row in rows:
+        material.append([
+            row["row_index"], row["step_index"], row["candidate_index"], row["token_position"],
+            row["candidate_position"], row["mask_allowed"], row["selected_score"], row["score"],
+            row["score_gap"], row["causal_gap"], row["attention_weight"], row["weight_denominator"],
+            *row["query"], *row["key"], *row["value"], *row["products"], *row["weighted_value"],
+            *row["weighted_numerator"], *row["attention_output"], *row["output_remainder"],
+        ])
+    return material
+
+
+def score_row_material_width() -> int:
+    return 12 + 3 * KEY_WIDTH + 5 * VALUE_WIDTH
+
+
+def rows_commitment(rows: list[dict[str, Any]]) -> str:
+    return commitment_from_parts(
+        [
+            ("encoding", "attention_kv_stwo_native_bounded_softmax_table_score_rows_v1"),
+            ("shape", [len(rows), score_row_material_width()]),
+            ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(score_rows_material(rows)))),
+        ],
+        ROW_DOMAIN,
+    )
+
+
+def kv_commitment(cache: list[dict[str, Any]], domain: str) -> str:
+    return commitment_from_parts(
+        [
+            ("encoding", "attention_kv_cache_v1"),
+            ("shape", [len(cache), 1 + KEY_WIDTH + VALUE_WIDTH]),
+            ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(vector_material_kv(cache)))),
+        ],
+        domain,
+    )
+
+
+def input_steps_commitment(steps: list[dict[str, Any]]) -> str:
+    return commitment_from_parts(
+        [
+            ("encoding", "attention_input_steps_v1"),
+            ("shape", [len(steps), 1 + 2 * KEY_WIDTH + VALUE_WIDTH]),
+            ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(input_steps_material(steps)))),
+        ],
+        INPUT_STEPS_DOMAIN,
+    )
+
+
+def outputs_commitment(outputs: list[list[int]]) -> str:
+    return commitment_from_parts(
+        [
+            ("encoding", "bounded_softmax_table_attention_outputs_v1"),
+            ("shape", [len(outputs), VALUE_WIDTH]),
+            ("rows_sha256", sha256_hex_bytes(canonical_json_bytes(outputs))),
+        ],
+        OUTPUTS_DOMAIN,
+    )
+
+
+def proof_native_parameter_commitment() -> str:
+    return commitment_from_parts(
+        [
+            ("key_width", KEY_WIDTH),
+            ("masking_policy", MASKING_POLICY),
+            ("score_gap_clip", SCORE_GAP_CLIP),
+            ("score_scale", SCORE_SCALE),
+            ("semantics", SEMANTICS),
+            ("sequence_length", SEQUENCE_LENGTH),
+            ("value_width", VALUE_WIDTH),
+            ("weight_table_commitment", weight_table_commitment()),
+            ("weight_policy", WEIGHT_POLICY),
+        ],
+        PROOF_NATIVE_PARAMETER_DOMAIN,
+    )
+
+
+def statement_commitment(payload: dict[str, Any]) -> str:
+    return commitment_from_parts(
+        [
+            ("final_kv_cache_commitment", payload["final_kv_cache_commitment"]),
+            ("initial_kv_cache_commitment", payload["initial_kv_cache_commitment"]),
+            ("input_steps_commitment", payload["input_steps_commitment"]),
+            ("key_width", payload["key_width"]),
+            ("masking_policy", payload["masking_policy"]),
+            ("non_claims", payload["non_claims"]),
+            ("outputs_commitment", payload["outputs_commitment"]),
+            ("proof_native_parameter_commitment", payload["proof_native_parameter_commitment"]),
+            ("required_backend_version", payload["required_backend_version"]),
+            ("score_gap_clip", payload["score_gap_clip"]),
+            ("score_row_commitment", payload["score_row_commitment"]),
+            ("score_scale", payload["score_scale"]),
+            ("semantics", payload["semantics"]),
+            ("sequence_length", payload["sequence_length"]),
+            ("target_id", payload["target_id"]),
+            ("value_width", payload["value_width"]),
+            ("verifier_domain", payload["verifier_domain"]),
+            ("weight_table_commitment", payload["weight_table_commitment"]),
+            ("weight_policy", payload["weight_policy"]),
+        ],
+        VERIFIER_DOMAIN,
+    )
+
+
+def public_instance_commitment(statement: str) -> str:
+    return commitment_from_parts(
+        [("statement_commitment", statement), ("target_id", TARGET_ID), ("proof_version", PROOF_VERSION)],
+        PUBLIC_INSTANCE_DOMAIN,
+    )
+
+
+def fixture_initial_kv() -> list[dict[str, Any]]:
+    initial = source_journal().get("initial_kv_cache")
+    items = [require_kv_item(item, label=f"initial_kv[{index}]") for index, item in enumerate(require_sequence(initial, label="initial_kv_cache"))]
+    if len(items) != INITIAL_KV_ITEMS:
+        raise AttentionKvBoundedSoftmaxTableInputError("source initial KV length drift")
+    return items
+
+
+def fixture_input_steps() -> list[dict[str, Any]]:
+    steps = source_journal().get("input_steps")
+    items = [require_input_step(item, label=f"input_steps[{index}]") for index, item in enumerate(require_sequence(steps, label="input_steps"))]
+    if len(items) != SEQUENCE_LENGTH:
+        raise AttentionKvBoundedSoftmaxTableInputError("source input step length drift")
+    return items
+
+
+def build_score_rows(initial_kv: list[dict[str, Any]], input_steps: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[list[int]]]:
+    current = [
+        require_kv_item(item, label=f"initial_kv[{index}]")
+        for index, item in enumerate(require_sequence(initial_kv, label="initial_kv"))
+    ]
+    steps = [
+        require_input_step(step, label=f"input_steps[{index}]")
+        for index, step in enumerate(require_sequence(input_steps, label="input_steps"))
+    ]
+    rows: list[dict[str, Any]] = []
+    outputs: list[list[int]] = []
+    for step_index, step in enumerate(steps):
+        next_item = {"position": step["token_position"], "key": step["new_key"], "value": step["new_value"]}
+        candidates = current + [next_item]
+        allowed = [
+            require_kv_item(candidate, label=f"step[{step_index}].candidate[{candidate_index}]")
+            for candidate_index, candidate in enumerate(candidates)
+            if candidate["position"] <= step["token_position"]
+        ]
+        if not allowed:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"step[{step_index}] has no allowed candidates")
+        scored = [(candidate, dot(step["query"], candidate["key"])) for candidate in allowed]
+        selected_score = max(score for _, score in scored)
+        weights = [weight_from_gap(selected_score - score) for _, score in scored]
+        denominator = sum(weights)
+        if denominator <= 0:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"step[{step_index}] has invalid weight denominator")
+        numerators = [0 for _ in range(VALUE_WIDTH)]
+        for (candidate, _), weight in zip(scored, weights, strict=True):
+            for dim, value in enumerate(candidate["value"]):
+                numerators[dim] += weight * value
+        output = [numerator // denominator for numerator in numerators]
+        remainders = [numerator - out * denominator for numerator, out in zip(numerators, output, strict=True)]
+        outputs.append(list(output))
+        for candidate_index, ((candidate, score), weight) in enumerate(zip(scored, weights, strict=True)):
+            products = [left * right for left, right in zip(step["query"], candidate["key"], strict=True)]
+            weighted_value = [weight * value for value in candidate["value"]]
+            rows.append({
+                "row_index": len(rows),
+                "step_index": step_index,
+                "candidate_index": candidate_index,
+                "token_position": step["token_position"],
+                "candidate_position": candidate["position"],
+                "mask_allowed": 1,
+                "selected_score": selected_score,
+                "score": score,
+                "score_gap": selected_score - score,
+                "causal_gap": step["token_position"] - candidate["position"],
+                "attention_weight": weight,
+                "weight_denominator": denominator,
+                "query": list(step["query"]),
+                "key": list(candidate["key"]),
+                "value": list(candidate["value"]),
+                "products": list(products),
+                "weighted_value": list(weighted_value),
+                "weighted_numerator": list(numerators),
+                "attention_output": list(output),
+                "output_remainder": list(remainders),
+            })
+        current = candidates
+    return rows, current, outputs
+
+
+def validate_payload(payload: dict[str, Any]) -> None:
+    if not isinstance(payload, dict):
+        raise AttentionKvBoundedSoftmaxTableInputError("payload must be an object")
+    expected_scalars = {
+        "schema": SCHEMA,
+        "decision": DECISION,
+        "issue": ISSUE,
+        "source_issue": SOURCE_ISSUE,
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "proof_version": PROOF_VERSION,
+        "statement_version": STATEMENT_VERSION,
+        "semantic_scope": SEMANTIC_SCOPE,
+        "verifier_domain": VERIFIER_DOMAIN,
+        "semantics": SEMANTICS,
+        "weight_policy": WEIGHT_POLICY,
+        "score_scale": SCORE_SCALE,
+        "score_gap_clip": SCORE_GAP_CLIP,
+        "weight_table": weight_table_payload(),
+        "masking_policy": MASKING_POLICY,
+        "key_width": KEY_WIDTH,
+        "value_width": VALUE_WIDTH,
+        "sequence_length": SEQUENCE_LENGTH,
+        "initial_kv_items": INITIAL_KV_ITEMS,
+        "final_kv_items": FINAL_KV_ITEMS,
+        "trace_row_count": TRACE_ROW_COUNT,
+        "next_backend_step": NEXT_BACKEND_STEP,
+    }
+    allowed_keys = set(expected_scalars) | {
+        "initial_kv_cache",
+        "input_steps",
+        "final_kv_cache",
+        "attention_outputs",
+        "score_rows",
+        "score_row_count",
+        "score_gap_bits",
+        "causal_gap_bits",
+        "weight_bits",
+        "output_remainder_bits",
+        "initial_kv_cache_commitment",
+        "input_steps_commitment",
+        "score_row_commitment",
+        "final_kv_cache_commitment",
+        "outputs_commitment",
+        "weight_table_commitment",
+        "proof_native_parameter_commitment",
+        "public_instance_commitment",
+        "statement_commitment",
+        "non_claims",
+        "proof_verifier_hardening",
+        "validation_commands",
+    }
+    extra_keys = set(payload) - allowed_keys
+    if extra_keys:
+        raise AttentionKvBoundedSoftmaxTableInputError(f"unknown payload keys: {sorted(extra_keys)}")
+    for key, expected in expected_scalars.items():
+        if payload.get(key) != expected:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"{key} drift")
+    if payload.get("non_claims") != NON_CLAIMS:
+        raise AttentionKvBoundedSoftmaxTableInputError("non claims drift")
+    if payload.get("proof_verifier_hardening") != PROOF_VERIFIER_HARDENING:
+        raise AttentionKvBoundedSoftmaxTableInputError("proof verifier hardening drift")
+    if payload.get("weight_table") != weight_table_payload():
+        raise AttentionKvBoundedSoftmaxTableInputError("weight table drift")
+    if payload.get("weight_table_commitment") != weight_table_commitment():
+        raise AttentionKvBoundedSoftmaxTableInputError("weight table commitment drift")
+    if payload.get("validation_commands") != VALIDATION_COMMANDS:
+        raise AttentionKvBoundedSoftmaxTableInputError("validation commands drift")
+    initial = fixture_initial_kv()
+    steps = fixture_input_steps()
+    rows, final_cache, outputs = build_score_rows(initial, steps)
+    if payload.get("initial_kv_cache") != initial:
+        raise AttentionKvBoundedSoftmaxTableInputError("initial KV drift")
+    if payload.get("input_steps") != steps:
+        raise AttentionKvBoundedSoftmaxTableInputError("input steps drift")
+    if payload.get("score_rows") != rows:
+        raise AttentionKvBoundedSoftmaxTableInputError("score rows drift")
+    validate_row_metadata(rows, payload)
+    if payload.get("final_kv_cache") != final_cache:
+        raise AttentionKvBoundedSoftmaxTableInputError("final KV drift")
+    if payload.get("attention_outputs") != outputs:
+        raise AttentionKvBoundedSoftmaxTableInputError("attention outputs drift")
+    expected_commitments = {
+        "initial_kv_cache_commitment": kv_commitment(initial, INITIAL_KV_DOMAIN),
+        "input_steps_commitment": input_steps_commitment(steps),
+        "score_row_commitment": rows_commitment(rows),
+        "final_kv_cache_commitment": kv_commitment(final_cache, FINAL_KV_DOMAIN),
+        "outputs_commitment": outputs_commitment(outputs),
+        "weight_table_commitment": weight_table_commitment(),
+        "proof_native_parameter_commitment": proof_native_parameter_commitment(),
+    }
+    for key, expected in expected_commitments.items():
+        if payload.get(key) != expected:
+            raise AttentionKvBoundedSoftmaxTableInputError(f"{key} drift")
+    statement = statement_commitment(payload)
+    if payload.get("statement_commitment") != statement:
+        raise AttentionKvBoundedSoftmaxTableInputError("statement commitment drift")
+    if payload.get("public_instance_commitment") != public_instance_commitment(statement):
+        raise AttentionKvBoundedSoftmaxTableInputError("public instance commitment drift")
+
+
+def build_payload() -> dict[str, Any]:
+    initial = fixture_initial_kv()
+    steps = fixture_input_steps()
+    rows, final_cache, outputs = build_score_rows(initial, steps)
+    payload: dict[str, Any] = {
+        "schema": SCHEMA,
+        "decision": DECISION,
+        "issue": ISSUE,
+        "source_issue": SOURCE_ISSUE,
+        "target_id": TARGET_ID,
+        "required_backend_version": REQUIRED_BACKEND_VERSION,
+        "proof_version": PROOF_VERSION,
+        "statement_version": STATEMENT_VERSION,
+        "semantic_scope": SEMANTIC_SCOPE,
+        "verifier_domain": VERIFIER_DOMAIN,
+        "semantics": SEMANTICS,
+        "weight_policy": WEIGHT_POLICY,
+        "score_scale": SCORE_SCALE,
+        "score_gap_clip": SCORE_GAP_CLIP,
+        "weight_table": weight_table_payload(),
+        "masking_policy": MASKING_POLICY,
+        "key_width": KEY_WIDTH,
+        "value_width": VALUE_WIDTH,
+        "sequence_length": SEQUENCE_LENGTH,
+        "initial_kv_items": INITIAL_KV_ITEMS,
+        "final_kv_items": FINAL_KV_ITEMS,
+        "score_row_count": SCORE_ROW_COUNT,
+        "trace_row_count": TRACE_ROW_COUNT,
+        "score_gap_bits": SCORE_GAP_BITS,
+        "causal_gap_bits": CAUSAL_GAP_BITS,
+        "weight_bits": WEIGHT_BITS,
+        "output_remainder_bits": OUTPUT_REMAINDER_BITS,
+        "initial_kv_cache": initial,
+        "input_steps": steps,
+        "final_kv_cache": final_cache,
+        "attention_outputs": outputs,
+        "score_rows": rows,
+        "initial_kv_cache_commitment": kv_commitment(initial, INITIAL_KV_DOMAIN),
+        "input_steps_commitment": input_steps_commitment(steps),
+        "score_row_commitment": rows_commitment(rows),
+        "final_kv_cache_commitment": kv_commitment(final_cache, FINAL_KV_DOMAIN),
+        "outputs_commitment": outputs_commitment(outputs),
+        "weight_table_commitment": weight_table_commitment(),
+        "proof_native_parameter_commitment": proof_native_parameter_commitment(),
+        "public_instance_commitment": "",
+        "statement_commitment": "",
+        "non_claims": NON_CLAIMS,
+        "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+        "next_backend_step": NEXT_BACKEND_STEP,
+        "validation_commands": VALIDATION_COMMANDS,
+    }
+    payload["statement_commitment"] = statement_commitment(payload)
+    payload["public_instance_commitment"] = public_instance_commitment(payload["statement_commitment"])
+    validate_payload(payload)
+    return payload
+
+
+def write_json(payload: dict[str, Any], path: pathlib.Path) -> None:
+    validate_payload(payload)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def to_tsv(payload: dict[str, Any]) -> str:
+    validate_payload(payload)
+    row = {
+        "issue": payload["issue"],
+        "decision": payload["decision"],
+        "proof_version": payload["proof_version"],
+        "key_width": payload["key_width"],
+        "value_width": payload["value_width"],
+        "sequence_length": payload["sequence_length"],
+        "score_row_count": payload["score_row_count"],
+        "trace_row_count": payload["trace_row_count"],
+        "weight_policy": payload["weight_policy"],
+        "score_gap_clip": payload["score_gap_clip"],
+        "weight_table_commitment": payload["weight_table_commitment"],
+        "attention_outputs": json.dumps(payload["attention_outputs"], separators=(",", ":")),
+        "score_row_commitment": payload["score_row_commitment"],
+        "final_kv_cache_commitment": payload["final_kv_cache_commitment"],
+        "outputs_commitment": payload["outputs_commitment"],
+        "statement_commitment": payload["statement_commitment"],
+        "non_claims": ";".join(payload["non_claims"]),
+    }
+    out_lines: list[str] = []
+    import io
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
+    writer.writeheader()
+    writer.writerow(row)
+    out_lines.append(buf.getvalue())
+    return "".join(out_lines)
+
+
+def write_tsv(payload: dict[str, Any], path: pathlib.Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(to_tsv(payload), encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write-json", type=pathlib.Path, default=JSON_OUT)
+    parser.add_argument("--write-tsv", type=pathlib.Path, default=TSV_OUT)
+    args = parser.parse_args()
+    payload = build_payload()
+    write_json(payload, args.write_json)
+    write_tsv(payload, args.write_tsv)
+
+
+if __name__ == "__main__":
+    main()
