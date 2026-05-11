@@ -47,6 +47,7 @@ reviews:
     - .greptile/**
     - .pr_agent.toml
     - .gitignore
+    - .codex/research/**
     - src/**
     - tests/**
     - programs/**
@@ -73,6 +74,9 @@ reviews:
     - path: 'scripts/**'
       instructions: |
         Treat these as reproducibility and artifact-generation code. Focus on determinism, path safety, environment assumptions, integrity metadata, and whether regenerated outputs can silently drift.
+    - path: '.codex/research/**'
+      instructions: |
+        Review as agent-native research control-plane state. Flag schema drift, invalid JSON/YAML, missing GO/NO-GO gates, weak falsification criteria, stale evidence paths, overclaimed paper conclusions, and merge-policy drift.
     - path: '.github/workflows/**'
       instructions: |
         Review for CI coverage loss, missing feature combinations, silent matrix gaps, cache misuse, and workflows that no longer match the documented toolchain requirements.
