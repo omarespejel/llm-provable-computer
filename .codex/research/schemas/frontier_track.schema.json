@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/omarespejel/provable-transformer-vm/.codex/research/schemas/frontier_track.schema.json",
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "thesis",
+    "why_it_matters_for_serious_paper",
+    "smallest_falsifying_experiment",
+    "go_gate",
+    "no_go_gate",
+    "required_artifacts",
+    "non_claims"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "EXPLORE",
+        "EXECUTE",
+        "PAPER_CANDIDATE",
+        "FOLLOWUP",
+        "GO",
+        "NO_GO",
+        "NARROW_CLAIM",
+        "FOLLOWUP_ISSUE",
+        "KILL",
+        "DONE"
+      ]
+    },
+    "thesis": { "type": "string", "minLength": 1 },
+    "why_it_matters_for_serious_paper": { "type": "string", "minLength": 1 },
+    "smallest_falsifying_experiment": { "type": "string", "minLength": 1 },
+    "go_gate": { "type": "string", "minLength": 1 },
+    "no_go_gate": { "type": "string", "minLength": 1 },
+    "required_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "owner_role": {
+      "type": "string",
+      "enum": ["scout", "experimenter", "skeptic", "integrator"]
+    },
+    "evidence_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocked_by": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

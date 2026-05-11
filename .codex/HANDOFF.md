@@ -13,6 +13,13 @@ The active split is now:
 2. experimental carry-aware core-proving lane
 3. verifiable-AI statement-bound transformer lane
 
+The STARK-native zkML research program now has a structured agent source of
+truth under `.codex/research/`. Fresh agents should read
+`.codex/research/north_star.yml` and `.codex/research/operating_model.yml`
+before opening or executing frontier issues. The north star is STARK-native
+proof architecture as the backbone for production zkML later; issues are
+hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
+
 ### Publication/default lane
 
 - Keep the current paper package and shipped default backend on the conservative carry-free route.
@@ -647,33 +654,50 @@ Use these in order of authority for current state:
 
 1. `AGENTS.md`
 2. `.codex/START_HERE.md`
-3. this file
-4. `docs/engineering/codex-repo-handoff-2026-04-24.md`
-5. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
-6. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
-7. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
-8. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
-9. `docs/engineering/tablero-soundness-note-2026-04-25.md`
-10. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
-11. `docs/engineering/serialized-stack-tamper-regression-index-2026-04-27.md`
-12. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
-13. `docs/engineering/phase44d-carry-aware-experimental-2x2-scaling-gate-2026-04-25.md`
-14. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
-15. `docs/engineering/phase44d-carry-aware-experimental-family-matrix-gate-2026-04-25.md`
-16. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
-17. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
-18. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
-19. `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
-20. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
-21. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
-22. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
-23. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
-24. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
-25. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
-26. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
-27. `docs/engineering/reproducibility.md`
-28. `git status --short --branch`
-
+3. `.codex/research/north_star.yml`
+4. `.codex/research/operating_model.yml`
+5. `.codex/research/README.md`
+6. `.codex/research/agent_briefs/*.yml`
+7. `.codex/research/schemas/*.schema.json`
+8. `.codex/HANDOFF.md`
+9. `docs/engineering/codex-repo-handoff-2026-04-24.md`
+10. `docs/engineering/phase12-carry-aware-arithmetic-subset-gate-2026-04-24.md`
+11. `docs/engineering/phase12-carry-aware-soundness-hardening-2026-04-24.md`
+12. `docs/engineering/phase12-carry-aware-soundness-review-2026-04-25.md`
+13. `docs/engineering/phase12-carry-aware-wrap-delta-witness-discipline-2026-04-26.md`
+14. `docs/engineering/tablero-soundness-note-2026-04-25.md`
+15. `docs/engineering/tablero-hardening-packet-2026-04-25.md`
+16. `docs/engineering/serialized-stack-tamper-regression-index-2026-04-27.md`
+17. `docs/engineering/phase44d-carry-aware-experimental-scaling-gate-2026-04-24.md`
+18. `docs/engineering/phase44d-carry-aware-experimental-3x3-scaling-gate-2026-04-25.md`
+19. `docs/engineering/phase71-second-boundary-assessment-2026-04-25.md`
+20. `docs/engineering/phase43-second-boundary-feasibility-gate-2026-04-25.md`
+21. `docs/engineering/phase44d-second-backend-feasibility-gate-2026-04-25.md`
+22. `docs/engineering/zkai-d128-recursive-pcd-route-selector-2026-05-03.md`
+23. `docs/engineering/zkai-d128-proof-native-two-slice-compression-2026-05-03.md`
+24. `docs/engineering/zkai-d128-cryptographic-backend-gate-2026-05-04.md`
+25. `docs/engineering/zkai-d128-snark-ivc-statement-receipt-2026-05-04.md`
+26. `docs/engineering/zkai-d128-snark-receipt-timing-setup-2026-05-04.md`
+27. `docs/engineering/zkai-d128-zkvm-statement-receipt-adapter-2026-05-04.md`
+28. `docs/engineering/zkai-d128-risc0-statement-receipt-2026-05-05.md`
+29. `docs/engineering/zkai-d64-external-recursion-adapter-2026-05-05.md`
+30. `docs/engineering/zkai-attention-kv-risc0-sequence-receipt-2026-05-05.md`
+31. `docs/engineering/zkai-attention-kv-risc0-scaled-sequence-receipt-2026-05-05.md`
+32. `docs/engineering/zkai-attention-kv-risc0-wide-masked-sequence-receipt-2026-05-05.md`
+33. `docs/engineering/zkai-attention-kv-stwo-native-masked-sequence-proof-2026-05-06.md`
+34. `docs/engineering/zkai-attention-kv-stwo-native-two-head-longseq-fused-softmax-table-gate-2026-05-08.md`
+35. `docs/engineering/zkai-attention-kv-stwo-native-d16-fused-softmax-table-gate-2026-05-08.md`
+36. `docs/engineering/zkai-attention-kv-d16-two-head-quantized-softmax-receipt-gate-2026-05-09.md`
+37. `docs/engineering/zkai-attention-kv-stwo-native-d16-two-head-longseq-fused-softmax-table-gate-2026-05-10.md`
+38. `docs/engineering/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05-10.md`
+39. `docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md`
+40. `docs/engineering/zkai-attention-kv-fused-softmax-table-microprofile-2026-05-10.md`
+41. `docs/engineering/zkai-attention-kv-fused-softmax-table-section-delta-2026-05-10.md`
+42. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
+43. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
+44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
+45. `docs/engineering/reproducibility.md`
+46. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.

@@ -1,0 +1,133 @@
+schema_version: 1
+model_id: research_operating_model_2026_05
+
+work_allocation:
+  exploration_share: 0.67
+  execution_share: 0.33
+  interpretation: >
+    Prefer broad search and hypothesis generation, but only promote narrow
+    experiments that produce checked evidence. Exploration may open issues;
+    execution must produce artifacts, gates, tests, or a written no-go.
+
+unit_of_work:
+  type: issue_as_hypothesis
+  required_fields:
+    - id
+    - status
+    - thesis
+    - why_it_matters_for_serious_paper
+    - smallest_falsifying_experiment
+    - go_gate
+    - no_go_gate
+    - required_artifacts
+    - non_claims
+  allowed_outcomes:
+    - GO
+    - NO_GO
+    - NARROW_CLAIM
+    - FOLLOWUP_ISSUE
+    - KILL
+
+agent_roles:
+  scout:
+    brief: .codex/research/agent_briefs/scout.yml
+    can_change_code: false
+    default_output: research_issue_or_ledger_update
+  experimenter:
+    brief: .codex/research/agent_briefs/experimenter.yml
+    can_change_code: true
+    default_output: smallest_checked_artifact_or_no_go
+  skeptic:
+    brief: .codex/research/agent_briefs/skeptic.yml
+    can_change_code: true
+    default_output: claim_breaker_or_hardening_followup
+  integrator:
+    brief: .codex/research/agent_briefs/integrator.yml
+    can_change_code: true
+    default_output: merged_pr_with_claim_boundary
+
+validation_policy:
+  default_mode: local_first_github_ci_never_normal_loop
+  github_actions:
+    normal_research_loop: forbidden
+    automatic_triggers: forbidden
+    workflow_dispatch: dormant_owner_directed_exception_only
+    allowed_only_for:
+      - release_candidate_cross_check
+      - paper_bundle_cross_check
+      - security_hotfix_cross_check
+      - final_review_cross_check
+    merge_required: false
+  local_validation:
+    required_before_push: true
+    preferred_order:
+      - "git diff --check"
+      - "format or lint touched surfaces"
+      - "targeted Rust tests for edited modules"
+      - "targeted Python evidence gates"
+      - "artifact regeneration with exact commands"
+      - "mutation or negative tests when proof semantics or evidence contracts changed"
+  pr_body_must_include:
+    - exact_local_validation_commands
+    - hardening_notes_for_trusted_core
+    - evidence_paths_when_relevant
+    - non_claims_when_relevant
+
+review_bot_policy:
+  reviewers:
+    - qodo
+    - coderabbit
+  reviewers_github_logins:
+    - qodo-code-review
+    - coderabbitai
+  stance: cheap_adversarial_reviewers
+  merge_rule:
+    required_quiet_window_minutes: 5
+    quiet_window_restarts_after:
+      - relevant_qodo_feedback
+      - relevant_coderabbit_feedback
+      - relevant_human_feedback
+      - any_push_after_feedback
+    merge_allowed_only_when:
+      - no_unresolved_relevant_qodo_findings
+      - no_unresolved_relevant_coderabbit_findings
+      - no_unresolved_relevant_human_threads
+      - local_scoped_validation_passed
+      - pr_claim_boundary_explicit
+  triage_classes:
+    must_fix:
+      meaning: "real soundness, verifier, artifact-binding, replay, path-safety, resource, or test-gap issue"
+      action: "fix locally, add or update targeted validation, push again"
+    evidence_needed:
+      meaning: "comment may be correct but needs current-code inspection"
+      action: "inspect current code, reproduce locally when possible, then fix or document"
+    stale_or_false_positive:
+      meaning: "bot is stale, misunderstood an invariant, or conflicts with a checked claim boundary"
+      action: "reply briefly with evidence; avoid code churn"
+    followup_issue:
+      meaning: "valid but outside current PR scope"
+      action: "open or update a follow-up issue with GO/NO-GO framing"
+    ignore:
+      meaning: "style-only preference with no correctness, security, or research impact"
+      action: "do not churn the PR"
+
+merge_policy:
+  command: "gh pr merge --rebase"
+  merge_commits: forbidden
+  auto_merge: forbidden
+  requirements:
+    - clean_worktree_branch_from_origin_main_or_current_stack_base
+    - local_validation_recorded
+    - review_bot_quiet_window_satisfied
+    - no_actionable_threads
+    - no_accidental_github_actions_runs_required
+
+claim_discipline:
+  frontier_claim_requires:
+    - checked_evidence
+    - exact_reproduction_commands
+    - negative_or_mutation_checks
+    - non_claims
+  no_go_behavior: >
+    Record the barrier and narrow or kill the claim. Do not smooth over failed
+    experiments as progress.

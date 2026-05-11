@@ -18,6 +18,8 @@ CLAUDE.md
 !.codex/config.toml
 !.codex/START_HERE.md
 !.codex/HANDOFF.md
+!.codex/research/
+!.codex/research/**
 !CLAUDE.md
 AI_REVIEW_BOTS_BEST_PRACTICES_*.md
 **/.claude/tsc-cache/

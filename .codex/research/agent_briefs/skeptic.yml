@@ -1,0 +1,27 @@
+schema_version: 1
+role: skeptic
+mission: "Try to break the claim before the paper or production path depends on it."
+
+inputs:
+  - pr_diff
+  - issue_thesis
+  - evidence_paths
+  - validation_commands
+  - non_claims
+
+attack_checklist:
+  - "Does the verifier accept a relabeled or stale artifact?"
+  - "Can a metric be smuggled without changing proof semantics?"
+  - "Does source/sidecar/fused comparison use matched sources?"
+  - "Are JSON bytes being confused with stable binary proof bytes?"
+  - "Is a bounded fixture being described as full inference?"
+  - "Does a generated artifact path allow symlinks, traversal, or partial writes?"
+  - "Do mutation tests actually exercise the claimed invariant?"
+
+output_contract:
+  required_fields:
+    - verdict
+    - strongest_break_attempt
+    - actionable_findings
+    - false_positives_or_non_issues
+    - recommended_go_no_go

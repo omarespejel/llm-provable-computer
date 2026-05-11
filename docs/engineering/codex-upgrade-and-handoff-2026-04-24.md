@@ -13,25 +13,30 @@ For this repository, the durable continuity layers are:
    - `.github/instructions/*.instructions.md`
    - `docs/engineering/codex-repo-handoff-2026-04-24.md`
    - `docs/engineering/codex-upgrade-and-handoff-2026-04-24.md`
-2. tracked fast local entrypoints under `.codex/`:
+2. tracked fast local entrypoints and structured Research OS files under `.codex/`:
+   - `.codex/config.toml`
    - `.codex/START_HERE.md`
    - `.codex/HANDOFF.md`
+   - `.codex/research/**`
 3. optional additional local-only notes under `.codex/`
 4. local Codex state under `~/.codex/`
 5. optional Codex memories
 
-Tracked repository docs are the canonical shared memory surface. The `.codex/`
-entrypoints are now also tracked on purpose so local agents have a fast, consistent
-read order. Any other machine-local `.codex/` scratch notes can remain untracked.
+Tracked repository docs are the canonical shared memory surface. The tracked
+`.codex/` entrypoints and Research OS files are also tracked on purpose so local
+agents have a fast, consistent read order and structured source of truth. Any
+other machine-local `.codex/` scratch notes can remain untracked.
 
 ## Repository-specific policy
 
-### 1. Only the fast `.codex` entrypoints are tracked
+### 1. Only the shared `.codex` entrypoints and Research OS are tracked
 
 The repository now tracks:
 
+- `.codex/config.toml`
 - `.codex/START_HERE.md`
 - `.codex/HANDOFF.md`
+- `.codex/research/**`
 
 Other `.codex/` markdown notes may remain local-only if they are purely machine-local.
 
