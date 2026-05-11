@@ -1,9 +1,14 @@
 name: PR hardening contract
 
+# The hardening contract is manual-only by policy. Trusted-core PRs still need
+# local validation and the hardening checklist in the PR body before review.
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to validate"
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -14,50 +19,76 @@ jobs:
     name: hardening contract
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
       - name: Validate PR hardening contract
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
         run: |
-          python3 - <<'PY'
-          import os
-          import subprocess
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || {
+            echo "Invalid PR_NUMBER: must be a positive integer" >&2
+            exit 1
+          }
+
+          pr_metadata="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json body,changedFiles)"
+          files_json="$(
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
+              --jq '.[] | {path: .filename, previous_path: (.previous_filename // "")} | @json' |
+            python3 -c 'import json, sys; print(json.dumps([json.loads(line) for line in sys.stdin if line.strip()]))'
+          )"
+          pr_json_path="${RUNNER_TEMP:-/tmp}/pr-hardening-contract.json"
+          python3 - "$pr_metadata" "$files_json" > "$pr_json_path" <<'PY'
+          import json
           import sys
 
+          pr = json.loads(sys.argv[1])
+          pr["files"] = json.loads(sys.argv[2])
+          print(json.dumps(pr))
+          PY
+          export PR_JSON_PATH="$pr_json_path"
+
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
           pr_number = os.environ.get("PR_NUMBER") or ""
-          base = os.environ.get("BASE_SHA") or ""
-          head = os.environ.get("HEAD_SHA") or ""
-          body = os.environ.get("PR_BODY") or ""
+          raw_pr_path = os.environ.get("PR_JSON_PATH") or ""
 
-          if not pr_number:
-              print("No pull_request context; skipping hardening contract.")
-              sys.exit(0)
+          if not pr_number.isdigit() or int(pr_number) <= 0:
+              print("PR number input must be a positive integer.")
+              sys.exit(1)
 
-          for rev_name, rev in (("BASE_SHA", base), ("HEAD_SHA", head)):
-              if not rev:
-                  print(f"{rev_name} is missing; skipping hardening contract.")
-                  sys.exit(0)
-              result = subprocess.run(
-                  ["git", "rev-parse", "--verify", "--quiet", rev],
-                  stdout=subprocess.DEVNULL,
-                  stderr=subprocess.DEVNULL,
+          if not raw_pr_path:
+              print("PR metadata path is required.")
+              sys.exit(1)
+
+          try:
+              raw_pr = Path(raw_pr_path).read_text(encoding="utf-8")
+              pr = json.loads(raw_pr)
+          except OSError as exc:
+              print(f"Could not read PR metadata file {raw_pr_path}: {exc}")
+              sys.exit(1)
+          except json.JSONDecodeError as exc:
+              print(f"Could not parse PR metadata file {raw_pr_path}: {exc}")
+              sys.exit(1)
+
+          body = pr.get("body") or ""
+          file_entries = pr.get("files", [])
+          changed = []
+          for file_entry in file_entries:
+              for key in ("path", "previous_path"):
+                  path = file_entry.get(key) or ""
+                  if path:
+                      changed.append(path)
+          changed_total = pr.get("changedFiles")
+          if isinstance(changed_total, int) and changed_total != len(file_entries):
+              print(
+                  "Paginated PR file list length does not match changedFiles: "
+                  f"{len(file_entries)} != {changed_total}"
               )
-              if result.returncode != 0:
-                  print(f"{rev_name} does not resolve locally; skipping hardening contract.")
-                  sys.exit(0)
-
-          changed = subprocess.check_output(
-              ["git", "diff", "--name-only", f"{base}...{head}"],
-              text=True,
-          ).splitlines()
+              sys.exit(1)
 
           trusted_prefixes = (
               "src/stwo_backend/",

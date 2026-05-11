@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 
 REPO="${MERGE_GATE_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
 PR_NUMBER="${MERGE_GATE_PR:-}"
-QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-420}"
+QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-300}"
 MAX_WAIT_SECONDS="${MERGE_GATE_MAX_WAIT_SECONDS:-1800}"
 WAIT_STARTED_AT="${MERGE_GATE_WAIT_STARTED_AT:-}"
 EVIDENCE_DIR="${MERGE_GATE_EVIDENCE_DIR:-target/local-hardening}"
@@ -32,7 +32,7 @@ Options:
   --pr NUMBER            Pull request number. Can also be positional.
   --mode smoke|full|hardening|none
                           Local command tier. Default: smoke.
-  --quiet-seconds N      AI-review quiet window. Default: 420.
+  --quiet-seconds N      AI-review quiet window. Default: 300.
   --max-wait-seconds N   Maximum total --wait wall time. Default: 1800; 0 disables.
   --evidence-dir DIR     Evidence output directory. Default: target/local-hardening.
   --wait                 Wait until the quiet window is satisfied.

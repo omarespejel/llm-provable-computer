@@ -13,31 +13,30 @@ change requires.
 - Do not use automatic `push`, `pull_request`, or `schedule` triggers for
   heavyweight GitHub Actions compute such as full CI matrix, mutation testing,
   Miri, sanitizers, or formal contracts.
-- Keep any automatic PR GitHub Actions compute lightweight and path-scoped; the
-  CI workflow only runs a core library contract plus integration-test smoke for
-  Rust, Cargo, program fixture, or CI workflow changes, plus one exact
-  pinned-nightly `stwo-backend` smoke with the pinned nightly toolchain cached.
-- Keep dependency-advisory drift under continuous watch with a lightweight
-  scheduled and `main`-branch dependency-audit job instead of widening the full
-  PR matrix.
-- Keep heavyweight GitHub Actions workflows available through
-  `workflow_dispatch` for intentional release, baseline, or emergency
-  GitHub-hosted validation.
+- Do not use automatic lightweight PR GitHub Actions compute either. The CI
+  workflow has no automatic PR path; local shellcheck, workflow audit,
+  dependency audit, smoke tests, and proof gates are the normal readiness
+  signal.
+- Keep dependency-advisory drift under local watch with
+  `scripts/run_dependency_audit_suite.sh` rather than scheduled or `main`-branch
+  GitHub Actions runs.
+- Keep GitHub Actions workflows available only through `workflow_dispatch` as
+  dormant guardrails for rare owner-directed release, paper-bundle, security, or
+  final-review validation.
 - Before opening or merging trusted-core PRs, run the matching tests and
   hardening suite locally, preferably inside a Lima Ubuntu 22.04 environment for
   Linux parity.
-- Keep CodeRabbit, Greptile, and Qodo as GitHub PR review signals, and keep the
-  PR hardening contract workflow (`.github/workflows/pr-hardening-contract.yml`)
-  as the enforced PR-body checklist gate.
-- `main` does not get automatic post-merge runs for heavyweight GitHub Actions
-  workflows; dispatch those workflows manually when release or baseline
-  validation needs a GitHub-hosted run on the merge commit.
+- Keep CodeRabbit, Greptile, and Qodo as GitHub PR review signals. The PR
+  hardening contract remains a local/PR-body discipline first; the
+  `workflow_dispatch` workflow is only a dormant mirror.
+- `main` does not get automatic post-merge GitHub Actions runs.
 - If a PR cannot run a local hardening command, document the blocker in the PR
-  validation notes and use `workflow_dispatch` intentionally.
+  validation notes instead of using GitHub Actions as a debugging loop.
 - Merge trusted-core PRs through `scripts/local_merge_gate.sh` so the final
   merge decision is tied to the exact PR head SHA, local evidence logs, a clean
-  GitHub check rollup, zero unresolved review threads, and a seven-minute quiet
-  window after the last CodeRabbit, Greptile, or Qodo event.
+  absence of unexpected GitHub check failures, zero unresolved review threads,
+  and a five-minute quiet window after the last relevant CodeRabbit, Greptile,
+  or Qodo event.
 
 ## Local Commands
 
@@ -186,7 +185,7 @@ Available local command tiers:
   delta, not the whole worktree. Prefer running this tier inside Lima for Linux
   parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
-  seven-minute AI-review quiet window. Use this only after a prior evidence run
+  five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.
 
 The GitHub side of the merge gate is intentionally narrow:
@@ -203,7 +202,7 @@ The GitHub side of the merge gate is intentionally narrow:
   fails closed if any individual review thread has more than 100 comments,
   because the gate cannot safely inspect that nested comment stream.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
-  previous 420 seconds. If no AI review/comment event exists yet, the gate
+  previous 300 seconds. If no AI review/comment event exists yet, the gate
   refuses to merge. Passing `--wait` sleeps through the remaining quiet window
   and then rechecks without rerunning local tests; any PR head change causes the
   recheck to fail.

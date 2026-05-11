@@ -1,18 +1,9 @@
 name: paper preflight
 
+# Paper preflight is manual-only by policy. Run local preflight first, then
+# dispatch this workflow intentionally for release or paper-bundle checks.
 on:
-  pull_request:
-    paths:
-      - "docs/paper/**"
-      - "scripts/paper/**"
-      - ".github/workflows/paper-preflight.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "docs/paper/**"
-      - "scripts/paper/**"
-      - ".github/workflows/paper-preflight.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

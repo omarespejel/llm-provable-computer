@@ -3,35 +3,14 @@ name: CI
 permissions:
   contents: read
 
+# CI is manual-only by policy. Local scoped validation plus cheap bot review is
+# the normal PR loop; run this workflow only as an intentional guardrail.
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/**"
-      - "src/**/*.rs"
-      - "tests/**"
-      - "programs/**"
-      - "scripts/*.sh"
-      - "scripts/**/*.sh"
-      - "docs/engineering/hardening-policy.md"
-      - "docs/engineering/hardening-strategy.md"
-      - "zizmor.yml"
-      - "deny.toml"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - "fuzz/Cargo.toml"
-      - "fuzz/Cargo.lock"
-      - "vendor/onnx-protobuf/**"
-  push:
-    branches:
-      - "main"
-  schedule:
-    - cron: "17 4 * * *"
   workflow_dispatch:
 
 jobs:
-  pr-smoke:
-    name: lightweight PR lib smoke
-    if: github.event_name == 'pull_request'
+  local-guardrails:
+    name: local guardrail parity
     runs-on: ubuntu-latest
 
     steps:
@@ -58,51 +37,17 @@ jobs:
             ~/.rustup/update-hashes
           key: rustup-nightly-2025-07-14-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Validate local merge gate script
+      - name: Validate local guardrail scripts
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck python3-pip
           bash scripts/run_shellcheck_suite.sh
-
-      - name: Run workflow audit when workflow surfaces change
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          changed_workflow_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- .github/workflows/ zizmor.yml)" || {
-            echo "workflow audit diff computation failed" >&2
-            exit 1
-          }
-          if [[ -z "$changed_workflow_inputs" ]]; then
-            echo "workflow audit not required for this PR"
-            exit 0
-          fi
           python3 -m pip install --user uv
           export PATH="$HOME/.local/bin:$PATH"
           bash scripts/run_workflow_audit_suite.sh
 
-      - name: Run dependency audit when dependency surfaces change
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          changed_dependency_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- Cargo.toml Cargo.lock fuzz/Cargo.toml fuzz/Cargo.lock deny.toml scripts/run_dependency_audit_suite.sh vendor/onnx-protobuf/)" || {
-            echo "dependency audit diff computation failed" >&2
-            exit 1
-          }
-          if [[ -z "$changed_dependency_inputs" ]]; then
-            echo "dependency audit not required for this PR"
-            exit 0
-          fi
-          audit_root="$RUNNER_TEMP/dependency-audit-tools"
-          cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
-          cargo install --locked cargo-deny --version 0.19.4 --root "$audit_root"
-          export PATH="$audit_root/bin:$PATH"
-          bash scripts/run_dependency_audit_suite.sh
-
   dependency-audit:
     name: dependency audit
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
