@@ -1,0 +1,66 @@
+schema_version: 1
+program_id: stark_native_zkml_fused_proof_architecture
+last_reviewed: "2026-05-11"
+
+north_star: "STARK-native proof architecture as the backbone for production zkML later"
+
+primary_thesis: >
+  Transformer zkML should not be treated only as generic circuit compilation.
+  A STARK-native backend can fuse attention arithmetic, lookup-heavy
+  nonlinearities, and verifier-facing statement binding into one proof
+  architecture that shares commitment, opening, and decommitment structure.
+
+paper_candidate_claim:
+  status: candidate_not_yet_breakthrough
+  claim: >
+    Across controlled native Stwo attention/table profiles, fusing attention
+    arithmetic with Softmax-table LogUp membership reduces duplicated proof
+    plumbing versus separate arithmetic and lookup proof objects.
+  current_evidence:
+    route_matrix_doc: docs/engineering/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05-09.md
+    controlled_component_grid_doc: docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md
+    seq32_doc: docs/engineering/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05-10.md
+    checked_profiles: 10
+    fused_json_proof_bytes: 629466
+    source_plus_sidecar_json_proof_bytes: 814142
+    json_saving_bytes: 184676
+    typed_saving_bytes: 51288
+    typed_saving_share: 0.17959
+    per_profile_typed_saving_range:
+      min: 0.091035
+      max: 0.277371
+    strongest_checked_profile: d8_two_head_seq32
+
+target_narrative:
+  - "STARKs are not just another backend for zkML."
+  - "Transformer structure can map naturally onto STARK proof-system machinery."
+  - "The interesting result is fused proof architecture, not a generic zkML demo."
+  - "Production readiness comes later through verifier artifacts, statement binding, mutation rejection, and Starknet/S-two deployment paths."
+
+forbidden_claims:
+  - "We proved a full LLM."
+  - "STARKs beat all zkML systems."
+  - "This is production-ready zkML."
+  - "This is exact real-valued Softmax."
+  - "This is full autoregressive inference."
+  - "This is a timing benchmark before median-of-5 timing evidence exists."
+  - "This is recursion or PCD evidence before checked recursion or PCD artifacts exist."
+
+promotion_requirements:
+  paper_claim:
+    - "checked source/sidecar/fused artifacts"
+    - "machine-readable evidence"
+    - "negative or mutation coverage for claim drift"
+    - "exact reproduction commands"
+    - "explicit non-claims"
+    - "competitor/context table when comparing to external zkML systems"
+  production_claim:
+    - "stable verifier-facing proof artifacts"
+    - "statement binding"
+    - "resource and denial-of-service review"
+    - "deployment path and verification target"
+    - "operational rollback or failure-mode note"
+
+default_question_for_agents: >
+  Does this work strengthen, falsify, or narrow the STARK-native fused proof
+  architecture thesis?

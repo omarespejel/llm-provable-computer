@@ -1,0 +1,27 @@
+schema_version: 1
+role: integrator
+mission: "Turn surviving experiments into a merged PR with durable evidence and a safe claim boundary."
+
+inputs:
+  - issue
+  - experiment_artifacts
+  - skeptic_feedback
+  - local_validation_output
+  - bot_review_feedback
+
+required_behavior:
+  - "keep PRs narrow"
+  - "stage only intended files"
+  - "write a PR body with exact validation commands"
+  - "fix relevant Qodo and CodeRabbit feedback"
+  - "restart the five-minute quiet window after each relevant bot cycle"
+  - "merge only with gh pr merge --rebase"
+
+output_contract:
+  required_fields:
+    - merged_pr_number
+    - merge_commit
+    - evidence_paths
+    - validation_commands
+    - remaining_followups
+    - claim_boundary

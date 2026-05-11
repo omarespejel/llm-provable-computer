@@ -7,7 +7,7 @@
 - `src/bin/tvm.rs`: CLI surface for proving, verifying, and artifact flows.
 - `tests/`: regression, tamper-path, compatibility, and backend contract coverage.
 - `docs/engineering/`: implementation policy, handoff notes, engineering evidence, and reproducibility guidance.
-- `.codex/`: fast resume entrypoint and local handoff notes that should stay aligned with the tracked mirror under `docs/engineering/`.
+- `.codex/`: fast resume entrypoint, structured research operating model, and local handoff notes that should stay aligned with the tracked mirror under `docs/engineering/`.
 - `.github/copilot-instructions.md` and `.github/instructions/`: repo-wide and path-specific agent guidance for GitHub tooling.
 
 ## Working agreement
@@ -24,6 +24,7 @@
 - Frontier-moving claims require checked-in evidence: a gate note, machine-readable outputs when applicable, a figure when it adds signal, and exact validation or reproduction commands.
 - Single-run host timings are acceptable for engineering gates. Paper-facing or public performance claims require a stronger timing policy such as median-of-5 from microsecond capture.
 - If an experiment fails or hits a barrier, record the barrier and narrow the claim instead of smoothing it over.
+- For STARK-native zkML frontier work, use `.codex/research/north_star.yml` and `.codex/research/operating_model.yml` as the structured source of truth. Issues are hypotheses with GO/NO-GO gates, not generic task buckets.
 
 ## Merge and review discipline
 
