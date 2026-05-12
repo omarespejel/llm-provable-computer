@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import os
 import pathlib
 import tempfile
@@ -35,6 +36,7 @@ def accounting(seed):
         "fixed_overhead": records[11]["total_bytes"] + records[12]["total_bytes"],
     }
     proof_json_size = total + 100 + seed
+    record_stream = gate.canonical_record_stream(records)
     return proof_json_size, {
         "format_domain": gate.ACCOUNTING_DOMAIN,
         "format_version": gate.ACCOUNTING_FORMAT_VERSION,
@@ -45,8 +47,8 @@ def accounting(seed):
         "typed_size_estimate_bytes": total,
         "grouped_reconstruction": grouped,
         "stwo_grouped_breakdown": copy.deepcopy(grouped),
-        "record_stream_bytes": 900 + seed,
-        "record_stream_sha256": f"{seed:064x}"[-64:],
+        "record_stream_bytes": len(record_stream),
+        "record_stream_sha256": hashlib.sha256(record_stream).hexdigest(),
         "json_over_local_typed_ratio": round(proof_json_size / total, 6),
         "json_minus_local_typed_bytes": proof_json_size - total,
     }
@@ -146,6 +148,29 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
         payload["profile_rows"][0]["local_binary_accounting"]["record_stream_sha256"] = "z" * 64
         payload["payload_commitment"] = gate.payload_commitment(payload)
         self.assert_rejects(payload, summary, "record_stream_sha256 digest invalid")
+
+    def test_rejects_record_stream_digest_drift(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["record_stream_sha256"] = "11" * 32
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "record stream sha256 drift")
+
+    def test_rejects_record_stream_byte_count_drift(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["record_stream_bytes"] += 1
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "record stream bytes drift")
+
+    def test_rejects_grouped_bytes_not_derived_from_records(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        accounting = payload["profile_rows"][0]["local_binary_accounting"]
+        accounting["grouped_reconstruction"]["fri_samples"] += 16
+        accounting["stwo_grouped_breakdown"]["fri_samples"] += 16
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "grouped_reconstruction drift")
 
     def test_rejects_non_hex_cli_row_digests(self):
         summary = cli_summary()
