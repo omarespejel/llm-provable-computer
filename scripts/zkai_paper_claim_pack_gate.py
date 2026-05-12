@@ -67,6 +67,12 @@ BLOCKERS = [
     "no full transformer runtime, tokenizer/model-weight import, or accuracy/perplexity gate is bound",
 ]
 
+NO_GO_POSTURE = [
+    "NO-GO for public performance or production deployment language.",
+    "NO-GO for runtime, accuracy, recursion, PCD, or Starknet deployment claims.",
+    "NO-GO for verifier-time improvement claims from the current timing run.",
+]
+
 EVIDENCE_REFS = [
     {
         "id": "route_matrix",
@@ -136,6 +142,7 @@ EXPECTED_MUTATION_NAMES = (
     "evidence_path_missing",
     "non_claim_removed",
     "blocker_removed",
+    "no_go_posture_removed",
     "unknown_field_injection",
 )
 
@@ -239,6 +246,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
     if payload["claim_boundary"] != CLAIM_BOUNDARY:
         raise ClaimPackGateError("claim boundary drift")
     _assert_no_positive_overclaims(payload)
+    _assert_exact_list(payload["no_go_posture"], NO_GO_POSTURE, "no_go_posture")
     _assert_exact_list(payload["non_claims"], NON_CLAIMS, "non_claims")
     _assert_exact_list(payload["blockers"], BLOCKERS, "blockers")
     _assert_evidence_paths_exist(payload)
@@ -292,11 +300,7 @@ def build_payload() -> dict[str, Any]:
             "timing evidence is separated from proof-size evidence",
             "model-facing quantized policy is bridge-checked before runtime integration",
         ],
-        "no_go_posture": [
-            "NO-GO for public performance or production deployment language.",
-            "NO-GO for runtime, accuracy, recursion, PCD, or Starknet deployment claims.",
-            "NO-GO for verifier-time improvement claims from the current timing run.",
-        ],
+        "no_go_posture": list(NO_GO_POSTURE),
         "non_claims": list(NON_CLAIMS),
         "blockers": list(BLOCKERS),
         "validation_commands": [
@@ -342,6 +346,10 @@ def mutation_cases(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     mutated = copy.deepcopy(payload)
     mutated["blockers"] = mutated["blockers"][1:]
     cases.append(("blocker_removed", mutated))
+
+    mutated = copy.deepcopy(payload)
+    mutated["no_go_posture"] = mutated["no_go_posture"][1:]
+    cases.append(("no_go_posture_removed", mutated))
 
     mutated = copy.deepcopy(payload)
     mutated["unexpected"] = "claim smuggling"

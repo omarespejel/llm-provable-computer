@@ -18,6 +18,7 @@ class PaperClaimPackGateTests(unittest.TestCase):
         self.assertIn("not public benchmark", self.payload["non_claims"])
         self.assertIn("not production-ready", self.payload["non_claims"])
         self.assertIn("not exact real-valued Softmax", self.payload["non_claims"])
+        self.assertEqual(self.payload["no_go_posture"], gate.NO_GO_POSTURE)
 
     def test_referenced_evidence_paths_exist(self):
         paths = [gate.ROOT / ref["path"] for ref in self.payload["evidence_refs"]]
