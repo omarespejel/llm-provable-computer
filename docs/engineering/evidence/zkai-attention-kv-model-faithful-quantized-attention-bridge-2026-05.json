@@ -227,8 +227,10 @@
   "schema": "zkai-attention-kv-model-faithful-quantized-attention-bridge-gate-v1",
   "source_fixture_issue": 463,
   "validation_commands": [
+    "just gate-fast",
     "python3 scripts/zkai_attention_kv_model_faithful_quantized_attention_bridge_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_model_faithful_quantized_attention_bridge_gate",
-    "git diff --check"
+    "git diff --check",
+    "just gate"
   ]
 }
