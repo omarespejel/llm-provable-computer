@@ -644,12 +644,17 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def validate_output_path(raw_path: pathlib.Path) -> pathlib.Path:
-    if raw_path.exists() and raw_path.is_symlink():
+    raw_path = raw_path if raw_path.is_absolute() else ROOT / raw_path
+    if raw_path.is_symlink():
         raise StwoMedianTimingGateError(f"output path must not be a symlink: {raw_path}")
     path = raw_path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
     if not path.parent.exists():
         raise StwoMedianTimingGateError(f"output parent does not exist: {path.parent}")
+    if not path.parent.is_dir():
+        raise StwoMedianTimingGateError(f"output parent must be a directory: {path.parent}")
+    if path.exists() and path.is_dir():
+        raise StwoMedianTimingGateError(f"output path must be a file: {path}")
     if evidence_root not in (path, *path.parents):
         raise StwoMedianTimingGateError(f"output path escapes evidence dir: {path}")
     return path
