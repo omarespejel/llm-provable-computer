@@ -756,13 +756,15 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def validate_output_path(path: pathlib.Path) -> pathlib.Path:
-    raw_path = path
+    raw_path = path if path.is_absolute() else ROOT / path
     if raw_path.is_symlink():
         raise BinaryTypedProofAccountingGateError(f"output path must not be a symlink: {raw_path}")
     path = raw_path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
     if not path.parent.exists():
         raise BinaryTypedProofAccountingGateError(f"output parent does not exist: {path.parent}")
+    if path.exists() and path.is_dir():
+        raise BinaryTypedProofAccountingGateError(f"output path must be a file: {path}")
     if evidence_root not in (path, *path.parents):
         raise BinaryTypedProofAccountingGateError(f"output path escapes evidence dir: {path}")
     return path
