@@ -15,6 +15,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import pathlib
 import subprocess
@@ -397,14 +398,14 @@ def validate_cli_row(row: Any, expected: dict[str, Any]) -> None:
     for key in ("proof_backend_version", "statement_version", "verifier_domain", "proof_schema_version", "target_id"):
         if metadata[key] != expected[key]:
             raise BinaryTypedProofAccountingGateError(f"{expected['role']} {key} drift")
+    proof_json_size = require_exact_int(row["proof_json_size_bytes"], f"{expected['role']} proof_json_size_bytes")
     accounting = row["local_binary_accounting"]
-    validate_local_accounting(accounting, expected["role"])
-    require_exact_int(row["proof_json_size_bytes"], f"{expected['role']} proof_json_size_bytes")
+    validate_local_accounting(accounting, expected["role"], proof_json_size)
     if accounting["json_minus_local_typed_bytes"] != row["proof_json_size_bytes"] - accounting["typed_size_estimate_bytes"]:
         raise BinaryTypedProofAccountingGateError(f"{expected['role']} JSON/local typed delta drift")
 
 
-def validate_local_accounting(accounting: Any, role: str) -> None:
+def validate_local_accounting(accounting: Any, role: str, proof_json_size_bytes: int) -> None:
     if not isinstance(accounting, dict):
         raise BinaryTypedProofAccountingGateError(f"{role} local accounting must be an object")
     expected_keys = {
@@ -455,7 +456,10 @@ def validate_local_accounting(accounting: Any, role: str) -> None:
     record_stream = canonical_record_stream(records)
     if require_exact_int(accounting["record_stream_bytes"], f"{role} record_stream_bytes") != len(record_stream):
         raise BinaryTypedProofAccountingGateError(f"{role} record stream bytes drift")
-    require_float(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
+    ratio = require_float(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
+    expected_ratio = rounded_ratio(proof_json_size_bytes, typed_size_estimate)
+    if not math.isclose(ratio, expected_ratio, rel_tol=0.0, abs_tol=1e-12):
+        raise BinaryTypedProofAccountingGateError(f"{role} json_over_local_typed_ratio drift")
     require_exact_int(accounting["json_minus_local_typed_bytes"], f"{role} json_minus_local_typed_bytes")
     if require_sha256_hex(accounting["record_stream_sha256"], f"{role} record_stream_sha256") != hashlib.sha256(
         record_stream
@@ -486,6 +490,12 @@ def validate_grouped_accounting(value: Any, expected: dict[str, int], role: str,
     for key in GROUPED_ACCOUNTING_KEYS:
         if require_exact_int(value[key], f"{role} {label} {key}") != expected[key]:
             raise BinaryTypedProofAccountingGateError(f"{role} {label} drift")
+
+
+def rounded_ratio(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        raise BinaryTypedProofAccountingGateError("ratio denominator must be positive")
+    return math.floor((numerator / denominator) * 1_000_000 + 0.5) / 1_000_000
 
 
 def validate_record(record: Any, expected_path: str, role: str) -> None:
