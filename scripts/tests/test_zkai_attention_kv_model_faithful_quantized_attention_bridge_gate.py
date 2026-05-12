@@ -145,6 +145,30 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output path must not be a symlink"):
                 gate.write_json(link, self.result)
 
+    def test_write_json_rejects_symlink_output_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = gate.pathlib.Path(tmp)
+            target_dir = tmp_dir / "target"
+            target_dir.mkdir()
+            link = tmp_dir / "parent-link"
+            try:
+                link.symlink_to(target_dir, target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent must not be a symlink"):
+                gate.write_json(link / "bridge.json", self.result)
+
+    def test_write_json_rejects_dangling_symlink_output_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = gate.pathlib.Path(tmp)
+            link = tmp_dir / "dangling-parent"
+            try:
+                link.symlink_to(tmp_dir / "missing-dir", target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent must not be a symlink"):
+                gate.write_json(link / "bridge.json", self.result)
+
 
 if __name__ == "__main__":
     unittest.main()
