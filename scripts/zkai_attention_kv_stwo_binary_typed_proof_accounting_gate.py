@@ -15,6 +15,7 @@ import csv
 import hashlib
 import io
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -678,8 +679,6 @@ def mutation_cases_for(base_payload: dict[str, Any], cli_summary: dict[str, Any]
             validate_payload(mutated, cli_summary, allow_missing_mutation_summary=True)
         except BinaryTypedProofAccountingGateError as err:
             cases.append({"name": name, "rejected": True, "error": str(err)})
-        except Exception:
-            raise
         else:
             cases.append({"name": name, "rejected": False, "error": ""})
     return cases
@@ -776,6 +775,7 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
         tmp_path = pathlib.Path(handle.name)
         handle.write(text)
         handle.flush()
+        os.fsync(handle.fileno())
     tmp_path.replace(path)
 
 
