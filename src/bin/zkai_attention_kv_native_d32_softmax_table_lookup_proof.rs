@@ -89,16 +89,6 @@ where
             if !verified {
                 return Err("lookup sidecar envelope verification returned false".to_string());
             }
-            if let Some(parent) = envelope_path.parent() {
-                if !parent.as_os_str().is_empty() {
-                    fs::create_dir_all(parent).map_err(|error| {
-                        format!(
-                            "failed to create output parent {}: {error}",
-                            parent.display()
-                        )
-                    })?;
-                }
-            }
             let envelope_bytes = serde_json::to_vec_pretty(&envelope)
                 .map_err(|error| format!("failed to serialize lookup envelope: {error}"))?;
             if envelope_bytes.len()
@@ -294,6 +284,26 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
             path.display()
         ));
     }
+    sync_parent_directory(parent, label, path)?;
+    Ok(())
+}
+
+#[cfg(all(feature = "stwo-backend", unix))]
+fn sync_parent_directory(parent: &Path, label: &str, path: &Path) -> Result<(), String> {
+    fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| {
+            format!(
+                "failed to sync output parent {} for {} {}: {error}",
+                parent.display(),
+                label,
+                path.display()
+            )
+        })
+}
+
+#[cfg(all(feature = "stwo-backend", not(unix)))]
+fn sync_parent_directory(_parent: &Path, _label: &str, _path: &Path) -> Result<(), String> {
     Ok(())
 }
 

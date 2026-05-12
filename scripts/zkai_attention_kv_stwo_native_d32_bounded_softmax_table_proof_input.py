@@ -791,8 +791,6 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
         raise AttentionKvBoundedSoftmaxTableInputError("JSON and TSV output paths must differ")
     staged_json = staged_output_path(json_out)
     staged_tsv = staged_output_path(tsv_out)
-    staged_json.unlink(missing_ok=True)
-    staged_tsv.unlink(missing_ok=True)
     try:
         with staged_json.open("w", encoding="utf-8", newline="") as handle:
             handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
