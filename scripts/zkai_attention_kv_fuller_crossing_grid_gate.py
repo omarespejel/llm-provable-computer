@@ -582,17 +582,19 @@ def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
         raise FullerCrossingGridGateError(f"refusing to overwrite symlink: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     validate_result(result)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
-    ) as handle:
-        tmp = pathlib.Path(handle.name)
-        json.dump(result, handle, indent=2, sort_keys=True)
-        handle.write("\n")
+    tmp: pathlib.Path | None = None
     try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+        ) as handle:
+            tmp = pathlib.Path(handle.name)
+            json.dump(result, handle, indent=2, sort_keys=True)
+            handle.write("\n")
         validate_result(json.loads(tmp.read_text(encoding="utf-8")))
         tmp.replace(path)
     except Exception:
-        tmp.unlink(missing_ok=True)
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
         raise
 
 
@@ -616,27 +618,29 @@ def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
             payload["missing_reason"] = "proved"
         rows.append(payload)
     expected_rows = [{column: str(value) for column, value in row.items()} for row in rows]
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", newline="", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
-    ) as handle:
-        tmp = pathlib.Path(handle.name)
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=TSV_COLUMNS,
-            delimiter="\t",
-            extrasaction="ignore",
-            lineterminator="\n",
-        )
-        writer.writeheader()
-        writer.writerows(rows)
+    tmp: pathlib.Path | None = None
     try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", newline="", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+        ) as handle:
+            tmp = pathlib.Path(handle.name)
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=TSV_COLUMNS,
+                delimiter="\t",
+                extrasaction="ignore",
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
         with tmp.open("r", encoding="utf-8", newline="") as handle:
             loaded_rows = list(csv.DictReader(handle, delimiter="\t"))
         if loaded_rows != expected_rows:
             raise FullerCrossingGridGateError("TSV round-trip drift")
         tmp.replace(path)
     except Exception:
-        tmp.unlink(missing_ok=True)
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
         raise
 
 
