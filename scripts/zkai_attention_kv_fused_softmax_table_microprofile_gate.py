@@ -112,18 +112,19 @@ TSV_COLUMNS = (
     "backend_internal_split_status",
 )
 EXPECTED_PROFILE_IDS = matrix.PROFILE_IDS
-EXPECTED_TOTAL_FUSED_PROOF_BYTES = 629_466
-EXPECTED_TOTAL_SECTION_PAYLOAD_BYTES = 628_216
-EXPECTED_TOTAL_WRAPPER_BYTES = 1_250
-EXPECTED_LARGEST_PROFILE_ID = "d16_two_head_seq16"
-EXPECTED_LARGEST_PROFILE_PROOF_BYTES = 84_868
-EXPECTED_TOTAL_LOOKUP_CLAIMS = 3_624
-EXPECTED_TOTAL_TRACE_ROWS = 5_248
-EXPECTED_TOTAL_SOURCE_PLUS_SIDECAR_BYTES = 814_142
-EXPECTED_TOTAL_FUSED_SAVINGS_BYTES = 184_676
+EXPECTED_TOTAL_FUSED_PROOF_BYTES = 736_727
+EXPECTED_TOTAL_SECTION_PAYLOAD_BYTES = 735_352
+EXPECTED_TOTAL_WRAPPER_BYTES = 1_375
+EXPECTED_LARGEST_PROFILE_ID = "d32_single_head_seq8"
+EXPECTED_LARGEST_PROFILE_PROOF_BYTES = 107_261
+EXPECTED_TOTAL_LOOKUP_CLAIMS = 3_676
+EXPECTED_TOTAL_TRACE_ROWS = 5_312
+EXPECTED_TOTAL_SOURCE_PLUS_SIDECAR_BYTES = 930_824
+EXPECTED_TOTAL_FUSED_SAVINGS_BYTES = 194_097
 EXPECTED_EXPOSED_RELATION_WIDTH_PROFILES = (
     "d8_single_head_seq8",
     "d16_single_head_seq8",
+    "d32_single_head_seq8",
     "d8_two_head_seq8",
     "d8_four_head_seq8",
     "d16_two_head_seq8",
@@ -136,6 +137,7 @@ EXPECTED_PROOF_BACKEND_VERSIONS = (
     "stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1",
     "stwo-attention-kv-d16-two-head-fused-bounded-softmax-table-logup-v1",
     "stwo-attention-kv-d16-two-head-longseq-fused-bounded-softmax-table-logup-v1",
+    "stwo-attention-kv-d32-fused-bounded-softmax-table-logup-v1",
     "stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1",
     "stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1",
     "stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1",

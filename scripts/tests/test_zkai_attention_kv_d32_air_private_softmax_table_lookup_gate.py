@@ -49,7 +49,7 @@ class AttentionKvAirPrivateSoftmaxTableLookupGateTests(unittest.TestCase):
         self.assertEqual(receipt["lookup_relation"], gate.LOOKUP_RELATION)
         self.assertEqual(receipt["lookup_relation_width"], 2)
         self.assertEqual(receipt["lookup_proof_size_bytes"], 15562)
-        self.assertEqual(receipt["lookup_envelope_size_bytes"], 379207)
+        self.assertEqual(receipt["lookup_envelope_size_bytes"], 379293)
         self.assertEqual(receipt["lookup_proof_commitments"], 4)
         self.assertEqual(receipt["lookup_trace_commitments"], 3)
         self.assertEqual(sum(row["multiplicity"] for row in receipt["table_multiplicities"]), 52)

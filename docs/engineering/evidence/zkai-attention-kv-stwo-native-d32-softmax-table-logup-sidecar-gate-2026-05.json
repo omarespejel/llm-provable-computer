@@ -7,7 +7,7 @@
   "issue": 6,
   "lookup_receipt": {
     "lookup_claims": 52,
-    "lookup_envelope_size_bytes": 379207,
+    "lookup_envelope_size_bytes": 379293,
     "lookup_proof_commitments": 4,
     "lookup_proof_size_bytes": 15562,
     "lookup_relation": "AttentionKvD32SoftmaxTableLookupRelation",
@@ -125,6 +125,11 @@
     },
     {
       "error": "lookup_receipt drift",
+      "name": "target_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "lookup_receipt drift",
       "name": "lookup_claim_count_metric_smuggling",
       "rejected": true
     },
@@ -169,8 +174,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 18,
-  "mutations_rejected": 18,
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
   "next_backend_step": "fuse the attention arithmetic columns and Softmax-table LogUp relation into one native component, then repeat the check on the two-head route",
   "non_claims": [
     "not a fused attention-arithmetic-plus-lookup component",

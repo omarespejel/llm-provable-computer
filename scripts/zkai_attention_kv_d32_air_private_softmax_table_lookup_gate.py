@@ -69,7 +69,7 @@ LOOKUP_TARGET_ID = "attention-kv-d32-causal-mask-bounded-softmax-table-logup-sid
 LOOKUP_RELATION = "AttentionKvD32SoftmaxTableLookupRelation"
 LOOKUP_RELATION_WIDTH = 2
 LOOKUP_PROOF_SIZE_BYTES = 15_562
-LOOKUP_ENVELOPE_SIZE_BYTES = 379_207
+LOOKUP_ENVELOPE_SIZE_BYTES = 379_293
 LOOKUP_PROOF_COMMITMENTS = 4
 LOOKUP_TRACE_COMMITMENTS = 3
 LOOKUP_TABLE_MULTIPLICITIES = (
@@ -116,6 +116,7 @@ EXPECTED_MUTATION_NAMES = (
     "source_weight_table_commitment_relabeling",
     "lookup_relation_relabeling",
     "lookup_relation_width_relabeling",
+    "target_id_relabeling",
     "lookup_claim_count_metric_smuggling",
     "lookup_proof_size_metric_smuggling",
     "lookup_envelope_size_metric_smuggling",
@@ -126,7 +127,7 @@ EXPECTED_MUTATION_NAMES = (
     "unknown_field_injection",
     "lookup_receipt_unknown_field_injection",
 )
-EXPECTED_MUTATION_COUNT = 18
+EXPECTED_MUTATION_COUNT = 19
 
 TSV_COLUMNS = (
     "decision",
@@ -354,6 +355,7 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
         "statement_version",
         "semantic_scope",
         "decision",
+        "target_id",
         "verifier_domain",
         "lookup_summary",
         "source_input",
@@ -368,6 +370,7 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
         "statement_version": LOOKUP_STATEMENT_VERSION,
         "semantic_scope": LOOKUP_SEMANTIC_SCOPE,
         "decision": DECISION,
+        "target_id": LOOKUP_TARGET_ID,
         "verifier_domain": LOOKUP_VERIFIER_DOMAIN,
     }
     for key, expected in expected_scalars.items():
@@ -402,7 +405,7 @@ def validate_lookup_envelope(envelope: Any, source_input: dict[str, Any], envelo
         "statement_version": envelope["statement_version"],
         "semantic_scope": envelope["semantic_scope"],
         "verifier_domain": envelope["verifier_domain"],
-        "target_id": LOOKUP_TARGET_ID,
+        "target_id": envelope["target_id"],
         "source_statement_commitment": summary["source_statement_commitment"],
         "source_public_instance_commitment": summary["source_public_instance_commitment"],
         "source_score_row_commitment": summary["source_score_row_commitment"],
@@ -495,6 +498,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         receipt["lookup_relation"] = "ForgedRelation"
     elif name == "lookup_relation_width_relabeling":
         receipt["lookup_relation_width"] = 3
+    elif name == "target_id_relabeling":
+        receipt["target_id"] = "attention-kv-d32-forged-lookup-sidecar"
     elif name == "lookup_claim_count_metric_smuggling":
         receipt["lookup_claims"] += 1
     elif name == "lookup_proof_size_metric_smuggling":

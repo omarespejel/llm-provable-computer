@@ -8,7 +8,7 @@ Where do the checked fused Softmax-table proof bytes go across the controlled
 route matrix?
 
 The route matrix already records that the fused native Stwo route is smaller
-than the matched source-plus-LogUp-sidecar route across all ten checked rows.
+than the matched source-plus-LogUp-sidecar route across all eleven checked rows.
 This gate asks a narrower question: can we account for the fused proof bytes
 without pretending the backend exposes internals it does not expose?
 
@@ -17,7 +17,7 @@ without pretending the backend exposes internals it does not expose?
 `GO_TOP_LEVEL_FUSED_SOFTMAX_TABLE_PROOF_BYTE_MICROPROFILE_WITH_BACKEND_INTERNAL_SPLIT_NO_GO`
 
 GO for top-level serialized `stark_proof` JSON section byte accounting across
-the ten checked fused Softmax-table routes.
+the eleven checked fused Softmax-table routes.
 
 NO-GO for backend-internal attribution between source arithmetic columns and
 LogUp lookup columns. The current checked gates do not expose a stable
@@ -36,12 +36,13 @@ strings so downstream tools can distinguish "not exposed" from "forgotten."
 
 Microprofile commitment:
 
-`blake2b-256:8237c21f9807260440dc029e0a370049870b7a34c555f498f44445d3791329b5`
+`blake2b-256:6dbd6e269f74550fc0d1b99f715918275bdc05cf0faae5423a460d2a234ceb8d`
 
 Backend versions pinned from the serialized fused proof envelopes:
 
 - `stwo-attention-kv-d8-fused-bounded-softmax-table-logup-v1`
 - `stwo-attention-kv-d16-fused-bounded-softmax-table-logup-v1`
+- `stwo-attention-kv-d32-fused-bounded-softmax-table-logup-v1`
 - `stwo-attention-kv-two-head-fused-bounded-softmax-table-logup-v1`
 - `stwo-attention-kv-four-head-fused-bounded-softmax-table-logup-v1`
 - `stwo-attention-kv-eight-head-fused-bounded-softmax-table-logup-v1`
@@ -53,27 +54,27 @@ Backend versions pinned from the serialized fused proof envelopes:
 
 ## Aggregate Read
 
-Across the ten checked fused routes:
+Across the eleven checked fused routes:
 
 | Bucket | Bytes | Share of fused proof bytes |
 |---|---:|---:|
-| Query bucket (`sampled_values` + `queried_values`) | 417,575 | 66.338% |
-| Opening bucket (`decommitments` + `fri_proof`) | 204,728 | 32.524% |
-| Commitment bucket | 4,516 | 0.717% |
-| Config + proof-of-work | 1,397 | 0.222% |
-| JSON wrapper bytes | 1,250 | 0.199% |
+| Query bucket (`sampled_values` + `queried_values`) | 510,881 | 69.345% |
+| Opening bucket (`decommitments` + `fri_proof`) | 217,963 | 29.585% |
+| Commitment bucket | 4,971 | 0.675% |
+| Config + proof-of-work | 1,537 | 0.209% |
+| JSON wrapper bytes | 1,375 | 0.187% |
 
 Totals:
 
-- profiles checked: `10`;
-- lookup claims: `3,624`;
-- trace rows: `5,248`;
-- table rows: `90`;
-- fused proof bytes: `629,466`;
-- matched source-plus-sidecar proof bytes: `814,142`;
-- fused savings against matched source-plus-sidecar: `184,676` bytes;
-- section payload bytes: `628,216`;
-- JSON wrapper bytes: `1,250`.
+- profiles checked: `11`;
+- lookup claims: `3,676`;
+- trace rows: `5,312`;
+- table rows: `99`;
+- fused proof bytes: `736,727`;
+- matched source-plus-sidecar proof bytes: `930,824`;
+- fused savings against matched source-plus-sidecar: `194,097` bytes;
+- section payload bytes: `735,352`;
+- JSON wrapper bytes: `1,375`.
 
 The useful engineering signal is that the checked proof bytes are dominated by
 query and opening material at the exposed JSON proof boundary. That is a
@@ -85,6 +86,7 @@ top-level proof-object explanation, not a binary PCS/FRI-internal explanation.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | `d8_single_head_seq8` | 8 | 1 | 8 | 52 | 64 | 47,698 | 33,749 | 13,229 | `EXPOSED_BY_GATE` |
 | `d16_single_head_seq8` | 16 | 1 | 8 | 52 | 64 | 64,503 | 50,570 | 13,216 | `EXPOSED_BY_GATE` |
+| `d32_single_head_seq8` | 32 | 1 | 8 | 52 | 64 | 107,261 | 93,306 | 13,235 | `EXPOSED_BY_GATE` |
 | `d8_two_head_seq8` | 8 | 2 | 8 | 104 | 128 | 49,508 | 34,652 | 14,139 | `EXPOSED_BY_GATE` |
 | `d8_four_head_seq8` | 8 | 4 | 8 | 208 | 256 | 53,468 | 35,131 | 17,625 | `EXPOSED_BY_GATE` |
 | `d8_eight_head_seq8` | 8 | 8 | 8 | 416 | 512 | 59,375 | 35,150 | 23,520 | `NOT_EXPOSED_BY_GATE_DO_NOT_INFER` |
@@ -94,8 +96,8 @@ top-level proof-object explanation, not a binary PCS/FRI-internal explanation.
 | `d16_two_head_seq8` | 16 | 2 | 8 | 104 | 128 | 78,211 | 60,802 | 16,691 | `EXPOSED_BY_GATE` |
 | `d16_two_head_seq16` | 16 | 2 | 16 | 336 | 512 | 84,868 | 61,734 | 22,411 | `EXPOSED_BY_GATE` |
 
-The largest checked route remains `d16_two_head_seq16`: `336` lookup claims,
-`512` trace rows, and `84,868` fused proof bytes.
+The largest checked route is now `d32_single_head_seq8`: `52` lookup claims,
+`64` trace rows, and `107,261` fused proof bytes.
 
 ## What This Adds To The Breakthrough Path
 
@@ -108,7 +110,7 @@ The stronger statement is now:
    across width, head-count, sequence, and combined axes, including the new
    `seq32` sequence-axis control.
 2. The fused route remains smaller than the matched source-plus-sidecar route
-   across all ten checked profiles.
+   across all eleven checked profiles.
 3. The exposed proof bytes are mostly query/opening material, not repeated
    top-level commitments or envelope wrapper bytes.
 4. Backend-internal source-vs-lookup attribution is still not exposed, so we do
