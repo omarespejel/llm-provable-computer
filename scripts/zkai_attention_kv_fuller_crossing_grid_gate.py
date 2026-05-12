@@ -350,6 +350,21 @@ def build_base_result() -> dict[str, Any]:
     return result
 
 
+def first_grid_row_with_status(rows: list[dict[str, Any]], status: str) -> dict[str, Any]:
+    for row in rows:
+        if row["status"] == status:
+            return row
+    raise FullerCrossingGridGateError(f"mutation target missing for status {status}")
+
+
+def first_proved_grid_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return first_grid_row_with_status(rows, PROVED_STATUS)
+
+
+def first_missing_grid_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return first_grid_row_with_status(rows, MISSING_STATUS)
+
+
 def mutation_cases() -> tuple[tuple[str, Any], ...]:
     return (
         ("decision_overclaim", lambda v: v.__setitem__("decision", "GO_FULL_PROOF_GRID")),
@@ -359,12 +374,12 @@ def mutation_cases() -> tuple[tuple[str, Any], ...]:
         ("proved_count_smuggling", lambda v: v["summary"].__setitem__("proved_cell_count", 45)),
         ("missing_count_smuggling", lambda v: v["summary"].__setitem__("missing_cell_count", 0)),
         ("grid_cell_count_smuggling", lambda v: v["summary"].__setitem__("grid_cell_count", 46)),
-        ("proved_cell_status_relabeling", lambda v: v["grid_rows"][0].__setitem__("status", MISSING_STATUS)),
-        ("missing_cell_status_relabeling", lambda v: v["grid_rows"][1].__setitem__("status", PROVED_STATUS)),
-        ("missing_cell_metric_injection", lambda v: v["grid_rows"][1].__setitem__("fused_proof_size_bytes", 1)),
-        ("missing_cell_evidence_injection", lambda v: v["grid_rows"][1].__setitem__("evidence_json", "docs/fake.json")),
-        ("proved_cell_metric_smuggling", lambda v: v["grid_rows"][0].__setitem__("lookup_claims", 1)),
-        ("proved_profile_relabeling", lambda v: v["grid_rows"][0].__setitem__("profile_id", "different_profile")),
+        ("proved_cell_status_relabeling", lambda v: first_proved_grid_row(v["grid_rows"]).__setitem__("status", MISSING_STATUS)),
+        ("missing_cell_status_relabeling", lambda v: first_missing_grid_row(v["grid_rows"]).__setitem__("status", PROVED_STATUS)),
+        ("missing_cell_metric_injection", lambda v: first_missing_grid_row(v["grid_rows"]).__setitem__("fused_proof_size_bytes", 1)),
+        ("missing_cell_evidence_injection", lambda v: first_missing_grid_row(v["grid_rows"]).__setitem__("evidence_json", "docs/fake.json")),
+        ("proved_cell_metric_smuggling", lambda v: first_proved_grid_row(v["grid_rows"]).__setitem__("lookup_claims", 1)),
+        ("proved_profile_relabeling", lambda v: first_proved_grid_row(v["grid_rows"]).__setitem__("profile_id", "different_profile")),
         ("go_criteria_removed", lambda v: v.__setitem__("go_criteria", v["go_criteria"][:-1])),
         ("no_go_criteria_removed", lambda v: v.__setitem__("no_go_criteria", v["no_go_criteria"][:-1])),
         ("next_profile_overclaim", lambda v: v["next_low_risk_profiles"][0].__setitem__("go_condition", "already proved")),
