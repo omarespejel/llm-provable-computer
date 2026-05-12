@@ -131,6 +131,14 @@ EXPECTED_RECORD_PATHS = (
     "pcs.proof_of_work",
     "pcs.config",
 )
+GROUPED_ACCOUNTING_KEYS = (
+    "oods_samples",
+    "queries_values",
+    "fri_samples",
+    "fri_decommitments",
+    "trace_decommitments",
+    "fixed_overhead",
+)
 EXPECTED_RECORD_SPECS = {
     "pcs.commitments": {"scalar_kind": "blake2s_hash", "size_constant_key": "blake2s_hash_bytes"},
     "pcs.trace_decommitments.hash_witness": {
@@ -201,6 +209,32 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 def sha256_json(value: Any) -> str:
     return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
+
+
+def canonical_record_stream(records: list[dict[str, Any]]) -> bytes:
+    chunks: list[bytes] = []
+    push_string(chunks, ACCOUNTING_DOMAIN)
+    push_string(chunks, ACCOUNTING_FORMAT_VERSION)
+    push_u64(chunks, len(records), "record_count")
+    for record in records:
+        push_string(chunks, record["path"])
+        push_string(chunks, record["scalar_kind"])
+        push_u64(chunks, record["item_count"], f"{record['path']} item_count")
+        push_u64(chunks, record["item_size_bytes"], f"{record['path']} item_size_bytes")
+        push_u64(chunks, record["total_bytes"], f"{record['path']} total_bytes")
+    return b"".join(chunks)
+
+
+def push_string(chunks: list[bytes], value: str) -> None:
+    raw = value.encode("utf-8")
+    push_u64(chunks, len(raw), "string length")
+    chunks.append(raw)
+
+
+def push_u64(chunks: list[bytes], value: int, label: str) -> None:
+    if value < 0 or value > 2**64 - 1:
+        raise BinaryTypedProofAccountingGateError(f"{label} does not fit u64")
+    chunks.append(value.to_bytes(8, "little"))
 
 
 def blake2b_commitment(value: Any, domain: str) -> str:
@@ -413,12 +447,45 @@ def validate_local_accounting(accounting: Any, role: str) -> None:
     )
     if typed_size_estimate != total:
         raise BinaryTypedProofAccountingGateError(f"{role} typed size estimate drift")
+    expected_grouped = grouped_accounting_from_records(records)
+    validate_grouped_accounting(accounting["grouped_reconstruction"], expected_grouped, role, "grouped_reconstruction")
+    validate_grouped_accounting(accounting["stwo_grouped_breakdown"], expected_grouped, role, "stwo_grouped_breakdown")
     if accounting["grouped_reconstruction"] != accounting["stwo_grouped_breakdown"]:
         raise BinaryTypedProofAccountingGateError(f"{role} grouped reconstruction drift")
-    require_exact_int(accounting["record_stream_bytes"], f"{role} record_stream_bytes")
+    record_stream = canonical_record_stream(records)
+    if require_exact_int(accounting["record_stream_bytes"], f"{role} record_stream_bytes") != len(record_stream):
+        raise BinaryTypedProofAccountingGateError(f"{role} record stream bytes drift")
     require_float(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
     require_exact_int(accounting["json_minus_local_typed_bytes"], f"{role} json_minus_local_typed_bytes")
-    require_sha256_hex(accounting["record_stream_sha256"], f"{role} record_stream_sha256")
+    if require_sha256_hex(accounting["record_stream_sha256"], f"{role} record_stream_sha256") != hashlib.sha256(
+        record_stream
+    ).hexdigest():
+        raise BinaryTypedProofAccountingGateError(f"{role} record stream sha256 drift")
+
+
+def grouped_accounting_from_records(records: list[dict[str, Any]]) -> dict[str, int]:
+    by_path = {record["path"]: record["total_bytes"] for record in records}
+    return {
+        "oods_samples": by_path["pcs.sampled_values"],
+        "queries_values": by_path["pcs.queried_values"],
+        "fri_samples": by_path["pcs.fri.first_layer.fri_witness"]
+        + by_path["pcs.fri.inner_layers.fri_witness"]
+        + by_path["pcs.fri.last_layer_poly"],
+        "fri_decommitments": by_path["pcs.fri.first_layer.commitment"]
+        + by_path["pcs.fri.inner_layers.commitments"]
+        + by_path["pcs.fri.first_layer.decommitment.hash_witness"]
+        + by_path["pcs.fri.inner_layers.decommitment.hash_witness"],
+        "trace_decommitments": by_path["pcs.commitments"] + by_path["pcs.trace_decommitments.hash_witness"],
+        "fixed_overhead": by_path["pcs.proof_of_work"] + by_path["pcs.config"],
+    }
+
+
+def validate_grouped_accounting(value: Any, expected: dict[str, int], role: str, label: str) -> None:
+    if not isinstance(value, dict) or set(value) != set(GROUPED_ACCOUNTING_KEYS):
+        raise BinaryTypedProofAccountingGateError(f"{role} {label} field drift")
+    for key in GROUPED_ACCOUNTING_KEYS:
+        if require_exact_int(value[key], f"{role} {label} {key}") != expected[key]:
+            raise BinaryTypedProofAccountingGateError(f"{role} {label} drift")
 
 
 def validate_record(record: Any, expected_path: str, role: str) -> None:
