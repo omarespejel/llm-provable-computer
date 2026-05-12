@@ -53,18 +53,18 @@ Checked summary:
 | Route envelope rows checked | `33` |
 | Verifier runs captured | `165` |
 | Mutation cases rejected | `13 / 13` |
-| Min fused median verify time | `6,503 us` |
-| Max fused median verify time | `139,509 us` |
+| Min fused median verify time | `6,316 us` |
+| Max fused median verify time | `138,600 us` |
 
 Selected profile medians:
 
 | Profile | Source + sidecar median | Fused median | Fused / source+sidecar |
 | --- | ---: | ---: | ---: |
-| `d8_single_head_seq8` | `3,137 us` | `6,503 us` | `2.073000x` |
-| `d16_single_head_seq8` | `4,562 us` | `7,427 us` | `1.628014x` |
-| `d32_single_head_seq8` | `9,219 us` | `12,140 us` | `1.316846x` |
-| `d8_two_head_seq32` | `51,086 us` | `139,509 us` | `2.730866x` |
-| `d16_two_head_seq16` | `21,239 us` | `63,067 us` | `2.969396x` |
+| `d8_single_head_seq8` | `3,210 us` | `6,610 us` | `2.059190x` |
+| `d16_single_head_seq8` | `4,644 us` | `6,316 us` | `1.360034x` |
+| `d32_single_head_seq8` | `8,898 us` | `12,574 us` | `1.413127x` |
+| `d8_two_head_seq32` | `50,899 us` | `138,600 us` | `2.723040x` |
+| `d16_two_head_seq16` | `21,460 us` | `64,032 us` | `2.983784x` |
 
 ## Interpretation
 

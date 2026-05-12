@@ -125,14 +125,37 @@ class StwoMedianTimingGateTests(unittest.TestCase):
             gate.validate_cli_summary(summary)
 
         summary = cli_summary()
-        summary["profile_summaries"][0]["fused_to_source_plus_sidecar_verify_median_ratio"] = 1
-        with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "fused ratio must be a float"):
+        summary["profile_summaries"][0]["fused_to_source_plus_sidecar_verify_median_ratio"] = True
+        with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "fused ratio must be a number"):
             gate.validate_cli_summary(summary)
 
         summary = cli_summary()
         summary["rows"][0]["envelope_sha256"] = "z" * 64
         with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "envelope_sha256 digest invalid"):
             gate.validate_cli_summary(summary)
+
+    def test_accepts_integer_encoded_exact_ratio(self):
+        summary = cli_summary()
+        first_chunk = summary["rows"][:3]
+        for row_item, median in zip(first_chunk, (5, 5, 10), strict=True):
+            row_item["verify_runs_us"] = [median - 2, median - 1, median, median + 1, median + 2]
+            row_item["verify_median_us"] = median
+            row_item["verify_min_us"] = median - 2
+            row_item["verify_max_us"] = median + 2
+        summary["profile_summaries"][0] = profile_summary(first_chunk)
+        summary["profile_summaries"][0]["fused_to_source_plus_sidecar_verify_median_ratio"] = 1
+        gate.validate_cli_summary(summary)
+
+    def test_rejects_extra_cli_validation_command(self):
+        summary = cli_summary()
+        summary["validation_commands"].append("unexpected command")
+        with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "CLI validation command drift"):
+            gate.validate_cli_summary(summary)
+
+    def test_accepts_tiny_float_ratio_representation_delta(self):
+        summary = cli_summary()
+        summary["profile_summaries"][0]["fused_to_source_plus_sidecar_verify_median_ratio"] += 1e-13
+        gate.validate_cli_summary(summary)
 
     def test_rejects_median_and_run_count_drift(self):
         summary = cli_summary()
