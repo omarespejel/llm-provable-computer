@@ -53,22 +53,99 @@ class PaperClaimPackGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.ClaimPackGateError, "missing evidence path"):
             gate.validate_payload(mutated)
 
-    def test_write_json_round_trip(self):
+    def test_rejects_symlinked_evidence_parent_even_when_commitment_is_refreshed(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = gate.pathlib.Path(tmp) / "claim-pack.json"
-            gate.write_json(path, self.payload)
+            outside_dir = gate.pathlib.Path(tmp) / "outside"
+            outside_dir.mkdir()
+            (outside_dir / "ok.json").write_text("{}", encoding="utf-8")
+            with tempfile.NamedTemporaryFile(
+                dir=gate.ROOT / "docs" / "engineering",
+                prefix="claim-pack-evidence-link-",
+                delete=False,
+            ) as handle:
+                link = gate.pathlib.Path(handle.name)
+            link.unlink()
+            try:
+                link.symlink_to(outside_dir, target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            try:
+                mutated = copy.deepcopy(self.payload)
+                mutated["evidence_refs"][0]["path"] = (link.relative_to(gate.ROOT) / "ok.json").as_posix()
+                mutated["payload_commitment"] = gate.payload_commitment(mutated)
+                with self.assertRaisesRegex(gate.ClaimPackGateError, "symlink components"):
+                    gate.validate_payload(mutated)
+            finally:
+                link.unlink(missing_ok=True)
+
+    def test_write_json_round_trip(self):
+        with tempfile.NamedTemporaryFile(
+            dir=gate.ALLOWED_OUTPUT_DIR,
+            prefix="claim-pack-test-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            path = gate.pathlib.Path(handle.name)
+        path.unlink()
+        try:
+            gate.write_json(path.relative_to(gate.ROOT), self.payload)
             loaded = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, self.payload)
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_write_json_rejects_symlink_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = gate.pathlib.Path(tmp)
             target = tmp_path / "target.json"
             target.write_text("{}", encoding="utf-8")
-            link = tmp_path / "link.json"
-            link.symlink_to(target)
-            with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must not be a symlink"):
-                gate.write_json(link, self.payload)
+            with tempfile.NamedTemporaryFile(
+                dir=gate.ALLOWED_OUTPUT_DIR,
+                prefix="claim-pack-link-",
+                suffix=".json",
+                delete=False,
+            ) as handle:
+                link = gate.pathlib.Path(handle.name)
+            link.unlink()
+            try:
+                link.symlink_to(target)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            try:
+                with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must not be a symlink"):
+                    gate.write_json(link.relative_to(gate.ROOT), self.payload)
+            finally:
+                link.unlink(missing_ok=True)
+
+    def test_write_json_rejects_outside_repo_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must be repo-relative"):
+                gate.write_json(gate.pathlib.Path(tmp) / "claim-pack.json", self.payload)
+
+    def test_write_json_rejects_outside_allowed_output_dir(self):
+        with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must stay under docs/paper/evidence"):
+            gate.write_json(gate.pathlib.Path("docs/engineering/evidence/claim-pack.json"), self.payload)
+
+    def test_write_json_rejects_symlink_output_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outside_dir = gate.pathlib.Path(tmp) / "outside"
+            outside_dir.mkdir()
+            with tempfile.NamedTemporaryFile(
+                dir=gate.ALLOWED_OUTPUT_DIR,
+                prefix="claim-pack-parent-link-",
+                delete=False,
+            ) as handle:
+                link = gate.pathlib.Path(handle.name)
+            link.unlink()
+            try:
+                link.symlink_to(outside_dir, target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            try:
+                with self.assertRaisesRegex(gate.ClaimPackGateError, "symlink components"):
+                    gate.write_json((link / "claim-pack.json").relative_to(gate.ROOT), self.payload)
+            finally:
+                link.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
