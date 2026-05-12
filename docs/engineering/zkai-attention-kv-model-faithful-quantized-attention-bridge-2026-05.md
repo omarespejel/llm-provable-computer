@@ -126,6 +126,8 @@ This gate does not claim:
 ## Reproduce
 
 ```bash
+just gate-fast
+
 python3 scripts/zkai_attention_kv_model_faithful_quantized_attention_bridge_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.tsv
@@ -134,4 +136,6 @@ python3 -m unittest \
   scripts.tests.test_zkai_attention_kv_model_faithful_quantized_attention_bridge_gate
 
 git diff --check
+
+just gate
 ```

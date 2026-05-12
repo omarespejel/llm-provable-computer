@@ -90,7 +90,7 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
 
     def test_rejects_receipt_kernel_overclaim(self):
         receipt = copy.deepcopy(self.receipt)
-        receipt["kernel_contract"]["kernel_status"] = "GO_REAL_VALUED_SOFTMAX"
+        receipt["kernel_contract"]["kernel_status"] = "GO_REAL_SOFTMAX"
         with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "kernel contract|receipt"):
             gate.validate_result(self.result, self.payload, receipt)
 
