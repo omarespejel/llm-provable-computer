@@ -314,7 +314,7 @@ def build_model_trace(payload: dict[str, Any]) -> dict[str, Any]:
 
         output: list[int] = []
         remainders: list[int] = []
-        for dim, numerator in enumerate(numerators):
+        for numerator in numerators:
             quotient, remainder = div_euclid_positive_denominator(numerator, denominator)
             output.append(quotient)
             remainders.append(remainder)
