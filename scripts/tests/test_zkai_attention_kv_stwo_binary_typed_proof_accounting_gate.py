@@ -1,8 +1,9 @@
 import copy
+import os
 import pathlib
-from unittest import mock
 import tempfile
 import unittest
+from unittest import mock
 
 from scripts import zkai_attention_kv_stwo_binary_typed_proof_accounting_gate as gate
 
@@ -215,13 +216,38 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "escapes evidence dir"):
                 gate.validate_output_path(pathlib.Path(tmp) / "bad.json")
 
+    def test_relative_output_path_is_repo_root_anchored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = pathlib.Path.cwd()
+            try:
+                os.chdir(tmp)
+                path = gate.validate_output_path(
+                    pathlib.Path(
+                        "docs/engineering/evidence/"
+                        "zkai-attention-kv-stwo-binary-typed-proof-accounting-2026-05.json"
+                    )
+                )
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(path, gate.JSON_OUT.resolve())
+
+    def test_rejects_evidence_directory_as_output_path(self):
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "must be a file"):
+            gate.validate_output_path(gate.EVIDENCE_DIR)
+
+    def symlink_or_skip(self, link: pathlib.Path, target: pathlib.Path) -> None:
+        try:
+            link.symlink_to(target)
+        except OSError as exc:
+            self.skipTest(f"symlinks unavailable: {exc}")
+
     @unittest.skipUnless(hasattr(pathlib.Path, "symlink_to"), "symlinks unavailable")
     def test_rejects_output_path_symlink_before_resolve(self):
         target = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-target.json"
         link = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-link.json"
         try:
             target.write_text("{}", encoding="utf-8")
-            link.symlink_to(target)
+            self.symlink_or_skip(link, target)
             with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "must not be a symlink"):
                 gate.validate_output_path(link)
         finally:
@@ -234,7 +260,7 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
         link = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-dangling-link.json"
         try:
             target.unlink(missing_ok=True)
-            link.symlink_to(target)
+            self.symlink_or_skip(link, target)
             self.assertFalse(link.exists())
             self.assertTrue(link.is_symlink())
             with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "must not be a symlink"):
