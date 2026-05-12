@@ -1,0 +1,130 @@
+{
+  "blockers": [
+    "stable verifier-facing binary proof serialization is not exposed upstream by Stwo in this repo surface",
+    "backend-internal source-arithmetic versus lookup-column byte attribution is still a NO-GO",
+    "local median-of-5 verifier timing does not support a fused verifier-time win claim",
+    "model-faithful quantized attention is bridged only for the checked d8 fixture trace",
+    "production Starknet verifier packaging, calldata/accounting, and deployment gates are not complete",
+    "no full transformer runtime, tokenizer/model-weight import, or accuracy/perplexity gate is bound"
+  ],
+  "claim_boundary": "STARK_NATIVE_PROOF_ARCHITECTURE_CLAIM_FOR_BOUNDED_INTEGER_ATTENTION_AND_SOFTMAX_TABLE_LOOKUP_MEMBERSHIP_NOT_EXACT_SOFTMAX_NOT_FULL_INFERENCE_NOT_PUBLIC_BENCHMARK_NOT_PRODUCTION_READY",
+  "decision": "GO_PAPER_CLAIM_PACK_NO_GO_PUBLIC_OR_PRODUCTION_CLAIMS",
+  "evidence_refs": [
+    {
+      "id": "route_matrix",
+      "path": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json",
+      "supports": "eleven checked source-sidecar-fused route rows with matched proof-byte ratios"
+    },
+    {
+      "id": "controlled_component_grid",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json",
+      "supports": "ten checked fine-grained typed-component rows with positive fused savings"
+    },
+    {
+      "id": "section_delta",
+      "path": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-section-delta-2026-05.json",
+      "supports": "opening/decommitment dominated JSON section-delta savings"
+    },
+    {
+      "id": "typed_size_estimate",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-typed-size-estimate-2026-05.json",
+      "supports": "Stwo typed size-estimate savings without claiming stable binary serialization"
+    },
+    {
+      "id": "binary_typed_accounting",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-binary-typed-proof-accounting-2026-05.json",
+      "supports": "repo-owned local binary typed accounting over d32 matched envelopes"
+    },
+    {
+      "id": "median_timing",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-softmax-table-median-timing-2026-05.json",
+      "supports": "engineering-only median-of-5 verifier timing discipline and timing non-claim"
+    },
+    {
+      "id": "seq32_fused",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-two-head-seq32-fused-softmax-table-gate-2026-05.json",
+      "supports": "two-head d8 seq32 fused proof existence and matched source-sidecar comparison"
+    },
+    {
+      "id": "model_faithful_bridge",
+      "path": "docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.json",
+      "supports": "checked equivalence between model-facing integer attention policy and the d8 fixture trace"
+    }
+  ],
+  "go_criteria_satisfied": [
+    "checked source, sidecar, and fused proof evidence exists for the cited profiles",
+    "machine-readable gates reject overclaim and evidence-drift mutations",
+    "timing evidence is separated from proof-size evidence",
+    "model-facing quantized policy is bridge-checked before runtime integration"
+  ],
+  "go_posture": [
+    "GO to present a bounded STARK-native proof-architecture claim in the paper evidence pack.",
+    "GO to cite proof-existence, matched proof-byte accounting, typed-size accounting, and claim-boundary discipline."
+  ],
+  "mutation_cases": [
+    {
+      "name": "positive_full_inference_overclaim",
+      "rejected": true
+    },
+    {
+      "name": "positive_exact_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "name": "positive_public_benchmark_overclaim",
+      "rejected": true
+    },
+    {
+      "name": "positive_production_ready_overclaim",
+      "rejected": true
+    },
+    {
+      "name": "evidence_path_missing",
+      "rejected": true
+    },
+    {
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "name": "blocker_removed",
+      "rejected": true
+    },
+    {
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "no_go_posture": [
+    "NO-GO for public performance or production deployment language.",
+    "NO-GO for runtime, accuracy, recursion, PCD, or Starknet deployment claims.",
+    "NO-GO for verifier-time improvement claims from the current timing run."
+  ],
+  "non_claims": [
+    "not exact real-valued Softmax",
+    "not full inference",
+    "not public benchmark",
+    "not production-ready",
+    "not Starknet deployed",
+    "not a stable upstream Stwo proof wire format",
+    "not recursion or PCD",
+    "not model accuracy, perplexity, tokenizer, weight-import, or runtime evidence"
+  ],
+  "paper_claims": [
+    "One checked proof object can bind attention arithmetic and statement-bound Softmax-table membership for the same bounded fixture family.",
+    "Matched source-plus-sidecar controls show proof-object byte savings across checked width, head-count, sequence-length, and combined-axis profiles.",
+    "Section-delta and typed-component evidence both point to shared opening and decommitment structure as the dominant source of savings.",
+    "A model-facing quantized attention policy is checked equivalent to the existing d8 bounded Softmax-table fixture trace at the trace boundary."
+  ],
+  "payload_commitment": "sha256:a663f27ff65c925760a3a84f759f6115becf1dd15cfb3cc4f6629d817468f000",
+  "schema": "stark-native-transformer-paper-claim-pack-v1",
+  "thesis": "Checked Stwo evidence supports a paper-facing architecture claim: bounded integer attention arithmetic and Softmax-table LogUp membership can be fused into one native STARK proof object, sharing proof-system commitment and opening plumbing across the arithmetic and lookup-heavy parts.",
+  "thesis_id": "stark_native_attention_arithmetic_softmax_table_fusion",
+  "validation_commands": [
+    "just gate-fast",
+    "python3 scripts/zkai_paper_claim_pack_gate.py --write-json docs/paper/evidence/stark-native-transformer-claim-pack-2026-05.json",
+    "python3 -m unittest scripts.tests.test_zkai_paper_claim_pack_gate",
+    "git diff --check",
+    "just gate"
+  ]
+}
