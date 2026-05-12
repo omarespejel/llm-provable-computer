@@ -49,14 +49,14 @@ CLAIM_BOUNDARY = (
 
 POLICY_NAME = "model_facing_bounded_quantized_attention_v1"
 KERNEL_NAME = receipt_gate.KERNEL_NAME
-SCORE_SCALE = 1
-MAX_SUBTRACTION_POLICY = "per_step_max_score_subtraction_before_table_lookup"
-SCORE_GAP_CLIP = 8
-CLIP_POLICY = "clipped_gap = min(max_score - score, 8)"
-DENOMINATOR_POLICY = "sum_positive_statement_bound_table_weights_per_step"
-DIVISION_RULE = "euclidean_floor_division_with_positive_denominator"
+SCORE_SCALE = receipt_gate.SCORE_SCALE
+MAX_SUBTRACTION_POLICY = receipt_gate.MAX_SUBTRACTION_POLICY
+SCORE_GAP_CLIP = receipt_gate.SCORE_GAP_CLIP
+CLIP_POLICY = receipt_gate.CLIP_POLICY
+DENOMINATOR_POLICY = receipt_gate.DENOMINATOR_POLICY
+DIVISION_RULE = receipt_gate.DIVISION_RULE
 REMAINDER_POLICY = "0 <= remainder < denominator for every output coordinate"
-OUTPUT_SCALE_POLICY = "same_integer_units_as_value_vectors"
+OUTPUT_SCALE_POLICY = receipt_gate.OUTPUT_SCALE_POLICY
 MASKING_POLICY = fixture_gate.MASKING_POLICY
 EXPECTED_WEIGHT_TABLE = [dict(entry) for entry in receipt_gate.EXPECTED_WEIGHT_TABLE]
 

@@ -16,12 +16,12 @@ against the existing checked fixture rows. The recomputed model trace matches
 the checked fixture exactly:
 
 - score scale `1`;
-- per-step max-score subtraction before table lookup;
+- per-step max-allowed-score subtraction before table lookup;
 - clipped gap cap `8`;
 - literal table
   `[(0,256), (1,181), (2,128), (3,91), (4,64), (5,45), (6,32), (7,23), (8,16)]`;
 - positive denominators;
-- Euclidean floor division with positive denominator;
+- `output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)`;
 - `0 <= remainder < denominator` for every output coordinate.
 
 This is a bridge claim: the existing checked fixture trace is exactly the trace

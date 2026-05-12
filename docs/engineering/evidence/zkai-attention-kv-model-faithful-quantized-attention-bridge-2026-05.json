@@ -55,10 +55,10 @@
     "model_policy": {
       "clip_policy": "clipped_gap = min(max_score - score, 8)",
       "denominator_policy": "sum_positive_statement_bound_table_weights_per_step",
-      "division_rule": "euclidean_floor_division_with_positive_denominator",
+      "division_rule": "output = numerator.div_euclid(denominator); remainder = numerator.rem_euclid(denominator)",
       "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
       "masking_policy": "causal_prefix_position_lte_query_token",
-      "max_subtraction_policy": "per_step_max_score_subtraction_before_table_lookup",
+      "max_subtraction_policy": "per_step_max_allowed_score_subtracted_before_table_lookup",
       "output_scale_policy": "same_integer_units_as_value_vectors",
       "policy_name": "model_facing_bounded_quantized_attention_v1",
       "remainder_policy": "0 <= remainder < denominator for every output coordinate",
@@ -113,7 +113,7 @@
       "not a tokenizer, model-weight, or runtime integration",
       "not an error bound against mathematical exp/div Softmax"
     ],
-    "policy_commitment": "blake2b-256:e4196b404610db713fd0c2109e05ee866b2e3439eda16c6e0f62a464770e7105"
+    "policy_commitment": "blake2b-256:2965276f3627a5e2819a13651bca674c6b02e9532ffc44ad88e7c1a67ae704ba"
   },
   "claim_boundary": "CHECKED_EQUIVALENCE_BETWEEN_A_MODEL_FACING_INTEGER_ATTENTION_POLICY_AND_THE_EXISTING_D8_BOUNDED_SOFTMAX_TABLE_FIXTURE_TRACE_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_PRODUCTION",
   "decision": "GO_MODEL_FAITHFUL_QUANTIZED_ATTENTION_BRIDGE_FOR_CHECKED_D8_FIXTURE",
