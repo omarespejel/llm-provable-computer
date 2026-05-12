@@ -294,7 +294,9 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
             path.display()
         ));
     }
-    sync_parent_directory(parent, label, path)?;
+    if let Err(error) = sync_parent_directory(parent, label, path) {
+        eprintln!("warning: {error}");
+    }
     Ok(())
 }
 
