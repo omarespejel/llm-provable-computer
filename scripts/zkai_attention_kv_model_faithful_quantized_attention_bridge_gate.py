@@ -171,6 +171,8 @@ def read_json(path: pathlib.Path, max_bytes: int, label: str) -> dict[str, Any]:
 def prepare_output_path(path: pathlib.Path) -> pathlib.Path:
     if path.is_symlink():
         raise ModelFaithfulQuantizedAttentionBridgeGateError("output path must not be a symlink")
+    if path.parent.is_symlink():
+        raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent must not be a symlink")
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.parent.is_symlink():
         raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent must not be a symlink")
