@@ -1,8 +1,15 @@
+#[cfg(feature = "stwo-backend")]
 use std::ffi::OsString;
+#[cfg(feature = "stwo-backend")]
 use std::fs;
+#[cfg(feature = "stwo-backend")]
 use std::io::{Read, Write};
+#[cfg(feature = "stwo-backend")]
 use std::path::{Path, PathBuf};
-use std::process::{self, ExitCode};
+#[cfg(feature = "stwo-backend")]
+use std::process;
+use std::process::ExitCode;
+#[cfg(feature = "stwo-backend")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "stwo-backend")]
