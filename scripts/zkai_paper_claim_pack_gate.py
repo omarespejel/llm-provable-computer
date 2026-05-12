@@ -173,7 +173,10 @@ def _assert_no_positive_overclaims(payload: dict[str, Any]) -> None:
 
 
 def _repo_relative_path(value: str | pathlib.Path, label: str) -> pathlib.PurePosixPath:
-    path = pathlib.PurePosixPath(str(value))
+    raw_path = str(value).replace("\\", "/")
+    if re.match(r"^[A-Za-z]:", raw_path):
+        raise ClaimPackGateError(f"{label} must be repo-relative")
+    path = pathlib.PurePosixPath(raw_path)
     if path.is_absolute() or ".." in path.parts:
         raise ClaimPackGateError(f"{label} must be repo-relative")
     return path
