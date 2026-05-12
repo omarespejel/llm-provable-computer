@@ -14,6 +14,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -186,6 +187,12 @@ def require_float(value: Any, label: str) -> float:
     return value
 
 
+def require_number(value: Any, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise StwoMedianTimingGateError(f"{label} must be a number")
+    return float(value)
+
+
 def require_sha256_hex(value: Any, label: str) -> str:
     if not isinstance(value, str) or len(value) != 64:
         raise StwoMedianTimingGateError(f"{label} digest invalid")
@@ -288,7 +295,7 @@ def validate_cli_summary(summary: Any) -> None:
         raise StwoMedianTimingGateError("CLI safety drift")
     if tuple(summary["non_claims"]) != NON_CLAIMS:
         raise StwoMedianTimingGateError("CLI non-claims drift")
-    if tuple(summary["validation_commands"])[:4] != VALIDATION_COMMANDS[:4]:
+    if not isinstance(summary["validation_commands"], list) or tuple(summary["validation_commands"]) != VALIDATION_COMMANDS[:4]:
         raise StwoMedianTimingGateError("CLI validation command drift")
     rows = summary["rows"]
     if not isinstance(rows, list) or len(rows) != len(EXPECTED_ROWS):
@@ -395,9 +402,9 @@ def validate_profile_summary(summary: Any, rows: list[dict[str, Any]]) -> None:
     expected_delta = fused_median - source_plus_sidecar
     if require_exact_int(summary["fused_minus_source_plus_sidecar_verify_median_us"], "fused delta") != expected_delta:
         raise StwoMedianTimingGateError("fused delta drift")
-    ratio = require_float(summary["fused_to_source_plus_sidecar_verify_median_ratio"], "fused ratio")
+    ratio = require_number(summary["fused_to_source_plus_sidecar_verify_median_ratio"], "fused ratio")
     expected_ratio = round6(fused_median / source_plus_sidecar)
-    if ratio != expected_ratio:
+    if not math.isclose(ratio, expected_ratio, rel_tol=0.0, abs_tol=1e-12):
         raise StwoMedianTimingGateError("fused ratio drift")
     if summary["timing_status"] != MEASUREMENT_STATUS:
         raise StwoMedianTimingGateError("timing status drift")
