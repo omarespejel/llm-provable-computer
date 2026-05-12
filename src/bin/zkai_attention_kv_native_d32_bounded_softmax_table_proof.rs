@@ -384,4 +384,27 @@ mod tests {
         assert!(error.contains("envelope JSON exceeds max size"));
         let _ = fs::remove_file(envelope);
     }
+
+    #[test]
+    fn rejects_tampered_envelope_proof_bytes() {
+        let mut envelope: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.envelope.json"
+        ))
+        .expect("checked d32 bounded Softmax-table envelope fixture");
+        let proof = envelope
+            .get_mut("proof")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("proof bytes");
+        let first = proof
+            .first()
+            .and_then(serde_json::Value::as_u64)
+            .expect("first proof byte");
+        proof[0] = serde_json::Value::from((first ^ 1) as u8);
+        let raw = serde_json::to_vec(&envelope).expect("serialize tampered envelope");
+        let path = write_temp("tampered-envelope", &raw);
+        let error = run_with_args(vec![arg("verify"), path.as_os_str().to_os_string()])
+            .expect_err("tampered envelope must reject");
+        assert!(!error.is_empty());
+        let _ = fs::remove_file(path);
+    }
 }

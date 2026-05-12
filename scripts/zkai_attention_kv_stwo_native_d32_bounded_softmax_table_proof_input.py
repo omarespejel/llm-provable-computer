@@ -705,6 +705,10 @@ def write_json(payload: dict[str, Any], path: pathlib.Path) -> None:
 
 def to_tsv(payload: dict[str, Any]) -> str:
     validate_payload(payload)
+    return _to_tsv_unchecked(payload)
+
+
+def _to_tsv_unchecked(payload: dict[str, Any]) -> str:
     row = {
         "issue": payload["issue"],
         "decision": payload["decision"],
@@ -792,7 +796,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
             handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
             handle.flush()
         with staged_tsv.open("w", encoding="utf-8", newline="") as handle:
-            handle.write(to_tsv(payload))
+            handle.write(_to_tsv_unchecked(payload))
             handle.flush()
         replace_staged_outputs_with_rollback(staged_json, json_out, staged_tsv, tsv_out)
     finally:
