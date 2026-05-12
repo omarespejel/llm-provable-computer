@@ -96,6 +96,12 @@ class StwoMedianTimingGateTests(unittest.TestCase):
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertTrue(payload["payload_commitment"].startswith("blake2b-256:"))
 
+    def test_round6_matches_rust_half_away_from_zero(self):
+        self.assertEqual(gate.round6(0.0000005), 0.000001)
+        self.assertEqual(gate.round6(0.0000025), 0.000003)
+        self.assertEqual(gate.round6(-0.0000005), -0.000001)
+        self.assertEqual(gate.round6(-0.0000025), -0.000003)
+
     def test_individual_mutations_reject(self):
         summary = cli_summary()
         payload = gate.build_payload(summary)

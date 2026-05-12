@@ -53,24 +53,26 @@ Checked summary:
 | Route envelope rows checked | `33` |
 | Verifier runs captured | `165` |
 | Mutation cases rejected | `13 / 13` |
-| Min fused median verify time | `6,316 us` |
-| Max fused median verify time | `138,600 us` |
+| Min fused median verify time | `6,620 us` |
+| Max fused median verify time | `194,866 us` |
 
 Selected profile medians:
 
 | Profile | Source + sidecar median | Fused median | Fused / source+sidecar |
 | --- | ---: | ---: | ---: |
-| `d8_single_head_seq8` | `3,210 us` | `6,610 us` | `2.059190x` |
-| `d16_single_head_seq8` | `4,644 us` | `6,316 us` | `1.360034x` |
-| `d32_single_head_seq8` | `8,898 us` | `12,574 us` | `1.413127x` |
-| `d8_two_head_seq32` | `50,899 us` | `138,600 us` | `2.723040x` |
-| `d16_two_head_seq16` | `21,460 us` | `64,032 us` | `2.983784x` |
+| `d8_single_head_seq8` | `3,124 us` | `6,620 us` | `2.119078x` |
+| `d16_single_head_seq8` | `5,178 us` | `6,655 us` | `1.285245x` |
+| `d32_single_head_seq8` | `17,339 us` | `15,944 us` | `0.919546x` |
+| `d8_two_head_seq32` | `51,543 us` | `194,866 us` | `3.780649x` |
+| `d16_two_head_seq16` | `26,666 us` | `71,918 us` | `2.696992x` |
 
 ## Interpretation
 
 This gate is useful, but it does **not** support a verifier-time win claim for
-the fused route on this host. The fused envelopes are consistently slower to
-verify than the measured source+sidecar median sum in this local run.
+the fused route on this host. Most selected fused envelopes are slower to verify
+than the measured source+sidecar median sum in this local run; one selected
+`d32` point is faster. This is engineering-local timing evidence, not a public
+benchmark claim.
 
 That does not contradict the current STARK-native architecture thesis. The
 stronger checked result remains proof-object plumbing and byte accounting:
