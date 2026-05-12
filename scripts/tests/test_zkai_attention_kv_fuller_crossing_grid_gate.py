@@ -163,6 +163,21 @@ class AttentionKvFullerCrossingGridGateTests(unittest.TestCase):
             self.assertFalse((tmp_path / "bad.json").exists())
             self.assertFalse((tmp_path / "bad.tsv").exists())
 
+    def test_write_helpers_clean_tempfiles_when_write_phase_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = gate.pathlib.Path(tmp)
+            json_path = tmp_path / "bad.json"
+            with mock.patch.object(gate.json, "dump", side_effect=RuntimeError("boom")):
+                with self.assertRaisesRegex(RuntimeError, "boom"):
+                    gate.write_json(json_path, self.result)
+            self.assertFalse(list(tmp_path.glob(".bad.json.*.tmp")))
+
+            tsv_path = tmp_path / "bad.tsv"
+            with mock.patch.object(gate.csv.DictWriter, "writeheader", side_effect=RuntimeError("boom")):
+                with self.assertRaisesRegex(RuntimeError, "boom"):
+                    gate.write_tsv(tsv_path, self.result)
+            self.assertFalse(list(tmp_path.glob(".bad.tsv.*.tmp")))
+
 
 if __name__ == "__main__":
     unittest.main()
