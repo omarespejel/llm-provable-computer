@@ -22,6 +22,7 @@ import io
 import json
 import os
 import pathlib
+import sys
 import tempfile
 import uuid
 from collections.abc import Sequence
@@ -687,6 +688,28 @@ def backup_output_path(path: pathlib.Path) -> pathlib.Path:
     return path.parent / f".{path.name}.backup.{uuid.uuid4().hex}.tmp"
 
 
+def fsync_directory_best_effort(path: pathlib.Path) -> None:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    try:
+        fd = os.open(path, flags)
+    except OSError as error:
+        print(f"warning: failed to open output parent {path} for sync: {error}", file=sys.stderr)
+        return
+    try:
+        os.fsync(fd)
+    except OSError as error:
+        print(f"warning: failed to sync output parent {path}: {error}", file=sys.stderr)
+    finally:
+        os.close(fd)
+
+
+def replace_and_sync(source: pathlib.Path, target: pathlib.Path) -> None:
+    source.replace(target)
+    fsync_directory_best_effort(target.parent)
+
+
 def write_text_atomically(path: pathlib.Path, contents: str) -> None:
     path = require_output_path(path)
     staged = staged_output_path(path)
@@ -695,7 +718,7 @@ def write_text_atomically(path: pathlib.Path, contents: str) -> None:
             handle.write(contents)
             handle.flush()
             os.fsync(handle.fileno())
-        staged.replace(path)
+        replace_and_sync(staged, path)
     finally:
         staged.unlink(missing_ok=True)
 
@@ -757,14 +780,14 @@ def replace_staged_outputs_with_rollback(
     try:
         if json_path.exists():
             backup_json = backup_output_path(json_path)
-            json_path.replace(backup_json)
+            replace_and_sync(json_path, backup_json)
         if tsv_path.exists():
             backup_tsv = backup_output_path(tsv_path)
-            tsv_path.replace(backup_tsv)
+            replace_and_sync(tsv_path, backup_tsv)
 
-        staged_json.replace(json_path)
+        replace_and_sync(staged_json, json_path)
         json_replaced = True
-        staged_tsv.replace(tsv_path)
+        replace_and_sync(staged_tsv, tsv_path)
         tsv_replaced = True
     except Exception:
         if json_replaced:
@@ -772,9 +795,9 @@ def replace_staged_outputs_with_rollback(
         if tsv_replaced:
             tsv_path.unlink(missing_ok=True)
         if backup_json is not None and backup_json.exists():
-            backup_json.replace(json_path)
+            replace_and_sync(backup_json, json_path)
         if backup_tsv is not None and backup_tsv.exists():
-            backup_tsv.replace(tsv_path)
+            replace_and_sync(backup_tsv, tsv_path)
         raise
     else:
         if backup_json is not None:
