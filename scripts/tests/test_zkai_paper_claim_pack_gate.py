@@ -122,6 +122,28 @@ class PaperClaimPackGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must be repo-relative"):
                 gate.write_json(gate.pathlib.Path(tmp) / "claim-pack.json", self.payload)
 
+    def test_write_json_rejects_drive_qualified_output(self):
+        with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must be repo-relative"):
+            gate.write_json(gate.pathlib.Path(r"C:\tmp\claim-pack.json"), self.payload)
+
+    def test_write_json_accepts_backslash_relative_output(self):
+        with tempfile.NamedTemporaryFile(
+            dir=gate.ALLOWED_OUTPUT_DIR,
+            prefix="claim-pack-backslash-test-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            path = gate.pathlib.Path(handle.name)
+        path.unlink()
+        relative = path.relative_to(gate.ROOT)
+        backslash_relative = gate.pathlib.Path("\\".join(relative.parts))
+        try:
+            gate.write_json(backslash_relative, self.payload)
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(loaded, self.payload)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_write_json_rejects_outside_allowed_output_dir(self):
         with self.assertRaisesRegex(gate.ClaimPackGateError, "output path must stay under docs/paper/evidence"):
             gate.write_json(gate.pathlib.Path("docs/engineering/evidence/claim-pack.json"), self.payload)
