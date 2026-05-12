@@ -18,8 +18,11 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import pathlib
+import tempfile
+import uuid
 from collections.abc import Sequence
 from typing import Any
 
@@ -653,10 +656,51 @@ def build_payload() -> dict[str, Any]:
     return payload
 
 
+def require_output_path(path: pathlib.Path) -> pathlib.Path:
+    resolved = (ROOT / path).resolve() if not path.is_absolute() else path.resolve()
+    try:
+        resolved.relative_to(EVIDENCE_DIR.resolve())
+    except ValueError as err:
+        raise AttentionKvBoundedSoftmaxTableInputError(
+            f"output path must stay under {EVIDENCE_DIR}: {path}"
+        ) from err
+    return resolved
+
+
+def staged_output_path(path: pathlib.Path) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="",
+        dir=path.parent,
+        prefix=f".{path.name}.staged.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        return pathlib.Path(handle.name)
+
+
+def backup_output_path(path: pathlib.Path) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.parent / f".{path.name}.backup.{uuid.uuid4().hex}.tmp"
+
+
+def write_text_atomically(path: pathlib.Path, contents: str) -> None:
+    path = require_output_path(path)
+    staged = staged_output_path(path)
+    try:
+        with staged.open("w", encoding="utf-8", newline="") as handle:
+            handle.write(contents)
+            handle.flush()
+        staged.replace(path)
+    finally:
+        staged.unlink(missing_ok=True)
+
+
 def write_json(payload: dict[str, Any], path: pathlib.Path) -> None:
     validate_payload(payload)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_atomically(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 def to_tsv(payload: dict[str, Any]) -> str:
@@ -681,7 +725,6 @@ def to_tsv(payload: dict[str, Any]) -> str:
         "non_claims": ";".join(payload["non_claims"]),
     }
     out_lines: list[str] = []
-    import io
 
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
@@ -692,8 +735,69 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def write_tsv(payload: dict[str, Any], path: pathlib.Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_tsv(payload), encoding="utf-8")
+    write_text_atomically(path, to_tsv(payload))
+
+
+def replace_staged_outputs_with_rollback(
+    staged_json: pathlib.Path,
+    json_path: pathlib.Path,
+    staged_tsv: pathlib.Path,
+    tsv_path: pathlib.Path,
+) -> None:
+    backup_json: pathlib.Path | None = None
+    backup_tsv: pathlib.Path | None = None
+    json_replaced = False
+    tsv_replaced = False
+    try:
+        if json_path.exists():
+            backup_json = backup_output_path(json_path)
+            json_path.replace(backup_json)
+        if tsv_path.exists():
+            backup_tsv = backup_output_path(tsv_path)
+            tsv_path.replace(backup_tsv)
+
+        staged_json.replace(json_path)
+        json_replaced = True
+        staged_tsv.replace(tsv_path)
+        tsv_replaced = True
+    except Exception:
+        if json_replaced:
+            json_path.unlink(missing_ok=True)
+        if tsv_replaced:
+            tsv_path.unlink(missing_ok=True)
+        if backup_json is not None and backup_json.exists():
+            backup_json.replace(json_path)
+        if backup_tsv is not None and backup_tsv.exists():
+            backup_tsv.replace(tsv_path)
+        raise
+    else:
+        if backup_json is not None:
+            backup_json.unlink(missing_ok=True)
+        if backup_tsv is not None:
+            backup_tsv.unlink(missing_ok=True)
+
+
+def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
+    validate_payload(payload)
+    json_out = require_output_path(json_path)
+    tsv_out = require_output_path(tsv_path)
+    if json_out == tsv_out:
+        raise AttentionKvBoundedSoftmaxTableInputError("JSON and TSV output paths must differ")
+    staged_json = staged_output_path(json_out)
+    staged_tsv = staged_output_path(tsv_out)
+    staged_json.unlink(missing_ok=True)
+    staged_tsv.unlink(missing_ok=True)
+    try:
+        with staged_json.open("w", encoding="utf-8", newline="") as handle:
+            handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+        with staged_tsv.open("w", encoding="utf-8", newline="") as handle:
+            handle.write(to_tsv(payload))
+            handle.flush()
+        replace_staged_outputs_with_rollback(staged_json, json_out, staged_tsv, tsv_out)
+    finally:
+        staged_json.unlink(missing_ok=True)
+        staged_tsv.unlink(missing_ok=True)
 
 
 def main() -> None:
@@ -702,8 +806,7 @@ def main() -> None:
     parser.add_argument("--write-tsv", type=pathlib.Path, default=TSV_OUT)
     args = parser.parse_args()
     payload = build_payload()
-    write_json(payload, args.write_json)
-    write_tsv(payload, args.write_tsv)
+    write_outputs(payload, args.write_json, args.write_tsv)
 
 
 if __name__ == "__main__":

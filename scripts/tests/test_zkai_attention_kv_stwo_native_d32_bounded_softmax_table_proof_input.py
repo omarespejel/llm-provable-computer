@@ -1,4 +1,6 @@
 import copy
+import pathlib
+import tempfile
 import unittest
 from unittest import mock
 
@@ -143,6 +145,57 @@ class AttentionKvBoundedSoftmaxTableInputTests(unittest.TestCase):
         steps[0]["token_position"] = True
         with self.assertRaisesRegex(gate.AttentionKvBoundedSoftmaxTableInputError, r"input_steps\[0\]\.token_position must be an integer"):
             gate.build_score_rows(initial, steps)
+
+    def test_output_paths_are_constrained_to_evidence_dir(self):
+        relative = pathlib.Path(
+            "docs/engineering/evidence/zkai-attention-kv-stwo-native-d32-bounded-softmax-table-proof-2026-05.json"
+        )
+        self.assertEqual(gate.require_output_path(relative), gate.JSON_OUT.resolve())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = pathlib.Path(tmp) / "out.json"
+            with self.assertRaisesRegex(
+                gate.AttentionKvBoundedSoftmaxTableInputError,
+                "output path must stay under",
+            ):
+                gate.write_outputs(gate.build_payload(), outside, gate.TSV_OUT)
+
+    def test_write_outputs_creates_both_outputs_under_evidence_dir(self):
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            root = pathlib.Path(tmp)
+            json_out = root / "json" / "out.json"
+            tsv_out = root / "tsv" / "out.tsv"
+            gate.write_outputs(payload, json_out, tsv_out)
+            self.assertTrue(json_out.is_file())
+            self.assertTrue(tsv_out.is_file())
+
+    def test_write_outputs_rejects_same_path(self):
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            out = pathlib.Path(tmp) / "same.out"
+            with self.assertRaisesRegex(
+                gate.AttentionKvBoundedSoftmaxTableInputError,
+                "must differ",
+            ):
+                gate.write_outputs(payload, out, out)
+
+    def test_replace_staged_outputs_rolls_back_json_if_tsv_publish_fails(self):
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            root = pathlib.Path(tmp)
+            json_out = root / "out.json"
+            tsv_out = root / "missing-parent" / "out.tsv"
+            staged_json = root / "staged.json"
+            staged_tsv = root / "staged.tsv"
+            json_out.write_text("old-json", encoding="utf-8")
+            staged_json.write_text("new-json", encoding="utf-8")
+            staged_tsv.write_text("new-tsv", encoding="utf-8")
+
+            with self.assertRaises(OSError):
+                gate.replace_staged_outputs_with_rollback(staged_json, json_out, staged_tsv, tsv_out)
+
+            self.assertEqual(json_out.read_text(encoding="utf-8"), "old-json")
+            self.assertTrue(staged_tsv.exists())
 
 
 if __name__ == "__main__":
