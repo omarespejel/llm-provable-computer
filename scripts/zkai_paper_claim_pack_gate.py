@@ -21,6 +21,8 @@ from typing import Any, Iterable
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 JSON_OUT = ROOT / "docs/paper/evidence/stark-native-transformer-claim-pack-2026-05.json"
+ALLOWED_OUTPUT_DIR = ROOT / "docs" / "paper" / "evidence"
+ALLOWED_OUTPUT_PREFIX = pathlib.PurePosixPath("docs/paper/evidence")
 
 SCHEMA = "stark-native-transformer-paper-claim-pack-v1"
 DECISION = "GO_PAPER_CLAIM_PACK_NO_GO_PUBLIC_OR_PRODUCTION_CLAIMS"
@@ -170,6 +172,36 @@ def _assert_no_positive_overclaims(payload: dict[str, Any]) -> None:
                     raise ClaimPackGateError(f"positive claim overclaim: {label} in {field}")
 
 
+def _repo_relative_path(value: str | pathlib.Path, label: str) -> pathlib.PurePosixPath:
+    path = pathlib.PurePosixPath(str(value))
+    if path.is_absolute() or ".." in path.parts:
+        raise ClaimPackGateError(f"{label} must be repo-relative")
+    return path
+
+
+def _full_repo_path(relative_path: pathlib.PurePosixPath) -> pathlib.Path:
+    return ROOT.joinpath(*relative_path.parts)
+
+
+def _assert_repo_contained(full_path: pathlib.Path, label: str) -> None:
+    try:
+        full_path.resolve(strict=True).relative_to(ROOT.resolve(strict=True))
+    except (FileNotFoundError, ValueError) as err:
+        raise ClaimPackGateError(f"{label} must stay within repo") from err
+
+
+def _assert_no_repo_symlink_components(full_path: pathlib.Path, label: str) -> None:
+    try:
+        relative_parts = full_path.relative_to(ROOT).parts
+    except ValueError as err:
+        raise ClaimPackGateError(f"{label} must stay within repo") from err
+    current = ROOT
+    for part in relative_parts:
+        current = current / part
+        if current.is_symlink():
+            raise ClaimPackGateError(f"{label} must not include symlink components")
+
+
 def _assert_evidence_paths_exist(payload: dict[str, Any]) -> None:
     refs = payload.get("evidence_refs")
     if not isinstance(refs, list) or not refs:
@@ -178,13 +210,13 @@ def _assert_evidence_paths_exist(payload: dict[str, Any]) -> None:
         if not isinstance(ref, dict):
             raise ClaimPackGateError(f"evidence_refs[{index}] must be an object")
         path = ref.get("path")
-        if not isinstance(path, str) or path.startswith("/") or ".." in pathlib.PurePosixPath(path).parts:
+        if not isinstance(path, str):
             raise ClaimPackGateError(f"evidence_refs[{index}].path must be repo-relative")
-        full_path = ROOT / path
-        if full_path.is_symlink():
-            raise ClaimPackGateError(f"evidence_refs[{index}].path must not be a symlink")
+        full_path = _full_repo_path(_repo_relative_path(path, f"evidence_refs[{index}].path"))
+        _assert_no_repo_symlink_components(full_path, f"evidence_refs[{index}].path")
         if not full_path.is_file():
             raise ClaimPackGateError(f"missing evidence path: {path}")
+        _assert_repo_contained(full_path, f"evidence_refs[{index}].path")
 
 
 def _assert_exact_list(value: Any, expected: list[str], label: str) -> None:
@@ -317,15 +349,26 @@ def mutation_cases(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
 
 def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
     validate_payload(payload)
-    if path.exists() and path.is_symlink():
+    relative_path = _repo_relative_path(path, "output path")
+    if relative_path.parts[: len(ALLOWED_OUTPUT_PREFIX.parts)] != ALLOWED_OUTPUT_PREFIX.parts:
+        raise ClaimPackGateError("output path must stay under docs/paper/evidence")
+    path = _full_repo_path(relative_path)
+    if path.is_symlink():
         raise ClaimPackGateError("output path must not be a symlink")
+    _assert_no_repo_symlink_components(path.parent, "output parent hierarchy")
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.parent.is_symlink():
-        raise ClaimPackGateError("output parent must not be a symlink")
+    _assert_no_repo_symlink_components(path.parent, "output parent hierarchy")
+    try:
+        path.parent.resolve(strict=True).relative_to(ALLOWED_OUTPUT_DIR.resolve(strict=True))
+    except ValueError as err:
+        raise ClaimPackGateError("output path must stay under docs/paper/evidence") from err
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         tmp_path = pathlib.Path(handle.name)
         json.dump(payload, handle, indent=2, sort_keys=True)
         handle.write("\n")
+    if path.is_symlink():
+        tmp_path.unlink(missing_ok=True)
+        raise ClaimPackGateError("output path must not be a symlink")
     tmp_path.replace(path)
 
 

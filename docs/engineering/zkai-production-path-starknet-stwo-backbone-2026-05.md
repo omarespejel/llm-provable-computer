@@ -8,6 +8,16 @@ evidence for bounded integer attention and Softmax-table membership fusion, but
 it has not crossed into runtime, public benchmark, production, or Starknet
 deployment claims.
 
+Pinned context: this note is scoped to `llm-provable-computer@0.1.0` with the
+`stwo-backend` feature, `stwo@2.2.0`,
+`stwo-constraint-framework@2.2.0`, and the local release gate pinned to
+`nightly-2025-07-14`. Proof-size claims cite the checked route matrix,
+controlled component grid, and local binary typed-accounting evidence under
+`docs/engineering/evidence/`; timing evidence is only
+`median_of_5_existing_typed_envelope_verifier_runs_microsecond_capture_engineering_only`
+from `zkai-attention-kv-stwo-softmax-table-median-timing-2026-05.json`, not a
+public benchmark or verifier-time win claim.
+
 ## Phase 0 - Current Artifact Discipline
 
 Status: `GO_ENGINEERING_EVIDENCE_DISCIPLINE`
