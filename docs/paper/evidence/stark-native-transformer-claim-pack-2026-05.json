@@ -91,6 +91,10 @@
       "rejected": true
     },
     {
+      "name": "no_go_posture_removed",
+      "rejected": true
+    },
+    {
       "name": "unknown_field_injection",
       "rejected": true
     }
@@ -116,7 +120,7 @@
     "Section-delta and typed-component evidence both point to shared opening and decommitment structure as the dominant source of savings.",
     "A model-facing quantized attention policy is checked equivalent to the existing d8 bounded Softmax-table fixture trace at the trace boundary."
   ],
-  "payload_commitment": "sha256:a663f27ff65c925760a3a84f759f6115becf1dd15cfb3cc4f6629d817468f000",
+  "payload_commitment": "sha256:682399c442e74decad977ea4aada6128142980fc2c3950a4a8f06121747278c3",
   "schema": "stark-native-transformer-paper-claim-pack-v1",
   "thesis": "Checked Stwo evidence supports a paper-facing architecture claim: bounded integer attention arithmetic and Softmax-table LogUp membership can be fused into one native STARK proof object, sharing proof-system commitment and opening plumbing across the arithmetic and lookup-heavy parts.",
   "thesis_id": "stark_native_attention_arithmetic_softmax_table_fusion",
