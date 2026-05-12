@@ -190,6 +190,24 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             max_bytes
         ));
     }
+    #[cfg(unix)]
+    let file = {
+        use std::os::unix::fs::OpenOptionsExt;
+
+        fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)
+            .map_err(|error| {
+                format!(
+                    "failed to open {} {} without following symlinks: io_kind={:?}: {error}",
+                    label,
+                    path.display(),
+                    error.kind()
+                )
+            })?
+    };
+    #[cfg(not(unix))]
     let file = fs::File::open(path)
         .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let metadata = file.metadata().map_err(|error| {

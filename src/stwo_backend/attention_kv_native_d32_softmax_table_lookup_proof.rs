@@ -142,6 +142,7 @@ pub struct ZkAiAttentionKvNativeD32SoftmaxTableLookupEnvelope {
     pub statement_version: String,
     pub semantic_scope: String,
     pub decision: String,
+    pub target_id: String,
     pub verifier_domain: String,
     pub lookup_summary: ZkAiAttentionKvNativeD32SoftmaxTableLookupSummary,
     pub source_input: ZkAiAttentionKvNativeD32BoundedSoftmaxTableProofInput,
@@ -183,6 +184,7 @@ pub fn prove_zkai_attention_kv_native_d32_softmax_table_lookup_envelope(
         semantic_scope: ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_SEMANTIC_SCOPE
             .to_string(),
         decision: ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_DECISION.to_string(),
+        target_id: ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_TARGET_ID.to_string(),
         verifier_domain: ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_VERIFIER_DOMAIN
             .to_string(),
         lookup_summary: bundle.summary,
@@ -241,6 +243,11 @@ fn validate_envelope(envelope: &ZkAiAttentionKvNativeD32SoftmaxTableLookupEnvelo
         &envelope.decision,
         ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_DECISION,
         "lookup decision",
+    )?;
+    expect_eq(
+        &envelope.target_id,
+        ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_TARGET_ID,
+        "lookup target id",
     )?;
     expect_eq(
         &envelope.verifier_domain,
@@ -730,6 +737,10 @@ mod tests {
             envelope.decision,
             ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_DECISION
         );
+        assert_eq!(
+            envelope.target_id,
+            ZKAI_ATTENTION_KV_NATIVE_D32_SOFTMAX_TABLE_LOOKUP_TARGET_ID
+        );
         assert_eq!(envelope.lookup_summary.score_rows, 52);
         assert_eq!(envelope.lookup_summary.lookup_claims, 52);
         assert_eq!(envelope.lookup_summary.table_rows, 9);
@@ -835,6 +846,17 @@ mod tests {
         let error = verify_zkai_attention_kv_native_d32_softmax_table_lookup_envelope(&envelope)
             .expect_err("summary drift must reject");
         assert!(error.to_string().contains("lookup summary"));
+    }
+
+    #[test]
+    fn attention_kv_d32_softmax_table_lookup_rejects_target_id_drift() {
+        let input = source_input();
+        let mut envelope = prove_zkai_attention_kv_native_d32_softmax_table_lookup_envelope(&input)
+            .expect("prove lookup sidecar");
+        envelope.target_id = "attention-kv-d32-forged-target".to_string();
+        let error = verify_zkai_attention_kv_native_d32_softmax_table_lookup_envelope(&envelope)
+            .expect_err("target-id drift must reject");
+        assert!(error.to_string().contains("lookup target id"));
     }
 
     #[test]

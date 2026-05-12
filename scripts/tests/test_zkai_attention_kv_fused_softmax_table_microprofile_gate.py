@@ -38,31 +38,31 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
         self.assertEqual(payload["column_breakdown_status"], gate.COLUMN_BREAKDOWN_STATUS)
         self.assertEqual(payload["timing_policy"], gate.TIMING_POLICY)
         self.assertEqual(payload["profile_ids"], list(gate.EXPECTED_PROFILE_IDS))
-        self.assertEqual(len(payload["profile_rows"]), 10)
+        self.assertEqual(len(payload["profile_rows"]), 11)
         self.assertIn("not source-arithmetic versus lookup column attribution", payload["non_claims"])
         self.assertEqual(payload["mutations_checked"], gate.EXPECTED_MUTATION_COUNT)
         self.assertEqual(payload["mutations_rejected"], gate.EXPECTED_MUTATION_COUNT)
         self.assertTrue(payload["all_mutations_rejected"])
 
-        self.assertEqual(aggregate["profiles_checked"], 10)
-        self.assertEqual(aggregate["total_lookup_claims"], 3624)
-        self.assertEqual(aggregate["total_trace_rows"], 5248)
-        self.assertEqual(aggregate["total_table_rows"], 90)
-        self.assertEqual(aggregate["total_fused_proof_size_bytes"], 629466)
-        self.assertEqual(aggregate["total_source_plus_sidecar_raw_proof_bytes"], 814142)
-        self.assertEqual(aggregate["total_fused_savings_vs_source_plus_sidecar_bytes"], 184676)
-        self.assertEqual(aggregate["total_section_payload_bytes"], 628216)
-        self.assertEqual(aggregate["total_json_wrapper_bytes"], 1250)
-        self.assertEqual(aggregate["largest_profile_id"], "d16_two_head_seq16")
-        self.assertEqual(aggregate["largest_profile_fused_proof_size_bytes"], 84868)
+        self.assertEqual(aggregate["profiles_checked"], 11)
+        self.assertEqual(aggregate["total_lookup_claims"], 3676)
+        self.assertEqual(aggregate["total_trace_rows"], 5312)
+        self.assertEqual(aggregate["total_table_rows"], 99)
+        self.assertEqual(aggregate["total_fused_proof_size_bytes"], 736727)
+        self.assertEqual(aggregate["total_source_plus_sidecar_raw_proof_bytes"], 930824)
+        self.assertEqual(aggregate["total_fused_savings_vs_source_plus_sidecar_bytes"], 194097)
+        self.assertEqual(aggregate["total_section_payload_bytes"], 735352)
+        self.assertEqual(aggregate["total_json_wrapper_bytes"], 1375)
+        self.assertEqual(aggregate["largest_profile_id"], "d32_single_head_seq8")
+        self.assertEqual(aggregate["largest_profile_fused_proof_size_bytes"], 107261)
         self.assertEqual(
             aggregate["bucket_totals"],
             {
-                "commitment_bucket_bytes": 4516,
-                "query_bucket_bytes": 417575,
-                "opening_bucket_bytes": 204728,
-                "config_and_pow_bytes": 1397,
-                "json_wrapper_bytes": 1250,
+                "commitment_bucket_bytes": 4971,
+                "query_bucket_bytes": 510881,
+                "opening_bucket_bytes": 217963,
+                "config_and_pow_bytes": 1537,
+                "json_wrapper_bytes": 1375,
             },
         )
         self.assertEqual(tuple(aggregate["proof_backend_versions"]), gate.EXPECTED_PROOF_BACKEND_VERSIONS)
@@ -86,6 +86,24 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
             baseline["trace_columns_by_component"]["fused_trace_columns_status"],
             gate.COLUMN_BREAKDOWN_STATUS,
         )
+
+        d32 = rows["d32_single_head_seq8"]
+        self.assertEqual(d32["axis_role"], "width_axis_extension")
+        self.assertEqual(d32["key_width"], 32)
+        self.assertEqual(d32["value_width"], 32)
+        self.assertEqual(d32["head_count"], 1)
+        self.assertEqual(d32["steps_per_head"], 8)
+        self.assertEqual(d32["lookup_claims"], 52)
+        self.assertEqual(d32["trace_rows"], 64)
+        self.assertEqual(d32["fused_proof_size_bytes"], 107261)
+        self.assertEqual(d32["source_plus_sidecar_raw_proof_bytes"], 116682)
+        self.assertEqual(d32["proof_section_payload_bytes_total"], 107136)
+        self.assertEqual(d32["proof_json_wrapper_bytes"], 125)
+        self.assertEqual(d32["proof_section_bytes"]["sampled_values"], 57177)
+        self.assertEqual(d32["proof_section_bytes"]["queried_values"], 36129)
+        self.assertEqual(d32["proof_byte_buckets"]["query_bucket_bytes"], 93306)
+        self.assertEqual(d32["proof_byte_buckets"]["opening_bucket_bytes"], 13235)
+        self.assertEqual(d32["lookup_relation_width_status"], gate.RELATION_WIDTH_STATUS_EXPOSED)
 
         sixteen = rows["d8_sixteen_head_seq8"]
         self.assertIsNone(sixteen["lookup_relation_width"])
@@ -227,8 +245,10 @@ class AttentionKvFusedSoftmaxTableMicroprofileGateTests(unittest.TestCase):
     def test_tsv_summary_matches_payload(self):
         tsv = gate.to_tsv(self.payload)
         self.assertIn("d16_two_head_seq16", tsv)
+        self.assertIn("d32_single_head_seq8", tsv)
         self.assertIn("d8_two_head_seq32", tsv)
         self.assertIn("84868", tsv)
+        self.assertIn("107261", tsv)
         self.assertIn("66327", tsv)
         self.assertIn(gate.BACKEND_INTERNAL_SPLIT_STATUS, tsv)
         self.assertIn(gate.RELATION_WIDTH_STATUS_INFERRED_MISSING, tsv)

@@ -53,7 +53,7 @@ TIMING_POLICY = "proof_existence_and_byte_accounting_only_not_public_benchmark"
 SOURCE_PROOF_SIZE_BYTES = 101_120
 SOURCE_ENVELOPE_SIZE_BYTES = 1_061_990
 SIDECAR_PROOF_SIZE_BYTES = 15_562
-SIDECAR_ENVELOPE_SIZE_BYTES = 379_207
+SIDECAR_ENVELOPE_SIZE_BYTES = 379_293
 SOURCE_PLUS_SIDECAR_RAW_PROOF_BYTES = SOURCE_PROOF_SIZE_BYTES + SIDECAR_PROOF_SIZE_BYTES
 FUSED_PROOF_SIZE_BYTES = 107_261
 FUSED_ENVELOPE_SIZE_BYTES = 1_113_806
@@ -75,6 +75,11 @@ LOOKUP_RELATION = "AttentionKvD32FusedSoftmaxTableRelation"
 LOOKUP_RELATION_WIDTH = 2
 SIDECAR_LOOKUP_RELATION = "AttentionKvD32SoftmaxTableLookupRelation"
 SIDECAR_LOOKUP_RELATION_WIDTH = 2
+SIDECAR_BACKEND_VERSION = "stwo-attention-kv-d32-softmax-table-logup-sidecar-proof-v1"
+SIDECAR_STATEMENT_VERSION = "zkai-attention-kv-stwo-native-d32-softmax-table-logup-sidecar-statement-v1"
+SIDECAR_SEMANTIC_SCOPE = "d32_bounded_softmax_table_membership_constrained_by_native_stwo_logup_sidecar"
+SIDECAR_TARGET_ID = "attention-kv-d32-causal-mask-bounded-softmax-table-logup-sidecar-v1"
+SIDECAR_VERIFIER_DOMAIN = "ptvm:zkai:attention-kv-stwo-native-d32-softmax-table-logup-sidecar:v1"
 
 FUSED_BACKEND_VERSION = "stwo-attention-kv-d32-fused-bounded-softmax-table-logup-v1"
 FUSED_PROOF_SCHEMA_VERSION = "stwo-attention-kv-d32-fused-bounded-softmax-table-logup-proof-v1"
@@ -409,6 +414,18 @@ def validate_source_artifacts(source_input: dict[str, Any], source_envelope: dic
         raise AttentionKvD32FusedSoftmaxTableGateError("source proof size drift")
     if len(sidecar_envelope.get("proof", [])) != SIDECAR_PROOF_SIZE_BYTES:
         raise AttentionKvD32FusedSoftmaxTableGateError("sidecar proof size drift")
+    expected_sidecar_scalars = {
+        "proof_backend": "stwo",
+        "proof_backend_version": SIDECAR_BACKEND_VERSION,
+        "statement_version": SIDECAR_STATEMENT_VERSION,
+        "semantic_scope": SIDECAR_SEMANTIC_SCOPE,
+        "decision": "GO_NATIVE_STWO_AIR_CONSTRAINED_SOFTMAX_TABLE_LOOKUP_RELATION_SIDECAR",
+        "target_id": SIDECAR_TARGET_ID,
+        "verifier_domain": SIDECAR_VERIFIER_DOMAIN,
+    }
+    for key, expected_value in expected_sidecar_scalars.items():
+        if not type_strict_equal(sidecar_envelope.get(key), expected_value):
+            raise AttentionKvD32FusedSoftmaxTableGateError(f"sidecar {key} drift")
     lookup_summary = sidecar_envelope.get("lookup_summary")
     if not isinstance(lookup_summary, dict):
         raise AttentionKvD32FusedSoftmaxTableGateError("sidecar lookup summary missing")

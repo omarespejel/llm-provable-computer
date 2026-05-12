@@ -107,6 +107,12 @@ class AttentionKvD32FusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 ):
                     gate.validate_source_artifacts(self.source_input, self.source_envelope, sidecar)
 
+    def test_rejects_sidecar_target_id_relabeling(self):
+        sidecar = copy.deepcopy(self.sidecar_envelope)
+        sidecar["target_id"] = "attention-kv-d32-forged-sidecar"
+        with self.assertRaisesRegex(gate.AttentionKvD32FusedSoftmaxTableGateError, "sidecar target_id drift"):
+            gate.validate_source_artifacts(self.source_input, self.source_envelope, sidecar)
+
     def test_rejects_source_envelope_input_type_smuggling(self):
         envelope = copy.deepcopy(self.source_envelope)
         envelope["input"]["score_rows"][0]["row_index"] = float(envelope["input"]["score_rows"][0]["row_index"])
@@ -152,8 +158,8 @@ class AttentionKvD32FusedSoftmaxTableNativeGateTests(unittest.TestCase):
                 gate.expect_artifact_size(raw + b" ", expected_size, label)
 
     def test_write_json_and_tsv_round_trip(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = gate.pathlib.Path(tmp)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = gate.pathlib.Path(tmp_dir)
             json_path = tmp / "gate.json"
             tsv_path = tmp / "gate.tsv"
             gate.write_json(json_path, self.payload)
