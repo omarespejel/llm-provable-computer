@@ -1,0 +1,234 @@
+{
+  "bridge_contract": {
+    "blockers": [
+      "full transformer runtime is not wired to this policy yet",
+      "no tokenizer/model-weight import path is bound to this fixture",
+      "no accuracy or perplexity delta against a real quantized model is measured",
+      "only the existing checked d8 fixture trace is bridged",
+      "production verifier and Starknet deployment surfaces are out of scope"
+    ],
+    "metrics": {
+      "comparisons": {
+        "attention_outputs_match": true,
+        "denominators_positive": true,
+        "final_kv_cache_match": true,
+        "score_gap_clip_match": true,
+        "score_rows_match": true,
+        "score_scale_match": true,
+        "weight_table_match": true
+      },
+      "denominator_max": 789,
+      "denominator_min": 368,
+      "equivalence_mismatches": 0,
+      "fixture_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+      "fixture_score_row_commitment": "blake2b-256:1279d23d93288d6ddce174aaae45b895f8c0ba690754c0a3035a84a556efb5ec",
+      "fixture_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+      "fixture_weight_table_commitment": "blake2b-256:8c45ca7eec1032a0ffa5d5a1e842bebd5f6268d75f82d696b29ec7cf9a420e13",
+      "fused_envelope_size_bytes": 478713,
+      "fused_proof_size_bytes": 47698,
+      "key_width": 8,
+      "max_observed_division_error_decimal": 0.9836829836829837,
+      "max_observed_division_error_fraction": "422/429",
+      "model_trace_commitment": "blake2b-256:bb4e51c20554288e486f97242ebff9bb1060cbe7eb5bc88e6b70a6b1dec0f9d1",
+      "model_trace_sha256": "db2d3e2bd7c1351a43a5b6e620b8de1548493e7ace1c4299ad7b09f65512cbb0",
+      "per_step_denominators": [
+        429,
+        368,
+        395,
+        789,
+        592,
+        391,
+        384,
+        455
+      ],
+      "quantized_receipt_json": "docs/engineering/evidence/zkai-attention-kv-quantized-softmax-receipt-gate-2026-05.json",
+      "receipt_mutations_rejected": 28,
+      "receipt_route_id": "local_stwo_attention_kv_d8_quantized_softmax_table_kernel_receipt",
+      "score_rows": 52,
+      "source_fixture_json": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json",
+      "status": "GO_EQUIVALENT_FOR_EXISTING_CHECKED_FIXTURE_TRACE",
+      "steps": 8,
+      "table_rows": 9,
+      "trace_rows": 64,
+      "value_width": 8
+    },
+    "model_policy": {
+      "clip_policy": "clipped_gap = min(max_score - score, 8)",
+      "denominator_policy": "sum_positive_statement_bound_table_weights_per_step",
+      "division_rule": "euclidean_floor_division_with_positive_denominator",
+      "kernel_name": "bounded_fixed_point_softmax_table_attention_v1",
+      "masking_policy": "causal_prefix_position_lte_query_token",
+      "max_subtraction_policy": "per_step_max_score_subtraction_before_table_lookup",
+      "output_scale_policy": "same_integer_units_as_value_vectors",
+      "policy_name": "model_facing_bounded_quantized_attention_v1",
+      "remainder_policy": "0 <= remainder < denominator for every output coordinate",
+      "score_gap_clip": 8,
+      "score_rule": "score = dot(query, key) / score_scale with score_scale fixed to 1",
+      "score_scale": 1,
+      "weight_table": [
+        {
+          "gap": 0,
+          "weight": 256
+        },
+        {
+          "gap": 1,
+          "weight": 181
+        },
+        {
+          "gap": 2,
+          "weight": 128
+        },
+        {
+          "gap": 3,
+          "weight": 91
+        },
+        {
+          "gap": 4,
+          "weight": 64
+        },
+        {
+          "gap": 5,
+          "weight": 45
+        },
+        {
+          "gap": 6,
+          "weight": 32
+        },
+        {
+          "gap": 7,
+          "weight": 23
+        },
+        {
+          "gap": 8,
+          "weight": 16
+        }
+      ]
+    },
+    "non_claims": [
+      "not exact real-valued Softmax",
+      "not full inference",
+      "not public benchmark",
+      "not production",
+      "not accuracy or perplexity evidence",
+      "not a tokenizer, model-weight, or runtime integration",
+      "not an error bound against mathematical exp/div Softmax"
+    ],
+    "policy_commitment": "blake2b-256:e4196b404610db713fd0c2109e05ee866b2e3439eda16c6e0f62a464770e7105"
+  },
+  "claim_boundary": "CHECKED_EQUIVALENCE_BETWEEN_A_MODEL_FACING_INTEGER_ATTENTION_POLICY_AND_THE_EXISTING_D8_BOUNDED_SOFTMAX_TABLE_FIXTURE_TRACE_NOT_REAL_VALUED_SOFTMAX_NOT_FULL_INFERENCE_NOT_PRODUCTION",
+  "decision": "GO_MODEL_FAITHFUL_QUANTIZED_ATTENTION_BRIDGE_FOR_CHECKED_D8_FIXTURE",
+  "fused_proof_issue": 478,
+  "fused_receipt_issue": 485,
+  "mutation_results": [
+    {
+      "error": "result bridge_contract drift",
+      "name": "policy_name_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "result claim_boundary drift",
+      "name": "claim_boundary_real_softmax_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "score_scale_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "max_subtraction_policy_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "clip_cap_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "weight_table_value_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "denominator_policy_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "division_rule_drift",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "remainder_policy_removed",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "result bridge_contract drift",
+      "name": "blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "attention outputs drift",
+      "name": "source_fixture_output_drift",
+      "rejected": true
+    },
+    {
+      "error": "score rows drift",
+      "name": "source_fixture_score_gap_drift",
+      "rejected": true
+    },
+    {
+      "error": "score rows drift",
+      "name": "source_fixture_denominator_zero",
+      "rejected": true
+    },
+    {
+      "error": "score rows drift",
+      "name": "source_fixture_remainder_drift",
+      "rejected": true
+    },
+    {
+      "error": "statement commitment drift",
+      "name": "source_fixture_statement_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "receipt_kernel_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "receipt_weight_table_drift",
+      "rejected": true
+    },
+    {
+      "error": "kernel contract drift",
+      "name": "receipt_source_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "unknown bridge field(s): ['unexpected']",
+      "name": "unknown_bridge_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 20,
+  "mutations_rejected": 20,
+  "route_id": "local_model_faithful_quantized_attention_bridge_d8_bounded_softmax_table",
+  "schema": "zkai-attention-kv-model-faithful-quantized-attention-bridge-gate-v1",
+  "source_fixture_issue": 463,
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_model_faithful_quantized_attention_bridge_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_model_faithful_quantized_attention_bridge_gate",
+    "git diff --check"
+  ]
+}
