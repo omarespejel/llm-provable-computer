@@ -197,6 +197,19 @@ class StwoMedianTimingGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "escapes evidence dir"):
                 gate.validate_output_path(pathlib.Path(tmp) / "bad.json")
 
+    def test_rejects_output_path_with_file_parent(self):
+        parent = gate.EVIDENCE_DIR / "tmp-stwo-median-timing-parent-file"
+        try:
+            parent.write_text("not a directory", encoding="utf-8")
+            with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "parent must be a directory"):
+                gate.validate_output_path(parent / "bad.json")
+        finally:
+            parent.unlink(missing_ok=True)
+
+    def test_rejects_evidence_directory_as_output_path(self):
+        with self.assertRaisesRegex(gate.StwoMedianTimingGateError, "must be a file"):
+            gate.validate_output_path(gate.EVIDENCE_DIR)
+
     @unittest.skipUnless(hasattr(pathlib.Path, "symlink_to"), "symlinks unavailable")
     def test_rejects_output_path_symlink_before_resolve(self):
         target = gate.EVIDENCE_DIR / "tmp-stwo-median-timing-target.json"
