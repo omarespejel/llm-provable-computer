@@ -90,7 +90,7 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
 
     def test_rejects_receipt_kernel_overclaim(self):
         receipt = copy.deepcopy(self.receipt)
-        receipt["kernel_contract"]["real_softmax_status"] = "GO_REAL_VALUED_SOFTMAX"
+        receipt["kernel_contract"]["kernel_status"] = "GO_REAL_VALUED_SOFTMAX"
         with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "kernel contract|receipt"):
             gate.validate_result(self.result, self.payload, receipt)
 
@@ -127,7 +127,10 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
             target = tmp_dir / "target.json"
             target.write_text("{}", encoding="utf-8")
             link = tmp_dir / "link.json"
-            link.symlink_to(target)
+            try:
+                link.symlink_to(target)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
             with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output path must not be a symlink"):
                 gate.write_json(link, self.result)
 
@@ -135,7 +138,10 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_dir = gate.pathlib.Path(tmp)
             link = tmp_dir / "dangling.json"
-            link.symlink_to(tmp_dir / "missing.json")
+            try:
+                link.symlink_to(tmp_dir / "missing.json")
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
             with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output path must not be a symlink"):
                 gate.write_json(link, self.result)
 
