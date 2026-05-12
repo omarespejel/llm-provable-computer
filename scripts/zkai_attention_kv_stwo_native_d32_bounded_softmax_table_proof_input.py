@@ -20,6 +20,7 @@ import csv
 import hashlib
 import io
 import json
+import os
 import pathlib
 import tempfile
 import uuid
@@ -693,6 +694,7 @@ def write_text_atomically(path: pathlib.Path, contents: str) -> None:
         with staged.open("w", encoding="utf-8", newline="") as handle:
             handle.write(contents)
             handle.flush()
+            os.fsync(handle.fileno())
         staged.replace(path)
     finally:
         staged.unlink(missing_ok=True)
@@ -795,9 +797,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
         with staged_json.open("w", encoding="utf-8", newline="") as handle:
             handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
             handle.flush()
+            os.fsync(handle.fileno())
         with staged_tsv.open("w", encoding="utf-8", newline="") as handle:
             handle.write(_to_tsv_unchecked(payload))
             handle.flush()
+            os.fsync(handle.fileno())
         replace_staged_outputs_with_rollback(staged_json, json_out, staged_tsv, tsv_out)
     finally:
         staged_json.unlink(missing_ok=True)
