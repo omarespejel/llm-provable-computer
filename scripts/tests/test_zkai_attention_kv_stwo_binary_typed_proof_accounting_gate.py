@@ -228,6 +228,21 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
             link.unlink(missing_ok=True)
             target.unlink(missing_ok=True)
 
+    @unittest.skipUnless(hasattr(pathlib.Path, "symlink_to"), "symlinks unavailable")
+    def test_rejects_dangling_output_path_symlink(self):
+        target = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-missing-target.json"
+        link = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-dangling-link.json"
+        try:
+            target.unlink(missing_ok=True)
+            link.symlink_to(target)
+            self.assertFalse(link.exists())
+            self.assertTrue(link.is_symlink())
+            with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "must not be a symlink"):
+                gate.validate_output_path(link)
+        finally:
+            link.unlink(missing_ok=True)
+            target.unlink(missing_ok=True)
+
     def test_write_json_validates_before_writing(self):
         summary = cli_summary()
         payload = gate.build_payload(summary)

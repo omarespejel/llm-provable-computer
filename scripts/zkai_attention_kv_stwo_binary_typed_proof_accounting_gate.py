@@ -757,7 +757,7 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 def validate_output_path(path: pathlib.Path) -> pathlib.Path:
     raw_path = path
-    if raw_path.exists() and raw_path.is_symlink():
+    if raw_path.is_symlink():
         raise BinaryTypedProofAccountingGateError(f"output path must not be a symlink: {raw_path}")
     path = raw_path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
