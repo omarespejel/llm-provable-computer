@@ -242,18 +242,24 @@ fn proof_accounting_row(canonical_root: &Path, path: &Path) -> Result<serde_json
     }
     let grouped_reconstruction = component_bytes.grouped();
     let stwo_grouped = proof.size_breakdown_estimate();
+    let fixed_overhead = checked_fixed_overhead(
+        typed_size_estimate,
+        &[
+            ("oods_samples", stwo_grouped.oods_samples),
+            ("queries_values", stwo_grouped.queries_values),
+            ("fri_samples", stwo_grouped.fri_samples),
+            ("fri_decommitments", stwo_grouped.fri_decommitments),
+            ("trace_decommitments", stwo_grouped.trace_decommitments),
+        ],
+        path,
+    )?;
     let stwo_grouped_breakdown = serde_json::json!({
         "oods_samples": stwo_grouped.oods_samples,
         "queries_values": stwo_grouped.queries_values,
         "fri_samples": stwo_grouped.fri_samples,
         "fri_decommitments": stwo_grouped.fri_decommitments,
         "trace_decommitments": stwo_grouped.trace_decommitments,
-        "fixed_overhead": typed_size_estimate
-            - stwo_grouped.oods_samples
-            - stwo_grouped.queries_values
-            - stwo_grouped.fri_samples
-            - stwo_grouped.fri_decommitments
-            - stwo_grouped.trace_decommitments,
+        "fixed_overhead": fixed_overhead,
     });
     if grouped_reconstruction != stwo_grouped_breakdown {
         return Err(format!(
@@ -488,6 +494,27 @@ fn component_bytes_from_records(records: &[AccountingRecord]) -> ComponentBytes 
 }
 
 #[cfg(feature = "stwo-backend")]
+fn checked_fixed_overhead(
+    typed_size_estimate: usize,
+    grouped_components: &[(&str, usize)],
+    path: &Path,
+) -> Result<usize, String> {
+    let mut remaining = typed_size_estimate;
+    for (name, value) in grouped_components {
+        remaining = remaining.checked_sub(*value).ok_or_else(|| {
+            format!(
+                "Stwo grouped breakdown exceeds typed size estimate for {} while subtracting {name}: estimate {}, remaining {}, component {}",
+                path.display(),
+                typed_size_estimate,
+                remaining,
+                value
+            )
+        })?;
+    }
+    Ok(remaining)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn canonical_local_binary_accounting_stream(
     records: &[AccountingRecord],
 ) -> Result<Vec<u8>, String> {
@@ -649,6 +676,32 @@ mod tests {
         let error =
             read_contained_bounded_file(&canonical_root, &path, 5, "test file").unwrap_err();
         assert!(error.contains("exceeds max size"));
+    }
+
+    #[test]
+    fn fixed_overhead_rejects_underflow() {
+        let error = checked_fixed_overhead(
+            7,
+            &[("oods_samples", 3), ("queries_values", 5)],
+            Path::new("fixture.envelope.json"),
+        )
+        .unwrap_err();
+        assert!(error.contains("exceeds typed size estimate"));
+    }
+
+    #[test]
+    fn fixed_overhead_returns_remaining_bytes() {
+        let fixed_overhead = checked_fixed_overhead(
+            16,
+            &[
+                ("oods_samples", 3),
+                ("queries_values", 4),
+                ("fri_samples", 5),
+            ],
+            Path::new("fixture.envelope.json"),
+        )
+        .unwrap();
+        assert_eq!(fixed_overhead, 4);
     }
 
     #[test]

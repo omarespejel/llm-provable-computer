@@ -1,15 +1,18 @@
 import copy
 import pathlib
+from unittest import mock
 import tempfile
 import unittest
 
 from scripts import zkai_attention_kv_stwo_binary_typed_proof_accounting_gate as gate
 
 
-def record(path, count, size):
+def record(path, count):
+    spec = gate.EXPECTED_RECORD_SPECS[path]
+    size = gate.EXPECTED_SIZE_CONSTANTS[spec["size_constant_key"]]
     return {
         "path": path,
-        "scalar_kind": "fixture_scalar",
+        "scalar_kind": spec["scalar_kind"],
         "item_count": count,
         "item_size_bytes": size,
         "total_bytes": count * size,
@@ -17,10 +20,7 @@ def record(path, count, size):
 
 
 def accounting(seed):
-    records = [
-        record(path, seed + index + 1, 4 + (index % 3))
-        for index, path in enumerate(gate.EXPECTED_RECORD_PATHS)
-    ]
+    records = [record(path, seed + index + 1) for index, path in enumerate(gate.EXPECTED_RECORD_PATHS)]
     total = sum(item["total_bytes"] for item in records)
     grouped = {
         "oods_samples": records[2]["total_bytes"],
@@ -80,14 +80,8 @@ def cli_summary():
         "accounting_source": "fixture",
         "upstream_stwo_serialization_status": gate.UPSTREAM_SERIALIZATION_STATUS,
         "proof_payload_kind": gate.PROOF_PAYLOAD_KIND,
-        "safety": {"path_policy": "fixture"},
-        "size_constants": {
-            "base_field_bytes": 4,
-            "secure_field_bytes": 16,
-            "blake2s_hash_bytes": 32,
-            "proof_of_work_bytes": 8,
-            "pcs_config_bytes": 4,
-        },
+        "safety": dict(gate.EXPECTED_SAFETY),
+        "size_constants": dict(gate.EXPECTED_SIZE_CONSTANTS),
         "rows": rows,
     }
 
@@ -132,11 +126,80 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
         payload["payload_commitment"] = gate.payload_commitment(payload)
         self.assert_rejects(payload, summary, "item_count must be an integer")
 
+    def test_rejects_float_encoded_local_accounting_metrics(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["record_count"] = 1.5
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "record_count must be an integer")
+
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["typed_size_estimate_bytes"] = 1.5
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "typed_size_estimate_bytes must be an integer")
+
+    def test_rejects_non_hex_record_stream_digest(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["record_stream_sha256"] = "z" * 64
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "record_stream_sha256 digest invalid")
+
+    def test_rejects_non_hex_cli_row_digests(self):
+        summary = cli_summary()
+        summary["rows"][0]["envelope_sha256"] = "z" * 64
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "envelope_sha256 digest invalid"):
+            gate.validate_cli_summary(summary)
+
+        summary = cli_summary()
+        summary["rows"][0]["proof_sha256"] = "z" * 64
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "proof_sha256 digest invalid"):
+            gate.validate_cli_summary(summary)
+
+    def test_rejects_scalar_kind_and_size_drift(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["records"][0]["scalar_kind"] = "fixture_scalar"
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "scalar_kind drift")
+
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        payload["profile_rows"][0]["local_binary_accounting"]["records"][0]["item_size_bytes"] += 1
+        payload["profile_rows"][0]["local_binary_accounting"]["records"][0]["total_bytes"] += payload["profile_rows"][0][
+            "local_binary_accounting"
+        ]["records"][0]["item_count"]
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "item_size_bytes drift")
+
     def test_rejects_cli_schema_drift(self):
         summary = cli_summary()
         summary["schema"] = "wrong"
         with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "CLI schema drift"):
             gate.validate_cli_summary(summary)
+
+    def test_rejects_cli_size_constant_and_safety_drift(self):
+        summary = cli_summary()
+        summary["size_constants"]["pcs_config_bytes"] += 1
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "size constant pcs_config_bytes drift"):
+            gate.validate_cli_summary(summary)
+
+        summary = cli_summary()
+        summary["safety"]["path_policy"] = "fixture"
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "safety path_policy drift"):
+            gate.validate_cli_summary(summary)
+
+    def test_run_binary_accounting_cli_rejects_timeout(self):
+        with mock.patch("subprocess.run") as run:
+            run.side_effect = gate.subprocess.TimeoutExpired(
+                cmd=["cargo"],
+                timeout=gate.BINARY_ACCOUNTING_TIMEOUT_SECONDS,
+                output="partial stdout",
+                stderr="partial stderr",
+            )
+            with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "timed out"):
+                gate.run_binary_accounting_cli()
 
     def test_tsv_contains_rows_and_commitments(self):
         summary = cli_summary()
@@ -151,6 +214,19 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "escapes evidence dir"):
                 gate.validate_output_path(pathlib.Path(tmp) / "bad.json")
+
+    @unittest.skipUnless(hasattr(pathlib.Path, "symlink_to"), "symlinks unavailable")
+    def test_rejects_output_path_symlink_before_resolve(self):
+        target = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-target.json"
+        link = gate.EVIDENCE_DIR / "tmp-binary-typed-proof-accounting-link.json"
+        try:
+            target.write_text("{}", encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "must not be a symlink"):
+                gate.validate_output_path(link)
+        finally:
+            link.unlink(missing_ok=True)
+            target.unlink(missing_ok=True)
 
     def test_write_json_validates_before_writing(self):
         summary = cli_summary()

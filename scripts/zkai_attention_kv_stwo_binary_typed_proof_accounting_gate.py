@@ -72,6 +72,20 @@ TSV_COLUMNS = (
     "record_stream_sha256",
     "proof_sha256",
 )
+BINARY_ACCOUNTING_TIMEOUT_SECONDS = 900
+EXPECTED_SIZE_CONSTANTS = {
+    "base_field_bytes": 4,
+    "secure_field_bytes": 16,
+    "blake2s_hash_bytes": 32,
+    "proof_of_work_bytes": 8,
+    "pcs_config_bytes": 40,
+}
+EXPECTED_SAFETY = {
+    "max_envelope_json_bytes": 16 * 1024 * 1024,
+    "max_proof_json_bytes": 2 * 1024 * 1024,
+    "path_policy": "inputs_must_be_regular_non_symlink_files_inside_canonical_evidence_dir",
+    "commitment": "sha256_over_repo_owned_canonical_local_binary_accounting_record_stream",
+}
 EXPECTED_ROLES = (
     {
         "role": "source_arithmetic",
@@ -116,6 +130,42 @@ EXPECTED_RECORD_PATHS = (
     "pcs.proof_of_work",
     "pcs.config",
 )
+EXPECTED_RECORD_SPECS = {
+    "pcs.commitments": {"scalar_kind": "blake2s_hash", "size_constant_key": "blake2s_hash_bytes"},
+    "pcs.trace_decommitments.hash_witness": {
+        "scalar_kind": "blake2s_hash",
+        "size_constant_key": "blake2s_hash_bytes",
+    },
+    "pcs.sampled_values": {"scalar_kind": "secure_field", "size_constant_key": "secure_field_bytes"},
+    "pcs.queried_values": {"scalar_kind": "base_field", "size_constant_key": "base_field_bytes"},
+    "pcs.fri.first_layer.fri_witness": {
+        "scalar_kind": "secure_field",
+        "size_constant_key": "secure_field_bytes",
+    },
+    "pcs.fri.inner_layers.fri_witness": {
+        "scalar_kind": "secure_field",
+        "size_constant_key": "secure_field_bytes",
+    },
+    "pcs.fri.last_layer_poly": {"scalar_kind": "secure_field", "size_constant_key": "secure_field_bytes"},
+    "pcs.fri.first_layer.commitment": {
+        "scalar_kind": "blake2s_hash",
+        "size_constant_key": "blake2s_hash_bytes",
+    },
+    "pcs.fri.inner_layers.commitments": {
+        "scalar_kind": "blake2s_hash",
+        "size_constant_key": "blake2s_hash_bytes",
+    },
+    "pcs.fri.first_layer.decommitment.hash_witness": {
+        "scalar_kind": "blake2s_hash",
+        "size_constant_key": "blake2s_hash_bytes",
+    },
+    "pcs.fri.inner_layers.decommitment.hash_witness": {
+        "scalar_kind": "blake2s_hash",
+        "size_constant_key": "blake2s_hash_bytes",
+    },
+    "pcs.proof_of_work": {"scalar_kind": "u64_le", "size_constant_key": "proof_of_work_bytes"},
+    "pcs.config": {"scalar_kind": "pcs_config", "size_constant_key": "pcs_config_bytes"},
+}
 MUTATION_NAMES = (
     "schema_relabeling",
     "decision_overclaim",
@@ -172,6 +222,25 @@ def require_float(value: Any, label: str) -> float:
     return value
 
 
+def output_tail(value: str | None, limit: int = 1600) -> str:
+    if value is None:
+        return ""
+    value = value.strip()
+    if len(value) <= limit:
+        return value
+    return value[-limit:]
+
+
+def require_sha256_hex(value: Any, label: str) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise BinaryTypedProofAccountingGateError(f"{label} digest invalid")
+    try:
+        bytes.fromhex(value)
+    except ValueError as err:
+        raise BinaryTypedProofAccountingGateError(f"{label} digest invalid") from err
+    return value
+
+
 def expected_envelope_paths() -> list[pathlib.Path]:
     return [EVIDENCE_DIR / role["path"] for role in EXPECTED_ROLES]
 
@@ -191,10 +260,31 @@ def run_binary_accounting_cli() -> dict[str, Any]:
         str(EVIDENCE_DIR),
         *[str(path) for path in expected_envelope_paths()],
     ]
-    completed = subprocess.run(command, cwd=ROOT, check=False, text=True, capture_output=True)
-    if completed.returncode != 0:
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            check=False,
+            text=True,
+            capture_output=True,
+            timeout=BINARY_ACCOUNTING_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as err:
+        stderr = output_tail(err.stderr if isinstance(err.stderr, str) else None)
+        stdout = output_tail(err.stdout if isinstance(err.stdout, str) else None)
+        detail = stderr or stdout or "<no output>"
         raise BinaryTypedProofAccountingGateError(
-            f"binary accounting CLI failed with exit {completed.returncode}: {completed.stderr.strip()}"
+            "binary accounting CLI timed out after "
+            f"{BINARY_ACCOUNTING_TIMEOUT_SECONDS}s: {' '.join(command)}: {detail}"
+        ) from err
+    except OSError as err:
+        raise BinaryTypedProofAccountingGateError(f"failed to run binary accounting CLI: {err}") from err
+    if completed.returncode != 0:
+        stderr = output_tail(completed.stderr)
+        stdout = output_tail(completed.stdout)
+        detail = stderr or stdout or "<no output>"
+        raise BinaryTypedProofAccountingGateError(
+            f"binary accounting CLI failed with exit {completed.returncode}: {detail}"
         )
     try:
         summary = json.loads(completed.stdout)
@@ -230,6 +320,8 @@ def validate_cli_summary(summary: Any) -> None:
         raise BinaryTypedProofAccountingGateError("CLI upstream serialization status drift")
     if summary["proof_payload_kind"] != PROOF_PAYLOAD_KIND:
         raise BinaryTypedProofAccountingGateError("CLI proof payload kind drift")
+    validate_safety(summary["safety"])
+    validate_size_constants(summary["size_constants"])
     rows = summary.get("rows")
     if not isinstance(rows, list) or len(rows) != len(EXPECTED_ROLES):
         raise BinaryTypedProofAccountingGateError("CLI row count drift")
@@ -253,6 +345,8 @@ def validate_cli_row(row: Any, expected: dict[str, Any]) -> None:
         raise BinaryTypedProofAccountingGateError("CLI row field drift")
     if row["evidence_relative_path"] != expected["path"]:
         raise BinaryTypedProofAccountingGateError(f"{expected['role']} evidence path drift")
+    require_sha256_hex(row["envelope_sha256"], f"{expected['role']} envelope_sha256")
+    require_sha256_hex(row["proof_sha256"], f"{expected['role']} proof_sha256")
     metadata = row["envelope_metadata"]
     if not isinstance(metadata, dict) or set(metadata) != {
         "proof_backend",
@@ -304,7 +398,8 @@ def validate_local_accounting(accounting: Any, role: str) -> None:
     records = accounting["records"]
     if not isinstance(records, list) or len(records) != len(EXPECTED_RECORD_PATHS):
         raise BinaryTypedProofAccountingGateError(f"{role} accounting record count drift")
-    if accounting["record_count"] != len(records):
+    record_count = require_exact_int(accounting["record_count"], f"{role} record_count")
+    if record_count != len(records):
         raise BinaryTypedProofAccountingGateError(f"{role} record_count drift")
     total = 0
     for record, expected_path in zip(records, EXPECTED_RECORD_PATHS, strict=True):
@@ -312,15 +407,17 @@ def validate_local_accounting(accounting: Any, role: str) -> None:
         total += record["total_bytes"]
     if require_exact_int(accounting["component_sum_bytes"], f"{role} component_sum_bytes") != total:
         raise BinaryTypedProofAccountingGateError(f"{role} component sum drift")
-    if accounting["typed_size_estimate_bytes"] != total:
+    typed_size_estimate = require_exact_int(
+        accounting["typed_size_estimate_bytes"], f"{role} typed_size_estimate_bytes"
+    )
+    if typed_size_estimate != total:
         raise BinaryTypedProofAccountingGateError(f"{role} typed size estimate drift")
     if accounting["grouped_reconstruction"] != accounting["stwo_grouped_breakdown"]:
         raise BinaryTypedProofAccountingGateError(f"{role} grouped reconstruction drift")
     require_exact_int(accounting["record_stream_bytes"], f"{role} record_stream_bytes")
     require_float(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
     require_exact_int(accounting["json_minus_local_typed_bytes"], f"{role} json_minus_local_typed_bytes")
-    if not isinstance(accounting["record_stream_sha256"], str) or len(accounting["record_stream_sha256"]) != 64:
-        raise BinaryTypedProofAccountingGateError(f"{role} record stream commitment drift")
+    require_sha256_hex(accounting["record_stream_sha256"], f"{role} record_stream_sha256")
 
 
 def validate_record(record: Any, expected_path: str, role: str) -> None:
@@ -334,11 +431,35 @@ def validate_record(record: Any, expected_path: str, role: str) -> None:
         raise BinaryTypedProofAccountingGateError(f"{role} accounting record field drift")
     if record["path"] != expected_path:
         raise BinaryTypedProofAccountingGateError(f"{role} accounting record path drift")
+    expected_spec = EXPECTED_RECORD_SPECS[expected_path]
+    if record["scalar_kind"] != expected_spec["scalar_kind"]:
+        raise BinaryTypedProofAccountingGateError(f"{role} {expected_path} scalar_kind drift")
     count = require_exact_int(record["item_count"], f"{role} {expected_path} item_count")
     size = require_exact_int(record["item_size_bytes"], f"{role} {expected_path} item_size_bytes")
     total = require_exact_int(record["total_bytes"], f"{role} {expected_path} total_bytes")
+    expected_size = EXPECTED_SIZE_CONSTANTS[expected_spec["size_constant_key"]]
+    if size != expected_size:
+        raise BinaryTypedProofAccountingGateError(f"{role} {expected_path} item_size_bytes drift")
     if count < 0 or size <= 0 or total != count * size:
         raise BinaryTypedProofAccountingGateError(f"{role} accounting record total drift")
+
+
+def validate_safety(safety: Any) -> None:
+    if not isinstance(safety, dict) or set(safety) != set(EXPECTED_SAFETY):
+        raise BinaryTypedProofAccountingGateError("CLI safety field drift")
+    for key, expected in EXPECTED_SAFETY.items():
+        if safety[key] != expected:
+            raise BinaryTypedProofAccountingGateError(f"CLI safety {key} drift")
+    for key in ("max_envelope_json_bytes", "max_proof_json_bytes"):
+        require_exact_int(safety[key], f"CLI safety {key}")
+
+
+def validate_size_constants(size_constants: Any) -> None:
+    if not isinstance(size_constants, dict) or set(size_constants) != set(EXPECTED_SIZE_CONSTANTS):
+        raise BinaryTypedProofAccountingGateError("CLI size constants field drift")
+    for key, expected in EXPECTED_SIZE_CONSTANTS.items():
+        if require_exact_int(size_constants[key], f"CLI size constant {key}") != expected:
+            raise BinaryTypedProofAccountingGateError(f"CLI size constant {key} drift")
 
 
 def build_payload(cli_summary: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -635,12 +756,13 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def validate_output_path(path: pathlib.Path) -> pathlib.Path:
-    path = path.resolve()
+    raw_path = path
+    if raw_path.exists() and raw_path.is_symlink():
+        raise BinaryTypedProofAccountingGateError(f"output path must not be a symlink: {raw_path}")
+    path = raw_path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
     if not path.parent.exists():
         raise BinaryTypedProofAccountingGateError(f"output parent does not exist: {path.parent}")
-    if path.exists() and path.is_symlink():
-        raise BinaryTypedProofAccountingGateError(f"output path must not be a symlink: {path}")
     if evidence_root not in (path, *path.parents):
         raise BinaryTypedProofAccountingGateError(f"output path escapes evidence dir: {path}")
     return path
