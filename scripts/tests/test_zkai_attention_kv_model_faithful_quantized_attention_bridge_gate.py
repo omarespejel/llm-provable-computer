@@ -32,6 +32,22 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
         self.assertIn("not public benchmark", self.result["bridge_contract"]["non_claims"])
         self.assertIn("not production", self.result["bridge_contract"]["non_claims"])
 
+    def test_shared_policy_labels_match_receipt_kernel_contract(self):
+        policy = self.result["bridge_contract"]["model_policy"]
+        receipt_contract = self.receipt["kernel_contract"]
+        for key in (
+            "kernel_name",
+            "score_scale",
+            "max_subtraction_policy",
+            "clip_policy",
+            "score_gap_clip",
+            "denominator_policy",
+            "division_rule",
+            "output_scale_policy",
+        ):
+            self.assertEqual(policy[key], receipt_contract[key])
+        self.assertEqual(policy["weight_table"], receipt_contract["weight_table"])
+
     def test_model_trace_is_equivalent_to_existing_fixture_trace(self):
         metrics = self.result["bridge_contract"]["metrics"]
         self.assertEqual(metrics["status"], "GO_EQUIVALENT_FOR_EXISTING_CHECKED_FIXTURE_TRACE")
