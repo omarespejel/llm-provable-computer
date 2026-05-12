@@ -556,6 +556,19 @@ def validate_result(result: Any) -> None:
         raise FullerCrossingGridGateError("checked result drift")
     if mutation_results is None and mutations_checked is None and mutations_rejected is None:
         return
+    if mutation_results is None or mutations_checked is None or mutations_rejected is None:
+        raise FullerCrossingGridGateError("mutation field presence drift")
+    if isinstance(mutations_checked, bool) or not isinstance(mutations_checked, int):
+        raise FullerCrossingGridGateError("mutations_checked drift")
+    if isinstance(mutations_rejected, bool) or not isinstance(mutations_rejected, int):
+        raise FullerCrossingGridGateError("mutations_rejected drift")
+    if not isinstance(mutation_results, list) or len(mutation_results) != len(EXPECTED_MUTATION_NAMES):
+        raise FullerCrossingGridGateError("mutation results shape drift")
+    for item in mutation_results:
+        if not isinstance(item, dict) or set(item) != {"name", "rejected", "error"}:
+            raise FullerCrossingGridGateError("mutation result item drift")
+        if not isinstance(item["error"], str) or not item["error"]:
+            raise FullerCrossingGridGateError("mutation error drift")
     if [item.get("name") for item in mutation_results] != list(EXPECTED_MUTATION_NAMES):
         raise FullerCrossingGridGateError("mutation name drift")
     if not all(item.get("rejected") is True for item in mutation_results):
@@ -568,18 +581,44 @@ def write_json(path: pathlib.Path, result: dict[str, Any]) -> None:
     if path.is_symlink():
         raise FullerCrossingGridGateError(f"refusing to overwrite symlink: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+    validate_result(result)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+    ) as handle:
         tmp = pathlib.Path(handle.name)
         json.dump(result, handle, indent=2, sort_keys=True)
         handle.write("\n")
-    tmp.replace(path)
+    try:
+        validate_result(json.loads(tmp.read_text(encoding="utf-8")))
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def tsv_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return "+".join(value)
+    return value
 
 
 def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
     if path.is_symlink():
         raise FullerCrossingGridGateError(f"refusing to overwrite symlink: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="", dir=path.parent, delete=False) as handle:
+    validate_result(result)
+    rows = []
+    for row in result["grid_rows"]:
+        payload = {column: tsv_value(row[column]) for column in TSV_COLUMNS}
+        if payload["missing_reason"] == "":
+            payload["missing_reason"] = "proved"
+        rows.append(payload)
+    expected_rows = [{column: str(value) for column, value in row.items()} for row in rows]
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", newline="", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+    ) as handle:
         tmp = pathlib.Path(handle.name)
         writer = csv.DictWriter(
             handle,
@@ -589,13 +628,16 @@ def write_tsv(path: pathlib.Path, result: dict[str, Any]) -> None:
             lineterminator="\n",
         )
         writer.writeheader()
-        for row in result["grid_rows"]:
-            payload = dict(row)
-            payload["pressure_axes"] = "+".join(row["pressure_axes"])
-            if payload["missing_reason"] is None:
-                payload["missing_reason"] = "proved"
-            writer.writerow(payload)
-    tmp.replace(path)
+        writer.writerows(rows)
+    try:
+        with tmp.open("r", encoding="utf-8", newline="") as handle:
+            loaded_rows = list(csv.DictReader(handle, delimiter="\t"))
+        if loaded_rows != expected_rows:
+            raise FullerCrossingGridGateError("TSV round-trip drift")
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def main() -> int:

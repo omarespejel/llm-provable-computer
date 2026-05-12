@@ -100,6 +100,29 @@ class AttentionKvFullerCrossingGridGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "checked result drift"):
             gate.validate_result(bad)
 
+        for key in ("mutation_results", "mutations_checked", "mutations_rejected"):
+            with self.subTest(key=key):
+                bad = copy.deepcopy(self.result)
+                bad.pop(key)
+                with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "mutation field presence drift"):
+                    gate.validate_result(bad)
+
+        bad = copy.deepcopy(self.result)
+        bad["mutation_results"] = None
+        with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "mutation field presence drift"):
+            gate.validate_result(bad)
+
+        bad = copy.deepcopy(self.result)
+        bad["mutation_results"] = copy.deepcopy(self.result["mutation_results"])
+        bad["mutation_results"][0] = "not-a-dict"
+        with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "mutation result item drift"):
+            gate.validate_result(bad)
+
+        bad = copy.deepcopy(self.result)
+        bad["mutation_results"][0].pop("error")
+        with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "mutation result item drift"):
+            gate.validate_result(bad)
+
     def test_mutator_failures_are_gate_failures_not_rejections(self):
         def broken_mutator(_result):
             raise RuntimeError("boom")
@@ -127,6 +150,18 @@ class AttentionKvFullerCrossingGridGateTests(unittest.TestCase):
             self.assertEqual(rows[1]["fused_proof_size_bytes"], "")
             self.assertEqual(rows[30]["cell_id"], "d32_h1_seq8")
             self.assertEqual(rows[30]["profile_id"], "d32_single_head_seq8")
+
+    def test_write_helpers_validate_before_persisting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = gate.pathlib.Path(tmp)
+            bad = copy.deepcopy(self.result)
+            bad["summary"]["missing_cell_count"] = 0
+            with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "summary drift"):
+                gate.write_json(tmp_path / "bad.json", bad)
+            with self.assertRaisesRegex(gate.FullerCrossingGridGateError, "summary drift"):
+                gate.write_tsv(tmp_path / "bad.tsv", bad)
+            self.assertFalse((tmp_path / "bad.json").exists())
+            self.assertFalse((tmp_path / "bad.tsv").exists())
 
 
 if __name__ == "__main__":
