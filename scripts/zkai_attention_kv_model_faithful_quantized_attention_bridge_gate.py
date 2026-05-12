@@ -168,14 +168,27 @@ def read_json(path: pathlib.Path, max_bytes: int, label: str) -> dict[str, Any]:
     return value
 
 
+def output_parent_creation_chain(path: pathlib.Path) -> list[pathlib.Path]:
+    chain: list[pathlib.Path] = []
+    parent = path.parent
+    while True:
+        chain.append(parent)
+        if parent.is_symlink() or parent.exists() or parent == parent.parent:
+            return chain
+        parent = parent.parent
+
+
 def prepare_output_path(path: pathlib.Path) -> pathlib.Path:
     if path.is_symlink():
         raise ModelFaithfulQuantizedAttentionBridgeGateError("output path must not be a symlink")
-    if path.parent.is_symlink():
-        raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent must not be a symlink")
+    parent_chain = output_parent_creation_chain(path)
+    for parent in parent_chain:
+        if parent.is_symlink():
+            raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent hierarchy must not contain a symlink")
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.parent.is_symlink():
-        raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent must not be a symlink")
+    for parent in parent_chain:
+        if parent.is_symlink():
+            raise ModelFaithfulQuantizedAttentionBridgeGateError("output parent hierarchy must not contain a symlink")
     return path
 
 
