@@ -170,6 +170,14 @@ class BinaryTypedProofAccountingGateTests(unittest.TestCase):
         payload["payload_commitment"] = gate.payload_commitment(payload)
         self.assert_rejects(payload, summary, "json_over_local_typed_ratio drift")
 
+    def test_accepts_integer_encoded_json_over_local_typed_ratio(self):
+        summary = cli_summary()
+        accounting = summary["rows"][0]["local_binary_accounting"]
+        summary["rows"][0]["proof_json_size_bytes"] = accounting["typed_size_estimate_bytes"]
+        accounting["json_minus_local_typed_bytes"] = 0
+        accounting["json_over_local_typed_ratio"] = 1
+        gate.validate_cli_summary(summary)
+
     def test_rejects_grouped_bytes_not_derived_from_records(self):
         summary = cli_summary()
         payload = gate.build_payload(summary)

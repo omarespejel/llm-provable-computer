@@ -252,10 +252,10 @@ def require_exact_int(value: Any, label: str) -> int:
     return value
 
 
-def require_float(value: Any, label: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, float):
-        raise BinaryTypedProofAccountingGateError(f"{label} must be a float")
-    return value
+def require_number(value: Any, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise BinaryTypedProofAccountingGateError(f"{label} must be a number")
+    return float(value)
 
 
 def output_tail(value: str | None, limit: int = 1600) -> str:
@@ -456,7 +456,7 @@ def validate_local_accounting(accounting: Any, role: str, proof_json_size_bytes:
     record_stream = canonical_record_stream(records)
     if require_exact_int(accounting["record_stream_bytes"], f"{role} record_stream_bytes") != len(record_stream):
         raise BinaryTypedProofAccountingGateError(f"{role} record stream bytes drift")
-    ratio = require_float(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
+    ratio = require_number(accounting["json_over_local_typed_ratio"], f"{role} json_over_local_typed_ratio")
     expected_ratio = rounded_ratio(proof_json_size_bytes, typed_size_estimate)
     if not math.isclose(ratio, expected_ratio, rel_tol=0.0, abs_tol=1e-12):
         raise BinaryTypedProofAccountingGateError(f"{role} json_over_local_typed_ratio drift")
