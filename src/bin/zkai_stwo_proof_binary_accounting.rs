@@ -232,14 +232,7 @@ fn proof_accounting_row(canonical_root: &Path, path: &Path) -> Result<serde_json
     let component_bytes = component_bytes_from_records(&records);
     let component_sum_bytes = component_bytes.sum();
     let typed_size_estimate = proof.size_estimate();
-    if component_sum_bytes != typed_size_estimate {
-        return Err(format!(
-            "local component sum does not match Stwo typed estimate for {}: components {}, estimate {}",
-            path.display(),
-            component_sum_bytes,
-            typed_size_estimate
-        ));
-    }
+    ensure_component_sum_matches_typed_estimate(component_sum_bytes, typed_size_estimate, path)?;
     let grouped_reconstruction = component_bytes.grouped();
     let stwo_grouped = proof.size_breakdown_estimate();
     let fixed_overhead = checked_fixed_overhead(
@@ -261,12 +254,11 @@ fn proof_accounting_row(canonical_root: &Path, path: &Path) -> Result<serde_json
         "trace_decommitments": stwo_grouped.trace_decommitments,
         "fixed_overhead": fixed_overhead,
     });
-    if grouped_reconstruction != stwo_grouped_breakdown {
-        return Err(format!(
-            "local grouped reconstruction drift for {}",
-            path.display()
-        ));
-    }
+    ensure_grouped_reconstruction_matches_stwo(
+        &grouped_reconstruction,
+        &stwo_grouped_breakdown,
+        path,
+    )?;
     let local_binary_stream = canonical_local_binary_accounting_stream(&records)?;
     let canonical_path = fs::canonicalize(path)
         .map_err(|error| format!("failed to canonicalize {}: {error}", path.display()))?;
@@ -515,6 +507,38 @@ fn checked_fixed_overhead(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn ensure_component_sum_matches_typed_estimate(
+    component_sum_bytes: usize,
+    typed_size_estimate: usize,
+    path: &Path,
+) -> Result<(), String> {
+    if component_sum_bytes != typed_size_estimate {
+        return Err(format!(
+            "local component sum does not match Stwo typed estimate for {}: components {}, estimate {}",
+            path.display(),
+            component_sum_bytes,
+            typed_size_estimate
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn ensure_grouped_reconstruction_matches_stwo(
+    grouped_reconstruction: &serde_json::Value,
+    stwo_grouped_breakdown: &serde_json::Value,
+    path: &Path,
+) -> Result<(), String> {
+    if grouped_reconstruction != stwo_grouped_breakdown {
+        return Err(format!(
+            "local grouped reconstruction drift for {}",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn canonical_local_binary_accounting_stream(
     records: &[AccountingRecord],
 ) -> Result<Vec<u8>, String> {
@@ -702,6 +726,44 @@ mod tests {
         )
         .unwrap();
         assert_eq!(fixed_overhead, 4);
+    }
+
+    #[test]
+    fn component_sum_check_rejects_typed_estimate_mismatch() {
+        let error =
+            ensure_component_sum_matches_typed_estimate(16, 15, Path::new("fixture.envelope.json"))
+                .unwrap_err();
+        assert!(error.contains("component sum does not match"));
+        ensure_component_sum_matches_typed_estimate(16, 16, Path::new("fixture.envelope.json"))
+            .unwrap();
+    }
+
+    #[test]
+    fn grouped_reconstruction_check_rejects_stwo_breakdown_mismatch() {
+        let grouped_reconstruction = serde_json::json!({
+            "oods_samples": 3,
+            "queries_values": 5,
+            "fri_samples": 7,
+            "fri_decommitments": 11,
+            "trace_decommitments": 13,
+            "fixed_overhead": 17,
+        });
+        let mut stwo_grouped_breakdown = grouped_reconstruction.clone();
+        stwo_grouped_breakdown["fri_samples"] = serde_json::json!(8);
+
+        let error = ensure_grouped_reconstruction_matches_stwo(
+            &grouped_reconstruction,
+            &stwo_grouped_breakdown,
+            Path::new("fixture.envelope.json"),
+        )
+        .unwrap_err();
+        assert!(error.contains("grouped reconstruction drift"));
+        ensure_grouped_reconstruction_matches_stwo(
+            &grouped_reconstruction,
+            &grouped_reconstruction,
+            Path::new("fixture.envelope.json"),
+        )
+        .unwrap();
     }
 
     #[test]
