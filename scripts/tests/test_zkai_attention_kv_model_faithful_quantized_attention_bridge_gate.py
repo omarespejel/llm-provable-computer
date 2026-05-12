@@ -155,7 +155,7 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
                 link.symlink_to(target_dir, target_is_directory=True)
             except OSError as err:
                 self.skipTest(f"symlink creation is unavailable: {err}")
-            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent must not be a symlink"):
+            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent hierarchy must not contain a symlink"):
                 gate.write_json(link / "bridge.json", self.result)
 
     def test_write_json_rejects_dangling_symlink_output_parent(self):
@@ -166,8 +166,21 @@ class ModelFaithfulQuantizedAttentionBridgeGateTests(unittest.TestCase):
                 link.symlink_to(tmp_dir / "missing-dir", target_is_directory=True)
             except OSError as err:
                 self.skipTest(f"symlink creation is unavailable: {err}")
-            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent must not be a symlink"):
+            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent hierarchy must not contain a symlink"):
                 gate.write_json(link / "bridge.json", self.result)
+
+    def test_write_json_rejects_intermediate_symlink_output_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = gate.pathlib.Path(tmp)
+            target_dir = tmp_dir / "target"
+            target_dir.mkdir()
+            link = tmp_dir / "parent-link"
+            try:
+                link.symlink_to(target_dir, target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            with self.assertRaisesRegex(gate.ModelFaithfulQuantizedAttentionBridgeGateError, "output parent hierarchy must not contain a symlink"):
+                gate.write_json(link / "nested" / "bridge.json", self.result)
 
 
 if __name__ == "__main__":
