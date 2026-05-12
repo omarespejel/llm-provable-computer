@@ -57,6 +57,7 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 fmt --check",
     "git diff --check",
 )
+CLI_VALIDATION_COMMANDS = VALIDATION_COMMANDS[:4]
 EXPECTED_SAFETY = {
     "max_envelope_json_bytes": 16 * 1024 * 1024,
     "path_policy": "relative_paths_must_be_regular_non_symlink_files_inside_canonical_evidence_dir",
@@ -172,7 +173,8 @@ def blake2b_commitment(value: Any, domain: str) -> str:
 
 
 def round6(value: float) -> float:
-    return round(value, 6)
+    rounded = math.floor(abs(value) * 1_000_000 + 0.5) / 1_000_000
+    return math.copysign(rounded, value)
 
 
 def require_exact_int(value: Any, label: str) -> int:
@@ -295,7 +297,7 @@ def validate_cli_summary(summary: Any) -> None:
         raise StwoMedianTimingGateError("CLI safety drift")
     if tuple(summary["non_claims"]) != NON_CLAIMS:
         raise StwoMedianTimingGateError("CLI non-claims drift")
-    if not isinstance(summary["validation_commands"], list) or tuple(summary["validation_commands"]) != VALIDATION_COMMANDS[:4]:
+    if not isinstance(summary["validation_commands"], list) or tuple(summary["validation_commands"]) != CLI_VALIDATION_COMMANDS:
         raise StwoMedianTimingGateError("CLI validation command drift")
     rows = summary["rows"]
     if not isinstance(rows, list) or len(rows) != len(EXPECTED_ROWS):
