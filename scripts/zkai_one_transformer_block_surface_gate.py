@@ -40,6 +40,7 @@ VALIDATION_COMMANDS = [
     "python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 ]
 
 NON_CLAIMS = [

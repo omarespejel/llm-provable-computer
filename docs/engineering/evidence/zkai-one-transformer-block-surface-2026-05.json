@@ -79,7 +79,7 @@
     "not full autoregressive inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:7d865258a957e7138340b23863e8f77276ec7206fe7464e13ed20aac82a363e7",
+  "payload_commitment": "sha256:c6a822eaa0f9d6f7431ca610b4d225b5ea2726a4d6eb7bcb2765f054b4bc2c40",
   "schema": "zkai-one-transformer-block-surface-v1",
   "source_artifacts": [
     {
@@ -117,6 +117,7 @@
     "python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }
