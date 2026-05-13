@@ -340,6 +340,26 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_load_tsv_rejects_overwide_rows(self):
+        columns = list(gate.REQUIRED_PUBLISHED_COLUMNS)
+        row = {column: "value" for column in columns}
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="competitor-overwide-published-",
+            suffix=".tsv",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write("\t".join(columns) + "\n")
+            handle.write("\t".join([row[column] for column in columns] + ["surplus"]) + "\n")
+        try:
+            with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "TSV source row 2 has extra cells"):
+                gate.load_tsv(path)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_read_source_bytes_rejects_symlink_source(self):
         with tempfile.TemporaryDirectory(dir=gate.ENGINEERING_EVIDENCE) as tmp:
             real_path = pathlib.Path(tmp) / "real.json"
