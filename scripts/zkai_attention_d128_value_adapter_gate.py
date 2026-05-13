@@ -535,19 +535,29 @@ def summary_from_analysis(analysis: dict[str, Any], analysis_commitment: str) ->
     }
 
 
-def build_core_payload() -> dict[str, Any]:
+def build_expected_context() -> dict[str, Any]:
     attention, d128_input, bridge, source_artifacts = _load_sources()
     analysis = build_adapter_analysis(attention, d128_input, bridge)
     analysis_commitment = blake2b_commitment(analysis, PAYLOAD_DOMAIN)
+    return {
+        "source_artifacts": source_artifacts,
+        "adapter_analysis": analysis,
+        "adapter_analysis_commitment": analysis_commitment,
+        "summary": summary_from_analysis(analysis, analysis_commitment),
+    }
+
+
+def build_core_payload(expected_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    context = expected_context if expected_context is not None else build_expected_context()
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,
         "result": RESULT,
         "claim_boundary": CLAIM_BOUNDARY,
-        "adapter_analysis": analysis,
-        "adapter_analysis_commitment": analysis_commitment,
-        "source_artifacts": source_artifacts,
-        "summary": summary_from_analysis(analysis, analysis_commitment),
+        "adapter_analysis": copy.deepcopy(context["adapter_analysis"]),
+        "adapter_analysis_commitment": context["adapter_analysis_commitment"],
+        "source_artifacts": copy.deepcopy(context["source_artifacts"]),
+        "summary": copy.deepcopy(context["summary"]),
         "non_claims": NON_CLAIMS,
         "validation_commands": VALIDATION_COMMANDS,
     }
@@ -559,7 +569,12 @@ def _comparable(payload: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in payload.items() if key != "payload_commitment"}
 
 
-def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None) -> None:
+def validate_payload(
+    payload: Any,
+    *,
+    expected: dict[str, Any] | None = None,
+    expected_context: dict[str, Any] | None = None,
+) -> None:
     data = _dict(payload, "payload")
     key_set = set(data)
     if key_set not in (CORE_KEYS, FINAL_KEYS):
@@ -576,17 +591,20 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None) ->
         raise AttentionD128ValueAdapterError("non-claims drift")
     if data.get("validation_commands") != VALIDATION_COMMANDS:
         raise AttentionD128ValueAdapterError("validation command drift")
-    attention, d128_input_source, bridge, expected_source_artifacts = _load_sources()
+    context = expected_context if expected_context is not None else build_expected_context()
+    expected_source_artifacts = _list(context.get("source_artifacts"), "expected source_artifacts")
     _validate_source_artifacts(data.get("source_artifacts"), expected_artifacts=expected_source_artifacts)
 
     analysis = _dict(data.get("adapter_analysis"), "adapter analysis")
-    expected_analysis = build_adapter_analysis(attention, d128_input_source, bridge)
+    expected_analysis = _dict(context.get("adapter_analysis"), "expected adapter analysis")
     if canonical_json_bytes(analysis) != canonical_json_bytes(expected_analysis):
         raise AttentionD128ValueAdapterError("adapter analysis content drift")
-    expected_analysis_commitment = blake2b_commitment(expected_analysis, PAYLOAD_DOMAIN)
+    expected_analysis_commitment = _commitment(
+        context.get("adapter_analysis_commitment"), "expected adapter analysis commitment"
+    )
     if data.get("adapter_analysis_commitment") != expected_analysis_commitment:
         raise AttentionD128ValueAdapterError("adapter analysis commitment drift")
-    if _dict(data.get("summary"), "summary") != summary_from_analysis(expected_analysis, expected_analysis_commitment):
+    if _dict(data.get("summary"), "summary") != _dict(context.get("summary"), "expected summary"):
         raise AttentionD128ValueAdapterError("summary drift")
     if data.get("payload_commitment") != payload_commitment(data):
         raise AttentionD128ValueAdapterError("payload commitment drift")
@@ -697,7 +715,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
 EXPECTED_MUTATIONS = tuple(name for name, _, _ in MUTATION_BUILDERS)
 
 
-def run_mutation_cases(core_payload: dict[str, Any]) -> list[dict[str, Any]]:
+def run_mutation_cases(core_payload: dict[str, Any], expected_context: dict[str, Any]) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     for name, mutator, refresh in MUTATION_BUILDERS:
         mutated = copy.deepcopy(core_payload)
@@ -705,7 +723,7 @@ def run_mutation_cases(core_payload: dict[str, Any]) -> list[dict[str, Any]]:
         if refresh:
             refresh_payload_commitment(mutated)
         try:
-            validate_payload(mutated, expected=core_payload)
+            validate_payload(mutated, expected=core_payload, expected_context=expected_context)
         except AttentionD128ValueAdapterError as err:
             cases.append({"name": name, "accepted": False, "rejected": True, "error": str(err)})
         else:
@@ -713,25 +731,25 @@ def run_mutation_cases(core_payload: dict[str, Any]) -> list[dict[str, Any]]:
     return cases
 
 
-def build_gate_result() -> dict[str, Any]:
-    core = build_core_payload()
-    cases = run_mutation_cases(core)
+def build_gate_result(expected_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    context = expected_context if expected_context is not None else build_expected_context()
+    core = build_core_payload(context)
+    cases = run_mutation_cases(core, context)
     final = copy.deepcopy(core)
     final["mutation_inventory"] = list(EXPECTED_MUTATIONS)
     final["cases"] = cases
     final["case_count"] = len(cases)
     final["all_mutations_rejected"] = all(case["rejected"] for case in cases)
     refresh_payload_commitment(final)
-    validate_payload(final)
+    validate_payload(final, expected_context=context)
     return final
 
 
-def to_tsv(payload: dict[str, Any]) -> str:
+def to_tsv(payload: dict[str, Any], expected_context: dict[str, Any] | None = None) -> str:
     data = _dict(payload, "payload")
-    validate_payload(data)
-    analysis = _dict(data.get("adapter_analysis"), "adapter analysis")
-    analysis_commitment = blake2b_commitment(analysis, PAYLOAD_DOMAIN)
-    summary = summary_from_analysis(analysis, analysis_commitment)
+    context = expected_context if expected_context is not None else build_expected_context()
+    validate_payload(data, expected_context=context)
+    summary = _dict(context.get("summary"), "expected summary")
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
@@ -827,14 +845,20 @@ def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
                 os.close(parent_fd)
 
 
-def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
-    validate_payload(payload)
+def write_outputs(
+    payload: dict[str, Any],
+    json_path: pathlib.Path | None,
+    tsv_path: pathlib.Path | None,
+    expected_context: dict[str, Any] | None = None,
+) -> None:
+    context = expected_context if expected_context is not None else build_expected_context()
+    validate_payload(payload, expected_context=context)
     json_target = require_output_path(json_path, ".json")
     tsv_target = require_output_path(tsv_path, ".tsv")
     if json_target is not None:
         write_text_no_follow(json_target, pretty_json(payload) + "\n", "json output")
     if tsv_target is not None:
-        write_text_no_follow(tsv_target, to_tsv(payload), "tsv output")
+        write_text_no_follow(tsv_target, to_tsv(payload, expected_context=context), "tsv output")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -843,8 +867,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-tsv", type=pathlib.Path)
     args = parser.parse_args(argv)
     try:
-        payload = build_gate_result()
-        write_outputs(payload, args.write_json, args.write_tsv)
+        context = build_expected_context()
+        payload = build_gate_result(context)
+        write_outputs(payload, args.write_json, args.write_tsv, expected_context=context)
         if args.write_json is None and args.write_tsv is None:
             print(pretty_json(payload))
     except AttentionD128ValueAdapterError as err:
