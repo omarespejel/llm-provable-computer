@@ -1,0 +1,365 @@
+{
+  "all_mutations_rejected": true,
+  "candidate_inventory": [
+    {
+      "classification": "INPUT_CONTRACT_ONLY_NOT_OUTER_PROOF",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "sha256:3d52dbcd57dd0d3acad1725e6a297b5ffaee5539cc2d16e48229c209b516fa14",
+      "kind": "checked_input_contract",
+      "name": "compressed_statement_chain_input_contract",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.json",
+      "reason": "defines the compressed public-input contract but does not prove the six verifier checks in one proof object",
+      "required_for_go": false
+    },
+    {
+      "classification": "REFERENCE_ONLY_NOT_ATTENTION_DERIVED_SIX_SLICE_PROOF",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "sha256:59eb3fd4a9bc6c3e84a7b8a57156326c6442d974c4f336d23e1069ab31fdd834",
+      "kind": "prior_no_go_reference",
+      "name": "two_slice_outer_proof_spike_reference",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json",
+      "reason": "two-slice d128 no-go evidence is useful prior art but cannot be relabeled as the attention-derived six-slice proof object",
+      "required_for_go": false
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_backend_module",
+      "name": "required_attention_derived_outer_module",
+      "path": "src/stwo_backend/attention_derived_d128_outer_proof.rs",
+      "reason": "no current Stwo-native outer proof module exists for the attention-derived d128 statement-chain verifier checks",
+      "required_for_go": true
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_proof_artifact",
+      "name": "required_attention_derived_outer_proof_artifact",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-object-2026-05.json",
+      "reason": "no checked attention-derived d128 outer proof artifact exists",
+      "required_for_go": true
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_verifier_handle",
+      "name": "required_attention_derived_outer_verifier_handle",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-verifier-2026-05.json",
+      "reason": "no local verifier handle exists for an attention-derived d128 outer proof object",
+      "required_for_go": true
+    },
+    {
+      "classification": "MISSING_REQUIRED_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_outer_proof_test_surface",
+      "name": "required_attention_derived_outer_mutation_tests",
+      "path": "scripts/tests/test_zkai_attention_derived_d128_outer_proof_object_backend.py",
+      "reason": "future outer proof public inputs must reject relabeling before metrics are meaningful",
+      "required_for_go": true
+    }
+  ],
+  "case_count": 28,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "schema drift",
+      "name": "schema_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "decision_changed_to_go",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "result drift",
+      "name": "result_changed_to_go",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source compression evidence drift",
+      "name": "compression_source_path_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source compression evidence drift",
+      "name": "compression_file_sha256_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source compression evidence drift",
+      "name": "compression_payload_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract schema drift",
+      "name": "input_contract_schema_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_block_statement_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_compressed_artifact_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_verifier_handle_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_source_bytes_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_compressed_bytes_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_byte_savings_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_ratio_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_rows_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_required_public_input_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "input contract drift",
+      "name": "input_contract_required_public_input_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "outer proof result drift",
+      "name": "outer_proof_result_changed_to_go",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "outer proof artifact smuggled",
+      "name": "outer_proof_artifact_smuggled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "outer verifier handle smuggled",
+      "name": "outer_verifier_handle_claimed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "proof metric smuggled before proof",
+      "name": "proof_metrics_smuggled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "blocked-before-metrics drift",
+      "name": "blocked_before_metrics_disabled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "first blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "missing backend features drift",
+      "name": "missing_backend_feature_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "candidate inventory drift",
+      "name": "candidate_inventory_required_relabel",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "candidate inventory drift",
+      "name": "candidate_inventory_path_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non_claims drift",
+      "name": "non_claims_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "validation command drift",
+      "name": "validation_command_drift",
+      "rejected": true
+    }
+  ],
+  "decision": "NO_GO_ATTENTION_DERIVED_D128_OUTER_PROOF_OBJECT_MISSING",
+  "input_contract": {
+    "contract_kind": "attention-derived-d128-six-slice-outer-proof-input-contract",
+    "input_contract_commitment": "blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39",
+    "preimage": {
+      "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+      "byte_savings": 12065,
+      "compressed_artifact_bytes": 2559,
+      "compressed_artifact_commitment": "blake2b-256:c00afcf67e3f0e002175f6104737c63504d5f7b28b2a03515483d86bf0af53e8",
+      "compressed_to_source_ratio": 0.174986,
+      "compression_payload_commitment": "sha256:d15c409b11bd5d1f7ffd66caeabd94daf60ca7feca7dc325987aa26f07c2b423",
+      "contract_kind": "attention-derived-d128-six-slice-outer-proof-input-contract",
+      "edge_count": 11,
+      "input_contract_result": "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT",
+      "required_public_inputs": {
+        "accounted_relation_rows": 199553,
+        "activation_lookup_rows": 2049,
+        "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+        "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+        "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+        "derived_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+        "down_projection_mul_rows": 65536,
+        "edge_count": 11,
+        "projection_mul_rows": 131072,
+        "residual_add_rows": 128,
+        "slice_count": 6,
+        "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+        "source_payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52"
+      },
+      "schema": "zkai-attention-derived-d128-outer-proof-input-contract-v1",
+      "slice_count": 6,
+      "source_chain_artifact_bytes": 14624,
+      "source_relation_rows": 199553,
+      "verifier_handle_commitment": "blake2b-256:54fdd48b4d4260b7cd64269e669fbc4d3328851125c3fe25061010e4683adb08"
+    },
+    "schema": "zkai-attention-derived-d128-outer-proof-input-contract-v1"
+  },
+  "mutation_inventory": [
+    "schema_drift",
+    "decision_changed_to_go",
+    "result_changed_to_go",
+    "compression_source_path_drift",
+    "compression_file_sha256_drift",
+    "compression_payload_commitment_drift",
+    "input_contract_schema_drift",
+    "input_contract_block_statement_drift",
+    "input_contract_compressed_artifact_drift",
+    "input_contract_verifier_handle_drift",
+    "input_contract_source_bytes_drift",
+    "input_contract_compressed_bytes_drift",
+    "input_contract_byte_savings_drift",
+    "input_contract_ratio_drift",
+    "input_contract_rows_drift",
+    "input_contract_required_public_input_removed",
+    "input_contract_required_public_input_drift",
+    "outer_proof_result_changed_to_go",
+    "outer_proof_artifact_smuggled",
+    "outer_verifier_handle_claimed",
+    "proof_metrics_smuggled",
+    "blocked_before_metrics_disabled",
+    "first_blocker_removed",
+    "missing_backend_feature_removed",
+    "candidate_inventory_required_relabel",
+    "candidate_inventory_path_drift",
+    "non_claims_removed",
+    "validation_command_drift"
+  ],
+  "non_claims": [
+    "not one composed d128 transformer-block proof",
+    "not recursive aggregation",
+    "not proof-carrying data",
+    "not proof-size evidence",
+    "not verifier-time evidence",
+    "not proof-generation-time evidence",
+    "not matched NANOZK benchmark evidence",
+    "not production-ready"
+  ],
+  "outer_proof_attempt": {
+    "blocked_before_metrics": true,
+    "first_blocker": "no executable outer proof backend currently proves the six attention-derived d128 slice-chain verifier checks, binds the compressed statement-chain input contract as public input, and emits one verifier-facing proof object",
+    "missing_backend_features": [
+      "nested verifier program/AIR/circuit for the six attention-derived d128 slice-chain checks",
+      "outer proof object or PCD accumulator over the compressed statement-chain input contract",
+      "outer verifier handle that accepts the input contract commitment as a public input",
+      "public-input binding for block statement, compressed artifact, verifier handle, row counts, and source file hash",
+      "mutation tests against relabeling the compressed transcript as proof-size or recursion evidence"
+    ],
+    "outer_proof_artifacts": [],
+    "outer_verifier_handles": [],
+    "proof_metrics": null,
+    "result": "NO_GO_EXECUTABLE_ATTENTION_DERIVED_D128_OUTER_PROOF_BACKEND_MISSING"
+  },
+  "payload_commitment": "sha256:21f66f08de064425961fb8d1d75ef3158aa194ce25676906a15618769a98899d",
+  "result": "BOUNDED_NO_GO",
+  "schema": "zkai-attention-derived-d128-outer-proof-route-gate-v1",
+  "source": {
+    "file_sha256": "sha256:3d52dbcd57dd0d3acad1725e6a297b5ffaee5539cc2d16e48229c209b516fa14",
+    "kind": "compressed_statement_chain_evidence",
+    "path": "docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.json",
+    "payload_commitment": "sha256:d15c409b11bd5d1f7ffd66caeabd94daf60ca7feca7dc325987aa26f07c2b423"
+  },
+  "summary": {
+    "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+    "byte_savings": 12065,
+    "compressed_artifact_bytes": 2559,
+    "compressed_to_source_ratio": 0.174986,
+    "edge_count": 11,
+    "first_blocker": "no executable outer proof backend currently proves the six attention-derived d128 slice-chain verifier checks, binds the compressed statement-chain input contract as public input, and emits one verifier-facing proof object",
+    "input_contract_status": "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT",
+    "outer_proof_status": "NO_GO_EXECUTABLE_ATTENTION_DERIVED_D128_OUTER_PROOF_BACKEND_MISSING",
+    "slice_count": 6,
+    "source_chain_artifact_bytes": 14624,
+    "source_relation_rows": 199553
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_derived_d128_outer_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_attention_derived_d128_outer_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_outer_proof_route_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_outer_proof_route_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

@@ -60,8 +60,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
 50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
 51. `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`
-51. `docs/engineering/reproducibility.md`
-52. `git status --short --branch`
+52. `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`
+53. `docs/engineering/reproducibility.md`
+54. `git status --short --branch`
 
 ## Current lane split
 
@@ -695,6 +696,15 @@ Tablero boundary.
   it remains a no-go for one composed proof, recursion, PCD, proof-size
   evidence, timings, or production readiness; see
   `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`.
+- The compressed attention-derived d128 statement-chain contract now has an
+  outer-proof route gate. It records a checked input contract commitment
+  `blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39`
+  over the `2,559`-byte compressed transcript and `199,553` source relation
+  rows, rejects `28 / 28` route mutations, and keeps the outer proof result at
+  `NO_GO_EXECUTABLE_ATTENTION_DERIVED_D128_OUTER_PROOF_BACKEND_MISSING`
+  because no executable backend proves the six verifier checks in one object;
+  see
+  `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
