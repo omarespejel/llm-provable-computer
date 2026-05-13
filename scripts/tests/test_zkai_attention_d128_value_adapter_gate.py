@@ -95,7 +95,7 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         payload["adapter_analysis_commitment"] = GATE.blake2b_commitment(payload["adapter_analysis"], GATE.PAYLOAD_DOMAIN)
         payload["summary"] = GATE.summary_from_analysis(payload["adapter_analysis"], payload["adapter_analysis_commitment"])
         GATE.refresh_payload_commitment(payload)
-        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter equality overclaim"):
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter analysis content drift"):
             GATE.validate_payload(payload, expected=self.payload)
 
         payload = self.fresh_payload()
@@ -103,7 +103,7 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         payload["adapter_analysis_commitment"] = GATE.blake2b_commitment(payload["adapter_analysis"], GATE.PAYLOAD_DOMAIN)
         payload["summary"] = GATE.summary_from_analysis(payload["adapter_analysis"], payload["adapter_analysis_commitment"])
         GATE.refresh_payload_commitment(payload)
-        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "best candidate overclaim"):
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter analysis content drift"):
             GATE.validate_payload(payload)
 
     def test_source_artifacts_are_hash_bound(self) -> None:
@@ -144,7 +144,7 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         GATE.refresh_payload_commitment(payload)
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "summary drift"):
             GATE.validate_payload(payload)
-        tsv = GATE.to_tsv(payload)
+        tsv = GATE.to_tsv(self.fresh_payload())
         self.assertIn(actual, tsv)
         self.assertNotIn(forged, tsv)
 
@@ -158,6 +158,7 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
             "candidate_exact_match_overclaim",
             "candidate_mismatch_zeroed",
             "best_candidate_zeroed",
+            "self_consistent_forged_best_candidate_positive",
             "target_pattern_relabelled",
             "source_artifact_sha_drift",
             "payload_commitment_drift",
@@ -174,6 +175,24 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         )
         GATE.refresh_payload_commitment(payload)
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "finite number"):
+            GATE.summary_from_analysis(payload["adapter_analysis"], payload["adapter_analysis_commitment"])
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter analysis content drift"):
+            GATE.validate_payload(payload)
+
+    def test_rejects_self_consistent_forged_adapter_analysis(self) -> None:
+        payload = self.fresh_payload()
+        payload["adapter_analysis"]["best_candidate"]["mismatch_count"] = 1
+        payload["adapter_analysis"]["best_candidate"]["mismatch_share"] = 1 / 128
+        payload["adapter_analysis_commitment"] = GATE.blake2b_commitment(
+            payload["adapter_analysis"], GATE.PAYLOAD_DOMAIN
+        )
+        payload["summary"] = GATE.summary_from_analysis(
+            payload["adapter_analysis"], payload["adapter_analysis_commitment"]
+        )
+        GATE.refresh_payload_commitment(payload)
+        self.assertEqual(payload["summary"]["best_candidate_mismatches"], 1)
+        self.assertEqual(payload["payload_commitment"], GATE.payload_commitment(payload))
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter analysis content drift"):
             GATE.validate_payload(payload)
 
     def test_write_outputs_round_trip_and_rejects_outside_path(self) -> None:

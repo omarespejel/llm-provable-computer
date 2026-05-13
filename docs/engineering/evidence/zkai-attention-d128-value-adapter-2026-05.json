@@ -361,7 +361,7 @@
   },
   "adapter_analysis_commitment": "blake2b-256:217529b3442b632f8c5b023093f011c9d5aa8858127e3f1d72a0e8993a3f1593",
   "all_mutations_rejected": true,
-  "case_count": 11,
+  "case_count": 12,
   "cases": [
     {
       "accepted": false,
@@ -377,37 +377,43 @@
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
       "name": "attention_commitment_drift",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
       "name": "d128_input_commitment_drift",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
       "name": "candidate_exact_match_overclaim",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
       "name": "candidate_mismatch_zeroed",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
       "name": "best_candidate_zeroed",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "adapter analysis commitment drift",
+      "error": "adapter analysis content drift",
+      "name": "self_consistent_forged_best_candidate_positive",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis content drift",
       "name": "target_pattern_relabelled",
       "rejected": true
     },
@@ -440,6 +446,7 @@
     "candidate_exact_match_overclaim",
     "candidate_mismatch_zeroed",
     "best_candidate_zeroed",
+    "self_consistent_forged_best_candidate_positive",
     "target_pattern_relabelled",
     "source_artifact_sha_drift",
     "non_claim_removed",
@@ -454,7 +461,7 @@
     "not full transformer inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:6445fc9dc51cb60c6adcc995ba176bc37a1494028809249fe22b1cb5987ad21b",
+  "payload_commitment": "sha256:7e27cf2c0fc242293dad3e6874812b0277e045a6129b58412dbe420debe70d7a",
   "result": "NO_GO_MODEL_FAITHFUL_VALUE_ADAPTER_MISSING",
   "schema": "zkai-attention-d128-value-adapter-gate-v1",
   "source_artifacts": [
