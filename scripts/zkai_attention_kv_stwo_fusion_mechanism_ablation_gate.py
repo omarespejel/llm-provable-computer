@@ -172,15 +172,24 @@ def _open_repo_regular_file(path: pathlib.Path) -> bytes:
     return raw
 
 
-def load_json(relative_path: str) -> dict[str, Any]:
-    path = _full_repo_path(_repo_relative_path(relative_path, "evidence path"))
-    raw = _open_repo_regular_file(path)
+def _json_payload_from_bytes(relative_path: str, raw: bytes) -> dict[str, Any]:
     try:
         payload = json.loads(raw.decode("utf-8"), parse_constant=_reject_json_constant)
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as err:
         raise FusionMechanismAblationGateError(f"invalid JSON in {relative_path}: {err}") from err
     if not isinstance(payload, dict):
         raise FusionMechanismAblationGateError(f"evidence payload must be object: {relative_path}")
+    return payload
+
+
+def _load_json_with_sha256(relative_path: str) -> tuple[dict[str, Any], str]:
+    path = _full_repo_path(_repo_relative_path(relative_path, "evidence path"))
+    raw = _open_repo_regular_file(path)
+    return _json_payload_from_bytes(relative_path, raw), hashlib.sha256(raw).hexdigest()
+
+
+def load_json(relative_path: str) -> dict[str, Any]:
+    payload, _digest = _load_json_with_sha256(relative_path)
     return payload
 
 
@@ -310,6 +319,11 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
 
 def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
     aggregate = binary["aggregate"]
+    local_typed_saving = _positive_numeric_payload_field(
+        binary,
+        ("aggregate", "fused_saves_vs_source_plus_sidecar_local_typed_bytes"),
+        "d32 local typed saving",
+    )
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "source_plus_sidecar_json_proof_bytes": aggregate["source_plus_sidecar_json_proof_bytes"],
@@ -319,9 +333,7 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
         ],
         "source_plus_sidecar_local_typed_bytes": aggregate["source_plus_sidecar_local_typed_bytes"],
         "fused_local_typed_bytes": aggregate["fused_local_typed_bytes"],
-        "fused_saves_vs_source_plus_sidecar_local_typed_bytes": aggregate[
-            "fused_saves_vs_source_plus_sidecar_local_typed_bytes"
-        ],
+        "fused_saves_vs_source_plus_sidecar_local_typed_bytes": local_typed_saving,
         "binary_serialization_status": binary["binary_serialization_status"],
         "cli_upstream_stwo_serialization_status": binary["cli_upstream_stwo_serialization_status"],
         "first_blocker": binary["first_blocker"],
@@ -330,15 +342,18 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
 
 def _base_payload() -> dict[str, Any]:
     try:
-        loaded = {name: load_json(path) for name, path in EVIDENCE_INPUTS.items()}
-        source_artifacts = [
-            {
-                "id": name,
-                "path": path,
-                "sha256": sha256_file(path),
-            }
-            for name, path in EVIDENCE_INPUTS.items()
-        ]
+        loaded = {}
+        source_artifacts = []
+        for name, path in EVIDENCE_INPUTS.items():
+            payload, digest = _load_json_with_sha256(path)
+            loaded[name] = payload
+            source_artifacts.append(
+                {
+                    "id": name,
+                    "path": path,
+                    "sha256": digest,
+                }
+            )
         route = _route_metrics(loaded["route_matrix"])
         section = _section_delta_metrics(loaded["section_delta"])
         typed = _typed_metrics(loaded["typed_size_estimate"])
@@ -362,6 +377,11 @@ def _base_payload() -> dict[str, Any]:
         "typed_estimate_scope_is_nine_profile_slice": typed["profiles_checked"] == 9,
         "binary_accounting_scope_is_d32_matched_slice": binary["profiles_checked"] == 3,
     }
+    failed_consistency = [key for key, value in evidence_consistency.items() if value is not True]
+    if failed_consistency:
+        raise FusionMechanismAblationGateError(
+            "evidence consistency failed: " + ", ".join(failed_consistency)
+        )
 
     return {
         "schema": SCHEMA,
@@ -529,6 +549,13 @@ def validate_payload(
         "matched route persistence",
     ) is not True:
         raise FusionMechanismAblationGateError("matched route savings persistence drift")
+    binary_local_typed_saving = _positive_numeric_payload_field(
+        payload,
+        ("binary_typed_accounting", "fused_saves_vs_source_plus_sidecar_local_typed_bytes"),
+        "d32 local typed saving",
+    )
+    if binary_local_typed_saving <= 0:
+        raise FusionMechanismAblationGateError("d32 local typed saving below claim threshold")
     section_opening_share = _share_payload_field(
         payload, ("section_delta", "opening_bucket_savings_share"), "section opening share"
     )
@@ -575,6 +602,20 @@ def _numeric_payload_field(payload: dict[str, Any], path: tuple[str, ...], label
     if not math.isfinite(number):
         raise FusionMechanismAblationGateError(f"{label} must be finite")
     return number
+
+
+def _positive_numeric_payload_field(
+    payload: dict[str, Any], path: tuple[str, ...], label: str
+) -> int | float:
+    value = _payload_field(payload, path, label)
+    if type(value) not in (int, float):
+        raise FusionMechanismAblationGateError(f"{label} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise FusionMechanismAblationGateError(f"{label} must be finite")
+    if number <= 0.0:
+        raise FusionMechanismAblationGateError(f"{label} must be positive")
+    return value
 
 
 def _share_payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> float:

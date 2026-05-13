@@ -124,6 +124,12 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         ):
             gate.validate_payload(payload, require_mutation_summary=False, expected=payload)
 
+    def test_rejects_binary_local_typed_saving_claim_drift_directly(self):
+        payload = self.strip_mutation_summary(self.payload)
+        payload["binary_typed_accounting"]["fused_saves_vs_source_plus_sidecar_local_typed_bytes"] = 0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "d32 local typed saving must be positive"):
+            gate.validate_payload(payload, require_mutation_summary=False, expected=payload)
+
     def test_tsv_summary_contains_core_metrics(self):
         tsv = gate.to_tsv(self.payload)
         self.assertIn("route_json_savings_bytes\t194097", tsv)
@@ -343,19 +349,19 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate.validate_payload(payload, require_mutation_summary=False)
 
     def test_base_payload_normalizes_malformed_source_evidence_errors(self):
-        original = gate.load_json
+        original = gate._load_json_with_sha256
 
         def malformed(path):
             if str(path).endswith("route-matrix-2026-05.json"):
-                return {}
+                return {}, "0" * 64
             return original(path)
 
         try:
-            gate.load_json = malformed
+            gate._load_json_with_sha256 = malformed
             with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "malformed source evidence"):
                 gate._base_payload()
         finally:
-            gate.load_json = original
+            gate._load_json_with_sha256 = original
 
         original_route_metrics = gate._route_metrics
 
@@ -368,6 +374,31 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 gate._base_payload()
         finally:
             gate._route_metrics = original_route_metrics
+
+    def test_base_payload_hard_fails_evidence_consistency_drift(self):
+        original = gate._section_delta_metrics
+
+        def wrong_scope(payload):
+            result = original(payload)
+            result["profiles_checked"] = 9
+            return result
+
+        try:
+            gate._section_delta_metrics = wrong_scope
+            with self.assertRaisesRegex(
+                gate.FusionMechanismAblationGateError,
+                "section_delta_scope_is_ten_profile_slice",
+            ):
+                gate._base_payload()
+        finally:
+            gate._section_delta_metrics = original
+
+    def test_base_payload_uses_single_read_for_payload_and_sha(self):
+        payload = gate._base_payload()
+        source_by_id = {artifact["id"]: artifact for artifact in payload["source_artifacts"]}
+        for name, path in gate.EVIDENCE_INPUTS.items():
+            raw = gate._open_repo_regular_file(gate._full_repo_path(gate._repo_relative_path(path, "evidence path")))
+            self.assertEqual(source_by_id[name]["sha256"], gate.hashlib.sha256(raw).hexdigest())
 
     def test_build_payload_reuses_precomputed_expected_payload(self):
         original = gate._base_payload
