@@ -9,6 +9,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import pathlib
 import stat as stat_module
@@ -473,13 +474,13 @@ def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool 
 
     if payload["route_matrix"]["matched_profiles_checked"] != 11:
         raise FusionMechanismAblationGateError("matched route count drift")
-    section_opening_share = _numeric_payload_field(
+    section_opening_share = _share_payload_field(
         payload, ("section_delta", "opening_bucket_savings_share"), "section opening share"
     )
-    typed_decommitment_share = _numeric_payload_field(
+    typed_decommitment_share = _share_payload_field(
         payload, ("typed_size_estimate", "fri_trace_decommitment_savings_share"), "typed decommitment share"
     )
-    controlled_opening_share = _numeric_payload_field(
+    controlled_opening_share = _share_payload_field(
         payload,
         ("controlled_component_grid", "opening_plumbing_share_of_typed_savings"),
         "controlled opening share",
@@ -523,7 +524,17 @@ def _numeric_payload_field(payload: dict[str, Any], path: tuple[str, ...], label
     value = _payload_field(payload, path, label)
     if type(value) not in (int, float):
         raise FusionMechanismAblationGateError(f"{label} must be numeric")
-    return float(value)
+    number = float(value)
+    if not math.isfinite(number):
+        raise FusionMechanismAblationGateError(f"{label} must be finite")
+    return number
+
+
+def _share_payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> float:
+    number = _numeric_payload_field(payload, path, label)
+    if number < 0.0 or number > 1.0:
+        raise FusionMechanismAblationGateError(f"{label} must be between 0 and 1")
+    return number
 
 
 def _string_payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> str:
