@@ -25,7 +25,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         self.assertEqual(payload["claim_boundary"], gate.CLAIM_BOUNDARY)
         self.assertEqual(len(payload["source_artifacts"]), 4)
         self.assertEqual(len(payload["component_rows"]), 4)
-        self.assertIn("not a matched benchmark", payload["non_claims"][0])
+        self.assertTrue(any("not a matched benchmark" in claim for claim in payload["non_claims"]))
 
         rows = {row["surface"]: row for row in payload["component_rows"]}
         self.assertEqual(rows["attention/Softmax-table fused proof component"]["value"], 194097)
