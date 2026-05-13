@@ -231,9 +231,13 @@ def _bool(value: Any, label: str) -> bool:
 
 def _commitment(value: Any, label: str) -> str:
     text = _string(value, label)
-    if not (text.startswith("blake2b-256:") or text.startswith("sha256:")):
-        raise AttentionBlockStatementBridgeError(f"{label} must be a typed commitment")
-    return text
+    for prefix in ("blake2b-256:", "sha256:"):
+        if text.startswith(prefix):
+            digest = text.removeprefix(prefix)
+            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+                raise AttentionBlockStatementBridgeError(f"{label} must use a 32-byte lowercase hex digest")
+            return text
+    raise AttentionBlockStatementBridgeError(f"{label} must be a typed commitment")
 
 
 def _source_artifact(artifact_id: str, path: pathlib.Path, payload: dict[str, Any], raw: bytes) -> dict[str, Any]:
@@ -570,10 +574,18 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
     if path is None:
         return None
     candidate = pathlib.Path(os.path.abspath(path if path.is_absolute() else ROOT / path))
+    evidence_root = EVIDENCE_DIR.resolve(strict=True)
     try:
-        candidate.relative_to(EVIDENCE_DIR.resolve())
+        candidate.relative_to(EVIDENCE_DIR)
     except ValueError as err:
         raise AttentionBlockStatementBridgeError(f"output path must stay in docs/engineering/evidence: {path}") from err
+    try:
+        parent_real = candidate.parent.resolve(strict=True)
+        parent_real.relative_to(evidence_root)
+    except (FileNotFoundError, ValueError) as err:
+        raise AttentionBlockStatementBridgeError(
+            f"output parent must stay in real docs/engineering/evidence tree: {path}"
+        ) from err
     if candidate.suffix != suffix:
         raise AttentionBlockStatementBridgeError(f"output path must end with {suffix}: {path}")
     if candidate.exists() and candidate.is_symlink():

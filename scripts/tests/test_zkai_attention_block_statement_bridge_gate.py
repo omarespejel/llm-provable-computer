@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import os
 import pathlib
 import sys
 import tempfile
@@ -132,6 +133,21 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
         finally:
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
+
+    def test_rejects_malformed_commitments_and_parent_symlink_outputs(self) -> None:
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "lowercase hex digest"):
+            GATE._commitment("blake2b-256:not-hex", "bad commitment")
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "lowercase hex digest"):
+            GATE._commitment("sha256:" + "AA" * 32, "uppercase commitment")
+
+        with tempfile.TemporaryDirectory() as outside_dir:
+            link_path = GATE.EVIDENCE_DIR / "attention-block-bridge-symlink-parent-test"
+            try:
+                os.symlink(outside_dir, link_path)
+                with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "output parent must stay"):
+                    GATE.require_output_path(link_path / "out.json", ".json")
+            finally:
+                link_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
