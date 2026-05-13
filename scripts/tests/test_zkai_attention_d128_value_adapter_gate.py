@@ -329,6 +329,20 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
 
+    def test_temp_name_collision_retries_without_unlinking_existing_file(self) -> None:
+        target = GATE.EVIDENCE_DIR / "attention-d128-value-adapter-temp-collision-test.json"
+        collision = GATE.EVIDENCE_DIR / f".{target.name}.collision.tmp"
+        try:
+            target.unlink(missing_ok=True)
+            collision.write_text("not ours\n", encoding="utf-8")
+            with mock.patch.object(GATE, "token_hex", side_effect=["collision", "fresh"]):
+                GATE.write_text_no_follow(target, "new contents\n", "collision output")
+            self.assertEqual(target.read_text(encoding="utf-8"), "new contents\n")
+            self.assertEqual(collision.read_text(encoding="utf-8"), "not ours\n")
+        finally:
+            target.unlink(missing_ok=True)
+            collision.unlink(missing_ok=True)
+
     def test_rejects_malformed_commitments_and_parent_symlink_outputs(self) -> None:
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "lowercase hex digest"):
             GATE._commitment("blake2b-256:not-hex", "bad commitment")
