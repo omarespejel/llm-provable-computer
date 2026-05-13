@@ -67,6 +67,12 @@ class AttentionDerivedD128ProjectionBoundaryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "projection boundary payload drift|source projection"):
             GATE.validate_payload(payload, context=copy.deepcopy(self.context))
 
+    def test_gate_value_rejects_standalone_source_bridge_public_instance_drift(self) -> None:
+        payload = self.fresh_payload()["gate_value_projection_payload"]
+        payload["source_bridge_public_instance_commitment"] = "blake2b-256:" + "77" * 32
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "source bridge public instance"):
+            GATE.validate_gate_value_projection_payload(payload)
+
     def test_gate_value_rejects_output_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["gate_value_projection_payload"]["gate_projection_q8"][0] += 1
