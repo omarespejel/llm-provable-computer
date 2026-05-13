@@ -221,6 +221,15 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             )
 
         payload = copy.deepcopy(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = math.nan
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section opening share must be finite"):
+            gate._share_payload_field(
+                payload,
+                ("section_delta", "opening_bucket_savings_share"),
+                "section opening share",
+            )
+
+        payload = copy.deepcopy(self.payload)
         payload["section_delta"]["opening_bucket_savings_share"] = 1.1
         with self.assertRaisesRegex(
             gate.FusionMechanismAblationGateError,
