@@ -860,6 +860,20 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
 )
 
 EXPECTED_MUTATIONS = tuple(name for name, _, _ in MUTATION_BUILDERS)
+EXPECTED_MUTATION_ERRORS = {
+    "decision_overclaim": "decision drift",
+    "result_overclaim": "result drift",
+    "claim_boundary_overclaim": "claim boundary drift",
+    "bridge_source_output_commitment_drift": "projection boundary payload drift",
+    "bridge_projection_value_drift": "projection boundary payload drift",
+    "gate_value_source_projection_commitment_drift": "projection boundary payload drift",
+    "gate_projection_output_drift": "projection boundary payload drift",
+    "gate_value_statement_commitment_drift": "projection boundary payload drift",
+    "current_block_consumption_overclaim": "projection boundary payload drift",
+    "source_artifact_hash_drift": "projection boundary payload drift",
+    "non_claim_removed": "non-claims drift",
+    "payload_commitment_drift": "payload commitment drift",
+}
 
 
 def run_mutation_cases(core_payload: dict[str, Any], context: dict[str, Any]) -> list[dict[str, Any]]:
@@ -872,7 +886,12 @@ def run_mutation_cases(core_payload: dict[str, Any], context: dict[str, Any]) ->
         try:
             validate_payload(mutated, context=context)
         except AttentionDerivedD128ProjectionBoundaryError as err:
-            cases.append({"name": name, "accepted": False, "rejected": True, "error": str(err)})
+            expected_error = EXPECTED_MUTATION_ERRORS.get(name)
+            if expected_error is None:
+                raise AttentionDerivedD128ProjectionBoundaryError(f"mutation error marker missing: {name}") from err
+            actual_error = str(err)
+            error = expected_error if expected_error in actual_error else actual_error
+            cases.append({"name": name, "accepted": False, "rejected": True, "error": error})
         else:
             cases.append({"name": name, "accepted": True, "rejected": False, "error": ""})
     return cases
