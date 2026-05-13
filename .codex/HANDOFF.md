@@ -695,6 +695,18 @@ Tablero boundary.
   down-projection fixture mismatches `512 / 512` hidden values, `128 / 128`
   residual deltas, and `128 / 128` residual remainders. See
   `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`.
+- The attention-derived d128 path now reaches residual add. The derived input
+  activation commitment
+  `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`
+  and derived residual delta commitment
+  `blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`
+  emit derived output activation commitment
+  `blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9`.
+  This checks `128` residual-add rows, rejects `17 / 17` local mutations, and
+  remains a no-go for one composed d128 block proof because the canonical
+  residual-add fixture mismatches `127 / 128` inputs, `128 / 128` residual
+  deltas, and `128 / 128` outputs. See
+  `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -748,8 +760,9 @@ Use these in order of authority for current state:
 46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
 47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
 48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
-49. `docs/engineering/reproducibility.md`
-50. `git status --short --branch`
+49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
+50. `docs/engineering/reproducibility.md`
+51. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.
