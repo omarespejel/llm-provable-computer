@@ -212,11 +212,24 @@ def _mapping(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+def _non_negative_integer_mapping_field(payload: dict[str, Any], key: str, label: str) -> int:
+    value = payload[key]
+    if type(value) is not int:
+        raise FusionMechanismAblationGateError(f"{label} must be integer bytes")
+    if value < 0:
+        raise FusionMechanismAblationGateError(f"{label} must be non-negative")
+    return value
+
+
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
     matched = [(index, row) for index, row in enumerate(rows) if "source_plus_sidecar_raw_proof_bytes" in row]
     if not matched:
         raise FusionMechanismAblationGateError("route matrix must contain matched source-plus-sidecar rows")
+    savings = []
+    ratios = []
+    source_values = []
+    fused_values = []
     for index, row in matched:
         for key in (
             "source_plus_sidecar_raw_proof_bytes",
@@ -226,15 +239,40 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
         ):
             if key not in row:
                 raise FusionMechanismAblationGateError(f"route matrix row {index} missing {key}")
-    savings = [row["fused_saves_vs_source_plus_sidecar_bytes"] for _, row in matched]
-    ratios = [row["fused_to_source_plus_sidecar_ratio"] for _, row in matched]
-    source_plus = sum(row["source_plus_sidecar_raw_proof_bytes"] for _, row in matched)
-    fused = sum(row["fused_proof_size_bytes"] for _, row in matched)
+        source_bytes = _non_negative_integer_mapping_field(
+            row, "source_plus_sidecar_raw_proof_bytes", f"route matrix row {index} source-plus-sidecar"
+        )
+        fused_bytes = _non_negative_integer_mapping_field(
+            row, "fused_proof_size_bytes", f"route matrix row {index} fused proof"
+        )
+        saving_bytes = _non_negative_integer_mapping_field(
+            row, "fused_saves_vs_source_plus_sidecar_bytes", f"route matrix row {index} fused saving"
+        )
+        if saving_bytes != source_bytes - fused_bytes:
+            raise FusionMechanismAblationGateError(f"route matrix row {index} saving does not match byte totals")
+        ratio = row["fused_to_source_plus_sidecar_ratio"]
+        if type(ratio) not in (int, float) or not math.isfinite(float(ratio)):
+            raise FusionMechanismAblationGateError(f"route matrix row {index} ratio must be finite")
+        source_values.append(source_bytes)
+        fused_values.append(fused_bytes)
+        savings.append(saving_bytes)
+        ratios.append(float(ratio))
+    source_plus = sum(source_values)
+    fused = sum(fused_values)
     if source_plus <= 0:
         raise FusionMechanismAblationGateError("route matrix source-plus-sidecar total must be positive")
     if not ratios:
         raise FusionMechanismAblationGateError("route matrix ratio inventory must be non-empty")
     aggregate = route["aggregate_metrics"]
+    aggregate_source_plus = _non_negative_integer_mapping_field(
+        aggregate, "matched_source_plus_sidecar_raw_proof_bytes_total", "route aggregate source-plus-sidecar"
+    )
+    aggregate_fused = _non_negative_integer_mapping_field(
+        aggregate, "matched_fused_proof_size_bytes_total", "route aggregate fused proof"
+    )
+    aggregate_savings = _non_negative_integer_mapping_field(
+        aggregate, "matched_fused_savings_bytes_total", "route aggregate fused saving"
+    )
     return {
         "profiles_checked": len(rows),
         "matched_profiles_checked": len(matched),
@@ -246,11 +284,9 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
         "min_fused_to_source_plus_sidecar_ratio": min(ratios),
         "max_fused_to_source_plus_sidecar_ratio": max(ratios),
         "aggregate_metrics_match": {
-            "source_plus_sidecar_raw_proof_bytes_total": aggregate[
-                "matched_source_plus_sidecar_raw_proof_bytes_total"
-            ],
-            "fused_proof_size_bytes_total": aggregate["matched_fused_proof_size_bytes_total"],
-            "fused_savings_bytes_total": aggregate["matched_fused_savings_bytes_total"],
+            "source_plus_sidecar_raw_proof_bytes_total": aggregate_source_plus,
+            "fused_proof_size_bytes_total": aggregate_fused,
+            "fused_savings_bytes_total": aggregate_savings,
         },
     }
 
@@ -274,6 +310,8 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     recomputed_opening_share = _round(opening / total)
     if reported_opening_share != recomputed_opening_share:
         raise FusionMechanismAblationGateError("section opening share does not match byte totals")
+    if section["backend_internal_split_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
+        raise FusionMechanismAblationGateError("section backend split status drift")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "json_savings_bytes_total": total,
@@ -283,7 +321,7 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
         "fri_plus_decommitments_savings_share": _round(fri_plus_decommitments / total),
         "largest_delta_section": aggregate["largest_delta_section"],
         "largest_delta_section_bytes": aggregate["largest_delta_section_bytes"],
-        "backend_internal_split_status": section["backend_internal_split_status"],
+        "backend_internal_split_status": BACKEND_INTERNAL_SPLIT_STATUS,
     }
 
 
@@ -736,16 +774,26 @@ def _assert_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
     return full
 
 
-def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
+def write_outputs(
+    payload: dict[str, Any],
+    json_path: pathlib.Path | None,
+    tsv_path: pathlib.Path | None,
+) -> None:
     validate_payload(payload)
     json_text = pretty_json(payload) + "\n"
 
-    json_target = _assert_output_path(json_path, "json output path")
-    tsv_target = _assert_output_path(tsv_path, "tsv output path")
-    if os.path.abspath(json_target) == os.path.abspath(tsv_target):
+    outputs = []
+    json_target = _assert_output_path(json_path, "json output path") if json_path is not None else None
+    tsv_target = _assert_output_path(tsv_path, "tsv output path") if tsv_path is not None else None
+    if json_target is not None:
+        outputs.append((json_target, json_text))
+    if tsv_target is not None:
+        outputs.append((tsv_target, to_tsv(payload)))
+    if not outputs:
+        raise FusionMechanismAblationGateError("at least one explicit output path is required")
+    if json_target is not None and tsv_target is not None and os.path.abspath(json_target) == os.path.abspath(tsv_target):
         raise FusionMechanismAblationGateError("json and tsv output paths must differ")
 
-    outputs = [(json_target, json_text), (tsv_target, to_tsv(payload))]
     temps: list[pathlib.Path] = []
     replaced: list[pathlib.Path] = []
     original_bytes: dict[pathlib.Path, bytes | None] = {}
@@ -807,7 +855,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         payload = build_payload()
         if args.write_json or args.write_tsv:
-            write_outputs(payload, args.write_json or JSON_OUT.relative_to(ROOT), args.write_tsv or TSV_OUT.relative_to(ROOT))
+            write_outputs(payload, args.write_json, args.write_tsv)
         else:
             print(pretty_json(payload))
     except FusionMechanismAblationGateError as err:
