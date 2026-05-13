@@ -23,6 +23,11 @@ D128_ACCUMULATOR = EVIDENCE_DIR / "zkai-d128-full-block-accumulator-backend-2026
 ONE_BLOCK_SURFACE = EVIDENCE_DIR / "zkai-one-transformer-block-surface-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-attention-block-statement-bridge-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-block-statement-bridge-2026-05.tsv"
+EXPECTED_SOURCE_ARTIFACTS = (
+    ("model_faithful_attention_bridge", ATTENTION_BRIDGE.relative_to(ROOT).as_posix()),
+    ("d128_full_block_accumulator", D128_ACCUMULATOR.relative_to(ROOT).as_posix()),
+    ("one_transformer_block_surface", ONE_BLOCK_SURFACE.relative_to(ROOT).as_posix()),
+)
 
 SCHEMA = "zkai-attention-block-statement-bridge-v1"
 DECISION = "GO_STATEMENT_BRIDGE_NO_GO_ATTENTION_TO_BLOCK_VALUE_EQUALITY"
@@ -181,7 +186,12 @@ def read_source_bytes(path: pathlib.Path) -> bytes:
                 post_stat.st_size,
             ):
                 raise AttentionBlockStatementBridgeError(f"source path changed while reading: {path}")
-            return os.read(fd, MAX_SOURCE_BYTES + 1)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise AttentionBlockStatementBridgeError(f"source path must remain a regular file: {path}")
+            raw = os.read(fd, MAX_SOURCE_BYTES + 1)
+            if len(raw) > MAX_SOURCE_BYTES:
+                raise AttentionBlockStatementBridgeError(f"source path exceeds size limit after open: {path}")
+            return raw
         finally:
             os.close(fd)
     except OSError as err:
@@ -233,17 +243,48 @@ def _commitment(value: Any, label: str) -> str:
     text = _string(value, label)
     for prefix in ("blake2b-256:", "sha256:"):
         if text.startswith(prefix):
-            digest = text.removeprefix(prefix)
-            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
-                raise AttentionBlockStatementBridgeError(f"{label} must use a 32-byte lowercase hex digest")
+            _hex_digest(text.removeprefix(prefix), label)
             return text
     raise AttentionBlockStatementBridgeError(f"{label} must be a typed commitment")
+
+
+def _hex_digest(value: Any, label: str) -> str:
+    text = _string(value, label)
+    if len(text) != 64 or any(char not in "0123456789abcdef" for char in text):
+        raise AttentionBlockStatementBridgeError(f"{label} must use a 32-byte lowercase hex digest")
+    return text
+
+
+def _validate_source_artifacts(value: Any) -> None:
+    artifacts = _list(value, "source_artifacts")
+    if len(artifacts) != len(EXPECTED_SOURCE_ARTIFACTS):
+        raise AttentionBlockStatementBridgeError("source_artifacts count drift")
+    for index, ((expected_id, expected_path), artifact_value) in enumerate(
+        zip(EXPECTED_SOURCE_ARTIFACTS, artifacts, strict=True)
+    ):
+        label = f"source_artifacts[{index}]"
+        artifact = _dict(artifact_value, label)
+        expected_keys = {"id", "path", "sha256", "payload_sha256"}
+        if set(artifact) != expected_keys:
+            raise AttentionBlockStatementBridgeError(f"{label} keys drift")
+        if artifact.get("id") != expected_id:
+            raise AttentionBlockStatementBridgeError(f"{label} id drift")
+        path = _string(artifact.get("path"), f"{label} path")
+        parsed_path = pathlib.PurePosixPath(path)
+        if parsed_path.is_absolute() or ".." in parsed_path.parts:
+            raise AttentionBlockStatementBridgeError(f"{label} source artifact path must be repo-relative")
+        if path != expected_path:
+            raise AttentionBlockStatementBridgeError(f"{label} source artifact path drift")
+        if not path.startswith("docs/engineering/evidence/") or not path.endswith(".json"):
+            raise AttentionBlockStatementBridgeError(f"{label} source artifact path must be evidence JSON")
+        _hex_digest(artifact.get("sha256"), f"{label} sha256")
+        _hex_digest(artifact.get("payload_sha256"), f"{label} payload_sha256")
 
 
 def _source_artifact(artifact_id: str, path: pathlib.Path, payload: dict[str, Any], raw: bytes) -> dict[str, Any]:
     return {
         "id": artifact_id,
-        "path": str(path.relative_to(ROOT)),
+        "path": path.relative_to(ROOT).as_posix(),
         "sha256": hashlib.sha256(raw).hexdigest(),
         "payload_sha256": hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
     }
@@ -423,6 +464,7 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None) ->
         raise AttentionBlockStatementBridgeError("non-claims drift")
     if data.get("validation_commands") != VALIDATION_COMMANDS:
         raise AttentionBlockStatementBridgeError("validation command drift")
+    _validate_source_artifacts(data.get("source_artifacts"))
     statement = _dict(data.get("bridge_statement"), "bridge statement")
     expected_statement_commitment = blake2b_commitment(statement, BRIDGE_DOMAIN)
     if data.get("bridge_statement_commitment") != expected_statement_commitment:
