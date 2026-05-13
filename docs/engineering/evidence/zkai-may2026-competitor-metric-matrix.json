@@ -1,0 +1,158 @@
+{
+  "claim_boundary": "SOURCE_BACKED_MAY2026_ZKML_COMPETITOR_MATRIX_WITH_LOCAL_STWO_ATTENTION_FUSION_AND_TRANSFORMER_BLOCK_TARGET_CONTEXT_NOT_A_MATCHED_PUBLIC_BENCHMARK_NOT_FULL_INFERENCE",
+  "decision": "GO_SOURCE_BACKED_COMPETITOR_MATRIX_NO_GO_MATCHED_BENCHMARK_CLAIMS",
+  "external_rows": [
+    {
+      "backend_family": "Halo2 IPA SNARK + lookups",
+      "comparison_status": "SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "hardware": "Single Intel Xeon CPU @ 2.4GHz with 64GB RAM",
+      "model_or_dims": "GPT-2-scale block; d=768; dff=3072",
+      "proof_size_reported": "6.9 KB",
+      "prove_seconds": "6.3",
+      "setup_or_keygen_seconds": "37 per layer setup",
+      "source_locator": "Table 3 + Section 6.2",
+      "source_url": "https://arxiv.org/abs/2603.18046",
+      "system": "NANOZK",
+      "verify_seconds": "0.023",
+      "workload_label": "Transformer block proof",
+      "workload_scope": "Per-layer block proof"
+    },
+    {
+      "backend_family": "Halo2 IPA SNARK + lookups",
+      "comparison_status": "SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "hardware": "Single Intel Xeon CPU @ 2.4GHz with 64GB RAM",
+      "model_or_dims": "GPT-2-Small; 12 layers",
+      "proof_size_reported": "NA",
+      "prove_seconds": "516",
+      "setup_or_keygen_seconds": "includes setup",
+      "source_locator": "Section 6.2",
+      "source_url": "https://arxiv.org/abs/2603.18046",
+      "system": "NANOZK",
+      "verify_seconds": "NA",
+      "workload_label": "GPT-2-Small full model",
+      "workload_scope": "Sequential 12-layer end-to-end"
+    },
+    {
+      "backend_family": "Lookup-centric sumcheck SNARK",
+      "comparison_status": "SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "hardware": "NA",
+      "model_or_dims": "NanoGPT; ~0.25M params; 4 transformer layers",
+      "proof_size_reported": "NA",
+      "prove_seconds": "14",
+      "setup_or_keygen_seconds": "0.492 total keygen",
+      "source_locator": "Table 1",
+      "source_url": "https://arxiv.org/abs/2602.17452",
+      "system": "Jolt Atlas",
+      "verify_seconds": "0.517",
+      "workload_label": "NanoGPT proof",
+      "workload_scope": "End-to-end"
+    },
+    {
+      "backend_family": "Lookup-centric sumcheck SNARK",
+      "comparison_status": "SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "hardware": "NA",
+      "model_or_dims": "GPT-2; 125M parameters",
+      "proof_size_reported": "NA",
+      "prove_seconds": "38",
+      "setup_or_keygen_seconds": "0.872 keygen",
+      "source_locator": "Table 3",
+      "source_url": "https://arxiv.org/abs/2602.17452",
+      "system": "Jolt Atlas",
+      "verify_seconds": "NA",
+      "workload_label": "GPT-2 proof",
+      "workload_scope": "End-to-end"
+    },
+    {
+      "backend_family": "Halo2-style zkML with lookups",
+      "comparison_status": "SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "hardware": "NA",
+      "model_or_dims": "NanoGPT; ~0.25M params; 4 transformer layers",
+      "proof_size_reported": "NA",
+      "prove_seconds": "237",
+      "setup_or_keygen_seconds": "404 total keygen",
+      "source_locator": "Table 2",
+      "source_url": "https://arxiv.org/abs/2602.17452",
+      "system": "EZKL (reported by Jolt Atlas)",
+      "verify_seconds": "0.34",
+      "workload_label": "NanoGPT proof",
+      "workload_scope": "End-to-end"
+    }
+  ],
+  "interpretation": [
+    "NANOZK and Jolt Atlas are the relevant layerwise/end-to-end competitors for headline zkML metrics.",
+    "The local repo does not yet have a d128 layer proof to compare on proof size or verifier time.",
+    "The local competitive claim is currently architectural: STARK-native fusion saves duplicated opening/decommitment plumbing.",
+    "The next real block milestone is a parameterized d64 then d128 RMSNorm/SwiGLU/residual proof surface with the same statement bindings."
+  ],
+  "local_rows": [
+    {
+      "comparison_status": "LOCAL_MECHANISM_EVIDENCE_NOT_LAYERWISE_FULL_MODEL_BENCHMARK",
+      "local_status": "GO_BOUNDED_ARCHITECTURE_MECHANISM",
+      "metric": "matched route JSON proof-byte saving",
+      "support": "11 matched profiles; opening share 0.927722",
+      "surface": "Stwo attention/Softmax-table fusion",
+      "system": "provable-transformer-vm",
+      "unit": "bytes",
+      "value": 194097
+    },
+    {
+      "comparison_status": "LOCAL_RECEIPT_CHAIN_NOT_RECURSIVE_PROOF_COMPRESSION",
+      "local_status": "GO_STATEMENT_BOUND_RECEIPT_COMPOSITION",
+      "metric": "checked slice rows",
+      "support": "6 slices; 14 / 14 mutations rejected",
+      "surface": "d64 RMSNorm/SwiGLU/residual block receipt",
+      "system": "provable-transformer-vm",
+      "unit": "rows",
+      "value": 49600
+    },
+    {
+      "comparison_status": "TARGET_SPEC_ONLY_NOT_LOCAL_PROOF_RESULT",
+      "local_status": "NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING",
+      "metric": "target estimated linear multiplications",
+      "support": "the d128 RMSNorm-SwiGLU-residual receipt target is pinned, but the repository does not contain a local d128 proof artifact, verifier handle, or relabeling suite",
+      "surface": "d128 RMSNorm/SwiGLU/residual comparator target",
+      "system": "provable-transformer-vm",
+      "unit": "linear_muls",
+      "value": 196608
+    }
+  ],
+  "non_claims": [
+    "not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, or RISC Zero",
+    "not a local d128 proof result",
+    "not proof-size or verifier-time evidence for a local d128 transformer block",
+    "not full transformer inference",
+    "not exact real-valued Softmax",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:33153867ba85c312a3218d945b46dd86a323b52fbbebdd4e284e898a6783c27f",
+  "schema": "zkai-may2026-competitor-metric-matrix-v1",
+  "source_artifacts": [
+    {
+      "kind": "published_zkml_numbers_tsv",
+      "path": "docs/paper/evidence/published-zkml-numbers-2026-04.tsv",
+      "sha256": "aa16aa98493ecf9f984d238875890c81b4525ebde21463b76010c92f6767390b"
+    },
+    {
+      "kind": "local_fusion_mechanism_json",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json",
+      "sha256": "25f9d504967959465ec4feec5c6aa1c4e1adae5fd453933830858c3fe488fb97"
+    },
+    {
+      "kind": "local_d64_block_receipt_json",
+      "path": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+      "sha256": "a70c61a9724fb269d054f94f39f5b59e6cb7091c35782f6f53f94f3874e2ec13"
+    },
+    {
+      "kind": "local_d128_target_json",
+      "path": "docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json",
+      "sha256": "bf1b5cb0dc3471d5c7421f091b4f94f986e38f2ed80e91f325f26fc8080617a0"
+    }
+  ],
+  "validation_commands": [
+    "python3 scripts/zkai_may2026_competitor_metric_matrix_gate.py --write-json docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json --write-tsv docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_may2026_competitor_metric_matrix_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
