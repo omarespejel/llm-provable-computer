@@ -29,7 +29,7 @@ equality is still not claimable.
 - best candidate mismatches: `124 / 128`.
 - target d128 fixture pattern:
   `target_q8[i] = ((13 * i + 7) % 193) - 96`.
-- local adapter mutation gate: `11 / 11` mutations rejected.
+- local adapter mutation gate: `12 / 12` mutations rejected.
 
 Machine-readable evidence:
 

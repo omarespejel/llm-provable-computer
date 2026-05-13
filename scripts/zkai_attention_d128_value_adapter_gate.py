@@ -369,7 +369,7 @@ def _score_candidate(candidate_id: str, description: str, values: list[int], tar
 
 def _best_global_affine_tiled(flat: list[int], target: list[int]) -> tuple[list[int], dict[str, int]]:
     base = (flat * ((len(target) + len(flat) - 1) // len(flat)))[: len(target)]
-    best: tuple[int, int, int, list[int]] | None = None
+    best: tuple[int, int, int, int, list[int]] | None = None
     for scale in range(-64, 65):
         for bias in range(-256, 257):
             values = [scale * value + bias for value in base]
@@ -576,14 +576,17 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None) ->
         raise AttentionD128ValueAdapterError("non-claims drift")
     if data.get("validation_commands") != VALIDATION_COMMANDS:
         raise AttentionD128ValueAdapterError("validation command drift")
-    _, _, _, expected_source_artifacts = _load_sources()
+    attention, d128_input_source, bridge, expected_source_artifacts = _load_sources()
     _validate_source_artifacts(data.get("source_artifacts"), expected_artifacts=expected_source_artifacts)
 
     analysis = _dict(data.get("adapter_analysis"), "adapter analysis")
-    expected_analysis_commitment = blake2b_commitment(analysis, PAYLOAD_DOMAIN)
+    expected_analysis = build_adapter_analysis(attention, d128_input_source, bridge)
+    if canonical_json_bytes(analysis) != canonical_json_bytes(expected_analysis):
+        raise AttentionD128ValueAdapterError("adapter analysis content drift")
+    expected_analysis_commitment = blake2b_commitment(expected_analysis, PAYLOAD_DOMAIN)
     if data.get("adapter_analysis_commitment") != expected_analysis_commitment:
         raise AttentionD128ValueAdapterError("adapter analysis commitment drift")
-    if _dict(data.get("summary"), "summary") != summary_from_analysis(analysis, expected_analysis_commitment):
+    if _dict(data.get("summary"), "summary") != summary_from_analysis(expected_analysis, expected_analysis_commitment):
         raise AttentionD128ValueAdapterError("summary drift")
     if data.get("payload_commitment") != payload_commitment(data):
         raise AttentionD128ValueAdapterError("payload commitment drift")
@@ -637,6 +640,14 @@ def _set_payload_commitment_drift(payload: dict[str, Any]) -> None:
     payload["payload_commitment"] = "sha256:" + "11" * 32
 
 
+def _forge_best_candidate_positive(payload: dict[str, Any]) -> None:
+    payload["adapter_analysis"]["best_candidate"]["mismatch_count"] = 1
+    payload["adapter_analysis"]["best_candidate"]["mismatch_share"] = 1 / 128
+    payload["adapter_analysis_commitment"] = blake2b_commitment(payload["adapter_analysis"], PAYLOAD_DOMAIN)
+    payload["summary"] = summary_from_analysis(payload["adapter_analysis"], payload["adapter_analysis_commitment"])
+    refresh_payload_commitment(payload)
+
+
 MutationFn = Callable[[dict[str, Any]], None]
 
 
@@ -670,6 +681,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         lambda p: p["adapter_analysis"]["best_candidate"].__setitem__("mismatch_count", 0),
         True,
     ),
+    ("self_consistent_forged_best_candidate_positive", _forge_best_candidate_positive, False),
     (
         "target_pattern_relabelled",
         lambda p: p["adapter_analysis"]["d128_input"]["target_pattern"].__setitem__(
@@ -716,6 +728,7 @@ def build_gate_result() -> dict[str, Any]:
 
 def to_tsv(payload: dict[str, Any]) -> str:
     data = _dict(payload, "payload")
+    validate_payload(data)
     analysis = _dict(data.get("adapter_analysis"), "adapter analysis")
     analysis_commitment = blake2b_commitment(analysis, PAYLOAD_DOMAIN)
     summary = summary_from_analysis(analysis, analysis_commitment)
@@ -815,6 +828,7 @@ def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
+    validate_payload(payload)
     json_target = require_output_path(json_path, ".json")
     tsv_target = require_output_path(tsv_path, ".tsv")
     if json_target is not None:
