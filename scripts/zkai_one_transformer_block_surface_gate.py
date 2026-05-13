@@ -29,6 +29,9 @@ ATTENTION_DERIVED_D128_CHAIN = (
     ENGINEERING_EVIDENCE / "zkai-attention-derived-d128-block-statement-chain-2026-05.json"
 )
 COMPETITOR_MATRIX = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.json"
+EXPECTED_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_COMMITMENT = (
+    "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5"
+)
 
 SCHEMA = "zkai-one-transformer-block-surface-v1"
 DECISION = "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF"
@@ -280,6 +283,20 @@ def _validate_attention_derived_d128_chain(payload: dict[str, Any]) -> dict[str,
         raise OneTransformerBlockSurfaceError("attention-derived d128 chain mutation count drift")
     if _int_field(payload, ("summary", "accounted_relation_rows"), "attention-derived d128 chain rows") <= 0:
         raise OneTransformerBlockSurfaceError("attention-derived d128 chain rows must be positive")
+    top_statement = _string_field(
+        payload,
+        ("block_statement_commitment",),
+        "attention-derived d128 chain block statement commitment",
+    )
+    summary_statement = _string_field(
+        payload,
+        ("summary", "block_statement_commitment"),
+        "attention-derived d128 chain summary block statement commitment",
+    )
+    if top_statement != EXPECTED_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_COMMITMENT:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain block statement commitment drift")
+    if summary_statement != top_statement:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain summary commitment drift")
     return summary
 
 
