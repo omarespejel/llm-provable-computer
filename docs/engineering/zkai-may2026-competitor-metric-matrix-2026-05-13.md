@@ -33,13 +33,13 @@ The comparison posture is:
 The gate consumes `docs/paper/evidence/published-zkml-numbers-2026-04.tsv` and
 checks the rows used for comparison:
 
-| System | Workload | Prove | Verify | Proof size |
-| --- | ---: | ---: | ---: | ---: |
-| NANOZK | Transformer block proof | `6.3s` | `0.023s` | `6.9 KB` |
-| NANOZK | GPT-2-Small full model | `516s` | `NA` | `NA` |
-| Jolt Atlas | NanoGPT proof | `14s` | `0.517s` | `NA` |
-| Jolt Atlas | GPT-2 proof | `38s` | `NA` | `NA` |
-| EZKL (reported by Jolt Atlas) | NanoGPT proof | `237s` | `0.34s` | `NA` |
+| System | Workload | Prove | Verify | Proof size | Provenance |
+| --- | --- | ---: | ---: | ---: | --- |
+| NANOZK | Transformer block proof | `6.3s` | `0.023s` | `6.9 KB` | Halo2 IPA SNARK + lookups; arXiv `2603.18046`, Table 3 + Section 6.2; GPT-2-scale block `d=768`, `dff=3072`; single Intel Xeon CPU @ 2.4GHz with 64GB RAM; timing mode from source, wall/CPU split not reported; evidence path `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`. |
+| NANOZK | GPT-2-Small full model | `516s` | `NA` | `NA` | Halo2 IPA SNARK + lookups; arXiv `2603.18046`, Section 6.2; GPT-2-Small, 12 sequential layers; includes setup; single Intel Xeon CPU @ 2.4GHz with 64GB RAM; verify/proof-size not reported by source; evidence path `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`. |
+| Jolt Atlas | NanoGPT proof | `14s` | `0.517s` | `NA` | Lookup-centric sumcheck SNARK; arXiv `2602.17452`, Table 1; NanoGPT, about 0.25M params, 4 transformer layers; hardware not reported by source; proof size not reported by source; evidence path `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`. |
+| Jolt Atlas | GPT-2 proof | `38s` | `NA` | `NA` | Lookup-centric sumcheck SNARK; arXiv `2602.17452`, Table 3; GPT-2, 125M parameters; hardware and verifier time not reported by source; proof size not reported by source; evidence path `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`. |
+| EZKL (reported by Jolt Atlas) | NanoGPT proof | `237s` | `0.34s` | `NA` | Halo2-style zkML with lookups, reported by Jolt Atlas; arXiv `2602.17452`, Table 2; NanoGPT, about 0.25M params, 4 transformer layers; hardware not reported by source; proof size not reported by source; evidence path `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`. |
 
 These are source-backed context rows, not local reproductions.
 
