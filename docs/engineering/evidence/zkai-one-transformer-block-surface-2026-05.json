@@ -1,0 +1,122 @@
+{
+  "block_component_map": [
+    {
+      "checked_surface": "bounded Softmax-table attention with fused LogUp membership",
+      "component": "attention",
+      "honest_scope": "STARK-native proof architecture mechanism, not exact real-valued Softmax"
+    },
+    {
+      "checked_surface": "RMSNorm receipt slices",
+      "component": "normalization",
+      "honest_scope": "RMSNorm substitute for LayerNorm in this block surface"
+    },
+    {
+      "checked_surface": "bounded SiLU/SwiGLU activation and multiplication rows",
+      "component": "mlp_nonlinearity",
+      "honest_scope": "GELU-style bounded nonlinearity substitute, not exact GELU"
+    },
+    {
+      "checked_surface": "residual-add receipt slices",
+      "component": "residual",
+      "honest_scope": "statement-bound residual transition, not full autoregressive inference"
+    }
+  ],
+  "claim_boundary": "SOURCE_BACKED_STARK_NATIVE_ATTENTION_AND_RMSNORM_SWIGLU_RESIDUAL_BLOCK_SURFACE_NOT_SINGLE_RECURSIVE_PROOF_OBJECT_NOT_MATCHED_NANOZK_BENCHMARK_NOT_FULL_INFERENCE",
+  "component_rows": [
+    {
+      "comparison_status": "LOCAL_MECHANISM_EVIDENCE_NOT_LAYERWISE_BENCHMARK",
+      "local_status": "GO_STARK_NATIVE_FUSION_MECHANISM",
+      "metric": "matched fused-vs-source-plus-sidecar saving",
+      "subsystem": "attention",
+      "support": "11 matched profiles; opening/decommitment saving share 0.927722",
+      "surface": "attention/Softmax-table fused proof component",
+      "unit": "json_proof_bytes",
+      "value": 194097
+    },
+    {
+      "comparison_status": "LOCAL_RECEIPT_CHAIN_NOT_SINGLE_PROOF_OBJECT",
+      "local_status": "GO_STATEMENT_BOUND_RECEIPT_CHAIN",
+      "metric": "checked slice rows",
+      "subsystem": "bounded_mlp_substitute",
+      "support": "6 slices; 14 / 14 mutations rejected",
+      "surface": "d64 RMSNorm/SwiGLU/residual receipt chain",
+      "unit": "rows",
+      "value": 49600
+    },
+    {
+      "comparison_status": "LOCAL_RECEIPT_CHAIN_NOT_RECURSIVE_LAYER_PROOF",
+      "local_status": "GO_STATEMENT_BOUND_RECEIPT_CHAIN_NO_GO_PROOF_SIZE_BENCHMARK",
+      "metric": "checked slice rows",
+      "subsystem": "bounded_mlp_substitute",
+      "support": "6 slices; 21 / 21 mutations rejected; proof-size benchmark still not claimed",
+      "surface": "d128 RMSNorm/SwiGLU/residual receipt chain",
+      "unit": "rows",
+      "value": 197504
+    },
+    {
+      "comparison_status": "CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
+      "local_status": "SOURCE_BACKED_EXTERNAL_CONTEXT",
+      "metric": "reported transformer block proof",
+      "subsystem": "external_context",
+      "support": "6.3s prove; 0.023s verify; GPT-2-scale block; d=768; dff=3072",
+      "surface": "NANOZK transformer block context",
+      "unit": "reported_proof_size",
+      "value": "6.9 KB"
+    }
+  ],
+  "decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
+  "next_required_work": [
+    "make attention output feed the block receipt input under one statement commitment",
+    "add proof-carrying aggregation or recursion if claiming one proof object",
+    "add median-of-5 timing only after the block proof surface is stable",
+    "keep NANOZK/Jolt comparisons source-backed and non-matched until dimensions, semantics, hardware, and timing policy match"
+  ],
+  "non_claims": [
+    "not a matched benchmark against NANOZK or Jolt Atlas",
+    "not one recursive or compressed proof object for a full transformer block",
+    "not proof-size or verifier-time evidence for a local d128 layer proof",
+    "not exact real-valued Softmax, LayerNorm, or GELU",
+    "not full autoregressive inference",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:7d865258a957e7138340b23863e8f77276ec7206fe7464e13ed20aac82a363e7",
+  "schema": "zkai-one-transformer-block-surface-v1",
+  "source_artifacts": [
+    {
+      "kind": "local_attention_fusion_json",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json",
+      "sha256": "25f9d504967959465ec4feec5c6aa1c4e1adae5fd453933830858c3fe488fb97"
+    },
+    {
+      "kind": "local_d64_block_receipt_json",
+      "path": "docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json",
+      "sha256": "a70c61a9724fb269d054f94f39f5b59e6cb7091c35782f6f53f94f3874e2ec13"
+    },
+    {
+      "kind": "local_d128_block_receipt_json",
+      "path": "docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json",
+      "sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f"
+    },
+    {
+      "kind": "source_backed_competitor_matrix_json",
+      "path": "docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json",
+      "sha256": "ed838fd9137d66fb2acbf72e3ac82fca4774a4d0f6d9b935a74674cfd671249d"
+    }
+  ],
+  "summary": {
+    "attention_fusion_saving_bytes": 194097,
+    "breakthrough_status": "credible_architecture_path_not_field_breakthrough",
+    "d128_checked_rows": 197504,
+    "d128_over_d64_checked_row_ratio": 3.981935,
+    "d64_checked_rows": 49600,
+    "go_result": "GO for one-block architecture surface accounting",
+    "no_go_result": "NO-GO for matched NANOZK-style single layer proof, proof-size benchmark, verifier-time benchmark, or full inference",
+    "strongest_claim": "STARK-native attention fusion and statement-bound RMSNorm/SwiGLU/residual receipt chains now sit in one source-backed block-surface scorecard."
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate",
+    "git diff --check",
+    "just gate-fast"
+  ]
+}
