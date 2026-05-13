@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -121,12 +122,59 @@ class AttentionDerivedD128ActivationSwiGluGateTests(unittest.TestCase):
             self.assertIn("derived_hidden_activation_commitment", tsv)
             self.assertIn(payload["summary"]["derived_hidden_activation_commitment"], tsv)
 
+    def test_write_outputs_anchors_relative_paths_to_repo_root(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp, tempfile.TemporaryDirectory() as raw_cwd:
+            tmp = pathlib.Path(raw_tmp)
+            json_path = (tmp / "activation-swiglu.json").relative_to(GATE.ROOT)
+            tsv_path = (tmp / "activation-swiglu.tsv").relative_to(GATE.ROOT)
+            original_cwd = pathlib.Path.cwd()
+            try:
+                os.chdir(raw_cwd)
+                GATE.write_outputs(payload, json_path, tsv_path, context=copy.deepcopy(self.context))
+            finally:
+                os.chdir(original_cwd)
+            self.assertEqual(json.loads((tmp / "activation-swiglu.json").read_text(encoding="utf-8")), payload)
+            self.assertIn(
+                payload["summary"]["derived_hidden_activation_commitment"],
+                (tmp / "activation-swiglu.tsv").read_text(encoding="utf-8"),
+            )
+
     def test_write_outputs_rejects_paths_outside_evidence_dir(self) -> None:
         payload = self.fresh_payload()
         with tempfile.TemporaryDirectory() as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
             with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "docs/engineering/evidence"):
                 GATE.write_outputs(payload, tmp / "activation-swiglu.json", None, context=copy.deepcopy(self.context))
+
+    def test_write_outputs_rejects_wrong_suffix(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "end with .json"):
+                GATE.write_outputs(payload, tmp / "activation-swiglu.txt", None, context=copy.deepcopy(self.context))
+
+    def test_load_json_rejects_unhardened_paths(self) -> None:
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            source = tmp / "source.json"
+            source.write_text(json.dumps(GATE.build_core_payload(copy.deepcopy(self.context))), encoding="utf-8")
+            link = tmp / "link.json"
+            link.symlink_to(source)
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "symlink"):
+                GATE.load_json(link)
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            outside = pathlib.Path(raw_tmp) / "source.json"
+            outside.write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "escapes repository"):
+                GATE.load_json(outside)
+
+    def test_load_json_rejects_oversized_source(self) -> None:
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            source = pathlib.Path(raw_tmp) / "oversized.json"
+            source.write_text(" " * (GATE.MAX_SOURCE_JSON_BYTES + 1), encoding="utf-8")
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "exceeds max size"):
+                GATE.load_json(source)
 
 
 if __name__ == "__main__":
