@@ -152,6 +152,29 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                     gate.TSV_OUT.relative_to(gate.ROOT),
                 )
 
+    def test_metric_extractors_fail_closed_on_empty_or_zero_inputs(self):
+        route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
+        route["route_rows"] = []
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "matched source-plus-sidecar"):
+            gate._route_metrics(route)
+
+        route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
+        for row in route["route_rows"]:
+            if "source_plus_sidecar_raw_proof_bytes" in row:
+                row["source_plus_sidecar_raw_proof_bytes"] = 0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "source-plus-sidecar total"):
+            gate._route_metrics(route)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] = 0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta savings total"):
+            gate._section_delta_metrics(section)
+
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):
+            gate._typed_metrics(typed)
+
 
 if __name__ == "__main__":
     unittest.main()

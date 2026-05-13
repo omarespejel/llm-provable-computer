@@ -104,7 +104,7 @@
     "not a d64 or d128 RMSNorm-SwiGLU transformer-block proof",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:396326059017fa9bc92923b94adaaed6107fde80483777b8d8db1e2393a90130",
+  "payload_commitment": "sha256:947068899ffd33a59aa155114fd90dd09241f3dc7956d874be22e0e347e9f2e5",
   "route_id": "local_stwo_attention_kv_fusion_mechanism_ablation",
   "route_matrix": {
     "aggregate_metrics_match": {
@@ -176,6 +176,7 @@
     "python3 scripts/zkai_attention_kv_stwo_fusion_mechanism_ablation_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fusion_mechanism_ablation_gate",
     "just gate-fast",
-    "git diff --check"
+    "git diff --check",
+    "just gate"
   ]
 }

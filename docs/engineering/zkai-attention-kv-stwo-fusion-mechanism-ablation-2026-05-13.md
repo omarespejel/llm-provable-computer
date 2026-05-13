@@ -84,4 +84,6 @@ python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fusion_mechanism_a
 just gate-fast
 
 git diff --check
+
+just gate
 ```
