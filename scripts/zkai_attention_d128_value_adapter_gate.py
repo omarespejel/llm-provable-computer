@@ -674,7 +674,9 @@ def validate_payload(
         if case_names != list(EXPECTED_MUTATIONS):
             raise AttentionD128ValueAdapterError("mutation case order drift")
         expected_cases = run_mutation_cases(build_core_payload(context), context)
-        if cases != expected_cases:
+        case_outcomes = [(case["name"], case["accepted"], case["rejected"]) for case in cases]
+        expected_outcomes = [(case["name"], case["accepted"], case["rejected"]) for case in expected_cases]
+        if case_outcomes != expected_outcomes:
             raise AttentionD128ValueAdapterError("mutation cases drift")
 
 

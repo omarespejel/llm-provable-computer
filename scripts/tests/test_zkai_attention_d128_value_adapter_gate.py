@@ -219,11 +219,31 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "malformed mutation case"):
             GATE.validate_payload(payload)
 
-    def test_rejects_forged_mutation_evidence(self) -> None:
+    def test_allows_human_mutation_error_wording_drift(self) -> None:
         payload = self.fresh_payload()
-        payload["cases"][0]["error"] = "forged rejection reason"
+        payload["cases"][0]["error"] = "same rejected outcome with clearer wording"
         GATE.refresh_payload_commitment(payload)
-        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "mutation cases drift"):
+        GATE.validate_payload(payload)
+
+    def test_rejects_forged_mutation_outcomes(self) -> None:
+        payload = self.fresh_payload()
+        real_run_mutation_cases = GATE.run_mutation_cases
+
+        def changed_outcome(core_payload: dict, expected_context: dict) -> list[dict]:
+            cases = real_run_mutation_cases(core_payload, expected_context)
+            cases[0]["accepted"] = True
+            cases[0]["rejected"] = False
+            return cases
+
+        with mock.patch.object(GATE, "run_mutation_cases", side_effect=changed_outcome):
+            with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "mutation cases drift"):
+                GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["accepted"] = True
+        payload["cases"][0]["rejected"] = False
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "mutation was not rejected"):
             GATE.validate_payload(payload)
 
     def test_source_read_loops_until_eof(self) -> None:
