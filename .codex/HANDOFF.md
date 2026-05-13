@@ -740,6 +740,17 @@ Tablero boundary.
   because no executable backend proves the six verifier checks in one object.
   See
   `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`.
+- The checked attention-derived d128 outer-proof input contract now has a real
+  external `snarkjs/Groth16` statement receipt. The receipt binds `16`
+  contract-derived public fields into `17` snarkjs public signals, has an
+  `807`-byte proof, a `5,856`-byte verification key, `1,386`-byte public
+  signals, and rejects `40 / 40` relabeling, artifact, input,
+  embedded-artifact, metric, and schema mutations.
+  The prior two-slice SNARK receipt cannot be reused for this contract: `0 / 17`
+  public-signal positions match. This is executable statement binding over the
+  input contract, not verification of the six Stwo slice proofs inside Groth16,
+  not recursion/PCD, and not the missing STARK-native outer proof backend. See
+  `docs/engineering/zkai-attention-derived-d128-snark-statement-receipt-2026-05-14.md`.
 
 ## Source-of-truth documents
 

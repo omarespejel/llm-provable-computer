@@ -1,0 +1,18 @@
+{
+  "artifacts": {
+    "attention_derived_d128_statement_receipt.circom": "803888d7a87f1a57ef2ca23be5cb631e462e0a85fabfb6356f3dccd08cc57e78",
+    "input.json": "664369704a428b672d688a4f2f6cb21bdab6a7d51d82d2af4370c8ef5fa8f4ba",
+    "proof.json": "f41d393cc40f7728f10389adff51e694fecc94de33213039a4c0e41e1b654820",
+    "public.json": "9b4a9964d281e3212929ff35409765ec7c906be6b07961ba3f840ca34aa13e53",
+    "verification_key.json": "80afe48ed23997240c042d2d605aefeac533a6dfcab8dc17a10f5851fc75b03e"
+  },
+  "circom_version": "2.0.9",
+  "circuit_id": "urn:ptvm:zkai:attention-derived-d128-statement-receipt:v1",
+  "generation_note": "Generated locally with circom 2.0.9 and snarkjs 0.7.6; verifier-facing artifacts are checked in, proving key and ceremony transcript are intentionally not checked in.",
+  "proof_system": "snarkjs/Groth16/BN128",
+  "schema": "zkai-attention-derived-d128-snark-statement-receipt-artifact-metadata-v1",
+  "snarkjs_version": "0.7.6",
+  "source_evidence": "docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.json",
+  "source_gate": "scripts/zkai_attention_derived_d128_outer_proof_route_gate.py",
+  "trusted_setup_note": "Local throwaway Groth16 setup for statement-receipt research only; not a production trusted setup or security endorsement."
+}
