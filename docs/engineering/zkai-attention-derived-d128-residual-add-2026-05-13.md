@@ -34,14 +34,14 @@ residual receipt consumption.
 | Source input activation | `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35` |
 | Source residual delta | `blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec` |
 | Derived output activation | `blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9` |
-| Derived residual-add statement | `blake2b-256:a70164f2676f260a3d91208affa5aef04db8097b209ae90c558cc06c1f6ecf5d` |
+| Derived residual-add statement | `blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0` |
 | Derived residual-add rows | `blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf` |
 | Residual-add rows | `128` |
 | Mutations rejected | `17 / 17` |
 | Input mismatch vs existing fixture | `127 / 128` |
 | Residual delta mismatch vs existing fixture | `128 / 128` |
 | Output mismatch vs existing fixture | `128 / 128` |
-| Payload commitment | `sha256:d32405b7b1647c7a36f6e40631ca35224bdc65f708e7bf46b6b38f51204e8eed` |
+| Payload commitment | `sha256:a82f94544eb2f7415fa0caec9605730a857e5a380bed0cbccb6ec2bd6f869861` |
 
 ## What This Adds
 
@@ -69,6 +69,10 @@ This is not proof-size evidence. It does not show STARK fusion savings directly.
 It also does not turn the slice chain into one verifier-facing proof object.
 The value is that the attention-derived path now reaches a block-output vector
 without pretending to be the old canonical d128 fixture.
+
+The residual-add statement commitment also binds `required_backend_version`, so
+backend-version drift changes the statement hash instead of only changing the
+outer payload.
 
 The next useful step is a statement-composition boundary that consumes the
 derived slice statement commitments and records exactly what is, and is not,

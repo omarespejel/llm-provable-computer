@@ -147,7 +147,7 @@
     "not production-ready",
     "residual-add rows are verifier-recomputed from checked public input and residual-delta rows"
   ],
-  "payload_commitment": "sha256:d32405b7b1647c7a36f6e40631ca35224bdc65f708e7bf46b6b38f51204e8eed",
+  "payload_commitment": "sha256:a82f94544eb2f7415fa0caec9605730a857e5a380bed0cbccb6ec2bd6f869861",
   "residual_add_payload": {
     "decision": "GO_ATTENTION_DERIVED_D128_RESIDUAL_ADD_INPUT",
     "input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
@@ -424,7 +424,7 @@
       -3337
     ],
     "proof_native_parameter_commitment": "blake2b-256:80b0613bd5762b0acd46e737f0f5a2c529e87663582706c4a5abe07d4360f999",
-    "public_instance_commitment": "blake2b-256:480fea16822138e729a6b5e89f3901c78054b4cd7e13ef2e7099a16025bbda61",
+    "public_instance_commitment": "blake2b-256:8860afcc5b7aa9971872567161ad28bf396ca5a4c26ce60d77c4a2eb4cbde105",
     "range_policy": "attention_derived_input_q8_semantic_bound_1024; residual_delta_and_output_signed_m31",
     "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
     "residual_add_row_commitment": "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf",
@@ -1470,7 +1470,7 @@
     "source_down_projection_statement_commitment": "blake2b-256:5477f0c19e1f36e9f6c3627827c85751f48f7b7853f9ed62a0a5dcc5c20c73f9",
     "source_input_payload_commitment": "sha256:2ae84c02a4267c6e85786d1317fdd2c6d7921970169db09bd66dfbd9f34b7a77",
     "source_input_schema": "zkai-attention-derived-d128-input-gate-v1",
-    "statement_commitment": "blake2b-256:a70164f2676f260a3d91208affa5aef04db8097b209ae90c558cc06c1f6ecf5d",
+    "statement_commitment": "blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0",
     "target_id": "rmsnorm-swiglu-residual-d128-v1",
     "verifier_domain": "ptvm:zkai:attention-derived-d128-residual-add:v1",
     "width": 128
@@ -1514,7 +1514,7 @@
     {
       "id": "attention_derived_residual_add_gate",
       "path": "scripts/zkai_attention_derived_d128_residual_add_gate.py",
-      "sha256": "612eb233146defd8856a3df941a90c9126abf7446ad0006b1aba00b4b0ea2cfa"
+      "sha256": "a360b8f034a6c71111bfcb2f26eed0f88042010e381126bb7a4de95b41092b32"
     }
   ],
   "source_summary": {
@@ -1529,9 +1529,9 @@
   },
   "summary": {
     "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
-    "derived_residual_add_public_instance_commitment": "blake2b-256:480fea16822138e729a6b5e89f3901c78054b4cd7e13ef2e7099a16025bbda61",
+    "derived_residual_add_public_instance_commitment": "blake2b-256:8860afcc5b7aa9971872567161ad28bf396ca5a4c26ce60d77c4a2eb4cbde105",
     "derived_residual_add_row_commitment": "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf",
-    "derived_residual_add_statement_commitment": "blake2b-256:a70164f2676f260a3d91208affa5aef04db8097b209ae90c558cc06c1f6ecf5d",
+    "derived_residual_add_statement_commitment": "blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0",
     "go_result": "GO for attention-derived d128 input plus derived residual delta producing a derived output activation",
     "input_mismatch_count": 127,
     "matches_existing_d128_residual_add": false,
