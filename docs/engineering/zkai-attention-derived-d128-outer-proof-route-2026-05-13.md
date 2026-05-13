@@ -78,6 +78,10 @@ proof-size evidence, not timing evidence, and not production readiness.
 ## Reproduce
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r scripts/requirements.txt
+
 python3 scripts/zkai_attention_derived_d128_outer_proof_route_gate.py \
   --write-json docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.json \
   --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.tsv

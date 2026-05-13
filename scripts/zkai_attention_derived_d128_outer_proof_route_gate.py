@@ -333,6 +333,10 @@ def build_candidate_inventory() -> list[dict[str, Any]]:
         exists = path.exists()
         entry = dict(spec)
         entry["exists"] = exists
+        if spec["expected_exists"] and not path.is_file():
+            raise AttentionDerivedD128OuterProofRouteError(
+                f"candidate must be a file when expected to exist: {spec['name']}"
+            )
         if exists and path.is_file():
             raw = COMPRESSION.read_source_bytes(path, f"candidate {spec['name']}")
             entry["file_sha256"] = sha256_bytes(raw)
