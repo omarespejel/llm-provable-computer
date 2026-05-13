@@ -77,6 +77,22 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
             artifact = source_by_path[str(path.relative_to(gate.ROOT))]
             self.assertEqual(artifact["sha256"], gate.hashlib.sha256(raw).hexdigest())
 
+    def test_build_payload_reuses_precomputed_expected_payload(self):
+        original = gate.build_payload_uncommitted
+        calls = 0
+
+        def counted_build_payload_uncommitted():
+            nonlocal calls
+            calls += 1
+            return original()
+
+        try:
+            gate.build_payload_uncommitted = counted_build_payload_uncommitted
+            gate.build_payload()
+            self.assertEqual(calls, 1)
+        finally:
+            gate.build_payload_uncommitted = original
+
     def test_write_outputs_round_trip_and_rejects_outside_path(self):
         with tempfile.NamedTemporaryFile(
             dir=gate.ENGINEERING_EVIDENCE,
@@ -87,14 +103,22 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
             json_path = pathlib.Path(handle.name)
         json_path.unlink()
         tsv_path = json_path.with_suffix(".tsv")
+        only_json = json_path.with_name(json_path.stem + "-only.json")
+        implicit_tsv = only_json.with_suffix(".tsv")
         try:
             gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, self.payload)
             self.assertIn("row_kind", tsv_path.read_text(encoding="utf-8"))
+
+            gate.write_outputs(self.payload, only_json.relative_to(gate.ROOT), None)
+            self.assertTrue(only_json.exists())
+            self.assertFalse(implicit_tsv.exists())
         finally:
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
+            only_json.unlink(missing_ok=True)
+            implicit_tsv.unlink(missing_ok=True)
 
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "repo-relative"):

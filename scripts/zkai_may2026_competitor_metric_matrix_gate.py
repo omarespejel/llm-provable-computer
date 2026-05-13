@@ -378,15 +378,18 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
 
 def build_payload() -> dict[str, Any]:
     payload = build_payload_uncommitted()
+    expected = dict(payload)
     payload["payload_commitment"] = payload_commitment(payload)
-    validate_payload(payload)
+    validate_payload(payload, expected=expected)
     return payload
 
 
-def validate_payload(payload: dict[str, Any]) -> None:
+def validate_payload(payload: dict[str, Any], *, expected: dict[str, Any] | None = None) -> None:
     if not isinstance(payload, dict):
         raise CompetitorMetricMatrixError("payload must be object")
-    expected = {key: value for key, value in build_payload_uncommitted().items() if key != "payload_commitment"}
+    if expected is None:
+        expected = build_payload_uncommitted()
+    expected = {key: value for key, value in expected.items() if key != "payload_commitment"}
     candidate = {key: value for key, value in payload.items() if key != "payload_commitment"}
     if candidate != expected:
         if payload.get("schema") != SCHEMA:
@@ -511,16 +514,26 @@ def _assert_no_repo_symlink_components(path: pathlib.Path, label: str) -> None:
             raise CompetitorMetricMatrixError(f"{label} must not include symlink components")
 
 
-def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
+def write_outputs(
+    payload: dict[str, Any],
+    json_path: pathlib.Path | None,
+    tsv_path: pathlib.Path | None,
+) -> None:
     validate_payload(payload)
     json_text = pretty_json(payload) + "\n"
 
-    json_target = _assert_output_path(json_path, "json output path")
-    tsv_target = _assert_output_path(tsv_path, "tsv output path")
-    if os.path.abspath(json_target) == os.path.abspath(tsv_target):
+    json_target = _assert_output_path(json_path, "json output path") if json_path is not None else None
+    tsv_target = _assert_output_path(tsv_path, "tsv output path") if tsv_path is not None else None
+    if json_target is None and tsv_target is None:
+        raise CompetitorMetricMatrixError("at least one explicit output path is required")
+    if json_target is not None and tsv_target is not None and os.path.abspath(json_target) == os.path.abspath(tsv_target):
         raise CompetitorMetricMatrixError("json and tsv output paths must differ")
 
-    outputs = [(json_target, json_text), (tsv_target, to_tsv(payload))]
+    outputs = []
+    if json_target is not None:
+        outputs.append((json_target, json_text))
+    if tsv_target is not None:
+        outputs.append((tsv_target, to_tsv(payload)))
     temps: list[pathlib.Path] = []
     replaced: list[pathlib.Path] = []
     original_bytes: dict[pathlib.Path, bytes | None] = {}
@@ -603,7 +616,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         payload = build_payload()
         if args.write_json or args.write_tsv:
-            write_outputs(payload, args.write_json or JSON_OUT.relative_to(ROOT), args.write_tsv or TSV_OUT.relative_to(ROOT))
+            write_outputs(payload, args.write_json, args.write_tsv)
         else:
             print(pretty_json(payload))
     except CompetitorMetricMatrixError as err:
