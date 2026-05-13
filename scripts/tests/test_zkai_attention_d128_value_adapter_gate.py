@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -44,6 +45,10 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         self.assertEqual(summary["best_candidate_id"], "best_global_affine_over_tiled_attention")
         self.assertEqual(summary["best_candidate_mismatches"], 124)
         self.assertTrue(summary["target_matches_synthetic_pattern"])
+        payload["non_claims"].append("mutated outside constants")
+        payload["validation_commands"].append("mutated outside constants")
+        self.assertNotIn("mutated outside constants", GATE.NON_CLAIMS)
+        self.assertNotIn("mutated outside constants", GATE.VALIDATION_COMMANDS)
 
     def test_adapter_analysis_binds_source_commitments_and_shapes(self) -> None:
         analysis = self.fresh_payload()["adapter_analysis"]
@@ -214,6 +219,13 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "malformed mutation case"):
             GATE.validate_payload(payload)
 
+    def test_rejects_forged_mutation_evidence(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["error"] = "forged rejection reason"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "mutation cases drift"):
+            GATE.validate_payload(payload)
+
     def test_source_read_loops_until_eof(self) -> None:
         with tempfile.NamedTemporaryFile(
             dir=GATE.EVIDENCE_DIR,
@@ -224,16 +236,15 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
             path = pathlib.Path(handle.name)
             handle.write(b'{"ok": true, "items": [1, 2, 3]}')
 
-        real_read = GATE.os.read
+        real_read = GATE.os_read
 
         def short_read(fd: int, count: int) -> bytes:
             return real_read(fd, min(count, 3))
 
         try:
-            GATE.os.read = short_read
-            self.assertEqual(GATE.read_source_bytes(path), b'{"ok": true, "items": [1, 2, 3]}')
+            with mock.patch.object(GATE, "os_read", side_effect=short_read):
+                self.assertEqual(GATE.read_source_bytes(path), b'{"ok": true, "items": [1, 2, 3]}')
         finally:
-            GATE.os.read = real_read
             path.unlink(missing_ok=True)
 
     def test_write_outputs_round_trip_and_rejects_outside_path(self) -> None:
