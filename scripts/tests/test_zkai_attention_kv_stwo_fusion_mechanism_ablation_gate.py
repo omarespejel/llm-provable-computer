@@ -245,6 +245,12 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "source-plus-sidecar total"):
             gate._route_metrics(route)
 
+        route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
+        route["route_rows"].insert(0, {"route_id": "unmatched-row"})
+        del route["route_rows"][1]["fused_proof_size_bytes"]
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "route matrix row 1 missing"):
+            gate._route_metrics(route)
+
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
         section["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta savings total"):
@@ -333,6 +339,22 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 gate._base_payload()
         finally:
             gate.load_json = original
+
+    def test_build_payload_reuses_precomputed_expected_payload(self):
+        original = gate._base_payload
+        calls = 0
+
+        def counted_base_payload():
+            nonlocal calls
+            calls += 1
+            return original()
+
+        try:
+            gate._base_payload = counted_base_payload
+            gate.build_payload()
+            self.assertEqual(calls, 1)
+        finally:
+            gate._base_payload = original
 
 
 if __name__ == "__main__":

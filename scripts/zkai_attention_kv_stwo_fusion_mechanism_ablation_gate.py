@@ -204,10 +204,10 @@ def _mapping(value: Any, label: str) -> dict[str, Any]:
 
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
-    matched = [row for row in rows if "source_plus_sidecar_raw_proof_bytes" in row]
+    matched = [(index, row) for index, row in enumerate(rows) if "source_plus_sidecar_raw_proof_bytes" in row]
     if not matched:
         raise FusionMechanismAblationGateError("route matrix must contain matched source-plus-sidecar rows")
-    for index, row in enumerate(matched):
+    for index, row in matched:
         for key in (
             "source_plus_sidecar_raw_proof_bytes",
             "fused_proof_size_bytes",
@@ -216,10 +216,10 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
         ):
             if key not in row:
                 raise FusionMechanismAblationGateError(f"route matrix row {index} missing {key}")
-    savings = [row["fused_saves_vs_source_plus_sidecar_bytes"] for row in matched]
-    ratios = [row["fused_to_source_plus_sidecar_ratio"] for row in matched]
-    source_plus = sum(row["source_plus_sidecar_raw_proof_bytes"] for row in matched)
-    fused = sum(row["fused_proof_size_bytes"] for row in matched)
+    savings = [row["fused_saves_vs_source_plus_sidecar_bytes"] for _, row in matched]
+    ratios = [row["fused_to_source_plus_sidecar_ratio"] for _, row in matched]
+    source_plus = sum(row["source_plus_sidecar_raw_proof_bytes"] for _, row in matched)
+    fused = sum(row["fused_proof_size_bytes"] for _, row in matched)
     if source_plus <= 0:
         raise FusionMechanismAblationGateError("route matrix source-plus-sidecar total must be positive")
     if not ratios:
@@ -466,8 +466,14 @@ def _strip_mutation_fields(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool = True) -> None:
-    expected = _base_payload()
+def validate_payload(
+    payload: dict[str, Any],
+    *,
+    require_mutation_summary: bool = True,
+    expected: dict[str, Any] | None = None,
+) -> None:
+    if expected is None:
+        expected = _base_payload()
     expected_keys = set(expected)
     if require_mutation_summary:
         expected_keys |= {"mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected", "payload_commitment"}
@@ -573,10 +579,11 @@ def _string_payload_field(payload: dict[str, Any], path: tuple[str, ...], label:
 
 def build_payload() -> dict[str, Any]:
     payload = _base_payload()
+    expected = copy.deepcopy(payload)
     mutation_results = []
     for name, mutated in mutation_cases(payload):
         try:
-            validate_payload(mutated, require_mutation_summary=False)
+            validate_payload(mutated, require_mutation_summary=False, expected=expected)
         except FusionMechanismAblationGateError:
             mutation_results.append({"name": name, "rejected": True})
         else:
@@ -586,7 +593,7 @@ def build_payload() -> dict[str, Any]:
     payload["mutations_rejected"] = sum(1 for result in mutation_results if result["rejected"])
     payload["all_mutations_rejected"] = payload["mutations_checked"] == payload["mutations_rejected"]
     payload["payload_commitment"] = payload_commitment(payload)
-    validate_payload(payload)
+    validate_payload(payload, expected=expected)
     return payload
 
 
