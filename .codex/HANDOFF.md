@@ -647,6 +647,18 @@ Tablero boundary.
   against public zkML systems until an aggregated proof object exists, or until
   the comparison is explicitly scoped as receipt/composition-only. The #430
   SNARK timings are receipt-adapter timings under local throwaway setup only.
+- The attention-to-d128 block bridge lane has now moved beyond statement-only
+  binding for the first block slice. The checked d8 bounded Softmax-table
+  attention output is projected into a new d128 input commitment
+  `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
+  and a derived d128 RMSNorm public-row payload consumes that exact input,
+  producing RMSNorm statement commitment
+  `blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d`.
+  This rejects `11 / 11` local overclaim/binding mutations and remains a
+  no-go for claiming the existing d128 full-block receipt consumed the vector
+  because the current-vs-derived d128 input mismatch is still `127 / 128`.
+  See
+  `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -696,8 +708,9 @@ Use these in order of authority for current state:
 42. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
 43. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-45. `docs/engineering/reproducibility.md`
-46. `git status --short --branch`
+45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
+46. `docs/engineering/reproducibility.md`
+47. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.
