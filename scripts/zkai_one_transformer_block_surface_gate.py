@@ -28,9 +28,18 @@ D128_BLOCK_RECEIPT = ENGINEERING_EVIDENCE / "zkai-d128-block-receipt-composition
 ATTENTION_DERIVED_D128_CHAIN = (
     ENGINEERING_EVIDENCE / "zkai-attention-derived-d128-block-statement-chain-2026-05.json"
 )
+ATTENTION_DERIVED_D128_SNARK_RECEIPT = (
+    ENGINEERING_EVIDENCE / "zkai-attention-derived-d128-snark-statement-receipt-2026-05.json"
+)
 COMPETITOR_MATRIX = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.json"
 EXPECTED_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_COMMITMENT = (
     "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5"
+)
+EXPECTED_ATTENTION_DERIVED_D128_INPUT_CONTRACT_COMMITMENT = (
+    "blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39"
+)
+EXPECTED_ATTENTION_DERIVED_D128_SNARK_RECEIPT_COMMITMENT = (
+    "blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d"
 )
 
 SCHEMA = "zkai-one-transformer-block-surface-v1"
@@ -53,7 +62,8 @@ VALIDATION_COMMANDS = [
 NON_CLAIMS = [
     "not a matched benchmark against NANOZK or Jolt Atlas",
     "not one recursive or compressed proof object for a full transformer block",
-    "not proof-size or verifier-time evidence for a local d128 layer proof",
+    "not native proof-size or verifier-time evidence for a local d128 layer proof",
+    "the 807-byte Groth16 proof is an external statement receipt, not a native block proof",
     "not exact real-valued Softmax, LayerNorm, or GELU",
     "not full autoregressive inference",
     "not production-ready",
@@ -300,11 +310,81 @@ def _validate_attention_derived_d128_chain(payload: dict[str, Any]) -> dict[str,
     return summary
 
 
+def _validate_attention_derived_d128_snark_receipt(
+    payload: dict[str, Any],
+    attention_derived_summary: dict[str, Any],
+) -> dict[str, Any]:
+    if (
+        _string_field(payload, ("schema",), "attention-derived d128 SNARK receipt schema")
+        != "zkai-attention-derived-d128-snark-statement-receipt-gate-v1"
+    ):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt schema drift")
+    if _string_field(payload, ("result",), "attention-derived d128 SNARK receipt result") != "GO":
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt result drift")
+    if (
+        _string_field(payload, ("decision",), "attention-derived d128 SNARK receipt decision")
+        != "GO_ATTENTION_DERIVED_D128_SNARK_STATEMENT_RECEIPT_FOR_OUTER_PROOF_INPUT_CONTRACT"
+    ):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt decision drift")
+    if payload.get("all_mutations_rejected") is not True:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt mutations are not all rejected")
+    if _int_field(payload, ("case_count",), "attention-derived d128 SNARK receipt mutations") != 40:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt mutation count drift")
+
+    source_metrics = _dict(payload.get("source_route_metrics"), "attention-derived d128 SNARK source metrics")
+    receipt_metrics = _dict(payload.get("receipt_metrics"), "attention-derived d128 SNARK receipt metrics")
+    statement_receipt = _dict(payload.get("statement_receipt"), "attention-derived d128 SNARK statement receipt")
+    source_contract = _dict(payload.get("source_contract"), "attention-derived d128 SNARK source contract")
+
+    if source_metrics.get("block_statement_commitment") != EXPECTED_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_COMMITMENT:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK block statement commitment drift")
+    if source_metrics.get("block_statement_commitment") != attention_derived_summary["block_statement_commitment"]:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK source chain mismatch")
+    if source_metrics.get("source_relation_rows") != attention_derived_summary["accounted_relation_rows"]:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK source relation rows mismatch")
+    if source_metrics.get("edge_count") != attention_derived_summary["edge_count"]:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK edge count mismatch")
+    if source_metrics.get("slice_count") != attention_derived_summary["slice_count"]:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK slice count mismatch")
+    if source_metrics.get("input_contract_commitment") != EXPECTED_ATTENTION_DERIVED_D128_INPUT_CONTRACT_COMMITMENT:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK input contract commitment drift")
+    if statement_receipt.get("receipt_commitment") != EXPECTED_ATTENTION_DERIVED_D128_SNARK_RECEIPT_COMMITMENT:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt commitment drift")
+    if source_contract.get("result") != "BOUNDED_NO_GO":
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK source contract no-go drift")
+
+    expected_receipt_metrics = {
+        "proof_size_bytes": 807,
+        "verification_key_bytes": 5856,
+        "public_signals_bytes": 1386,
+        "public_signal_field_count": 16,
+        "public_signal_count": 17,
+    }
+    for key, expected_value in expected_receipt_metrics.items():
+        if receipt_metrics.get(key) != expected_value:
+            raise OneTransformerBlockSurfaceError(f"attention-derived d128 SNARK receipt metric drift: {key}")
+    if receipt_metrics.get("verifier_time_ms") is not None or receipt_metrics.get("proof_generation_time_ms") is not None:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK timing metric must not be claimed")
+    if statement_receipt.get("proof_system") != "snarkjs/Groth16/BN128":
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK proof system drift")
+    if statement_receipt.get("proof_system_version") != "0.7.6":
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK proof-system version drift")
+    if "not the missing STARK-native outer proof backend" not in payload.get("non_claims", []):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK non-claim drift")
+    return {
+        "source_route_metrics": source_metrics,
+        "receipt_metrics": receipt_metrics,
+        "statement_receipt": statement_receipt,
+        "source_contract": source_contract,
+    }
+
+
 def _component_rows(
     fusion: dict[str, Any],
     d64: dict[str, Any],
     d128: dict[str, Any],
     attention_derived_d128: dict[str, Any],
+    attention_derived_d128_snark: dict[str, Any],
     matrix: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if _string_field(fusion, ("schema",), "fusion schema") != "zkai-attention-kv-stwo-fusion-mechanism-ablation-v1":
@@ -319,7 +399,12 @@ def _component_rows(
     d64_summary = _validate_block_receipt(d64, 64)
     d128_summary = _validate_block_receipt(d128, 128)
     attention_derived_summary = _validate_attention_derived_d128_chain(attention_derived_d128)
+    snark_summary = _validate_attention_derived_d128_snark_receipt(
+        attention_derived_d128_snark,
+        attention_derived_summary,
+    )
     nanozk = _nanozk_block_row(matrix)
+    receipt_metrics = snark_summary["receipt_metrics"]
 
     fused_savings = _int_field(fusion, ("route_matrix", "fused_savings_bytes_total"), "fusion savings")
     fused_proof_bytes = _int_field(fusion, ("route_matrix", "fused_proof_size_bytes_total"), "fusion proof bytes")
@@ -375,6 +460,20 @@ def _component_rows(
             "comparison_status": "LOCAL_STATEMENT_CHAIN_NOT_SINGLE_PROOF_OBJECT",
         },
         {
+            "surface": "attention-derived d128 executable statement receipt",
+            "subsystem": "external_statement_binding",
+            "local_status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_NO_GO_NATIVE_OUTER_PROOF",
+            "metric": "verified Groth16 statement receipt over outer-proof input contract",
+            "value": receipt_metrics["proof_size_bytes"],
+            "unit": "proof_bytes",
+            "support": (
+                f"{receipt_metrics['public_signal_count']} public signals; "
+                "40 / 40 mutations rejected; "
+                f"receipt {snark_summary['statement_receipt']['receipt_commitment']}"
+            ),
+            "comparison_status": "EXECUTABLE_CONTROL_NOT_NATIVE_BLOCK_PROOF",
+        },
+        {
             "surface": "NANOZK transformer block context",
             "subsystem": "external_context",
             "local_status": "SOURCE_BACKED_EXTERNAL_CONTEXT",
@@ -392,19 +491,31 @@ def build_payload_uncommitted() -> dict[str, Any]:
     d64_raw = read_source_bytes(D64_BLOCK_RECEIPT, "d64 block receipt JSON")
     d128_raw = read_source_bytes(D128_BLOCK_RECEIPT, "d128 block receipt JSON")
     attention_derived_raw = read_source_bytes(ATTENTION_DERIVED_D128_CHAIN, "attention-derived d128 chain JSON")
+    attention_derived_snark_raw = read_source_bytes(
+        ATTENTION_DERIVED_D128_SNARK_RECEIPT,
+        "attention-derived d128 SNARK receipt JSON",
+    )
     matrix_raw = read_source_bytes(COMPETITOR_MATRIX, "competitor matrix JSON")
     fusion = _parse_json_bytes(FUSION_MECHANISM, fusion_raw)
     d64 = _parse_json_bytes(D64_BLOCK_RECEIPT, d64_raw)
     d128 = _parse_json_bytes(D128_BLOCK_RECEIPT, d128_raw)
     attention_derived = _parse_json_bytes(ATTENTION_DERIVED_D128_CHAIN, attention_derived_raw)
+    attention_derived_snark = _parse_json_bytes(ATTENTION_DERIVED_D128_SNARK_RECEIPT, attention_derived_snark_raw)
     matrix = _parse_json_bytes(COMPETITOR_MATRIX, matrix_raw)
-    component_rows = _component_rows(fusion, d64, d128, attention_derived, matrix)
+    component_rows = _component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
     d64_row = next(row for row in component_rows if row["surface"].startswith("d64 "))
     d128_row = next(row for row in component_rows if row["surface"].startswith("d128 "))
     attention_derived_row = next(
         row for row in component_rows if row["surface"] == "attention-derived d128 block statement chain"
     )
+    snark_row = next(
+        row for row in component_rows if row["surface"] == "attention-derived d128 executable statement receipt"
+    )
     attention_derived_summary = _validate_attention_derived_d128_chain(attention_derived)
+    snark_summary = _validate_attention_derived_d128_snark_receipt(
+        attention_derived_snark,
+        attention_derived_summary,
+    )
     attention_row = next(row for row in component_rows if row["subsystem"] == "attention")
     return {
         "schema": SCHEMA,
@@ -418,6 +529,11 @@ def build_payload_uncommitted() -> dict[str, Any]:
                 ATTENTION_DERIVED_D128_CHAIN,
                 "local_attention_derived_d128_statement_chain_json",
                 attention_derived_raw,
+            ),
+            _source_from_bytes(
+                ATTENTION_DERIVED_D128_SNARK_RECEIPT,
+                "local_attention_derived_d128_snark_statement_receipt_json",
+                attention_derived_snark_raw,
             ),
             _source_from_bytes(COMPETITOR_MATRIX, "source_backed_competitor_matrix_json", matrix_raw),
         ],
@@ -451,9 +567,9 @@ def build_payload_uncommitted() -> dict[str, Any]:
         ],
         "summary": {
             "breakthrough_status": "credible_architecture_path_not_field_breakthrough",
-            "strongest_claim": "STARK-native attention fusion and an attention-derived d128 RMSNorm/SwiGLU/residual statement chain now sit in one source-backed block-surface scorecard.",
-            "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain",
-            "no_go_result": "NO-GO for matched NANOZK-style single layer proof, proof-size benchmark, verifier-time benchmark, or full inference",
+            "strongest_claim": "STARK-native attention fusion, an attention-derived d128 RMSNorm/SwiGLU/residual statement chain, and an executable external receipt over that chain's input contract now sit in one source-backed block-surface scorecard.",
+            "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain and external statement receipt",
+            "no_go_result": "NO-GO for matched NANOZK-style single layer proof, native outer proof, verifier-time benchmark, or full inference",
             "attention_fusion_saving_bytes": attention_row["value"],
             "d64_checked_rows": d64_row["value"],
             "d128_checked_rows": d128_row["value"],
@@ -461,6 +577,20 @@ def build_payload_uncommitted() -> dict[str, Any]:
             "attention_derived_d128_statement_chain_edges": attention_derived_summary["edge_count"],
             "attention_derived_d128_block_statement_commitment": attention_derived_summary[
                 "block_statement_commitment"
+            ],
+            "attention_derived_d128_snark_receipt_proof_bytes": snark_row["value"],
+            "attention_derived_d128_snark_receipt_public_signals": snark_summary["receipt_metrics"][
+                "public_signal_count"
+            ],
+            "attention_derived_d128_snark_receipt_mutations_rejected": 40,
+            "attention_derived_d128_snark_receipt_commitment": snark_summary["statement_receipt"][
+                "receipt_commitment"
+            ],
+            "attention_derived_d128_input_contract_commitment": snark_summary["source_route_metrics"][
+                "input_contract_commitment"
+            ],
+            "attention_derived_d128_statement_chain_compressed_ratio": snark_summary["source_route_metrics"][
+                "compressed_to_source_ratio"
             ],
             "d128_over_d64_checked_row_ratio": round(float(d128_row["value"]) / float(d64_row["value"]), 6),
         },

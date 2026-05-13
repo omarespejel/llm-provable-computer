@@ -23,8 +23,8 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         self.assertEqual(payload["schema"], gate.SCHEMA)
         self.assertEqual(payload["decision"], gate.DECISION)
         self.assertEqual(payload["claim_boundary"], gate.CLAIM_BOUNDARY)
-        self.assertEqual(len(payload["source_artifacts"]), 5)
-        self.assertEqual(len(payload["component_rows"]), 5)
+        self.assertEqual(len(payload["source_artifacts"]), 6)
+        self.assertEqual(len(payload["component_rows"]), 6)
         self.assertEqual(payload["non_claims"], gate.NON_CLAIMS)
 
         rows = {row["surface"]: row for row in payload["component_rows"]}
@@ -32,6 +32,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         self.assertEqual(rows["d64 RMSNorm/SwiGLU/residual receipt chain"]["value"], 49600)
         self.assertEqual(rows["d128 RMSNorm/SwiGLU/residual receipt chain"]["value"], 197504)
         self.assertEqual(rows["attention-derived d128 block statement chain"]["value"], 199553)
+        self.assertEqual(rows["attention-derived d128 executable statement receipt"]["value"], 807)
         self.assertEqual(rows["NANOZK transformer block context"]["value"], "6.9 KB")
 
         summary = payload["summary"]
@@ -40,6 +41,18 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         self.assertEqual(summary["d128_checked_rows"], 197504)
         self.assertEqual(summary["attention_derived_d128_statement_chain_rows"], 199553)
         self.assertEqual(summary["attention_derived_d128_statement_chain_edges"], 11)
+        self.assertEqual(summary["attention_derived_d128_snark_receipt_proof_bytes"], 807)
+        self.assertEqual(summary["attention_derived_d128_snark_receipt_public_signals"], 17)
+        self.assertEqual(summary["attention_derived_d128_snark_receipt_mutations_rejected"], 40)
+        self.assertEqual(summary["attention_derived_d128_statement_chain_compressed_ratio"], 0.174986)
+        self.assertEqual(
+            summary["attention_derived_d128_input_contract_commitment"],
+            "blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39",
+        )
+        self.assertEqual(
+            summary["attention_derived_d128_snark_receipt_commitment"],
+            "blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d",
+        )
         self.assertEqual(
             summary["attention_derived_d128_block_statement_commitment"],
             "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
@@ -72,21 +85,22 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         d64 = gate.load_json(gate.D64_BLOCK_RECEIPT)
         d128 = gate.load_json(gate.D128_BLOCK_RECEIPT)
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
+        attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         matrix = gate.load_json(gate.COMPETITOR_MATRIX)
 
         fusion["route_matrix"]["fused_savings_bytes_total"] = 0
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "fusion metrics must be positive"):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         fusion = gate.load_json(gate.FUSION_MECHANISM)
         d128["summary"]["mutations_rejected"] = d128["summary"]["mutation_cases"] - 1
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "d128 mutation rejection count drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         d128 = gate.load_json(gate.D128_BLOCK_RECEIPT)
         attention_derived["summary"]["edge_count"] = 10
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "attention-derived d128 chain edge count drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived["summary"].pop("block_statement_commitment")
@@ -94,7 +108,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 chain summary block statement commitment",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived["summary"]["block_statement_commitment"] = "blake2b-256:" + "00" * 32
@@ -102,9 +116,26 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 chain summary commitment drift",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
+        attention_derived_snark["receipt_metrics"]["proof_size_bytes"] = 1
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 SNARK receipt metric drift: proof_size_bytes",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+
+        attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
+        attention_derived_snark["source_route_metrics"]["source_relation_rows"] = 1
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 SNARK source relation rows mismatch",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+
+        attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
+        attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         nanozk_block_row = next(
             row
             for row in matrix["external_rows"]
@@ -114,7 +145,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         )
         nanozk_block_row["proof_size_reported"] = "1 byte"
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
         matrix = gate.load_json(gate.COMPETITOR_MATRIX)
         nanozk_block_row = next(
@@ -126,13 +157,17 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         )
         nanozk_block_row.pop("model_or_dims", None)
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift: model_or_dims"):
-            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
     def test_tsv_contains_component_rows(self):
         tsv = gate.to_tsv(self.payload)
         self.assertIn("attention/Softmax-table fused proof component\tattention", tsv)
         self.assertIn("d128 RMSNorm/SwiGLU/residual receipt chain\tbounded_mlp_substitute", tsv)
         self.assertIn("attention-derived d128 block statement chain\tattention_to_block_boundary", tsv)
+        self.assertIn(
+            "attention-derived d128 executable statement receipt\texternal_statement_binding",
+            tsv,
+        )
         self.assertIn("NANOZK transformer block context\texternal_context", tsv)
 
     def test_write_outputs_round_trip_and_rejects_outside_path(self):

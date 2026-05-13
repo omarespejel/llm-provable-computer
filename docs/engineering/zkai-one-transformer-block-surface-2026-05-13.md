@@ -1,6 +1,6 @@
 # One Transformer Block Surface Gate
 
-Date: 2026-05-13
+Date: 2026-05-14
 
 ## Decision
 
@@ -8,9 +8,9 @@ Date: 2026-05-13
 
 This PR adds a source-backed scorecard for a one-transformer-block proof surface. The useful claim is architectural:
 
-> STARK-native attention fusion and an attention-derived d128 RMSNorm/SwiGLU/residual statement chain now sit in one checked block-surface accounting artifact.
+> STARK-native attention fusion, an attention-derived d128 RMSNorm/SwiGLU/residual statement chain, and an executable external receipt over that chain's input contract now sit in one checked block-surface accounting artifact.
 
-This is not a claim that the repo has a NANOZK-style single layer proof, a recursive aggregation proof, a proof-size benchmark for a full local block, or full autoregressive inference.
+This is not a claim that the repo has a NANOZK-style single layer proof, a native outer proof, a recursive aggregation proof, a verifier-time benchmark for a full local block, or full autoregressive inference.
 
 ## Evidence
 
@@ -25,6 +25,7 @@ Source artifacts:
 - `docs/engineering/evidence/zkai-d64-block-receipt-composition-gate-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-snark-statement-receipt-2026-05.json`
 - `docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json`
 
 Checked local rows:
@@ -35,9 +36,12 @@ Checked local rows:
 | d64 RMSNorm/SwiGLU/residual receipt chain | checked slice rows | `49,600` rows | receipt chain, not one proof object |
 | d128 RMSNorm/SwiGLU/residual receipt chain | checked slice rows | `197,504` rows | receipt chain, not proof-size benchmark |
 | attention-derived d128 block statement chain | accounted relation rows under one statement commitment | `199,553` rows | statement chain, not one composed proof |
+| attention-derived d128 executable statement receipt | verified Groth16 statement receipt over outer-proof input contract | `807` proof bytes, `17` public signals, `40 / 40` mutations rejected | external control, not native block proof |
 | NANOZK transformer block context | reported transformer block proof | `6.9 KB`, `6.3s` prove, `0.023s` verify | source-backed context only |
 
 The d128/d64 checked-row ratio is `3.981935x`, close to the expected width-scaling pressure from the d64 to d128 block surface.
+The attention-derived statement-chain artifact remains compressed from `14,624`
+bytes to `2,559` bytes (`0.174986x`) before the external receipt layer.
 
 ## Interpretation
 
@@ -48,16 +52,20 @@ The block surface now has the pieces we need to discuss a serious transformer bl
 - MLP nonlinearity: bounded SiLU/SwiGLU activation and multiplication rows, an honest GELU-style substitute, not exact GELU;
 - residual: statement-bound residual-add receipt slices.
 - attention-to-block boundary: the checked attention output now feeds a d128 block-output activation path under block statement commitment `blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5`.
+- executable control: the compressed input contract is accepted by a real
+  `snarkjs/Groth16` receipt with commitment
+  `blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d`.
 
 The strongest paper-facing angle is still not "we beat NANOZK." The stronger and more defensible angle is:
 
-> A STARK-native backend can organize attention lookup fusion and bounded block receipt chains under one proof-surface accounting discipline, while preserving explicit claim boundaries.
+> A STARK-native backend can organize attention lookup fusion, bounded block receipt chains, and verifier-facing statement receipts under one proof-surface accounting discipline, while preserving explicit claim boundaries.
 
 ## Non-Claims
 
 - Not a matched benchmark against NANOZK or Jolt Atlas.
 - Not one recursive or compressed proof object for a full transformer block.
-- Not proof-size or verifier-time evidence for a local d128 layer proof.
+- Not native proof-size or verifier-time evidence for a local d128 layer proof.
+- The `807`-byte Groth16 proof is an external statement receipt, not a native block proof.
 - Not exact real-valued Softmax, LayerNorm, or GELU.
 - Not full autoregressive inference.
 - Not production-ready.
