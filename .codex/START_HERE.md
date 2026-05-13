@@ -546,6 +546,17 @@ This repository currently has three live lanes.
      parser/schema, validation-command-drift, and non-claim-removal mutations.
      This is accumulator-integrity GO only; see
      `docs/engineering/zkai-d128-full-block-accumulator-backend-2026-05-03.md`.
+   - The attention-to-d128 block bridge lane now has a value-connected first
+     slice: the checked d8 bounded Softmax-table attention output is projected
+     into a new d128 input commitment
+     `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
+     and the d128 RMSNorm public-row payload consumes that exact commitment,
+     producing statement commitment
+     `blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d`.
+     This is a GO for attention-derived input to first RMSNorm slice, but a
+     NO-GO for claiming the existing full-block receipt consumed the vector;
+     current-vs-derived d128 input mismatch remains `127 / 128`. See
+     `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
    - The d128 lane now has receipt-composition, range-policy-bound full-block
      public inputs, two-slice accumulator, full-block accumulator, and
      proof-native two-slice transcript-compression GO results, plus checked

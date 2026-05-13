@@ -72,16 +72,17 @@ It is not:
 - proof-size savings;
 - production-ready.
 
-## Next Gate
+## Follow-Up Gate
 
-The next useful PR should parameterize or clone the d128 RMSNorm public-row input
-surface so it consumes this derived input vector, producing a new RMSNorm
-statement commitment whose input activation commitment is exactly:
+The follow-up gate parameterizes the d128 RMSNorm public-row input surface so it
+consumes this derived input vector, producing a new RMSNorm statement commitment
+whose input activation commitment is exactly:
 
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`
 
-That would move the path from "attention-derived input artifact" to
-"attention-derived RMSNorm slice."
+That moves the path from "attention-derived input artifact" to
+"attention-derived RMSNorm slice"; see
+`docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
 
 ## Validation
 
