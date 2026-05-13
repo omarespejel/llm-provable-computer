@@ -60,6 +60,7 @@ VALIDATION_COMMANDS = [
     "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fusion_mechanism_ablation_gate",
     "just gate-fast",
     "git diff --check",
+    "just gate",
 ]
 
 EXPECTED_MUTATION_NAMES = [
@@ -176,10 +177,25 @@ def _round(value: float) -> float:
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
     matched = [row for row in rows if "source_plus_sidecar_raw_proof_bytes" in row]
+    if not matched:
+        raise FusionMechanismAblationGateError("route matrix must contain matched source-plus-sidecar rows")
+    for index, row in enumerate(matched):
+        for key in (
+            "source_plus_sidecar_raw_proof_bytes",
+            "fused_proof_size_bytes",
+            "fused_saves_vs_source_plus_sidecar_bytes",
+            "fused_to_source_plus_sidecar_ratio",
+        ):
+            if key not in row:
+                raise FusionMechanismAblationGateError(f"route matrix row {index} missing {key}")
     savings = [row["fused_saves_vs_source_plus_sidecar_bytes"] for row in matched]
     ratios = [row["fused_to_source_plus_sidecar_ratio"] for row in matched]
     source_plus = sum(row["source_plus_sidecar_raw_proof_bytes"] for row in matched)
     fused = sum(row["fused_proof_size_bytes"] for row in matched)
+    if source_plus <= 0:
+        raise FusionMechanismAblationGateError("route matrix source-plus-sidecar total must be positive")
+    if not ratios:
+        raise FusionMechanismAblationGateError("route matrix ratio inventory must be non-empty")
     aggregate = route["aggregate_metrics"]
     return {
         "profiles_checked": len(rows),
@@ -206,6 +222,11 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     delta = aggregate["section_totals_by_role"]["delta"]
     opening = aggregate["bucket_totals_by_role"]["delta"]["opening_bucket_bytes"]
     total = aggregate["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"]
+    if total <= 0:
+        raise FusionMechanismAblationGateError("section delta savings total must be positive")
+    for key in ("fri_proof", "decommitments"):
+        if key not in delta:
+            raise FusionMechanismAblationGateError(f"section delta missing {key}")
     fri_plus_decommitments = delta["fri_proof"] + delta["decommitments"]
     return {
         "profiles_checked": aggregate["profiles_checked"],
@@ -223,8 +244,13 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
 def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     aggregate = typed["aggregate"]
     delta = aggregate["source_plus_sidecar_minus_fused_delta"]
+    for key in ("fri_decommitments", "trace_decommitments", "typed_size_estimate_bytes"):
+        if key not in delta:
+            raise FusionMechanismAblationGateError(f"typed size delta missing {key}")
     decommitment_total = delta["fri_decommitments"] + delta["trace_decommitments"]
     typed_savings = delta["typed_size_estimate_bytes"]
+    if typed_savings <= 0:
+        raise FusionMechanismAblationGateError("typed size savings total must be positive")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "typed_savings_bytes_total": typed_savings,
