@@ -175,6 +175,21 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):
             gate._typed_metrics(typed)
 
+    def test_base_payload_normalizes_malformed_source_evidence_errors(self):
+        original = gate.load_json
+
+        def malformed(path):
+            if str(path).endswith("route-matrix-2026-05.json"):
+                return {}
+            return original(path)
+
+        try:
+            gate.load_json = malformed
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "malformed source evidence"):
+                gate._base_payload()
+        finally:
+            gate.load_json = original
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -35,6 +35,33 @@ The gate cross-checks these existing inputs:
 
 ## Checked Result
 
+Metadata:
+
+- Backend: `llm-provable-computer@0.1.0` with `stwo-backend`,
+  `stwo@2.2.0`, and `stwo-constraint-framework@2.2.0`.
+- Gate source commit before this review-fix patch:
+  `0c1d54358f9f13361ad205c06bedaade878e573a`.
+- Git tag: none used for this research gate; branch artifacts are identified by
+  checked evidence paths, source-artifact SHA-256 hashes, and the Git commit.
+- Build/release artifact identifier:
+  `zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05`.
+- Timing mode:
+  `proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark`.
+- Runtime environment used for this local gate run: macOS `26.4.1`, `arm64`,
+  Apple M3 Pro.
+- Exact generation command:
+  `python3 scripts/zkai_attention_kv_stwo_fusion_mechanism_ablation_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.tsv`.
+- Raw input evidence paths:
+  `docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-section-delta-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-kv-stwo-typed-size-estimate-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-attention-kv-stwo-binary-typed-proof-accounting-2026-05.json`.
+- Checked profile parameters: `11` matched route profiles in the route matrix,
+  `10` section-delta profiles, `9` typed-size profiles, `10` controlled-grid
+  profiles, and one d32 source/sidecar/fused local typed-accounting slice.
+
 - Route matrix: `11` matched profiles, `930,824` source-plus-sidecar JSON proof
   bytes, `736,727` fused JSON proof bytes, `194,097` bytes saved.
 - Section delta: ten-profile JSON slice saves `184,676` bytes, with `92.7722%`
