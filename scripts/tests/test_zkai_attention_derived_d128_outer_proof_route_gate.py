@@ -62,6 +62,15 @@ class AttentionDerivedD128OuterProofRouteGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "proof metric"):
             gate.validate_payload(payload)
 
+    def test_rejects_missing_mutation_audit_fields(self) -> None:
+        payload = self.fresh_payload()
+        for field in ("mutation_inventory", "cases", "case_count", "all_mutations_rejected"):
+            payload.pop(field)
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+
+        with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "missing finalized field"):
+            gate.validate_payload(payload)
+
     def test_rejects_expected_candidate_directory(self) -> None:
         original_root = gate.ROOT
         original_specs = gate.CANDIDATE_SPECS
@@ -78,6 +87,25 @@ class AttentionDerivedD128OuterProofRouteGateTests(unittest.TestCase):
             )
             try:
                 with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "candidate must be a file"):
+                    gate.build_candidate_inventory()
+            finally:
+                gate.ROOT = original_root
+                gate.CANDIDATE_SPECS = original_specs
+
+    def test_rejects_missing_expected_candidate_separately(self) -> None:
+        original_root = gate.ROOT
+        original_specs = gate.CANDIDATE_SPECS
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            gate.ROOT = pathlib.Path(raw_tmp)
+            gate.CANDIDATE_SPECS = (
+                {
+                    "name": "missing_candidate",
+                    "path": "candidate",
+                    "expected_exists": True,
+                },
+            )
+            try:
+                with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "existence drift"):
                     gate.build_candidate_inventory()
             finally:
                 gate.ROOT = original_root

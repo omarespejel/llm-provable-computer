@@ -333,10 +333,10 @@ def build_candidate_inventory() -> list[dict[str, Any]]:
         exists = path.exists()
         entry = dict(spec)
         entry["exists"] = exists
+        if spec["expected_exists"] and not exists:
+            raise AttentionDerivedD128OuterProofRouteError(f"candidate existence drift: {spec['name']}")
         if spec["expected_exists"] and not path.is_file():
-            raise AttentionDerivedD128OuterProofRouteError(
-                f"candidate must be a file when expected to exist: {spec['name']}"
-            )
+            raise AttentionDerivedD128OuterProofRouteError(f"candidate must be a file: {spec['name']}")
         if exists and path.is_file():
             raw = COMPRESSION.read_source_bytes(path, f"candidate {spec['name']}")
             entry["file_sha256"] = sha256_bytes(raw)
@@ -411,7 +411,7 @@ def expected_payload_parts() -> tuple[dict[str, Any], dict[str, Any], dict[str, 
     }
 
 
-def validate_payload(payload: dict[str, Any]) -> None:
+def validate_payload(payload: dict[str, Any], *, require_finalized: bool = True) -> None:
     if not isinstance(payload, dict):
         raise AttentionDerivedD128OuterProofRouteError("payload must be object")
     if _str(payload.get("schema"), "schema") != SCHEMA:
@@ -461,9 +461,15 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise AttentionDerivedD128OuterProofRouteError("non_claims drift")
     if payload.get("validation_commands") != VALIDATION_COMMANDS:
         raise AttentionDerivedD128OuterProofRouteError("validation command drift")
-    if ("cases" in payload) != ("case_count" in payload):
+    audit_fields = ("mutation_inventory", "cases", "case_count", "all_mutations_rejected")
+    present_audit_fields = {field for field in audit_fields if field in payload}
+    if require_finalized:
+        for field in audit_fields:
+            if field not in payload:
+                raise AttentionDerivedD128OuterProofRouteError(f"missing finalized field: {field}")
+    elif present_audit_fields and present_audit_fields != set(audit_fields):
         raise AttentionDerivedD128OuterProofRouteError("mutation finalization drift")
-    if "cases" in payload:
+    if present_audit_fields == set(audit_fields):
         inventory = _list(payload.get("mutation_inventory"), "mutation_inventory")
         cases = _list(payload.get("cases"), "cases")
         if tuple(inventory) != EXPECTED_MUTATIONS:
@@ -571,7 +577,7 @@ def run_mutations(base_payload: dict[str, Any]) -> list[dict[str, Any]]:
         try:
             mutations[name](mutated)
             mutated["payload_commitment"] = payload_commitment(mutated)
-            validate_payload(mutated)
+            validate_payload(mutated, require_finalized=False)
             accepted = True
         except AttentionDerivedD128OuterProofRouteError as err:
             error = str(err)
