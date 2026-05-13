@@ -25,6 +25,9 @@ TSV_OUT = ENGINEERING_EVIDENCE / "zkai-one-transformer-block-surface-2026-05.tsv
 FUSION_MECHANISM = ENGINEERING_EVIDENCE / "zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json"
 D64_BLOCK_RECEIPT = ENGINEERING_EVIDENCE / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 D128_BLOCK_RECEIPT = ENGINEERING_EVIDENCE / "zkai-d128-block-receipt-composition-gate-2026-05.json"
+ATTENTION_DERIVED_D128_CHAIN = (
+    ENGINEERING_EVIDENCE / "zkai-attention-derived-d128-block-statement-chain-2026-05.json"
+)
 COMPETITOR_MATRIX = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.json"
 
 SCHEMA = "zkai-one-transformer-block-surface-v1"
@@ -37,6 +40,7 @@ MAX_SOURCE_BYTES = 16 * 1024 * 1024
 
 VALIDATION_COMMANDS = [
     "python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_one_transformer_block_surface_gate.py scripts/tests/test_zkai_one_transformer_block_surface_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate",
     "git diff --check",
     "just gate-fast",
@@ -247,10 +251,43 @@ def _validate_block_receipt(payload: dict[str, Any], width: int) -> dict[str, An
     return summary
 
 
+def _validate_attention_derived_d128_chain(payload: dict[str, Any]) -> dict[str, Any]:
+    if (
+        _string_field(payload, ("schema",), "attention-derived d128 chain schema")
+        != "zkai-attention-derived-d128-block-statement-chain-gate-v1"
+    ):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain schema drift")
+    if (
+        _string_field(payload, ("decision",), "attention-derived d128 chain decision")
+        != "GO_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_CHAIN"
+    ):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain decision drift")
+    if (
+        _string_field(payload, ("result",), "attention-derived d128 chain result")
+        != "GO_COMMITTED_SLICE_CHAIN_NO_GO_SINGLE_COMPOSED_PROOF"
+    ):
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain result drift")
+    if payload.get("all_mutations_rejected") is not True:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain mutations are not all rejected")
+    summary = _dict(payload.get("summary"), "attention-derived d128 chain summary")
+    if summary.get("all_edges_match") is not True:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain edges do not all match")
+    if _int_field(payload, ("summary", "slice_count"), "attention-derived d128 chain slice count") != 6:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain slice count drift")
+    if _int_field(payload, ("summary", "edge_count"), "attention-derived d128 chain edge count") != 11:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain edge count drift")
+    if _int_field(payload, ("case_count",), "attention-derived d128 chain mutations") != 19:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain mutation count drift")
+    if _int_field(payload, ("summary", "accounted_relation_rows"), "attention-derived d128 chain rows") <= 0:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 chain rows must be positive")
+    return summary
+
+
 def _component_rows(
     fusion: dict[str, Any],
     d64: dict[str, Any],
     d128: dict[str, Any],
+    attention_derived_d128: dict[str, Any],
     matrix: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if _string_field(fusion, ("schema",), "fusion schema") != "zkai-attention-kv-stwo-fusion-mechanism-ablation-v1":
@@ -264,6 +301,7 @@ def _component_rows(
         raise OneTransformerBlockSurfaceError("fusion mutations are not all rejected")
     d64_summary = _validate_block_receipt(d64, 64)
     d128_summary = _validate_block_receipt(d128, 128)
+    attention_derived_summary = _validate_attention_derived_d128_chain(attention_derived_d128)
     nanozk = _nanozk_block_row(matrix)
 
     fused_savings = _int_field(fusion, ("route_matrix", "fused_savings_bytes_total"), "fusion savings")
@@ -305,6 +343,21 @@ def _component_rows(
             "comparison_status": "LOCAL_RECEIPT_CHAIN_NOT_RECURSIVE_LAYER_PROOF",
         },
         {
+            "surface": "attention-derived d128 block statement chain",
+            "subsystem": "attention_to_block_boundary",
+            "local_status": "GO_ATTENTION_DERIVED_STATEMENT_CHAIN_NO_GO_COMPOSED_PROOF",
+            "metric": "accounted relation rows bound under one statement commitment",
+            "value": attention_derived_summary["accounted_relation_rows"],
+            "unit": "rows",
+            "support": (
+                f"{attention_derived_summary['slice_count']} slices; "
+                f"{attention_derived_summary['edge_count']} edges; "
+                "19 / 19 mutations rejected; "
+                f"statement {attention_derived_summary['block_statement_commitment']}"
+            ),
+            "comparison_status": "LOCAL_STATEMENT_CHAIN_NOT_SINGLE_PROOF_OBJECT",
+        },
+        {
             "surface": "NANOZK transformer block context",
             "subsystem": "external_context",
             "local_status": "SOURCE_BACKED_EXTERNAL_CONTEXT",
@@ -321,14 +374,20 @@ def build_payload_uncommitted() -> dict[str, Any]:
     fusion_raw = read_source_bytes(FUSION_MECHANISM, "fusion mechanism JSON")
     d64_raw = read_source_bytes(D64_BLOCK_RECEIPT, "d64 block receipt JSON")
     d128_raw = read_source_bytes(D128_BLOCK_RECEIPT, "d128 block receipt JSON")
+    attention_derived_raw = read_source_bytes(ATTENTION_DERIVED_D128_CHAIN, "attention-derived d128 chain JSON")
     matrix_raw = read_source_bytes(COMPETITOR_MATRIX, "competitor matrix JSON")
     fusion = _parse_json_bytes(FUSION_MECHANISM, fusion_raw)
     d64 = _parse_json_bytes(D64_BLOCK_RECEIPT, d64_raw)
     d128 = _parse_json_bytes(D128_BLOCK_RECEIPT, d128_raw)
+    attention_derived = _parse_json_bytes(ATTENTION_DERIVED_D128_CHAIN, attention_derived_raw)
     matrix = _parse_json_bytes(COMPETITOR_MATRIX, matrix_raw)
-    component_rows = _component_rows(fusion, d64, d128, matrix)
+    component_rows = _component_rows(fusion, d64, d128, attention_derived, matrix)
     d64_row = next(row for row in component_rows if row["surface"].startswith("d64 "))
     d128_row = next(row for row in component_rows if row["surface"].startswith("d128 "))
+    attention_derived_row = next(
+        row for row in component_rows if row["surface"] == "attention-derived d128 block statement chain"
+    )
+    attention_derived_summary = _validate_attention_derived_d128_chain(attention_derived)
     attention_row = next(row for row in component_rows if row["subsystem"] == "attention")
     return {
         "schema": SCHEMA,
@@ -338,6 +397,11 @@ def build_payload_uncommitted() -> dict[str, Any]:
             _source_from_bytes(FUSION_MECHANISM, "local_attention_fusion_json", fusion_raw),
             _source_from_bytes(D64_BLOCK_RECEIPT, "local_d64_block_receipt_json", d64_raw),
             _source_from_bytes(D128_BLOCK_RECEIPT, "local_d128_block_receipt_json", d128_raw),
+            _source_from_bytes(
+                ATTENTION_DERIVED_D128_CHAIN,
+                "local_attention_derived_d128_statement_chain_json",
+                attention_derived_raw,
+            ),
             _source_from_bytes(COMPETITOR_MATRIX, "source_backed_competitor_matrix_json", matrix_raw),
         ],
         "component_rows": component_rows,
@@ -362,19 +426,29 @@ def build_payload_uncommitted() -> dict[str, Any]:
                 "checked_surface": "residual-add receipt slices",
                 "honest_scope": "statement-bound residual transition, not full autoregressive inference",
             },
+            {
+                "component": "attention_to_block_boundary",
+                "checked_surface": "attention output through d128 block-output activation under one statement chain",
+                "honest_scope": "one verifier-facing statement chain, not one composed proof object",
+            },
         ],
         "summary": {
             "breakthrough_status": "credible_architecture_path_not_field_breakthrough",
-            "strongest_claim": "STARK-native attention fusion and statement-bound RMSNorm/SwiGLU/residual receipt chains now sit in one source-backed block-surface scorecard.",
-            "go_result": "GO for one-block architecture surface accounting",
+            "strongest_claim": "STARK-native attention fusion and an attention-derived d128 RMSNorm/SwiGLU/residual statement chain now sit in one source-backed block-surface scorecard.",
+            "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain",
             "no_go_result": "NO-GO for matched NANOZK-style single layer proof, proof-size benchmark, verifier-time benchmark, or full inference",
             "attention_fusion_saving_bytes": attention_row["value"],
             "d64_checked_rows": d64_row["value"],
             "d128_checked_rows": d128_row["value"],
+            "attention_derived_d128_statement_chain_rows": attention_derived_row["value"],
+            "attention_derived_d128_statement_chain_edges": attention_derived_summary["edge_count"],
+            "attention_derived_d128_block_statement_commitment": attention_derived_summary[
+                "block_statement_commitment"
+            ],
             "d128_over_d64_checked_row_ratio": round(float(d128_row["value"]) / float(d64_row["value"]), 6),
         },
         "next_required_work": [
-            "make attention output feed the block receipt input under one statement commitment",
+            "turn the attention-derived statement chain into a proof-object composition or compression experiment",
             "add proof-carrying aggregation or recursion if claiming one proof object",
             "add median-of-5 timing only after the block proof surface is stable",
             "keep NANOZK/Jolt comparisons source-backed and non-matched until dimensions, semantics, hardware, and timing policy match",
