@@ -220,21 +220,65 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         tsv_path.unlink(missing_ok=True)
 
         original_replace = gate.os.replace
+        original_write_bytes = pathlib.Path.write_bytes
         try:
             def fail_on_tsv(src, dst):
                 if pathlib.Path(dst) == tsv_path:
                     raise OSError("simulated second replace failure")
                 return original_replace(src, dst)
 
+            def fail_direct_write(_path, _contents):
+                raise AssertionError("rollback must restore through an atomic temp replace")
+
             gate.os.replace = fail_on_tsv
+            pathlib.Path.write_bytes = fail_direct_write
             with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "failed to write output path"):
                 gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
             self.assertEqual(json_path.read_text(encoding="utf-8"), "original-json")
             self.assertFalse(tsv_path.exists())
         finally:
             gate.os.replace = original_replace
+            pathlib.Path.write_bytes = original_write_bytes
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
+
+    def test_write_outputs_rollback_does_not_follow_swapped_symlink(self):
+        with tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix="fusion-transaction-symlink-json-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+            handle.write(b"original-json")
+        tsv_path = json_path.with_suffix(".tsv")
+        tsv_path.unlink(missing_ok=True)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outside_target = pathlib.Path(tmp) / "outside-target.json"
+            outside_target.write_text("outside-original", encoding="utf-8")
+            original_replace = gate.os.replace
+            try:
+                def swap_json_target_on_tsv(src, dst):
+                    if pathlib.Path(dst) == tsv_path:
+                        json_path.unlink(missing_ok=True)
+                        try:
+                            json_path.symlink_to(outside_target)
+                        except OSError as err:
+                            self.skipTest(f"symlink creation is unavailable: {err}")
+                        raise OSError("simulated second replace failure after target swap")
+                    return original_replace(src, dst)
+
+                gate.os.replace = swap_json_target_on_tsv
+                with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "failed to write output path"):
+                    gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
+                self.assertEqual(outside_target.read_text(encoding="utf-8"), "outside-original")
+                self.assertTrue(json_path.is_symlink())
+                self.assertFalse(tsv_path.exists())
+            finally:
+                gate.os.replace = original_replace
+                json_path.unlink(missing_ok=True)
+                tsv_path.unlink(missing_ok=True)
 
     def test_json_helpers_reject_non_finite_values(self):
         payload = copy.deepcopy(self.payload)
@@ -306,6 +350,21 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate._section_delta_metrics(section)
 
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] = 184676.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._section_delta_metrics(section)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["bucket_totals_by_role"]["delta"]["opening_bucket_bytes"] = 171328.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._section_delta_metrics(section)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["section_totals_by_role"]["delta"]["fri_proof"] = 102304.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._section_delta_metrics(section)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
         section["aggregate"]["opening_bucket_savings_share"] = 0.5
         with self.assertRaisesRegex(
             gate.FusionMechanismAblationGateError,
@@ -321,6 +380,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):
+            gate._typed_metrics(typed)
+
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["trace_decommitments"] = 17312.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
             gate._typed_metrics(typed)
 
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
@@ -345,6 +409,26 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         controlled["aggregate"]["typed_savings_bytes_total"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "controlled typed savings total"):
             gate._controlled_metrics(controlled)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["opening_plumbing_savings_bytes_total"] = 44896.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._controlled_metrics(controlled)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["fri_trace_merkle_path_savings_bytes_total"] = 41312.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._controlled_metrics(controlled)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["aggregate"]["source_plus_sidecar_json_proof_bytes"] = 116682.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._binary_metrics(binary)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["aggregate"]["fused_saves_vs_source_plus_sidecar_local_typed_bytes"] = 2620.25
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._binary_metrics(binary)
 
     def test_payload_field_helpers_reject_wrong_types(self):
         payload = copy.deepcopy(self.payload)

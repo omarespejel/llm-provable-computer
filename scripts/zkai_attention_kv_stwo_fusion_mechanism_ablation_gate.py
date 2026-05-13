@@ -221,6 +221,13 @@ def _non_negative_integer_mapping_field(payload: dict[str, Any], key: str, label
     return value
 
 
+def _positive_integer_mapping_field(payload: dict[str, Any], key: str, label: str) -> int:
+    value = _non_negative_integer_mapping_field(payload, key, label)
+    if value <= 0:
+        raise FusionMechanismAblationGateError(f"{label} must be positive")
+    return value
+
+
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
     matched = [(index, row) for index, row in enumerate(rows) if "source_plus_sidecar_raw_proof_bytes" in row]
@@ -299,14 +306,25 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
 def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     aggregate = section["aggregate"]
     delta = _mapping(aggregate["section_totals_by_role"]["delta"], "section delta totals")
-    opening = aggregate["bucket_totals_by_role"]["delta"]["opening_bucket_bytes"]
-    total = aggregate["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"]
-    if total <= 0:
-        raise FusionMechanismAblationGateError("section delta savings total must be positive")
+    opening_bucket = _mapping(aggregate["bucket_totals_by_role"]["delta"], "section opening bucket totals")
+    role_totals = _mapping(aggregate["role_totals"], "section role totals")
+    opening = _non_negative_integer_mapping_field(
+        opening_bucket, "opening_bucket_bytes", "section opening bucket"
+    )
+    total = _positive_integer_mapping_field(
+        role_totals,
+        "fused_saves_vs_source_plus_sidecar_bytes",
+        "section delta savings total",
+    )
     for key in ("fri_proof", "decommitments"):
         if key not in delta:
             raise FusionMechanismAblationGateError(f"section delta missing {key}")
-    fri_plus_decommitments = delta["fri_proof"] + delta["decommitments"]
+    fri_proof = _non_negative_integer_mapping_field(delta, "fri_proof", "section fri_proof")
+    decommitments = _non_negative_integer_mapping_field(delta, "decommitments", "section decommitments")
+    fri_plus_decommitments = fri_proof + decommitments
+    largest_delta_section_bytes = _non_negative_integer_mapping_field(
+        aggregate, "largest_delta_section_bytes", "section largest delta"
+    )
     reported_opening_share = _share_payload_field(
         section,
         ("aggregate", "opening_bucket_savings_share"),
@@ -325,7 +343,7 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
         "fri_plus_decommitments_savings_bytes": fri_plus_decommitments,
         "fri_plus_decommitments_savings_share": _round(fri_plus_decommitments / total),
         "largest_delta_section": aggregate["largest_delta_section"],
-        "largest_delta_section_bytes": aggregate["largest_delta_section_bytes"],
+        "largest_delta_section_bytes": largest_delta_section_bytes,
         "backend_internal_split_status": BACKEND_INTERNAL_SPLIT_STATUS,
     }
 
@@ -336,10 +354,15 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     for key in ("fri_decommitments", "trace_decommitments", "typed_size_estimate_bytes"):
         if key not in delta:
             raise FusionMechanismAblationGateError(f"typed size delta missing {key}")
-    decommitment_total = delta["fri_decommitments"] + delta["trace_decommitments"]
-    typed_savings = delta["typed_size_estimate_bytes"]
-    if typed_savings <= 0:
-        raise FusionMechanismAblationGateError("typed size savings total must be positive")
+    fri_decommitments = _non_negative_integer_mapping_field(delta, "fri_decommitments", "typed fri decommitments")
+    trace_decommitments = _non_negative_integer_mapping_field(
+        delta, "trace_decommitments", "typed trace decommitments"
+    )
+    decommitment_total = fri_decommitments + trace_decommitments
+    typed_savings = _positive_integer_mapping_field(delta, "typed_size_estimate_bytes", "typed size savings total")
+    largest_typed_saving_bucket_bytes = _non_negative_integer_mapping_field(
+        aggregate, "largest_typed_saving_bucket_bytes", "typed largest saving bucket"
+    )
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "typed_savings_bytes_total": typed_savings,
@@ -347,22 +370,26 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
         "fri_trace_decommitment_savings_bytes": decommitment_total,
         "fri_trace_decommitment_savings_share": _round(decommitment_total / typed_savings),
         "largest_typed_saving_bucket": aggregate["largest_typed_saving_bucket"],
-        "largest_typed_saving_bucket_bytes": aggregate["largest_typed_saving_bucket_bytes"],
+        "largest_typed_saving_bucket_bytes": largest_typed_saving_bucket_bytes,
         "stable_binary_serializer_status": typed["stable_binary_serializer_status"],
     }
 
 
 def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
     aggregate = controlled["aggregate"]
-    typed_total = _positive_numeric_payload_field(
-        controlled,
-        ("aggregate", "typed_savings_bytes_total"),
-        "controlled typed savings total",
+    typed_total = _positive_integer_mapping_field(
+        aggregate, "typed_savings_bytes_total", "controlled typed savings total"
     )
-    opening_bytes = _positive_numeric_payload_field(
-        controlled,
-        ("aggregate", "opening_plumbing_savings_bytes_total"),
-        "controlled opening plumbing savings",
+    opening_bytes = _positive_integer_mapping_field(
+        aggregate, "opening_plumbing_savings_bytes_total", "controlled opening plumbing savings"
+    )
+    fri_trace_merkle_path_savings = _non_negative_integer_mapping_field(
+        aggregate,
+        "fri_trace_merkle_path_savings_bytes_total",
+        "controlled FRI trace merkle path savings",
+    )
+    largest_component_saving = _non_negative_integer_mapping_field(
+        aggregate, "largest_component_saving_bucket_bytes", "controlled largest component saving"
     )
     reported_share = _share_payload_field(
         controlled,
@@ -379,29 +406,45 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
         "typed_saving_share_total": aggregate["typed_saving_share_total"],
         "opening_plumbing_savings_bytes_total": opening_bytes,
         "opening_plumbing_share_of_typed_savings": recomputed_share,
-        "fri_trace_merkle_path_savings_bytes_total": aggregate["fri_trace_merkle_path_savings_bytes_total"],
+        "fri_trace_merkle_path_savings_bytes_total": fri_trace_merkle_path_savings,
         "fri_trace_merkle_path_share_of_typed_savings": aggregate["fri_trace_merkle_path_share_of_typed_savings"],
         "largest_component_saving_bucket": aggregate["largest_component_saving_bucket"],
+        "largest_component_saving_bucket_bytes": largest_component_saving,
         "stable_binary_serializer_status": controlled["stable_binary_serializer_status"],
     }
 
 
 def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
     aggregate = binary["aggregate"]
-    local_typed_saving = _positive_numeric_payload_field(
-        binary,
-        ("aggregate", "fused_saves_vs_source_plus_sidecar_local_typed_bytes"),
+    source_plus_sidecar_json = _non_negative_integer_mapping_field(
+        aggregate, "source_plus_sidecar_json_proof_bytes", "binary source-plus-sidecar JSON proof"
+    )
+    fused_json = _non_negative_integer_mapping_field(
+        aggregate, "fused_json_proof_bytes", "binary fused JSON proof"
+    )
+    json_saving = _non_negative_integer_mapping_field(
+        aggregate,
+        "fused_saves_vs_source_plus_sidecar_json_bytes",
+        "binary JSON proof saving",
+    )
+    source_plus_sidecar_typed = _non_negative_integer_mapping_field(
+        aggregate, "source_plus_sidecar_local_typed_bytes", "binary source-plus-sidecar local typed"
+    )
+    fused_typed = _non_negative_integer_mapping_field(
+        aggregate, "fused_local_typed_bytes", "binary fused local typed"
+    )
+    local_typed_saving = _positive_integer_mapping_field(
+        aggregate,
+        "fused_saves_vs_source_plus_sidecar_local_typed_bytes",
         "d32 local typed saving",
     )
     return {
         "profiles_checked": aggregate["profiles_checked"],
-        "source_plus_sidecar_json_proof_bytes": aggregate["source_plus_sidecar_json_proof_bytes"],
-        "fused_json_proof_bytes": aggregate["fused_json_proof_bytes"],
-        "fused_saves_vs_source_plus_sidecar_json_bytes": aggregate[
-            "fused_saves_vs_source_plus_sidecar_json_bytes"
-        ],
-        "source_plus_sidecar_local_typed_bytes": aggregate["source_plus_sidecar_local_typed_bytes"],
-        "fused_local_typed_bytes": aggregate["fused_local_typed_bytes"],
+        "source_plus_sidecar_json_proof_bytes": source_plus_sidecar_json,
+        "fused_json_proof_bytes": fused_json,
+        "fused_saves_vs_source_plus_sidecar_json_bytes": json_saving,
+        "source_plus_sidecar_local_typed_bytes": source_plus_sidecar_typed,
+        "fused_local_typed_bytes": fused_typed,
         "fused_saves_vs_source_plus_sidecar_local_typed_bytes": local_typed_saving,
         "binary_serialization_status": binary["binary_serialization_status"],
         "cli_upstream_stwo_serialization_status": binary["cli_upstream_stwo_serialization_status"],
@@ -817,6 +860,26 @@ def write_outputs(
             os.fsync(handle.fileno())
         return tmp_path
 
+    def write_temp_bytes(path: pathlib.Path, contents: bytes) -> pathlib.Path:
+        _assert_no_repo_symlink_components(path.parent, "rollback output path")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _assert_no_repo_symlink_components(path.parent, "rollback output path")
+        if path.is_symlink():
+            raise FusionMechanismAblationGateError("rollback output path must not include symlink components")
+        with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
+            tmp_path = pathlib.Path(handle.name)
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        return tmp_path
+
+    def rollback_replace(path: pathlib.Path, contents: bytes) -> None:
+        _assert_output_path(path, "rollback output path")
+        tmp = write_temp_bytes(path, contents)
+        temps.append(tmp)
+        _assert_output_path(path, "rollback output path")
+        os.replace(tmp, path)
+
     try:
         try:
             for path, text in outputs:
@@ -834,11 +897,12 @@ def write_outputs(
             for path in reversed(replaced):
                 original = original_bytes.get(path)
                 try:
+                    _assert_output_path(path, "rollback output path")
                     if original is None:
                         path.unlink(missing_ok=True)
                     else:
-                        path.write_bytes(original)
-                except OSError:
+                        rollback_replace(path, original)
+                except (FusionMechanismAblationGateError, OSError):
                     pass
         for tmp in temps:
             try:
