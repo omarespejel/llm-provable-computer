@@ -573,6 +573,9 @@ def validate_gate_value_projection_payload(payload: Any, *, bridge_payload: dict
         raise AttentionDerivedD128ProjectionBoundaryError("value matrix root drift")
     if GATE_VALUE.proof_native_parameter_commitment(data["gate_matrix_root"], data["value_matrix_root"]) != data["proof_native_parameter_commitment"]:
         raise AttentionDerivedD128ProjectionBoundaryError("gate/value proof-native parameter drift")
+    expected_bridge_public_instance = BRIDGE.public_instance_commitment(data["source_bridge_statement_commitment"])
+    if data["source_bridge_public_instance_commitment"] != expected_bridge_public_instance:
+        raise AttentionDerivedD128ProjectionBoundaryError("gate/value source bridge public instance commitment drift")
     if bridge_payload is not None:
         validate_bridge_payload(bridge_payload)
         if data["source_bridge_statement_commitment"] != bridge_payload["statement_commitment"]:
