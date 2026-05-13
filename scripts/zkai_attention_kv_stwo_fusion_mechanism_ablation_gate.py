@@ -36,7 +36,13 @@ BACKEND_INTERNAL_SPLIT_STATUS = (
 )
 TIMING_POLICY = "proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark"
 MAX_EVIDENCE_JSON_BYTES = 16 * 1024 * 1024
+EXPECTED_STABLE_BINARY_SERIALIZER_STATUS = "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED"
+EXPECTED_BINARY_SERIALIZATION_STATUS = "NO_GO_NOT_UPSTREAM_STWO_PROOF_SERIALIZATION"
 EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS = "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY"
+EXPECTED_BINARY_FIRST_BLOCKER = (
+    "Upstream Stwo does not expose a stable proof wire serializer here; this gate records a repo-owned "
+    "deterministic accounting record stream over typed proof fields instead."
+)
 MIN_MATCHED_ROUTE_SAVINGS_BYTES = 1
 
 EVIDENCE_INPUTS = {
@@ -228,6 +234,15 @@ def _positive_integer_mapping_field(payload: dict[str, Any], key: str, label: st
     return value
 
 
+def _string_mapping_field(payload: dict[str, Any], key: str, label: str) -> str:
+    value = payload[key]
+    if not isinstance(value, str):
+        raise FusionMechanismAblationGateError(f"{label} must be string")
+    if not value:
+        raise FusionMechanismAblationGateError(f"{label} must be non-empty")
+    return value
+
+
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
     matched = [(index, row) for index, row in enumerate(rows) if "source_plus_sidecar_raw_proof_bytes" in row]
@@ -325,6 +340,7 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     largest_delta_section_bytes = _non_negative_integer_mapping_field(
         aggregate, "largest_delta_section_bytes", "section largest delta"
     )
+    largest_delta_section = _string_mapping_field(aggregate, "largest_delta_section", "section largest delta")
     reported_opening_share = _share_payload_field(
         section,
         ("aggregate", "opening_bucket_savings_share"),
@@ -342,7 +358,7 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
         "opening_bucket_savings_share": recomputed_opening_share,
         "fri_plus_decommitments_savings_bytes": fri_plus_decommitments,
         "fri_plus_decommitments_savings_share": _round(fri_plus_decommitments / total),
-        "largest_delta_section": aggregate["largest_delta_section"],
+        "largest_delta_section": largest_delta_section,
         "largest_delta_section_bytes": largest_delta_section_bytes,
         "backend_internal_split_status": BACKEND_INTERNAL_SPLIT_STATUS,
     }
@@ -360,18 +376,38 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     )
     decommitment_total = fri_decommitments + trace_decommitments
     typed_savings = _positive_integer_mapping_field(delta, "typed_size_estimate_bytes", "typed size savings total")
+    source_plus_sidecar = _mapping(aggregate["source_plus_sidecar_totals"], "typed source-plus-sidecar totals")
+    source_plus_sidecar_typed = _positive_integer_mapping_field(
+        source_plus_sidecar, "typed_size_estimate_bytes", "typed source-plus-sidecar total"
+    )
+    reported_typed_share = _share_payload_field(
+        typed,
+        ("aggregate", "typed_saving_share_vs_source_plus_sidecar"),
+        "typed saving share",
+    )
+    recomputed_typed_share = _round(typed_savings / source_plus_sidecar_typed)
+    if reported_typed_share != recomputed_typed_share:
+        raise FusionMechanismAblationGateError("typed saving share does not match byte totals")
     largest_typed_saving_bucket_bytes = _non_negative_integer_mapping_field(
         aggregate, "largest_typed_saving_bucket_bytes", "typed largest saving bucket"
     )
+    largest_typed_saving_bucket = _string_mapping_field(
+        aggregate, "largest_typed_saving_bucket", "typed largest saving bucket"
+    )
+    stable_binary_status = _string_mapping_field(
+        typed, "stable_binary_serializer_status", "typed stable binary serializer status"
+    )
+    if stable_binary_status != EXPECTED_STABLE_BINARY_SERIALIZER_STATUS:
+        raise FusionMechanismAblationGateError("typed stable binary serializer status drift")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "typed_savings_bytes_total": typed_savings,
-        "typed_saving_share_vs_source_plus_sidecar": aggregate["typed_saving_share_vs_source_plus_sidecar"],
+        "typed_saving_share_vs_source_plus_sidecar": recomputed_typed_share,
         "fri_trace_decommitment_savings_bytes": decommitment_total,
         "fri_trace_decommitment_savings_share": _round(decommitment_total / typed_savings),
-        "largest_typed_saving_bucket": aggregate["largest_typed_saving_bucket"],
+        "largest_typed_saving_bucket": largest_typed_saving_bucket,
         "largest_typed_saving_bucket_bytes": largest_typed_saving_bucket_bytes,
-        "stable_binary_serializer_status": typed["stable_binary_serializer_status"],
+        "stable_binary_serializer_status": stable_binary_status,
     }
 
 
@@ -388,9 +424,25 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
         "fri_trace_merkle_path_savings_bytes_total",
         "controlled FRI trace merkle path savings",
     )
+    source_plus_sidecar_typed = _positive_integer_mapping_field(
+        aggregate,
+        "source_plus_sidecar_typed_size_bytes_total",
+        "controlled source-plus-sidecar typed total",
+    )
     largest_component_saving = _non_negative_integer_mapping_field(
         aggregate, "largest_component_saving_bucket_bytes", "controlled largest component saving"
     )
+    largest_component_bucket = _string_mapping_field(
+        aggregate, "largest_component_saving_bucket", "controlled largest component saving bucket"
+    )
+    reported_typed_share = _share_payload_field(
+        controlled,
+        ("aggregate", "typed_saving_share_total"),
+        "controlled typed saving share",
+    )
+    recomputed_typed_share = _round(typed_total / source_plus_sidecar_typed)
+    if reported_typed_share != recomputed_typed_share:
+        raise FusionMechanismAblationGateError("controlled typed saving share does not match byte totals")
     reported_share = _share_payload_field(
         controlled,
         ("aggregate", "opening_plumbing_share_of_typed_savings"),
@@ -399,18 +451,35 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
     recomputed_share = _round(opening_bytes / typed_total)
     if reported_share != recomputed_share:
         raise FusionMechanismAblationGateError("controlled opening plumbing share does not match byte totals")
+    reported_fri_trace_share = _share_payload_field(
+        controlled,
+        ("aggregate", "fri_trace_merkle_path_share_of_typed_savings"),
+        "controlled FRI trace merkle path share",
+    )
+    recomputed_fri_trace_share = _round(fri_trace_merkle_path_savings / typed_total)
+    if reported_fri_trace_share != recomputed_fri_trace_share:
+        raise FusionMechanismAblationGateError(
+            "controlled FRI trace merkle path share does not match byte totals"
+        )
+    stable_binary_status = _string_mapping_field(
+        controlled, "stable_binary_serializer_status", "controlled stable binary serializer status"
+    )
+    if stable_binary_status != EXPECTED_STABLE_BINARY_SERIALIZER_STATUS:
+        raise FusionMechanismAblationGateError("controlled stable binary serializer status drift")
+    if aggregate["all_profiles_save_typed_components"] is not True:
+        raise FusionMechanismAblationGateError("controlled all-profiles-save status drift")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "all_profiles_save_typed_components": aggregate["all_profiles_save_typed_components"],
         "typed_savings_bytes_total": typed_total,
-        "typed_saving_share_total": aggregate["typed_saving_share_total"],
+        "typed_saving_share_total": recomputed_typed_share,
         "opening_plumbing_savings_bytes_total": opening_bytes,
         "opening_plumbing_share_of_typed_savings": recomputed_share,
         "fri_trace_merkle_path_savings_bytes_total": fri_trace_merkle_path_savings,
-        "fri_trace_merkle_path_share_of_typed_savings": aggregate["fri_trace_merkle_path_share_of_typed_savings"],
-        "largest_component_saving_bucket": aggregate["largest_component_saving_bucket"],
+        "fri_trace_merkle_path_share_of_typed_savings": recomputed_fri_trace_share,
+        "largest_component_saving_bucket": largest_component_bucket,
         "largest_component_saving_bucket_bytes": largest_component_saving,
-        "stable_binary_serializer_status": controlled["stable_binary_serializer_status"],
+        "stable_binary_serializer_status": stable_binary_status,
     }
 
 
@@ -438,6 +507,17 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
         "fused_saves_vs_source_plus_sidecar_local_typed_bytes",
         "d32 local typed saving",
     )
+    binary_status = _string_mapping_field(binary, "binary_serialization_status", "binary serialization status")
+    cli_status = _string_mapping_field(
+        binary, "cli_upstream_stwo_serialization_status", "binary upstream serialization status"
+    )
+    first_blocker = _string_mapping_field(binary, "first_blocker", "binary first blocker")
+    if binary_status != EXPECTED_BINARY_SERIALIZATION_STATUS:
+        raise FusionMechanismAblationGateError("binary serialization status drift")
+    if cli_status != EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS:
+        raise FusionMechanismAblationGateError("binary upstream serialization status drift")
+    if first_blocker != EXPECTED_BINARY_FIRST_BLOCKER:
+        raise FusionMechanismAblationGateError("binary first blocker drift")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "source_plus_sidecar_json_proof_bytes": source_plus_sidecar_json,
@@ -446,9 +526,9 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
         "source_plus_sidecar_local_typed_bytes": source_plus_sidecar_typed,
         "fused_local_typed_bytes": fused_typed,
         "fused_saves_vs_source_plus_sidecar_local_typed_bytes": local_typed_saving,
-        "binary_serialization_status": binary["binary_serialization_status"],
-        "cli_upstream_stwo_serialization_status": binary["cli_upstream_stwo_serialization_status"],
-        "first_blocker": binary["first_blocker"],
+        "binary_serialization_status": binary_status,
+        "cli_upstream_stwo_serialization_status": cli_status,
+        "first_blocker": first_blocker,
     }
 
 
