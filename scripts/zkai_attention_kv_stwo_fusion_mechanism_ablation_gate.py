@@ -375,6 +375,7 @@ def _base_payload() -> dict[str, Any]:
         "section_delta_scope_is_ten_profile_slice": section["profiles_checked"] == 10,
         "route_matrix_scope_is_eleven_matched_profiles": route["matched_profiles_checked"] == 11,
         "typed_estimate_scope_is_nine_profile_slice": typed["profiles_checked"] == 9,
+        "controlled_component_grid_scope_is_ten_profile_slice": controlled["profiles_checked"] == 10,
         "binary_accounting_scope_is_d32_matched_slice": binary["profiles_checked"] == 3,
     }
     failed_consistency = [key for key, value in evidence_consistency.items() if value is not True]
@@ -725,6 +726,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
     write_error: OSError | None = None
 
     def write_temp(path: pathlib.Path, text: str) -> pathlib.Path:
+        _assert_no_repo_symlink_components(path.parent, "output path")
         path.parent.mkdir(parents=True, exist_ok=True)
         _assert_no_repo_symlink_components(path.parent, "output path")
         if path.is_symlink():

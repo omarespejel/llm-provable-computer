@@ -376,10 +376,10 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate._route_metrics = original_route_metrics
 
     def test_base_payload_hard_fails_evidence_consistency_drift(self):
-        original = gate._section_delta_metrics
+        original_section = gate._section_delta_metrics
 
         def wrong_scope(payload):
-            result = original(payload)
+            result = original_section(payload)
             result["profiles_checked"] = 9
             return result
 
@@ -391,7 +391,24 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             ):
                 gate._base_payload()
         finally:
-            gate._section_delta_metrics = original
+            gate._section_delta_metrics = original_section
+
+        original_controlled = gate._controlled_metrics
+
+        def wrong_controlled_scope(payload):
+            result = original_controlled(payload)
+            result["profiles_checked"] = 9
+            return result
+
+        try:
+            gate._controlled_metrics = wrong_controlled_scope
+            with self.assertRaisesRegex(
+                gate.FusionMechanismAblationGateError,
+                "controlled_component_grid_scope_is_ten_profile_slice",
+            ):
+                gate._base_payload()
+        finally:
+            gate._controlled_metrics = original_controlled
 
     def test_base_payload_uses_single_read_for_payload_and_sha(self):
         payload = gate._base_payload()
