@@ -723,6 +723,13 @@ Tablero boundary.
   a matched NANOZK-style layer proof, proof-size benchmark, verifier-time
   benchmark, or full inference. See
   `docs/engineering/zkai-one-transformer-block-surface-2026-05-13.md`.
+- The attention-derived d128 statement chain now has a compressed
+  verifier-facing transcript artifact. The source statement-chain JSON is
+  `14,624` bytes; the compressed artifact is `2,559` bytes, saving `12,065`
+  bytes with ratio `0.174986x`. The gate rejects `20 / 20` local mutations
+  and remains a no-go for one composed proof, recursion, PCD, proof-size
+  evidence, timings, or production readiness. See
+  `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -778,6 +785,7 @@ Use these in order of authority for current state:
 48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
 50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
+51. `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`
 51. `docs/engineering/reproducibility.md`
 52. `git status --short --branch`
 ## Merge culture

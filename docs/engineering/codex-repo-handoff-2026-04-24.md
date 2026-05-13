@@ -59,6 +59,7 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
 50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
+51. `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`
 51. `docs/engineering/reproducibility.md`
 52. `git status --short --branch`
 
@@ -686,6 +687,13 @@ Tablero boundary.
   statement-chain rows. This remains a no-go for a matched NANOZK-style layer
   proof, proof-size benchmark, verifier-time benchmark, or full inference; see
   `docs/engineering/zkai-one-transformer-block-surface-2026-05-13.md`.
+- The attention-derived d128 statement chain now has a compressed
+  verifier-facing transcript artifact: source statement-chain JSON `14,624`
+  bytes, compressed artifact `2,559` bytes, saving `12,065` bytes at
+  `0.174986x`. This is artifact/transcript compression only; it remains a
+  no-go for one composed proof, recursion, PCD, proof-size evidence, timings,
+  or production readiness; see
+  `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
