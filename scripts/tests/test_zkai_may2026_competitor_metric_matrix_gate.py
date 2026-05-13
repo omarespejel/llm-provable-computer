@@ -124,6 +124,13 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "repo-relative"):
                 gate.write_outputs(self.payload, pathlib.Path(tmp) / "out.json", gate.TSV_OUT.relative_to(gate.ROOT))
 
+        with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "json and tsv output paths must differ"):
+            gate.write_outputs(
+                self.payload,
+                pathlib.Path("docs/engineering/evidence/competitor-case-collision.JSON"),
+                pathlib.Path("docs/engineering/evidence/competitor-case-collision.json"),
+            )
+
         with tempfile.NamedTemporaryFile(
             dir=gate.ENGINEERING_EVIDENCE,
             prefix="competitor-output-parent-",
