@@ -152,6 +152,22 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                     gate.TSV_OUT.relative_to(gate.ROOT),
                 )
 
+        with tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix="fusion-output-parent-",
+            delete=False,
+        ) as handle:
+            parent_file = pathlib.Path(handle.name)
+        try:
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "failed to write output path"):
+                gate.write_outputs(
+                    self.payload,
+                    (parent_file / "out.json").relative_to(gate.ROOT),
+                    gate.TSV_OUT.relative_to(gate.ROOT),
+                )
+        finally:
+            parent_file.unlink(missing_ok=True)
+
     def test_metric_extractors_fail_closed_on_empty_or_zero_inputs(self):
         route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
         route["route_rows"] = []
@@ -174,6 +190,25 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):
             gate._typed_metrics(typed)
+
+    def test_payload_field_helpers_reject_wrong_types(self):
+        payload = copy.deepcopy(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = "0.9"
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section opening share must be numeric"):
+            gate._numeric_payload_field(
+                payload,
+                ("section_delta", "opening_bucket_savings_share"),
+                "section opening share",
+            )
+
+        payload = copy.deepcopy(self.payload)
+        payload["binary_typed_accounting"]["cli_upstream_stwo_serialization_status"] = 1
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary status must be string"):
+            gate._string_payload_field(
+                payload,
+                ("binary_typed_accounting", "cli_upstream_stwo_serialization_status"),
+                "binary status",
+            )
 
     def test_base_payload_normalizes_malformed_source_evidence_errors(self):
         original = gate.load_json

@@ -473,13 +473,29 @@ def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool 
 
     if payload["route_matrix"]["matched_profiles_checked"] != 11:
         raise FusionMechanismAblationGateError("matched route count drift")
-    if payload["section_delta"]["opening_bucket_savings_share"] < 0.9:
+    section_opening_share = _numeric_payload_field(
+        payload, ("section_delta", "opening_bucket_savings_share"), "section opening share"
+    )
+    typed_decommitment_share = _numeric_payload_field(
+        payload, ("typed_size_estimate", "fri_trace_decommitment_savings_share"), "typed decommitment share"
+    )
+    controlled_opening_share = _numeric_payload_field(
+        payload,
+        ("controlled_component_grid", "opening_plumbing_share_of_typed_savings"),
+        "controlled opening share",
+    )
+    binary_status = _string_payload_field(
+        payload,
+        ("binary_typed_accounting", "cli_upstream_stwo_serialization_status"),
+        "binary upstream serialization status",
+    )
+    if section_opening_share < 0.9:
         raise FusionMechanismAblationGateError("opening share below claim threshold")
-    if payload["typed_size_estimate"]["fri_trace_decommitment_savings_share"] < 0.85:
+    if typed_decommitment_share < 0.85:
         raise FusionMechanismAblationGateError("typed decommitment share below claim threshold")
-    if payload["controlled_component_grid"]["opening_plumbing_share_of_typed_savings"] < 0.85:
+    if controlled_opening_share < 0.85:
         raise FusionMechanismAblationGateError("controlled opening share below claim threshold")
-    if payload["binary_typed_accounting"]["cli_upstream_stwo_serialization_status"].startswith("UPSTREAM"):
+    if binary_status.startswith("UPSTREAM"):
         raise FusionMechanismAblationGateError("binary accounting overclaim")
 
     if require_mutation_summary:
@@ -492,6 +508,29 @@ def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool 
             raise FusionMechanismAblationGateError("mutation rejection drift")
         if payload["payload_commitment"] != payload_commitment(payload):
             raise FusionMechanismAblationGateError("payload commitment drift")
+
+
+def _payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> Any:
+    current: Any = payload
+    for part in path:
+        if not isinstance(current, dict) or part not in current:
+            raise FusionMechanismAblationGateError(f"{label} missing or malformed")
+        current = current[part]
+    return current
+
+
+def _numeric_payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> float:
+    value = _payload_field(payload, path, label)
+    if type(value) not in (int, float):
+        raise FusionMechanismAblationGateError(f"{label} must be numeric")
+    return float(value)
+
+
+def _string_payload_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> str:
+    value = _payload_field(payload, path, label)
+    if not isinstance(value, str):
+        raise FusionMechanismAblationGateError(f"{label} must be string")
+    return value
 
 
 def build_payload() -> dict[str, Any]:
@@ -564,17 +603,29 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
         (_assert_output_path(tsv_path, "tsv output path"), to_tsv(payload)),
     ]
     for path, text in outputs:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        _assert_no_repo_symlink_components(path.parent, "output path")
-        if path.is_symlink():
-            raise FusionMechanismAblationGateError("output path must not include symlink components")
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
-            tmp = pathlib.Path(handle.name)
-            handle.write(text)
+        tmp: pathlib.Path | None = None
+        write_error: OSError | None = None
         try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _assert_no_repo_symlink_components(path.parent, "output path")
+            if path.is_symlink():
+                raise FusionMechanismAblationGateError("output path must not include symlink components")
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+                tmp = pathlib.Path(handle.name)
+                handle.write(text)
             os.replace(tmp, path)
+        except OSError as err:
+            write_error = err
+            raise FusionMechanismAblationGateError(f"failed to write output path {path}: {err}") from err
         finally:
-            tmp.unlink(missing_ok=True)
+            if tmp is not None:
+                try:
+                    tmp.unlink(missing_ok=True)
+                except OSError as err:
+                    if write_error is None:
+                        raise FusionMechanismAblationGateError(
+                            f"failed to clean temporary output {tmp}: {err}"
+                        ) from err
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
