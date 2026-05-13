@@ -676,12 +676,16 @@ def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
         if file_fd is not None:
             os.close(file_fd)
         if parent_fd is not None:
-            if temp_name is not None:
-                try:
-                    os.unlink(temp_name, dir_fd=parent_fd)
-                except FileNotFoundError:
-                    pass
-            os.close(parent_fd)
+            try:
+                if temp_name is not None:
+                    try:
+                        os.unlink(temp_name, dir_fd=parent_fd)
+                    except FileNotFoundError:
+                        pass
+                    except OSError:
+                        pass
+            finally:
+                os.close(parent_fd)
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
