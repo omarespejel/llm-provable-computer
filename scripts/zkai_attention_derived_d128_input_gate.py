@@ -487,17 +487,19 @@ def validate_payload(
     validate_core_payload(data, expected=expected, context=context)
     if set(data) == FINAL_KEYS:
         cases = _list(data.get("cases"), "cases")
+        if len(cases) != len(EXPECTED_MUTATIONS):
+            raise AttentionDerivedD128InputError("mutation case count drift")
         if data.get("mutation_inventory") != list(EXPECTED_MUTATIONS):
             raise AttentionDerivedD128InputError("mutation inventory drift")
         if data.get("case_count") != len(EXPECTED_MUTATIONS):
             raise AttentionDerivedD128InputError("case count drift")
         if data.get("all_mutations_rejected") is not True:
             raise AttentionDerivedD128InputError("not all mutations rejected")
-        for index, case_value in enumerate(cases):
+        for index, (expected_name, case_value) in enumerate(zip(EXPECTED_MUTATIONS, cases, strict=True)):
             case = _dict(case_value, f"case {index}")
             if set(case) != {"name", "accepted", "rejected", "error"}:
                 raise AttentionDerivedD128InputError("mutation case field drift")
-            if case.get("name") != EXPECTED_MUTATIONS[index]:
+            if case.get("name") != expected_name:
                 raise AttentionDerivedD128InputError("mutation case order drift")
             if _bool(case.get("accepted"), "mutation accepted") is not False:
                 raise AttentionDerivedD128InputError("mutation accepted")
