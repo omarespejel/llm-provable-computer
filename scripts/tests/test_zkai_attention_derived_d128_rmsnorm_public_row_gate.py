@@ -90,11 +90,24 @@ class AttentionDerivedD128RmsnormPublicRowGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128RmsnormPublicRowError, "payload commitment"):
             GATE.validate_payload(payload, context=self.context)
 
+    def test_rejects_mutation_case_length_drift_with_domain_error(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"] = payload["cases"][:-1]
+        payload["case_count"] = len(GATE.EXPECTED_MUTATIONS)
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128RmsnormPublicRowError, "mutation case count"):
+            GATE.validate_payload(payload, context=self.context)
+
     def test_tsv_contains_summary_row(self) -> None:
         tsv = GATE.to_tsv(self.fresh_payload(), context=self.context)
         self.assertIn("GO_ATTENTION_DERIVED_D128_RMSNORM_PUBLIC_ROW_INPUT", tsv)
         self.assertIn("8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35", tsv)
         self.assertIn("\tfalse\t127\t11", tsv)
+
+    def test_tsv_requires_final_payload(self) -> None:
+        core = GATE.build_core_payload(self.context)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128RmsnormPublicRowError, "finalized payload"):
+            GATE.to_tsv(core, context=self.context)
 
     def test_write_outputs_round_trips_and_rejects_outside_path(self) -> None:
         payload = self.fresh_payload()
