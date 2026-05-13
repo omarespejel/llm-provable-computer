@@ -216,6 +216,8 @@ def _parse_tsv_bytes(path: pathlib.Path, raw: bytes) -> list[dict[str, str]]:
     for index, row in enumerate(rows, start=2):
         if None in row:
             raise CompetitorMetricMatrixError(f"TSV source row {index} has extra cells")
+        if any(value is None for value in row.values()):
+            raise CompetitorMetricMatrixError(f"TSV source row {index} has missing cells")
     if not rows:
         raise CompetitorMetricMatrixError(f"TSV source must not be empty: {path}")
     return rows
