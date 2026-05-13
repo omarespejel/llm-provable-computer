@@ -80,7 +80,16 @@ class FusionMechanismAblationGateError(ValueError):
 
 
 def canonical_json_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    try:
+        return json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        ).encode("utf-8")
+    except ValueError as err:
+        raise FusionMechanismAblationGateError(f"non-finite JSON value: {err}") from err
 
 
 def payload_commitment(payload: dict[str, Any]) -> str:
@@ -158,12 +167,16 @@ def load_json(relative_path: str) -> dict[str, Any]:
     path = _full_repo_path(_repo_relative_path(relative_path, "evidence path"))
     raw = _open_repo_regular_file(path)
     try:
-        payload = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        payload = json.loads(raw.decode("utf-8"), parse_constant=_reject_json_constant)
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as err:
         raise FusionMechanismAblationGateError(f"invalid JSON in {relative_path}: {err}") from err
     if not isinstance(payload, dict):
         raise FusionMechanismAblationGateError(f"evidence payload must be object: {relative_path}")
     return payload
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant: {value}")
 
 
 def sha256_file(relative_path: str) -> str:
@@ -609,34 +622,63 @@ def _assert_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
     validate_payload(payload)
-    outputs = [
-        (_assert_output_path(json_path, "json output path"), json.dumps(payload, indent=2, sort_keys=True) + "\n"),
-        (_assert_output_path(tsv_path, "tsv output path"), to_tsv(payload)),
-    ]
-    for path, text in outputs:
-        tmp: pathlib.Path | None = None
-        write_error: OSError | None = None
+    try:
+        json_text = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    except ValueError as err:
+        raise FusionMechanismAblationGateError(f"non-finite JSON value: {err}") from err
+
+    json_target = _assert_output_path(json_path, "json output path")
+    tsv_target = _assert_output_path(tsv_path, "tsv output path")
+    if os.path.abspath(json_target) == os.path.abspath(tsv_target):
+        raise FusionMechanismAblationGateError("json and tsv output paths must differ")
+
+    outputs = [(json_target, json_text), (tsv_target, to_tsv(payload))]
+    temps: list[pathlib.Path] = []
+    replaced: list[pathlib.Path] = []
+    original_bytes: dict[pathlib.Path, bytes | None] = {}
+    write_error: OSError | None = None
+
+    def write_temp(path: pathlib.Path, text: str) -> pathlib.Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _assert_no_repo_symlink_components(path.parent, "output path")
+        if path.is_symlink():
+            raise FusionMechanismAblationGateError("output path must not include symlink components")
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+            tmp_path = pathlib.Path(handle.name)
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        return tmp_path
+
+    try:
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            _assert_no_repo_symlink_components(path.parent, "output path")
-            if path.is_symlink():
-                raise FusionMechanismAblationGateError("output path must not include symlink components")
-            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
-                tmp = pathlib.Path(handle.name)
-                handle.write(text)
-            os.replace(tmp, path)
+            for path, text in outputs:
+                original_bytes[path] = path.read_bytes() if path.exists() else None
+                tmp = write_temp(path, text)
+                temps.append(tmp)
+            for tmp, (path, _) in zip(temps, outputs):
+                os.replace(tmp, path)
+                replaced.append(path)
         except OSError as err:
             write_error = err
-            raise FusionMechanismAblationGateError(f"failed to write output path {path}: {err}") from err
-        finally:
-            if tmp is not None:
+            raise FusionMechanismAblationGateError(f"failed to write output path: {err}") from err
+    finally:
+        if write_error is not None:
+            for path in reversed(replaced):
+                original = original_bytes.get(path)
                 try:
-                    tmp.unlink(missing_ok=True)
-                except OSError as err:
-                    if write_error is None:
-                        raise FusionMechanismAblationGateError(
-                            f"failed to clean temporary output {tmp}: {err}"
-                        ) from err
+                    if original is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        path.write_bytes(original)
+                except OSError:
+                    pass
+        for tmp in temps:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError as err:
+                if write_error is None:
+                    raise FusionMechanismAblationGateError(f"failed to clean temporary output {tmp}: {err}") from err
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -653,7 +695,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.write_json or args.write_tsv:
             write_outputs(payload, args.write_json or JSON_OUT.relative_to(ROOT), args.write_tsv or TSV_OUT.relative_to(ROOT))
         else:
-            print(json.dumps(payload, indent=2, sort_keys=True))
+            print(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False))
     except FusionMechanismAblationGateError as err:
         print(f"fusion mechanism ablation gate failed: {err}", file=sys.stderr)
         return 1

@@ -169,6 +169,57 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         finally:
             parent_file.unlink(missing_ok=True)
 
+    def test_write_outputs_rolls_back_when_second_replace_fails(self):
+        with tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix="fusion-transaction-json-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+            handle.write(b"original-json")
+        tsv_path = json_path.with_suffix(".tsv")
+        tsv_path.unlink(missing_ok=True)
+
+        original_replace = gate.os.replace
+        try:
+            def fail_on_tsv(src, dst):
+                if pathlib.Path(dst) == tsv_path:
+                    raise OSError("simulated second replace failure")
+                return original_replace(src, dst)
+
+            gate.os.replace = fail_on_tsv
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "failed to write output path"):
+                gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "original-json")
+            self.assertFalse(tsv_path.exists())
+        finally:
+            gate.os.replace = original_replace
+            json_path.unlink(missing_ok=True)
+            tsv_path.unlink(missing_ok=True)
+
+    def test_json_helpers_reject_non_finite_values(self):
+        payload = copy.deepcopy(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = math.nan
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "non-finite JSON value"):
+            gate.canonical_json_bytes(payload)
+
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.EVIDENCE_DIR,
+            prefix="fusion-non-finite-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            bad_path = pathlib.Path(handle.name)
+            handle.write('{"value": NaN}\n')
+        try:
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "non-finite JSON constant"):
+                gate.load_json(str(bad_path.relative_to(gate.ROOT)))
+        finally:
+            bad_path.unlink(missing_ok=True)
+
     def test_metric_extractors_fail_closed_on_empty_or_zero_inputs(self):
         route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
         route["route_rows"] = []
