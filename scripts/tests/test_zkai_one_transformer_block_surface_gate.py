@@ -89,6 +89,22 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate._component_rows(fusion, d64, d128, attention_derived, matrix)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
+        attention_derived["summary"].pop("block_statement_commitment")
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 chain summary block statement commitment",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+
+        attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
+        attention_derived["summary"]["block_statement_commitment"] = "blake2b-256:" + "00" * 32
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 chain summary commitment drift",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, matrix)
+
+        attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         nanozk_block_row = next(
             row
             for row in matrix["external_rows"]
