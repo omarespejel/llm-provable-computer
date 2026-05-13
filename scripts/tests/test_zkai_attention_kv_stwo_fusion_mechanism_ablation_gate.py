@@ -387,6 +387,22 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
             gate._typed_metrics(typed)
 
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["aggregate"]["typed_saving_share_vs_source_plus_sidecar"] = 0.5
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "typed saving share does not match byte totals",
+        ):
+            gate._typed_metrics(typed)
+
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["stable_binary_serializer_status"] = 1
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "typed stable binary serializer status must be string",
+        ):
+            gate._typed_metrics(typed)
+
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
         section["aggregate"]["section_totals_by_role"]["delta"] = None
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta totals must be object"):
@@ -420,6 +436,30 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
             gate._controlled_metrics(controlled)
 
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["typed_saving_share_total"] = 0.5
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "controlled typed saving share does not match byte totals",
+        ):
+            gate._controlled_metrics(controlled)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["fri_trace_merkle_path_share_of_typed_savings"] = 0.5
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "controlled FRI trace merkle path share does not match byte totals",
+        ):
+            gate._controlled_metrics(controlled)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["stable_binary_serializer_status"] = "GO_STABLE_BINARY_SERIALIZER"
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "controlled stable binary serializer status drift",
+        ):
+            gate._controlled_metrics(controlled)
+
         binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
         binary["aggregate"]["source_plus_sidecar_json_proof_bytes"] = 116682.25
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
@@ -428,6 +468,16 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
         binary["aggregate"]["fused_saves_vs_source_plus_sidecar_local_typed_bytes"] = 2620.25
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "integer bytes"):
+            gate._binary_metrics(binary)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["binary_serialization_status"] = "GO_UPSTREAM_STWO_WIRE_FORMAT"
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary serialization status drift"):
+            gate._binary_metrics(binary)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["first_blocker"] = ""
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary first blocker must be non-empty"):
             gate._binary_metrics(binary)
 
     def test_payload_field_helpers_reject_wrong_types(self):
