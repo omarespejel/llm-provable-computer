@@ -70,4 +70,5 @@ python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/eng
 python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate
 git diff --check
 just gate-fast
+just gate
 ```
