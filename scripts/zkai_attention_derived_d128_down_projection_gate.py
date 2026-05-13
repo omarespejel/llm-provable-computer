@@ -99,12 +99,49 @@ class AttentionDerivedD128DownProjectionError(ValueError):
     pass
 
 
+def _read_repo_regular_file_bytes(path: pathlib.Path, *, label: str) -> tuple[bytes, pathlib.Path]:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise AttentionDerivedD128DownProjectionError(f"{label} must not be a symlink: {path}")
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise AttentionDerivedD128DownProjectionError(f"{label} escapes repository: {path}") from err
+    try:
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise AttentionDerivedD128DownProjectionError(f"{label} is not a regular file: {path}")
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise AttentionDerivedD128DownProjectionError(f"{label} is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise AttentionDerivedD128DownProjectionError(f"{label} changed while reading: {path}")
+            with os.fdopen(fd, "rb") as handle:
+                fd = None
+                raw = handle.read(MAX_SOURCE_ARTIFACT_BYTES + 1)
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise AttentionDerivedD128DownProjectionError(f"failed to read {label}: {path}: {err}") from err
+    if len(raw) > MAX_SOURCE_ARTIFACT_BYTES:
+        raise AttentionDerivedD128DownProjectionError(
+            f"{label} exceeds max size: got at least {len(raw)} bytes, limit {MAX_SOURCE_ARTIFACT_BYTES} bytes"
+        )
+    return raw, resolved
+
+
 def _load_module(path: pathlib.Path, name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
+    source, resolved = _read_repo_regular_file_bytes(path, label="module source")
+    spec = importlib.util.spec_from_loader(name, loader=None, origin=str(resolved))
+    if spec is None:
         raise AttentionDerivedD128DownProjectionError(f"failed to load helper module: {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module.__file__ = str(resolved)
+    exec(compile(source, str(resolved), "exec"), module.__dict__)
     return module
 
 

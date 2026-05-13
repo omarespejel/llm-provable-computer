@@ -947,7 +947,7 @@
     "not proof-size or timing evidence",
     "down projection rows are verifier-recomputed from checked public hidden activation rows"
   ],
-  "payload_commitment": "sha256:ef4040dd5486431e634e46d51ea5f01d5b6ca6e76c4f969aa51a2f228671722b",
+  "payload_commitment": "sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150",
   "result": "GO_VALUE_CONNECTED_DOWN_PROJECTION_INPUT_NO_GO_FULL_BLOCK",
   "schema": "zkai-attention-derived-d128-down-projection-gate-v1",
   "source_artifacts": [
@@ -976,7 +976,7 @@
     {
       "id": "attention_derived_down_projection_gate",
       "path": "scripts/zkai_attention_derived_d128_down_projection_gate.py",
-      "sha256": "f8594052593b80befe3294ca99c6a1d5eb4fbeb2dd1844984ea4c628cb53aa77"
+      "sha256": "5c11dda21d55cc9c57853eb8425d08b68fc25ae8f778f70d55f9318baff55357"
     }
   ],
   "source_summary": {

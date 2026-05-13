@@ -37,7 +37,7 @@ consumption, residual addition, recursion, proof-size savings, or timing claims.
 | Hidden mismatch vs existing fixture | `512 / 512` |
 | Residual delta mismatch vs existing fixture | `128 / 128` |
 | Residual remainder mismatch vs existing fixture | `128 / 128` |
-| Payload commitment | `sha256:ef4040dd5486431e634e46d51ea5f01d5b6ca6e76c4f969aa51a2f228671722b` |
+| Payload commitment | `sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150` |
 
 ## What This Adds
 
