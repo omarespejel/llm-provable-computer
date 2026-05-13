@@ -1990,7 +1990,7 @@
     "not proof-size or timing evidence",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:68b133fa5c883b78b63a2eb9193c519a0f42fafc3c2ec0b8e11a08672868a5c1",
+  "payload_commitment": "sha256:d4c4e71ae3bf58936823ec394a3640fc44a6e47a985f5698311ebf7c29550dcd",
   "result": "GO_VALUE_CONNECTED_GATE_VALUE_PROJECTION_INPUT_NO_GO_FULL_BLOCK",
   "schema": "zkai-attention-derived-d128-projection-boundary-gate-v1",
   "source_artifacts": [
@@ -2025,7 +2025,7 @@
     {
       "id": "attention_derived_projection_boundary_gate",
       "path": "scripts/zkai_attention_derived_d128_projection_boundary_gate.py",
-      "sha256": "3a0d24d608d5f9dc748b128e990e1fb66501a2979034571cd18d95dacb95c47f"
+      "sha256": "9adbbbc098a6ccce30a70ad9a4edaa2f1ac794a788b8dbc86dd0c88a481b00ea"
     }
   ],
   "source_summary": {

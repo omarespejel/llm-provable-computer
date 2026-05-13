@@ -73,6 +73,13 @@ class AttentionDerivedD128ProjectionBoundaryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "source bridge public instance"):
             GATE.validate_gate_value_projection_payload(payload)
 
+    def test_validate_rejects_synthetic_context_rmsnorm_drift(self) -> None:
+        payload = self.fresh_payload()
+        context = copy.deepcopy(self.context)
+        context["rmsnorm_public_row_payload"]["rows"][0]["normed_q8"] += 1
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "context artifact binding"):
+            GATE.validate_payload(payload, context=context)
+
     def test_gate_value_rejects_output_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["gate_value_projection_payload"]["gate_projection_q8"][0] += 1
