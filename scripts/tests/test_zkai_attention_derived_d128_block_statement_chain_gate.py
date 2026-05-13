@@ -48,7 +48,7 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         self.assertEqual(
             payload["block_statement_commitment"],
-            "blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff",
+            "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
         )
         self.assertEqual(
             payload["summary"]["derived_output_activation_commitment"],
@@ -70,6 +70,22 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
         self.assertEqual(
             by_id["residual_add"]["payload_commitment"],
             "sha256:a82f94544eb2f7415fa0caec9605730a857e5a380bed0cbccb6ec2bd6f869861",
+        )
+
+    def test_sha_edges_store_the_matched_payload_commitment(self) -> None:
+        payload = self.fresh_payload()
+        edges = {edge["id"]: edge for edge in payload["block_statement"]["edges"]}
+        self.assertEqual(
+            edges["activation_statement_to_down_projection_source"]["commitment"],
+            "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
+        )
+        self.assertEqual(
+            edges["residual_source_payloads_bind_prior_slices"]["commitment"],
+            "sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150",
+        )
+        self.assertEqual(
+            edges["activation_source_reuses_projection_boundary"]["commitment"],
+            "sha256:627115a11d771a6da1c50407963efa5eb39c52226adf69deedc43083c05a0af6",
         )
 
     def test_mutation_errors_are_stable_markers(self) -> None:
@@ -131,6 +147,25 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "payload commitment drift"):
             GATE.validate_payload(payload, context=copy.deepcopy(self.context))
 
+    def test_payload_rejects_mutation_case_metadata_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["name"] = "different"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "mutation case name drift"):
+            GATE.validate_payload(payload, context=copy.deepcopy(self.context))
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["error"] = "different"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "mutation case error drift"):
+            GATE.validate_payload(payload, context=copy.deepcopy(self.context))
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["accepted"] = True
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "mutation accepted unexpectedly"):
+            GATE.validate_payload(payload, context=copy.deepcopy(self.context))
+
     def test_to_tsv_requires_final_payload(self) -> None:
         core = GATE.build_core_payload(copy.deepcopy(self.context))
         with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "finalized payload"):
@@ -189,6 +224,17 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "symlink"):
                 GATE.write_outputs(payload, link, None, context=copy.deepcopy(self.context))
 
+    def test_write_outputs_rejects_intermediate_symlink_parent(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real_dir = tmp / "real"
+            real_dir.mkdir()
+            link_dir = tmp / "linkdir"
+            link_dir.symlink_to(real_dir, target_is_directory=True)
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "symlink"):
+                GATE.write_outputs(payload, link_dir / "statement-chain.json", None, context=copy.deepcopy(self.context))
+
     def test_load_json_rejects_unhardened_paths(self) -> None:
         with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
@@ -203,6 +249,18 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
             outside.write_text("{}", encoding="utf-8")
             with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "inside repository|traverse"):
                 GATE.load_json(outside)
+
+    def test_load_json_rejects_intermediate_symlink_path(self) -> None:
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            real_dir = tmp / "real"
+            real_dir.mkdir()
+            source = real_dir / "source.json"
+            source.write_text(json.dumps(GATE.build_core_payload(copy.deepcopy(self.context))), encoding="utf-8")
+            link_dir = tmp / "linkdir"
+            link_dir.symlink_to(real_dir, target_is_directory=True)
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "symlink"):
+                GATE.load_json(link_dir / "source.json")
 
     def test_load_json_rejects_oversized_source(self) -> None:
         original_max = GATE.MAX_SOURCE_BYTES

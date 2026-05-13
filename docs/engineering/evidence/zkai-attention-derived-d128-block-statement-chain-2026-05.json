@@ -34,7 +34,7 @@
         "matches": true
       },
       {
-        "commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "commitment": "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
         "id": "activation_statement_to_down_projection_source",
         "matches": true
       },
@@ -54,12 +54,12 @@
         "matches": true
       },
       {
-        "commitment": "blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0",
+        "commitment": "sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150",
         "id": "residual_source_payloads_bind_prior_slices",
         "matches": true
       },
       {
-        "commitment": "blake2b-256:c5f7477df93b9ac35f81774c3505f89101c7be676c47e9f1dc6160566ff2dbef",
+        "commitment": "sha256:627115a11d771a6da1c50407963efa5eb39c52226adf69deedc43083c05a0af6",
         "id": "activation_source_reuses_projection_boundary",
         "matches": true
       },
@@ -98,7 +98,7 @@
     ],
     "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638"
   },
-  "block_statement_commitment": "blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff",
+  "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
   "case_count": 19,
   "cases": [
     {
@@ -250,7 +250,7 @@
     "not production-ready",
     "slice commitments are bound as a statement chain, not verified inside one outer proof"
   ],
-  "payload_commitment": "sha256:b582befbf801d5cb956d1f3c31453a624ca7c40570ae15ba1ae8a0b9f99b2ae6",
+  "payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52",
   "result": "GO_COMMITTED_SLICE_CHAIN_NO_GO_SINGLE_COMPOSED_PROOF",
   "schema": "zkai-attention-derived-d128-block-statement-chain-gate-v1",
   "source_artifacts": [
@@ -325,7 +325,7 @@
     "accounted_relation_rows": 199553,
     "activation_lookup_rows": 2049,
     "all_edges_match": true,
-    "block_statement_commitment": "blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff",
+    "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
     "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
     "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",

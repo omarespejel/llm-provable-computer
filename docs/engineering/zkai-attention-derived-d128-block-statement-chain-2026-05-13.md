@@ -24,7 +24,7 @@ readiness.
 | --- | --- |
 | Decision | `GO_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_CHAIN` |
 | Result | `GO_COMMITTED_SLICE_CHAIN_NO_GO_SINGLE_COMPOSED_PROOF` |
-| Block statement | `blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff` |
+| Block statement | `blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5` |
 | Source attention outputs | `blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638` |
 | Derived input activation | `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35` |
 | Derived hidden activation | `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4` |
@@ -37,7 +37,7 @@ readiness.
 | Down-projection multiplication rows | `65,536` |
 | Activation lookup rows | `2,049` |
 | Mutations rejected | `19 / 19` |
-| Payload commitment | `sha256:b582befbf801d5cb956d1f3c31453a624ca7c40570ae15ba1ae8a0b9f99b2ae6` |
+| Payload commitment | `sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52` |
 
 ## What This Adds
 
