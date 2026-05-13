@@ -30,9 +30,17 @@ class PaperClaimPackGateTests(unittest.TestCase):
         expected = set(gate.EXPECTED_MUTATION_NAMES)
         actual = {name for name, _ in gate.mutation_cases(self.payload)}
         self.assertEqual(actual, expected)
+        self.assertIn("no_go_posture_removed", actual)
         for name, mutated in gate.mutation_cases(self.payload):
             with self.assertRaises(gate.ClaimPackGateError, msg=name):
                 gate.validate_payload(mutated)
+
+    def test_rejects_no_go_posture_drift_even_when_commitment_is_refreshed(self):
+        mutated = copy.deepcopy(self.payload)
+        mutated["no_go_posture"] = mutated["no_go_posture"][1:]
+        mutated["payload_commitment"] = gate.payload_commitment(mutated)
+        with self.assertRaisesRegex(gate.ClaimPackGateError, "no_go_posture drift"):
+            gate.validate_payload(mutated)
 
     def test_rejects_positive_overclaims_even_when_commitment_is_refreshed(self):
         for text in [
