@@ -36,6 +36,7 @@ BACKEND_INTERNAL_SPLIT_STATUS = (
 )
 TIMING_POLICY = "proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark"
 MAX_EVIDENCE_JSON_BYTES = 16 * 1024 * 1024
+EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS = "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY"
 
 EVIDENCE_INPUTS = {
     "route_matrix": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json",
@@ -88,8 +89,15 @@ def canonical_json_bytes(value: Any) -> bytes:
             ensure_ascii=True,
             allow_nan=False,
         ).encode("utf-8")
-    except ValueError as err:
-        raise FusionMechanismAblationGateError(f"non-finite JSON value: {err}") from err
+    except (TypeError, ValueError) as err:
+        raise FusionMechanismAblationGateError(f"invalid JSON value: {err}") from err
+
+
+def pretty_json(value: Any) -> str:
+    try:
+        return json.dumps(value, indent=2, sort_keys=True, allow_nan=False)
+    except (TypeError, ValueError) as err:
+        raise FusionMechanismAblationGateError(f"invalid JSON value: {err}") from err
 
 
 def payload_commitment(payload: dict[str, Any]) -> str:
@@ -188,6 +196,12 @@ def _round(value: float) -> float:
     return round(value, 6)
 
 
+def _mapping(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise FusionMechanismAblationGateError(f"{label} must be object")
+    return value
+
+
 def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
     rows = route["route_rows"]
     matched = [row for row in rows if "source_plus_sidecar_raw_proof_bytes" in row]
@@ -233,7 +247,7 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
 
 def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     aggregate = section["aggregate"]
-    delta = aggregate["section_totals_by_role"]["delta"]
+    delta = _mapping(aggregate["section_totals_by_role"]["delta"], "section delta totals")
     opening = aggregate["bucket_totals_by_role"]["delta"]["opening_bucket_bytes"]
     total = aggregate["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"]
     if total <= 0:
@@ -257,7 +271,7 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
 
 def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     aggregate = typed["aggregate"]
-    delta = aggregate["source_plus_sidecar_minus_fused_delta"]
+    delta = _mapping(aggregate["source_plus_sidecar_minus_fused_delta"], "typed size delta")
     for key in ("fri_decommitments", "trace_decommitments", "typed_size_estimate_bytes"):
         if key not in delta:
             raise FusionMechanismAblationGateError(f"typed size delta missing {key}")
@@ -460,6 +474,14 @@ def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool 
     if set(payload) != expected_keys:
         raise FusionMechanismAblationGateError("unknown or missing field")
 
+    binary_status = _string_payload_field(
+        payload,
+        ("binary_typed_accounting", "cli_upstream_stwo_serialization_status"),
+        "binary upstream serialization status",
+    )
+    if binary_status != EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS:
+        raise FusionMechanismAblationGateError("binary accounting overclaim")
+
     if _strip_mutation_fields(payload) != expected:
         if payload.get("schema") != SCHEMA:
             raise FusionMechanismAblationGateError("schema drift")
@@ -498,20 +520,12 @@ def validate_payload(payload: dict[str, Any], *, require_mutation_summary: bool 
         ("controlled_component_grid", "opening_plumbing_share_of_typed_savings"),
         "controlled opening share",
     )
-    binary_status = _string_payload_field(
-        payload,
-        ("binary_typed_accounting", "cli_upstream_stwo_serialization_status"),
-        "binary upstream serialization status",
-    )
     if section_opening_share < 0.9:
         raise FusionMechanismAblationGateError("opening share below claim threshold")
     if typed_decommitment_share < 0.85:
         raise FusionMechanismAblationGateError("typed decommitment share below claim threshold")
     if controlled_opening_share < 0.85:
         raise FusionMechanismAblationGateError("controlled opening share below claim threshold")
-    if binary_status.startswith("UPSTREAM"):
-        raise FusionMechanismAblationGateError("binary accounting overclaim")
-
     if require_mutation_summary:
         expected_mutation_cases = [{"name": name, "rejected": True} for name in EXPECTED_MUTATION_NAMES]
         if payload["mutation_cases"] != expected_mutation_cases:
@@ -610,6 +624,19 @@ def to_tsv(payload: dict[str, Any]) -> str:
 
 
 def _assert_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
+    if path.is_absolute():
+        full = pathlib.Path(os.path.abspath(path))
+        try:
+            full.relative_to(EVIDENCE_DIR.resolve())
+        except ValueError as err:
+            raise FusionMechanismAblationGateError(
+                f"{label} must stay under docs/engineering/evidence"
+            ) from err
+        _assert_no_repo_symlink_components(full.parent, label)
+        if full.is_symlink():
+            raise FusionMechanismAblationGateError(f"{label} must not include symlink components")
+        return full
+
     relative = _repo_relative_path(path, label)
     if pathlib.PurePosixPath(*relative.parts[:3]) != pathlib.PurePosixPath("docs/engineering/evidence"):
         raise FusionMechanismAblationGateError(f"{label} must stay under docs/engineering/evidence")
@@ -622,10 +649,7 @@ def _assert_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pathlib.Path) -> None:
     validate_payload(payload)
-    try:
-        json_text = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    except ValueError as err:
-        raise FusionMechanismAblationGateError(f"non-finite JSON value: {err}") from err
+    json_text = pretty_json(payload) + "\n"
 
     json_target = _assert_output_path(json_path, "json output path")
     tsv_target = _assert_output_path(tsv_path, "tsv output path")
@@ -695,7 +719,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.write_json or args.write_tsv:
             write_outputs(payload, args.write_json or JSON_OUT.relative_to(ROOT), args.write_tsv or TSV_OUT.relative_to(ROOT))
         else:
-            print(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False))
+            print(pretty_json(payload))
     except FusionMechanismAblationGateError as err:
         print(f"fusion mechanism ablation gate failed: {err}", file=sys.stderr)
         return 1
