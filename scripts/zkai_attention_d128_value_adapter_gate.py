@@ -20,6 +20,7 @@ from typing import Any, Callable
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 os_read = os.read
+os_replace = os.replace
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 ATTENTION_FIXTURE = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json"
 D128_RMSNORM_INPUT = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
@@ -64,6 +65,7 @@ EXPECTED_BRIDGE = {
     "result": "GO_STATEMENT_COMMITMENT_BINDING_WITH_NO_GO_VALUE_EQUALITY",
     "bridge_statement_commitment": "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
 }
+EXPECTED_BRIDGE_FEED_EQUALITY_STATUS = "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY"
 
 NON_CLAIMS = [
     "not proof that attention output equals the d128 block input",
@@ -420,6 +422,8 @@ def build_adapter_analysis(
     bridge_summary = _dict(bridge.get("summary"), "bridge summary")
     if bridge_summary.get("current_commitments_equal") is not False:
         raise AttentionD128ValueAdapterError("statement bridge equality status drift")
+    if bridge_summary.get("feed_equality_status") != EXPECTED_BRIDGE_FEED_EQUALITY_STATUS:
+        raise AttentionD128ValueAdapterError("statement bridge feed equality status drift")
     if bridge_summary.get("attention_outputs_commitment") != attention.get("outputs_commitment"):
         raise AttentionD128ValueAdapterError("bridge attention commitment drift")
     if bridge_summary.get("block_input_activation_commitment") != d128_input.get("input_activation_commitment"):
@@ -501,7 +505,7 @@ def build_adapter_analysis(
             ),
             "payload_commitment": _commitment(bridge.get("payload_commitment"), "bridge payload commitment"),
             "current_commitments_equal": _bool(bridge_summary.get("current_commitments_equal"), "bridge current equality"),
-            "feed_equality_status": _string(bridge_summary.get("feed_equality_status"), "bridge feed equality status"),
+            "feed_equality_status": EXPECTED_BRIDGE_FEED_EQUALITY_STATUS,
         },
         "candidate_policies": candidates,
         "best_candidate": {
@@ -819,56 +823,140 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
     return candidate
 
 
-def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
-    data = contents.encode("utf-8")
-    parent_fd: int | None = None
+def _unused_name(parent_fd: int, prefix: str, suffix: str) -> str:
+    for _ in range(100):
+        candidate = f".{prefix}.{secrets.token_hex(8)}.{suffix}"
+        try:
+            os.stat(candidate, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return candidate
+    raise AttentionD128ValueAdapterError(f"failed allocating temporary {prefix}")
+
+
+def _write_temp_file(parent_fd: int, final_name: str, contents: str, label: str) -> str:
     file_fd: int | None = None
-    temp_name: str | None = None
+    temp_name = _unused_name(parent_fd, final_name, "tmp")
     try:
-        parent = path.parent.resolve(strict=True)
-        parent.relative_to(EVIDENCE_DIR.resolve(strict=True))
+        create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        file_fd = os.open(temp_name, create_flags, 0o600, dir_fd=parent_fd)
+        with os.fdopen(file_fd, "wb") as handle:
+            file_fd = None
+            handle.write(contents.encode("utf-8"))
+            handle.flush()
+            os.fsync(handle.fileno())
+        return temp_name
+    except OSError as err:
+        try:
+            os.unlink(temp_name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+        raise AttentionD128ValueAdapterError(f"failed writing temporary {label}: {err}") from err
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+
+
+def _target_backup(parent_fd: int, path: pathlib.Path, label: str) -> str | None:
+    try:
+        target_stat = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return None
+    if stat_module.S_ISLNK(target_stat.st_mode):
+        raise AttentionD128ValueAdapterError(f"{label} path must not become a symlink")
+    if not stat_module.S_ISREG(target_stat.st_mode):
+        raise AttentionD128ValueAdapterError(f"{label} path must remain a regular file")
+    backup_name = _unused_name(parent_fd, path.name, "bak")
+    os_replace(path.name, backup_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+    return backup_name
+
+
+def write_texts_no_follow(outputs: list[tuple[pathlib.Path, str, str]]) -> None:
+    if not outputs:
+        return
+    parent = outputs[0][0].parent.resolve(strict=True)
+    evidence_root = EVIDENCE_DIR.resolve(strict=True)
+    parent.relative_to(evidence_root)
+    for path, _, label in outputs:
+        candidate_parent = path.parent.resolve(strict=True)
+        candidate_parent.relative_to(evidence_root)
+        if candidate_parent != parent:
+            raise AttentionD128ValueAdapterError("paired output paths must share one evidence directory")
+        if path.name in {".", ".."}:
+            raise AttentionD128ValueAdapterError(f"{label} output file name is invalid")
+    parent_fd: int | None = None
+    temps: list[tuple[str, str, str]] = []
+    backups: list[tuple[str, str | None]] = []
+    replaced: list[tuple[str, str | None]] = []
+    try:
         parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
         parent_fd = os.open(parent, parent_flags)
         parent_stat = os.fstat(parent_fd)
         if not stat_module.S_ISDIR(parent_stat.st_mode):
-            raise AttentionD128ValueAdapterError(f"{label} parent must be a real directory")
-        create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-        for _ in range(100):
-            candidate = f".{path.name}.{secrets.token_hex(8)}.tmp"
-            try:
-                file_fd = os.open(candidate, create_flags, 0o600, dir_fd=parent_fd)
-                temp_name = candidate
-                break
-            except FileExistsError:
-                continue
-        if file_fd is None or temp_name is None:
-            raise AttentionD128ValueAdapterError(f"failed creating temporary {label}")
-        with os.fdopen(file_fd, "wb") as handle:
-            file_fd = None
-            handle.write(data)
-            handle.flush()
-            os.fsync(handle.fileno())
-        if path.is_symlink():
-            raise AttentionD128ValueAdapterError(f"{label} path must not become a symlink")
-        os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
-        temp_name = None
+            raise AttentionD128ValueAdapterError("output parent must be a real directory")
+        for path, contents, label in outputs:
+            temps.append((path.name, _write_temp_file(parent_fd, path.name, contents, label), label))
+        for final_name, _, label in temps:
+            backups.append((final_name, _target_backup(parent_fd, pathlib.Path(parent / final_name), label)))
+        for final_name, temp_name, _ in temps:
+            os_replace(temp_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+            replaced.append((final_name, dict(backups)[final_name]))
         os.fsync(parent_fd)
+        for _, backup_name in backups:
+            if backup_name is not None:
+                os.unlink(backup_name, dir_fd=parent_fd)
+        backups.clear()
+        temps.clear()
     except OSError as err:
-        raise AttentionD128ValueAdapterError(f"failed writing {label}: {err}") from err
-    finally:
-        if file_fd is not None:
-            os.close(file_fd)
         if parent_fd is not None:
+            _rollback_outputs(parent_fd, replaced, backups)
+        raise AttentionD128ValueAdapterError(f"failed writing output group: {err}") from err
+    except Exception:
+        if parent_fd is not None:
+            _rollback_outputs(parent_fd, replaced, backups)
+        raise
+    finally:
+        if parent_fd is not None:
+            for _, temp_name, _ in temps:
+                try:
+                    os.unlink(temp_name, dir_fd=parent_fd)
+                except FileNotFoundError:
+                    pass
+                except OSError:
+                    pass
+            os.close(parent_fd)
+
+
+def _rollback_outputs(
+    parent_fd: int,
+    replaced: list[tuple[str, str | None]],
+    backups: list[tuple[str, str | None]],
+) -> None:
+    for final_name, backup_name in reversed(replaced):
+        try:
+            os.unlink(final_name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+        if backup_name is not None:
             try:
-                if temp_name is not None:
-                    try:
-                        os.unlink(temp_name, dir_fd=parent_fd)
-                    except FileNotFoundError:
-                        pass
-                    except OSError:
-                        pass
-            finally:
-                os.close(parent_fd)
+                os_replace(backup_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+            except OSError:
+                pass
+    replaced_names = {final_name for final_name, _ in replaced}
+    for final_name, backup_name in reversed(backups):
+        if backup_name is None or final_name in replaced_names:
+            continue
+        try:
+            os_replace(backup_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        except OSError:
+            pass
+
+
+def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
+    write_texts_no_follow([(path, contents, label)])
 
 
 def write_outputs(
@@ -881,10 +969,12 @@ def write_outputs(
     validate_payload(payload, expected_context=context)
     json_target = require_output_path(json_path, ".json")
     tsv_target = require_output_path(tsv_path, ".tsv")
+    outputs: list[tuple[pathlib.Path, str, str]] = []
     if json_target is not None:
-        write_text_no_follow(json_target, pretty_json(payload) + "\n", "json output")
+        outputs.append((json_target, pretty_json(payload) + "\n", "json output"))
     if tsv_target is not None:
-        write_text_no_follow(tsv_target, to_tsv(payload, expected_context=context), "tsv output")
+        outputs.append((tsv_target, to_tsv(payload, expected_context=context), "tsv output"))
+    write_texts_no_follow(outputs)
 
 
 def main(argv: list[str] | None = None) -> int:
