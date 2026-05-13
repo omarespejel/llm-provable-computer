@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-10
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `432845269bae497c37c8d565a1bdee6b6b66d2d7`
+Mainline reference at refresh: `3aabaee1384df3f3fc8563fb1a7892b3e02633dd`
 
 ## Immediate orientation
 
@@ -659,6 +659,19 @@ Tablero boundary.
   because the current-vs-derived d128 input mismatch is still `127 / 128`.
   See
   `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
+- The attention-derived d128 path now crosses the next block boundary. The
+  derived RMSNorm output commitment
+  `blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9`
+  is re-emitted as projection input commitment
+  `blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba`,
+  then consumed by a deterministic d128 gate/value projection input with output
+  commitment
+  `blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`.
+  This covers `131,072` gate/value multiplication rows, rejects `12 / 12`
+  local mutations, and remains a no-go for claiming existing full-block
+  consumption because the canonical fixture mismatches `127 / 128` projection
+  inputs and `512 / 512` gate and value outputs. See
+  `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -709,8 +722,9 @@ Use these in order of authority for current state:
 43. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
-46. `docs/engineering/reproducibility.md`
-47. `git status --short --branch`
+46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
+47. `docs/engineering/reproducibility.md`
+48. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.

@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `432845269bae497c37c8d565a1bdee6b6b66d2d7` (matches
+**Mainline tip at last refresh:** `3aabaee1384df3f3fc8563fb1a7892b3e02633dd` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -54,8 +54,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 43. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
-46. `docs/engineering/reproducibility.md`
-47. `git status --short --branch`
+46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
+47. `docs/engineering/reproducibility.md`
+48. `git status --short --branch`
 
 ## Current lane split
 

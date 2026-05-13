@@ -75,8 +75,10 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 69. `docs/engineering/zkai-attention-kv-stwo-typed-size-estimate-2026-05-10.md`
 70. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
 71. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
-72. `docs/engineering/reproducibility.md`
-73. `git status --short --branch`
+72. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
+73. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
+74. `docs/engineering/reproducibility.md`
+75. `git status --short --branch`
 
 ## What this repository is now
 
@@ -557,6 +559,18 @@ This repository currently has three live lanes.
      NO-GO for claiming the existing full-block receipt consumed the vector;
      current-vs-derived d128 input mismatch remains `127 / 128`. See
      `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
+   - The same attention-derived lane now feeds the derived RMSNorm output into
+     a d128 projection boundary and deterministic gate/value projection input.
+     The derived projection-input commitment is
+     `blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba`;
+     the derived gate/value projection output commitment is
+     `blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`;
+     the surface accounts for `131,072` gate/value multiplication rows and
+     rejects `12 / 12` local overclaim/binding mutations. This remains a NO-GO
+     for claiming existing d128 full-block consumption because the current
+     fixture mismatches `127 / 128` projection inputs and `512 / 512` gate and
+     value projection outputs. See
+     `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`.
    - The d128 lane now has receipt-composition, range-policy-bound full-block
      public inputs, two-slice accumulator, full-block accumulator, and
      proof-native two-slice transcript-compression GO results, plus checked
