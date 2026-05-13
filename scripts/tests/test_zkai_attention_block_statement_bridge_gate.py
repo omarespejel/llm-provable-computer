@@ -96,6 +96,51 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "keys drift"):
             GATE.validate_payload(payload)
 
+    def test_rejects_missing_or_empty_attention_comparisons(self) -> None:
+        attention, accumulator, surface, _ = GATE._load_sources()
+        attention["bridge_contract"]["metrics"]["comparisons"] = {}
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "comparison keys drift"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+        attention, accumulator, surface, _ = GATE._load_sources()
+        del attention["bridge_contract"]["metrics"]["comparisons"]["score_rows_match"]
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "score_rows_match"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+        attention, accumulator, surface, _ = GATE._load_sources()
+        attention["bridge_contract"]["metrics"]["comparisons"]["score_rows_match"] = False
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "score_rows_match"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+    def test_missing_nested_source_fields_use_gate_errors(self) -> None:
+        attention, accumulator, surface, _ = GATE._load_sources()
+        del attention["route_id"]
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "attention bridge drift: route_id"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+        attention, accumulator, surface, _ = GATE._load_sources()
+        del accumulator["summary"]
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "d128 summary"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+        attention, accumulator, surface, _ = GATE._load_sources()
+        del surface["summary"]
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "one-block surface summary"):
+            GATE.build_bridge_statement(attention, accumulator, surface)
+
+    def test_rejects_summary_drift_and_tsv_derives_from_statement(self) -> None:
+        payload = self.fresh_payload()
+        forged = "blake2b-256:" + "77" * 32
+        actual = payload["bridge_statement"]["attention_output"]["outputs_commitment"]
+        payload["summary"]["attention_outputs_commitment"] = forged
+        GATE.refresh_payload_commitment(payload)
+
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "summary drift"):
+            GATE.validate_payload(payload)
+        tsv = GATE.to_tsv(payload)
+        self.assertIn(actual, tsv)
+        self.assertNotIn(forged, tsv)
+
     def test_read_source_bytes_rejects_oversize_sources(self) -> None:
         old_limit = GATE.MAX_SOURCE_BYTES
         with tempfile.NamedTemporaryFile(
@@ -124,6 +169,7 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
             "feed_equality_overclaim",
             "adapter_requirement_removed",
             "source_artifact_sha_drift",
+            "summary_attention_output_commitment_drift",
             "payload_commitment_drift",
         ):
             with self.subTest(name=name):

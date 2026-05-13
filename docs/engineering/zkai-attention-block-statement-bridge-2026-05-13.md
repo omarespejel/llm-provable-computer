@@ -29,6 +29,8 @@ So the result is a statement-binding bridge, not value-equality.
 - block side: checked d128 full-block accumulator,
   `52 / 52` mutations rejected.
 - combined source mutation floor: `72`.
+- bridge gate: `14 / 14` local statement, summary, artifact, and
+  overclaim mutations rejected.
 - feed equality status:
   `NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY`.
 

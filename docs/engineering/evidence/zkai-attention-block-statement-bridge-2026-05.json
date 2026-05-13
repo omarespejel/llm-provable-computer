@@ -41,7 +41,7 @@
     "statement_version": "v1"
   },
   "bridge_statement_commitment": "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
-  "case_count": 13,
+  "case_count": 14,
   "cases": [
     {
       "accepted": false,
@@ -117,6 +117,12 @@
     },
     {
       "accepted": false,
+      "error": "summary drift",
+      "name": "summary_attention_output_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
       "error": "payload commitment drift",
       "name": "payload_commitment_drift",
       "rejected": true
@@ -137,6 +143,7 @@
     "non_claim_removed",
     "validation_command_removed",
     "source_artifact_sha_drift",
+    "summary_attention_output_commitment_drift",
     "payload_commitment_drift"
   ],
   "non_claims": [
@@ -148,7 +155,7 @@
     "not full autoregressive inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:5223ba000147ce51f233ab4e257d94fa67303a3245ade5bf552d078b5babc0cb",
+  "payload_commitment": "sha256:da00ab51765bd23ec0a25e75605f342fe94cef10f07be861c91ee28e3627cdbf",
   "result": "GO_STATEMENT_COMMITMENT_BINDING_WITH_NO_GO_VALUE_EQUALITY",
   "schema": "zkai-attention-block-statement-bridge-v1",
   "source_artifacts": [

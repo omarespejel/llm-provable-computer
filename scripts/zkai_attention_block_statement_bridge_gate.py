@@ -29,6 +29,15 @@ EXPECTED_SOURCE_ARTIFACTS = (
     ("d128_full_block_accumulator", D128_ACCUMULATOR.relative_to(ROOT).as_posix()),
     ("one_transformer_block_surface", ONE_BLOCK_SURFACE.relative_to(ROOT).as_posix()),
 )
+EXPECTED_ATTENTION_COMPARISONS = (
+    "attention_outputs_match",
+    "denominators_positive",
+    "final_kv_cache_match",
+    "score_gap_clip_match",
+    "score_rows_match",
+    "score_scale_match",
+    "weight_table_match",
+)
 
 SCHEMA = "zkai-attention-block-statement-bridge-v1"
 DECISION = "GO_STATEMENT_BRIDGE_NO_GO_ATTENTION_TO_BLOCK_VALUE_EQUALITY"
@@ -313,7 +322,9 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
     _validate_expected(attention, EXPECTED_ATTENTION, "attention bridge")
     _validate_expected(accumulator, EXPECTED_ACCUMULATOR, "d128 accumulator")
     _validate_expected(surface, EXPECTED_SURFACE, "one-block surface")
-    if accumulator.get("all_mutations_rejected") is not True:
+    attention_route_id = _string(attention.get("route_id"), "attention route_id")
+    attention_mutations_rejected = _int(attention.get("mutations_rejected"), "attention mutations_rejected")
+    if _bool(accumulator.get("all_mutations_rejected"), "d128 all_mutations_rejected") is not True:
         raise AttentionBlockStatementBridgeError("d128 accumulator mutations are not all rejected")
     if "make attention output feed the block receipt input under one statement commitment" not in _list(
         surface.get("next_required_work"), "one-block next_required_work"
@@ -323,8 +334,17 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
     bridge_contract = _dict(attention.get("bridge_contract"), "attention bridge_contract")
     metrics = _dict(bridge_contract.get("metrics"), "attention metrics")
     comparisons = _dict(metrics.get("comparisons"), "attention comparisons")
-    if any(value is not True for value in comparisons.values()):
-        raise AttentionBlockStatementBridgeError("attention bridge comparisons are not all true")
+    comparison_keys = set(comparisons)
+    expected_comparison_keys = set(EXPECTED_ATTENTION_COMPARISONS)
+    if comparison_keys != expected_comparison_keys:
+        missing = sorted(expected_comparison_keys - comparison_keys)
+        extra = sorted(comparison_keys - expected_comparison_keys)
+        raise AttentionBlockStatementBridgeError(
+            f"attention comparison keys drift: missing={missing} extra={extra}"
+        )
+    for key in EXPECTED_ATTENTION_COMPARISONS:
+        if _bool(comparisons.get(key), f"attention comparison {key}") is not True:
+            raise AttentionBlockStatementBridgeError(f"attention bridge comparison is not true: {key}")
     attention_outputs = _commitment(metrics.get("fixture_outputs_commitment"), "attention fixture outputs commitment")
     attention_statement = _commitment(metrics.get("fixture_statement_commitment"), "attention statement commitment")
     policy_commitment = _commitment(bridge_contract.get("policy_commitment"), "attention policy commitment")
@@ -338,15 +358,18 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
     if len(transcript) != 6:
         raise AttentionBlockStatementBridgeError("d128 accumulator transcript must contain six slices")
     first_slice = _dict(transcript[0], "d128 first slice")
-    if first_slice.get("slice_id") != "rmsnorm_public_rows":
+    if _string(first_slice.get("slice_id"), "d128 first slice_id") != "rmsnorm_public_rows":
         raise AttentionBlockStatementBridgeError("d128 first slice drift")
+    accumulator_summary = _dict(accumulator.get("summary"), "d128 summary")
+    accumulator_case_count = _int(accumulator.get("case_count"), "d128 case_count")
+    surface_summary = _dict(surface.get("summary"), "one-block surface summary")
     block_input = _commitment(
         _dict(first_slice.get("source_commitments"), "d128 first slice source commitments").get(
             "input_activation_commitment"
         ),
         "d128 input activation commitment",
     )
-    block_width = _int(accumulator["summary"].get("slice_count"), "d128 summary slice_count")
+    block_width = _int(accumulator_summary.get("slice_count"), "d128 summary slice_count")
     if block_width != 6:
         raise AttentionBlockStatementBridgeError("d128 slice_count drift")
     d128_width = 128
@@ -358,7 +381,7 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
         "statement_kind": "attention-output-to-d128-block-input-statement-bridge",
         "statement_version": "v1",
         "attention_output": {
-            "route_id": attention["route_id"],
+            "route_id": attention_route_id,
             "policy_commitment": policy_commitment,
             "source_statement_commitment": attention_statement,
             "outputs_commitment": attention_outputs,
@@ -367,11 +390,11 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
             "score_rows": _int(metrics.get("score_rows"), "attention score_rows"),
             "fused_proof_size_bytes": _int(metrics.get("fused_proof_size_bytes"), "attention proof bytes"),
             "fused_envelope_size_bytes": _int(metrics.get("fused_envelope_size_bytes"), "attention envelope bytes"),
-            "mutations_rejected": attention["mutations_rejected"],
+            "mutations_rejected": attention_mutations_rejected,
         },
         "d128_block_input": {
             "accumulator_commitment": _commitment(
-                accumulator["summary"].get("accumulator_commitment"), "d128 accumulator commitment"
+                accumulator_summary.get("accumulator_commitment"), "d128 accumulator commitment"
             ),
             "block_receipt_commitment": _commitment(
                 public_inputs.get("block_receipt_commitment"), "d128 block receipt commitment"
@@ -380,8 +403,8 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
             "input_activation_commitment": block_input,
             "width": d128_width,
             "slice_count": len(transcript),
-            "total_checked_rows": _int(accumulator["summary"].get("total_checked_rows"), "d128 checked rows"),
-            "mutations_rejected": accumulator["case_count"],
+            "total_checked_rows": _int(accumulator_summary.get("total_checked_rows"), "d128 checked rows"),
+            "mutations_rejected": accumulator_case_count,
         },
         "feed_edge": {
             "from_commitment": attention_outputs,
@@ -398,36 +421,48 @@ def build_bridge_statement(attention: dict[str, Any], accumulator: dict[str, Any
             "one_block_surface_payload_commitment": _commitment(
                 surface.get("payload_commitment"), "one-block surface payload commitment"
             ),
-            "one_block_surface_decision": surface["decision"],
+            "one_block_surface_decision": _string(surface.get("decision"), "one-block surface decision"),
             "surface_attention_fusion_saving_bytes": _int(
-                surface["summary"].get("attention_fusion_saving_bytes"), "surface attention saving"
+                surface_summary.get("attention_fusion_saving_bytes"), "surface attention saving"
             ),
-            "surface_d128_checked_rows": _int(surface["summary"].get("d128_checked_rows"), "surface d128 rows"),
+            "surface_d128_checked_rows": _int(surface_summary.get("d128_checked_rows"), "surface d128 rows"),
         },
     }
     return statement
+
+
+def summary_from_statement(statement: dict[str, Any], statement_commitment: str) -> dict[str, Any]:
+    attention_output = _dict(statement.get("attention_output"), "summary attention output")
+    d128_block_input = _dict(statement.get("d128_block_input"), "summary d128 block input")
+    feed_edge = _dict(statement.get("feed_edge"), "summary feed edge")
+    attention_mutations = _int(attention_output.get("mutations_rejected"), "summary attention mutations")
+    block_mutations = _int(d128_block_input.get("mutations_rejected"), "summary block mutations")
+    return {
+        "go_result": "GO for one verifier-facing statement commitment binding attention output and d128 block input handles",
+        "no_go_result": "NO-GO for value equality, adapter proof, recursion, matched benchmark, or full inference",
+        "attention_outputs_commitment": _commitment(
+            attention_output.get("outputs_commitment"), "summary attention outputs commitment"
+        ),
+        "block_input_activation_commitment": _commitment(
+            d128_block_input.get("input_activation_commitment"), "summary block input activation commitment"
+        ),
+        "current_commitments_equal": _bool(feed_edge.get("current_commitments_equal"), "summary current equality"),
+        "feed_equality_status": _string(feed_edge.get("feed_equality_status"), "summary feed equality status"),
+        "adapter_required": _bool(feed_edge.get("width_adapter_required"), "summary adapter_required"),
+        "attention_value_width": _int(attention_output.get("value_width"), "summary attention value_width"),
+        "block_width": _int(d128_block_input.get("width"), "summary block width"),
+        "attention_mutations_rejected": attention_mutations,
+        "block_mutations_rejected": block_mutations,
+        "combined_source_mutation_floor": attention_mutations + block_mutations,
+        "bridge_statement_commitment": _commitment(statement_commitment, "summary bridge statement commitment"),
+    }
 
 
 def build_core_payload() -> dict[str, Any]:
     attention, accumulator, surface, source_artifacts = _load_sources()
     statement = build_bridge_statement(attention, accumulator, surface)
     statement_commitment = blake2b_commitment(statement, BRIDGE_DOMAIN)
-    summary = {
-        "go_result": "GO for one verifier-facing statement commitment binding attention output and d128 block input handles",
-        "no_go_result": "NO-GO for value equality, adapter proof, recursion, matched benchmark, or full inference",
-        "attention_outputs_commitment": statement["attention_output"]["outputs_commitment"],
-        "block_input_activation_commitment": statement["d128_block_input"]["input_activation_commitment"],
-        "current_commitments_equal": statement["feed_edge"]["current_commitments_equal"],
-        "feed_equality_status": statement["feed_edge"]["feed_equality_status"],
-        "adapter_required": statement["feed_edge"]["width_adapter_required"],
-        "attention_value_width": statement["attention_output"]["value_width"],
-        "block_width": statement["d128_block_input"]["width"],
-        "attention_mutations_rejected": statement["attention_output"]["mutations_rejected"],
-        "block_mutations_rejected": statement["d128_block_input"]["mutations_rejected"],
-        "combined_source_mutation_floor": statement["attention_output"]["mutations_rejected"]
-        + statement["d128_block_input"]["mutations_rejected"],
-        "bridge_statement_commitment": statement_commitment,
-    }
+    summary = summary_from_statement(statement, statement_commitment)
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -470,21 +505,26 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None) ->
     expected_statement_commitment = blake2b_commitment(statement, BRIDGE_DOMAIN)
     if data.get("bridge_statement_commitment") != expected_statement_commitment:
         raise AttentionBlockStatementBridgeError("bridge statement commitment drift")
-    if _dict(data.get("summary"), "summary").get("bridge_statement_commitment") != expected_statement_commitment:
+    summary = _dict(data.get("summary"), "summary")
+    if summary.get("bridge_statement_commitment") != expected_statement_commitment:
         raise AttentionBlockStatementBridgeError("summary bridge commitment drift")
+    if summary != summary_from_statement(statement, expected_statement_commitment):
+        raise AttentionBlockStatementBridgeError("summary drift")
     if data.get("payload_commitment") != payload_commitment(data):
         raise AttentionBlockStatementBridgeError("payload commitment drift")
 
     feed_edge = _dict(statement.get("feed_edge"), "feed edge")
+    attention_output = _dict(statement.get("attention_output"), "attention output")
+    d128_block_input = _dict(statement.get("d128_block_input"), "d128 block input")
     if feed_edge.get("current_commitments_equal") is not False:
         raise AttentionBlockStatementBridgeError("feed equality overclaim")
     if feed_edge.get("feed_equality_status") != "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY":
         raise AttentionBlockStatementBridgeError("feed equality status drift")
     if feed_edge.get("width_adapter_required") is not True:
         raise AttentionBlockStatementBridgeError("adapter requirement drift")
-    if feed_edge.get("from_commitment") != statement["attention_output"]["outputs_commitment"]:
+    if feed_edge.get("from_commitment") != attention_output.get("outputs_commitment"):
         raise AttentionBlockStatementBridgeError("attention feed commitment drift")
-    if feed_edge.get("to_commitment") != statement["d128_block_input"]["input_activation_commitment"]:
+    if feed_edge.get("to_commitment") != d128_block_input.get("input_activation_commitment"):
         raise AttentionBlockStatementBridgeError("block input feed commitment drift")
 
     if expected is not None and _comparable(data) != _comparable(expected):
@@ -555,6 +595,11 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ("non_claim_removed", lambda p: p.__setitem__("non_claims", p["non_claims"][1:]), True),
     ("validation_command_removed", lambda p: p.__setitem__("validation_commands", p["validation_commands"][:-1]), True),
     ("source_artifact_sha_drift", lambda p: p["source_artifacts"][0].__setitem__("sha256", "66" * 32), True),
+    (
+        "summary_attention_output_commitment_drift",
+        lambda p: p["summary"].__setitem__("attention_outputs_commitment", "blake2b-256:" + "77" * 32),
+        True,
+    ),
     ("payload_commitment_drift", _set_payload_commitment_drift, False),
 )
 
@@ -594,12 +639,15 @@ def to_tsv(payload: dict[str, Any]) -> str:
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
-    summary = payload["summary"]
+    data = _dict(payload, "payload")
+    statement = _dict(data.get("bridge_statement"), "bridge statement")
+    statement_commitment = blake2b_commitment(statement, BRIDGE_DOMAIN)
+    summary = summary_from_statement(statement, statement_commitment)
     writer.writerow(
         {
-            "decision": payload["decision"],
-            "result": payload["result"],
-            "bridge_statement_commitment": payload["bridge_statement_commitment"],
+            "decision": _string(data.get("decision"), "decision"),
+            "result": _string(data.get("result"), "result"),
+            "bridge_statement_commitment": statement_commitment,
             "attention_outputs_commitment": summary["attention_outputs_commitment"],
             "block_input_activation_commitment": summary["block_input_activation_commitment"],
             "current_commitments_equal": str(summary["current_commitments_equal"]).lower(),
