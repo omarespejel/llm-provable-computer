@@ -856,9 +856,16 @@ def atomic_write_text(path: pathlib.Path, text: str, *, suffix: str | None = Non
         open_parent_stat = os.fstat(dir_fd)
         if (open_parent_stat.st_dev, open_parent_stat.st_ino) != (parent_stat.st_dev, parent_stat.st_ino):
             raise AttentionDerivedD128BlockStatementChainError(f"output parent changed while opening: {resolved.parent}")
-        fd = os.open(tmp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
+        fd: int | None = os.open(tmp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
         tmp_created = True
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+        try:
+            handle = os.fdopen(fd, "w", encoding="utf-8", newline="")
+        except Exception:
+            os.close(fd)
+            fd = None
+            raise
+        fd = None
+        with handle:
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())

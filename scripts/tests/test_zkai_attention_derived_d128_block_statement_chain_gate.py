@@ -262,6 +262,25 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
             finally:
                 pathlib.Path.resolve = original_resolve
 
+    def test_write_outputs_cleans_temp_when_fdopen_fails(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            output_path = tmp / "statement-chain.json"
+            original_fdopen = GATE.os.fdopen
+
+            def fail_fdopen(*args, **kwargs):
+                raise OSError("simulated fdopen failure")
+
+            try:
+                GATE.os.fdopen = fail_fdopen
+                with self.assertRaisesRegex(OSError, "simulated fdopen failure"):
+                    GATE.write_outputs(payload, output_path, None, context=copy.deepcopy(self.context))
+                self.assertFalse(output_path.exists())
+                self.assertEqual([path.name for path in tmp.iterdir()], [])
+            finally:
+                GATE.os.fdopen = original_fdopen
+
     def test_load_json_rejects_unhardened_paths(self) -> None:
         with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)
