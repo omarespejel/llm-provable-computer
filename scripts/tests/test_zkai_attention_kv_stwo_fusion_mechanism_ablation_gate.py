@@ -471,6 +471,22 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate._binary_metrics(binary)
 
         binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["aggregate"]["fused_saves_vs_source_plus_sidecar_json_bytes"] += 1
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "binary JSON proof saving does not match byte totals",
+        ):
+            gate._binary_metrics(binary)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["aggregate"]["fused_saves_vs_source_plus_sidecar_local_typed_bytes"] += 1
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "binary local typed saving does not match byte totals",
+        ):
+            gate._binary_metrics(binary)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
         binary["binary_serialization_status"] = "GO_UPSTREAM_STWO_WIRE_FORMAT"
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary serialization status drift"):
             gate._binary_metrics(binary)
