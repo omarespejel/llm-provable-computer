@@ -22,7 +22,8 @@ import pathlib
 import secrets
 import stat as stat_module
 import sys
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -85,6 +86,8 @@ EXPECTED_MUTATIONS = (
     "source_edge_count_drift",
     "source_row_count_drift",
     "source_case_count_drift",
+    "compressed_hidden_activation_recommit_drift",
+    "compressed_projection_rows_recommit_drift",
     "compressed_artifact_commitment_drift",
     "compressed_artifact_claim_boundary_drift",
     "compressed_public_input_removed",
@@ -258,15 +261,17 @@ def source_summary(source: dict[str, Any]) -> dict[str, Any]:
     return summary
 
 
-def build_compressed_artifact(source: dict[str, Any], source_raw: bytes) -> dict[str, Any]:
-    summary = source_summary(source)
-    source_artifact = {
+def expected_source_artifact(source: dict[str, Any], source_raw: bytes) -> dict[str, Any]:
+    return {
         "path": str(SOURCE_CHAIN.relative_to(ROOT)),
         "file_sha256": sha256_bytes(source_raw),
         "payload_commitment": source["payload_commitment"],
         "block_statement_commitment": source["block_statement_commitment"],
     }
-    required_public_inputs = {
+
+
+def expected_required_public_inputs(source: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
+    return {
         "block_statement_commitment": source["block_statement_commitment"],
         "source_attention_outputs_commitment": summary["source_attention_outputs_commitment"],
         "derived_input_activation_commitment": summary["derived_input_activation_commitment"],
@@ -282,6 +287,12 @@ def build_compressed_artifact(source: dict[str, Any], source_raw: bytes) -> dict
         "residual_add_rows": summary["residual_add_rows"],
         "source_payload_commitment": source["payload_commitment"],
     }
+
+
+def build_compressed_artifact(source: dict[str, Any], source_raw: bytes) -> dict[str, Any]:
+    summary = source_summary(source)
+    source_artifact = expected_source_artifact(source, source_raw)
+    required_public_inputs = expected_required_public_inputs(source, summary)
     preimage = {
         "artifact_kind": COMPRESSED_ARTIFACT_KIND,
         "claim_boundary": CLAIM_BOUNDARY,
@@ -396,37 +407,33 @@ def finalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def validate_compressed_artifact(artifact: dict[str, Any]) -> None:
+def validate_compressed_artifact(
+    artifact: dict[str, Any],
+    *,
+    expected_artifact: dict[str, Any],
+    expected_required: dict[str, Any],
+) -> None:
     if _str(artifact.get("schema"), "compressed_artifact.schema") != COMPRESSED_ARTIFACT_SCHEMA:
         raise AttentionDerivedD128StatementChainCompressionError("compressed artifact schema drift")
+    if _str(artifact.get("artifact_kind"), "compressed_artifact.artifact_kind") != COMPRESSED_ARTIFACT_KIND:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed artifact kind drift")
     if _str(artifact.get("claim_boundary"), "compressed_artifact.claim_boundary") != CLAIM_BOUNDARY:
         raise AttentionDerivedD128StatementChainCompressionError("compressed artifact claim boundary drift")
     preimage = _dict(artifact.get("preimage"), "compressed_artifact.preimage")
+    if _str(preimage.get("artifact_kind"), "compressed_artifact.preimage.artifact_kind") != COMPRESSED_ARTIFACT_KIND:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed preimage kind drift")
+    if _str(preimage.get("claim_boundary"), "compressed_artifact.preimage.claim_boundary") != CLAIM_BOUNDARY:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed preimage claim boundary drift")
     expected = blake2b_commitment(preimage, COMPRESSED_ARTIFACT_DOMAIN)
     if _str(artifact.get("compressed_artifact_commitment"), "compressed_artifact.commitment") != expected:
         raise AttentionDerivedD128StatementChainCompressionError("compressed artifact commitment drift")
+    if _dict(preimage.get("source_artifact"), "compressed_artifact.source_artifact") != expected_artifact:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed source artifact drift")
     required = _dict(preimage.get("required_public_inputs"), "compressed_artifact.required_public_inputs")
-    for key in (
-        "block_statement_commitment",
-        "source_attention_outputs_commitment",
-        "derived_input_activation_commitment",
-        "derived_output_activation_commitment",
-        "source_payload_commitment",
-    ):
-        _str(required.get(key), f"compressed_artifact.required_public_inputs.{key}")
-    if _str(required["block_statement_commitment"], "required block statement") != EXPECTED_SOURCE_BLOCK_STATEMENT:
-        raise AttentionDerivedD128StatementChainCompressionError("compressed public input block statement drift")
-    if _str(required["source_payload_commitment"], "required source payload") != EXPECTED_SOURCE_PAYLOAD:
-        raise AttentionDerivedD128StatementChainCompressionError("compressed public input payload drift")
-    if _int(required.get("slice_count"), "compressed_artifact.required_public_inputs.slice_count") != EXPECTED_SOURCE_SLICES:
-        raise AttentionDerivedD128StatementChainCompressionError("compressed public input slice count drift")
-    if _int(required.get("edge_count"), "compressed_artifact.required_public_inputs.edge_count") != EXPECTED_SOURCE_EDGES:
-        raise AttentionDerivedD128StatementChainCompressionError("compressed public input edge count drift")
-    if (
-        _int(required.get("accounted_relation_rows"), "compressed_artifact.required_public_inputs.accounted_relation_rows")
-        != EXPECTED_SOURCE_ROWS
-    ):
-        raise AttentionDerivedD128StatementChainCompressionError("compressed public input row count drift")
+    if required != expected_required:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed public input drift")
+    if preimage.get("non_claims") != NON_CLAIMS:
+        raise AttentionDerivedD128StatementChainCompressionError("compressed non_claims drift")
 
 
 def validate_verifier_handle(handle: dict[str, Any], artifact: dict[str, Any]) -> None:
@@ -441,6 +448,12 @@ def validate_verifier_handle(handle: dict[str, Any], artifact: dict[str, Any]) -
         "compressed_artifact_commitment"
     ]:
         raise AttentionDerivedD128StatementChainCompressionError("verifier handle artifact drift")
+    if _str(preimage.get("accepted_artifact_schema"), "verifier_handle.accepted_artifact_schema") != artifact["schema"]:
+        raise AttentionDerivedD128StatementChainCompressionError("verifier handle artifact schema drift")
+    if _str(preimage.get("accepted_claim_boundary"), "verifier_handle.accepted_claim_boundary") != CLAIM_BOUNDARY:
+        raise AttentionDerivedD128StatementChainCompressionError("verifier handle accepted boundary drift")
+    if preimage.get("required_public_inputs") != artifact["preimage"]["required_public_inputs"]:
+        raise AttentionDerivedD128StatementChainCompressionError("verifier handle public input drift")
     expected = blake2b_commitment(preimage, VERIFIER_HANDLE_DOMAIN)
     if _str(handle.get("verifier_handle_commitment"), "verifier_handle.commitment") != expected:
         raise AttentionDerivedD128StatementChainCompressionError("verifier handle commitment drift")
@@ -457,12 +470,19 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise AttentionDerivedD128StatementChainCompressionError("result drift")
     if _str(payload.get("claim_boundary"), "claim_boundary") != CLAIM_BOUNDARY:
         raise AttentionDerivedD128StatementChainCompressionError("claim boundary drift")
+    source_raw = read_source_bytes(SOURCE_CHAIN, "source chain JSON")
+    source_payload = parse_json_bytes(source_raw, "source chain JSON")
+    summary = source_summary(source_payload)
+    expected_artifact = expected_source_artifact(source_payload, source_raw)
+    expected_required = expected_required_public_inputs(source_payload, summary)
     source = _dict(payload.get("source_chain"), "source_chain")
-    if _str(source.get("payload_commitment"), "source_chain.payload_commitment") != EXPECTED_SOURCE_PAYLOAD:
-        raise AttentionDerivedD128StatementChainCompressionError("source chain payload commitment drift")
-    if _str(source.get("block_statement_commitment"), "source_chain.block_statement_commitment") != EXPECTED_SOURCE_BLOCK_STATEMENT:
-        raise AttentionDerivedD128StatementChainCompressionError("source chain block statement drift")
-    validate_compressed_artifact(_dict(payload.get("compressed_artifact"), "compressed_artifact"))
+    if source != expected_artifact:
+        raise AttentionDerivedD128StatementChainCompressionError("source chain artifact drift")
+    validate_compressed_artifact(
+        _dict(payload.get("compressed_artifact"), "compressed_artifact"),
+        expected_artifact=expected_artifact,
+        expected_required=expected_required,
+    )
     validate_verifier_handle(
         _dict(payload.get("verifier_handle"), "verifier_handle"),
         _dict(payload.get("compressed_artifact"), "compressed_artifact"),
@@ -537,6 +557,11 @@ def _recommit_handle(payload: dict[str, Any]) -> None:
     handle["verifier_handle_commitment"] = blake2b_commitment(handle["preimage"], VERIFIER_HANDLE_DOMAIN)
 
 
+def _mutate_required_input(payload: dict[str, Any], key: str, value: Any) -> None:
+    payload["compressed_artifact"]["preimage"]["required_public_inputs"][key] = value
+    _recommit_artifact(payload)
+
+
 def run_mutations(base_payload: dict[str, Any]) -> list[dict[str, Any]]:
     def mutate_source_schema(payload: dict[str, Any]) -> None:
         payload["source_chain"]["payload_commitment"] = "sha256:" + "00" * 32
@@ -552,17 +577,15 @@ def run_mutations(base_payload: dict[str, Any]) -> list[dict[str, Any]]:
         "source_summary_statement_drift": lambda p: p["summary"].__setitem__(
             "block_statement_commitment", "blake2b-256:" + "11" * 32
         ),
-        "source_edges_not_all_match": lambda p: p["compressed_artifact"]["preimage"][
-            "required_public_inputs"
-        ].__setitem__("edge_count", 10),
-        "source_slice_count_drift": lambda p: p["compressed_artifact"]["preimage"][
-            "required_public_inputs"
-        ].__setitem__("slice_count", 5),
+        "source_edges_not_all_match": lambda p: _mutate_required_input(p, "edge_count", 10),
+        "source_slice_count_drift": lambda p: _mutate_required_input(p, "slice_count", 5),
         "source_edge_count_drift": lambda p: p["summary"].__setitem__("source_relation_rows", 1),
-        "source_row_count_drift": lambda p: p["compressed_artifact"]["preimage"][
-            "required_public_inputs"
-        ].__setitem__("accounted_relation_rows", 1),
+        "source_row_count_drift": lambda p: _mutate_required_input(p, "accounted_relation_rows", 1),
         "source_case_count_drift": lambda p: p.__setitem__("case_count", 1),
+        "compressed_hidden_activation_recommit_drift": lambda p: _mutate_required_input(
+            p, "derived_hidden_activation_commitment", "blake2b-256:" + "55" * 32
+        ),
+        "compressed_projection_rows_recommit_drift": lambda p: _mutate_required_input(p, "projection_mul_rows", 1),
         "compressed_artifact_commitment_drift": lambda p: p["compressed_artifact"].__setitem__(
             "compressed_artifact_commitment", "blake2b-256:" + "22" * 32
         ),

@@ -23,7 +23,7 @@ class AttentionDerivedD128StatementChainCompressionGateTests(unittest.TestCase):
         self.assertEqual(payload["decision"], gate.DECISION)
         self.assertEqual(payload["result"], gate.RESULT)
         self.assertEqual(payload["claim_boundary"], gate.CLAIM_BOUNDARY)
-        self.assertEqual(payload["case_count"], 20)
+        self.assertEqual(payload["case_count"], 22)
         self.assertTrue(payload["all_mutations_rejected"])
         self.assertEqual(payload["source_chain"]["payload_commitment"], gate.EXPECTED_SOURCE_PAYLOAD)
         self.assertEqual(
@@ -78,7 +78,43 @@ class AttentionDerivedD128StatementChainCompressionGateTests(unittest.TestCase):
     def test_tsv_contains_single_summary_row(self) -> None:
         tsv = gate.to_tsv(self.fresh_payload())
         self.assertIn("source_chain_artifact_bytes\tcompressed_artifact_bytes\tbyte_savings", tsv)
-        self.assertIn("14624\t2559\t12065\t0.174986\t20", tsv)
+        self.assertIn("14624\t2559\t12065\t0.174986\t22", tsv)
+
+    def test_rejects_recommitted_public_input_drift(self) -> None:
+        payload = self.fresh_payload()
+        required = payload["compressed_artifact"]["preimage"]["required_public_inputs"]
+        required["derived_hidden_activation_commitment"] = "blake2b-256:" + "44" * 32
+        payload["compressed_artifact"]["compressed_artifact_commitment"] = gate.blake2b_commitment(
+            payload["compressed_artifact"]["preimage"], gate.COMPRESSED_ARTIFACT_DOMAIN
+        )
+        payload["verifier_handle"]["preimage"]["accepted_artifact_commitment"] = payload["compressed_artifact"][
+            "compressed_artifact_commitment"
+        ]
+        payload["verifier_handle"]["preimage"]["required_public_inputs"] = copy.deepcopy(required)
+        payload["verifier_handle"]["verifier_handle_commitment"] = gate.blake2b_commitment(
+            payload["verifier_handle"]["preimage"], gate.VERIFIER_HANDLE_DOMAIN
+        )
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+
+        with self.assertRaisesRegex(gate.AttentionDerivedD128StatementChainCompressionError, "public input drift"):
+            gate.validate_payload(payload)
+
+    def test_rejects_recommitted_source_artifact_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["compressed_artifact"]["preimage"]["source_artifact"]["file_sha256"] = "sha256:" + "44" * 32
+        payload["compressed_artifact"]["compressed_artifact_commitment"] = gate.blake2b_commitment(
+            payload["compressed_artifact"]["preimage"], gate.COMPRESSED_ARTIFACT_DOMAIN
+        )
+        payload["verifier_handle"]["preimage"]["accepted_artifact_commitment"] = payload["compressed_artifact"][
+            "compressed_artifact_commitment"
+        ]
+        payload["verifier_handle"]["verifier_handle_commitment"] = gate.blake2b_commitment(
+            payload["verifier_handle"]["preimage"], gate.VERIFIER_HANDLE_DOMAIN
+        )
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+
+        with self.assertRaisesRegex(gate.AttentionDerivedD128StatementChainCompressionError, "source artifact drift"):
+            gate.validate_payload(payload)
 
     def test_write_outputs_round_trip_and_rejects_bad_paths(self) -> None:
         payload = self.fresh_payload()

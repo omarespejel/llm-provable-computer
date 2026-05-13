@@ -31,8 +31,8 @@ readiness.
 | Byte savings | `12,065` |
 | Compressed/source ratio | `0.174986x` |
 | Source relation rows | `199,553` |
-| Mutations rejected | `20 / 20` |
-| Payload commitment | `sha256:fbe9c0dc38357868e970c6bd8598088ceca5991e4ec3ece2b296aa6759d75aec` |
+| Mutations rejected | `22 / 22` |
+| Payload commitment | `sha256:d15c409b11bd5d1f7ffd66caeabd94daf60ca7feca7dc325987aa26f07c2b423` |
 
 ## What This Adds
 
@@ -49,6 +49,11 @@ full statement-chain JSON
 This is useful for engineering the next proof-object experiment because it
 defines the smaller public-input contract an outer proof or accumulator would
 need to bind.
+
+The verifier-facing artifact now rechecks the current upstream source file hash
+and the full required-public-input dictionary derived from the source summary,
+including hidden/residual commitments and projection/activation/residual row
+counts. Recomputed compressed artifacts with drifted public inputs are rejected.
 
 ## Claim Boundary
 

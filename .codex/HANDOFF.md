@@ -726,9 +726,10 @@ Tablero boundary.
 - The attention-derived d128 statement chain now has a compressed
   verifier-facing transcript artifact. The source statement-chain JSON is
   `14,624` bytes; the compressed artifact is `2,559` bytes, saving `12,065`
-  bytes with ratio `0.174986x`. The gate rejects `20 / 20` local mutations
-  and remains a no-go for one composed proof, recursion, PCD, proof-size
-  evidence, timings, or production readiness. See
+  bytes with ratio `0.174986x`. The gate rejects `22 / 22` local mutations,
+  including recommitted public-input drift, and remains a no-go for one
+  composed proof, recursion, PCD, proof-size evidence, timings, or production
+  readiness. See
   `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`.
 
 ## Source-of-truth documents
