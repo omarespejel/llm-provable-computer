@@ -683,11 +683,15 @@ Tablero boundary.
   composed proof, proof-size savings, timings, or learned model weights; see
   `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`.
 - The one-transformer-block surface scorecard now consumes the
-  attention-derived d128 statement chain directly: `5` source artifacts, `5`
+  attention-derived d128 statement chain and the executable external SNARK
+  statement receipt over its input contract: `6` source artifacts, `6`
   component rows, `194,097` local attention-fusion JSON proof-byte savings,
-  `197,504` d128 receipt-chain rows, and `199,553` attention-derived
-  statement-chain rows. This remains a no-go for a matched NANOZK-style layer
-  proof, proof-size benchmark, verifier-time benchmark, or full inference; see
+  `197,504` d128 receipt-chain rows, `199,553` attention-derived
+  statement-chain rows, a `0.174986x` compressed/source statement-chain ratio,
+  and an `807`-byte Groth16 statement receipt with `17` public signals and
+  `40 / 40` mutation rejection. This remains a no-go for a matched
+  NANOZK-style layer proof, native outer proof, verifier-time benchmark, or full
+  inference; see
   `docs/engineering/zkai-one-transformer-block-surface-2026-05-13.md`.
 - The attention-derived d128 statement chain now has a compressed
   verifier-facing transcript artifact: source statement-chain JSON `14,624`

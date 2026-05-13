@@ -69,6 +69,16 @@
       "value": 199553
     },
     {
+      "comparison_status": "EXECUTABLE_CONTROL_NOT_NATIVE_BLOCK_PROOF",
+      "local_status": "GO_EXTERNAL_SNARK_STATEMENT_RECEIPT_NO_GO_NATIVE_OUTER_PROOF",
+      "metric": "verified Groth16 statement receipt over outer-proof input contract",
+      "subsystem": "external_statement_binding",
+      "support": "17 public signals; 40 / 40 mutations rejected; receipt blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d",
+      "surface": "attention-derived d128 executable statement receipt",
+      "unit": "proof_bytes",
+      "value": 807
+    },
+    {
       "comparison_status": "CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
       "local_status": "SOURCE_BACKED_EXTERNAL_CONTEXT",
       "metric": "reported transformer block proof",
@@ -89,12 +99,13 @@
   "non_claims": [
     "not a matched benchmark against NANOZK or Jolt Atlas",
     "not one recursive or compressed proof object for a full transformer block",
-    "not proof-size or verifier-time evidence for a local d128 layer proof",
+    "not native proof-size or verifier-time evidence for a local d128 layer proof",
+    "the 807-byte Groth16 proof is an external statement receipt, not a native block proof",
     "not exact real-valued Softmax, LayerNorm, or GELU",
     "not full autoregressive inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:02b80ba9e7a9d1c420e50e4ee1ab5bfb930851a7fac0595a1ee5a8630e551b3a",
+  "payload_commitment": "sha256:085b3fe4014e3b4c939389983b15d08b45abe34c5d71a6d25616953c0f80beba",
   "schema": "zkai-one-transformer-block-surface-v1",
   "source_artifacts": [
     {
@@ -118,6 +129,11 @@
       "sha256": "990602eefeaceb98a9272d00acfd9b1ef387d34d0218d9ae1a736afc2f6163a3"
     },
     {
+      "kind": "local_attention_derived_d128_snark_statement_receipt_json",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-snark-statement-receipt-2026-05.json",
+      "sha256": "0b2f311210c9102b758a1987441a0ef44044998636e6b7bf3ccd19e0558b60fc"
+    },
+    {
       "kind": "source_backed_competitor_matrix_json",
       "path": "docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json",
       "sha256": "ed838fd9137d66fb2acbf72e3ac82fca4774a4d0f6d9b935a74674cfd671249d"
@@ -125,6 +141,12 @@
   ],
   "summary": {
     "attention_derived_d128_block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+    "attention_derived_d128_input_contract_commitment": "blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39",
+    "attention_derived_d128_snark_receipt_commitment": "blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d",
+    "attention_derived_d128_snark_receipt_mutations_rejected": 40,
+    "attention_derived_d128_snark_receipt_proof_bytes": 807,
+    "attention_derived_d128_snark_receipt_public_signals": 17,
+    "attention_derived_d128_statement_chain_compressed_ratio": 0.174986,
     "attention_derived_d128_statement_chain_edges": 11,
     "attention_derived_d128_statement_chain_rows": 199553,
     "attention_fusion_saving_bytes": 194097,
@@ -132,9 +154,9 @@
     "d128_checked_rows": 197504,
     "d128_over_d64_checked_row_ratio": 3.981935,
     "d64_checked_rows": 49600,
-    "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain",
-    "no_go_result": "NO-GO for matched NANOZK-style single layer proof, proof-size benchmark, verifier-time benchmark, or full inference",
-    "strongest_claim": "STARK-native attention fusion and an attention-derived d128 RMSNorm/SwiGLU/residual statement chain now sit in one source-backed block-surface scorecard."
+    "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain and external statement receipt",
+    "no_go_result": "NO-GO for matched NANOZK-style single layer proof, native outer proof, verifier-time benchmark, or full inference",
+    "strongest_claim": "STARK-native attention fusion, an attention-derived d128 RMSNorm/SwiGLU/residual statement chain, and an executable external receipt over that chain's input contract now sit in one source-backed block-surface scorecard."
   },
   "validation_commands": [
     "python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.tsv",
