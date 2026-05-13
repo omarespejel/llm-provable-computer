@@ -1,0 +1,181 @@
+{
+  "all_mutations_rejected": true,
+  "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+  "binary_typed_accounting": {
+    "binary_serialization_status": "NO_GO_NOT_UPSTREAM_STWO_PROOF_SERIALIZATION",
+    "cli_upstream_stwo_serialization_status": "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY",
+    "first_blocker": "Upstream Stwo does not expose a stable proof wire serializer here; this gate records a repo-owned deterministic accounting record stream over typed proof fields instead.",
+    "fused_json_proof_bytes": 107261,
+    "fused_local_typed_bytes": 50380,
+    "fused_saves_vs_source_plus_sidecar_json_bytes": 9421,
+    "fused_saves_vs_source_plus_sidecar_local_typed_bytes": 2620,
+    "profiles_checked": 3,
+    "source_plus_sidecar_json_proof_bytes": 116682,
+    "source_plus_sidecar_local_typed_bytes": 53000
+  },
+  "claim_boundary": "CROSS_EVIDENCE_MECHANISM_ABLATION_FOR_MATCHED_SOURCE_PLUS_LOGUP_SIDECAR_VS_FUSED_NATIVE_STWO_ATTENTION_SOFTMAX_TABLE_PROOFS_NOT_BACKEND_INTERNAL_BYTE_ATTRIBUTION_NOT_TIMING",
+  "controlled_component_grid": {
+    "all_profiles_save_typed_components": true,
+    "fri_trace_merkle_path_savings_bytes_total": 41312,
+    "fri_trace_merkle_path_share_of_typed_savings": 0.805491,
+    "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+    "opening_plumbing_savings_bytes_total": 44896,
+    "opening_plumbing_share_of_typed_savings": 0.87537,
+    "profiles_checked": 10,
+    "stable_binary_serializer_status": "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED",
+    "typed_saving_share_total": 0.17959,
+    "typed_savings_bytes_total": 51288
+  },
+  "decision": "GO_STARK_NATIVE_FUSION_MECHANISM_ABLATION_FOR_PAPER_ARCHITECTURE_CLAIM",
+  "evidence_consistency": {
+    "binary_accounting_scope_is_d32_matched_slice": true,
+    "route_matrix_aggregate_matches_recomputed_totals": true,
+    "route_matrix_scope_is_eleven_matched_profiles": true,
+    "section_delta_scope_is_ten_profile_slice": true,
+    "typed_estimate_scope_is_nine_profile_slice": true
+  },
+  "findings": [
+    {
+      "id": "matched_route_savings_persist_across_checked_axes",
+      "status": "GO",
+      "value": "11 matched profiles save 194097 JSON proof bytes"
+    },
+    {
+      "id": "serialized_section_delta_points_to_opening_plumbing",
+      "status": "GO",
+      "value": "0.927722 of ten-profile JSON savings come from the opening bucket"
+    },
+    {
+      "id": "typed_accounting_independently_points_to_decommitments",
+      "status": "GO",
+      "value": "0.868305 of nine-profile typed savings come from FRI plus trace decommitments"
+    },
+    {
+      "id": "controlled_component_grid_agrees_on_opening_plumbing",
+      "status": "GO",
+      "value": "0.875370 of controlled-grid typed savings come from opening plumbing"
+    },
+    {
+      "id": "d32_local_binary_accounting_is_positive_but_not_wire_format",
+      "status": "GO_WITH_NO_GO_BOUNDARY",
+      "value": "d32 local typed fused saving is 2620 bytes; upstream Stwo wire format remains a non-claim"
+    }
+  ],
+  "mechanism_status": "GO_SHARED_OPENING_DECOMMITMENT_PLUMBING_DOMINATES_CHECKED_SAVINGS",
+  "mutation_cases": [
+    {
+      "name": "route_total_saving_drift",
+      "rejected": true
+    },
+    {
+      "name": "opening_share_drift",
+      "rejected": true
+    },
+    {
+      "name": "typed_decommitment_share_drift",
+      "rejected": true
+    },
+    {
+      "name": "binary_accounting_overclaim",
+      "rejected": true
+    },
+    {
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "name": "evidence_sha_drift",
+      "rejected": true
+    },
+    {
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 7,
+  "mutations_rejected": 7,
+  "non_claims": [
+    "not backend-internal source arithmetic versus lookup byte attribution",
+    "not upstream Stwo verifier-facing binary proof serialization",
+    "not timing evidence",
+    "not a public benchmark",
+    "not exact real-valued Softmax",
+    "not full inference",
+    "not a d64 or d128 RMSNorm-SwiGLU transformer-block proof",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:396326059017fa9bc92923b94adaaed6107fde80483777b8d8db1e2393a90130",
+  "route_id": "local_stwo_attention_kv_fusion_mechanism_ablation",
+  "route_matrix": {
+    "aggregate_metrics_match": {
+      "fused_proof_size_bytes_total": 736727,
+      "fused_savings_bytes_total": 194097,
+      "source_plus_sidecar_raw_proof_bytes_total": 930824
+    },
+    "all_matched_profiles_save_json_bytes": true,
+    "fused_proof_size_bytes_total": 736727,
+    "fused_saving_share": 0.208522,
+    "fused_savings_bytes_total": 194097,
+    "matched_profiles_checked": 11,
+    "max_fused_to_source_plus_sidecar_ratio": 0.919259,
+    "min_fused_to_source_plus_sidecar_ratio": 0.676723,
+    "profiles_checked": 11,
+    "source_plus_sidecar_raw_proof_bytes_total": 930824
+  },
+  "schema": "zkai-attention-kv-stwo-fusion-mechanism-ablation-v1",
+  "section_delta": {
+    "backend_internal_split_status": "NO_GO_SERIALIZED_STARK_PROOF_DOES_NOT_LABEL_SOURCE_ARITHMETIC_VS_LOGUP_LOOKUP_COLUMNS_OR_BYTES",
+    "fri_plus_decommitments_savings_bytes": 171328,
+    "fri_plus_decommitments_savings_share": 0.927722,
+    "json_savings_bytes_total": 184676,
+    "largest_delta_section": "fri_proof",
+    "largest_delta_section_bytes": 102304,
+    "opening_bucket_savings_bytes": 171328,
+    "opening_bucket_savings_share": 0.927722,
+    "profiles_checked": 10
+  },
+  "source_artifacts": [
+    {
+      "id": "route_matrix",
+      "path": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json",
+      "sha256": "49d082c2923ca9831faa0374ea9ffec2a4d3a599651b26db4c55e98caf9aaf22"
+    },
+    {
+      "id": "section_delta",
+      "path": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-section-delta-2026-05.json",
+      "sha256": "985b329c8a0d5aa864674eaa3d740b87f92b8e64dd3e8a872fad9d2600fec446"
+    },
+    {
+      "id": "typed_size_estimate",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-typed-size-estimate-2026-05.json",
+      "sha256": "b8f39c7f122f18ae9891c83eed76f5ae6891acba71d2fd6e36b125732b32e3d0"
+    },
+    {
+      "id": "controlled_component_grid",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-controlled-component-grid-2026-05.json",
+      "sha256": "f39d68a84070f0fc848d465fd260b711b42cacb2b6915e8da59181d355311f67"
+    },
+    {
+      "id": "binary_typed_accounting",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-binary-typed-proof-accounting-2026-05.json",
+      "sha256": "a684687af5d16c65cdab97bfe6d71c3491892c214ceb8a9dae51d782b025dc3e"
+    }
+  ],
+  "timing_policy": "proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark",
+  "typed_size_estimate": {
+    "fri_trace_decommitment_savings_bytes": 36896,
+    "fri_trace_decommitment_savings_share": 0.868305,
+    "largest_typed_saving_bucket": "fri_decommitments",
+    "largest_typed_saving_bucket_bytes": 19584,
+    "profiles_checked": 9,
+    "stable_binary_serializer_status": "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED",
+    "typed_saving_share_vs_source_plus_sidecar": 0.167376,
+    "typed_savings_bytes_total": 42492
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_kv_stwo_fusion_mechanism_ablation_gate.py --write-json docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_kv_stwo_fusion_mechanism_ablation_gate",
+    "just gate-fast",
+    "git diff --check"
+  ]
+}

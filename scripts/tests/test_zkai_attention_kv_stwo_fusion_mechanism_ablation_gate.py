@@ -1,0 +1,157 @@
+import copy
+import json
+import pathlib
+import tempfile
+import unittest
+
+from scripts import zkai_attention_kv_stwo_fusion_mechanism_ablation_gate as gate
+
+
+class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.payload_base = gate.build_payload()
+
+    def setUp(self) -> None:
+        self.payload = copy.deepcopy(self.payload_base)
+
+    def strip_mutation_summary(self, payload):
+        payload = copy.deepcopy(payload)
+        for key in (
+            "mutation_cases",
+            "mutations_checked",
+            "mutations_rejected",
+            "all_mutations_rejected",
+            "payload_commitment",
+        ):
+            payload.pop(key, None)
+        return payload
+
+    def assert_rejects(self, payload, message):
+        with self.assertRaises(gate.FusionMechanismAblationGateError) as ctx:
+            gate.validate_payload(payload, require_mutation_summary=False)
+        self.assertIn(message, str(ctx.exception))
+
+    def test_builds_checked_mechanism_ablation_payload(self):
+        payload = self.payload
+        gate.validate_payload(payload)
+
+        self.assertEqual(payload["schema"], gate.SCHEMA)
+        self.assertEqual(payload["decision"], gate.DECISION)
+        self.assertEqual(payload["mechanism_status"], gate.MECHANISM_STATUS)
+        self.assertEqual(payload["backend_internal_split_status"], gate.BACKEND_INTERNAL_SPLIT_STATUS)
+        self.assertEqual(payload["timing_policy"], gate.TIMING_POLICY)
+        self.assertEqual(len(payload["source_artifacts"]), 5)
+
+        route = payload["route_matrix"]
+        self.assertEqual(route["matched_profiles_checked"], 11)
+        self.assertEqual(route["source_plus_sidecar_raw_proof_bytes_total"], 930824)
+        self.assertEqual(route["fused_proof_size_bytes_total"], 736727)
+        self.assertEqual(route["fused_savings_bytes_total"], 194097)
+        self.assertTrue(route["all_matched_profiles_save_json_bytes"])
+
+        section = payload["section_delta"]
+        self.assertEqual(section["profiles_checked"], 10)
+        self.assertEqual(section["json_savings_bytes_total"], 184676)
+        self.assertEqual(section["opening_bucket_savings_share"], 0.927722)
+        self.assertEqual(section["largest_delta_section"], "fri_proof")
+
+        typed = payload["typed_size_estimate"]
+        self.assertEqual(typed["profiles_checked"], 9)
+        self.assertEqual(typed["typed_savings_bytes_total"], 42492)
+        self.assertEqual(typed["fri_trace_decommitment_savings_bytes"], 36896)
+        self.assertEqual(typed["fri_trace_decommitment_savings_share"], 0.868305)
+
+        controlled = payload["controlled_component_grid"]
+        self.assertEqual(controlled["profiles_checked"], 10)
+        self.assertEqual(controlled["typed_savings_bytes_total"], 51288)
+        self.assertEqual(controlled["opening_plumbing_share_of_typed_savings"], 0.87537)
+
+        binary = payload["binary_typed_accounting"]
+        self.assertEqual(binary["profiles_checked"], 3)
+        self.assertEqual(binary["fused_saves_vs_source_plus_sidecar_local_typed_bytes"], 2620)
+        self.assertIn("not upstream Stwo verifier-facing binary proof serialization", payload["non_claims"])
+
+    def test_declared_mutations_reject(self):
+        self.assertEqual([item["name"] for item in self.payload["mutation_cases"]], gate.EXPECTED_MUTATION_NAMES)
+        self.assertTrue(all(item["rejected"] is True for item in self.payload["mutation_cases"]))
+        self.assertEqual(self.payload["mutations_checked"], len(gate.EXPECTED_MUTATION_NAMES))
+        self.assertEqual(self.payload["mutations_rejected"], len(gate.EXPECTED_MUTATION_NAMES))
+        self.assertTrue(self.payload["all_mutations_rejected"])
+
+    def test_rejects_claim_drift_after_recommit(self):
+        payload = self.strip_mutation_summary(self.payload)
+        payload["route_matrix"]["fused_savings_bytes_total"] += 1
+        self.assert_rejects(payload, "route matrix drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = 0.5
+        self.assert_rejects(payload, "section delta drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["typed_size_estimate"]["fri_trace_decommitment_savings_share"] = 0.1
+        self.assert_rejects(payload, "typed size estimate drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["binary_typed_accounting"]["cli_upstream_stwo_serialization_status"] = "UPSTREAM_STWO_WIRE_FORMAT"
+        self.assert_rejects(payload, "binary typed accounting drift")
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["non_claims"] = payload["non_claims"][1:]
+        self.assert_rejects(payload, "non_claims drift")
+
+    def test_rejects_commitment_drift(self):
+        payload = copy.deepcopy(self.payload)
+        payload["payload_commitment"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "payload commitment drift"):
+            gate.validate_payload(payload)
+
+    def test_tsv_summary_contains_core_metrics(self):
+        tsv = gate.to_tsv(self.payload)
+        self.assertIn("route_json_savings_bytes\t194097", tsv)
+        self.assertIn("section_opening_share\t0.927722", tsv)
+        self.assertIn("d32_local_typed_saving_bytes\t2620", tsv)
+
+    def test_write_outputs_round_trip(self):
+        with tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix="fusion-mechanism-test-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+        json_path.unlink()
+        tsv_path = json_path.with_suffix(".tsv")
+        try:
+            gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
+            loaded = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertEqual(loaded, self.payload)
+            self.assertIn("matched_profiles_checked", tsv_path.read_text(encoding="utf-8"))
+        finally:
+            json_path.unlink(missing_ok=True)
+            tsv_path.unlink(missing_ok=True)
+
+    def test_write_outputs_rejects_outside_or_symlinked_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = pathlib.Path(tmp) / "out.json"
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "repo-relative"):
+                gate.write_outputs(self.payload, outside, gate.TSV_OUT.relative_to(gate.ROOT))
+
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            real_dir = pathlib.Path(tmp) / "real"
+            real_dir.mkdir()
+            link_dir = pathlib.Path(tmp) / "linked"
+            try:
+                link_dir.symlink_to(real_dir, target_is_directory=True)
+            except OSError as err:
+                self.skipTest(f"symlink creation is unavailable: {err}")
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "symlink components"):
+                gate.write_outputs(
+                    self.payload,
+                    (link_dir / "out.json").relative_to(gate.ROOT),
+                    gate.TSV_OUT.relative_to(gate.ROOT),
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()
