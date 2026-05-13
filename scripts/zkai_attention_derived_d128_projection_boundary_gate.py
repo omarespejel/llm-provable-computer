@@ -637,6 +637,7 @@ def build_context() -> dict[str, Any]:
             "derived_rmsnorm_statement_commitment": rmsnorm_payload["statement_commitment"],
             "derived_rmsnorm_output_row_commitment": rmsnorm_payload["rmsnorm_output_row_commitment"],
         },
+        "rmsnorm_public_row_payload": rmsnorm_payload,
         "bridge_payload": bridge_payload,
         "gate_value_projection_payload": gate_value_payload,
         "comparison_summary": comparison,
@@ -715,7 +716,8 @@ def validate_core_payload(payload: dict[str, Any], *, context: dict[str, Any] | 
         raise AttentionDerivedD128ProjectionBoundaryError("projection boundary payload drift")
     bridge_payload = _dict(payload.get("bridge_payload"), "bridge payload")
     gate_value_payload = _dict(payload.get("gate_value_projection_payload"), "gate/value payload")
-    validate_bridge_payload(bridge_payload, rmsnorm_payload=DERIVED_RMSNORM.build_context()["rmsnorm_public_row_payload"])
+    rmsnorm_payload = _dict(context.get("rmsnorm_public_row_payload"), "context RMSNorm payload")
+    validate_bridge_payload(bridge_payload, rmsnorm_payload=rmsnorm_payload)
     validate_gate_value_projection_payload(gate_value_payload, bridge_payload=bridge_payload)
     summary = _dict(payload.get("summary"), "summary")
     comparison = _dict(payload.get("comparison_summary"), "comparison summary")
