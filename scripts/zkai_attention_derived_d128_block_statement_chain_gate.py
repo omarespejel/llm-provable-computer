@@ -225,12 +225,12 @@ def _sha(value: Any, label: str) -> str:
 
 def read_source_bytes(path: pathlib.Path) -> bytes:
     root = ROOT.resolve()
-    candidate = path if path.is_absolute() else ROOT / path
+    raw_candidate = path if path.is_absolute() else ROOT / path
+    candidate = pathlib.Path(os.path.abspath(raw_candidate))
     if candidate.is_symlink():
         raise AttentionDerivedD128BlockStatementChainError(f"source path must not be symlink: {path}")
-    resolved = candidate.resolve(strict=False)
     try:
-        relative = resolved.relative_to(root)
+        relative = candidate.relative_to(root)
     except ValueError as err:
         raise AttentionDerivedD128BlockStatementChainError(f"source path must stay inside repository: {path}") from err
     current = root
@@ -246,7 +246,7 @@ def read_source_bytes(path: pathlib.Path) -> bytes:
             raise AttentionDerivedD128BlockStatementChainError(f"source path must be a repo file: {path}")
         if pre_stat.st_size > MAX_SOURCE_BYTES:
             raise AttentionDerivedD128BlockStatementChainError(f"source path exceeds size limit: {path}")
-        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        fd: int | None = os.open(candidate, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         try:
             post_stat = os.fstat(fd)
             if (post_stat.st_dev, post_stat.st_ino, post_stat.st_size) != (
@@ -332,12 +332,17 @@ def _comparison(payloads: dict[str, dict[str, Any]], artifact_id: str) -> dict[s
     return _dict(payloads[artifact_id].get("comparison_summary"), f"{artifact_id}.comparison_summary")
 
 
-def edge(edge_id: str, left: str, right: str, commitment: str) -> dict[str, Any]:
+def edge(edge_id: str, left: str, right: str, commitment: str, *, prefix: str = "blake2b-256") -> dict[str, Any]:
     if left != right:
         raise AttentionDerivedD128BlockStatementChainError(
             f"edge drift: {edge_id}: left {left} does not match right {right}"
         )
-    return {"id": edge_id, "commitment": _digest(commitment, f"{edge_id}.commitment"), "matches": True}
+    matched = _digest(commitment, f"{edge_id}.commitment", prefix=prefix)
+    if matched != left:
+        raise AttentionDerivedD128BlockStatementChainError(
+            f"edge drift: {edge_id}: stored commitment {matched} does not match checked value {left}"
+        )
+    return {"id": edge_id, "commitment": matched, "matches": True}
 
 
 def build_edges(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -386,7 +391,8 @@ def build_edges(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "activation_statement_to_down_projection_source",
             _sha(payloads["activation_swiglu"]["payload_commitment"], "activation.payload_commitment"),
             _sha(down_summary["source_activation_swiglu_payload_commitment"], "down.source_activation_swiglu_payload_commitment"),
-            activation_summary["derived_hidden_activation_commitment"],
+            payloads["activation_swiglu"]["payload_commitment"],
+            prefix="sha256",
         ),
         edge(
             "activation_hidden_to_down_projection",
@@ -410,13 +416,15 @@ def build_edges(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "residual_source_payloads_bind_prior_slices",
             _sha(payloads["down_projection"]["payload_commitment"], "down.payload_commitment"),
             _sha(residual_source["source_down_projection_payload_commitment"], "residual.source_down_projection_payload_commitment"),
-            residual_summary["derived_residual_add_statement_commitment"],
+            payloads["down_projection"]["payload_commitment"],
+            prefix="sha256",
         ),
         edge(
             "activation_source_reuses_projection_boundary",
             _sha(payloads["projection"]["payload_commitment"], "projection.payload_commitment"),
             _sha(activation_source["source_projection_boundary_payload_commitment"], "activation.source_projection_boundary_payload_commitment"),
-            activation_summary["derived_activation_statement_commitment"],
+            payloads["projection"]["payload_commitment"],
+            prefix="sha256",
         ),
         edge(
             "down_source_reuses_activation_output",
@@ -617,10 +625,17 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
             raise AttentionDerivedD128BlockStatementChainError("mutation cases drift")
         if not _bool(payload.get("all_mutations_rejected"), "all_mutations_rejected"):
             raise AttentionDerivedD128BlockStatementChainError("mutation rejection drift")
-        for case in cases:
-            case_dict = _dict(case, "mutation case")
+        for index, expected_name in enumerate(EXPECTED_MUTATIONS):
+            case_dict = _dict(cases[index], f"mutation case {index}")
+            if _str(case_dict.get("name"), "mutation case name") != expected_name:
+                raise AttentionDerivedD128BlockStatementChainError("mutation case name drift")
+            if _bool(case_dict.get("accepted"), "mutation case accepted"):
+                raise AttentionDerivedD128BlockStatementChainError("mutation accepted unexpectedly")
             if not _bool(case_dict.get("rejected"), "mutation case rejected"):
                 raise AttentionDerivedD128BlockStatementChainError("mutation accepted unexpectedly")
+            expected_error = _str(EXPECTED_MUTATION_ERRORS[expected_name], "expected mutation error")
+            if _str(case_dict.get("error"), "mutation case error") != expected_error:
+                raise AttentionDerivedD128BlockStatementChainError("mutation case error drift")
 
 
 MutationFn = Callable[[dict[str, Any]], None]
@@ -785,21 +800,38 @@ def to_tsv(payload: dict[str, Any], *, context: dict[str, Any] | None = None) ->
 
 
 def require_output_path(path: pathlib.Path, *, suffix: str | None = None) -> pathlib.Path:
-    candidate = path if path.is_absolute() else ROOT / path
-    resolved = candidate.resolve(strict=False)
+    evidence_root = EVIDENCE_DIR.resolve()
+    raw_candidate = path if path.is_absolute() else ROOT / path
+    candidate = pathlib.Path(os.path.abspath(raw_candidate))
     try:
-        resolved.relative_to(EVIDENCE_DIR.resolve())
+        relative = candidate.relative_to(evidence_root)
     except ValueError as err:
         raise AttentionDerivedD128BlockStatementChainError(
             f"output path must stay under docs/engineering/evidence: {path}"
         ) from err
-    if suffix is not None and resolved.suffix != suffix:
+    current = evidence_root
+    for part in relative.parent.parts:
+        current = current / part
+        try:
+            part_stat = current.lstat()
+        except OSError as err:
+            raise AttentionDerivedD128BlockStatementChainError(f"output parent must exist: {current}") from err
+        if stat_module.S_ISLNK(part_stat.st_mode):
+            raise AttentionDerivedD128BlockStatementChainError(f"output path must not traverse symlinks: {path}")
+        if not stat_module.S_ISDIR(part_stat.st_mode):
+            raise AttentionDerivedD128BlockStatementChainError(f"output parent must be a directory: {current}")
+    if suffix is not None and candidate.suffix != suffix:
         raise AttentionDerivedD128BlockStatementChainError(f"output path must end with {suffix}: {path}")
-    if candidate.is_symlink() or resolved.is_symlink():
+    if candidate.is_symlink():
         raise AttentionDerivedD128BlockStatementChainError(f"output path must not be a symlink: {path}")
-    if resolved.exists() and resolved.is_dir():
+    if candidate.exists() and candidate.is_dir():
         raise AttentionDerivedD128BlockStatementChainError(f"output path must not be a directory: {path}")
-    return resolved
+    real_parent = candidate.parent.resolve(strict=True)
+    try:
+        real_parent.relative_to(evidence_root)
+    except ValueError as err:
+        raise AttentionDerivedD128BlockStatementChainError(f"output parent escapes evidence dir: {candidate.parent}") from err
+    return candidate
 
 
 def atomic_write_text(path: pathlib.Path, text: str, *, suffix: str | None = None) -> None:
@@ -809,7 +841,10 @@ def atomic_write_text(path: pathlib.Path, text: str, *, suffix: str | None = Non
     parent_stat = resolved.parent.lstat()
     if not stat_module.S_ISDIR(parent_stat.st_mode):
         raise AttentionDerivedD128BlockStatementChainError(f"output parent must be a directory: {resolved.parent}")
-    dir_fd = os.open(resolved.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    dir_fd = os.open(
+        resolved.parent,
+        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+    )
     tmp_name = f".{resolved.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
     tmp_created = False
     try:

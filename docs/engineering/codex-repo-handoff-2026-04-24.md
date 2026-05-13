@@ -675,7 +675,7 @@ Tablero boundary.
 - The attention-derived d128 path now has a committed block statement chain:
   `6` checked slice artifacts, `11` commitment edges, `199,553` accounted
   relation rows, and block statement commitment
-  `blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff`.
+  `blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5`.
   The gate rejects `19 / 19` local mutations and remains a no-go for one
   composed proof, proof-size savings, timings, or learned model weights; see
   `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`.
