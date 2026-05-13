@@ -195,6 +195,47 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "adapter analysis content drift"):
             GATE.validate_payload(payload)
 
+    def test_rejects_malformed_mutation_cases(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0] = 0
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "malformed mutation case"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        del payload["cases"][0]["accepted"]
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "malformed mutation case"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["cases"][0]["name"] = "unknown_mutation"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "malformed mutation case"):
+            GATE.validate_payload(payload)
+
+    def test_source_read_loops_until_eof(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=GATE.EVIDENCE_DIR,
+            prefix="attention-d128-value-adapter-read-loop-test-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write(b'{"ok": true, "items": [1, 2, 3]}')
+
+        real_read = GATE.os.read
+
+        def short_read(fd: int, count: int) -> bytes:
+            return real_read(fd, min(count, 3))
+
+        try:
+            GATE.os.read = short_read
+            self.assertEqual(GATE.read_source_bytes(path), b'{"ok": true, "items": [1, 2, 3]}')
+        finally:
+            GATE.os.read = real_read
+            path.unlink(missing_ok=True)
+
     def test_write_outputs_round_trip_and_rejects_outside_path(self) -> None:
         with tempfile.NamedTemporaryFile(
             dir=GATE.EVIDENCE_DIR,
