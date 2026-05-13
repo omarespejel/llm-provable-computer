@@ -2230,7 +2230,7 @@
     "not proof-size or timing evidence",
     "activation lookup and SwiGLU rows are verifier-recomputed from checked public rows"
   ],
-  "payload_commitment": "sha256:9ee733d6f42069cc6a4fdf4f3d3bb19697f2f30423b19677c87352f6473332c9",
+  "payload_commitment": "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
   "result": "GO_VALUE_CONNECTED_ACTIVATION_SWIGLU_INPUT_NO_GO_FULL_BLOCK",
   "schema": "zkai-attention-derived-d128-activation-swiglu-gate-v1",
   "source_artifacts": [
@@ -2259,7 +2259,7 @@
     {
       "id": "attention_derived_activation_swiglu_gate",
       "path": "scripts/zkai_attention_derived_d128_activation_swiglu_gate.py",
-      "sha256": "f2e3d244d861d37bcde6fd88a9005bc08c7d1b0265d482dec77242ee0f00e2e0"
+      "sha256": "932203c09016493ef9c97921febdfbe3eb46cf84feff1bed9809cd5a8b84bc05"
     }
   ],
   "source_summary": {

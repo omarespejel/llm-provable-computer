@@ -54,6 +54,18 @@ class AttentionDerivedD128ActivationSwiGluGateTests(unittest.TestCase):
             GATE.EXPECTED_MUTATION_ERRORS,
         )
 
+    def test_mutation_errors_reject_unexpected_markers(self) -> None:
+        original = GATE.EXPECTED_MUTATION_ERRORS["decision_overclaim"]
+        GATE.EXPECTED_MUTATION_ERRORS["decision_overclaim"] = "impossible marker"
+        try:
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128ActivationSwiGluError, "unexpected error"):
+                GATE.run_mutation_cases(
+                    GATE.build_core_payload(copy.deepcopy(self.context)),
+                    copy.deepcopy(self.context),
+                )
+        finally:
+            GATE.EXPECTED_MUTATION_ERRORS["decision_overclaim"] = original
+
     def test_current_activation_comparison_is_explicitly_not_matching(self) -> None:
         payload = self.fresh_payload()
         comparison = payload["comparison_summary"]
