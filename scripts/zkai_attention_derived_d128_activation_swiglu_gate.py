@@ -12,6 +12,7 @@ import io
 import json
 import os
 import pathlib
+import stat as stat_module
 import tempfile
 from collections.abc import Callable
 from typing import Any
@@ -40,6 +41,8 @@ SOURCE_PROJECTION_BOUNDARY_VERSION = "zkai-attention-derived-d128-projection-bou
 SOURCE_GATE_VALUE_PROOF_VERSION = "zkai-attention-derived-d128-gate-value-projection-input-v1"
 VERIFIER_DOMAIN = "ptvm:zkai:attention-derived-d128-activation-swiglu:v1"
 PUBLIC_INSTANCE_DOMAIN = "ptvm:zkai:attention-derived-d128-activation-swiglu-public-instance:v1"
+MAX_SOURCE_JSON_BYTES = 8 * 1024 * 1024
+MAX_SOURCE_ARTIFACT_BYTES = 8 * 1024 * 1024
 
 NON_CLAIMS = [
     "not full d128 block proof",
@@ -163,9 +166,44 @@ def _commitment(value: Any, label: str) -> str:
         raise AttentionDerivedD128ActivationSwiGluError(str(err)) from err
 
 
+def read_source_bytes(path: pathlib.Path, *, max_bytes: int, label: str) -> bytes:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise AttentionDerivedD128ActivationSwiGluError(f"{label} must not be a symlink: {path}")
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise AttentionDerivedD128ActivationSwiGluError(f"{label} escapes repository: {path}") from err
+    try:
+        pre_stat = resolved.lstat()
+        if not stat_module.S_ISREG(pre_stat.st_mode):
+            raise AttentionDerivedD128ActivationSwiGluError(f"{label} is not a regular file: {path}")
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            post_stat = os.fstat(fd)
+            if not stat_module.S_ISREG(post_stat.st_mode):
+                raise AttentionDerivedD128ActivationSwiGluError(f"{label} is not a regular file: {path}")
+            if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
+                raise AttentionDerivedD128ActivationSwiGluError(f"{label} changed while reading: {path}")
+            with os.fdopen(fd, "rb") as handle:
+                fd = None
+                raw = handle.read(max_bytes + 1)
+        finally:
+            if fd is not None:
+                os.close(fd)
+    except OSError as err:
+        raise AttentionDerivedD128ActivationSwiGluError(f"failed to read {label}: {path}: {err}") from err
+    if len(raw) > max_bytes:
+        raise AttentionDerivedD128ActivationSwiGluError(
+            f"{label} exceeds max size: got at least {len(raw)} bytes, limit {max_bytes} bytes"
+        )
+    return raw
+
+
 def load_json(path: pathlib.Path) -> tuple[dict[str, Any], bytes]:
     try:
-        raw = path.read_bytes()
+        raw = read_source_bytes(path, max_bytes=MAX_SOURCE_JSON_BYTES, label="JSON source")
         payload = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
         raise AttentionDerivedD128ActivationSwiGluError(f"failed to load JSON: {path}: {err}") from err
@@ -174,8 +212,8 @@ def load_json(path: pathlib.Path) -> tuple[dict[str, Any], bytes]:
 
 def source_artifact(artifact_id: str, path: pathlib.Path, payload: Any | None = None) -> dict[str, Any]:
     try:
-        raw = path.read_bytes()
-    except OSError as err:
+        raw = read_source_bytes(path, max_bytes=MAX_SOURCE_ARTIFACT_BYTES, label="source artifact")
+    except AttentionDerivedD128ActivationSwiGluError as err:
         raise AttentionDerivedD128ActivationSwiGluError(f"failed to read source artifact: {path}: {err}") from err
     artifact = {
         "id": artifact_id,
@@ -799,20 +837,25 @@ def to_tsv(payload: dict[str, Any], *, context: dict[str, Any] | None = None) ->
     return handle.getvalue()
 
 
-def require_output_path(path: pathlib.Path) -> pathlib.Path:
-    resolved = path.resolve()
+def require_output_path(path: pathlib.Path, *, suffix: str | None = None) -> pathlib.Path:
+    candidate = path if path.is_absolute() else ROOT / path
+    resolved = candidate.resolve(strict=False)
     evidence_root = EVIDENCE_DIR.resolve()
     try:
         resolved.relative_to(evidence_root)
     except ValueError as err:
         raise AttentionDerivedD128ActivationSwiGluError(f"output path must stay under docs/engineering/evidence: {path}") from err
-    if path.exists() and path.is_symlink():
+    if suffix is not None and resolved.suffix != suffix:
+        raise AttentionDerivedD128ActivationSwiGluError(f"output path must end with {suffix}: {path}")
+    if candidate.is_symlink() or resolved.is_symlink():
         raise AttentionDerivedD128ActivationSwiGluError(f"output path must not be a symlink: {path}")
+    if resolved.exists() and resolved.is_dir():
+        raise AttentionDerivedD128ActivationSwiGluError(f"output path must not be a directory: {path}")
     return resolved
 
 
-def atomic_write_text(path: pathlib.Path, text: str) -> None:
-    resolved = require_output_path(path)
+def atomic_write_text(path: pathlib.Path, text: str, *, suffix: str | None = None) -> None:
+    resolved = require_output_path(path, suffix=suffix)
     resolved.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(prefix=f".{resolved.name}.", suffix=".tmp", dir=resolved.parent)
     tmp_path = pathlib.Path(tmp_name)
@@ -822,9 +865,16 @@ def atomic_write_text(path: pathlib.Path, text: str) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(tmp_path, resolved)
+        dir_fd = os.open(resolved.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
     except Exception:
-        tmp_path.unlink(missing_ok=True)
-        raise
+        try:
+            tmp_path.unlink(missing_ok=True)
+        finally:
+            raise
 
 
 def write_outputs(
@@ -837,9 +887,9 @@ def write_outputs(
     context = build_context() if context is None else context
     validate_payload(payload, context=context)
     if json_path is not None:
-        atomic_write_text(json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        atomic_write_text(json_path, json.dumps(payload, indent=2, sort_keys=True) + "\n", suffix=".json")
     if tsv_path is not None:
-        atomic_write_text(tsv_path, to_tsv(payload, context=context))
+        atomic_write_text(tsv_path, to_tsv(payload, context=context), suffix=".tsv")
 
 
 def parse_args() -> argparse.Namespace:
