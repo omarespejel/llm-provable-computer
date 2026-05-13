@@ -687,7 +687,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path, tsv_path: pa
                 original_bytes[path] = path.read_bytes() if path.exists() else None
                 tmp = write_temp(path, text)
                 temps.append(tmp)
-            for tmp, (path, _) in zip(temps, outputs):
+            for tmp, (path, _) in zip(temps, outputs, strict=True):
                 os.replace(tmp, path)
                 replaced.append(path)
         except OSError as err:
