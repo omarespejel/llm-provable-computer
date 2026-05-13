@@ -78,8 +78,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 72. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
 73. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
 74. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
-75. `docs/engineering/reproducibility.md`
-76. `git status --short --branch`
+75. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
+76. `docs/engineering/reproducibility.md`
+77. `git status --short --branch`
 
 ## What this repository is now
 

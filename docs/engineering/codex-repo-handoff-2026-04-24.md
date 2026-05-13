@@ -56,8 +56,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
 46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
 47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
-48. `docs/engineering/reproducibility.md`
-49. `git status --short --branch`
+48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
+49. `docs/engineering/reproducibility.md`
+50. `git status --short --branch`
 
 ## Current lane split
 
@@ -645,6 +646,18 @@ Tablero boundary.
   d128 full-block consumption because the canonical activation fixture
   mismatches `288 / 512` activation outputs and `512 / 512` hidden outputs; see
   `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`.
+- The attention-derived d128 path now reaches down projection: derived hidden
+  activation
+  `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`
+  feeds a deterministic d128 down-projection input and emits derived residual
+  delta
+  `blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`.
+  The gate checks `65,536` down-projection multiplication rows plus `128`
+  quotient/remainder residual rows, rejects `16 / 16` local mutations, and
+  remains a no-go for existing d128 full-block consumption because the canonical
+  down-projection fixture mismatches `512 / 512` hidden values, `128 / 128`
+  residual deltas, and `128 / 128` residual remainders; see
+  `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
