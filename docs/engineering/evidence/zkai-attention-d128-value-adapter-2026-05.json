@@ -1,0 +1,500 @@
+{
+  "adapter_analysis": {
+    "analysis_kind": "attention-output-to-d128-input-value-adapter-feasibility",
+    "attention": {
+      "flattened_cells": 64,
+      "max_q8": 5,
+      "min_q8": -3,
+      "outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+      "shape": [
+        8,
+        8
+      ],
+      "statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+      "sum_q8": 45
+    },
+    "best_candidate": {
+      "id": "best_global_affine_over_tiled_attention",
+      "mean_abs_error": 47.734375,
+      "mismatch_count": 124,
+      "mismatch_share": 0.96875
+    },
+    "candidate_policies": [
+      {
+        "description": "flatten the 8x8 attention outputs and tile once to 128 cells",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": 1,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": 1,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": 0,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": -1,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": 1,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": -1,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": 2,
+            "index": 6,
+            "target": -11
+          },
+          {
+            "candidate": 1,
+            "index": 7,
+            "target": 2
+          }
+        ],
+        "id": "tile_flat_attention_twice",
+        "mean_abs_error": 47.671875,
+        "mismatch_count": 127,
+        "mismatch_share": 0.9921875,
+        "output_width": 128,
+        "total_abs_error": 6102
+      },
+      {
+        "description": "flatten the 8x8 attention outputs and pad the remaining 64 cells with zero",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": 1,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": 1,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": 0,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": -1,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": 1,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": -1,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": 2,
+            "index": 6,
+            "target": -11
+          },
+          {
+            "candidate": 1,
+            "index": 7,
+            "target": 2
+          }
+        ],
+        "id": "pad_flat_attention_with_zeroes",
+        "mean_abs_error": 47.6953125,
+        "mismatch_count": 128,
+        "mismatch_share": 1.0,
+        "output_width": 128,
+        "total_abs_error": 6105
+      },
+      {
+        "description": "duplicate each flattened attention output cell once",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": 1,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": 1,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": 1,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": 1,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": 0,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": 0,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": -1,
+            "index": 6,
+            "target": -11
+          },
+          {
+            "candidate": -1,
+            "index": 7,
+            "target": 2
+          }
+        ],
+        "id": "repeat_each_attention_cell",
+        "mean_abs_error": 48.015625,
+        "mismatch_count": 128,
+        "mismatch_share": 1.0,
+        "output_width": 128,
+        "total_abs_error": 6146
+      },
+      {
+        "description": "repeat the first attention output row sixteen times",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": 1,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": 1,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": 0,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": -1,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": 1,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": -1,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": 2,
+            "index": 6,
+            "target": -11
+          },
+          {
+            "candidate": 1,
+            "index": 7,
+            "target": 2
+          }
+        ],
+        "id": "first_step_repeat_16",
+        "mean_abs_error": 47.65625,
+        "mismatch_count": 127,
+        "mismatch_share": 0.9921875,
+        "output_width": 128,
+        "total_abs_error": 6100
+      },
+      {
+        "description": "repeat the last attention output row sixteen times",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": -3,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": 3,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": 0,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": -2,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": 3,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": 1,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": -1,
+            "index": 6,
+            "target": -11
+          },
+          {
+            "candidate": 0,
+            "index": 7,
+            "target": 2
+          }
+        ],
+        "id": "last_step_repeat_16",
+        "mean_abs_error": 47.765625,
+        "mismatch_count": 128,
+        "mismatch_share": 1.0,
+        "output_width": 128,
+        "total_abs_error": 6114
+      },
+      {
+        "description": "best integer y = scale*x + bias over tiled attention in scale/bias search window: {'scale': -3, 'bias': -5, 'mismatches': 124, 'total_abs_error': 6110}",
+        "exact_match": false,
+        "first_mismatches": [
+          {
+            "candidate": -8,
+            "index": 0,
+            "target": -89
+          },
+          {
+            "candidate": -8,
+            "index": 1,
+            "target": -76
+          },
+          {
+            "candidate": -5,
+            "index": 2,
+            "target": -63
+          },
+          {
+            "candidate": -2,
+            "index": 3,
+            "target": -50
+          },
+          {
+            "candidate": -8,
+            "index": 4,
+            "target": -37
+          },
+          {
+            "candidate": -2,
+            "index": 5,
+            "target": -24
+          },
+          {
+            "candidate": -8,
+            "index": 7,
+            "target": 2
+          },
+          {
+            "candidate": -14,
+            "index": 8,
+            "target": 15
+          }
+        ],
+        "id": "best_global_affine_over_tiled_attention",
+        "mean_abs_error": 47.734375,
+        "mismatch_count": 124,
+        "mismatch_share": 0.96875,
+        "output_width": 128,
+        "total_abs_error": 6110
+      }
+    ],
+    "d128_input": {
+      "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+      "max_q8": 95,
+      "min_q8": -96,
+      "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+      "sum_q8": -298,
+      "target_pattern": {
+        "center": 96,
+        "interpretation": "the current d128 input activation is an independent deterministic fixture pattern, not a value-derived expansion of the checked d8 attention output",
+        "matches": true,
+        "modulus": 193,
+        "offset": 7,
+        "pattern": "target_q8[i] = ((13 * i + 7) % 193) - 96",
+        "step": 13
+      },
+      "width": 128
+    },
+    "go_gate": "GO only after a non-arbitrary checked adapter consumes the exact attention output values and emits the exact d128 input activation vector with zero mismatches under a model-facing policy",
+    "no_go_gate": "current checked fixtures fail every conservative adapter candidate; value equality remains NO-GO",
+    "statement_bridge": {
+      "bridge_statement_commitment": "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
+      "current_commitments_equal": false,
+      "feed_equality_status": "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY",
+      "payload_commitment": "sha256:da00ab51765bd23ec0a25e75605f342fe94cef10f07be861c91ee28e3627cdbf"
+    }
+  },
+  "adapter_analysis_commitment": "blake2b-256:217529b3442b632f8c5b023093f011c9d5aa8858127e3f1d72a0e8993a3f1593",
+  "all_mutations_rejected": true,
+  "case_count": 11,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "decision_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "claim boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "attention_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "d128_input_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "candidate_exact_match_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "candidate_mismatch_zeroed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "best_candidate_zeroed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter analysis commitment drift",
+      "name": "target_pattern_relabelled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source_artifacts[0] hash drift",
+      "name": "source_artifact_sha_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "CURRENT_D8_ATTENTION_AND_D128_BLOCK_FIXTURES_ARE_STATEMENT_BOUND_BUT_NOT_VALUE_CONNECTED_NO_ARBITRARY_LEARNED_PROJECTION_NO_MODEL_FAITHFUL_ADAPTER_YET",
+  "decision": "NO_GO_CURRENT_ATTENTION_TO_D128_VALUE_ADAPTER",
+  "mutation_inventory": [
+    "decision_promoted",
+    "claim_boundary_overclaim",
+    "attention_commitment_drift",
+    "d128_input_commitment_drift",
+    "candidate_exact_match_overclaim",
+    "candidate_mismatch_zeroed",
+    "best_candidate_zeroed",
+    "target_pattern_relabelled",
+    "source_artifact_sha_drift",
+    "non_claim_removed",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not proof that attention output equals the d128 block input",
+    "not a learned projection or model-faithful adapter",
+    "not evidence that the current d128 block consumes attention values",
+    "not a recursive or compressed proof object",
+    "not a matched NANOZK/Jolt/DeepProve benchmark",
+    "not full transformer inference",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:6445fc9dc51cb60c6adcc995ba176bc37a1494028809249fe22b1cb5987ad21b",
+  "result": "NO_GO_MODEL_FAITHFUL_VALUE_ADAPTER_MISSING",
+  "schema": "zkai-attention-d128-value-adapter-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "attention_d8_bounded_softmax_table",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json",
+      "payload_sha256": "6ed3ae9e3946c51304674e3e7fb9596c454f5f7a51a700dad0f7361b7293515c",
+      "sha256": "00bb82158c5f8cd55a3d2ada5a3fa8a66382c164695240b90230866e22bbbcb7"
+    },
+    {
+      "id": "d128_rmsnorm_input",
+      "path": "docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+      "payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
+      "sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec"
+    },
+    {
+      "id": "attention_block_statement_bridge",
+      "path": "docs/engineering/evidence/zkai-attention-block-statement-bridge-2026-05.json",
+      "payload_sha256": "3f5ca5335200a944b33b3221398aa68b90ee55fde98de0726cb8517ae3eb1031",
+      "sha256": "b5b7708919205b69e7c7995c2605f3cbcd251e65a6d86ebf5f38795401b41d8d"
+    }
+  ],
+  "summary": {
+    "adapter_analysis_commitment": "blake2b-256:217529b3442b632f8c5b023093f011c9d5aa8858127e3f1d72a0e8993a3f1593",
+    "attention_cells": 64,
+    "attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+    "best_candidate_id": "best_global_affine_over_tiled_attention",
+    "best_candidate_mean_abs_error": 47.734375,
+    "best_candidate_mismatches": 124,
+    "d128_input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+    "go_result": "NO-GO for current value adapter; statement binding exists but values are not connected",
+    "target_matches_synthetic_pattern": true,
+    "target_width": 128
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_d128_value_adapter_gate.py --write-json docs/engineering/evidence/zkai-attention-d128-value-adapter-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-d128-value-adapter-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_d128_value_adapter_gate",
+    "python3 -m py_compile scripts/zkai_attention_d128_value_adapter_gate.py scripts/tests/test_zkai_attention_d128_value_adapter_gate.py",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
