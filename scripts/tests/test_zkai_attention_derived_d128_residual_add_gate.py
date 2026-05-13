@@ -120,6 +120,12 @@ class AttentionDerivedD128ResidualAddGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ResidualAddError, "derived residual-add payload drift|output"):
             GATE.validate_payload(payload, context=copy.deepcopy(self.context))
 
+    def test_statement_commitment_binds_required_backend_version(self) -> None:
+        payload = self.fresh_payload()["residual_add_payload"]
+        mutated = copy.deepcopy(payload)
+        mutated["required_backend_version"] = mutated["required_backend_version"] + "-drift"
+        self.assertNotEqual(GATE.statement_commitment(payload), GATE.statement_commitment(mutated))
+
     def test_payload_rejects_existing_residual_consumption_overclaim(self) -> None:
         payload = self.fresh_payload()
         payload["summary"]["matches_existing_d128_residual_add"] = True

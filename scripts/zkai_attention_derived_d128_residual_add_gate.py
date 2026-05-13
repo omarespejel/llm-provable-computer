@@ -328,6 +328,7 @@ def statement_commitment(payload: dict[str, Any]) -> str:
             "operation": "attention_derived_residual_add",
             "output_activation_commitment": payload["output_activation_commitment"],
             "range_policy": payload["range_policy"],
+            "required_backend_version": payload["required_backend_version"],
             "residual_add_row_commitment": payload["residual_add_row_commitment"],
             "residual_delta_commitment": payload["residual_delta_commitment"],
             "residual_delta_remainder_sha256": payload["residual_delta_remainder_sha256"],
