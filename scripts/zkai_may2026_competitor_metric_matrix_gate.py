@@ -201,7 +201,11 @@ def _parse_tsv_bytes(path: pathlib.Path, raw: bytes) -> list[dict[str, str]]:
     except UnicodeDecodeError as err:
         raise CompetitorMetricMatrixError(f"failed to load TSV source {path}: {err}") from err
     reader = csv.DictReader(io.StringIO(text), delimiter="\t")
-    fieldnames = set(reader.fieldnames or [])
+    fieldname_list = reader.fieldnames or []
+    duplicate_fields = sorted({field for field in fieldname_list if fieldname_list.count(field) > 1})
+    if duplicate_fields:
+        raise CompetitorMetricMatrixError(f"TSV source has duplicate columns: {duplicate_fields}")
+    fieldnames = set(fieldname_list)
     missing = REQUIRED_PUBLISHED_COLUMNS - fieldnames
     if missing:
         raise CompetitorMetricMatrixError(f"TSV source missing columns: {sorted(missing)}")

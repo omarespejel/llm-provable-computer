@@ -319,6 +319,27 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_load_tsv_rejects_duplicate_columns(self):
+        columns = list(gate.REQUIRED_PUBLISHED_COLUMNS)
+        duplicate_columns = columns + [columns[0]]
+        row = {column: "value" for column in columns}
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="competitor-duplicate-published-",
+            suffix=".tsv",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write("\t".join(duplicate_columns) + "\n")
+            handle.write("\t".join([row[column] for column in columns] + ["value"]) + "\n")
+        try:
+            with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "TSV source has duplicate columns"):
+                gate.load_tsv(path)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_read_source_bytes_rejects_symlink_source(self):
         with tempfile.TemporaryDirectory(dir=gate.ENGINEERING_EVIDENCE) as tmp:
             real_path = pathlib.Path(tmp) / "real.json"
