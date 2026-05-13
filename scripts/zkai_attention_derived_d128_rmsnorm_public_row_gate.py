@@ -240,12 +240,25 @@ def build_context() -> dict[str, Any]:
     except Exception as err:
         raise AttentionDerivedD128RmsnormPublicRowError(str(err)) from err
     derived = _dict(derived_input.get("derived_input"), "derived input")
-    derived_values = [_int(value, f"derived value {index}") for index, value in enumerate(_list(derived.get("values_q8"), "derived values"))]
+    derived_values = [
+        _int(value, f"derived value {index}")
+        for index, value in enumerate(_list(derived.get("values_q8"), "derived values"))
+    ]
     rmsnorm_payload = build_rmsnorm_payload_for_input(derived_values)
     derived_commitment = _commitment(derived.get("input_activation_commitment"), "derived input commitment")
     if rmsnorm_payload["input_activation_commitment"] != derived_commitment:
         raise AttentionDerivedD128RmsnormPublicRowError("derived RMSNorm input commitment mismatch")
     current_comparison = _dict(derived_input.get("current_d128_comparison"), "current comparison")
+    current_artifact_commitment = _commitment(
+        current_rmsnorm.get("input_activation_commitment"),
+        "current RMSNorm input activation commitment",
+    )
+    current_comparison_commitment = _commitment(
+        current_comparison.get("current_input_activation_commitment"),
+        "current d128 input activation commitment",
+    )
+    if current_comparison_commitment != current_artifact_commitment:
+        raise AttentionDerivedD128RmsnormPublicRowError("current comparison commitment mismatches RMSNorm artifact")
     return {
         "source_artifacts": [
             source_artifact("attention_derived_d128_input_gate", DERIVED_INPUT_JSON, derived_input),
@@ -265,10 +278,7 @@ def build_context() -> dict[str, Any]:
                 derived.get("source_attention_outputs_commitment"), "source attention outputs commitment"
             ),
             "derived_input_activation_commitment": derived_commitment,
-            "current_d128_input_activation_commitment": _commitment(
-                current_comparison.get("current_input_activation_commitment"),
-                "current d128 input activation commitment",
-            ),
+            "current_d128_input_activation_commitment": current_artifact_commitment,
             "current_d128_mismatch_count": _int(
                 current_comparison.get("mismatch_count_against_current"), "current d128 mismatch count"
             ),
@@ -356,6 +366,8 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
     validate_core_payload(data, context=context)
     if set(data) == FINAL_KEYS:
         cases = _list(data.get("cases"), "cases")
+        if len(cases) != len(EXPECTED_MUTATIONS):
+            raise AttentionDerivedD128RmsnormPublicRowError("mutation case count drift")
         if data.get("mutation_inventory") != list(EXPECTED_MUTATIONS):
             raise AttentionDerivedD128RmsnormPublicRowError("mutation inventory drift")
         if data.get("case_count") != len(EXPECTED_MUTATIONS):
@@ -458,6 +470,8 @@ def build_gate_result() -> dict[str, Any]:
 
 def to_tsv(payload: dict[str, Any], context: dict[str, Any] | None = None) -> str:
     validate_payload(payload, context=context)
+    if set(payload) != FINAL_KEYS:
+        raise AttentionDerivedD128RmsnormPublicRowError("to_tsv requires finalized payload")
     summary = _dict(payload.get("summary"), "summary")
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")

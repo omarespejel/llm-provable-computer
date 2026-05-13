@@ -53,8 +53,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 42. `docs/engineering/zkai-attention-kv-stwo-fine-grained-component-schema-2026-05-10.md`
 43. `docs/engineering/zkai-attention-kv-stwo-controlled-component-grid-2026-05-10.md`
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
-45. `docs/engineering/reproducibility.md`
-46. `git status --short --branch`
+45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
+46. `docs/engineering/reproducibility.md`
+47. `git status --short --branch`
 
 ## Current lane split
 

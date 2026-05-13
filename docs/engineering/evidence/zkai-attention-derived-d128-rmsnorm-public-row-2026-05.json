@@ -93,7 +93,7 @@
     "not proof-size or timing evidence",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:2f21521cae5de09199c51fbcf31464029ef50200a904b05cfb3aa577d5b20bdf",
+  "payload_commitment": "sha256:863c74ca6adcc1da81409cd80806014c54475479b195cf3ff71e0f5c0d0a3301",
   "result": "GO_VALUE_CONNECTED_RMSNORM_SLICE_INPUT_NO_GO_FULL_BLOCK",
   "rmsnorm_public_row_payload": {
     "average_square_floor": 4,
@@ -1595,7 +1595,7 @@
     {
       "id": "attention_derived_rmsnorm_public_row_gate",
       "path": "scripts/zkai_attention_derived_d128_rmsnorm_public_row_gate.py",
-      "sha256": "f293da7d718166ef279627484042bdc8c7616c8c9ec081f5a072b48652c9700e"
+      "sha256": "6a0871eb9eed58a6bc19d71649d182c912638f2f8333547781571e87772ce57b"
     }
   ],
   "source_summary": {
