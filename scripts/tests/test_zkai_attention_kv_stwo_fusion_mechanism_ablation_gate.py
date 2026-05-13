@@ -1,5 +1,6 @@
 import copy
 import json
+import math
 import pathlib
 import tempfile
 import unittest
@@ -208,6 +209,27 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 payload,
                 ("binary_typed_accounting", "cli_upstream_stwo_serialization_status"),
                 "binary status",
+            )
+
+        payload = copy.deepcopy(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = math.inf
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section opening share must be finite"):
+            gate._share_payload_field(
+                payload,
+                ("section_delta", "opening_bucket_savings_share"),
+                "section opening share",
+            )
+
+        payload = copy.deepcopy(self.payload)
+        payload["section_delta"]["opening_bucket_savings_share"] = 1.1
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "section opening share must be between 0 and 1",
+        ):
+            gate._share_payload_field(
+                payload,
+                ("section_delta", "opening_bucket_savings_share"),
+                "section opening share",
             )
 
     def test_base_payload_normalizes_malformed_source_evidence_errors(self):
