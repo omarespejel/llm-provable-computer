@@ -205,12 +205,36 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
             link_path.unlink(missing_ok=True)
             os.symlink(outside_path, link_path)
             GATE.require_output_path = stale_validation
-            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "failed writing json output"):
+            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "must not become a symlink"):
                 GATE.write_outputs(self.fresh_payload(), pathlib.Path("stale-validation.json"), None)
         finally:
             GATE.require_output_path = original_require_output_path
             link_path.unlink(missing_ok=True)
             outside_path.unlink(missing_ok=True)
+
+    def test_atomic_write_preserves_existing_output_on_replace_failure(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=GATE.EVIDENCE_DIR,
+            prefix="attention-block-bridge-atomic-write-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            output_path = pathlib.Path(handle.name)
+            handle.write(b"original\n")
+        original_replace = GATE.os.replace
+
+        def failing_replace(*args, **kwargs) -> None:
+            raise OSError("simulated replace failure")
+
+        try:
+            GATE.os.replace = failing_replace
+            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "failed writing json output"):
+                GATE.write_text_no_follow(output_path, "replacement\n", "json output")
+            self.assertEqual(output_path.read_text(encoding="utf-8"), "original\n")
+            self.assertEqual(list(GATE.EVIDENCE_DIR.glob(f".{output_path.name}.*.tmp")), [])
+        finally:
+            GATE.os.replace = original_replace
+            output_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

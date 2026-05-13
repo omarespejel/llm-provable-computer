@@ -11,6 +11,7 @@ import io
 import json
 import os
 import pathlib
+import secrets
 import stat as stat_module
 import sys
 from typing import Any, Callable
@@ -637,20 +638,50 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
 
 def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
     data = contents.encode("utf-8")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
-    fd: int | None = None
+    parent_fd: int | None = None
+    file_fd: int | None = None
+    temp_name: str | None = None
     try:
-        fd = os.open(path, flags, 0o600)
-        with os.fdopen(fd, "wb") as handle:
-            fd = None
+        parent = path.parent.resolve(strict=True)
+        parent.relative_to(EVIDENCE_DIR.resolve(strict=True))
+        parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        parent_fd = os.open(parent, parent_flags)
+        parent_stat = os.fstat(parent_fd)
+        if not stat_module.S_ISDIR(parent_stat.st_mode):
+            raise AttentionBlockStatementBridgeError(f"{label} parent must be a real directory")
+        create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        for _ in range(100):
+            candidate = f".{path.name}.{secrets.token_hex(8)}.tmp"
+            try:
+                file_fd = os.open(candidate, create_flags, 0o600, dir_fd=parent_fd)
+                temp_name = candidate
+                break
+            except FileExistsError:
+                continue
+        if file_fd is None or temp_name is None:
+            raise AttentionBlockStatementBridgeError(f"failed creating temporary {label}")
+        with os.fdopen(file_fd, "wb") as handle:
+            file_fd = None
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
+        if path.is_symlink():
+            raise AttentionBlockStatementBridgeError(f"{label} path must not become a symlink")
+        os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        temp_name = None
+        os.fsync(parent_fd)
     except OSError as err:
         raise AttentionBlockStatementBridgeError(f"failed writing {label}: {err}") from err
     finally:
-        if fd is not None:
-            os.close(fd)
+        if file_fd is not None:
+            os.close(file_fd)
+        if parent_fd is not None:
+            if temp_name is not None:
+                try:
+                    os.unlink(temp_name, dir_fd=parent_fd)
+                except FileNotFoundError:
+                    pass
+            os.close(parent_fd)
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
