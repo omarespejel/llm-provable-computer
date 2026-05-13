@@ -1,0 +1,350 @@
+{
+  "all_mutations_rejected": true,
+  "block_statement": {
+    "all_edges_match": true,
+    "claim_boundary": "ONE_STATEMENT_CHAIN_BINDS_ATTENTION_DERIVED_D128_SLICES_NOT_ONE_COMPOSED_PROOF_NOT_PROOF_SIZE_EVIDENCE_NOT_MODEL_FAITHFUL_WEIGHTS",
+    "derived_activation_statement_commitment": "blake2b-256:c5f7477df93b9ac35f81774c3505f89101c7be676c47e9f1dc6160566ff2dbef",
+    "derived_down_projection_statement_commitment": "blake2b-256:5477f0c19e1f36e9f6c3627827c85751f48f7b7853f9ed62a0a5dcc5c20c73f9",
+    "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+    "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+    "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+    "derived_projection_statement_commitment": "blake2b-256:e6dca036c80385d2d47c3953cb4aca15ed058b2a0ac3fc2596767a0658b30d6c",
+    "derived_residual_add_statement_commitment": "blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0",
+    "derived_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+    "derived_rmsnorm_statement_commitment": "blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d",
+    "edges": [
+      {
+        "commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+        "id": "attention_outputs_to_input",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+        "id": "input_activation_to_rmsnorm",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9",
+        "id": "rmsnorm_to_projection",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2",
+        "id": "projection_to_activation_gate_value",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "id": "activation_statement_to_down_projection_source",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "id": "activation_hidden_to_down_projection",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+        "id": "down_projection_to_residual_delta",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+        "id": "residual_input_reuses_derived_input",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:3e27333c8cc7d80cf502eb3ca6ffcbb80dd55036b5f082f24f8d49699ac534e0",
+        "id": "residual_source_payloads_bind_prior_slices",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:c5f7477df93b9ac35f81774c3505f89101c7be676c47e9f1dc6160566ff2dbef",
+        "id": "activation_source_reuses_projection_boundary",
+        "matches": true
+      },
+      {
+        "commitment": "blake2b-256:470a8b0c07e1a3ad556a8fd6e606212d8dd8b88e0b4db9070b3f7a7e898e8090",
+        "id": "down_source_reuses_activation_output",
+        "matches": true
+      }
+    ],
+    "payload_commitments": {
+      "activation_swiglu": "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
+      "down_projection": "sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150",
+      "input": "sha256:2ae84c02a4267c6e85786d1317fdd2c6d7921970169db09bd66dfbd9f34b7a77",
+      "projection": "sha256:627115a11d771a6da1c50407963efa5eb39c52226adf69deedc43083c05a0af6",
+      "residual_add": "sha256:a82f94544eb2f7415fa0caec9605730a857e5a380bed0cbccb6ec2bd6f869861",
+      "rmsnorm": "sha256:863c74ca6adcc1da81409cd80806014c54475479b195cf3ff71e0f5c0d0a3301"
+    },
+    "relation_rows": {
+      "accounted_relation_rows": 199553,
+      "activation_lookup_rows": 2049,
+      "down_projection_mul_rows": 65536,
+      "gate_value_projection_mul_rows": 131072,
+      "residual_add_rows": 128,
+      "residual_delta_rows": 128,
+      "rmsnorm_public_rows": 128,
+      "swiglu_mix_rows": 512
+    },
+    "schema": "zkai-attention-derived-d128-block-statement-chain-v1",
+    "slice_order": [
+      "input",
+      "rmsnorm",
+      "projection",
+      "activation_swiglu",
+      "down_projection",
+      "residual_add"
+    ],
+    "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638"
+  },
+  "block_statement_commitment": "blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff",
+  "case_count": 19,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "decision_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "result drift",
+      "name": "result_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "claim boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source artifact drift",
+      "name": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source artifact drift",
+      "name": "source_payload_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "slice_order_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "edge_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "input_activation_relabeling",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "hidden_activation_relabeling",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "residual_delta_relabeling",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "output_relabels_input",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "relation_row_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement drift",
+      "name": "all_edges_match_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "block statement commitment drift",
+      "name": "statement_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "summary_output_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "summary_rows_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "validation commands drift",
+      "name": "validation_command_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "ONE_STATEMENT_CHAIN_BINDS_ATTENTION_DERIVED_D128_SLICES_NOT_ONE_COMPOSED_PROOF_NOT_PROOF_SIZE_EVIDENCE_NOT_MODEL_FAITHFUL_WEIGHTS",
+  "decision": "GO_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_CHAIN",
+  "mutation_inventory": [
+    "decision_overclaim",
+    "result_overclaim",
+    "claim_boundary_overclaim",
+    "source_artifact_hash_drift",
+    "source_payload_commitment_drift",
+    "slice_order_drift",
+    "edge_commitment_drift",
+    "input_activation_relabeling",
+    "hidden_activation_relabeling",
+    "residual_delta_relabeling",
+    "output_relabels_input",
+    "relation_row_count_drift",
+    "all_edges_match_overclaim",
+    "statement_commitment_drift",
+    "summary_output_drift",
+    "summary_rows_drift",
+    "non_claim_removed",
+    "validation_command_removed",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not one composed d128 transformer-block proof",
+    "not recursive composition",
+    "not proof-size savings",
+    "not timing evidence",
+    "not learned model weights",
+    "not exact LayerNorm or GELU",
+    "not full autoregressive inference",
+    "not production-ready",
+    "slice commitments are bound as a statement chain, not verified inside one outer proof"
+  ],
+  "payload_commitment": "sha256:b582befbf801d5cb956d1f3c31453a624ca7c40570ae15ba1ae8a0b9f99b2ae6",
+  "result": "GO_COMMITTED_SLICE_CHAIN_NO_GO_SINGLE_COMPOSED_PROOF",
+  "schema": "zkai-attention-derived-d128-block-statement-chain-gate-v1",
+  "source_artifacts": [
+    {
+      "all_mutations_rejected": true,
+      "case_count": 11,
+      "decision": "GO_ATTENTION_DERIVED_D128_INPUT_FIXTURE",
+      "id": "input",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json",
+      "payload_commitment": "sha256:2ae84c02a4267c6e85786d1317fdd2c6d7921970169db09bd66dfbd9f34b7a77",
+      "result": "GO_VALUE_CONNECTED_INPUT_ARTIFACT_NO_GO_CURRENT_D128_BLOCK",
+      "schema": "zkai-attention-derived-d128-input-gate-v1",
+      "sha256": "969abf1e934f3ce391b26d2f3053e4fca9027269e6618e8490e4e460ae72c4c9"
+    },
+    {
+      "all_mutations_rejected": true,
+      "case_count": 11,
+      "decision": "GO_ATTENTION_DERIVED_D128_RMSNORM_PUBLIC_ROW_INPUT",
+      "id": "rmsnorm",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json",
+      "payload_commitment": "sha256:863c74ca6adcc1da81409cd80806014c54475479b195cf3ff71e0f5c0d0a3301",
+      "result": "GO_VALUE_CONNECTED_RMSNORM_SLICE_INPUT_NO_GO_FULL_BLOCK",
+      "schema": "zkai-attention-derived-d128-rmsnorm-public-row-gate-v1",
+      "sha256": "b7e286d99903b31f79a0856799d3e8db8252234d16f28d08930822797963793a"
+    },
+    {
+      "all_mutations_rejected": true,
+      "case_count": 12,
+      "decision": "GO_ATTENTION_DERIVED_D128_PROJECTION_BOUNDARY_INPUT",
+      "id": "projection",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-projection-boundary-2026-05.json",
+      "payload_commitment": "sha256:627115a11d771a6da1c50407963efa5eb39c52226adf69deedc43083c05a0af6",
+      "result": "GO_VALUE_CONNECTED_GATE_VALUE_PROJECTION_INPUT_NO_GO_FULL_BLOCK",
+      "schema": "zkai-attention-derived-d128-projection-boundary-gate-v1",
+      "sha256": "172609d7c8c090572642dddce1693f697d81081131e5c6a574f14b4b48ff46e5"
+    },
+    {
+      "all_mutations_rejected": true,
+      "case_count": 15,
+      "decision": "GO_ATTENTION_DERIVED_D128_ACTIVATION_SWIGLU_INPUT",
+      "id": "activation_swiglu",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-activation-swiglu-2026-05.json",
+      "payload_commitment": "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
+      "result": "GO_VALUE_CONNECTED_ACTIVATION_SWIGLU_INPUT_NO_GO_FULL_BLOCK",
+      "schema": "zkai-attention-derived-d128-activation-swiglu-gate-v1",
+      "sha256": "66f88cb0732149685c2fd4e992c1c093ab472dd7c72b40c09a35deb79c234bd4"
+    },
+    {
+      "all_mutations_rejected": true,
+      "case_count": 16,
+      "decision": "GO_ATTENTION_DERIVED_D128_DOWN_PROJECTION_INPUT",
+      "id": "down_projection",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-down-projection-2026-05.json",
+      "payload_commitment": "sha256:66dd7949ef35d6ddecf6ee0534dabe7e78ccb898776e7e1fa7bcbac2e2aaf150",
+      "result": "GO_VALUE_CONNECTED_DOWN_PROJECTION_INPUT_NO_GO_FULL_BLOCK",
+      "schema": "zkai-attention-derived-d128-down-projection-gate-v1",
+      "sha256": "ba445196546ffd68fc8e533731e4d7fdb36822e353de4a89c90c6cdc5b26818c"
+    },
+    {
+      "all_mutations_rejected": true,
+      "case_count": 17,
+      "decision": "GO_ATTENTION_DERIVED_D128_RESIDUAL_ADD_INPUT",
+      "id": "residual_add",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-residual-add-2026-05.json",
+      "payload_commitment": "sha256:a82f94544eb2f7415fa0caec9605730a857e5a380bed0cbccb6ec2bd6f869861",
+      "result": "GO_VALUE_CONNECTED_RESIDUAL_ADD_INPUT_NO_GO_SINGLE_BLOCK_PROOF",
+      "schema": "zkai-attention-derived-d128-residual-add-gate-v1",
+      "sha256": "32f0a9282e77fe0ade60fb51911b3e204e6b6a747227f29a62a9f452e8f0a074"
+    }
+  ],
+  "summary": {
+    "accounted_relation_rows": 199553,
+    "activation_lookup_rows": 2049,
+    "all_edges_match": true,
+    "block_statement_commitment": "blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff",
+    "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+    "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+    "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+    "derived_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+    "down_projection_mul_rows": 65536,
+    "edge_count": 11,
+    "go_result": "GO for a committed attention-derived d128 slice statement chain",
+    "no_go_result": "NO-GO for one composed proof, proof-size savings, timings, or model-faithful learned weights",
+    "projection_mul_rows": 131072,
+    "residual_add_rows": 128,
+    "slice_count": 6,
+    "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_derived_d128_block_statement_chain_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_attention_derived_d128_block_statement_chain_gate.py scripts/tests/test_zkai_attention_derived_d128_block_statement_chain_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_block_statement_chain_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

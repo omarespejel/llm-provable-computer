@@ -707,6 +707,14 @@ Tablero boundary.
   residual-add fixture mismatches `127 / 128` inputs, `128 / 128` residual
   deltas, and `128 / 128` outputs. See
   `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`.
+- The attention-derived d128 path now has a committed block statement chain.
+  The chain consumes `6` checked slice artifacts, verifies `11` commitment
+  edges, accounts for `199,553` relation rows, and emits block statement
+  commitment
+  `blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff`.
+  It rejects `19 / 19` local mutations and remains a no-go for one composed
+  proof, proof-size savings, timings, or learned model weights. See
+  `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -761,8 +769,9 @@ Use these in order of authority for current state:
 47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
 48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
-50. `docs/engineering/reproducibility.md`
-51. `git status --short --branch`
+50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
+51. `docs/engineering/reproducibility.md`
+52. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.
