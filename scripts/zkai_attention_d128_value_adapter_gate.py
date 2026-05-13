@@ -19,6 +19,7 @@ from typing import Any, Callable
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+os_read = os.read
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 ATTENTION_FIXTURE = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json"
 D128_RMSNORM_INPUT = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
@@ -189,7 +190,7 @@ def read_source_bytes(path: pathlib.Path) -> bytes:
             chunks = []
             total = 0
             while True:
-                chunk = os.read(fd, min(65536, MAX_SOURCE_BYTES + 1 - total))
+                chunk = os_read(fd, min(65536, MAX_SOURCE_BYTES + 1 - total))
                 if chunk == b"":
                     return b"".join(chunks)
                 chunks.append(chunk)
@@ -564,8 +565,8 @@ def build_core_payload(expected_context: dict[str, Any] | None = None) -> dict[s
         "adapter_analysis_commitment": context["adapter_analysis_commitment"],
         "source_artifacts": copy.deepcopy(context["source_artifacts"]),
         "summary": copy.deepcopy(context["summary"]),
-        "non_claims": NON_CLAIMS,
-        "validation_commands": VALIDATION_COMMANDS,
+        "non_claims": list(NON_CLAIMS),
+        "validation_commands": list(VALIDATION_COMMANDS),
     }
     refresh_payload_commitment(payload)
     return payload
@@ -672,6 +673,9 @@ def validate_payload(
                 raise AttentionD128ValueAdapterError(f"mutation was not rejected: {name}")
         if case_names != list(EXPECTED_MUTATIONS):
             raise AttentionD128ValueAdapterError("mutation case order drift")
+        expected_cases = run_mutation_cases(build_core_payload(context), context)
+        if cases != expected_cases:
+            raise AttentionD128ValueAdapterError("mutation cases drift")
 
 
 def _set_payload_commitment_drift(payload: dict[str, Any]) -> None:
