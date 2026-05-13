@@ -70,6 +70,16 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
             analysis["statement_bridge"]["bridge_statement_commitment"],
             "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
         )
+        self.assertEqual(
+            analysis["statement_bridge"]["feed_equality_status"],
+            "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY",
+        )
+
+    def test_rejects_statement_bridge_feed_status_drift(self) -> None:
+        attention, d128_input, bridge, _ = GATE._load_sources()
+        bridge["summary"]["feed_equality_status"] = "GO_VALUE_EQUALITY"
+        with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "feed equality status drift"):
+            GATE.build_adapter_analysis(attention, d128_input, bridge)
 
     def test_candidate_policies_do_not_match_target(self) -> None:
         candidates = {candidate["id"]: candidate for candidate in self.fresh_payload()["adapter_analysis"]["candidate_policies"]}
@@ -285,6 +295,36 @@ class AttentionD128ValueAdapterGateTests(unittest.TestCase):
                 GATE.write_outputs(self.fresh_payload(), pathlib.Path("/tmp/out.json"), None)
             with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "output path must end"):
                 GATE.write_outputs(self.fresh_payload(), None, json_path)
+        finally:
+            json_path.unlink(missing_ok=True)
+            tsv_path.unlink(missing_ok=True)
+
+    def test_write_outputs_rolls_back_json_tsv_pair_on_partial_failure(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=GATE.EVIDENCE_DIR,
+            prefix="attention-d128-value-adapter-rollback-test-",
+            suffix=".json",
+            delete=False,
+            mode="w",
+            encoding="utf-8",
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+            handle.write("old json\n")
+        tsv_path = json_path.with_suffix(".tsv")
+        tsv_path.write_text("old tsv\n", encoding="utf-8")
+        real_replace = GATE.os_replace
+
+        def fail_tsv_commit(src: str, dst: str, *args: object, **kwargs: object) -> None:
+            if dst == tsv_path.name and src.startswith(f".{tsv_path.name}.") and src.endswith(".tmp"):
+                raise OSError("simulated tsv replace failure")
+            real_replace(src, dst, *args, **kwargs)
+
+        try:
+            with mock.patch.object(GATE, "os_replace", side_effect=fail_tsv_commit):
+                with self.assertRaisesRegex(GATE.AttentionD128ValueAdapterError, "failed writing output group"):
+                    GATE.write_outputs(self.fresh_payload(), json_path.relative_to(GATE.ROOT), tsv_path.relative_to(GATE.ROOT))
+            self.assertEqual(json_path.read_text(encoding="utf-8"), "old json\n")
+            self.assertEqual(tsv_path.read_text(encoding="utf-8"), "old tsv\n")
         finally:
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
