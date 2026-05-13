@@ -640,17 +640,29 @@ def artifact_context_seed() -> dict[str, Any]:
 
 
 def expected_comparison_summary(gate_value_payload: dict[str, Any], seed: dict[str, Any]) -> dict[str, Any]:
+    projection_input = [
+        _int(value, f"comparison projection input {index}")
+        for index, value in enumerate(_list(gate_value_payload.get("projection_input_q8"), "comparison projection input"))
+    ]
+    gate_projection = [
+        _int(value, f"comparison gate projection {index}")
+        for index, value in enumerate(_list(gate_value_payload.get("gate_projection_q8"), "comparison gate projection"))
+    ]
+    value_projection = [
+        _int(value, f"comparison value projection {index}")
+        for index, value in enumerate(_list(gate_value_payload.get("value_projection_q8"), "comparison value projection"))
+    ]
     return {
         "current_projection_input_commitment": seed["current_projection_input_commitment"],
         "current_gate_value_projection_output_commitment": seed["current_gate_value_projection_output_commitment"],
         "current_projection_input_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["projection_input_q8"], seed["current_projection_input"], "projection input"
+            projection_input, seed["current_projection_input"], "projection input"
         ),
         "current_gate_projection_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["gate_projection_q8"], seed["current_gate"], "gate projection"
+            gate_projection, seed["current_gate"], "gate projection"
         ),
         "current_value_projection_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["value_projection_q8"], seed["current_value"], "value projection"
+            value_projection, seed["current_value"], "value projection"
         ),
         "matches_existing_d128_gate_value_projection": False,
     }
