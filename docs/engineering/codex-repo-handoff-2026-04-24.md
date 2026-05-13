@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `3aabaee1384df3f3fc8563fb1a7892b3e02633dd` (matches
+**Mainline tip at last refresh:** `f07446a3c4e2f8097a455c26fe9612d29932840e` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -55,8 +55,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
 46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
-47. `docs/engineering/reproducibility.md`
-48. `git status --short --branch`
+47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
+48. `docs/engineering/reproducibility.md`
+49. `git status --short --branch`
 
 ## Current lane split
 
@@ -634,6 +635,16 @@ Tablero boundary.
   plus a `2049`-row bounded activation lookup table, rejects relabeling
   `hidden_activation_commitment` as the full output, and emits
   `hidden_activation_commitment`.
+- The attention-derived d128 path now reaches the first nonlinear MLP boundary:
+  derived gate/value output
+  `blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`
+  feeds a derived activation/SwiGLU input and emits derived hidden activation
+  `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`.
+  The gate checks `512` SwiGLU lanes and the `2049`-row bounded activation
+  table, rejects `15 / 15` local mutations, and remains a no-go for existing
+  d128 full-block consumption because the canonical activation fixture
+  mismatches `288 / 512` activation outputs and `512 / 512` hidden outputs; see
+  `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact

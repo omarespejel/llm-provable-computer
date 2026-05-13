@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-05-10
+Last refreshed: 2026-05-13
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `3aabaee1384df3f3fc8563fb1a7892b3e02633dd`
+Mainline reference at refresh: `f07446a3c4e2f8097a455c26fe9612d29932840e`
 
 ## Immediate orientation
 
@@ -672,6 +672,17 @@ Tablero boundary.
   consumption because the canonical fixture mismatches `127 / 128` projection
   inputs and `512 / 512` gate and value outputs. See
   `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`.
+- The attention-derived d128 path now reaches the first nonlinear MLP boundary.
+  The derived gate/value output commitment
+  `blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`
+  feeds a derived activation/SwiGLU input with derived hidden activation
+  commitment
+  `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`.
+  This checks `512` SwiGLU lanes, the `2049`-row bounded activation table,
+  rejects `15 / 15` local mutations, and remains a no-go for existing d128
+  full-block consumption because the canonical activation fixture mismatches
+  `288 / 512` activation outputs and `512 / 512` hidden outputs. See
+  `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`.
 
 ## Source-of-truth documents
 
@@ -723,8 +734,9 @@ Use these in order of authority for current state:
 44. `docs/engineering/zkai-attention-kv-proof-route-selector-2026-05-05.md`
 45. `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`
 46. `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
-47. `docs/engineering/reproducibility.md`
-48. `git status --short --branch`
+47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
+48. `docs/engineering/reproducibility.md`
+49. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.
