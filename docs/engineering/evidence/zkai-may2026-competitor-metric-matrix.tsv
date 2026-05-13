@@ -1,0 +1,9 @@
+row_kind	system	surface_or_workload	prove_seconds	verify_seconds	proof_size_reported	local_metric	local_value	comparison_status
+external	NANOZK	Transformer block proof	6.3	0.023	6.9 KB			SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION
+external	NANOZK	GPT-2-Small full model	516	NA	NA			SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION
+external	Jolt Atlas	NanoGPT proof	14	0.517	NA			SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION
+external	Jolt Atlas	GPT-2 proof	38	NA	NA			SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION
+external	EZKL (reported by Jolt Atlas)	NanoGPT proof	237	0.34	NA			SOURCE_BACKED_CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION
+local	provable-transformer-vm	Stwo attention/Softmax-table fusion				matched route JSON proof-byte saving	194097	LOCAL_MECHANISM_EVIDENCE_NOT_LAYERWISE_FULL_MODEL_BENCHMARK
+local	provable-transformer-vm	d64 RMSNorm/SwiGLU/residual block receipt				checked slice rows	49600	LOCAL_RECEIPT_CHAIN_NOT_RECURSIVE_PROOF_COMPRESSION
+local	provable-transformer-vm	d128 RMSNorm/SwiGLU/residual comparator target				target estimated linear multiplications	196608	TARGET_SPEC_ONLY_NOT_LOCAL_PROOF_RESULT
