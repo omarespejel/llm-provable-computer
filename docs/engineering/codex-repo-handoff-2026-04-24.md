@@ -58,8 +58,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 47. `docs/engineering/zkai-attention-derived-d128-activation-swiglu-2026-05-13.md`
 48. `docs/engineering/zkai-attention-derived-d128-down-projection-2026-05-13.md`
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
-50. `docs/engineering/reproducibility.md`
-51. `git status --short --branch`
+50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
+51. `docs/engineering/reproducibility.md`
+52. `git status --short --branch`
 
 ## Current lane split
 
@@ -671,6 +672,13 @@ Tablero boundary.
   residual-add fixture mismatches `127 / 128` inputs, `128 / 128` residual
   deltas, and `128 / 128` outputs; see
   `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`.
+- The attention-derived d128 path now has a committed block statement chain:
+  `6` checked slice artifacts, `11` commitment edges, `199,553` accounted
+  relation rows, and block statement commitment
+  `blake2b-256:a8f48c0b5a0ef6ec7e30d9445be2e1850effbf113367fc90b4f024a343dd06ff`.
+  The gate rejects `19 / 19` local mutations and remains a no-go for one
+  composed proof, proof-size savings, timings, or learned model weights; see
+  `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
