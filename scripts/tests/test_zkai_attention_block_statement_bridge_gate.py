@@ -236,6 +236,37 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
             GATE.os.replace = original_replace
             output_path.unlink(missing_ok=True)
 
+    def test_atomic_write_cleanup_error_does_not_mask_replace_failure(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=GATE.EVIDENCE_DIR,
+            prefix="attention-block-bridge-cleanup-write-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            output_path = pathlib.Path(handle.name)
+            handle.write(b"original\n")
+        original_replace = GATE.os.replace
+        original_unlink = GATE.os.unlink
+
+        def failing_replace(*args, **kwargs) -> None:
+            raise OSError("simulated replace failure")
+
+        def failing_unlink(*args, **kwargs) -> None:
+            raise OSError("simulated cleanup failure")
+
+        try:
+            GATE.os.replace = failing_replace
+            GATE.os.unlink = failing_unlink
+            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "simulated replace failure"):
+                GATE.write_text_no_follow(output_path, "replacement\n", "json output")
+            self.assertEqual(output_path.read_text(encoding="utf-8"), "original\n")
+        finally:
+            GATE.os.replace = original_replace
+            GATE.os.unlink = original_unlink
+            for temp_path in GATE.EVIDENCE_DIR.glob(f".{output_path.name}.*.tmp"):
+                temp_path.unlink(missing_ok=True)
+            output_path.unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()
