@@ -19,6 +19,7 @@
     "fri_trace_merkle_path_savings_bytes_total": 41312,
     "fri_trace_merkle_path_share_of_typed_savings": 0.805491,
     "largest_component_saving_bucket": "fri_decommitment_merkle_path_bytes",
+    "largest_component_saving_bucket_bytes": 21824,
     "opening_plumbing_savings_bytes_total": 44896,
     "opening_plumbing_share_of_typed_savings": 0.87537,
     "profiles_checked": 10,
@@ -105,7 +106,7 @@
     "not a d64 or d128 RMSNorm-SwiGLU transformer-block proof",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:8364a4f98b75ad9d73ee8b9c17151018fefe953ead9f52d7a7de5f74fd8d7ea6",
+  "payload_commitment": "sha256:d5c23dc00d585f2c84c9df984e4d6ce67ea9f981a205fde68706e539ef65967e",
   "route_id": "local_stwo_attention_kv_fusion_mechanism_ablation",
   "route_matrix": {
     "aggregate_metrics_match": {
