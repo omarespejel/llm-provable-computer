@@ -12,7 +12,9 @@ import io
 import json
 import pathlib
 import sys
-from typing import Any, Callable
+from collections.abc import Callable
+from functools import lru_cache
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -591,7 +593,8 @@ def validate_gate_value_projection_payload(payload: Any, *, bridge_payload: dict
         raise AttentionDerivedD128ProjectionBoundaryError("gate/value public instance commitment drift")
 
 
-def build_context() -> dict[str, Any]:
+@lru_cache(maxsize=1)
+def artifact_context_seed() -> dict[str, Any]:
     derived_rmsnorm_gate, _derived_raw = load_json(DERIVED_RMSNORM_JSON)
     current_gate_value, current_raw = load_json(CURRENT_GATE_VALUE_JSON)
     try:
@@ -601,25 +604,6 @@ def build_context() -> dict[str, Any]:
         raise AttentionDerivedD128ProjectionBoundaryError(str(err)) from err
     rmsnorm_payload = _dict(derived_rmsnorm_gate.get("rmsnorm_public_row_payload"), "derived RMSNorm payload")
     validate_rmsnorm_source(rmsnorm_payload)
-    bridge_payload = build_bridge_payload(rmsnorm_payload)
-    gate_value_payload = build_gate_value_projection_payload(bridge_payload)
-    current_projection_input = [_int(value, f"current projection input {index}") for index, value in enumerate(current_gate_value["projection_input_q8"])]
-    current_gate = [_int(value, f"current gate output {index}") for index, value in enumerate(current_gate_value["gate_projection_q8"])]
-    current_value = [_int(value, f"current value output {index}") for index, value in enumerate(current_gate_value["value_projection_q8"])]
-    comparison = {
-        "current_projection_input_commitment": current_gate_value["source_projection_input_row_commitment"],
-        "current_gate_value_projection_output_commitment": current_gate_value["gate_value_projection_output_commitment"],
-        "current_projection_input_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["projection_input_q8"], current_projection_input, "projection input"
-        ),
-        "current_gate_projection_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["gate_projection_q8"], current_gate, "gate projection"
-        ),
-        "current_value_projection_mismatch_count": sequence_mismatch_count(
-            gate_value_payload["value_projection_q8"], current_value, "value projection"
-        ),
-        "matches_existing_d128_gate_value_projection": False,
-    }
     return {
         "source_artifacts": [
             source_artifact("attention_derived_d128_rmsnorm_public_row_gate", DERIVED_RMSNORM_JSON, derived_rmsnorm_gate),
@@ -641,9 +625,61 @@ def build_context() -> dict[str, Any]:
             "derived_rmsnorm_output_row_commitment": rmsnorm_payload["rmsnorm_output_row_commitment"],
         },
         "rmsnorm_public_row_payload": rmsnorm_payload,
+        "current_projection_input": [
+            _int(value, f"current projection input {index}") for index, value in enumerate(current_gate_value["projection_input_q8"])
+        ],
+        "current_gate": [
+            _int(value, f"current gate output {index}") for index, value in enumerate(current_gate_value["gate_projection_q8"])
+        ],
+        "current_value": [
+            _int(value, f"current value output {index}") for index, value in enumerate(current_gate_value["value_projection_q8"])
+        ],
+        "current_projection_input_commitment": current_gate_value["source_projection_input_row_commitment"],
+        "current_gate_value_projection_output_commitment": current_gate_value["gate_value_projection_output_commitment"],
+    }
+
+
+def expected_comparison_summary(gate_value_payload: dict[str, Any], seed: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "current_projection_input_commitment": seed["current_projection_input_commitment"],
+        "current_gate_value_projection_output_commitment": seed["current_gate_value_projection_output_commitment"],
+        "current_projection_input_mismatch_count": sequence_mismatch_count(
+            gate_value_payload["projection_input_q8"], seed["current_projection_input"], "projection input"
+        ),
+        "current_gate_projection_mismatch_count": sequence_mismatch_count(
+            gate_value_payload["gate_projection_q8"], seed["current_gate"], "gate projection"
+        ),
+        "current_value_projection_mismatch_count": sequence_mismatch_count(
+            gate_value_payload["value_projection_q8"], seed["current_value"], "value projection"
+        ),
+        "matches_existing_d128_gate_value_projection": False,
+    }
+
+
+def require_artifact_backed_context(context: dict[str, Any]) -> dict[str, Any]:
+    seed = artifact_context_seed()
+    for field in ("source_artifacts", "source_summary", "rmsnorm_public_row_payload"):
+        if context.get(field) != seed[field]:
+            raise AttentionDerivedD128ProjectionBoundaryError(f"context artifact binding drift: {field}")
+    gate_value_payload = _dict(context.get("gate_value_projection_payload"), "context gate/value payload")
+    comparison = expected_comparison_summary(gate_value_payload, seed)
+    if context.get("comparison_summary") != comparison:
+        raise AttentionDerivedD128ProjectionBoundaryError("context artifact binding drift: comparison_summary")
+    return seed["rmsnorm_public_row_payload"]
+
+
+def build_context() -> dict[str, Any]:
+    seed = artifact_context_seed()
+    rmsnorm_payload = seed["rmsnorm_public_row_payload"]
+    bridge_payload = build_bridge_payload(rmsnorm_payload)
+    gate_value_payload = build_gate_value_projection_payload(bridge_payload)
+    return {
+        "source_artifacts": copy.deepcopy(seed["source_artifacts"]),
+        "source_summary": copy.deepcopy(seed["source_summary"]),
+        "rmsnorm_public_row_payload": copy.deepcopy(rmsnorm_payload),
         "bridge_payload": bridge_payload,
         "gate_value_projection_payload": gate_value_payload,
-        "comparison_summary": comparison,
+        "comparison_summary": expected_comparison_summary(gate_value_payload, seed),
     }
 
 
@@ -712,6 +748,7 @@ def validate_core_payload(payload: dict[str, Any], *, context: dict[str, Any] | 
     if payload.get("validation_commands") != VALIDATION_COMMANDS:
         raise AttentionDerivedD128ProjectionBoundaryError("validation commands drift")
     context = build_context() if context is None else context
+    artifact_rmsnorm_payload = require_artifact_backed_context(context)
     expected_core = build_core_payload(context)
     comparable = {key: value for key, value in payload.items() if key not in MUTATION_KEYS | {"payload_commitment"}}
     expected = {key: value for key, value in expected_core.items() if key != "payload_commitment"}
@@ -719,8 +756,7 @@ def validate_core_payload(payload: dict[str, Any], *, context: dict[str, Any] | 
         raise AttentionDerivedD128ProjectionBoundaryError("projection boundary payload drift")
     bridge_payload = _dict(payload.get("bridge_payload"), "bridge payload")
     gate_value_payload = _dict(payload.get("gate_value_projection_payload"), "gate/value payload")
-    rmsnorm_payload = _dict(context.get("rmsnorm_public_row_payload"), "context RMSNorm payload")
-    validate_bridge_payload(bridge_payload, rmsnorm_payload=rmsnorm_payload)
+    validate_bridge_payload(bridge_payload, rmsnorm_payload=artifact_rmsnorm_payload)
     validate_gate_value_projection_payload(gate_value_payload, bridge_payload=bridge_payload)
     summary = _dict(payload.get("summary"), "summary")
     comparison = _dict(payload.get("comparison_summary"), "comparison summary")
