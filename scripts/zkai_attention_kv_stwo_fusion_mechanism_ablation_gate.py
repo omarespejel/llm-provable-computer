@@ -300,20 +300,23 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
 
 
 def _base_payload() -> dict[str, Any]:
-    loaded = {name: load_json(path) for name, path in EVIDENCE_INPUTS.items()}
-    source_artifacts = [
-        {
-            "id": name,
-            "path": path,
-            "sha256": sha256_file(path),
-        }
-        for name, path in EVIDENCE_INPUTS.items()
-    ]
-    route = _route_metrics(loaded["route_matrix"])
-    section = _section_delta_metrics(loaded["section_delta"])
-    typed = _typed_metrics(loaded["typed_size_estimate"])
-    controlled = _controlled_metrics(loaded["controlled_component_grid"])
-    binary = _binary_metrics(loaded["binary_typed_accounting"])
+    try:
+        loaded = {name: load_json(path) for name, path in EVIDENCE_INPUTS.items()}
+        source_artifacts = [
+            {
+                "id": name,
+                "path": path,
+                "sha256": sha256_file(path),
+            }
+            for name, path in EVIDENCE_INPUTS.items()
+        ]
+        route = _route_metrics(loaded["route_matrix"])
+        section = _section_delta_metrics(loaded["section_delta"])
+        typed = _typed_metrics(loaded["typed_size_estimate"])
+        controlled = _controlled_metrics(loaded["controlled_component_grid"])
+        binary = _binary_metrics(loaded["binary_typed_accounting"])
+    except (KeyError, TypeError) as err:
+        raise FusionMechanismAblationGateError(f"malformed source evidence: {err}") from err
 
     route_aggregate = route["aggregate_metrics_match"]
     evidence_consistency = {
