@@ -134,6 +134,22 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         ):
             gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
 
+        attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
+        attention_derived_snark["source_route_metrics"].pop("compressed_to_source_ratio")
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 SNARK compressed/source ratio",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+
+        attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
+        attention_derived_snark["source_route_metrics"]["compressed_to_source_ratio"] = 1.0
+        with self.assertRaisesRegex(
+            gate.OneTransformerBlockSurfaceError,
+            "attention-derived d128 SNARK compressed/source ratio drift",
+        ):
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         nanozk_block_row = next(

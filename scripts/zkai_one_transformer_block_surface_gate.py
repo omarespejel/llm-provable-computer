@@ -41,6 +41,7 @@ EXPECTED_ATTENTION_DERIVED_D128_INPUT_CONTRACT_COMMITMENT = (
 EXPECTED_ATTENTION_DERIVED_D128_SNARK_RECEIPT_COMMITMENT = (
     "blake2b-256:b9448afdbce5b2eac524274fa8be99595ca3fae933931300ff38c9fba3e52c1d"
 )
+EXPECTED_ATTENTION_DERIVED_D128_COMPRESSED_RATIO = 0.174986
 
 SCHEMA = "zkai-one-transformer-block-surface-v1"
 DECISION = "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF"
@@ -348,6 +349,13 @@ def _validate_attention_derived_d128_snark_receipt(
         raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK slice count mismatch")
     if source_metrics.get("input_contract_commitment") != EXPECTED_ATTENTION_DERIVED_D128_INPUT_CONTRACT_COMMITMENT:
         raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK input contract commitment drift")
+    compressed_ratio = _float_field(
+        payload,
+        ("source_route_metrics", "compressed_to_source_ratio"),
+        "attention-derived d128 SNARK compressed/source ratio",
+    )
+    if compressed_ratio != EXPECTED_ATTENTION_DERIVED_D128_COMPRESSED_RATIO:
+        raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK compressed/source ratio drift")
     if statement_receipt.get("receipt_commitment") != EXPECTED_ATTENTION_DERIVED_D128_SNARK_RECEIPT_COMMITMENT:
         raise OneTransformerBlockSurfaceError("attention-derived d128 SNARK receipt commitment drift")
     if source_contract.get("result") != "BOUNDED_NO_GO":
@@ -376,6 +384,7 @@ def _validate_attention_derived_d128_snark_receipt(
         "receipt_metrics": receipt_metrics,
         "statement_receipt": statement_receipt,
         "source_contract": source_contract,
+        "compressed_to_source_ratio": compressed_ratio,
     }
 
 
@@ -589,9 +598,7 @@ def build_payload_uncommitted() -> dict[str, Any]:
             "attention_derived_d128_input_contract_commitment": snark_summary["source_route_metrics"][
                 "input_contract_commitment"
             ],
-            "attention_derived_d128_statement_chain_compressed_ratio": snark_summary["source_route_metrics"][
-                "compressed_to_source_ratio"
-            ],
+            "attention_derived_d128_statement_chain_compressed_ratio": snark_summary["compressed_to_source_ratio"],
             "d128_over_d64_checked_row_ratio": round(float(d128_row["value"]) / float(d64_row["value"]), 6),
         },
         "next_required_work": [
