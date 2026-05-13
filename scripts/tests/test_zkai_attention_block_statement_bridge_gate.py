@@ -186,6 +186,32 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
             finally:
                 link_path.unlink(missing_ok=True)
 
+    def test_write_outputs_rejects_leaf_symlink_at_write_time(self) -> None:
+        if getattr(os, "O_NOFOLLOW", 0) == 0:
+            self.skipTest("O_NOFOLLOW is unavailable on this platform")
+
+        with tempfile.NamedTemporaryFile(delete=False) as outside_handle:
+            outside_path = pathlib.Path(outside_handle.name)
+        link_path = GATE.EVIDENCE_DIR / "attention-block-bridge-leaf-symlink-test.json"
+        original_require_output_path = GATE.require_output_path
+
+        def stale_validation(path: pathlib.Path | None, suffix: str) -> pathlib.Path | None:
+            if path is None:
+                return None
+            self.assertEqual(suffix, ".json")
+            return link_path
+
+        try:
+            link_path.unlink(missing_ok=True)
+            os.symlink(outside_path, link_path)
+            GATE.require_output_path = stale_validation
+            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "failed writing json output"):
+                GATE.write_outputs(self.fresh_payload(), pathlib.Path("stale-validation.json"), None)
+        finally:
+            GATE.require_output_path = original_require_output_path
+            link_path.unlink(missing_ok=True)
+            outside_path.unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()

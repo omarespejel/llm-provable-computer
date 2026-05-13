@@ -635,13 +635,31 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
     return candidate
 
 
+def write_text_no_follow(path: pathlib.Path, contents: str, label: str) -> None:
+    data = contents.encode("utf-8")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd: int | None = None
+    try:
+        fd = os.open(path, flags, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            fd = None
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except OSError as err:
+        raise AttentionBlockStatementBridgeError(f"failed writing {label}: {err}") from err
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
     json_target = require_output_path(json_path, ".json")
     tsv_target = require_output_path(tsv_path, ".tsv")
     if json_target is not None:
-        json_target.write_text(pretty_json(payload) + "\n", encoding="utf-8")
+        write_text_no_follow(json_target, pretty_json(payload) + "\n", "json output")
     if tsv_target is not None:
-        tsv_target.write_text(to_tsv(payload), encoding="utf-8")
+        write_text_no_follow(tsv_target, to_tsv(payload), "tsv output")
 
 
 def main(argv: list[str] | None = None) -> int:
