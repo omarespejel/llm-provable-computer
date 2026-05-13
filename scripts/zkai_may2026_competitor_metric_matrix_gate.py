@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 import hashlib
 import io
@@ -378,7 +379,7 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
 
 def build_payload() -> dict[str, Any]:
     payload = build_payload_uncommitted()
-    expected = dict(payload)
+    expected = copy.deepcopy(payload)
     payload["payload_commitment"] = payload_commitment(payload)
     validate_payload(payload, expected=expected)
     return payload
@@ -526,7 +527,11 @@ def write_outputs(
     tsv_target = _assert_output_path(tsv_path, "tsv output path") if tsv_path is not None else None
     if json_target is None and tsv_target is None:
         raise CompetitorMetricMatrixError("at least one explicit output path is required")
-    if json_target is not None and tsv_target is not None and os.path.abspath(json_target) == os.path.abspath(tsv_target):
+    if (
+        json_target is not None
+        and tsv_target is not None
+        and os.path.abspath(json_target).casefold() == os.path.abspath(tsv_target).casefold()
+    ):
         raise CompetitorMetricMatrixError("json and tsv output paths must differ")
 
     outputs = []
