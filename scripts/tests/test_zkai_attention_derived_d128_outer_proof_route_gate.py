@@ -62,6 +62,27 @@ class AttentionDerivedD128OuterProofRouteGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "proof metric"):
             gate.validate_payload(payload)
 
+    def test_rejects_expected_candidate_directory(self) -> None:
+        original_root = gate.ROOT
+        original_specs = gate.CANDIDATE_SPECS
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = pathlib.Path(raw_tmp)
+            (tmp / "candidate").mkdir()
+            gate.ROOT = tmp
+            gate.CANDIDATE_SPECS = (
+                {
+                    "name": "expected_candidate",
+                    "path": "candidate",
+                    "expected_exists": True,
+                },
+            )
+            try:
+                with self.assertRaisesRegex(gate.AttentionDerivedD128OuterProofRouteError, "candidate must be a file"):
+                    gate.build_candidate_inventory()
+            finally:
+                gate.ROOT = original_root
+                gate.CANDIDATE_SPECS = original_specs
+
     def test_tsv_contains_single_summary_row(self) -> None:
         tsv = gate.to_tsv(self.fresh_payload())
         self.assertIn("input_contract_commitment\touter_proof_status", tsv)
