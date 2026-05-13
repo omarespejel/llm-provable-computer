@@ -39,7 +39,7 @@ checks the rows used for comparison:
 | NANOZK | GPT-2-Small full model | `516s` | `NA` | `NA` |
 | Jolt Atlas | NanoGPT proof | `14s` | `0.517s` | `NA` |
 | Jolt Atlas | GPT-2 proof | `38s` | `NA` | `NA` |
-| EZKL reported by Jolt Atlas | NanoGPT proof | `237s` | `0.34s` | `NA` |
+| EZKL (reported by Jolt Atlas) | NanoGPT proof | `237s` | `0.34s` | `NA` |
 
 These are source-backed context rows, not local reproductions.
 
@@ -49,7 +49,7 @@ These are source-backed context rows, not local reproductions.
 | --- | --- | ---: |
 | Stwo attention/Softmax-table fusion | `GO_BOUNDED_ARCHITECTURE_MECHANISM` | `194,097` matched JSON proof bytes saved |
 | d64 RMSNorm/SwiGLU/residual block receipt | `GO_STATEMENT_BOUND_RECEIPT_COMPOSITION` | `49,600` checked slice rows |
-| d128 RMSNorm/SwiGLU/residual target | `NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING` | `196,608` estimated linear multiplications |
+| d128 RMSNorm/SwiGLU/residual comparator target | `NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING` | `196,608` estimated linear multiplications |
 
 ## Interpretation
 
