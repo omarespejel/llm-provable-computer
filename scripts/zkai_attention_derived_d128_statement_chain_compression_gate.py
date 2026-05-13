@@ -272,20 +272,41 @@ def expected_source_artifact(source: dict[str, Any], source_raw: bytes) -> dict[
 
 def expected_required_public_inputs(source: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
     return {
-        "block_statement_commitment": source["block_statement_commitment"],
-        "source_attention_outputs_commitment": summary["source_attention_outputs_commitment"],
-        "derived_input_activation_commitment": summary["derived_input_activation_commitment"],
-        "derived_hidden_activation_commitment": summary["derived_hidden_activation_commitment"],
-        "derived_residual_delta_commitment": summary["derived_residual_delta_commitment"],
-        "derived_output_activation_commitment": summary["derived_output_activation_commitment"],
-        "slice_count": summary["slice_count"],
-        "edge_count": summary["edge_count"],
-        "accounted_relation_rows": summary["accounted_relation_rows"],
-        "projection_mul_rows": summary["projection_mul_rows"],
-        "down_projection_mul_rows": summary["down_projection_mul_rows"],
-        "activation_lookup_rows": summary["activation_lookup_rows"],
-        "residual_add_rows": summary["residual_add_rows"],
-        "source_payload_commitment": source["payload_commitment"],
+        "block_statement_commitment": _str(
+            source.get("block_statement_commitment"), "source.block_statement_commitment"
+        ),
+        "source_attention_outputs_commitment": _str(
+            summary.get("source_attention_outputs_commitment"),
+            "source.summary.source_attention_outputs_commitment",
+        ),
+        "derived_input_activation_commitment": _str(
+            summary.get("derived_input_activation_commitment"),
+            "source.summary.derived_input_activation_commitment",
+        ),
+        "derived_hidden_activation_commitment": _str(
+            summary.get("derived_hidden_activation_commitment"),
+            "source.summary.derived_hidden_activation_commitment",
+        ),
+        "derived_residual_delta_commitment": _str(
+            summary.get("derived_residual_delta_commitment"),
+            "source.summary.derived_residual_delta_commitment",
+        ),
+        "derived_output_activation_commitment": _str(
+            summary.get("derived_output_activation_commitment"),
+            "source.summary.derived_output_activation_commitment",
+        ),
+        "slice_count": _int(summary.get("slice_count"), "source.summary.slice_count"),
+        "edge_count": _int(summary.get("edge_count"), "source.summary.edge_count"),
+        "accounted_relation_rows": _int(
+            summary.get("accounted_relation_rows"), "source.summary.accounted_relation_rows"
+        ),
+        "projection_mul_rows": _int(summary.get("projection_mul_rows"), "source.summary.projection_mul_rows"),
+        "down_projection_mul_rows": _int(
+            summary.get("down_projection_mul_rows"), "source.summary.down_projection_mul_rows"
+        ),
+        "activation_lookup_rows": _int(summary.get("activation_lookup_rows"), "source.summary.activation_lookup_rows"),
+        "residual_add_rows": _int(summary.get("residual_add_rows"), "source.summary.residual_add_rows"),
+        "source_payload_commitment": _str(source.get("payload_commitment"), "source.payload_commitment"),
     }
 
 

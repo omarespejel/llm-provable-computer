@@ -75,6 +75,14 @@ class AttentionDerivedD128StatementChainCompressionGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AttentionDerivedD128StatementChainCompressionError, "source edge count"):
             gate.source_summary(source)
 
+    def test_expected_public_inputs_reject_missing_summary_fields_as_domain_error(self) -> None:
+        source = gate.load_json(gate.SOURCE_CHAIN)
+        summary = gate.source_summary(source)
+        summary.pop("projection_mul_rows")
+
+        with self.assertRaisesRegex(gate.AttentionDerivedD128StatementChainCompressionError, "projection_mul_rows"):
+            gate.expected_required_public_inputs(source, summary)
+
     def test_tsv_contains_single_summary_row(self) -> None:
         tsv = gate.to_tsv(self.fresh_payload())
         self.assertIn("source_chain_artifact_bytes\tcompressed_artifact_bytes\tbyte_savings", tsv)
