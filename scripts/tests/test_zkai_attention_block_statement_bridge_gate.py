@@ -77,6 +77,43 @@ class AttentionBlockStatementBridgeGateTests(unittest.TestCase):
             self.assertEqual(len(artifact["sha256"]), 64)
             self.assertEqual(len(artifact["payload_sha256"]), 64)
 
+    def test_rejects_malformed_source_artifacts(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_artifacts"][0]["sha256"] = "nothex"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "sha256"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        payload["source_artifacts"][0]["path"] = "../outside.json"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "source artifact path"):
+            GATE.validate_payload(payload)
+
+        payload = self.fresh_payload()
+        del payload["source_artifacts"][0]["payload_sha256"]
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "keys drift"):
+            GATE.validate_payload(payload)
+
+    def test_read_source_bytes_rejects_oversize_sources(self) -> None:
+        old_limit = GATE.MAX_SOURCE_BYTES
+        with tempfile.NamedTemporaryFile(
+            dir=GATE.EVIDENCE_DIR,
+            prefix="attention-block-bridge-source-limit-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            source_path = pathlib.Path(handle.name)
+            handle.write(b"12345")
+        try:
+            GATE.MAX_SOURCE_BYTES = 4
+            with self.assertRaisesRegex(GATE.AttentionBlockStatementBridgeError, "size limit"):
+                GATE.read_source_bytes(source_path)
+        finally:
+            GATE.MAX_SOURCE_BYTES = old_limit
+            source_path.unlink(missing_ok=True)
+
     def test_mutation_inventory_rejects_claim_drift(self) -> None:
         payload = self.fresh_payload()
         case_by_name = {case["name"]: case for case in payload["cases"]}
