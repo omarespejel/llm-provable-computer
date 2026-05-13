@@ -210,7 +210,7 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
                     return original_replace(src, dst)
 
                 gate.os.replace = swap_json_target_on_tsv
-                with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "failed to write output path"):
+                with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "failed to roll back output path"):
                     gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
                 self.assertEqual(outside_target.read_text(encoding="utf-8"), "outside-original")
                 self.assertTrue(json_path.is_symlink())
@@ -295,6 +295,26 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
             handle.write("system\tworkload_label\nNANOZK\tTransformer block proof\n")
         try:
             with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "TSV source missing columns"):
+                gate.load_tsv(path)
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_load_tsv_rejects_extra_required_columns(self):
+        columns = list(gate.REQUIRED_PUBLISHED_COLUMNS) + ["extra"]
+        row = {column: "value" for column in columns}
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="competitor-extra-published-",
+            suffix=".tsv",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write("\t".join(columns) + "\n")
+            handle.write("\t".join(row[column] for column in columns) + "\n")
+        try:
+            with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "TSV source has extra columns"):
                 gate.load_tsv(path)
         finally:
             path.unlink(missing_ok=True)

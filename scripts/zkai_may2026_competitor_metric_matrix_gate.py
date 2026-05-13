@@ -83,6 +83,7 @@ EXPECTED_EXTERNAL_ROWS = {
 
 REQUIRED_PUBLISHED_COLUMNS = {
     "system",
+    "source_kind",
     "source_url",
     "source_locator",
     "backend_family",
@@ -94,6 +95,7 @@ REQUIRED_PUBLISHED_COLUMNS = {
     "proof_size_reported",
     "setup_or_keygen_seconds",
     "hardware",
+    "notes",
 }
 
 
@@ -199,9 +201,13 @@ def _parse_tsv_bytes(path: pathlib.Path, raw: bytes) -> list[dict[str, str]]:
     except UnicodeDecodeError as err:
         raise CompetitorMetricMatrixError(f"failed to load TSV source {path}: {err}") from err
     reader = csv.DictReader(io.StringIO(text), delimiter="\t")
-    missing = REQUIRED_PUBLISHED_COLUMNS - set(reader.fieldnames or [])
+    fieldnames = set(reader.fieldnames or [])
+    missing = REQUIRED_PUBLISHED_COLUMNS - fieldnames
     if missing:
         raise CompetitorMetricMatrixError(f"TSV source missing columns: {sorted(missing)}")
+    extra = fieldnames - REQUIRED_PUBLISHED_COLUMNS
+    if extra:
+        raise CompetitorMetricMatrixError(f"TSV source has extra columns: {sorted(extra)}")
     rows = list(reader)
     if not rows:
         raise CompetitorMetricMatrixError(f"TSV source must not be empty: {path}")
@@ -543,6 +549,7 @@ def write_outputs(
     replaced: list[pathlib.Path] = []
     original_bytes: dict[pathlib.Path, bytes | None] = {}
     write_error: OSError | None = None
+    rollback_errors: list[str] = []
 
     def write_temp(path: pathlib.Path, text: str) -> pathlib.Path:
         _assert_no_repo_symlink_components(path.parent, "output path")
@@ -599,14 +606,20 @@ def write_outputs(
                         path.unlink(missing_ok=True)
                     else:
                         rollback_replace(path, original)
-                except (CompetitorMetricMatrixError, OSError):
-                    pass
+                except (CompetitorMetricMatrixError, OSError) as err:
+                    rollback_errors.append(f"{path}: {err}")
         for tmp in temps:
             try:
                 tmp.unlink(missing_ok=True)
             except OSError as err:
                 if write_error is None:
                     raise CompetitorMetricMatrixError(f"failed to clean temporary output {tmp}: {err}") from err
+        if rollback_errors:
+            raise CompetitorMetricMatrixError(
+                "failed to roll back output path after write error: "
+                + "; ".join(rollback_errors)
+                + f"; original write error: {write_error}"
+            ) from write_error
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
