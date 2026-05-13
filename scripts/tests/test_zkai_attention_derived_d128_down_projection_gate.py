@@ -186,6 +186,13 @@ class AttentionDerivedD128DownProjectionGateTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.AttentionDerivedD128DownProjectionError, "exceeds max size"):
                 GATE.load_json(source)
 
+    def test_load_module_rejects_symlinked_helper(self) -> None:
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            link = pathlib.Path(raw_tmp) / "helper.py"
+            link.symlink_to(GATE.DOWN_PROJECTION_PATH)
+            with self.assertRaisesRegex(GATE.AttentionDerivedD128DownProjectionError, "symlink"):
+                GATE._load_module(link, "symlinked_helper")
+
 
 if __name__ == "__main__":
     unittest.main()
