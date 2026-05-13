@@ -507,6 +507,10 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
         "fused_saves_vs_source_plus_sidecar_local_typed_bytes",
         "d32 local typed saving",
     )
+    if json_saving != source_plus_sidecar_json - fused_json:
+        raise FusionMechanismAblationGateError("binary JSON proof saving does not match byte totals")
+    if local_typed_saving != source_plus_sidecar_typed - fused_typed:
+        raise FusionMechanismAblationGateError("binary local typed saving does not match byte totals")
     binary_status = _string_mapping_field(binary, "binary_serialization_status", "binary serialization status")
     cli_status = _string_mapping_field(
         binary, "cli_upstream_stwo_serialization_status", "binary upstream serialization status"
