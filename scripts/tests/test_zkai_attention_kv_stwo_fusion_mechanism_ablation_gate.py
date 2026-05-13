@@ -279,6 +279,14 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta savings total"):
             gate._section_delta_metrics(section)
 
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["opening_bucket_savings_share"] = 0.5
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "section opening share does not match byte totals",
+        ):
+            gate._section_delta_metrics(section)
+
         typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):

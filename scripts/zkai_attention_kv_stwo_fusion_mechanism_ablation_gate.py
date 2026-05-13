@@ -266,11 +266,19 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
         if key not in delta:
             raise FusionMechanismAblationGateError(f"section delta missing {key}")
     fri_plus_decommitments = delta["fri_proof"] + delta["decommitments"]
+    reported_opening_share = _share_payload_field(
+        section,
+        ("aggregate", "opening_bucket_savings_share"),
+        "section opening share",
+    )
+    recomputed_opening_share = _round(opening / total)
+    if reported_opening_share != recomputed_opening_share:
+        raise FusionMechanismAblationGateError("section opening share does not match byte totals")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "json_savings_bytes_total": total,
         "opening_bucket_savings_bytes": opening,
-        "opening_bucket_savings_share": aggregate["opening_bucket_savings_share"],
+        "opening_bucket_savings_share": recomputed_opening_share,
         "fri_plus_decommitments_savings_bytes": fri_plus_decommitments,
         "fri_plus_decommitments_savings_share": _round(fri_plus_decommitments / total),
         "largest_delta_section": aggregate["largest_delta_section"],
