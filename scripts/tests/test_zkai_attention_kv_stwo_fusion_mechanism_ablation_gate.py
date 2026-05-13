@@ -127,7 +127,7 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
     def test_rejects_binary_local_typed_saving_claim_drift_directly(self):
         payload = self.strip_mutation_summary(self.payload)
         payload["binary_typed_accounting"]["fused_saves_vs_source_plus_sidecar_local_typed_bytes"] = 0
-        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "d32 local typed saving must be positive"):
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "d32 local typed saving below claim"):
             gate.validate_payload(payload, require_mutation_summary=False, expected=payload)
 
     def test_tsv_summary_contains_core_metrics(self):
@@ -345,6 +345,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate._route_metrics(route)
 
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["profiles_checked"] = 10.0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section profiles checked must be integer"):
+            gate._section_delta_metrics(section)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
         section["aggregate"]["role_totals"]["fused_saves_vs_source_plus_sidecar_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta savings total"):
             gate._section_delta_metrics(section)
@@ -376,6 +381,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         section["backend_internal_split_status"] = "GO_BACKEND_INTERNAL_SPLIT"
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section backend split status drift"):
             gate._section_delta_metrics(section)
+
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["aggregate"]["profiles_checked"] = 9.0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed profiles checked must be integer"):
+            gate._typed_metrics(typed)
 
         typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
@@ -412,6 +422,14 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"] = None
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size delta must be object"):
             gate._typed_metrics(typed)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["profiles_checked"] = 10.0
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "controlled profiles checked must be integer",
+        ):
+            gate._controlled_metrics(controlled)
 
         controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
         controlled["aggregate"]["opening_plumbing_share_of_typed_savings"] = 0.5
@@ -459,6 +477,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             "controlled stable binary serializer status drift",
         ):
             gate._controlled_metrics(controlled)
+
+        binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
+        binary["aggregate"]["profiles_checked"] = 3.0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary profiles checked must be integer"):
+            gate._binary_metrics(binary)
 
         binary = gate.load_json(gate.EVIDENCE_INPUTS["binary_typed_accounting"])
         binary["aggregate"]["source_plus_sidecar_json_proof_bytes"] = 116682.25

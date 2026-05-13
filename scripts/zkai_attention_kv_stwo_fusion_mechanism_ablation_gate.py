@@ -36,6 +36,7 @@ BACKEND_INTERNAL_SPLIT_STATUS = (
 )
 TIMING_POLICY = "proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark"
 MAX_EVIDENCE_JSON_BYTES = 16 * 1024 * 1024
+MAX_OUTPUT_BACKUP_BYTES = 64 * 1024 * 1024
 EXPECTED_STABLE_BINARY_SERIALIZER_STATUS = "NO_GO_STABLE_BINARY_STWO_PROOF_SERIALIZER_NOT_EXPOSED"
 EXPECTED_BINARY_SERIALIZATION_STATUS = "NO_GO_NOT_UPSTREAM_STWO_PROOF_SERIALIZATION"
 EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS = "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY"
@@ -136,13 +137,18 @@ def _assert_no_repo_symlink_components(path: pathlib.Path, label: str) -> None:
             raise FusionMechanismAblationGateError(f"{label} must not include symlink components")
 
 
-def _open_repo_regular_file(path: pathlib.Path) -> bytes:
+def _open_repo_regular_file(
+    path: pathlib.Path,
+    *,
+    label: str = "evidence path",
+    max_bytes: int = MAX_EVIDENCE_JSON_BYTES,
+) -> bytes:
     root = ROOT.resolve()
     candidate = pathlib.Path(os.path.abspath(path if path.is_absolute() else ROOT / path))
     try:
         relative = candidate.relative_to(root)
     except ValueError as err:
-        raise FusionMechanismAblationGateError(f"evidence path escapes repository: {path}") from err
+        raise FusionMechanismAblationGateError(f"{label} escapes repository: {path}") from err
 
     current = root
     pre_stat = None
@@ -151,29 +157,29 @@ def _open_repo_regular_file(path: pathlib.Path) -> bytes:
             current = current / part
             part_stat = current.lstat()
             if stat_module.S_ISLNK(part_stat.st_mode):
-                raise FusionMechanismAblationGateError(f"evidence path must not traverse symlinks: {path}")
+                raise FusionMechanismAblationGateError(f"{label} must not traverse symlinks: {path}")
             pre_stat = part_stat
         if pre_stat is None or not stat_module.S_ISREG(pre_stat.st_mode):
-            raise FusionMechanismAblationGateError(f"evidence path is not a regular file: {path}")
+            raise FusionMechanismAblationGateError(f"{label} is not a regular file: {path}")
         fd = os.open(candidate, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         try:
             post_stat = os.fstat(fd)
             if not stat_module.S_ISREG(post_stat.st_mode):
-                raise FusionMechanismAblationGateError(f"evidence path is not a regular file: {path}")
+                raise FusionMechanismAblationGateError(f"{label} is not a regular file: {path}")
             if (post_stat.st_dev, post_stat.st_ino) != (pre_stat.st_dev, pre_stat.st_ino):
-                raise FusionMechanismAblationGateError(f"evidence path changed while reading: {path}")
+                raise FusionMechanismAblationGateError(f"{label} changed while reading: {path}")
             with os.fdopen(fd, "rb") as handle:
                 fd = None
-                raw = handle.read(MAX_EVIDENCE_JSON_BYTES + 1)
+                raw = handle.read(max_bytes + 1)
         finally:
             if fd is not None:
                 os.close(fd)
     except OSError as err:
-        raise FusionMechanismAblationGateError(f"failed to read evidence path {path}: {err}") from err
+        raise FusionMechanismAblationGateError(f"failed to read {label} {path}: {err}") from err
 
-    if len(raw) > MAX_EVIDENCE_JSON_BYTES:
+    if len(raw) > max_bytes:
         raise FusionMechanismAblationGateError(
-            f"evidence JSON exceeds max size: got at least {len(raw)} bytes, limit {MAX_EVIDENCE_JSON_BYTES}"
+            f"{label} exceeds max size: got at least {len(raw)} bytes, limit {max_bytes}"
         )
     return raw
 
@@ -234,6 +240,15 @@ def _positive_integer_mapping_field(payload: dict[str, Any], key: str, label: st
     return value
 
 
+def _positive_integer_count_mapping_field(payload: dict[str, Any], key: str, label: str) -> int:
+    value = payload[key]
+    if type(value) is not int:
+        raise FusionMechanismAblationGateError(f"{label} must be integer")
+    if value <= 0:
+        raise FusionMechanismAblationGateError(f"{label} must be positive")
+    return value
+
+
 def _string_mapping_field(payload: dict[str, Any], key: str, label: str) -> str:
     value = payload[key]
     if not isinstance(value, str):
@@ -278,7 +293,7 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
         if type(reported_ratio) not in (int, float) or not math.isfinite(float(reported_ratio)):
             raise FusionMechanismAblationGateError(f"route matrix row {index} ratio must be finite")
         ratio = _round(fused_bytes / source_bytes)
-        if float(reported_ratio) != ratio:
+        if _round(float(reported_ratio)) != ratio:
             raise FusionMechanismAblationGateError(f"route matrix row {index} ratio does not match byte totals")
         source_values.append(source_bytes)
         fused_values.append(fused_bytes)
@@ -320,6 +335,9 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
 
 def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
     aggregate = section["aggregate"]
+    profiles_checked = _positive_integer_count_mapping_field(
+        aggregate, "profiles_checked", "section profiles checked"
+    )
     delta = _mapping(aggregate["section_totals_by_role"]["delta"], "section delta totals")
     opening_bucket = _mapping(aggregate["bucket_totals_by_role"]["delta"], "section opening bucket totals")
     role_totals = _mapping(aggregate["role_totals"], "section role totals")
@@ -347,12 +365,12 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
         "section opening share",
     )
     recomputed_opening_share = _round(opening / total)
-    if reported_opening_share != recomputed_opening_share:
+    if _round(reported_opening_share) != recomputed_opening_share:
         raise FusionMechanismAblationGateError("section opening share does not match byte totals")
     if section["backend_internal_split_status"] != BACKEND_INTERNAL_SPLIT_STATUS:
         raise FusionMechanismAblationGateError("section backend split status drift")
     return {
-        "profiles_checked": aggregate["profiles_checked"],
+        "profiles_checked": profiles_checked,
         "json_savings_bytes_total": total,
         "opening_bucket_savings_bytes": opening,
         "opening_bucket_savings_share": recomputed_opening_share,
@@ -366,6 +384,9 @@ def _section_delta_metrics(section: dict[str, Any]) -> dict[str, Any]:
 
 def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     aggregate = typed["aggregate"]
+    profiles_checked = _positive_integer_count_mapping_field(
+        aggregate, "profiles_checked", "typed profiles checked"
+    )
     delta = _mapping(aggregate["source_plus_sidecar_minus_fused_delta"], "typed size delta")
     for key in ("fri_decommitments", "trace_decommitments", "typed_size_estimate_bytes"):
         if key not in delta:
@@ -386,7 +407,7 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
         "typed saving share",
     )
     recomputed_typed_share = _round(typed_savings / source_plus_sidecar_typed)
-    if reported_typed_share != recomputed_typed_share:
+    if _round(reported_typed_share) != recomputed_typed_share:
         raise FusionMechanismAblationGateError("typed saving share does not match byte totals")
     largest_typed_saving_bucket_bytes = _non_negative_integer_mapping_field(
         aggregate, "largest_typed_saving_bucket_bytes", "typed largest saving bucket"
@@ -400,7 +421,7 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
     if stable_binary_status != EXPECTED_STABLE_BINARY_SERIALIZER_STATUS:
         raise FusionMechanismAblationGateError("typed stable binary serializer status drift")
     return {
-        "profiles_checked": aggregate["profiles_checked"],
+        "profiles_checked": profiles_checked,
         "typed_savings_bytes_total": typed_savings,
         "typed_saving_share_vs_source_plus_sidecar": recomputed_typed_share,
         "fri_trace_decommitment_savings_bytes": decommitment_total,
@@ -413,6 +434,9 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
 
 def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
     aggregate = controlled["aggregate"]
+    profiles_checked = _positive_integer_count_mapping_field(
+        aggregate, "profiles_checked", "controlled profiles checked"
+    )
     typed_total = _positive_integer_mapping_field(
         aggregate, "typed_savings_bytes_total", "controlled typed savings total"
     )
@@ -441,7 +465,7 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
         "controlled typed saving share",
     )
     recomputed_typed_share = _round(typed_total / source_plus_sidecar_typed)
-    if reported_typed_share != recomputed_typed_share:
+    if _round(reported_typed_share) != recomputed_typed_share:
         raise FusionMechanismAblationGateError("controlled typed saving share does not match byte totals")
     reported_share = _share_payload_field(
         controlled,
@@ -449,7 +473,7 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
         "controlled opening plumbing share",
     )
     recomputed_share = _round(opening_bytes / typed_total)
-    if reported_share != recomputed_share:
+    if _round(reported_share) != recomputed_share:
         raise FusionMechanismAblationGateError("controlled opening plumbing share does not match byte totals")
     reported_fri_trace_share = _share_payload_field(
         controlled,
@@ -457,7 +481,7 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
         "controlled FRI trace merkle path share",
     )
     recomputed_fri_trace_share = _round(fri_trace_merkle_path_savings / typed_total)
-    if reported_fri_trace_share != recomputed_fri_trace_share:
+    if _round(reported_fri_trace_share) != recomputed_fri_trace_share:
         raise FusionMechanismAblationGateError(
             "controlled FRI trace merkle path share does not match byte totals"
         )
@@ -469,7 +493,7 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
     if aggregate["all_profiles_save_typed_components"] is not True:
         raise FusionMechanismAblationGateError("controlled all-profiles-save status drift")
     return {
-        "profiles_checked": aggregate["profiles_checked"],
+        "profiles_checked": profiles_checked,
         "all_profiles_save_typed_components": aggregate["all_profiles_save_typed_components"],
         "typed_savings_bytes_total": typed_total,
         "typed_saving_share_total": recomputed_typed_share,
@@ -485,6 +509,9 @@ def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
 
 def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
     aggregate = binary["aggregate"]
+    profiles_checked = _positive_integer_count_mapping_field(
+        aggregate, "profiles_checked", "binary profiles checked"
+    )
     source_plus_sidecar_json = _non_negative_integer_mapping_field(
         aggregate, "source_plus_sidecar_json_proof_bytes", "binary source-plus-sidecar JSON proof"
     )
@@ -523,7 +550,7 @@ def _binary_metrics(binary: dict[str, Any]) -> dict[str, Any]:
     if first_blocker != EXPECTED_BINARY_FIRST_BLOCKER:
         raise FusionMechanismAblationGateError("binary first blocker drift")
     return {
-        "profiles_checked": aggregate["profiles_checked"],
+        "profiles_checked": profiles_checked,
         "source_plus_sidecar_json_proof_bytes": source_plus_sidecar_json,
         "fused_json_proof_bytes": fused_json,
         "fused_saves_vs_source_plus_sidecar_json_bytes": json_saving,
@@ -555,6 +582,8 @@ def _base_payload() -> dict[str, Any]:
         typed = _typed_metrics(loaded["typed_size_estimate"])
         controlled = _controlled_metrics(loaded["controlled_component_grid"])
         binary = _binary_metrics(loaded["binary_typed_accounting"])
+    except FusionMechanismAblationGateError:
+        raise
     except (KeyError, TypeError, ValueError) as err:
         raise FusionMechanismAblationGateError(f"malformed source evidence: {err}") from err
 
@@ -746,7 +775,7 @@ def validate_payload(
         "matched route persistence",
     ) is not True:
         raise FusionMechanismAblationGateError("matched route savings persistence drift")
-    binary_local_typed_saving = _positive_numeric_payload_field(
+    binary_local_typed_saving = _numeric_payload_field(
         payload,
         ("binary_typed_accounting", "fused_saves_vs_source_plus_sidecar_local_typed_bytes"),
         "d32 local typed saving",
@@ -967,7 +996,15 @@ def write_outputs(
     try:
         try:
             for path, text in outputs:
-                original_bytes[path] = _open_repo_regular_file(path) if path.exists() else None
+                original_bytes[path] = (
+                    _open_repo_regular_file(
+                        path,
+                        label="existing output backup",
+                        max_bytes=MAX_OUTPUT_BACKUP_BYTES,
+                    )
+                    if path.exists()
+                    else None
+                )
                 tmp = write_temp(path, text)
                 temps.append(tmp)
             for tmp, (path, _) in zip(temps, outputs, strict=True):
