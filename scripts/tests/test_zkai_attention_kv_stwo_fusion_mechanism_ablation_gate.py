@@ -294,6 +294,19 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size delta must be object"):
             gate._typed_metrics(typed)
 
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["opening_plumbing_share_of_typed_savings"] = 0.5
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "controlled opening plumbing share does not match byte totals",
+        ):
+            gate._controlled_metrics(controlled)
+
+        controlled = gate.load_json(gate.EVIDENCE_INPUTS["controlled_component_grid"])
+        controlled["aggregate"]["typed_savings_bytes_total"] = 0
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "controlled typed savings total"):
+            gate._controlled_metrics(controlled)
+
     def test_payload_field_helpers_reject_wrong_types(self):
         payload = copy.deepcopy(self.payload)
         payload["section_delta"]["opening_bucket_savings_share"] = "0.9"
