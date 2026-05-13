@@ -216,6 +216,7 @@ def _nanozk_block_row(matrix: dict[str, Any]) -> dict[str, Any]:
         "verify_seconds": "0.023",
         "proof_size_reported": "6.9 KB",
         "backend_family": "Halo2 IPA SNARK + lookups",
+        "model_or_dims": "GPT-2-scale block; d=768; dff=3072",
     }
     for key, value in expected.items():
         if row.get(key) != value:

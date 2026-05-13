@@ -87,6 +87,18 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift"):
             gate._component_rows(fusion, d64, d128, matrix)
 
+        matrix = gate.load_json(gate.COMPETITOR_MATRIX)
+        nanozk_block_row = next(
+            row
+            for row in matrix["external_rows"]
+            if row.get("system") == "NANOZK"
+            and row.get("workload_label") == "Transformer block proof"
+            and row.get("workload_scope") == "Per-layer block proof"
+        )
+        del nanozk_block_row["model_or_dims"]
+        with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift: model_or_dims"):
+            gate._component_rows(fusion, d64, d128, matrix)
+
     def test_tsv_contains_component_rows(self):
         tsv = gate.to_tsv(self.payload)
         self.assertIn("attention/Softmax-table fused proof component\tattention", tsv)
