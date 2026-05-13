@@ -94,6 +94,13 @@ class AttentionDerivedD128ProjectionBoundaryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "overclaim|payload drift"):
             GATE.validate_payload(payload, context=copy.deepcopy(self.context))
 
+    def test_payload_rejects_mutation_error_rewrite(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"][0]["error"] = "rewritten rejection reason"
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "mutation case drift"):
+            GATE.validate_payload(payload, context=copy.deepcopy(self.context))
+
     def test_to_tsv_requires_final_payload(self) -> None:
         core = GATE.build_core_payload(copy.deepcopy(self.context))
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "finalized payload"):
