@@ -134,6 +134,20 @@ class AttentionDerivedD128InputGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128InputError, "mutation accepted"):
             GATE.validate_payload(payload)
 
+    def test_rejects_extra_mutation_case_without_raw_index_error(self) -> None:
+        payload = self.fresh_payload()
+        payload["cases"].append(
+            {
+                "name": "spoofed_extra_case",
+                "accepted": False,
+                "rejected": True,
+                "error": "spoofed",
+            }
+        )
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128InputError, "mutation case count drift"):
+            GATE.validate_payload(payload)
+
     def test_tsv_derives_from_validated_payload(self) -> None:
         payload = self.fresh_payload()
         tsv = GATE.to_tsv(payload)
