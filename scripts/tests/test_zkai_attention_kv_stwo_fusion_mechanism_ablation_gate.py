@@ -95,7 +95,7 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
 
         payload = self.strip_mutation_summary(self.payload)
         payload["binary_typed_accounting"]["cli_upstream_stwo_serialization_status"] = "UPSTREAM_STWO_WIRE_FORMAT"
-        self.assert_rejects(payload, "binary typed accounting drift")
+        self.assert_rejects(payload, "binary accounting overclaim")
 
         payload = self.strip_mutation_summary(self.payload)
         payload["non_claims"] = payload["non_claims"][1:]
@@ -123,19 +123,26 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             json_path = pathlib.Path(handle.name)
         json_path.unlink()
         tsv_path = json_path.with_suffix(".tsv")
+        absolute_json = json_path.with_name(json_path.stem + "-absolute.json")
+        absolute_tsv = json_path.with_name(json_path.stem + "-absolute.tsv")
         try:
             gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, self.payload)
             self.assertIn("matched_profiles_checked", tsv_path.read_text(encoding="utf-8"))
+
+            gate.write_outputs(self.payload, absolute_json, absolute_tsv)
+            self.assertEqual(json.loads(absolute_json.read_text(encoding="utf-8")), self.payload)
         finally:
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
+            absolute_json.unlink(missing_ok=True)
+            absolute_tsv.unlink(missing_ok=True)
 
     def test_write_outputs_rejects_outside_or_symlinked_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             outside = pathlib.Path(tmp) / "out.json"
-            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "repo-relative"):
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "docs/engineering/evidence"):
                 gate.write_outputs(self.payload, outside, gate.TSV_OUT.relative_to(gate.ROOT))
 
         with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
@@ -201,7 +208,12 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
     def test_json_helpers_reject_non_finite_values(self):
         payload = copy.deepcopy(self.payload)
         payload["section_delta"]["opening_bucket_savings_share"] = math.nan
-        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "non-finite JSON value"):
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "invalid JSON value"):
+            gate.canonical_json_bytes(payload)
+
+        payload = copy.deepcopy(self.payload)
+        payload["not_json_serializable"] = {1, 2, 3}
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "invalid JSON value"):
             gate.canonical_json_bytes(payload)
 
         with tempfile.NamedTemporaryFile(
@@ -241,6 +253,16 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
         typed["aggregate"]["source_plus_sidecar_minus_fused_delta"]["typed_size_estimate_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size savings total"):
+            gate._typed_metrics(typed)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["aggregate"]["section_totals_by_role"]["delta"] = None
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section delta totals must be object"):
+            gate._section_delta_metrics(section)
+
+        typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
+        typed["aggregate"]["source_plus_sidecar_minus_fused_delta"] = None
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "typed size delta must be object"):
             gate._typed_metrics(typed)
 
     def test_payload_field_helpers_reject_wrong_types(self):
@@ -291,6 +313,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 ("section_delta", "opening_bucket_savings_share"),
                 "section opening share",
             )
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["binary_typed_accounting"]["cli_upstream_stwo_serialization_status"] = "upstream_stwo_wire_format"
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "binary accounting overclaim"):
+            gate.validate_payload(payload, require_mutation_summary=False)
 
     def test_base_payload_normalizes_malformed_source_evidence_errors(self):
         original = gate.load_json
