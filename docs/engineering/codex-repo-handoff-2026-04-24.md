@@ -679,6 +679,13 @@ Tablero boundary.
   The gate rejects `19 / 19` local mutations and remains a no-go for one
   composed proof, proof-size savings, timings, or learned model weights; see
   `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`.
+- The one-transformer-block surface scorecard now consumes the
+  attention-derived d128 statement chain directly: `5` source artifacts, `5`
+  component rows, `194,097` local attention-fusion JSON proof-byte savings,
+  `197,504` d128 receipt-chain rows, and `199,553` attention-derived
+  statement-chain rows. This remains a no-go for a matched NANOZK-style layer
+  proof, proof-size benchmark, verifier-time benchmark, or full inference; see
+  `docs/engineering/zkai-one-transformer-block-surface-2026-05-13.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact

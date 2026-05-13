@@ -19,6 +19,11 @@
       "checked_surface": "residual-add receipt slices",
       "component": "residual",
       "honest_scope": "statement-bound residual transition, not full autoregressive inference"
+    },
+    {
+      "checked_surface": "attention output through d128 block-output activation under one statement chain",
+      "component": "attention_to_block_boundary",
+      "honest_scope": "one verifier-facing statement chain, not one composed proof object"
     }
   ],
   "claim_boundary": "SOURCE_BACKED_STARK_NATIVE_ATTENTION_AND_RMSNORM_SWIGLU_RESIDUAL_BLOCK_SURFACE_NOT_SINGLE_RECURSIVE_PROOF_OBJECT_NOT_MATCHED_NANOZK_BENCHMARK_NOT_FULL_INFERENCE",
@@ -54,6 +59,16 @@
       "value": 197504
     },
     {
+      "comparison_status": "LOCAL_STATEMENT_CHAIN_NOT_SINGLE_PROOF_OBJECT",
+      "local_status": "GO_ATTENTION_DERIVED_STATEMENT_CHAIN_NO_GO_COMPOSED_PROOF",
+      "metric": "accounted relation rows bound under one statement commitment",
+      "subsystem": "attention_to_block_boundary",
+      "support": "6 slices; 11 edges; 19 / 19 mutations rejected; statement blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+      "surface": "attention-derived d128 block statement chain",
+      "unit": "rows",
+      "value": 199553
+    },
+    {
       "comparison_status": "CONTEXT_ONLY_NOT_LOCAL_REPRODUCTION",
       "local_status": "SOURCE_BACKED_EXTERNAL_CONTEXT",
       "metric": "reported transformer block proof",
@@ -66,7 +81,7 @@
   ],
   "decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
   "next_required_work": [
-    "make attention output feed the block receipt input under one statement commitment",
+    "turn the attention-derived statement chain into a proof-object composition or compression experiment",
     "add proof-carrying aggregation or recursion if claiming one proof object",
     "add median-of-5 timing only after the block proof surface is stable",
     "keep NANOZK/Jolt comparisons source-backed and non-matched until dimensions, semantics, hardware, and timing policy match"
@@ -79,7 +94,7 @@
     "not full autoregressive inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:c6a822eaa0f9d6f7431ca610b4d225b5ea2726a4d6eb7bcb2765f054b4bc2c40",
+  "payload_commitment": "sha256:02b80ba9e7a9d1c420e50e4ee1ab5bfb930851a7fac0595a1ee5a8630e551b3a",
   "schema": "zkai-one-transformer-block-surface-v1",
   "source_artifacts": [
     {
@@ -98,23 +113,32 @@
       "sha256": "87c0d6bef7527c7d26013bb50a4f03ef9042e03c27699f85bb9c0851a47c259f"
     },
     {
+      "kind": "local_attention_derived_d128_statement_chain_json",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json",
+      "sha256": "990602eefeaceb98a9272d00acfd9b1ef387d34d0218d9ae1a736afc2f6163a3"
+    },
+    {
       "kind": "source_backed_competitor_matrix_json",
       "path": "docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json",
       "sha256": "ed838fd9137d66fb2acbf72e3ac82fca4774a4d0f6d9b935a74674cfd671249d"
     }
   ],
   "summary": {
+    "attention_derived_d128_block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+    "attention_derived_d128_statement_chain_edges": 11,
+    "attention_derived_d128_statement_chain_rows": 199553,
     "attention_fusion_saving_bytes": 194097,
     "breakthrough_status": "credible_architecture_path_not_field_breakthrough",
     "d128_checked_rows": 197504,
     "d128_over_d64_checked_row_ratio": 3.981935,
     "d64_checked_rows": 49600,
-    "go_result": "GO for one-block architecture surface accounting",
+    "go_result": "GO for one-block architecture surface accounting with an attention-derived d128 statement chain",
     "no_go_result": "NO-GO for matched NANOZK-style single layer proof, proof-size benchmark, verifier-time benchmark, or full inference",
-    "strongest_claim": "STARK-native attention fusion and statement-bound RMSNorm/SwiGLU/residual receipt chains now sit in one source-backed block-surface scorecard."
+    "strongest_claim": "STARK-native attention fusion and an attention-derived d128 RMSNorm/SwiGLU/residual statement chain now sit in one source-backed block-surface scorecard."
   },
   "validation_commands": [
     "python3 scripts/zkai_one_transformer_block_surface_gate.py --write-json docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_one_transformer_block_surface_gate.py scripts/tests/test_zkai_one_transformer_block_surface_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_one_transformer_block_surface_gate",
     "git diff --check",
     "just gate-fast",
