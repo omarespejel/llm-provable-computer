@@ -148,6 +148,8 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         tsv_path = json_path.with_suffix(".tsv")
         absolute_json = json_path.with_name(json_path.stem + "-absolute.json")
         absolute_tsv = json_path.with_name(json_path.stem + "-absolute.tsv")
+        only_json = json_path.with_name(json_path.stem + "-only.json")
+        implicit_tsv = only_json.with_suffix(".tsv")
         try:
             gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
@@ -156,11 +158,17 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
 
             gate.write_outputs(self.payload, absolute_json, absolute_tsv)
             self.assertEqual(json.loads(absolute_json.read_text(encoding="utf-8")), self.payload)
+
+            gate.write_outputs(self.payload, only_json.relative_to(gate.ROOT), None)
+            self.assertTrue(only_json.exists())
+            self.assertFalse(implicit_tsv.exists())
         finally:
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
             absolute_json.unlink(missing_ok=True)
             absolute_tsv.unlink(missing_ok=True)
+            only_json.unlink(missing_ok=True)
+            implicit_tsv.unlink(missing_ok=True)
 
     def test_write_outputs_rejects_outside_or_symlinked_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -265,6 +273,8 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         for row in route["route_rows"]:
             if "source_plus_sidecar_raw_proof_bytes" in row:
                 row["source_plus_sidecar_raw_proof_bytes"] = 0
+                row["fused_proof_size_bytes"] = 0
+                row["fused_saves_vs_source_plus_sidecar_bytes"] = 0
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "source-plus-sidecar total"):
             gate._route_metrics(route)
 
@@ -272,6 +282,14 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         route["route_rows"].insert(0, {"route_id": "unmatched-row"})
         del route["route_rows"][1]["fused_proof_size_bytes"]
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "route matrix row 1 missing"):
+            gate._route_metrics(route)
+
+        route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
+        for row in route["route_rows"]:
+            if "fused_proof_size_bytes" in row:
+                row["fused_proof_size_bytes"] = 0.5
+                break
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "fused proof must be integer bytes"):
             gate._route_metrics(route)
 
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
@@ -285,6 +303,11 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate.FusionMechanismAblationGateError,
             "section opening share does not match byte totals",
         ):
+            gate._section_delta_metrics(section)
+
+        section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
+        section["backend_internal_split_status"] = "GO_BACKEND_INTERNAL_SPLIT"
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "section backend split status drift"):
             gate._section_delta_metrics(section)
 
         typed = gate.load_json(gate.EVIDENCE_INPUTS["typed_size_estimate"])
@@ -432,11 +455,25 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
             gate._controlled_metrics = original_controlled
 
     def test_base_payload_uses_single_read_for_payload_and_sha(self):
-        payload = gate._base_payload()
-        source_by_id = {artifact["id"]: artifact for artifact in payload["source_artifacts"]}
-        for name, path in gate.EVIDENCE_INPUTS.items():
-            raw = gate._open_repo_regular_file(gate._full_repo_path(gate._repo_relative_path(path, "evidence path")))
-            self.assertEqual(source_by_id[name]["sha256"], gate.hashlib.sha256(raw).hexdigest())
+        original = gate._open_repo_regular_file
+        calls = []
+
+        def recording_open(path):
+            calls.append(path)
+            return original(path)
+
+        try:
+            gate._open_repo_regular_file = recording_open
+            gate._base_payload()
+        finally:
+            gate._open_repo_regular_file = original
+
+        expected_paths = [
+            gate._full_repo_path(gate._repo_relative_path(path, "evidence path"))
+            for path in gate.EVIDENCE_INPUTS.values()
+        ]
+        self.assertEqual(calls, expected_paths)
+        self.assertEqual(len(calls), len(gate.EVIDENCE_INPUTS))
 
     def test_build_payload_reuses_precomputed_expected_payload(self):
         original = gate._base_payload

@@ -29,6 +29,7 @@
   "decision": "GO_STARK_NATIVE_FUSION_MECHANISM_ABLATION_FOR_PAPER_ARCHITECTURE_CLAIM",
   "evidence_consistency": {
     "binary_accounting_scope_is_d32_matched_slice": true,
+    "controlled_component_grid_scope_is_ten_profile_slice": true,
     "route_matrix_aggregate_matches_recomputed_totals": true,
     "route_matrix_scope_is_eleven_matched_profiles": true,
     "section_delta_scope_is_ten_profile_slice": true,
@@ -104,7 +105,7 @@
     "not a d64 or d128 RMSNorm-SwiGLU transformer-block proof",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:947068899ffd33a59aa155114fd90dd09241f3dc7956d874be22e0e347e9f2e5",
+  "payload_commitment": "sha256:8364a4f98b75ad9d73ee8b9c17151018fefe953ead9f52d7a7de5f74fd8d7ea6",
   "route_id": "local_stwo_attention_kv_fusion_mechanism_ablation",
   "route_matrix": {
     "aggregate_metrics_match": {
