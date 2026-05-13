@@ -186,10 +186,16 @@ def read_source_bytes(path: pathlib.Path) -> bytes:
                 raise AttentionD128ValueAdapterError(f"source path changed while reading: {path}")
             if not stat_module.S_ISREG(post_stat.st_mode):
                 raise AttentionD128ValueAdapterError(f"source path must remain a regular file: {path}")
-            raw = os.read(fd, MAX_SOURCE_BYTES + 1)
-            if len(raw) > MAX_SOURCE_BYTES:
-                raise AttentionD128ValueAdapterError(f"source path exceeds size limit after open: {path}")
-            return raw
+            chunks = []
+            total = 0
+            while True:
+                chunk = os.read(fd, min(65536, MAX_SOURCE_BYTES + 1 - total))
+                if chunk == b"":
+                    return b"".join(chunks)
+                chunks.append(chunk)
+                total += len(chunk)
+                if total > MAX_SOURCE_BYTES:
+                    raise AttentionD128ValueAdapterError(f"source path exceeds size limit after open: {path}")
         finally:
             os.close(fd)
     except OSError as err:
@@ -647,11 +653,25 @@ def validate_payload(
             raise AttentionD128ValueAdapterError("case count drift")
         if data.get("all_mutations_rejected") is not True:
             raise AttentionD128ValueAdapterError("not all mutations rejected")
-        if [case.get("name") for case in cases] != list(EXPECTED_MUTATIONS):
+        case_names = []
+        for index, case_value in enumerate(cases):
+            if not isinstance(case_value, dict):
+                raise AttentionD128ValueAdapterError("malformed mutation case")
+            case = case_value
+            if set(case) != {"name", "accepted", "rejected", "error"}:
+                raise AttentionD128ValueAdapterError("malformed mutation case")
+            name = _string(case.get("name"), f"cases[{index}] name")
+            if name not in EXPECTED_MUTATIONS:
+                raise AttentionD128ValueAdapterError("malformed mutation case")
+            accepted = _bool(case.get("accepted"), f"cases[{index}] accepted")
+            rejected = _bool(case.get("rejected"), f"cases[{index}] rejected")
+            if not isinstance(case.get("error"), str):
+                raise AttentionD128ValueAdapterError("malformed mutation case")
+            case_names.append(name)
+            if rejected is not True or accepted is not False:
+                raise AttentionD128ValueAdapterError(f"mutation was not rejected: {name}")
+        if case_names != list(EXPECTED_MUTATIONS):
             raise AttentionD128ValueAdapterError("mutation case order drift")
-        for case in cases:
-            if case.get("rejected") is not True or case.get("accepted") is not False:
-                raise AttentionD128ValueAdapterError(f"mutation was not rejected: {case.get('name')}")
 
 
 def _set_payload_commitment_drift(payload: dict[str, Any]) -> None:
