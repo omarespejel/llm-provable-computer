@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 20,
+  "case_count": 22,
   "cases": [
     {
       "accepted": false,
@@ -22,13 +22,13 @@
     },
     {
       "accepted": false,
-      "error": "source chain payload commitment drift",
+      "error": "source chain artifact drift",
       "name": "source_payload_commitment_drift",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "source chain block statement drift",
+      "error": "source chain artifact drift",
       "name": "source_block_statement_drift",
       "rejected": true
     },
@@ -40,13 +40,13 @@
     },
     {
       "accepted": false,
-      "error": "compressed artifact commitment drift",
+      "error": "compressed public input drift",
       "name": "source_edges_not_all_match",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "compressed artifact commitment drift",
+      "error": "compressed public input drift",
       "name": "source_slice_count_drift",
       "rejected": true
     },
@@ -58,7 +58,7 @@
     },
     {
       "accepted": false,
-      "error": "compressed artifact commitment drift",
+      "error": "compressed public input drift",
       "name": "source_row_count_drift",
       "rejected": true
     },
@@ -66,6 +66,18 @@
       "accepted": false,
       "error": "mutation finalization drift",
       "name": "source_case_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed public input drift",
+      "name": "compressed_hidden_activation_recommit_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed public input drift",
+      "name": "compressed_projection_rows_recommit_drift",
       "rejected": true
     },
     {
@@ -82,7 +94,7 @@
     },
     {
       "accepted": false,
-      "error": "compressed_artifact.required_public_inputs.derived_output_activation_commitment must be string",
+      "error": "compressed public input drift",
       "name": "compressed_public_input_removed",
       "rejected": true
     },
@@ -188,6 +200,8 @@
     "source_edge_count_drift",
     "source_row_count_drift",
     "source_case_count_drift",
+    "compressed_hidden_activation_recommit_drift",
+    "compressed_projection_rows_recommit_drift",
     "compressed_artifact_commitment_drift",
     "compressed_artifact_claim_boundary_drift",
     "compressed_public_input_removed",
@@ -209,7 +223,7 @@
     "not matched NANOZK benchmark evidence",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:fbe9c0dc38357868e970c6bd8598088ceca5991e4ec3ece2b296aa6759d75aec",
+  "payload_commitment": "sha256:d15c409b11bd5d1f7ffd66caeabd94daf60ca7feca7dc325987aa26f07c2b423",
   "recursive_or_pcd_status": {
     "first_blocker": "no executable outer proof currently proves the attention-derived d128 slice-chain verifier checks inside one cryptographic object",
     "outer_proof_artifacts": [],
