@@ -12,8 +12,8 @@ import io
 import json
 import os
 import pathlib
+import secrets
 import stat as stat_module
-import tempfile
 from collections.abc import Callable
 from typing import Any
 
@@ -792,8 +792,11 @@ def run_mutation_cases(core_payload: dict[str, Any], context: dict[str, Any]) ->
             if expected_error is None:
                 raise AttentionDerivedD128ActivationSwiGluError(f"mutation error marker missing: {name}") from err
             actual_error = str(err)
-            error = expected_error if expected_error in actual_error else actual_error
-            cases.append({"name": name, "accepted": False, "rejected": True, "error": error})
+            if expected_error not in actual_error:
+                raise AttentionDerivedD128ActivationSwiGluError(
+                    f"mutation produced unexpected error: {name}: {actual_error}"
+                ) from err
+            cases.append({"name": name, "accepted": False, "rejected": True, "error": expected_error})
         else:
             cases.append({"name": name, "accepted": True, "rejected": False, "error": ""})
     return cases
@@ -856,25 +859,36 @@ def require_output_path(path: pathlib.Path, *, suffix: str | None = None) -> pat
 
 def atomic_write_text(path: pathlib.Path, text: str, *, suffix: str | None = None) -> None:
     resolved = require_output_path(path, suffix=suffix)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(prefix=f".{resolved.name}.", suffix=".tmp", dir=resolved.parent)
-    tmp_path = pathlib.Path(tmp_name)
+    if not resolved.parent.exists():
+        raise AttentionDerivedD128ActivationSwiGluError(f"output parent must exist: {resolved.parent}")
+    parent_stat = resolved.parent.lstat()
+    if not stat_module.S_ISDIR(parent_stat.st_mode):
+        raise AttentionDerivedD128ActivationSwiGluError(f"output parent must be a directory: {resolved.parent}")
+    dir_fd = os.open(resolved.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    tmp_name = f".{resolved.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
+    tmp_created = False
     try:
+        open_parent_stat = os.fstat(dir_fd)
+        if (open_parent_stat.st_dev, open_parent_stat.st_ino) != (parent_stat.st_dev, parent_stat.st_ino):
+            raise AttentionDerivedD128ActivationSwiGluError(f"output parent changed while opening: {resolved.parent}")
+        fd = os.open(tmp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
+        tmp_created = True
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(tmp_path, resolved)
-        dir_fd = os.open(resolved.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
+        os.rename(tmp_name, resolved.name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        tmp_created = False
+        os.fsync(dir_fd)
     except Exception:
-        try:
-            tmp_path.unlink(missing_ok=True)
-        finally:
-            raise
+        if tmp_created:
+            try:
+                os.unlink(tmp_name, dir_fd=dir_fd)
+            except FileNotFoundError:
+                pass
+        raise
+    finally:
+        os.close(dir_fd)
 
 
 def write_outputs(
