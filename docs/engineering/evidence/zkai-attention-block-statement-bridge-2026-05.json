@@ -1,0 +1,196 @@
+{
+  "all_mutations_rejected": true,
+  "bridge_statement": {
+    "attention_output": {
+      "fused_envelope_size_bytes": 478713,
+      "fused_proof_size_bytes": 47698,
+      "mutations_rejected": 20,
+      "outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+      "policy_commitment": "blake2b-256:2965276f3627a5e2819a13651bca674c6b02e9532ffc44ad88e7c1a67ae704ba",
+      "route_id": "local_model_faithful_quantized_attention_bridge_d8_bounded_softmax_table",
+      "score_rows": 52,
+      "source_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+      "steps": 8,
+      "value_width": 8
+    },
+    "comparison_context": {
+      "one_block_surface_decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
+      "one_block_surface_payload_commitment": "sha256:c6a822eaa0f9d6f7431ca610b4d225b5ea2726a4d6eb7bcb2765f054b4bc2c40",
+      "surface_attention_fusion_saving_bytes": 194097,
+      "surface_d128_checked_rows": 197504
+    },
+    "d128_block_input": {
+      "accumulator_commitment": "blake2b-256:e1589759a0160bda75bf2dee33e2951d75ff13473a689b6326b03c2a4141eadc",
+      "block_receipt_commitment": "blake2b-256:20b656e0d52771ff91751bb6beace60a8609b9a76264342a6130457066fbacea",
+      "input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+      "mutations_rejected": 52,
+      "slice_count": 6,
+      "statement_commitment": "blake2b-256:4e34c91eaa458ae421cfc18a11811b331f0c85ca74e291496be1d50ce7adf02c",
+      "total_checked_rows": 197504,
+      "width": 128
+    },
+    "feed_edge": {
+      "adapter_requirement": "add a checked adapter that consumes the attention output commitment and emits the exact d128 input_activation_commitment before claiming feed equality",
+      "current_commitments_equal": false,
+      "feed_equality_status": "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY",
+      "from_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+      "to_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+      "width_adapter_required": true
+    },
+    "statement_kind": "attention-output-to-d128-block-input-statement-bridge",
+    "statement_version": "v1"
+  },
+  "bridge_statement_commitment": "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
+  "case_count": 13,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "decision_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "claim boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "attention_output_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "block_input_activation_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "feed_from_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "feed_to_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "feed_equality_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "adapter_requirement_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "bridge statement commitment drift",
+      "name": "feed_status_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "validation command drift",
+      "name": "validation_command_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload content drift",
+      "name": "source_artifact_sha_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "ONE_STATEMENT_COMMITMENT_BINDS_ATTENTION_OUTPUT_AND_D128_BLOCK_INPUT_NOT_VALUE_EQUALITY_NOT_RECURSIVE_PROOF_NOT_FULL_INFERENCE",
+  "decision": "GO_STATEMENT_BRIDGE_NO_GO_ATTENTION_TO_BLOCK_VALUE_EQUALITY",
+  "mutation_inventory": [
+    "decision_drift",
+    "claim_boundary_overclaim",
+    "attention_output_commitment_drift",
+    "block_input_activation_commitment_drift",
+    "feed_from_commitment_drift",
+    "feed_to_commitment_drift",
+    "feed_equality_overclaim",
+    "adapter_requirement_removed",
+    "feed_status_promoted",
+    "non_claim_removed",
+    "validation_command_removed",
+    "source_artifact_sha_drift",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not proof that the current attention output equals the d128 block input activation",
+    "not an adapter from the d8 attention fixture into the d128 block input vector",
+    "not one recursive or compressed proof object",
+    "not exact real-valued Softmax, LayerNorm, or GELU",
+    "not a matched NANOZK/Jolt/DeepProve benchmark",
+    "not full autoregressive inference",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:5223ba000147ce51f233ab4e257d94fa67303a3245ade5bf552d078b5babc0cb",
+  "result": "GO_STATEMENT_COMMITMENT_BINDING_WITH_NO_GO_VALUE_EQUALITY",
+  "schema": "zkai-attention-block-statement-bridge-v1",
+  "source_artifacts": [
+    {
+      "id": "model_faithful_attention_bridge",
+      "path": "docs/engineering/evidence/zkai-attention-kv-model-faithful-quantized-attention-bridge-2026-05.json",
+      "payload_sha256": "dabb6a7ac897b21aed0a56cdef7c1e5271d593c320223818be047596545b59ed",
+      "sha256": "716d86376cdcba8a92b9b2a0df1638dbc244a3413aac6ca4f1e58d4faa1ed0a6"
+    },
+    {
+      "id": "d128_full_block_accumulator",
+      "path": "docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json",
+      "payload_sha256": "2724b3a673bec346f5df0abaeadb3b8d4301f5efe090288026d10cc31b7d2fd9",
+      "sha256": "18fdb95015a948cb57a78dcaf35ed6359d818cf2df7b1a47c4383b944720b848"
+    },
+    {
+      "id": "one_transformer_block_surface",
+      "path": "docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json",
+      "payload_sha256": "8ede99aad3a60c840b0140d980b8e0a371536eeb71f716ed55c23912851bcaaf",
+      "sha256": "34a77898e1c0238cf13afb42d0efc5fac797168c09f50a22dbba26129257fa7a"
+    }
+  ],
+  "summary": {
+    "adapter_required": true,
+    "attention_mutations_rejected": 20,
+    "attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+    "attention_value_width": 8,
+    "block_input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
+    "block_mutations_rejected": 52,
+    "block_width": 128,
+    "bridge_statement_commitment": "blake2b-256:f180e809c0b0329bc340b34864d8067d6dfa9c4335471ba6adec94e203ec4d2e",
+    "combined_source_mutation_floor": 72,
+    "current_commitments_equal": false,
+    "feed_equality_status": "NO_GO_CURRENT_FIXTURES_DO_NOT_BIND_VALUE_EQUALITY",
+    "go_result": "GO for one verifier-facing statement commitment binding attention output and d128 block input handles",
+    "no_go_result": "NO-GO for value equality, adapter proof, recursion, matched benchmark, or full inference"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_block_statement_bridge_gate.py --write-json docs/engineering/evidence/zkai-attention-block-statement-bridge-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-block-statement-bridge-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_block_statement_bridge_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
