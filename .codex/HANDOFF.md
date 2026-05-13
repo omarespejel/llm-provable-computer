@@ -731,6 +731,15 @@ Tablero boundary.
   composed proof, recursion, PCD, proof-size evidence, timings, or production
   readiness. See
   `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`.
+- The compressed attention-derived d128 statement-chain contract now has an
+  outer-proof route gate. It records a checked input contract commitment
+  `blake2b-256:503fb256305f03a8da20b6872753234dbf776bb1b81044485949b4072152ed39`
+  over the `2,559`-byte compressed transcript and `199,553` source relation
+  rows, rejects `28 / 28` route mutations, and keeps the outer proof result at
+  `NO_GO_EXECUTABLE_ATTENTION_DERIVED_D128_OUTER_PROOF_BACKEND_MISSING`
+  because no executable backend proves the six verifier checks in one object.
+  See
+  `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`.
 
 ## Source-of-truth documents
 
