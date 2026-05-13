@@ -80,6 +80,13 @@ class AttentionDerivedD128ProjectionBoundaryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "context artifact binding"):
             GATE.validate_payload(payload, context=context)
 
+    def test_validate_rejects_malformed_context_without_keyerror(self) -> None:
+        payload = self.fresh_payload()
+        context = copy.deepcopy(self.context)
+        del context["gate_value_projection_payload"]["projection_input_q8"]
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128ProjectionBoundaryError, "comparison projection input"):
+            GATE.validate_payload(payload, context=context)
+
     def test_gate_value_rejects_output_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["gate_value_projection_payload"]["gate_projection_q8"][0] += 1
