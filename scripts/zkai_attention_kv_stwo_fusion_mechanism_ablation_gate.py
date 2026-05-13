@@ -303,13 +303,31 @@ def _typed_metrics(typed: dict[str, Any]) -> dict[str, Any]:
 
 def _controlled_metrics(controlled: dict[str, Any]) -> dict[str, Any]:
     aggregate = controlled["aggregate"]
+    typed_total = _positive_numeric_payload_field(
+        controlled,
+        ("aggregate", "typed_savings_bytes_total"),
+        "controlled typed savings total",
+    )
+    opening_bytes = _positive_numeric_payload_field(
+        controlled,
+        ("aggregate", "opening_plumbing_savings_bytes_total"),
+        "controlled opening plumbing savings",
+    )
+    reported_share = _share_payload_field(
+        controlled,
+        ("aggregate", "opening_plumbing_share_of_typed_savings"),
+        "controlled opening plumbing share",
+    )
+    recomputed_share = _round(opening_bytes / typed_total)
+    if reported_share != recomputed_share:
+        raise FusionMechanismAblationGateError("controlled opening plumbing share does not match byte totals")
     return {
         "profiles_checked": aggregate["profiles_checked"],
         "all_profiles_save_typed_components": aggregate["all_profiles_save_typed_components"],
-        "typed_savings_bytes_total": aggregate["typed_savings_bytes_total"],
+        "typed_savings_bytes_total": typed_total,
         "typed_saving_share_total": aggregate["typed_saving_share_total"],
-        "opening_plumbing_savings_bytes_total": aggregate["opening_plumbing_savings_bytes_total"],
-        "opening_plumbing_share_of_typed_savings": aggregate["opening_plumbing_share_of_typed_savings"],
+        "opening_plumbing_savings_bytes_total": opening_bytes,
+        "opening_plumbing_share_of_typed_savings": recomputed_share,
         "fri_trace_merkle_path_savings_bytes_total": aggregate["fri_trace_merkle_path_savings_bytes_total"],
         "fri_trace_merkle_path_share_of_typed_savings": aggregate["fri_trace_merkle_path_share_of_typed_savings"],
         "largest_component_saving_bucket": aggregate["largest_component_saving_bucket"],
