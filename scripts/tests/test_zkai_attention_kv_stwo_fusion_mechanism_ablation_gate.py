@@ -107,6 +107,23 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "payload commitment drift"):
             gate.validate_payload(payload)
 
+    def test_rejects_route_savings_claim_drift_directly(self):
+        payload = self.strip_mutation_summary(self.payload)
+        payload["route_matrix"]["fused_savings_bytes_total"] = 0
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "matched route savings below claim threshold",
+        ):
+            gate.validate_payload(payload, require_mutation_summary=False, expected=payload)
+
+        payload = self.strip_mutation_summary(self.payload)
+        payload["route_matrix"]["all_matched_profiles_save_json_bytes"] = False
+        with self.assertRaisesRegex(
+            gate.FusionMechanismAblationGateError,
+            "matched route savings persistence drift",
+        ):
+            gate.validate_payload(payload, require_mutation_summary=False, expected=payload)
+
     def test_tsv_summary_contains_core_metrics(self):
         tsv = gate.to_tsv(self.payload)
         self.assertIn("route_json_savings_bytes\t194097", tsv)
@@ -339,6 +356,18 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 gate._base_payload()
         finally:
             gate.load_json = original
+
+        original_route_metrics = gate._route_metrics
+
+        def malformed_metrics(_payload):
+            raise ValueError("non-numeric share")
+
+        try:
+            gate._route_metrics = malformed_metrics
+            with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "malformed source evidence"):
+                gate._base_payload()
+        finally:
+            gate._route_metrics = original_route_metrics
 
     def test_build_payload_reuses_precomputed_expected_payload(self):
         original = gate._base_payload

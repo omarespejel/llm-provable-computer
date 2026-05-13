@@ -37,6 +37,7 @@ BACKEND_INTERNAL_SPLIT_STATUS = (
 TIMING_POLICY = "proof_bytes_and_local_typed_accounting_only_not_timing_not_public_benchmark"
 MAX_EVIDENCE_JSON_BYTES = 16 * 1024 * 1024
 EXPECTED_CLI_UPSTREAM_STWO_SERIALIZATION_STATUS = "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY"
+MIN_MATCHED_ROUTE_SAVINGS_BYTES = 1
 
 EVIDENCE_INPUTS = {
     "route_matrix": "docs/engineering/evidence/zkai-attention-kv-fused-softmax-table-route-matrix-2026-05.json",
@@ -343,7 +344,7 @@ def _base_payload() -> dict[str, Any]:
         typed = _typed_metrics(loaded["typed_size_estimate"])
         controlled = _controlled_metrics(loaded["controlled_component_grid"])
         binary = _binary_metrics(loaded["binary_typed_accounting"])
-    except (KeyError, TypeError) as err:
+    except (KeyError, TypeError, ValueError) as err:
         raise FusionMechanismAblationGateError(f"malformed source evidence: {err}") from err
 
     route_aggregate = route["aggregate_metrics_match"]
@@ -515,6 +516,19 @@ def validate_payload(
 
     if payload["route_matrix"]["matched_profiles_checked"] != 11:
         raise FusionMechanismAblationGateError("matched route count drift")
+    route_savings = _numeric_payload_field(
+        payload,
+        ("route_matrix", "fused_savings_bytes_total"),
+        "matched route savings",
+    )
+    if route_savings < MIN_MATCHED_ROUTE_SAVINGS_BYTES:
+        raise FusionMechanismAblationGateError("matched route savings below claim threshold")
+    if _payload_field(
+        payload,
+        ("route_matrix", "all_matched_profiles_save_json_bytes"),
+        "matched route persistence",
+    ) is not True:
+        raise FusionMechanismAblationGateError("matched route savings persistence drift")
     section_opening_share = _share_payload_field(
         payload, ("section_delta", "opening_bucket_savings_share"), "section opening share"
     )
