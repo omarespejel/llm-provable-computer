@@ -250,13 +250,18 @@ def _route_metrics(route: dict[str, Any]) -> dict[str, Any]:
         )
         if saving_bytes != source_bytes - fused_bytes:
             raise FusionMechanismAblationGateError(f"route matrix row {index} saving does not match byte totals")
-        ratio = row["fused_to_source_plus_sidecar_ratio"]
-        if type(ratio) not in (int, float) or not math.isfinite(float(ratio)):
+        if source_bytes <= 0:
+            raise FusionMechanismAblationGateError(f"route matrix row {index} source-plus-sidecar must be positive")
+        reported_ratio = row["fused_to_source_plus_sidecar_ratio"]
+        if type(reported_ratio) not in (int, float) or not math.isfinite(float(reported_ratio)):
             raise FusionMechanismAblationGateError(f"route matrix row {index} ratio must be finite")
+        ratio = _round(fused_bytes / source_bytes)
+        if float(reported_ratio) != ratio:
+            raise FusionMechanismAblationGateError(f"route matrix row {index} ratio does not match byte totals")
         source_values.append(source_bytes)
         fused_values.append(fused_bytes)
         savings.append(saving_bytes)
-        ratios.append(float(ratio))
+        ratios.append(ratio)
     source_plus = sum(source_values)
     fused = sum(fused_values)
     if source_plus <= 0:
@@ -815,7 +820,7 @@ def write_outputs(
     try:
         try:
             for path, text in outputs:
-                original_bytes[path] = path.read_bytes() if path.exists() else None
+                original_bytes[path] = _open_repo_regular_file(path) if path.exists() else None
                 tmp = write_temp(path, text)
                 temps.append(tmp)
             for tmp, (path, _) in zip(temps, outputs, strict=True):

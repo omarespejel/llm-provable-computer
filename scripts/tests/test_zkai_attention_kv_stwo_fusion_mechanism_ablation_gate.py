@@ -275,7 +275,7 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 row["source_plus_sidecar_raw_proof_bytes"] = 0
                 row["fused_proof_size_bytes"] = 0
                 row["fused_saves_vs_source_plus_sidecar_bytes"] = 0
-        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "source-plus-sidecar total"):
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "source-plus-sidecar must be positive"):
             gate._route_metrics(route)
 
         route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
@@ -290,6 +290,14 @@ class AttentionKvStwoFusionMechanismAblationGateTests(unittest.TestCase):
                 row["fused_proof_size_bytes"] = 0.5
                 break
         with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "fused proof must be integer bytes"):
+            gate._route_metrics(route)
+
+        route = gate.load_json(gate.EVIDENCE_INPUTS["route_matrix"])
+        for row in route["route_rows"]:
+            if "fused_to_source_plus_sidecar_ratio" in row:
+                row["fused_to_source_plus_sidecar_ratio"] = 0.5
+                break
+        with self.assertRaisesRegex(gate.FusionMechanismAblationGateError, "ratio does not match byte totals"):
             gate._route_metrics(route)
 
         section = gate.load_json(gate.EVIDENCE_INPUTS["section_delta"])
