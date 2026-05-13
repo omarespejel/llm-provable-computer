@@ -1,0 +1,280 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 20,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "schema drift",
+      "name": "source_schema_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "source_decision_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "result drift",
+      "name": "source_result_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source chain payload commitment drift",
+      "name": "source_payload_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source chain block statement drift",
+      "name": "source_block_statement_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary block statement drift",
+      "name": "source_summary_statement_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed artifact commitment drift",
+      "name": "source_edges_not_all_match",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed artifact commitment drift",
+      "name": "source_slice_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary source relation rows drift",
+      "name": "source_edge_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed artifact commitment drift",
+      "name": "source_row_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "mutation finalization drift",
+      "name": "source_case_count_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed artifact commitment drift",
+      "name": "compressed_artifact_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed artifact claim boundary drift",
+      "name": "compressed_artifact_claim_boundary_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compressed_artifact.required_public_inputs.derived_output_activation_commitment must be string",
+      "name": "compressed_public_input_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "verifier handle commitment drift",
+      "name": "verifier_handle_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "verifier handle artifact drift",
+      "name": "verifier_handle_artifact_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compression byte savings drift",
+      "name": "compression_metric_relabeling",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "proof size metric smuggled",
+      "name": "proof_size_metric_smuggled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non_claims drift",
+      "name": "non_claims_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "validation command drift",
+      "name": "validation_command_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION_NOT_PROOF_COMPOSITION_NOT_PROOF_SIZE_EVIDENCE",
+  "compressed_artifact": {
+    "artifact_kind": "attention-derived-d128-statement-chain-compressed-transcript",
+    "claim_boundary": "STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION_NOT_PROOF_COMPOSITION_NOT_PROOF_SIZE_EVIDENCE",
+    "compressed_artifact_commitment": "blake2b-256:c00afcf67e3f0e002175f6104737c63504d5f7b28b2a03515483d86bf0af53e8",
+    "preimage": {
+      "artifact_kind": "attention-derived-d128-statement-chain-compressed-transcript",
+      "claim_boundary": "STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION_NOT_PROOF_COMPOSITION_NOT_PROOF_SIZE_EVIDENCE",
+      "non_claims": [
+        "not one composed d128 transformer-block proof",
+        "not recursive aggregation",
+        "not proof-carrying data",
+        "not proof-size evidence",
+        "not verifier-time evidence",
+        "not proof-generation-time evidence",
+        "not learned model weights",
+        "not matched NANOZK benchmark evidence",
+        "not production-ready"
+      ],
+      "required_public_inputs": {
+        "accounted_relation_rows": 199553,
+        "activation_lookup_rows": 2049,
+        "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+        "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+        "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+        "derived_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+        "down_projection_mul_rows": 65536,
+        "edge_count": 11,
+        "projection_mul_rows": 131072,
+        "residual_add_rows": 128,
+        "slice_count": 6,
+        "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+        "source_payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52"
+      },
+      "source_artifact": {
+        "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+        "file_sha256": "sha256:990602eefeaceb98a9272d00acfd9b1ef387d34d0218d9ae1a736afc2f6163a3",
+        "path": "docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json",
+        "payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52"
+      }
+    },
+    "schema": "zkai-attention-derived-d128-statement-chain-compressed-artifact-v1"
+  },
+  "compression_metrics": {
+    "byte_savings": 12065,
+    "compressed_artifact_bytes": 2559,
+    "compressed_to_source_ratio": 0.174986,
+    "proof_size_metrics": null,
+    "source_chain_artifact_bytes": 14624,
+    "timing_mode": "not_timed"
+  },
+  "decision": "GO_ATTENTION_DERIVED_D128_STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION",
+  "mutation_inventory": [
+    "source_schema_drift",
+    "source_decision_drift",
+    "source_result_drift",
+    "source_payload_commitment_drift",
+    "source_block_statement_drift",
+    "source_summary_statement_drift",
+    "source_edges_not_all_match",
+    "source_slice_count_drift",
+    "source_edge_count_drift",
+    "source_row_count_drift",
+    "source_case_count_drift",
+    "compressed_artifact_commitment_drift",
+    "compressed_artifact_claim_boundary_drift",
+    "compressed_public_input_removed",
+    "verifier_handle_commitment_drift",
+    "verifier_handle_artifact_drift",
+    "compression_metric_relabeling",
+    "proof_size_metric_smuggled",
+    "non_claims_removed",
+    "validation_command_drift"
+  ],
+  "non_claims": [
+    "not one composed d128 transformer-block proof",
+    "not recursive aggregation",
+    "not proof-carrying data",
+    "not proof-size evidence",
+    "not verifier-time evidence",
+    "not proof-generation-time evidence",
+    "not learned model weights",
+    "not matched NANOZK benchmark evidence",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:fbe9c0dc38357868e970c6bd8598088ceca5991e4ec3ece2b296aa6759d75aec",
+  "recursive_or_pcd_status": {
+    "first_blocker": "no executable outer proof currently proves the attention-derived d128 slice-chain verifier checks inside one cryptographic object",
+    "outer_proof_artifacts": [],
+    "proof_metrics": null,
+    "result": "NO_GO_RECURSIVE_OR_PCD_OUTER_PROOF_MISSING"
+  },
+  "result": "GO_COMPRESSED_VERIFIER_FACING_STATEMENT_CHAIN_ARTIFACT_NO_GO_PROOF_SIZE",
+  "schema": "zkai-attention-derived-d128-statement-chain-compression-gate-v1",
+  "source_chain": {
+    "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+    "file_sha256": "sha256:990602eefeaceb98a9272d00acfd9b1ef387d34d0218d9ae1a736afc2f6163a3",
+    "path": "docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json",
+    "payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52"
+  },
+  "summary": {
+    "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+    "byte_savings": 12065,
+    "compressed_artifact_bytes": 2559,
+    "compressed_to_source_ratio": 0.174986,
+    "go_result": "GO for verifier-facing transcript compression of the attention-derived d128 statement chain",
+    "no_go_result": "NO-GO for proof composition, recursive aggregation, proof-size savings, timings, or production readiness",
+    "source_chain_artifact_bytes": 14624,
+    "source_relation_rows": 199553
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_attention_derived_d128_statement_chain_compression_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_attention_derived_d128_statement_chain_compression_gate.py scripts/tests/test_zkai_attention_derived_d128_statement_chain_compression_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_statement_chain_compression_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ],
+  "verifier_handle": {
+    "accepted": true,
+    "claim_boundary": "STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION_NOT_PROOF_COMPOSITION_NOT_PROOF_SIZE_EVIDENCE",
+    "preimage": {
+      "accepted": true,
+      "accepted_artifact_commitment": "blake2b-256:c00afcf67e3f0e002175f6104737c63504d5f7b28b2a03515483d86bf0af53e8",
+      "accepted_artifact_schema": "zkai-attention-derived-d128-statement-chain-compressed-artifact-v1",
+      "accepted_claim_boundary": "STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION_NOT_PROOF_COMPOSITION_NOT_PROOF_SIZE_EVIDENCE",
+      "required_public_inputs": {
+        "accounted_relation_rows": 199553,
+        "activation_lookup_rows": 2049,
+        "block_statement_commitment": "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5",
+        "derived_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+        "derived_output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+        "derived_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+        "down_projection_mul_rows": 65536,
+        "edge_count": 11,
+        "projection_mul_rows": 131072,
+        "residual_add_rows": 128,
+        "slice_count": 6,
+        "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+        "source_payload_commitment": "sha256:555998c5aecacc6e1d5e3ae8940f249f263c5b8dd3a40bf07cfa024478f6bd52"
+      },
+      "verifier_steps": [
+        "recompute source file sha256",
+        "check source payload and block statement commitments",
+        "check compressed artifact commitment",
+        "check all required public inputs",
+        "reject proof-size, recursion, timing, or production claims"
+      ]
+    },
+    "schema": "zkai-attention-derived-d128-statement-chain-compression-verifier-handle-v1",
+    "verifier_handle_commitment": "blake2b-256:54fdd48b4d4260b7cd64269e669fbc4d3328851125c3fe25061010e4683adb08"
+  }
+}
