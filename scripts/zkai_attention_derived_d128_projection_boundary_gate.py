@@ -785,8 +785,6 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
         if data.get("all_mutations_rejected") is not True:
             raise AttentionDerivedD128ProjectionBoundaryError("not all mutations rejected")
         expected_cases = run_mutation_cases(build_core_payload(context), context)
-        expected_outcomes = [(case["name"], case["accepted"], case["rejected"]) for case in expected_cases]
-        outcomes = []
         for index, (expected_name, case_value) in enumerate(zip(EXPECTED_MUTATIONS, cases, strict=True)):
             case = _dict(case_value, f"case {index}")
             if set(case) != {"name", "accepted", "rejected", "error"}:
@@ -799,9 +797,8 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
                 raise AttentionDerivedD128ProjectionBoundaryError("mutation not rejected")
             if not isinstance(case.get("error"), str) or not case["error"]:
                 raise AttentionDerivedD128ProjectionBoundaryError("mutation error field drift")
-            outcomes.append((case["name"], case["accepted"], case["rejected"]))
-        if outcomes != expected_outcomes:
-            raise AttentionDerivedD128ProjectionBoundaryError("mutation outcome drift")
+            if case != expected_cases[index]:
+                raise AttentionDerivedD128ProjectionBoundaryError("mutation case drift")
 
 
 MutationFn = Callable[[dict[str, Any]], None]
