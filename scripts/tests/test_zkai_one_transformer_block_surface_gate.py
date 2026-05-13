@@ -81,7 +81,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             for row in matrix["external_rows"]
             if row.get("system") == "NANOZK"
             and row.get("workload_label") == "Transformer block proof"
-            and row.get("model_or_dims") == "GPT-2-scale block; d=768; dff=3072"
+            and row.get("workload_scope") == "Per-layer block proof"
         )
         nanozk_block_row["proof_size_reported"] = "1 byte"
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift"):
