@@ -21,6 +21,7 @@ from typing import Any, Callable
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 os_read = os.read
 os_replace = os.replace
+token_hex = secrets.token_hex
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 ATTENTION_FIXTURE = EVIDENCE_DIR / "zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json"
 D128_RMSNORM_INPUT = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
@@ -825,7 +826,7 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
 
 def _unused_name(parent_fd: int, prefix: str, suffix: str) -> str:
     for _ in range(100):
-        candidate = f".{prefix}.{secrets.token_hex(8)}.{suffix}"
+        candidate = f".{prefix}.{token_hex(8)}.{suffix}"
         try:
             os.stat(candidate, dir_fd=parent_fd, follow_symlinks=False)
         except FileNotFoundError:
@@ -835,10 +836,21 @@ def _unused_name(parent_fd: int, prefix: str, suffix: str) -> str:
 
 def _write_temp_file(parent_fd: int, final_name: str, contents: str, label: str) -> str:
     file_fd: int | None = None
-    temp_name = _unused_name(parent_fd, final_name, "tmp")
+    temp_name: str | None = None
+    created_temp = False
     try:
         create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-        file_fd = os.open(temp_name, create_flags, 0o600, dir_fd=parent_fd)
+        for _ in range(100):
+            candidate = f".{final_name}.{token_hex(8)}.tmp"
+            try:
+                file_fd = os.open(candidate, create_flags, 0o600, dir_fd=parent_fd)
+            except FileExistsError:
+                continue
+            temp_name = candidate
+            created_temp = True
+            break
+        if file_fd is None or temp_name is None:
+            raise AttentionD128ValueAdapterError(f"failed creating temporary {label}")
         with os.fdopen(file_fd, "wb") as handle:
             file_fd = None
             handle.write(contents.encode("utf-8"))
@@ -846,12 +858,13 @@ def _write_temp_file(parent_fd: int, final_name: str, contents: str, label: str)
             os.fsync(handle.fileno())
         return temp_name
     except OSError as err:
-        try:
-            os.unlink(temp_name, dir_fd=parent_fd)
-        except FileNotFoundError:
-            pass
-        except OSError:
-            pass
+        if created_temp and temp_name is not None:
+            try:
+                os.unlink(temp_name, dir_fd=parent_fd)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                pass
         raise AttentionD128ValueAdapterError(f"failed writing temporary {label}: {err}") from err
     finally:
         if file_fd is not None:
