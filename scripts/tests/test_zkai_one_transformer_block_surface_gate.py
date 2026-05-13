@@ -95,7 +95,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             and row.get("workload_label") == "Transformer block proof"
             and row.get("workload_scope") == "Per-layer block proof"
         )
-        del nanozk_block_row["model_or_dims"]
+        nanozk_block_row.pop("model_or_dims", None)
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift: model_or_dims"):
             gate._component_rows(fusion, d64, d128, matrix)
 
