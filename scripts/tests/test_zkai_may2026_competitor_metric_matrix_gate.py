@@ -162,10 +162,10 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
         original_replace = gate.os.replace
         original_write_bytes = pathlib.Path.write_bytes
         try:
-            def fail_on_tsv(src, dst):
-                if pathlib.Path(dst) == tsv_path:
+            def fail_on_tsv(src, dst, *args, **kwargs):
+                if pathlib.Path(dst).name == tsv_path.name:
                     raise OSError("simulated second replace failure")
-                return original_replace(src, dst)
+                return original_replace(src, dst, *args, **kwargs)
 
             def fail_direct_write(_path, _contents):
                 raise AssertionError("rollback must restore through an atomic temp replace")
@@ -199,15 +199,15 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
             outside_target.write_text("outside-original", encoding="utf-8")
             original_replace = gate.os.replace
             try:
-                def swap_json_target_on_tsv(src, dst):
-                    if pathlib.Path(dst) == tsv_path:
+                def swap_json_target_on_tsv(src, dst, *args, **kwargs):
+                    if pathlib.Path(dst).name == tsv_path.name:
                         json_path.unlink(missing_ok=True)
                         try:
                             json_path.symlink_to(outside_target)
                         except OSError as err:
                             self.skipTest(f"symlink creation is unavailable: {err}")
                         raise OSError("simulated second replace failure after target swap")
-                    return original_replace(src, dst)
+                    return original_replace(src, dst, *args, **kwargs)
 
                 gate.os.replace = swap_json_target_on_tsv
                 with self.assertRaisesRegex(gate.CompetitorMetricMatrixError, "failed to roll back output path"):
@@ -219,6 +219,41 @@ class May2026CompetitorMetricMatrixGateTests(unittest.TestCase):
                 gate.os.replace = original_replace
                 json_path.unlink(missing_ok=True)
                 tsv_path.unlink(missing_ok=True)
+
+    def test_write_outputs_rejects_success_path_parent_symlink_swap(self):
+        with tempfile.TemporaryDirectory(dir=gate.ENGINEERING_EVIDENCE) as output_parent_name:
+            output_parent = pathlib.Path(output_parent_name)
+            backup_parent = output_parent.with_name(output_parent.name + "-backup")
+            json_path = output_parent / "out.json"
+            with tempfile.TemporaryDirectory() as outside_name:
+                outside_parent = pathlib.Path(outside_name)
+                original_replace = gate.os.replace
+                swapped = False
+                try:
+                    def swap_parent_on_first_replace(src, dst, *args, **kwargs):
+                        nonlocal swapped
+                        if not swapped and pathlib.Path(dst).name == json_path.name:
+                            swapped = True
+                            output_parent.rename(backup_parent)
+                            try:
+                                output_parent.symlink_to(outside_parent, target_is_directory=True)
+                            except OSError as err:
+                                self.skipTest(f"symlink creation is unavailable: {err}")
+                        return original_replace(src, dst, *args, **kwargs)
+
+                    gate.os.replace = swap_parent_on_first_replace
+                    with self.assertRaisesRegex(
+                        gate.CompetitorMetricMatrixError,
+                        "failed to write output path|failed to roll back output path",
+                    ):
+                        gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), None)
+                    self.assertFalse((outside_parent / json_path.name).exists())
+                finally:
+                    gate.os.replace = original_replace
+                    if output_parent.is_symlink():
+                        output_parent.unlink()
+                    if backup_parent.exists():
+                        backup_parent.rename(output_parent)
 
     def test_json_helpers_reject_non_finite_values(self):
         payload = copy.deepcopy(self.payload)

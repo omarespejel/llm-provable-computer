@@ -12,9 +12,9 @@ import json
 import math
 import os
 import pathlib
+import secrets
 import stat as stat_module
 import sys
-import tempfile
 from typing import Any
 
 
@@ -528,6 +528,44 @@ def _assert_no_repo_symlink_components(path: pathlib.Path, label: str) -> None:
             raise CompetitorMetricMatrixError(f"{label} must not include symlink components")
 
 
+def _directory_identity(path: pathlib.Path, label: str) -> tuple[int, int]:
+    try:
+        path_stat = path.lstat()
+    except OSError as err:
+        raise CompetitorMetricMatrixError(f"{label} parent directory is unavailable: {err}") from err
+    if stat_module.S_ISLNK(path_stat.st_mode) or not stat_module.S_ISDIR(path_stat.st_mode):
+        raise CompetitorMetricMatrixError(f"{label} parent must be a real directory")
+    return (path_stat.st_dev, path_stat.st_ino)
+
+
+def _assert_directory_identity(path: pathlib.Path, identity: tuple[int, int], label: str) -> None:
+    _assert_no_repo_symlink_components(path, label)
+    if _directory_identity(path, label) != identity:
+        raise CompetitorMetricMatrixError(f"{label} parent directory changed while writing")
+
+
+def _open_stable_directory(path: pathlib.Path, label: str) -> tuple[int, tuple[int, int]]:
+    _assert_no_repo_symlink_components(path, label)
+    path.mkdir(parents=True, exist_ok=True)
+    _assert_no_repo_symlink_components(path, label)
+    identity = _directory_identity(path, label)
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(path, flags)
+    except OSError as err:
+        raise CompetitorMetricMatrixError(f"failed to open {label} parent directory: {err}") from err
+    try:
+        fd_stat = os.fstat(fd)
+        if not stat_module.S_ISDIR(fd_stat.st_mode):
+            raise CompetitorMetricMatrixError(f"{label} parent must be a real directory")
+        if (fd_stat.st_dev, fd_stat.st_ino) != identity:
+            raise CompetitorMetricMatrixError(f"{label} parent directory changed while opening")
+    except Exception:
+        os.close(fd)
+        raise
+    return fd, identity
+
+
 def write_outputs(
     payload: dict[str, Any],
     json_path: pathlib.Path | None,
@@ -552,55 +590,96 @@ def write_outputs(
         outputs.append((json_target, json_text))
     if tsv_target is not None:
         outputs.append((tsv_target, to_tsv(payload)))
-    temps: list[pathlib.Path] = []
+    temps: list[tuple[pathlib.Path, str, int, tuple[int, int]]] = []
     replaced: list[pathlib.Path] = []
     original_bytes: dict[pathlib.Path, bytes | None] = {}
-    write_error: OSError | None = None
+    write_error: Exception | None = None
     rollback_errors: list[str] = []
 
-    def write_temp(path: pathlib.Path, text: str) -> pathlib.Path:
-        _assert_no_repo_symlink_components(path.parent, "output path")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        _assert_no_repo_symlink_components(path.parent, "output path")
-        if path.is_symlink():
-            raise CompetitorMetricMatrixError("output path must not include symlink components")
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
-            tmp_path = pathlib.Path(handle.name)
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        return tmp_path
+    def write_temp(path: pathlib.Path, contents: bytes, label: str) -> tuple[pathlib.Path, str, int, tuple[int, int]]:
+        parent_fd, parent_identity = _open_stable_directory(path.parent, label)
+        temp_name: str | None = None
+        file_fd: int | None = None
+        try:
+            _assert_directory_identity(path.parent, parent_identity, label)
+            if path.is_symlink():
+                raise CompetitorMetricMatrixError(f"{label} must not include symlink components")
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            for _ in range(100):
+                candidate = f".{path.name}.{secrets.token_hex(8)}.tmp"
+                try:
+                    file_fd = os.open(candidate, flags, 0o600, dir_fd=parent_fd)
+                    temp_name = candidate
+                    break
+                except FileExistsError:
+                    continue
+            if file_fd is None or temp_name is None:
+                raise CompetitorMetricMatrixError(f"failed to create unique temporary output for {label}")
+            with os.fdopen(file_fd, "wb") as handle:
+                file_fd = None
+                handle.write(contents)
+                handle.flush()
+                os.fsync(handle.fileno())
+            _assert_directory_identity(path.parent, parent_identity, label)
+            return (path.parent / temp_name, temp_name, parent_fd, parent_identity)
+        except Exception:
+            if file_fd is not None:
+                os.close(file_fd)
+            if temp_name is not None:
+                try:
+                    os.unlink(temp_name, dir_fd=parent_fd)
+                except FileNotFoundError:
+                    pass
+            os.close(parent_fd)
+            raise
 
-    def write_temp_bytes(path: pathlib.Path, contents: bytes) -> pathlib.Path:
-        _assert_no_repo_symlink_components(path.parent, "rollback output path")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        _assert_no_repo_symlink_components(path.parent, "rollback output path")
+    def replace_temp(temp: tuple[pathlib.Path, str, int, tuple[int, int]], path: pathlib.Path, label: str) -> None:
+        _, temp_name, parent_fd, parent_identity = temp
+        _assert_directory_identity(path.parent, parent_identity, label)
         if path.is_symlink():
-            raise CompetitorMetricMatrixError("rollback output path must not include symlink components")
-        with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
-            tmp_path = pathlib.Path(handle.name)
-            handle.write(contents)
-            handle.flush()
-            os.fsync(handle.fileno())
-        return tmp_path
+            raise CompetitorMetricMatrixError(f"{label} must not include symlink components")
+        os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        _assert_directory_identity(path.parent, parent_identity, label)
+
+    def cleanup_temp(temp: tuple[pathlib.Path, str, int, tuple[int, int]]) -> None:
+        _, temp_name, parent_fd, _ = temp
+        try:
+            os.unlink(temp_name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
 
     def rollback_replace(path: pathlib.Path, contents: bytes) -> None:
         _assert_output_path(path.relative_to(ROOT), "rollback output path")
-        tmp = write_temp_bytes(path, contents)
+        tmp = write_temp(path, contents, "rollback output path")
         temps.append(tmp)
         _assert_output_path(path.relative_to(ROOT), "rollback output path")
-        os.replace(tmp, path)
+        replace_temp(tmp, path, "rollback output path")
+
+    def rollback_remove(path: pathlib.Path) -> None:
+        _assert_output_path(path.relative_to(ROOT), "rollback output path")
+        parent_fd, parent_identity = _open_stable_directory(path.parent, "rollback output path")
+        try:
+            _assert_directory_identity(path.parent, parent_identity, "rollback output path")
+            if path.is_symlink():
+                raise CompetitorMetricMatrixError("rollback output path must not include symlink components")
+            try:
+                os.unlink(path.name, dir_fd=parent_fd)
+            except FileNotFoundError:
+                pass
+            _assert_directory_identity(path.parent, parent_identity, "rollback output path")
+        finally:
+            os.close(parent_fd)
 
     try:
         try:
             for path, text in outputs:
                 original_bytes[path] = read_source_bytes(path, "existing output") if path.exists() else None
-                tmp = write_temp(path, text)
+                tmp = write_temp(path, text.encode("utf-8"), "output path")
                 temps.append(tmp)
             for tmp, (path, _) in zip(temps, outputs, strict=True):
-                os.replace(tmp, path)
+                replace_temp(tmp, path, "output path")
                 replaced.append(path)
-        except OSError as err:
+        except (CompetitorMetricMatrixError, OSError) as err:
             write_error = err
             raise CompetitorMetricMatrixError(f"failed to write output path: {err}") from err
     finally:
@@ -610,17 +689,19 @@ def write_outputs(
                 try:
                     _assert_output_path(path.relative_to(ROOT), "rollback output path")
                     if original is None:
-                        path.unlink(missing_ok=True)
+                        rollback_remove(path)
                     else:
                         rollback_replace(path, original)
                 except (CompetitorMetricMatrixError, OSError) as err:
                     rollback_errors.append(f"{path}: {err}")
         for tmp in temps:
             try:
-                tmp.unlink(missing_ok=True)
+                cleanup_temp(tmp)
             except OSError as err:
                 if write_error is None:
-                    raise CompetitorMetricMatrixError(f"failed to clean temporary output {tmp}: {err}") from err
+                    raise CompetitorMetricMatrixError(f"failed to clean temporary output {tmp[0]}: {err}") from err
+            finally:
+                os.close(tmp[2])
         if rollback_errors:
             raise CompetitorMetricMatrixError(
                 "failed to roll back output path after write error: "
