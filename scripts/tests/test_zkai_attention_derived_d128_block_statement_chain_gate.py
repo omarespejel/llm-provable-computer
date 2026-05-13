@@ -166,6 +166,12 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "mutation accepted unexpectedly"):
             GATE.validate_payload(payload, context=copy.deepcopy(self.context))
 
+        payload = self.fresh_payload()
+        payload["cases"][0]["rejected"] = False
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "mutation rejection flag drift"):
+            GATE.validate_payload(payload, context=copy.deepcopy(self.context))
+
     def test_to_tsv_requires_final_payload(self) -> None:
         core = GATE.build_core_payload(copy.deepcopy(self.context))
         with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "finalized payload"):
@@ -234,6 +240,27 @@ class AttentionDerivedD128BlockStatementChainGateTests(unittest.TestCase):
             link_dir.symlink_to(real_dir, target_is_directory=True)
             with self.assertRaisesRegex(GATE.AttentionDerivedD128BlockStatementChainError, "symlink"):
                 GATE.write_outputs(payload, link_dir / "statement-chain.json", None, context=copy.deepcopy(self.context))
+
+    def test_write_outputs_wraps_parent_resolve_race(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:
+            output_path = pathlib.Path(raw_tmp) / "statement-chain.json"
+            original_resolve = pathlib.Path.resolve
+
+            def race_resolve(path: pathlib.Path, *args, **kwargs):
+                if path == output_path.parent:
+                    raise FileNotFoundError("simulated parent removal")
+                return original_resolve(path, *args, **kwargs)
+
+            try:
+                pathlib.Path.resolve = race_resolve
+                with self.assertRaisesRegex(
+                    GATE.AttentionDerivedD128BlockStatementChainError,
+                    "output parent cannot be resolved",
+                ):
+                    GATE.write_outputs(payload, output_path, None, context=copy.deepcopy(self.context))
+            finally:
+                pathlib.Path.resolve = original_resolve
 
     def test_load_json_rejects_unhardened_paths(self) -> None:
         with tempfile.TemporaryDirectory(dir=GATE.EVIDENCE_DIR) as raw_tmp:

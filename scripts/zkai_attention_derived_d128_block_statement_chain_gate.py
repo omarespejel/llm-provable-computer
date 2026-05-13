@@ -632,7 +632,7 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
             if _bool(case_dict.get("accepted"), "mutation case accepted"):
                 raise AttentionDerivedD128BlockStatementChainError("mutation accepted unexpectedly")
             if not _bool(case_dict.get("rejected"), "mutation case rejected"):
-                raise AttentionDerivedD128BlockStatementChainError("mutation accepted unexpectedly")
+                raise AttentionDerivedD128BlockStatementChainError("mutation rejection flag drift")
             expected_error = _str(EXPECTED_MUTATION_ERRORS[expected_name], "expected mutation error")
             if _str(case_dict.get("error"), "mutation case error") != expected_error:
                 raise AttentionDerivedD128BlockStatementChainError("mutation case error drift")
@@ -826,7 +826,12 @@ def require_output_path(path: pathlib.Path, *, suffix: str | None = None) -> pat
         raise AttentionDerivedD128BlockStatementChainError(f"output path must not be a symlink: {path}")
     if candidate.exists() and candidate.is_dir():
         raise AttentionDerivedD128BlockStatementChainError(f"output path must not be a directory: {path}")
-    real_parent = candidate.parent.resolve(strict=True)
+    try:
+        real_parent = candidate.parent.resolve(strict=True)
+    except OSError as err:
+        raise AttentionDerivedD128BlockStatementChainError(
+            f"output parent cannot be resolved: {candidate.parent}"
+        ) from err
     try:
         real_parent.relative_to(evidence_root)
     except ValueError as err:
