@@ -368,10 +368,21 @@ fn publish_temp_file_with_backup(
     match fs::rename(path, &backup_path) {
         Ok(()) => {
             if let Err(error) = sync_parent_directory(parent, label, path) {
-                let _ = fs::rename(&backup_path, path);
+                let restore_result = fs::rename(&backup_path, path);
                 let _ = sync_parent_directory(parent, label, path);
-                let _ = fs::remove_file(tmp_path);
-                return Err(error);
+                return match restore_result {
+                    Ok(()) => {
+                        let _ = fs::remove_file(tmp_path);
+                        Err(error)
+                    }
+                    Err(restore_error) => Err(format!(
+                        "failed to sync backup for {} {} and could not restore {}: sync error {error}; restore error {restore_error}; temp replacement left at {}",
+                        label,
+                        path.display(),
+                        backup_path.display(),
+                        tmp_path.display()
+                    )),
+                };
             }
             if let Err(second_error) = fs::rename(tmp_path, path) {
                 let restore_result = fs::rename(&backup_path, path);
