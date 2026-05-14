@@ -1,0 +1,841 @@
+{
+  "all_mutations_rejected": true,
+  "candidate_inventory": [
+    {
+      "bytes": null,
+      "classification": "INNER_STWO_SLICE_PROOF_NOT_OUTER_VERIFIER_EXECUTION",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "a482ae102a403565509d87a2053e85ddcaa0beb6ee6d466ddf9e389906b92bb1",
+      "kind": "inner_slice_stwo_module",
+      "missing_required_tokens": [],
+      "name": "rmsnorm_public_rows_inner_stwo_proof",
+      "path": "src/stwo_backend/d128_native_rmsnorm_public_row_proof.rs",
+      "reason": "proves and verifies the selected RMSNorm slice, but does not prove that verifier inside a native outer proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "rust_fn:prove_zkai_d128_rmsnorm_public_row_envelope",
+        "rust_fn:verify_zkai_d128_rmsnorm_public_row_envelope"
+      ],
+      "required_tokens_present": true,
+      "rows": 128,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "INNER_STWO_SLICE_PROOF_NOT_OUTER_VERIFIER_EXECUTION",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "29877fb750019a9c4635d00f7aad4351328d09d89832e60b7fa45107dca9d58a",
+      "kind": "inner_slice_stwo_module",
+      "missing_required_tokens": [],
+      "name": "rmsnorm_projection_bridge_inner_stwo_proof",
+      "path": "src/stwo_backend/d128_native_rmsnorm_to_projection_bridge_proof.rs",
+      "reason": "proves and verifies the selected bridge slice, but does not prove that verifier inside a native outer proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "rust_fn:prove_zkai_d128_rmsnorm_to_projection_bridge_envelope",
+        "rust_fn:verify_zkai_d128_rmsnorm_to_projection_bridge_envelope"
+      ],
+      "required_tokens_present": true,
+      "rows": 128,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "GO_NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "abe085ac2ebe3c0f980a7d98e53815b7a286b52649e73427bf2f18d49cb2a34d",
+      "kind": "non_recursive_accumulator_evidence",
+      "missing_required_tokens": null,
+      "name": "two_slice_non_recursive_accumulator",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+      "reason": "binds selected statements and source hashes, but does not execute verifier constraints in an outer proof",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": 256,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": 4435,
+      "classification": "GO_TRANSCRIPT_COMPRESSION_NOT_OUTER_PROOF",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "1da36dc26184e5295e1b31773741a24a3cde99c3ab77c1acbca19e263111b09e",
+      "kind": "compressed_public_input_contract",
+      "missing_required_tokens": null,
+      "name": "two_slice_proof_native_transcript_compression",
+      "path": "docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json",
+      "reason": "compresses proof-native public inputs; it is not a native outer cryptographic proof object",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": 256,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": 802,
+      "classification": "GO_EXTERNAL_SNARK_RECEIPT_NOT_NATIVE_STWO",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "ee6e07138c6cb076da54902ffdb63bff4577d59a9771b63e374bfa723f5dc0c2",
+      "kind": "external_snark_statement_receipt",
+      "missing_required_tokens": null,
+      "name": "external_groth16_statement_receipt",
+      "path": "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
+      "reason": "proves a statement contract with Groth16; it is external and does not make the selected Stwo verifier checks native",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": 4752,
+      "classification": "NO_GO_BLOCK_ROUTE_BLOCKED_BY_TWO_SLICE_OUTER_BACKEND",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "8373f667a67fa390ba7ffb90b31146b5bd8a01ca46cbffeb9966d7a5eca80029",
+      "kind": "route_gate_evidence",
+      "missing_required_tokens": null,
+      "name": "native_d128_block_route_no_go",
+      "path": "docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.json",
+      "reason": "records the compact package signal and blocks native d128 proof claims until this two-slice backend exists",
+      "required_for_go": false,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "STWO_PROVER_AVAILABLE_NO_LOCAL_OUTER_VERIFIER_BACKEND",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "9ca9a9f3e1be5352d38e237a8d54fdc895a91705a55982ea1f27459b01281d74",
+      "kind": "dependency_surface",
+      "missing_required_tokens": [],
+      "name": "stwo_dependency_surface",
+      "path": "Cargo.toml",
+      "reason": "the repository can build native Stwo slice proofs, but has no selected-verifier execution AIR for an outer proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "toml_line:stwo = { version = \"2.2.0\", default-features = false, features = [\"std\", \"prover\"], optional = true }",
+        "toml_line:stwo-backend = [\"dep:stwo\", \"dep:stwo-constraint-framework\", \"dep:flate2\"]"
+      ],
+      "required_tokens_present": true,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "MISSING_REQUIRED_NATIVE_OUTER_BACKEND",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_backend_module",
+      "missing_required_tokens": null,
+      "name": "required_native_two_slice_outer_backend_module",
+      "path": "src/stwo_backend/d128_native_two_slice_outer_backend.rs",
+      "reason": "no executable native Stwo backend module exists for the two selected verifier checks",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "MISSING_REQUIRED_NATIVE_OUTER_PROOF_ARTIFACT",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_native_proof_artifact",
+      "missing_required_tokens": null,
+      "name": "required_native_two_slice_outer_proof_artifact",
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-backend-proof-2026-05.json",
+      "reason": "no checked native outer proof artifact exists for the selected two-slice target",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "MISSING_REQUIRED_NATIVE_OUTER_VERIFIER_HANDLE",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_native_verifier_handle",
+      "missing_required_tokens": null,
+      "name": "required_native_two_slice_outer_verifier_handle",
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-backend-verifier-2026-05.json",
+      "reason": "no local verifier handle exists for a native two-slice outer proof object",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "MISSING_REQUIRED_NATIVE_OUTER_MUTATION_TESTS",
+      "exists": false,
+      "expected_exists": false,
+      "file_sha256": null,
+      "kind": "required_future_backend_test_surface",
+      "missing_required_tokens": null,
+      "name": "required_native_two_slice_outer_artifact_tests",
+      "path": "scripts/tests/test_zkai_native_d128_two_slice_outer_backend_proof.py",
+      "reason": "a future native GO must include fail-closed relabeling tests for the proof artifact",
+      "required_for_go": true,
+      "required_tokens": [],
+      "required_tokens_present": null,
+      "rows": null,
+      "supports_native_outer_claim": false
+    },
+    {
+      "bytes": null,
+      "classification": "NO_GO_AUDIT_TESTS_NOT_NATIVE_OUTER_PROOF_TESTS",
+      "exists": true,
+      "expected_exists": true,
+      "file_sha256": "77a4d03f47071e3727c5e337e8095cd4176bc31ffa0c7b8e32b1547bce4a1e41",
+      "kind": "current_no_go_audit_tests",
+      "missing_required_tokens": [],
+      "name": "current_no_go_gate_tests",
+      "path": "scripts/tests/test_zkai_native_d128_two_slice_outer_backend_gate.py",
+      "reason": "tests this route classifier and overclaim guardrails, not a future executable native outer proof",
+      "required_for_go": false,
+      "required_tokens": [
+        "python_def:test_gate_records_native_outer_no_go_without_downgrading_inner_stwo",
+        "python_def:test_rejects_native_outer_overclaims_and_metric_smuggling"
+      ],
+      "required_tokens_present": true,
+      "rows": null,
+      "supports_native_outer_claim": false
+    }
+  ],
+  "case_count": 29,
+  "cases": [
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "source artifacts mismatch",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "source_accumulator_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "source artifacts mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "source_recursive_result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "source artifacts mismatch",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "source_compression_promoted_to_recursion",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "source artifacts mismatch",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "source_snark_relabelled_as_native_stwo",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "source artifacts mismatch",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "source_block_route_claim_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "inner_stwo_promoted_to_outer_backend",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "accumulator_promoted_to_native_outer_proof",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "compression_promoted_to_native_outer_proof",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "snark_receipt_promoted_to_native_outer_proof",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "required_backend_module_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "candidate_file_hash_tampered",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "candidate_required_token_removed",
+      "rejected": true,
+      "rejection_layer": "candidate_inventory",
+      "surface": "candidate_inventory"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "native_outer_artifact_claimed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 13,
+      "mutated_accepted": false,
+      "mutation": "local_verifier_handle_claimed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 14,
+      "mutated_accepted": false,
+      "mutation": "public_input_binding_claimed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 15,
+      "mutated_accepted": false,
+      "mutation": "native_proof_bytes_smuggled",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 16,
+      "mutated_accepted": false,
+      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 17,
+      "mutated_accepted": false,
+      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 18,
+      "mutated_accepted": false,
+      "mutation": "matched_nanozk_claim_enabled",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 19,
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 20,
+      "mutated_accepted": false,
+      "mutation": "missing_backend_feature_removed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 21,
+      "mutated_accepted": false,
+      "mutation": "go_gate_weakened",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "decision mismatch",
+      "index": 22,
+      "mutated_accepted": false,
+      "mutation": "decision_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "result mismatch",
+      "index": 23,
+      "mutated_accepted": false,
+      "mutation": "result_changed_to_go",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "issue mismatch",
+      "index": 24,
+      "mutated_accepted": false,
+      "mutation": "issue_changed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim boundary mismatch",
+      "index": 25,
+      "mutated_accepted": false,
+      "mutation": "claim_boundary_changed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "non_claims mismatch",
+      "index": 26,
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "validation_commands mismatch",
+      "index": 27,
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "top-level payload key set mismatch: missing=[] extra=['invented_native_outer_metric']",
+      "index": 28,
+      "mutated_accepted": false,
+      "mutation": "unknown_top_level_field_added",
+      "rejected": true,
+      "rejection_layer": "parser_or_schema",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "claim_boundary": "INNER_STWO_PROOFS_ACCUMULATORS_COMPRESSION_AND_EXTERNAL_RECEIPTS_EXIST_NATIVE_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING",
+  "claim_guard": {
+    "accumulator_is_outer_proof": false,
+    "compressed_transcript_is_outer_proof": false,
+    "external_snark_receipt_is_native_stwo": false,
+    "inner_stwo_proofs_are_outer_proof": false,
+    "matched_nanozk_claim_allowed": false,
+    "native_outer_proof_size_claim_allowed": false,
+    "native_two_slice_outer_proof_bytes": null,
+    "native_two_slice_outer_proof_exists": false,
+    "package_bytes_are_native_proof_bytes": false,
+    "snark_bytes_are_native_proof_bytes": false
+  },
+  "decision": "NO_GO_EXECUTABLE_NATIVE_D128_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING",
+  "inner_stwo_baseline_result": "GO_TWO_SELECTED_INNER_STWO_SLICE_PROOFS_EXIST",
+  "issue": 581,
+  "missing_backend_features": [
+    "native Stwo outer AIR for rmsnorm_public_rows verifier execution",
+    "native Stwo outer AIR for rmsnorm_projection_bridge verifier execution",
+    "outer proof generator that consumes the two selected verifier transcripts",
+    "outer verifier handle that binds two_slice_target_commitment",
+    "public-input ordering for selected slice statements and selected source hashes",
+    "backend-version and verifier-domain binding inside the outer statement",
+    "proof-byte accounting measured from the native outer proof object",
+    "fail-closed mutation tests for native outer-proof relabeling"
+  ],
+  "mutation_inventory": [
+    {
+      "index": 0,
+      "mutation": "source_accumulator_hash_drift",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 1,
+      "mutation": "source_recursive_result_changed_to_go",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 2,
+      "mutation": "source_compression_promoted_to_recursion",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 3,
+      "mutation": "source_snark_relabelled_as_native_stwo",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 4,
+      "mutation": "source_block_route_claim_changed_to_go",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 5,
+      "mutation": "inner_stwo_promoted_to_outer_backend",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 6,
+      "mutation": "accumulator_promoted_to_native_outer_proof",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 7,
+      "mutation": "compression_promoted_to_native_outer_proof",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 8,
+      "mutation": "snark_receipt_promoted_to_native_outer_proof",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 9,
+      "mutation": "required_backend_module_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 10,
+      "mutation": "candidate_file_hash_tampered",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 11,
+      "mutation": "candidate_required_token_removed",
+      "surface": "candidate_inventory"
+    },
+    {
+      "index": 12,
+      "mutation": "native_outer_artifact_claimed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 13,
+      "mutation": "local_verifier_handle_claimed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 14,
+      "mutation": "public_input_binding_claimed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 15,
+      "mutation": "native_proof_bytes_smuggled",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 16,
+      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 17,
+      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 18,
+      "mutation": "matched_nanozk_claim_enabled",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 19,
+      "mutation": "first_blocker_removed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 20,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 21,
+      "mutation": "go_gate_weakened",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 22,
+      "mutation": "decision_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 23,
+      "mutation": "result_changed_to_go",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 24,
+      "mutation": "issue_changed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 25,
+      "mutation": "claim_boundary_changed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 26,
+      "mutation": "non_claim_removed",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 27,
+      "mutation": "validation_command_drift",
+      "surface": "parser_or_schema"
+    },
+    {
+      "index": 28,
+      "mutation": "unknown_top_level_field_added",
+      "surface": "parser_or_schema"
+    }
+  ],
+  "native_outer_attempt": {
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "accumulator_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+    "attempt": {
+      "blocked_before_native_proof_bytes": true,
+      "first_blocker": "no parameterized Stwo AIR/verifier-execution route exists for the selected d128 rmsnorm_public_rows and rmsnorm_projection_bridge verifier checks",
+      "missing_backend_features": [
+        "native Stwo outer AIR for rmsnorm_public_rows verifier execution",
+        "native Stwo outer AIR for rmsnorm_projection_bridge verifier execution",
+        "outer proof generator that consumes the two selected verifier transcripts",
+        "outer verifier handle that binds two_slice_target_commitment",
+        "public-input ordering for selected slice statements and selected source hashes",
+        "backend-version and verifier-domain binding inside the outer statement",
+        "proof-byte accounting measured from the native outer proof object",
+        "fail-closed mutation tests for native outer-proof relabeling"
+      ],
+      "native_outer_proof_artifact_exists": false,
+      "native_outer_proof_bytes": null,
+      "native_outer_public_input_binding_executable": false,
+      "native_outer_verifier_handle_exists": false,
+      "proof_metrics_enabled": false
+    },
+    "first_blocker": "no parameterized Stwo AIR/verifier-execution route exists for the selected d128 rmsnorm_public_rows and rmsnorm_projection_bridge verifier checks",
+    "go_gate": "one executable native Stwo outer proof object exists for the two selected d128 slice-verifier checks; the local verifier accepts it; proof bytes are measured from that native object; and relabeling mutations reject changed slice IDs, source hashes, target commitment, verifier-domain labels, backend versions, and public-input ordering",
+    "native_outer_backend_result": "NO_GO_NATIVE_STWO_OUTER_VERIFIER_EXECUTION_BACKEND_MISSING",
+    "next_backend_step": "build the native Stwo verifier-execution surface for the two selected slice verifiers before attempting a six-slice d128 block proof-size comparison",
+    "no_go_gate": "no native verifier-execution AIR/backend exists, or any candidate result is only an inner proof, non-recursive accumulator, compressed transcript, external SNARK receipt, package accounting row, or unmatched external benchmark row",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
+  },
+  "native_outer_backend_result": "NO_GO_NATIVE_STWO_OUTER_VERIFIER_EXECUTION_BACKEND_MISSING",
+  "non_claims": [
+    "not a native d128 two-slice outer proof",
+    "not a native d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched benchmark against NANOZK or another public zkML system",
+    "not recursive aggregation or proof-carrying data",
+    "not proof-size evidence for a native outer proof",
+    "not verifier-time or prover-time evidence for a native outer proof",
+    "not verification of the selected Stwo slice verifiers inside Stwo",
+    "not full transformer inference",
+    "not production-ready"
+  ],
+  "result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+  "schema": "zkai-native-d128-two-slice-outer-backend-gate-v1",
+  "source_artifacts": [
+    {
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_NOT_OUTER_PROOF",
+      "decision": "GO_D128_TWO_SLICE_VERIFIER_ACCUMULATOR_BACKEND",
+      "file_sha256": "abe085ac2ebe3c0f980a7d98e53815b7a286b52649e73427bf2f18d49cb2a34d",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-accumulator-backend-2026-05.json",
+      "payload_sha256": "d671e708f5d8d00454d4a4fded860a225201b67dc1b591f8cd7ce05dc366e8b2",
+      "result": "GO",
+      "schema": "zkai-d128-two-slice-accumulator-backend-v1"
+    },
+    {
+      "claim_boundary": "D128_NATIVE_BLOCK_PROOF_OBJECT_ROUTE_ONLY_NOT_PROOF_SIZE_WIN_NOT_MATCHED_NANOZK_BENCHMARK_NOT_RECURSION_NOT_TIMING",
+      "decision": "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING",
+      "file_sha256": "8373f667a67fa390ba7ffb90b31146b5bd8a01ca46cbffeb9966d7a5eca80029",
+      "path": "docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.json",
+      "payload_sha256": "d96a0dae80128f26002b3f98099130010f2978b870ea4c8565bcaceaaa039759",
+      "result": "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET",
+      "schema": "zkai-native-d128-block-proof-object-route-v1"
+    },
+    {
+      "claim_boundary": "PROOF_NATIVE_TRANSCRIPT_COMPRESSION_NOT_RECURSION",
+      "decision": "GO_D128_PROOF_NATIVE_TWO_SLICE_TRANSCRIPT_COMPRESSION",
+      "file_sha256": "1da36dc26184e5295e1b31773741a24a3cde99c3ab77c1acbca19e263111b09e",
+      "path": "docs/engineering/evidence/zkai-d128-proof-native-two-slice-compression-2026-05.json",
+      "payload_sha256": "10e29894dd77f8a7970d1d9d17c9d5c336e4a19060041cef4ff778d4be6f1b06",
+      "result": "GO",
+      "schema": "zkai-d128-proof-native-two-slice-compression-gate-v1"
+    },
+    {
+      "claim_boundary": "NON_RECURSIVE_ACCUMULATOR_AVAILABLE_RECURSIVE_PCD_BACKEND_MISSING",
+      "decision": "NO_GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND_UNAVAILABLE",
+      "file_sha256": "1fe4f21c7b4c92703ecd1e449bc518cdb4bf72d0a22724648896d056593a40c4",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-recursive-pcd-backend-2026-05.json",
+      "payload_sha256": "483d391baf15011d27082a1b3ffbdc7210dbe515e91f00414fdae453e0528e7c",
+      "result": "BOUNDED_NO_GO",
+      "schema": "zkai-d128-two-slice-recursive-pcd-backend-gate-v1"
+    },
+    {
+      "claim_boundary": "SNARK_STATEMENT_RECEIPT_BINDS_D128_TWO_SLICE_PUBLIC_INPUT_CONTRACT_NOT_RECURSION",
+      "decision": "GO_D128_SNARK_STATEMENT_RECEIPT_FOR_PROOF_NATIVE_TWO_SLICE_CONTRACT",
+      "file_sha256": "ee6e07138c6cb076da54902ffdb63bff4577d59a9771b63e374bfa723f5dc0c2",
+      "path": "docs/engineering/evidence/zkai-d128-snark-ivc-statement-receipt-2026-05.json",
+      "payload_sha256": "a8640f1a25365faaaf2c423472bdb2c1a561a1bc273f1363bd78085d6eea8aeb",
+      "result": "GO",
+      "schema": "zkai-d128-snark-ivc-statement-receipt-gate-v1"
+    }
+  ],
+  "summary": {
+    "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+    "accumulator_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+    "available_surfaces_that_do_not_support_native_outer_claim": [
+      "rmsnorm_public_rows_inner_stwo_proof",
+      "rmsnorm_projection_bridge_inner_stwo_proof",
+      "two_slice_non_recursive_accumulator",
+      "two_slice_proof_native_transcript_compression",
+      "external_groth16_statement_receipt",
+      "native_d128_block_route_no_go",
+      "stwo_dependency_surface"
+    ],
+    "claim_boundary": "INNER_STWO_PROOFS_ACCUMULATORS_COMPRESSION_AND_EXTERNAL_RECEIPTS_EXIST_NATIVE_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING",
+    "compressed_artifact_bytes": 4435,
+    "compressed_artifact_vs_source_ratio": 0.50272,
+    "decision": "NO_GO_EXECUTABLE_NATIVE_D128_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING",
+    "external_snark_proof_bytes": 802,
+    "external_snark_public_signal_bytes": 1389,
+    "external_snark_vk_bytes": 5854,
+    "first_blocker": "no parameterized Stwo AIR/verifier-execution route exists for the selected d128 rmsnorm_public_rows and rmsnorm_projection_bridge verifier checks",
+    "go_gate": "one executable native Stwo outer proof object exists for the two selected d128 slice-verifier checks; the local verifier accepts it; proof bytes are measured from that native object; and relabeling mutations reject changed slice IDs, source hashes, target commitment, verifier-domain labels, backend versions, and public-input ordering",
+    "inner_stwo_baseline_result": "GO_TWO_SELECTED_INNER_STWO_SLICE_PROOFS_EXIST",
+    "issue": 581,
+    "missing_backend_feature_count": 8,
+    "nanozk_reported_block_proof_bytes_decimal": 6900,
+    "native_outer_backend_result": "NO_GO_NATIVE_STWO_OUTER_VERIFIER_EXECUTION_BACKEND_MISSING",
+    "next_backend_step": "build the native Stwo verifier-execution surface for the two selected slice verifiers before attempting a six-slice d128 block proof-size comparison",
+    "no_go_gate": "no native verifier-execution AIR/backend exists, or any candidate result is only an inner proof, non-recursive accumulator, compressed transcript, external SNARK receipt, package accounting row, or unmatched external benchmark row",
+    "package_with_vk_bytes": 10608,
+    "package_with_vk_vs_nanozk_reported_ratio": 1.537391,
+    "package_without_vk_bytes": 4752,
+    "package_without_vk_vs_nanozk_reported_ratio": 0.688696,
+    "proof_metrics_enabled": false,
+    "required_go_artifacts_missing": [
+      "required_native_two_slice_outer_backend_module",
+      "required_native_two_slice_outer_proof_artifact",
+      "required_native_two_slice_outer_verifier_handle",
+      "required_native_two_slice_outer_artifact_tests"
+    ],
+    "result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "source_accumulator_artifact_bytes": 8822,
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_d128_two_slice_outer_backend_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-outer-backend-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-outer-backend-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_d128_two_slice_outer_backend_gate.py scripts/tests/test_zkai_native_d128_two_slice_outer_backend_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_d128_two_slice_outer_backend_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

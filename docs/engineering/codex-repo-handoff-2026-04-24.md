@@ -743,6 +743,16 @@ Tablero boundary.
   minimal experiment is a native two-slice outer proof backend before any
   six-slice proof-size or NANOZK comparison claim; see
   `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`.
+- The native d128 two-slice outer backend gate now audits that next experiment
+  directly. It preserves the positive `256` selected rows, `4,435` byte
+  proof-native compressed transcript, `802` byte external Groth16 statement
+  receipt, and broader `4,752` byte package signal, while rejecting `29 / 29`
+  overclaim mutations. The result remains
+  `NO_GO_EXECUTABLE_NATIVE_D128_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING`
+  because no parameterized Stwo AIR/verifier-execution route exists for the
+  selected `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier
+  checks; see
+  `docs/engineering/zkai-native-d128-two-slice-outer-backend-2026-05-14.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
@@ -928,8 +938,9 @@ Tablero boundary.
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
 10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
-    spike (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
-    route selector as checked bounded no-gos for local recursive proof-object
+    spike (`#408`), issue `#411` recursive/PCD backend audit, issue `#420`
+    route selector, and issue `#581` native two-slice outer-backend audit as
+    checked bounded no-gos for local recursive/native outer proof-object
     existence. Treat issue `#428` as the positive external SNARK
     statement-receipt adapter over the `#424` public-input contract, issue
     `#430` as its local throwaway-setup timing hardening result, issue `#422`
@@ -939,11 +950,12 @@ Tablero boundary.
     handoff objects: real non-recursive two-slice/full-block accumulators and a
     proof-native two-slice transcript-compressed verifier-facing object. The
     next useful experiment is no longer "produce any external receipt"; it is
-    either local recursion/PCD for the two-slice target or comparative external
-    receipt controls across SNARK and zkVM. Do not report recursive proof-size,
-    verifier-time, or proof-generation-time metrics until a real recursive or
-    PCD proof object exists; report #430 SNARK and #433 RISC Zero timings only
-    as statement-receipt adapter timings under their stated local policies.
+    the native Stwo verifier-execution surface for the selected two-slice
+    verifier checks, or comparative external receipt controls across SNARK and
+    zkVM. Do not report recursive/native-outer proof-size, verifier-time, or
+    proof-generation-time metrics until a real recursive, PCD, or native outer
+    proof object exists; report #430 SNARK and #433 RISC Zero timings only as
+    statement-receipt adapter timings under their stated local policies.
 11. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
 12. Do not spend more time pushing the current publication/default Phase71

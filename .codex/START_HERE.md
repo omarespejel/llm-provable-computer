@@ -88,8 +88,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 82. `docs/engineering/zkai-d128-native-block-gap-accounting-2026-05-14.md`
 83. `docs/engineering/zkai-matched-d64-d128-evidence-table-2026-05-14.md`
 84. `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`
-85. `docs/engineering/reproducibility.md`
-86. `git status --short --branch`
+85. `docs/engineering/zkai-native-d128-two-slice-outer-backend-2026-05-14.md`
+86. `docs/engineering/reproducibility.md`
+87. `git status --short --branch`
 
 ## What this repository is now
 
@@ -661,8 +662,9 @@ The repo now also has one explicit answer on the second-backend question:
 9. Keep the experimental backend isolated from the default/publication lane
    until a deliberate promotion pass.
 10. Treat the first d128 aggregation attempt (`#405`), two-slice target spike
-    (`#408`), issue `#411` recursive/PCD backend audit, and issue `#420`
-    route selector as checked bounded no-gos for local recursive proof-object
+    (`#408`), issue `#411` recursive/PCD backend audit, issue `#420`
+    route selector, and issue `#581` native two-slice outer-backend audit as
+    checked bounded no-gos for local recursive/native outer proof-object
     existence. Treat issue `#428` as the positive external SNARK
     statement-receipt adapter over the `#424` public-input contract, issue
     `#430` as its local throwaway-setup timing hardening result, issue `#422`
@@ -672,11 +674,12 @@ The repo now also has one explicit answer on the second-backend question:
     handoff objects: real non-recursive two-slice/full-block accumulators and a
     proof-native two-slice transcript-compressed verifier-facing object. The
     next useful experiment is no longer "produce any external receipt"; it is
-    either local recursion/PCD for the two-slice target or comparative external
-    receipt controls across SNARK and zkVM. Do not report recursive proof-size,
-    verifier-time, or proof-generation-time metrics until a real recursive or
-    PCD proof object exists; report #430 SNARK and #433 RISC Zero timings only
-    as statement-receipt adapter timings under their stated local policies.
+    the native Stwo verifier-execution surface for the selected two-slice
+    verifier checks, or comparative external receipt controls across SNARK and
+    zkVM. Do not report recursive/native-outer proof-size, verifier-time, or
+    proof-generation-time metrics until a real recursive, PCD, or native outer
+    proof object exists; report #430 SNARK and #433 RISC Zero timings only as
+    statement-receipt adapter timings under their stated local policies.
 
 ## What not to do
 
