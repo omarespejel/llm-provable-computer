@@ -83,6 +83,11 @@ class OneBlockExecutablePackageAccountingGateTests(unittest.TestCase):
 
     def test_source_validation_rejects_metric_smuggling(self) -> None:
         _scorecard, compression, snark, _sources = gate.checked_sources()
+        compression["summary"]["source_chain_artifact_bytes"] = 0
+        with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "source bytes must be positive"):
+            gate.package_summary(compression, snark)
+
+        _scorecard, compression, snark, _sources = gate.checked_sources()
         compression["summary"]["source_chain_artifact_bytes"] = 1
         with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "package summary drift"):
             gate.package_summary(compression, snark)

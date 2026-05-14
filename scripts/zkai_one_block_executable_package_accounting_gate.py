@@ -242,6 +242,8 @@ def package_summary(compression: dict[str, Any], snark: dict[str, Any]) -> dict[
     compression_summary = _dict(compression.get("summary"), "compression.summary")
     snark_receipt = _dict(snark.get("receipt_metrics"), "snark.receipt_metrics")
     source_bytes = _int(compression_summary.get("source_chain_artifact_bytes"), "source bytes")
+    if source_bytes <= 0:
+        raise OneBlockPackageAccountingError("source bytes must be positive")
     compressed_bytes = _int(compression_summary.get("compressed_artifact_bytes"), "compressed bytes")
     proof_bytes = _int(snark_receipt.get("proof_size_bytes"), "proof bytes")
     public_bytes = _int(snark_receipt.get("public_signals_bytes"), "public signal bytes")
