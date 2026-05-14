@@ -31,7 +31,7 @@ labels, row counts, and slice commitments before proof verification.
 - compressed envelope bytes: `34,471`
 - envelope saving: `60,393` bytes, `63.6627%`
 - compressed proof ratio vs NANOZK paper-reported `6.9 KB` row: `0.509565x`
-- mutation cases rejected: `25 / 25`
+- mutation cases rejected: `28 / 28`
 - proof SHA-256:
   `9977aeefe8021845a46a382be143824f10605b3ec676eaf0ed25e46f2d90e5f1`
 

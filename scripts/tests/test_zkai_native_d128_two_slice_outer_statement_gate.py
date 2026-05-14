@@ -39,6 +39,10 @@ class NativeD128TwoSliceOuterStatementGateTests(unittest.TestCase):
         self.assertEqual(result["metrics"]["proof_vs_nanozk_reported_row_ratio"], 0.509565)
         self.assertEqual(result["metrics"]["proof_saving_vs_prior_uncompressed_bytes"], 7525)
         self.assertEqual(result["metrics"]["proof_saving_vs_prior_uncompressed_share"], 0.681551)
+        self.assertEqual(result["case_count"], 28)
+        self.assertIn("proof_backend_version_relabelled_as_uncompressed_v1", result["mutation_inventory"])
+        self.assertIn("compressed_public_instance_commitment_drift", result["mutation_inventory"])
+        self.assertIn("compressed_proof_native_parameter_commitment_drift", result["mutation_inventory"])
         self.assertIn("not a NANOZK proof-size win", result["non_claims"])
         self.assertIn(
             "not a matched NANOZK proof-size win even though this payload is smaller than NANOZK's paper-reported row",
@@ -78,6 +82,29 @@ class NativeD128TwoSliceOuterStatementGateTests(unittest.TestCase):
         envelope = gate.load_json(gate.ENVELOPE_JSON)
         envelope["proof"][0] = (envelope["proof"][0] + 1) % 256
         with self.assertRaises(gate.OuterStatementGateError):
+            gate.validate_artifact(envelope, input_obj)
+
+    def test_gate_rejects_compressed_public_instance_commitment_tamper(self) -> None:
+        input_obj = gate.load_json(gate.INPUT_JSON)
+        envelope = gate.load_json(gate.ENVELOPE_JSON)
+        input_obj["public_instance_commitment"] = "blake2b-256:" + "11" * 32
+        envelope["input"] = input_obj
+        with self.assertRaisesRegex(gate.OuterStatementGateError, "public instance commitment mismatch"):
+            gate.validate_artifact(envelope, input_obj)
+
+    def test_gate_rejects_compressed_proof_parameter_commitment_tamper(self) -> None:
+        input_obj = gate.load_json(gate.INPUT_JSON)
+        envelope = gate.load_json(gate.ENVELOPE_JSON)
+        input_obj["proof_native_parameter_commitment"] = "blake2b-256:" + "22" * 32
+        envelope["input"] = input_obj
+        with self.assertRaisesRegex(gate.OuterStatementGateError, "proof-native parameter commitment mismatch"):
+            gate.validate_artifact(envelope, input_obj)
+
+    def test_gate_rejects_legacy_uncompressed_proof_version_relabel(self) -> None:
+        input_obj = gate.load_json(gate.INPUT_JSON)
+        envelope = gate.load_json(gate.ENVELOPE_JSON)
+        envelope["proof_backend_version"] = "stwo-d128-two-slice-outer-statement-air-proof-v1"
+        with self.assertRaisesRegex(gate.OuterStatementGateError, "proof backend version mismatch"):
             gate.validate_artifact(envelope, input_obj)
 
     def test_gate_rejects_source_hash_drift(self) -> None:

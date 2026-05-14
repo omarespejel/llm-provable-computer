@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 25,
+  "case_count": 28,
   "cases": [
     {
       "error": "proof backend mismatch",
@@ -17,162 +17,183 @@
       "rejected": true
     },
     {
-      "error": "statement version mismatch",
+      "error": "proof backend version mismatch",
       "index": 2,
+      "mutated_accepted": false,
+      "mutation": "proof_backend_version_relabelled_as_uncompressed_v1",
+      "rejected": true
+    },
+    {
+      "error": "statement version mismatch",
+      "index": 3,
       "mutated_accepted": false,
       "mutation": "statement_version_drift",
       "rejected": true
     },
     {
       "error": "semantic scope mismatch",
-      "index": 3,
+      "index": 4,
       "mutated_accepted": false,
       "mutation": "semantic_scope_drift",
       "rejected": true
     },
     {
       "error": "envelope keys mismatch: extra=['unexpected_claim'], missing=[]",
-      "index": 4,
+      "index": 5,
       "mutated_accepted": false,
       "mutation": "envelope_unknown_top_level_key",
       "rejected": true
     },
     {
       "error": "proof sha256 mismatch",
-      "index": 5,
+      "index": 6,
       "mutated_accepted": false,
       "mutation": "proof_bytes_tampered",
       "rejected": true
     },
     {
       "error": "proof byte length mismatch",
-      "index": 6,
+      "index": 7,
       "mutated_accepted": false,
       "mutation": "proof_replaced_with_package_without_vk_bytes",
       "rejected": true
     },
     {
       "error": "proof byte length mismatch",
-      "index": 7,
+      "index": 8,
       "mutated_accepted": false,
       "mutation": "proof_replaced_with_compressed_transcript_bytes",
       "rejected": true
     },
     {
       "error": "proof byte length mismatch",
-      "index": 8,
+      "index": 9,
       "mutated_accepted": false,
       "mutation": "proof_replaced_with_groth16_receipt_bytes",
       "rejected": true
     },
     {
       "error": "envelope decision mismatch",
-      "index": 9,
+      "index": 10,
       "mutated_accepted": false,
       "mutation": "envelope_decision_changed_to_native_verifier_execution",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 10,
+      "index": 11,
       "mutated_accepted": false,
       "mutation": "selected_slice_count_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 11,
+      "index": 12,
       "mutated_accepted": false,
       "mutation": "input_statement_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 12,
+      "index": 13,
       "mutated_accepted": false,
       "mutation": "target_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 13,
+      "index": 14,
       "mutated_accepted": false,
       "mutation": "accumulator_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 14,
+      "index": 15,
       "mutated_accepted": false,
       "mutation": "verifier_handle_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
-      "index": 15,
-      "mutated_accepted": false,
-      "mutation": "selected_slice_ids_reordered",
-      "rejected": true
-    },
-    {
-      "error": "envelope input does not match checked input artifact",
       "index": 16,
       "mutated_accepted": false,
-      "mutation": "row_source_hash_drift",
+      "mutation": "compressed_public_instance_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 17,
       "mutated_accepted": false,
-      "mutation": "row_proof_backend_version_drift",
+      "mutation": "compressed_proof_native_parameter_commitment_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 18,
       "mutated_accepted": false,
-      "mutation": "row_verified_false",
+      "mutation": "selected_slice_ids_reordered",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 19,
       "mutated_accepted": false,
-      "mutation": "non_claims_reordered",
+      "mutation": "row_source_hash_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 20,
       "mutated_accepted": false,
-      "mutation": "proof_verifier_hardening_reordered",
+      "mutation": "row_proof_backend_version_drift",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 21,
       "mutated_accepted": false,
-      "mutation": "validation_commands_reordered",
+      "mutation": "row_verified_false",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 22,
       "mutated_accepted": false,
-      "mutation": "non_claim_removed",
+      "mutation": "non_claims_reordered",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 23,
       "mutated_accepted": false,
-      "mutation": "validation_command_drift",
+      "mutation": "proof_verifier_hardening_reordered",
       "rejected": true
     },
     {
       "error": "envelope input does not match checked input artifact",
       "index": 24,
+      "mutated_accepted": false,
+      "mutation": "validation_commands_reordered",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 25,
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 26,
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 27,
       "mutated_accepted": false,
       "mutation": "proof_len_relabelled_as_nanozk_win",
       "rejected": true
@@ -221,6 +242,7 @@
   "mutation_inventory": [
     "proof_backend_relabelled",
     "proof_backend_version_drift",
+    "proof_backend_version_relabelled_as_uncompressed_v1",
     "statement_version_drift",
     "semantic_scope_drift",
     "envelope_unknown_top_level_key",
@@ -234,6 +256,8 @@
     "target_commitment_drift",
     "accumulator_commitment_drift",
     "verifier_handle_commitment_drift",
+    "compressed_public_instance_commitment_drift",
+    "compressed_proof_native_parameter_commitment_drift",
     "selected_slice_ids_reordered",
     "row_source_hash_drift",
     "row_proof_backend_version_drift",

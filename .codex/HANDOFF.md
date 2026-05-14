@@ -792,9 +792,10 @@ Tablero boundary.
   the two-slice target commitment, the accumulator commitment, and the
   verifier-handle commitment through the statement commitment. After digest
   compression, the checked JSON-serialized native Stwo proof payload is `3,516`
-  bytes, the envelope is `34,471` bytes, and the gate rejects `25 / 25`
-  artifact/relabeling/schema/list-order mutations, including unknown
-  envelope-key rejection. This saves `7,525` proof bytes (`68.1551%`) and
+  bytes, the envelope is `34,471` bytes, and the gate rejects `28 / 28`
+  artifact/relabeling/schema/list-order mutations, including compressed
+  commitment drift, legacy-v1 relabeling, and unknown envelope-key rejection.
+  This saves `7,525` proof bytes (`68.1551%`) and
   `60,393` envelope bytes (`63.6627%`) versus the prior uncompressed native
   outer statement route. The proof uses an empty preprocessed tree plus a
   verifier-recomputed compressed base-trace root for the checked row surface.

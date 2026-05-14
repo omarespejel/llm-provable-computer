@@ -46,7 +46,8 @@ input before Stwo verification.
   `blake2b-256:ab06c13b3bd24aad37285c4b6c759b9c30faf747af3248c2e45a2c245e7f8dc8`
 - public-instance commitment:
   `blake2b-256:dbb25a1e94bb38c2aeedfcf38b2cebd401427c633860577893e46389f3565beb`
-- mutation cases rejected: `25 / 25`, including unknown envelope-key and list-order rejection
+- mutation cases rejected: `28 / 28`, including unknown envelope-key,
+  list-order, compressed-commitment, and legacy-v1 relabeling rejection
 
 The compressed native outer statement proof is `0.509565x` the NANOZK
 paper-reported `6.9 KB` transformer-block proof row. This is still not a
