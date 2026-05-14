@@ -345,6 +345,11 @@
     },
     {
       "error": "payload drift from checked accounting summary",
+      "name": "compact_envelope_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "payload drift from checked accounting summary",
       "name": "baseline_typed_metric_smuggling",
       "rejected": true
     },
@@ -399,8 +404,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 17,
-  "mutations_rejected": 17,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "next_research_step": "extend the compact-preprocessed technique to the next d128 model-faithful block relations and prove where private witness or lookup-heavy surfaces stop admitting this compression",
   "non_claims": [
     "not a matched NANOZK benchmark",

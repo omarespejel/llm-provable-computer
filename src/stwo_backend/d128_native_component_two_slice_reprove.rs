@@ -28,8 +28,12 @@ use crate::proof::StarkProofBackend;
 use super::d128_native_rmsnorm_public_row_proof::{
     zkai_d128_rmsnorm_public_row_component_with_allocator,
     zkai_d128_rmsnorm_public_row_input_from_json_str,
-    zkai_d128_rmsnorm_public_row_preprocessed_column_ids, zkai_d128_rmsnorm_public_row_trace,
-    ZkAiD128RmsnormPublicRowProofInput, ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+    zkai_d128_rmsnorm_public_row_preprocessed_column_ids,
+    zkai_d128_rmsnorm_public_row_remainder_bit_column_id,
+    zkai_d128_rmsnorm_public_row_scalar_bit_column_id, zkai_d128_rmsnorm_public_row_trace,
+    ZkAiD128RmsnormPublicRowProofInput, ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS, ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+    ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID, ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
 };
 use super::d128_native_rmsnorm_to_projection_bridge_proof::{
     zkai_d128_rmsnorm_to_projection_bridge_component_with_allocator,
@@ -37,6 +41,7 @@ use super::d128_native_rmsnorm_to_projection_bridge_proof::{
     zkai_d128_rmsnorm_to_projection_bridge_preprocessed_column_ids,
     zkai_d128_rmsnorm_to_projection_bridge_trace, ZkAiD128RmsnormToProjectionBridgeInput,
     ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT, ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_NATIVE_PARAMETER_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
@@ -942,27 +947,6 @@ const COMPACT_Q8_REMAINDER_BITS: usize = 8;
 const COMPACT_RMSNORM_NORM_REMAINDER_GAP_BITS: usize = 31;
 const COMPACT_RMSNORM_SCALAR_RANGE_BITS: usize = 17;
 
-const COMPACT_RMSNORM_COLUMN_IDS: [&str; 9] = [
-    "zkai/d128/rmsnorm/index",
-    "zkai/d128/rmsnorm/input_q8",
-    "zkai/d128/rmsnorm/rms_scale_q8",
-    "zkai/d128/rmsnorm/input_square",
-    "zkai/d128/rmsnorm/scaled_floor",
-    "zkai/d128/rmsnorm/scale_remainder",
-    "zkai/d128/rmsnorm/normed_q8",
-    "zkai/d128/rmsnorm/norm_remainder",
-    "zkai/d128/rmsnorm/rms_q8",
-];
-const COMPACT_AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str =
-    "zkai/d128/rmsnorm/scalar/average_square_floor";
-const COMPACT_SQRT_LOW_DELTA_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_low_delta";
-const COMPACT_SQRT_HIGH_GAP_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_high_gap";
-const COMPACT_BRIDGE_COLUMN_IDS: [&str; 3] = [
-    "zkai/d128/rmsnorm-to-projection/index",
-    "zkai/d128/rmsnorm-to-projection/rmsnorm_normed_q8",
-    "zkai/d128/rmsnorm-to-projection/projection_input_q8",
-];
-
 #[derive(Debug, Clone)]
 struct CompactPreprocessedRmsnormEval {
     log_size: u32,
@@ -980,49 +964,49 @@ impl FrameworkEval for CompactPreprocessedRmsnormEval {
     fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
         let anchor_index = eval.next_trace_mask();
         let index = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[0],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[0],
         ));
         eval.add_constraint(anchor_index - index);
 
         let input_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[1],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[1],
         ));
         let rms_scale_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[2],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[2],
         ));
         let input_square = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[3],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[3],
         ));
         let scaled_floor = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[4],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[4],
         ));
         let scale_remainder = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[5],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[5],
         ));
         let normed_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[6],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[6],
         ));
         let norm_remainder = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[7],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[7],
         ));
         let rms_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_RMSNORM_COLUMN_IDS[8],
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS[8],
         ));
         let average_square_floor = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
+            ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
         ));
         let sqrt_low_delta = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_SQRT_LOW_DELTA_COLUMN_ID,
+            ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
         ));
         let sqrt_high_gap = eval.get_preprocessed_column(compact_preprocessed_column_id(
-            COMPACT_SQRT_HIGH_GAP_COLUMN_ID,
+            ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID,
         ));
 
         let one = E::F::from(BaseField::from(1u32));
         let mut low_delta_bits = E::F::from(BaseField::from(0u32));
         for bit_index in 0..COMPACT_RMSNORM_SCALAR_RANGE_BITS {
             let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
-                &compact_scalar_bit_column_id("low", bit_index),
+                &zkai_d128_rmsnorm_public_row_scalar_bit_column_id("low", bit_index),
             ));
             eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
             low_delta_bits = low_delta_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
@@ -1030,7 +1014,7 @@ impl FrameworkEval for CompactPreprocessedRmsnormEval {
         let mut high_gap_bits = E::F::from(BaseField::from(0u32));
         for bit_index in 0..COMPACT_RMSNORM_SCALAR_RANGE_BITS {
             let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
-                &compact_scalar_bit_column_id("high", bit_index),
+                &zkai_d128_rmsnorm_public_row_scalar_bit_column_id("high", bit_index),
             ));
             eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
             high_gap_bits = high_gap_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
@@ -1038,7 +1022,7 @@ impl FrameworkEval for CompactPreprocessedRmsnormEval {
         let mut scale_remainder_bits = E::F::from(BaseField::from(0u32));
         for bit_index in 0..COMPACT_Q8_REMAINDER_BITS {
             let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
-                &compact_remainder_bit_column_id("scale", bit_index),
+                &zkai_d128_rmsnorm_public_row_remainder_bit_column_id("scale", bit_index),
             ));
             eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
             scale_remainder_bits =
@@ -1047,7 +1031,7 @@ impl FrameworkEval for CompactPreprocessedRmsnormEval {
         let mut norm_remainder_gap_bits = E::F::from(BaseField::from(0u32));
         for bit_index in 0..COMPACT_RMSNORM_NORM_REMAINDER_GAP_BITS {
             let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
-                &compact_remainder_bit_column_id("norm_gap", bit_index),
+                &zkai_d128_rmsnorm_public_row_remainder_bit_column_id("norm_gap", bit_index),
             ));
             eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
             let bit_weight = 1u32
@@ -1100,13 +1084,16 @@ impl FrameworkEval for CompactPreprocessedBridgeEval {
 
     fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
         let anchor_index = eval.next_trace_mask();
-        let index = eval
-            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[0]));
+        let index = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS[0],
+        ));
         eval.add_constraint(anchor_index - index);
-        let rmsnorm_normed_q8 = eval
-            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[1]));
-        let projection_input_q8 = eval
-            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[2]));
+        let rmsnorm_normed_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS[1],
+        ));
+        let projection_input_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS[2],
+        ));
         eval.add_constraint(projection_input_q8 - rmsnorm_normed_q8);
         eval
     }
@@ -1168,14 +1155,6 @@ fn compact_preprocessed_anchor_trace(
 
 fn compact_preprocessed_column_id(id: &str) -> PreProcessedColumnId {
     PreProcessedColumnId { id: id.to_string() }
-}
-
-fn compact_scalar_bit_column_id(kind: &str, bit_index: usize) -> String {
-    format!("zkai/d128/rmsnorm/scalar/sqrt_{kind}_bit_{bit_index:02}")
-}
-
-fn compact_remainder_bit_column_id(kind: &str, bit_index: usize) -> String {
-    format!("zkai/d128/rmsnorm/remainder/{kind}_bit_{bit_index:02}")
 }
 
 fn compact_field_usize(value: usize) -> BaseField {

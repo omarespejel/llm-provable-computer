@@ -218,6 +218,7 @@ MUTATION_NAMES = (
     "claim_boundary_overclaim",
     "compact_typed_metric_smuggling",
     "compact_json_metric_smuggling",
+    "compact_envelope_metric_smuggling",
     "baseline_typed_metric_smuggling",
     "nanozk_baseline_smuggling",
     "comparison_status_overclaim",
@@ -280,6 +281,17 @@ def load_json(path: pathlib.Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         payload = json.load(handle)
     return require_dict(payload, str(path))
+
+
+def checked_compact_envelope_size(actual_size: int | None = None) -> int:
+    if actual_size is None:
+        actual_size = COMPACT_ENVELOPE_PATH.stat().st_size
+    if actual_size != COMPACT_ENVELOPE_BYTES:
+        raise CompactPreprocessedGateError(
+            "compact envelope JSON size drift: "
+            f"got {actual_size}, expected {COMPACT_ENVELOPE_BYTES}"
+        )
+    return actual_size
 
 
 def parse_json_stdout(stdout: str) -> dict[str, Any]:
@@ -408,6 +420,7 @@ def build_payload(
     prior_budget: dict[str, Any] | None = None,
     *,
     include_mutations: bool = True,
+    compact_envelope_size_bytes: int | None = None,
 ) -> dict[str, Any]:
     if cli_summary is None:
         cli_summary = run_binary_accounting_cli()
@@ -417,6 +430,9 @@ def build_payload(
     validate_prior_budget(prior_budget)
 
     aggregate = dict(EXPECTED_AGGREGATE)
+    aggregate["compact_envelope_json_size_bytes"] = checked_compact_envelope_size(
+        compact_envelope_size_bytes
+    )
     if aggregate["typed_saving_vs_component_baseline_bytes"] != BASELINE_COMPONENT_TYPED_BYTES - COMPACT_LOCAL_TYPED_BYTES:
         raise CompactPreprocessedGateError("internal typed component saving arithmetic drift")
     if aggregate["typed_saving_vs_nanozk_paper_row_bytes"] != NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES - COMPACT_LOCAL_TYPED_BYTES:
@@ -496,6 +512,8 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         mutated["aggregate"]["compact_local_typed_bytes"] -= 1
     elif name == "compact_json_metric_smuggling":
         mutated["aggregate"]["compact_proof_json_size_bytes"] -= 1
+    elif name == "compact_envelope_metric_smuggling":
+        mutated["aggregate"]["compact_envelope_json_size_bytes"] -= 1
     elif name == "baseline_typed_metric_smuggling":
         mutated["aggregate"]["baseline_component_typed_bytes"] += 1
     elif name == "nanozk_baseline_smuggling":

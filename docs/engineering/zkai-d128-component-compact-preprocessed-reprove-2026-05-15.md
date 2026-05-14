@@ -124,8 +124,9 @@ evidence.`
 - CLI:
   `src/bin/zkai_d128_component_native_two_slice_reprove.rs`
 
-The gate rejects `17 / 17` source, metric, comparison, overclaim,
-record-count, validation-command, and payload-commitment mutations.
+The gate rejects `18 / 18` source, metric, comparison, overclaim,
+record-count, envelope-size, validation-command, and payload-commitment
+mutations.
 
 ## Reproduce
 
