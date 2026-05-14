@@ -853,32 +853,39 @@ def _candidate_by_name(payload: dict[str, Any], name: str) -> dict[str, Any]:
     raise NativeD128TwoSliceOuterBackendError(f"candidate not found: {name}", layer="candidate_inventory")
 
 
+def _source_by_path_suffix(payload: dict[str, Any], suffix: str) -> dict[str, Any]:
+    for source in require_list(payload.get("source_artifacts"), "source artifacts", layer="source_artifacts"):
+        item = require_object(source, "source artifact", layer="source_artifacts")
+        path = require_str(item.get("path"), "source artifact path", layer="source_artifacts")
+        if path.endswith(suffix):
+            return item
+    raise NativeD128TwoSliceOuterBackendError(f"source artifact not found: {suffix}", layer="source_artifacts")
+
+
 def mutate_payload(payload: dict[str, Any], mutation: str) -> dict[str, Any]:
     mutated = copy.deepcopy(payload)
     if mutation == "source_accumulator_hash_drift":
-        mutated["source_artifacts"][0]["file_sha256"] = "0" * 64
+        _source_by_path_suffix(mutated, "zkai-d128-two-slice-accumulator-backend-2026-05.json")["file_sha256"] = "0" * 64
     elif mutation == "source_recursive_result_changed_to_go":
-        for source in mutated["source_artifacts"]:
-            if source["path"].endswith("zkai-d128-two-slice-recursive-pcd-backend-2026-05.json"):
-                source["decision"] = "GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND"
-                break
+        _source_by_path_suffix(mutated, "zkai-d128-two-slice-recursive-pcd-backend-2026-05.json")[
+            "decision"
+        ] = "GO_D128_TWO_SLICE_RECURSIVE_PCD_BACKEND"
     elif mutation == "source_compression_promoted_to_recursion":
-        for source in mutated["source_artifacts"]:
-            if source["path"].endswith("zkai-d128-proof-native-two-slice-compression-2026-05.json"):
-                source["claim_boundary"] = "RECURSIVE_OR_NATIVE_OUTER_PROOF"
-                break
+        _source_by_path_suffix(mutated, "zkai-d128-proof-native-two-slice-compression-2026-05.json")[
+            "claim_boundary"
+        ] = "RECURSIVE_OR_NATIVE_OUTER_PROOF"
     elif mutation == "source_snark_relabelled_as_native_stwo":
-        for source in mutated["source_artifacts"]:
-            if source["path"].endswith("zkai-d128-snark-ivc-statement-receipt-2026-05.json"):
-                source["claim_boundary"] = "NATIVE_STWO_OUTER_PROOF"
-                break
+        _source_by_path_suffix(mutated, "zkai-d128-snark-ivc-statement-receipt-2026-05.json")[
+            "claim_boundary"
+        ] = "NATIVE_STWO_OUTER_PROOF"
     elif mutation == "source_block_route_claim_changed_to_go":
-        for source in mutated["source_artifacts"]:
-            if source["path"].endswith("zkai-native-d128-block-proof-object-route-2026-05.json"):
-                source["decision"] = "GO_NATIVE_D128_BLOCK_PROOF_OBJECT"
-                break
+        _source_by_path_suffix(mutated, "zkai-native-d128-block-proof-object-route-2026-05.json")[
+            "decision"
+        ] = "GO_NATIVE_D128_BLOCK_PROOF_OBJECT"
     elif mutation == "source_payload_hash_drift":
-        mutated["source_artifacts"][1]["payload_sha256"] = "2" * 64
+        _source_by_path_suffix(mutated, "zkai-native-d128-block-proof-object-route-2026-05.json")[
+            "payload_sha256"
+        ] = "2" * 64
     elif mutation == "inner_stwo_promoted_to_outer_backend":
         _candidate_by_name(mutated, "rmsnorm_public_rows_inner_stwo_proof")["classification"] = "GO_NATIVE_OUTER_BACKEND"
     elif mutation == "accumulator_promoted_to_native_outer_proof":
