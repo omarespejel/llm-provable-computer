@@ -1,0 +1,180 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 12,
+  "cases": [
+    {
+      "error": "summary drift",
+      "mutation": "source_chain_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "compressed_artifact_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "proof_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "public_signals_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "verification_key_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "package_without_vk_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "package_with_vk_ratio_drift",
+      "rejected": true
+    },
+    {
+      "error": "source artifact drift",
+      "mutation": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "claim boundary drift",
+      "mutation": "claim_boundary_native_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "non-claims drift",
+      "mutation": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "timing_metric_smuggled",
+      "rejected": true
+    },
+    {
+      "error": "result drift",
+      "mutation": "result_changed_to_native_proof",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "EXTERNAL_STATEMENT_RECEIPT_PACKAGE_ACCOUNTING_NOT_NATIVE_BLOCK_PROOF_NOT_RECURSION_NOT_TIMING_NOT_PRODUCTION_SETUP",
+  "decision": "GO_ONE_BLOCK_EXECUTABLE_PACKAGE_ACCOUNTING_NO_GO_NATIVE_PROOF_SIZE",
+  "mutation_inventory": [
+    "source_chain_bytes_drift",
+    "compressed_artifact_bytes_drift",
+    "proof_bytes_drift",
+    "public_signals_bytes_drift",
+    "verification_key_bytes_drift",
+    "package_without_vk_bytes_drift",
+    "package_with_vk_ratio_drift",
+    "source_artifact_hash_drift",
+    "claim_boundary_native_overclaim",
+    "non_claim_removed",
+    "timing_metric_smuggled",
+    "result_changed_to_native_proof"
+  ],
+  "non_claims": [
+    "not a native d128 transformer-block proof",
+    "not recursive aggregation",
+    "not proof-carrying data",
+    "not verification of the six Stwo slice proofs inside Groth16",
+    "not native proof-size evidence for a fused route",
+    "not verifier-time evidence",
+    "not proof-generation-time evidence",
+    "not a production trusted setup",
+    "not a matched NANOZK or Jolt benchmark"
+  ],
+  "package_rows": [
+    {
+      "bytes": 14624,
+      "ratio_vs_source": 1.0,
+      "saving_bytes": 0,
+      "scope": "source JSON statement chain",
+      "surface": "source statement-chain artifact"
+    },
+    {
+      "bytes": 2559,
+      "ratio_vs_source": 0.174986,
+      "saving_bytes": 12065,
+      "scope": "verifier-facing transcript handle, not proof",
+      "surface": "compressed statement-chain artifact"
+    },
+    {
+      "bytes": 4752,
+      "ratio_vs_source": 0.324945,
+      "saving_bytes": 9872,
+      "scope": "per-receipt package when verification key is reusable",
+      "surface": "compressed artifact plus proof plus public signals"
+    },
+    {
+      "bytes": 10608,
+      "ratio_vs_source": 0.725383,
+      "saving_bytes": 4016,
+      "scope": "self-contained research package, not production setup",
+      "surface": "compressed artifact plus proof plus public signals plus verification key"
+    }
+  ],
+  "payload_commitment": "sha256:f4f879fac1dfe2807c1b52c4204acbb5023289dcde1911a2fbf10f981a68f247",
+  "result": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_BLOCK_PROOF",
+  "schema": "zkai-one-block-executable-package-accounting-v1",
+  "source_artifacts": [
+    {
+      "decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
+      "file_sha256": "d287744e8dc8a8227fba110f47f86d5da7bac80353835dc1c2e054e20ec804e6",
+      "kind": "one_block_scorecard_json",
+      "path": "docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json",
+      "payload_sha256": "22bbef36def7139aa7a9ccbca03f822a9ee2d070a99f258538f4c088cb1c3501",
+      "schema": "zkai-one-transformer-block-surface-v1"
+    },
+    {
+      "decision": "GO_ATTENTION_DERIVED_D128_STATEMENT_CHAIN_TRANSCRIPT_COMPRESSION",
+      "file_sha256": "3d52dbcd57dd0d3acad1725e6a297b5ffaee5539cc2d16e48229c209b516fa14",
+      "kind": "statement_chain_compression_json",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.json",
+      "payload_sha256": "2aececdf7cb992880a3d849e618707a0b86cdca56876a44fc92de00ac19b2fd0",
+      "schema": "zkai-attention-derived-d128-statement-chain-compression-gate-v1"
+    },
+    {
+      "decision": "GO_ATTENTION_DERIVED_D128_SNARK_STATEMENT_RECEIPT_FOR_OUTER_PROOF_INPUT_CONTRACT",
+      "file_sha256": "0b2f311210c9102b758a1987441a0ef44044998636e6b7bf3ccd19e0558b60fc",
+      "kind": "snark_statement_receipt_json",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-snark-statement-receipt-2026-05.json",
+      "payload_sha256": "81449fdc24d31410d52b62fe18616b525e4dca230a2b9f2421f49ce2b18d19b9",
+      "schema": "zkai-attention-derived-d128-snark-statement-receipt-gate-v1"
+    }
+  ],
+  "summary": {
+    "compressed_statement_chain_bytes": 2559,
+    "no_go_result": "NO-GO for native block proof-size evidence, recursion, verifier-time evidence, production setup, or matched competitor benchmark.",
+    "package_with_vk_bytes": 10608,
+    "package_with_vk_ratio_vs_source": 0.725383,
+    "package_with_vk_saving_bytes": 4016,
+    "package_with_vk_saving_share": 0.274617,
+    "package_without_vk_bytes": 4752,
+    "package_without_vk_ratio_vs_source": 0.324945,
+    "package_without_vk_saving_bytes": 9872,
+    "package_without_vk_saving_share": 0.675055,
+    "receipt_mutations_rejected": 40,
+    "receipt_public_signal_count": 17,
+    "snark_proof_bytes": 807,
+    "snark_public_signals_bytes": 1386,
+    "snark_verification_key_bytes": 5856,
+    "source_statement_chain_bytes": 14624,
+    "statement_chain_rows": 199553,
+    "strongest_claim": "The external executable one-block statement package is smaller than the source statement-chain artifact both without and with the reusable verification key counted."
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_one_block_executable_package_accounting_gate.py --write-json docs/engineering/evidence/zkai-one-block-executable-package-accounting-2026-05.json --write-tsv docs/engineering/evidence/zkai-one-block-executable-package-accounting-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_one_block_executable_package_accounting_gate.py scripts/tests/test_zkai_one_block_executable_package_accounting_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_one_block_executable_package_accounting_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

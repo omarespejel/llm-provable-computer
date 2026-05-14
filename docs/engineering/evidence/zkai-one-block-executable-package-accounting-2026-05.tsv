@@ -1,0 +1,5 @@
+surface	bytes	ratio_vs_source	saving_bytes	scope
+source statement-chain artifact	14624	1.0	0	source JSON statement chain
+compressed statement-chain artifact	2559	0.174986	12065	verifier-facing transcript handle, not proof
+compressed artifact plus proof plus public signals	4752	0.324945	9872	per-receipt package when verification key is reusable
+compressed artifact plus proof plus public signals plus verification key	10608	0.725383	4016	self-contained research package, not production setup
