@@ -87,6 +87,7 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 fmt --check",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 )
 TSV_COLUMNS = (
     "role",
@@ -260,6 +261,9 @@ def validate_cli_row(row: Any, expected: dict[str, Any]) -> None:
         raise BinaryTypedProofAccountingGateError("CLI row field drift")
     if row["evidence_relative_path"] != expected["path"]:
         raise BinaryTypedProofAccountingGateError("evidence path drift")
+    expected_path = EVIDENCE_DIR / expected["path"]
+    if canonical_path_text(row["path"], "CLI path") != canonical_path_text(expected_path, "expected CLI path"):
+        raise BinaryTypedProofAccountingGateError("CLI path drift")
     require_sha256_hex(row["envelope_sha256"], "envelope_sha256")
     require_sha256_hex(row["proof_sha256"], "proof_sha256")
     metadata = row["envelope_metadata"]
@@ -405,6 +409,9 @@ def validate_payload(
         allowed_keys = expected_keys | mutation_keys
         if not set(payload).issubset(allowed_keys) or not expected_keys.issubset(payload):
             raise BinaryTypedProofAccountingGateError("payload field drift")
+        present_mutation_keys = mutation_keys & set(payload)
+        if present_mutation_keys and present_mutation_keys != mutation_keys:
+            raise BinaryTypedProofAccountingGateError("payload field drift")
     elif set(payload) != expected_keys | mutation_keys:
         raise BinaryTypedProofAccountingGateError("payload field drift")
     expected_values = {
@@ -441,7 +448,7 @@ def validate_payload(
         raise BinaryTypedProofAccountingGateError("aggregate drift")
     if payload["payload_commitment"] != payload_commitment(payload):
         raise BinaryTypedProofAccountingGateError("payload commitment drift")
-    if not allow_missing_mutation_summary or "mutation_cases" in payload:
+    if not allow_missing_mutation_summary or mutation_keys & set(payload):
         validate_mutation_summary(payload)
 
 
@@ -602,6 +609,12 @@ def validate_output_path(path: pathlib.Path) -> pathlib.Path:
     if evidence_root not in (path, *path.parents):
         raise BinaryTypedProofAccountingGateError(f"output path escapes evidence dir: {path}")
     return path
+
+
+def canonical_path_text(path: Any, label: str) -> str:
+    if not isinstance(path, (str, os.PathLike)):
+        raise BinaryTypedProofAccountingGateError(f"{label} must be a path")
+    return os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(path))))
 
 
 def reject_symlinked_path_components(path: pathlib.Path, label: str) -> None:

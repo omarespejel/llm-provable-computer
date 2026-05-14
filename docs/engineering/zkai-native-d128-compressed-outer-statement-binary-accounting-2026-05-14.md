@@ -93,4 +93,5 @@ python3 -m unittest scripts.tests.test_zkai_native_d128_compressed_outer_stateme
 cargo +nightly-2025-07-14 fmt --check
 git diff --check
 just gate-fast
+just gate
 ```

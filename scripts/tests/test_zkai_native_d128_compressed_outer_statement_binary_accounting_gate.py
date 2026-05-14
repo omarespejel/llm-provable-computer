@@ -171,6 +171,21 @@ class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "statement_version drift"):
             gate.validate_cli_summary(summary)
 
+    def test_rejects_cli_absolute_path_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["path"] = str(gate.EVIDENCE_DIR / "wrong-proof.envelope.json")
+        with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "CLI path drift"):
+            gate.validate_cli_summary(summary)
+
+    def test_rejects_partial_mutation_summary(self):
+        summary = cli_summary()
+        payload = gate.build_payload(summary)
+        for key in ("mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"):
+            payload.pop(key)
+        payload["mutations_checked"] = len(gate.MUTATION_NAMES)
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        self.assert_rejects(payload, summary, "payload field drift")
+
     def test_run_binary_accounting_cli_rejects_timeout(self):
         with mock.patch("subprocess.run") as run:
             run.side_effect = gate.subprocess.TimeoutExpired(
