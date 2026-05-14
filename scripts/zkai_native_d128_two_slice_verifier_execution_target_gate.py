@@ -358,7 +358,26 @@ def load_json(path: pathlib.Path) -> tuple[dict[str, Any], bytes]:
     return require_dict(payload, str(path)), raw
 
 
+def display_path(path: pathlib.Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def accounting_input_paths() -> tuple[pathlib.Path, ...]:
+    return (EVIDENCE_DIR, RMSNORM_ENVELOPE, BRIDGE_ENVELOPE, OUTER_STATEMENT_ENVELOPE)
+
+
+def require_accounting_inputs_exist(paths: tuple[pathlib.Path, ...] | None = None) -> None:
+    required = accounting_input_paths() if paths is None else paths
+    missing = [display_path(path) for path in required if not path.exists()]
+    if missing:
+        raise VerifierExecutionTargetGateError("missing accounting input files: " + ", ".join(missing))
+
+
 def run_accounting_cli() -> dict[str, Any]:
+    require_accounting_inputs_exist()
     command = [
         "cargo",
         "+nightly-2025-07-14",

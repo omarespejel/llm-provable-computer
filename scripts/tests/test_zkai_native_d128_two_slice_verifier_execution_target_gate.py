@@ -64,6 +64,14 @@ class VerifierExecutionTargetGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.VerifierExecutionTargetGateError, "local_typed_bytes drift"):
             gate.build_payload(summary)
 
+    def test_accounting_preflight_reports_missing_paths(self) -> None:
+        missing = gate.EVIDENCE_DIR / "missing-verifier-execution-target.json"
+        with self.assertRaisesRegex(
+            gate.VerifierExecutionTargetGateError,
+            "missing accounting input files: docs/engineering/evidence/missing-verifier-execution-target.json",
+        ):
+            gate.require_accounting_inputs_exist((missing,))
+
     def test_rejects_outer_promotion(self) -> None:
         payload = gate.build_payload(cli_summary())
         mutated = copy.deepcopy(payload)
