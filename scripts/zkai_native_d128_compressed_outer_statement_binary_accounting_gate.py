@@ -622,7 +622,11 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
         handle.write(text)
         handle.flush()
         os.fsync(handle.fileno())
-    tmp_path.replace(path)
+    try:
+        tmp_path.replace(path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def write_json(payload: dict[str, Any], cli_summary: dict[str, Any], path: pathlib.Path) -> None:

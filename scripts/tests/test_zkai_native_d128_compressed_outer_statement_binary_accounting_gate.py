@@ -246,6 +246,18 @@ class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
         finally:
             out.unlink(missing_ok=True)
 
+    def test_write_text_atomic_removes_temp_file_on_replace_failure(self):
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            out = pathlib.Path(tmp) / "out.json"
+            before = set(pathlib.Path(tmp).iterdir())
+            with (
+                mock.patch.object(pathlib.Path, "replace", side_effect=OSError("replace failed")),
+                self.assertRaisesRegex(OSError, "replace failed"),
+            ):
+                gate.write_text_atomic(out, "{}")
+            after = set(pathlib.Path(tmp).iterdir())
+        self.assertEqual(after, before)
+
 
 if __name__ == "__main__":
     unittest.main()
