@@ -207,6 +207,24 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             max_bytes
         ));
     }
+    #[cfg(unix)]
+    let file = {
+        use std::os::unix::fs::OpenOptionsExt;
+
+        fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)
+            .map_err(|error| {
+                format!(
+                    "failed to open {} {} without following symlinks: io_kind={:?}: {error}",
+                    label,
+                    path.display(),
+                    error.kind()
+                )
+            })?
+    };
+    #[cfg(not(unix))]
     let file = fs::File::open(path)
         .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let metadata = file.metadata().map_err(|error| {
@@ -465,4 +483,69 @@ fn sync_parent_directory(parent: &Path, label: &str, path: &Path) -> Result<(), 
 #[cfg(all(feature = "stwo-backend", not(unix)))]
 fn sync_parent_directory(_parent: &Path, _label: &str, _path: &Path) -> Result<(), String> {
     Ok(())
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::read_bounded_file;
+    use std::{
+        fs,
+        path::PathBuf,
+        process,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    fn temp_dir(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time before epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "zkai-d128-component-reprove-cli-{label}-{}-{nonce}",
+            process::id()
+        ))
+    }
+
+    #[test]
+    fn read_bounded_file_rejects_non_file_and_oversized_input() {
+        let dir = temp_dir("reader");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("create temp dir");
+        let oversized = dir.join("oversized.json");
+        let valid = dir.join("valid.json");
+        fs::write(&oversized, b"abcd").expect("write oversized fixture");
+        fs::write(&valid, b"abc").expect("write valid fixture");
+
+        let non_file_error = read_bounded_file(&dir, 8, "fixture").expect_err("directory rejected");
+        assert!(non_file_error.contains("not a regular file"));
+        let oversized_error =
+            read_bounded_file(&oversized, 3, "fixture").expect_err("oversized file rejected");
+        assert!(oversized_error.contains("exceeds max size"));
+        assert_eq!(
+            read_bounded_file(&valid, 3, "fixture").expect("valid file accepted"),
+            b"abc"
+        );
+
+        fs::remove_dir_all(&dir).expect("remove temp dir");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_bounded_file_rejects_symlink_input() {
+        use std::os::unix::fs::symlink;
+
+        let dir = temp_dir("reader-symlink");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("create temp dir");
+        let target = dir.join("target.json");
+        let link = dir.join("link.json");
+        fs::write(&target, b"{}").expect("write target");
+        symlink(&target, &link).expect("create symlink");
+
+        let error =
+            read_bounded_file(&link, 1024, "fixture").expect_err("symlinks must be rejected");
+        assert!(error.contains("is a symlink") || error.contains("without following symlinks"));
+
+        fs::remove_dir_all(&dir).expect("remove temp dir");
+    }
 }
