@@ -34,8 +34,13 @@ MATCHED_D64_D128_TABLE = EVIDENCE_DIR / "zkai-matched-d64-d128-evidence-table-20
 JSON_OUT = EVIDENCE_DIR / "zkai-native-d128-block-proof-object-route-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-native-d128-block-proof-object-route-2026-05.tsv"
 
+NATIVE_PROOF_OBJECT_STATUS = "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING"
+FULL_ACCUMULATOR_STATUS = "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_NOT_OUTER_PROOF"
+TWO_SLICE_STATUS = "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING"
+ATTENTION_INPUT_STATUS = "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT_NOT_OUTER_PROOF"
+PACKAGE_STATUS = "GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF"
 SCHEMA = "zkai-native-d128-block-proof-object-route-v1"
-DECISION = "NO_GO_NATIVE_D128_BLOCK_PROOF_OBJECT_BACKEND_MISSING"
+DECISION = NATIVE_PROOF_OBJECT_STATUS
 RESULT = "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET"
 ISSUE = 387
 CLAIM_BOUNDARY = (
@@ -56,16 +61,11 @@ EXPECTED_COMPRESSED_CHAIN_BYTES = 2_559
 EXPECTED_SOURCE_CHAIN_BYTES = 14_624
 EXPECTED_COMPRESSED_CHAIN_RATIO = 0.174986
 
-NATIVE_PROOF_OBJECT_STATUS = "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING"
-FULL_ACCUMULATOR_STATUS = "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_NOT_OUTER_PROOF"
-TWO_SLICE_STATUS = "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING"
-ATTENTION_INPUT_STATUS = "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT_NOT_OUTER_PROOF"
-PACKAGE_STATUS = "GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF"
-
+FIRST_BLOCKER_CATEGORY = "no parameterized AIR route for the d128 vector-block surface"
 FIRST_BLOCKER = (
-    "the repository still has no executable native outer proof backend that proves the d128 slice-verifier "
-    "checks and binds the block proof-object public inputs; the two-slice target is already NO-GO, so the "
-    "six-slice d128 block cannot be claimed as one native proof object"
+    f"allowed blocker category: {FIRST_BLOCKER_CATEGORY}; the repository still has no executable native outer "
+    "proof backend that proves the d128 slice-verifier checks and binds the block proof-object public inputs; "
+    "the two-slice target is already NO-GO, so the six-slice d128 block cannot be claimed as one native proof object"
 )
 
 NEXT_MINIMAL_EXPERIMENT = (
@@ -443,8 +443,16 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def source_descriptor_map(sources: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {
+        source["descriptor"]["path"]: source["descriptor"]
+        for source in sources.values()
+    }
+
+
 def build_core_payload() -> dict[str, Any]:
     sources = checked_sources()
+    expected_sources = source_descriptor_map(sources)
     rows = route_rows(sources)
     payload = {
         "schema": SCHEMA,
@@ -464,11 +472,15 @@ def build_core_payload() -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
     }
-    validate_core_payload(payload)
+    validate_core_payload(payload, expected_sources=expected_sources)
     return payload
 
 
-def validate_core_payload(payload: dict[str, Any]) -> None:
+def validate_core_payload(
+    payload: dict[str, Any],
+    *,
+    expected_sources: dict[str, dict[str, Any]] | None = None,
+) -> None:
     if payload.get("schema") != SCHEMA:
         raise NativeD128BlockProofObjectRouteError("schema drift")
     if payload.get("decision") != DECISION:
@@ -516,18 +528,11 @@ def validate_core_payload(payload: dict[str, Any]) -> None:
     descriptors = _list(payload.get("source_artifacts"), "source artifacts")
     if len(descriptors) != 6:
         raise NativeD128BlockProofObjectRouteError("source artifact count drift")
-    expected_sources = build_source_descriptor_map()
+    if expected_sources is None:
+        expected_sources = source_descriptor_map(checked_sources())
     actual_sources = {descriptor["path"]: descriptor for descriptor in descriptors}
     if actual_sources != expected_sources:
         raise NativeD128BlockProofObjectRouteError("source artifact drift")
-
-
-def build_source_descriptor_map() -> dict[str, dict[str, Any]]:
-    sources = checked_sources()
-    return {
-        source["descriptor"]["path"]: source["descriptor"]
-        for source in sources.values()
-    }
 
 
 def _finalized_fields_present(payload: dict[str, Any]) -> bool:
@@ -616,10 +621,13 @@ def mutation_cases(base: dict[str, Any]) -> list[dict[str, Any]]:
         accepted = False
         try:
             mutation_plan(name)(mutated)
+        except Exception as err:
+            raise NativeD128BlockProofObjectRouteError(f"mutation plan failed for {name}: {err}") from err
+        try:
             validate_payload(mutated)
             accepted = True
         except Exception as err:  # noqa: BLE001 - evidence records rejection reason.
-            error = str(err) or type(err).__name__
+            error = f"validate failed: {str(err) or type(err).__name__}"
         cases.append(
             {
                 "mutation": name,

@@ -23,6 +23,7 @@ class NativeD128BlockProofObjectRouteGateTests(unittest.TestCase):
 
         self.assertEqual(payload["schema"], gate.SCHEMA)
         self.assertEqual(payload["decision"], gate.DECISION)
+        self.assertEqual(payload["decision"], gate.NATIVE_PROOF_OBJECT_STATUS)
         self.assertEqual(payload["result"], gate.RESULT)
         self.assertEqual(payload["issue"], 387)
         self.assertFalse(payload["claim_guard"]["matched_nanozk_claim_allowed"])
@@ -43,6 +44,7 @@ class NativeD128BlockProofObjectRouteGateTests(unittest.TestCase):
         self.assertEqual(summary["package_without_vk_vs_nanozk_reported_ratio"], 0.688696)
         self.assertEqual(summary["package_with_vk_bytes"], 10608)
         self.assertEqual(summary["package_with_vk_vs_nanozk_reported_ratio"], 1.537391)
+        self.assertIn(gate.FIRST_BLOCKER_CATEGORY, summary["first_blocker"])
         self.assertIn("two-slice target is already NO-GO", summary["first_blocker"])
         self.assertIn("implement the smallest native two-slice outer proof backend", summary["next_minimal_experiment"])
         self.assertIn("not a NANOZK proof-size win", payload["non_claims"])
@@ -72,6 +74,22 @@ class NativeD128BlockProofObjectRouteGateTests(unittest.TestCase):
         self.assertIn("claim_guard", cases["matched_nanozk_claim_enabled"]["error"])
         self.assertIn("route_rows", cases["native_proof_bytes_smuggled"]["error"])
         self.assertIn("non_claims", cases["non_claim_removed"]["error"])
+
+    def test_mutation_plan_failures_do_not_count_as_rejections(self) -> None:
+        original = gate.mutation_plan
+
+        def broken_plan(_name):
+            def apply(_payload):
+                raise RuntimeError("broken mutation plan")
+
+            return apply
+
+        try:
+            gate.mutation_plan = broken_plan
+            with self.assertRaisesRegex(gate.NativeD128BlockProofObjectRouteError, "mutation plan failed"):
+                gate.mutation_cases(gate.build_core_payload())
+        finally:
+            gate.mutation_plan = original
 
     def test_validate_payload_rejects_recommitted_overclaim(self) -> None:
         payload = self.fresh_payload()
