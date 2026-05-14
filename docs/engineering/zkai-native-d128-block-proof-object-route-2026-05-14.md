@@ -9,7 +9,7 @@ transformer-block proof object?
 
 ## Decision
 
-`NO_GO_NATIVE_D128_BLOCK_PROOF_OBJECT_BACKEND_MISSING`
+`NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING`
 
 This is a bounded no-go, but it is useful. The current route has strong
 sub-results:
@@ -55,6 +55,9 @@ locally reproduced, and no native d128 block proof object exists yet.
 
 The repository still has no executable native outer proof backend that proves
 the d128 slice-verifier checks and binds the block proof-object public inputs.
+Allowed issue `#387` blocker category:
+`no parameterized AIR route for the d128 vector-block surface`.
+
 The two-slice target is already `NO-GO`, so the six-slice d128 block cannot be
 claimed as one native proof object.
 

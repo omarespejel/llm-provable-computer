@@ -4,79 +4,79 @@
   "cases": [
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "full_accumulator_promoted_to_native_proof",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "two_slice_no_go_changed_to_go",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "attention_input_contract_promoted_to_proof",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "package_without_vk_promoted_to_proof_size",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "native_proof_bytes_smuggled",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "claim_guard drift",
+      "error": "validate failed: claim_guard drift",
       "mutation": "matched_nanozk_claim_enabled",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "summary drift",
+      "error": "validate failed: summary drift",
       "mutation": "first_blocker_removed",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "summary drift",
+      "error": "validate failed: summary drift",
       "mutation": "next_minimal_experiment_weakened",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "non_claims drift",
+      "error": "validate failed: non_claims drift",
       "mutation": "non_claim_removed",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "source_artifacts drift",
+      "error": "validate failed: source_artifacts drift",
       "mutation": "source_artifact_hash_drift",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "route_rows drift",
+      "error": "validate failed: route_rows drift",
       "mutation": "route_row_removed",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "result drift",
+      "error": "validate failed: result drift",
       "mutation": "result_changed_to_go",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "validation_commands drift",
+      "error": "validate failed: validation_commands drift",
       "mutation": "validation_command_drift",
       "rejected": true
     }
@@ -88,7 +88,7 @@
     "native_proof_size_claim_allowed": false,
     "package_bytes_are_proof_bytes": false
   },
-  "decision": "NO_GO_NATIVE_D128_BLOCK_PROOF_OBJECT_BACKEND_MISSING",
+  "decision": "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING",
   "issue": 387,
   "mutation_inventory": [
     "full_accumulator_promoted_to_native_proof",
@@ -116,7 +116,7 @@
     "not exact real-valued Softmax, LayerNorm, or GELU",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:5e226df688e325a16d02fc4d3ead41b3dd3eedf0896fc234aa3e9496e66ca63c",
+  "payload_commitment": "sha256:f13684336a2c6c4577e6ea4d137288eae871e527ae33a603fcc64d20423a9444",
   "result": "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET",
   "route_rows": [
     {
@@ -243,7 +243,7 @@
     "compressed_statement_chain_bytes": 2559,
     "compressed_statement_chain_ratio": 0.174986,
     "d128_checked_rows": 197504,
-    "first_blocker": "the repository still has no executable native outer proof backend that proves the d128 slice-verifier checks and binds the block proof-object public inputs; the two-slice target is already NO-GO, so the six-slice d128 block cannot be claimed as one native proof object",
+    "first_blocker": "allowed blocker category: no parameterized AIR route for the d128 vector-block surface; the repository still has no executable native outer proof backend that proves the d128 slice-verifier checks and binds the block proof-object public inputs; the two-slice target is already NO-GO, so the six-slice d128 block cannot be claimed as one native proof object",
     "go_gate": "one executable native proof object verifies locally, binds block statement, slice statements, source hashes, and native proof-object public inputs, rejects relabeling mutations, and emits proof bytes from that object",
     "matched_nanozk_claim_allowed": false,
     "nanozk_reported_block_proof_bytes_decimal": 6900,
