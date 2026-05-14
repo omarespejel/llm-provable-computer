@@ -174,7 +174,7 @@ fn require_verified<E: std::fmt::Display>(
     match verified {
         Ok(true) => Ok(()),
         Ok(false) => Err(format!("{label} proof verification returned false")),
-        Err(error) => Err(error.to_string()),
+        Err(error) => Err(format!("{label} proof verification errored: {error}")),
     }
 }
 
