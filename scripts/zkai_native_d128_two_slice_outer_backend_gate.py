@@ -27,6 +27,7 @@ import re
 import stat as stat_module
 import sys
 import tempfile
+import tomllib
 from functools import lru_cache
 from typing import Any
 
@@ -71,6 +72,32 @@ EXPECTED_PACKAGE_WITH_VK_BYTES = 10_608
 EXPECTED_NANOZK_REPORTED_BYTES = 6_900
 EXPECTED_PACKAGE_WITHOUT_VK_VS_NANOZK = 0.688696
 EXPECTED_PACKAGE_WITH_VK_VS_NANOZK = 1.537391
+EXPECTED_VERIFIER_DOMAIN = "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+EXPECTED_REQUIRED_BACKEND_VERSION = "stwo-rmsnorm-swiglu-residual-d128-v1"
+EXPECTED_SELECTED_PROOF_BACKEND_VERSIONS = (
+    {
+        "slice_id": "rmsnorm_public_rows",
+        "proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+    },
+    {
+        "slice_id": "rmsnorm_projection_bridge",
+        "proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+    },
+)
+EXPECTED_BOUND_FIELDS = (
+    "selected_slice_ids",
+    "selected_checked_rows",
+    "two_slice_target_commitment",
+    "accumulator_commitment",
+    "accumulator_verifier_handle_commitment",
+    "selected_source_evidence_hashes",
+    "selected_slice_statement_commitments",
+    "selected_slice_public_instance_commitments",
+    "selected_slice_proof_native_parameter_commitments",
+    "verifier_domain_labels",
+    "required_backend_versions",
+    "selected_slice_proof_backend_versions",
+)
 MAX_SOURCE_BYTES = 16 * 1024 * 1024
 
 FIRST_BLOCKER = (
@@ -150,6 +177,7 @@ EXPECTED_MUTATION_INVENTORY = (
     ("source_compression_promoted_to_recursion", "source_artifacts"),
     ("source_snark_relabelled_as_native_stwo", "source_artifacts"),
     ("source_block_route_claim_changed_to_go", "source_artifacts"),
+    ("source_payload_hash_drift", "source_artifacts"),
     ("inner_stwo_promoted_to_outer_backend", "candidate_inventory"),
     ("accumulator_promoted_to_native_outer_proof", "candidate_inventory"),
     ("compression_promoted_to_native_outer_proof", "candidate_inventory"),
@@ -161,6 +189,15 @@ EXPECTED_MUTATION_INVENTORY = (
     ("local_verifier_handle_claimed", "native_outer_attempt"),
     ("public_input_binding_claimed", "native_outer_attempt"),
     ("native_proof_bytes_smuggled", "native_outer_attempt"),
+    ("selected_slice_ids_reordered", "native_outer_attempt"),
+    ("selected_checked_rows_drift", "native_outer_attempt"),
+    ("target_commitment_drift", "native_outer_attempt"),
+    ("accumulator_commitment_drift", "native_outer_attempt"),
+    ("verifier_handle_commitment_drift", "native_outer_attempt"),
+    ("required_bound_field_removed", "native_outer_attempt"),
+    ("verifier_domain_label_drift", "native_outer_attempt"),
+    ("backend_version_label_drift", "native_outer_attempt"),
+    ("proof_backend_version_label_drift", "native_outer_attempt"),
     ("package_bytes_relabelled_as_native_proof_bytes", "claim_guard"),
     ("snark_bytes_relabelled_as_native_proof_bytes", "claim_guard"),
     ("matched_nanozk_claim_enabled", "claim_guard"),
@@ -265,8 +302,9 @@ CANDIDATE_SPECS = (
         "bytes": None,
         "classification": "STWO_PROVER_AVAILABLE_NO_LOCAL_OUTER_VERIFIER_BACKEND",
         "required_tokens": (
-            'toml_line:stwo = { version = "2.2.0", default-features = false, features = ["std", "prover"], optional = true }',
-            'toml_line:stwo-backend = ["dep:stwo", "dep:stwo-constraint-framework", "dep:flate2"]',
+            "toml_dependency:stwo.version=2.2.0",
+            "toml_dependency_features:stwo=std,prover",
+            "toml_feature_contains:stwo-backend=dep:stwo,dep:stwo-constraint-framework,dep:flate2",
         ),
         "reason": "the repository can build native Stwo slice proofs, but has no selected-verifier execution AIR for an outer proof",
     },
@@ -496,7 +534,7 @@ def source_descriptor(path: pathlib.Path, payload: dict[str, Any]) -> dict[str, 
 
 
 @lru_cache(maxsize=1)
-def _source_bundle_cached() -> tuple[tuple[str, tuple[tuple[str, Any], ...]], ...]:
+def _source_descriptors_cached() -> tuple[tuple[str, tuple[tuple[str, Any], ...]], ...]:
     bundle: dict[str, dict[str, Any]] = {}
     for key, path in (
         ("accumulator", ACCUMULATOR_EVIDENCE),
@@ -512,11 +550,11 @@ def _source_bundle_cached() -> tuple[tuple[str, tuple[tuple[str, Any], ...]], ..
             "descriptor": source_descriptor(path, payload),
         }
     validate_source_bundle(bundle)
-    return tuple((key, tuple(value.items())) for key, value in bundle.items())
+    return tuple((key, tuple(bundle[key]["descriptor"].items())) for key in sorted(bundle))
 
 
-def source_bundle() -> dict[str, dict[str, Any]]:
-    return copy.deepcopy({key: dict(items) for key, items in _source_bundle_cached()})
+def source_descriptors() -> list[dict[str, Any]]:
+    return [dict(items) for _key, items in _source_descriptors_cached()]
 
 
 def validate_source_bundle(bundle: dict[str, dict[str, Any]]) -> None:
@@ -579,6 +617,16 @@ def validate_source_bundle(bundle: dict[str, dict[str, Any]]) -> None:
     expect_equal(block.get("all_mutations_rejected"), True, "block route mutations", layer="source_artifacts")
 
 
+def toml_data(raw: str) -> dict[str, Any]:
+    try:
+        data = tomllib.loads(raw)
+    except tomllib.TOMLDecodeError as err:
+        raise NativeD128TwoSliceOuterBackendError(f"failed to parse TOML: {err}", layer="candidate_inventory") from err
+    if not isinstance(data, dict):
+        raise NativeD128TwoSliceOuterBackendError("TOML root must be an object", layer="candidate_inventory")
+    return data
+
+
 def required_token_present(raw: str, token: str) -> bool:
     if token.startswith("rust_fn:"):
         name = re.escape(token.removeprefix("rust_fn:"))
@@ -586,9 +634,31 @@ def required_token_present(raw: str, token: str) -> bool:
     if token.startswith("python_def:"):
         name = re.escape(token.removeprefix("python_def:"))
         return re.search(rf"(?m)^\s*def\s+{name}\s*\(", raw) is not None
-    if token.startswith("toml_line:"):
-        line = re.escape(token.removeprefix("toml_line:"))
-        return re.search(rf"(?m)^\s*{line}\s*$", raw) is not None
+    if token.startswith("toml_dependency:"):
+        spec = token.removeprefix("toml_dependency:")
+        dep_name, raw_expected = spec.split(".", maxsplit=1)
+        field, expected = raw_expected.split("=", maxsplit=1)
+        dependency = toml_data(raw).get("dependencies", {}).get(dep_name)
+        if isinstance(dependency, str):
+            return field == "version" and dependency == expected
+        if isinstance(dependency, dict):
+            return dependency.get(field) == expected
+        return False
+    if token.startswith("toml_dependency_features:"):
+        spec = token.removeprefix("toml_dependency_features:")
+        dep_name, raw_features = spec.split("=", maxsplit=1)
+        dependency = toml_data(raw).get("dependencies", {}).get(dep_name)
+        features = dependency.get("features") if isinstance(dependency, dict) else None
+        if not isinstance(features, list):
+            return False
+        return set(raw_features.split(",")).issubset(set(features))
+    if token.startswith("toml_feature_contains:"):
+        spec = token.removeprefix("toml_feature_contains:")
+        feature_name, raw_members = spec.split("=", maxsplit=1)
+        members = toml_data(raw).get("features", {}).get(feature_name)
+        if not isinstance(members, list):
+            return False
+        return set(raw_members.split(",")).issubset(set(members))
     raise NativeD128TwoSliceOuterBackendError(f"unsupported required token matcher: {token}", layer="candidate_inventory")
 
 
@@ -641,10 +711,6 @@ def candidate_inventory() -> list[dict[str, Any]]:
     return copy.deepcopy([dict(item) for item in _candidate_inventory_cached()])
 
 
-def source_descriptors(bundle: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    return [bundle[key]["descriptor"] for key in sorted(bundle)]
-
-
 def native_outer_attempt() -> dict[str, Any]:
     return {
         "go_gate": GO_GATE,
@@ -657,6 +723,28 @@ def native_outer_attempt() -> dict[str, Any]:
         "two_slice_target_commitment": EXPECTED_TWO_SLICE_TARGET_COMMITMENT,
         "accumulator_commitment": EXPECTED_ACCUMULATOR_COMMITMENT,
         "accumulator_verifier_handle_commitment": EXPECTED_ACCUMULATOR_VERIFIER_HANDLE,
+        "required_bound_fields": list(EXPECTED_BOUND_FIELDS),
+        "verifier_domain_labels": [
+            {
+                "slice_id": "rmsnorm_public_rows",
+                "verifier_domain": EXPECTED_VERIFIER_DOMAIN,
+            },
+            {
+                "slice_id": "rmsnorm_projection_bridge",
+                "verifier_domain": EXPECTED_VERIFIER_DOMAIN,
+            },
+        ],
+        "required_backend_versions": [
+            {
+                "slice_id": "rmsnorm_public_rows",
+                "required_backend_version": EXPECTED_REQUIRED_BACKEND_VERSION,
+            },
+            {
+                "slice_id": "rmsnorm_projection_bridge",
+                "required_backend_version": EXPECTED_REQUIRED_BACKEND_VERSION,
+            },
+        ],
+        "selected_slice_proof_backend_versions": list(EXPECTED_SELECTED_PROOF_BACKEND_VERSIONS),
         "attempt": {
             "native_outer_proof_artifact_exists": False,
             "native_outer_verifier_handle_exists": False,
@@ -734,7 +822,6 @@ def mutation_inventory() -> list[dict[str, Any]]:
 
 
 def build_core_payload() -> dict[str, Any]:
-    sources = source_bundle()
     inventory = candidate_inventory()
     payload = {
         "schema": SCHEMA,
@@ -744,7 +831,7 @@ def build_core_payload() -> dict[str, Any]:
         "inner_stwo_baseline_result": INNER_STWO_BASELINE_RESULT,
         "native_outer_backend_result": NATIVE_OUTER_BACKEND_RESULT,
         "claim_boundary": CLAIM_BOUNDARY,
-        "source_artifacts": source_descriptors(sources),
+        "source_artifacts": source_descriptors(),
         "candidate_inventory": inventory,
         "native_outer_attempt": native_outer_attempt(),
         "claim_guard": claim_guard(),
@@ -790,6 +877,8 @@ def mutate_payload(payload: dict[str, Any], mutation: str) -> dict[str, Any]:
             if source["path"].endswith("zkai-native-d128-block-proof-object-route-2026-05.json"):
                 source["decision"] = "GO_NATIVE_D128_BLOCK_PROOF_OBJECT"
                 break
+    elif mutation == "source_payload_hash_drift":
+        mutated["source_artifacts"][1]["payload_sha256"] = "2" * 64
     elif mutation == "inner_stwo_promoted_to_outer_backend":
         _candidate_by_name(mutated, "rmsnorm_public_rows_inner_stwo_proof")["classification"] = "GO_NATIVE_OUTER_BACKEND"
     elif mutation == "accumulator_promoted_to_native_outer_proof":
@@ -816,6 +905,31 @@ def mutate_payload(payload: dict[str, Any], mutation: str) -> dict[str, Any]:
         mutated["native_outer_attempt"]["attempt"]["native_outer_public_input_binding_executable"] = True
     elif mutation == "native_proof_bytes_smuggled":
         mutated["native_outer_attempt"]["attempt"]["native_outer_proof_bytes"] = 4096
+    elif mutation == "selected_slice_ids_reordered":
+        mutated["native_outer_attempt"]["selected_slice_ids"] = [
+            "rmsnorm_projection_bridge",
+            "rmsnorm_public_rows",
+        ]
+    elif mutation == "selected_checked_rows_drift":
+        mutated["native_outer_attempt"]["selected_checked_rows"] = 255
+    elif mutation == "target_commitment_drift":
+        mutated["native_outer_attempt"]["two_slice_target_commitment"] = "blake2b-256:" + "3" * 64
+    elif mutation == "accumulator_commitment_drift":
+        mutated["native_outer_attempt"]["accumulator_commitment"] = "blake2b-256:" + "4" * 64
+    elif mutation == "verifier_handle_commitment_drift":
+        mutated["native_outer_attempt"]["accumulator_verifier_handle_commitment"] = "blake2b-256:" + "5" * 64
+    elif mutation == "required_bound_field_removed":
+        mutated["native_outer_attempt"]["required_bound_fields"].remove("selected_source_evidence_hashes")
+    elif mutation == "verifier_domain_label_drift":
+        mutated["native_outer_attempt"]["verifier_domain_labels"][0]["verifier_domain"] = "ptvm:zkai:wrong:v1"
+    elif mutation == "backend_version_label_drift":
+        mutated["native_outer_attempt"]["required_backend_versions"][0][
+            "required_backend_version"
+        ] = "stwo-rmsnorm-swiglu-residual-d128-v2"
+    elif mutation == "proof_backend_version_label_drift":
+        mutated["native_outer_attempt"]["selected_slice_proof_backend_versions"][0][
+            "proof_backend_version"
+        ] = "stwo-d128-rmsnorm-public-row-air-proof-v4"
     elif mutation == "package_bytes_relabelled_as_native_proof_bytes":
         mutated["claim_guard"]["package_bytes_are_native_proof_bytes"] = True
     elif mutation == "snark_bytes_relabelled_as_native_proof_bytes":
@@ -886,6 +1000,10 @@ NATIVE_OUTER_ATTEMPT_KEYS = {
     "two_slice_target_commitment",
     "accumulator_commitment",
     "accumulator_verifier_handle_commitment",
+    "required_bound_fields",
+    "verifier_domain_labels",
+    "required_backend_versions",
+    "selected_slice_proof_backend_versions",
     "attempt",
 }
 SUMMARY_KEYS = {
@@ -944,7 +1062,7 @@ FINAL_KEYS = CORE_KEYS | {"cases", "case_count", "all_mutations_rejected"}
 
 def validate_source_artifacts(value: Any) -> None:
     descriptors = require_list(value, "source artifacts", layer="source_artifacts")
-    expected = source_descriptors(source_bundle())
+    expected = source_descriptors()
     expect_equal(descriptors, expected, "source artifacts", layer="source_artifacts")
     for index, descriptor in enumerate(descriptors):
         item = require_object(descriptor, f"source artifact {index}", layer="source_artifacts")
@@ -1086,7 +1204,7 @@ def build_gate_result() -> dict[str, Any]:
     payload["cases"] = cases
     payload["case_count"] = len(cases)
     payload["all_mutations_rejected"] = all(case["rejected"] for case in cases)
-    validate_payload(payload)
+    validate_payload(payload, expected_core=core, expected_cases=cases)
     return payload
 
 
@@ -1107,20 +1225,28 @@ def validate_cases(value: Any, expected_cases: list[dict[str, Any]]) -> None:
         require_str(item["error"], f"case {index} error")
 
 
-def validate_payload(payload: dict[str, Any]) -> None:
+def validate_payload(
+    payload: dict[str, Any],
+    *,
+    expected_core: dict[str, Any] | None = None,
+    expected_cases: list[dict[str, Any]] | None = None,
+) -> None:
     if not isinstance(payload, dict):
         raise NativeD128TwoSliceOuterBackendError("payload must be a JSON object")
     expect_key_set(payload, FINAL_KEYS, "top-level payload")
     validate_core_payload(payload)
-    expected_core = build_core_payload()
-    expected_cases = run_mutations(expected_core)
+    if expected_core is None:
+        expected_core = build_core_payload()
+    if expected_cases is None:
+        expected_cases = run_mutations(expected_core)
     validate_cases(payload["cases"], expected_cases)
     expect_equal(payload["case_count"], len(expected_cases), "case_count")
     expect_equal(payload["all_mutations_rejected"], True, "all_mutations_rejected")
 
 
-def to_tsv(payload: dict[str, Any]) -> str:
-    validate_payload(payload)
+def to_tsv(payload: dict[str, Any], *, validate: bool = True) -> str:
+    if validate:
+        validate_payload(payload)
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
@@ -1150,7 +1276,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
     if json_path is not None:
         outputs.append((_safe_output_path(json_path), json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"))
     if tsv_path is not None:
-        outputs.append((_safe_output_path(tsv_path), to_tsv(payload).encode("utf-8")))
+        outputs.append((_safe_output_path(tsv_path), to_tsv(payload, validate=False).encode("utf-8")))
     if not outputs:
         raise NativeD128TwoSliceOuterBackendError("at least one output path is required")
     resolved_outputs = [path.resolve(strict=False) for path, _data in outputs]

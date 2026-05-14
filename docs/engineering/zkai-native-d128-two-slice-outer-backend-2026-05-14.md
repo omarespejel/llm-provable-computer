@@ -66,7 +66,7 @@ The repository still does not have:
   paper-reported `6,900` byte row.
 - Broader d128 package with VK: `10,608` bytes, `1.537391x` NANOZK's
   paper-reported row.
-- Mutation coverage: `29 / 29` mutations rejected.
+- Mutation coverage: `39 / 39` mutations rejected.
 
 ## First Blocker
 

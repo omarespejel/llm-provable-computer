@@ -97,6 +97,23 @@ class NativeD128TwoSliceOuterBackendGateTests(unittest.TestCase):
             attempt["accumulator_commitment"],
             "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
         )
+        self.assertIn("selected_source_evidence_hashes", attempt["required_bound_fields"])
+        self.assertIn("selected_slice_statement_commitments", attempt["required_bound_fields"])
+        self.assertEqual(
+            {item["verifier_domain"] for item in attempt["verifier_domain_labels"]},
+            {"ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"},
+        )
+        self.assertEqual(
+            {item["required_backend_version"] for item in attempt["required_backend_versions"]},
+            {"stwo-rmsnorm-swiglu-residual-d128-v1"},
+        )
+        self.assertEqual(
+            [item["proof_backend_version"] for item in attempt["selected_slice_proof_backend_versions"]],
+            [
+                "stwo-d128-rmsnorm-public-row-air-proof-v3",
+                "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+            ],
+        )
         self.assertFalse(attempt["attempt"]["native_outer_proof_artifact_exists"])
         self.assertIsNone(attempt["attempt"]["native_outer_proof_bytes"])
         self.assertTrue(attempt["attempt"]["blocked_before_native_proof_bytes"])
@@ -115,6 +132,15 @@ class NativeD128TwoSliceOuterBackendGateTests(unittest.TestCase):
             "snark_bytes_relabelled_as_native_proof_bytes",
             "matched_nanozk_claim_enabled",
             "decision_changed_to_go",
+            "selected_slice_ids_reordered",
+            "selected_checked_rows_drift",
+            "target_commitment_drift",
+            "accumulator_commitment_drift",
+            "verifier_handle_commitment_drift",
+            "required_bound_field_removed",
+            "verifier_domain_label_drift",
+            "backend_version_label_drift",
+            "proof_backend_version_label_drift",
         ):
             with self.subTest(mutation=mutation):
                 mutated = GATE.mutate_payload(self.fresh_payload(), mutation)
