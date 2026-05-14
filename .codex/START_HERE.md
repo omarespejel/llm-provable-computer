@@ -89,8 +89,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 83. `docs/engineering/zkai-matched-d64-d128-evidence-table-2026-05-14.md`
 84. `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`
 85. `docs/engineering/zkai-native-d128-two-slice-outer-backend-2026-05-14.md`
-86. `docs/engineering/reproducibility.md`
-87. `git status --short --branch`
+86. `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`
+87. `docs/engineering/reproducibility.md`
+88. `git status --short --branch`
 
 ## What this repository is now
 

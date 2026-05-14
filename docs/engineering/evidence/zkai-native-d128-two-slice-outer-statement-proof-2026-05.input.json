@@ -1,0 +1,86 @@
+{
+  "accumulator_commitment": "blake2b-256:873a71894de4b208b606a1b86bca525ed767fd1e853ec5269dfc90cefc5d167d",
+  "accumulator_verifier_handle_commitment": "blake2b-256:8dd18b7b5b8d0a5399535f0a02f9a1fe4128211bad8f3e69bb44c92cdf07a131",
+  "decision": "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_INPUT",
+  "next_backend_step": "replace host-verified slice-result binding with native Stwo verifier-execution constraints for the selected inner slice proofs",
+  "non_claims": [
+    "not native verifier execution of the selected inner Stwo proofs",
+    "not recursion or proof-carrying data",
+    "not a native d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not full transformer inference",
+    "not production-ready zkML"
+  ],
+  "operation": "d128_two_slice_outer_statement_binding",
+  "proof_native_parameter_commitment": "blake2b-256:9528113a0e62dc8565c2c5974d47c9859494a16fed307ef91881a2a2705fbf80",
+  "proof_verifier_hardening": [
+    "selected slice order checked before proof verification",
+    "selected row count checked before proof verification",
+    "two-slice target commitment bound into every outer statement row",
+    "accumulator commitment bound into every outer statement row",
+    "verifier-handle commitment bound into every outer statement row",
+    "selected slice statement commitments bound as digest limbs",
+    "selected source evidence hashes bound as digest limbs",
+    "proof backend version labels bound as digest limbs",
+    "verifier-domain label bound as digest limbs",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing"
+  ],
+  "public_instance_commitment": "blake2b-256:dbb25a1e94bb38c2aeedfcf38b2cebd401427c633860577893e46389f3565beb",
+  "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+  "rows": [
+    {
+      "index": 0,
+      "proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+      "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+      "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "row_count": 128,
+      "slice_id": "rmsnorm_public_rows",
+      "slice_tag": 1,
+      "source_file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+      "source_payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
+      "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+      "verified": true,
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    },
+    {
+      "index": 1,
+      "proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+      "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+      "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+      "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+      "row_count": 128,
+      "slice_id": "rmsnorm_projection_bridge",
+      "slice_tag": 2,
+      "source_file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+      "source_payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3",
+      "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728",
+      "verified": true,
+      "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+    }
+  ],
+  "schema": "zkai-native-d128-two-slice-outer-statement-air-proof-input-v1",
+  "selected_checked_rows": 256,
+  "selected_slice_count": 2,
+  "selected_slice_ids": [
+    "rmsnorm_public_rows",
+    "rmsnorm_projection_bridge"
+  ],
+  "statement_commitment": "blake2b-256:ab06c13b3bd24aad37285c4b6c759b9c30faf747af3248c2e45a2c245e7f8dc8",
+  "target_id": "rmsnorm-swiglu-residual-d128-v1",
+  "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+  "validation_commands": [
+    "python3 scripts/zkai_native_d128_two_slice_outer_statement_input.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.tsv",
+    "cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- prove docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- verify docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test d128_native_two_slice_outer_statement_proof --lib --features stwo-backend",
+    "python3 scripts/zkai_native_d128_two_slice_outer_statement_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.tsv",
+    "git diff --check",
+    "just gate-fast"
+  ],
+  "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+  "width": 128
+}

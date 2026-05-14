@@ -1,0 +1,284 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 25,
+  "cases": [
+    {
+      "error": "proof backend mismatch",
+      "index": 0,
+      "mutated_accepted": false,
+      "mutation": "proof_backend_relabelled",
+      "rejected": true
+    },
+    {
+      "error": "proof backend version mismatch",
+      "index": 1,
+      "mutated_accepted": false,
+      "mutation": "proof_backend_version_drift",
+      "rejected": true
+    },
+    {
+      "error": "statement version mismatch",
+      "index": 2,
+      "mutated_accepted": false,
+      "mutation": "statement_version_drift",
+      "rejected": true
+    },
+    {
+      "error": "semantic scope mismatch",
+      "index": 3,
+      "mutated_accepted": false,
+      "mutation": "semantic_scope_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope keys mismatch: extra=['unexpected_claim'], missing=[]",
+      "index": 4,
+      "mutated_accepted": false,
+      "mutation": "envelope_unknown_top_level_key",
+      "rejected": true
+    },
+    {
+      "error": "proof sha256 mismatch",
+      "index": 5,
+      "mutated_accepted": false,
+      "mutation": "proof_bytes_tampered",
+      "rejected": true
+    },
+    {
+      "error": "proof byte length mismatch",
+      "index": 6,
+      "mutated_accepted": false,
+      "mutation": "proof_replaced_with_package_without_vk_bytes",
+      "rejected": true
+    },
+    {
+      "error": "proof byte length mismatch",
+      "index": 7,
+      "mutated_accepted": false,
+      "mutation": "proof_replaced_with_compressed_transcript_bytes",
+      "rejected": true
+    },
+    {
+      "error": "proof byte length mismatch",
+      "index": 8,
+      "mutated_accepted": false,
+      "mutation": "proof_replaced_with_groth16_receipt_bytes",
+      "rejected": true
+    },
+    {
+      "error": "envelope decision mismatch",
+      "index": 9,
+      "mutated_accepted": false,
+      "mutation": "envelope_decision_changed_to_native_verifier_execution",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 10,
+      "mutated_accepted": false,
+      "mutation": "selected_slice_count_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 11,
+      "mutated_accepted": false,
+      "mutation": "input_statement_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 12,
+      "mutated_accepted": false,
+      "mutation": "target_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 13,
+      "mutated_accepted": false,
+      "mutation": "accumulator_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 14,
+      "mutated_accepted": false,
+      "mutation": "verifier_handle_commitment_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 15,
+      "mutated_accepted": false,
+      "mutation": "selected_slice_ids_reordered",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 16,
+      "mutated_accepted": false,
+      "mutation": "row_source_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 17,
+      "mutated_accepted": false,
+      "mutation": "row_proof_backend_version_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 18,
+      "mutated_accepted": false,
+      "mutation": "row_verified_false",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 19,
+      "mutated_accepted": false,
+      "mutation": "non_claims_reordered",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 20,
+      "mutated_accepted": false,
+      "mutation": "proof_verifier_hardening_reordered",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 21,
+      "mutated_accepted": false,
+      "mutation": "validation_commands_reordered",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 22,
+      "mutated_accepted": false,
+      "mutation": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 23,
+      "mutated_accepted": false,
+      "mutation": "validation_command_drift",
+      "rejected": true
+    },
+    {
+      "error": "envelope input does not match checked input artifact",
+      "index": 24,
+      "mutated_accepted": false,
+      "mutation": "proof_len_relabelled_as_nanozk_win",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "HOST_VERIFIED_OUTER_STATEMENT_BINDING_NOT_NATIVE_VERIFIER_EXECUTION",
+  "decision": "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_AIR_PROOF",
+  "followup_issues": [
+    {
+      "title": "Native Stwo verifier-execution constraints for selected d128 slice proofs",
+      "why": "turn this host-verified binding proof into the real issue #583 target"
+    },
+    {
+      "title": "Digest-binding compression for outer statement rows",
+      "why": "the 11,041-byte proof still binds many digest limbs directly; a smaller public-input hash layer may reduce fixed overhead"
+    }
+  ],
+  "interpretation": {
+    "human": "A real native Stwo proof now binds the two selected d128 slice-result rows, their source hashes, statement commitments, backend labels, and verifier-domain labels. The proof uses an empty preprocessed tree and a verifier-recomputed base-trace root. This is useful progress toward an outer route, but it is not recursive verifier execution.",
+    "next_backend_step": "Replace host-verified result binding with native Stwo verifier-execution constraints for the selected inner proofs.",
+    "why_not_nanozk_win": "The 11,041-byte native outer statement proof payload is JSON-serialized native Stwo proof material, is a different object class, and is 1.600145x the NANOZK paper-reported 6.9 KB row, so it must not be presented as a matched NANOZK proof-size win or as stable binary proof-size accounting."
+  },
+  "issue": 583,
+  "metrics": {
+    "nanozk_reported_transformer_block_proof_bytes": 6900,
+    "native_outer_statement_envelope_bytes": 94864,
+    "native_outer_statement_proof_bytes": 11041,
+    "native_outer_statement_proof_sha256": "8cd1352ea9cff6dfd2a4b25fc881649679c10a1751be7568e72936ac3f397d9e",
+    "package_with_vk_bytes_from_prior_gate": 10608,
+    "package_without_vk_bytes_from_prior_gate": 4752,
+    "proof_native_parameter_commitment": "blake2b-256:9528113a0e62dc8565c2c5974d47c9859494a16fed307ef91881a2a2705fbf80",
+    "proof_vs_nanozk_reported_row_ratio": 1.600145,
+    "public_instance_commitment": "blake2b-256:dbb25a1e94bb38c2aeedfcf38b2cebd401427c633860577893e46389f3565beb",
+    "selected_checked_rows": 256,
+    "selected_slice_ids": [
+      "rmsnorm_public_rows",
+      "rmsnorm_projection_bridge"
+    ],
+    "statement_commitment": "blake2b-256:ab06c13b3bd24aad37285c4b6c759b9c30faf747af3248c2e45a2c245e7f8dc8"
+  },
+  "mutation_inventory": [
+    "proof_backend_relabelled",
+    "proof_backend_version_drift",
+    "statement_version_drift",
+    "semantic_scope_drift",
+    "envelope_unknown_top_level_key",
+    "proof_bytes_tampered",
+    "proof_replaced_with_package_without_vk_bytes",
+    "proof_replaced_with_compressed_transcript_bytes",
+    "proof_replaced_with_groth16_receipt_bytes",
+    "envelope_decision_changed_to_native_verifier_execution",
+    "selected_slice_count_drift",
+    "input_statement_commitment_drift",
+    "target_commitment_drift",
+    "accumulator_commitment_drift",
+    "verifier_handle_commitment_drift",
+    "selected_slice_ids_reordered",
+    "row_source_hash_drift",
+    "row_proof_backend_version_drift",
+    "row_verified_false",
+    "non_claims_reordered",
+    "proof_verifier_hardening_reordered",
+    "validation_commands_reordered",
+    "non_claim_removed",
+    "validation_command_drift",
+    "proof_len_relabelled_as_nanozk_win"
+  ],
+  "non_claims": [
+    "not native verifier execution of the selected inner Stwo proofs",
+    "not recursion or proof-carrying data",
+    "not a native d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not full transformer inference",
+    "not production-ready zkML",
+    "not a native d128 two-slice recursive outer proof",
+    "not proof that Stwo verifies the selected inner Stwo proofs inside Stwo",
+    "not smaller than NANOZK's paper-reported transformer block proof row",
+    "not stable binary proof-size accounting"
+  ],
+  "result": "NARROW_GO_NATIVE_STWO_OUTER_STATEMENT_BINDING_NOT_VERIFIER_EXECUTION",
+  "schema": "zkai-native-d128-two-slice-outer-statement-gate-v1",
+  "source_artifacts": {
+    "envelope_json": {
+      "bytes": 94864,
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
+      "sha256": "4f7006bd8af151bf0303317fc50c51d2c309d37caa4f5dcb1901bba5cc7e9efe"
+    },
+    "input_json": {
+      "bytes": 5688,
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json",
+      "sha256": "0da299ee1b3f50f862d96bc01ca8c934f76b9393d05783d4e1f17a6fb1c41402"
+    },
+    "input_tsv": {
+      "bytes": 875,
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.tsv",
+      "sha256": "9e409cfd67a83b999e87dc5888a6ea7d82d5bd27feea637f5b4966420da3e41c"
+    }
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_d128_two_slice_outer_statement_input.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.tsv",
+    "cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- prove docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- verify docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test d128_native_two_slice_outer_statement_proof --lib --features stwo-backend",
+    "python3 scripts/zkai_native_d128_two_slice_outer_statement_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.tsv",
+    "git diff --check",
+    "just gate-fast"
+  ]
+}

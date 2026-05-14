@@ -784,6 +784,34 @@ Tablero boundary.
   selected `rmsnorm_public_rows` and `rmsnorm_projection_bridge` verifier
   checks. See
   `docs/engineering/zkai-native-d128-two-slice-outer-backend-2026-05-14.md`.
+- The follow-up native d128 two-slice outer statement route is a narrow GO, not
+  the full verifier-execution result. It produces a real native Stwo proof over
+  the two host-verified slice-result rows, binding slice IDs, row counts,
+  statement commitments, public-instance commitments, proof-native parameter
+  commitments, source evidence hashes, backend labels, verifier-domain labels,
+  the two-slice target commitment, the accumulator commitment, and the
+  verifier-handle commitment. The checked JSON-serialized native Stwo proof
+  payload is `11,041` bytes, the envelope is `94,864` bytes, and the gate
+  rejects `25 / 25` artifact/relabeling/schema/list-order mutations, including
+  unknown envelope-key rejection. The proof uses an empty
+  preprocessed tree plus a verifier-recomputed base-trace root for the checked
+  row surface. Backend/profile:
+  `Rust nightly-2025-07-14` with `--features stwo-backend`; backend version:
+  `stwo-d128-two-slice-outer-statement-air-proof-v1`; timing mode:
+  `proof_existence_and_byte_accounting_only_not_public_benchmark`; evidence:
+  `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.tsv`,
+  `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.tsv`;
+  reproduction command:
+  `cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- prove docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json`.
+  This is `1.600145x`
+  NANOZK's paper-reported `6.9 KB` row and must not be reported as a NANOZK
+  proof-size win, recursion, PCD, native verifier execution, stable binary
+  proof-size accounting, or a full d128 transformer-block proof. See
+  `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`.
 
 ## Source-of-truth documents
 
