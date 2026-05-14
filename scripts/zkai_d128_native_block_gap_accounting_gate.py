@@ -802,8 +802,8 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         for _temp_path, _temp_name, parent_fd, _identity in temps:
             try:
                 os.close(parent_fd)
-            except OSError:
-                pass
+            except OSError as err:
+                print(f"warning: failed to close output directory fd: {err}", file=sys.stderr)
     else:
         for path in reversed(replaced):
             try:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
 import pathlib
 import tempfile
@@ -179,9 +181,12 @@ class D128NativeBlockGapAccountingGateTests(unittest.TestCase):
                     raise OSError("simulated directory close failure")
 
             gate.os.close = close_then_fail_for_directory
-            gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8")), self.payload)
             self.assertIn("comparison_status", tsv_path.read_text(encoding="utf-8"))
+            self.assertIn("warning: failed to close output directory fd", stderr.getvalue())
         finally:
             gate.os.close = original_close
             json_path.unlink(missing_ok=True)
