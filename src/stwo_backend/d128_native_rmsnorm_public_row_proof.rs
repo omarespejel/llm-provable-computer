@@ -76,7 +76,7 @@ const ZKAI_D128_RMSNORM_PUBLIC_ROW_CONFIG_DOMAIN: &str = "ptvm:zkai:d128-rmsnorm
 const ZKAI_D128_RMSNORM_PUBLIC_ROW_SCALE_LEAF_DOMAIN: &str = "ptvm:zkai:d128:rms-scale-leaf:v1";
 const ZKAI_D128_RMSNORM_PUBLIC_ROW_SCALE_TREE_DOMAIN: &str = "ptvm:zkai:d128:rms-scale-tree:v1";
 
-const COLUMN_IDS: [&str; 9] = [
+pub(crate) const ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS: [&str; 9] = [
     "zkai/d128/rmsnorm/index",
     "zkai/d128/rmsnorm/input_q8",
     "zkai/d128/rmsnorm/rms_scale_q8",
@@ -87,9 +87,12 @@ const COLUMN_IDS: [&str; 9] = [
     "zkai/d128/rmsnorm/norm_remainder",
     "zkai/d128/rmsnorm/rms_q8",
 ];
-const AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/average_square_floor";
-const SQRT_LOW_DELTA_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_low_delta";
-const SQRT_HIGH_GAP_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_high_gap";
+pub(crate) const ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str =
+    "zkai/d128/rmsnorm/scalar/average_square_floor";
+pub(crate) const ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID: &str =
+    "zkai/d128/rmsnorm/scalar/sqrt_low_delta";
+pub(crate) const ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID: &str =
+    "zkai/d128/rmsnorm/scalar/sqrt_high_gap";
 const RMSNORM_OUTPUT_ROW_COMMITMENT_DOMAIN: &str = "ptvm:zkai:d128-rmsnorm-output-row:v1";
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
@@ -162,14 +165,26 @@ impl FrameworkEval for D128RmsnormPublicRowEval {
             norm_remainder.clone(),
             rms_q8.clone(),
         ];
-        for (column_id, trace_value) in COLUMN_IDS.iter().zip(trace_values) {
+        for (column_id, trace_value) in ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS
+            .iter()
+            .zip(trace_values)
+        {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
         }
         for (column_id, trace_value) in [
-            (AVERAGE_SQUARE_FLOOR_COLUMN_ID, average_square_floor.clone()),
-            (SQRT_LOW_DELTA_COLUMN_ID, sqrt_low_delta.clone()),
-            (SQRT_HIGH_GAP_COLUMN_ID, sqrt_high_gap.clone()),
+            (
+                ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
+                average_square_floor.clone(),
+            ),
+            (
+                ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
+                sqrt_low_delta.clone(),
+            ),
+            (
+                ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID,
+                sqrt_high_gap.clone(),
+            ),
         ] {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
@@ -971,11 +986,19 @@ fn public_row_trace(
 }
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
-    let mut ids: Vec<PreProcessedColumnId> =
-        COLUMN_IDS.into_iter().map(preprocessed_column_id).collect();
-    ids.push(preprocessed_column_id(AVERAGE_SQUARE_FLOOR_COLUMN_ID));
-    ids.push(preprocessed_column_id(SQRT_LOW_DELTA_COLUMN_ID));
-    ids.push(preprocessed_column_id(SQRT_HIGH_GAP_COLUMN_ID));
+    let mut ids: Vec<PreProcessedColumnId> = ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS
+        .into_iter()
+        .map(preprocessed_column_id)
+        .collect();
+    ids.push(preprocessed_column_id(
+        ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
+    ));
+    ids.push(preprocessed_column_id(
+        ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
+    ));
+    ids.push(preprocessed_column_id(
+        ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID,
+    ));
     for bit_index in 0..D128_RMSNORM_SCALAR_RANGE_BITS {
         ids.push(preprocessed_column_id(&scalar_bit_column_id(
             "low", bit_index,
@@ -1009,6 +1032,20 @@ fn scalar_bit_column_id(kind: &str, bit_index: usize) -> String {
 
 fn remainder_bit_column_id(kind: &str, bit_index: usize) -> String {
     format!("zkai/d128/rmsnorm/remainder/{kind}_bit_{bit_index:02}")
+}
+
+pub(crate) fn zkai_d128_rmsnorm_public_row_scalar_bit_column_id(
+    kind: &str,
+    bit_index: usize,
+) -> String {
+    scalar_bit_column_id(kind, bit_index)
+}
+
+pub(crate) fn zkai_d128_rmsnorm_public_row_remainder_bit_column_id(
+    kind: &str,
+    bit_index: usize,
+) -> String {
+    remainder_bit_column_id(kind, bit_index)
 }
 
 fn field_usize(value: usize) -> BaseField {

@@ -82,7 +82,7 @@ const PROOF_NATIVE_PARAMETER_DOMAIN: &str = "ptvm:zkai:d128-proof-native-paramet
 const RMSNORM_OUTPUT_ROW_COMMITMENT_DOMAIN: &str = "ptvm:zkai:d128-rmsnorm-output-row:v1";
 const PROJECTION_INPUT_ROW_COMMITMENT_DOMAIN: &str = "ptvm:zkai:d128-projection-input-row:v1";
 
-const COLUMN_IDS: [&str; 3] = [
+pub(crate) const ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS: [&str; 3] = [
     "zkai/d128/rmsnorm-to-projection/index",
     "zkai/d128/rmsnorm-to-projection/rmsnorm_normed_q8",
     "zkai/d128/rmsnorm-to-projection/projection_input_q8",
@@ -136,11 +136,14 @@ impl FrameworkEval for D128RmsnormToProjectionBridgeEval {
         let rmsnorm_normed_q8 = eval.next_trace_mask();
         let projection_input_q8 = eval.next_trace_mask();
 
-        for (column_id, trace_value) in COLUMN_IDS.iter().zip([
-            index,
-            rmsnorm_normed_q8.clone(),
-            projection_input_q8.clone(),
-        ]) {
+        for (column_id, trace_value) in ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS
+            .iter()
+            .zip([
+                index,
+                rmsnorm_normed_q8.clone(),
+                projection_input_q8.clone(),
+            ])
+        {
             let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
             eval.add_constraint(trace_value - public_value);
         }
@@ -648,7 +651,10 @@ fn bridge_trace(
 }
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
-    COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_COLUMN_IDS
+        .into_iter()
+        .map(preprocessed_column_id)
+        .collect()
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {

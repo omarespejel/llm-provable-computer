@@ -129,6 +129,15 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact record counts drift"):
             gate.build_payload(summary, prior_budget(), include_mutations=False)
 
+    def test_rejects_envelope_size_drift(self):
+        with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact envelope JSON size drift"):
+            gate.build_payload(
+                cli_summary(),
+                prior_budget(),
+                include_mutations=False,
+                compact_envelope_size_bytes=gate.COMPACT_ENVELOPE_BYTES + 1,
+            )
+
     def test_rejects_bool_encoded_metrics(self):
         summary = cli_summary()
         payload = gate.build_payload(summary, prior_budget(), include_mutations=False)
