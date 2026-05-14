@@ -81,7 +81,8 @@
   "interpretation": [
     "NANOZK and Jolt Atlas are the relevant layerwise/end-to-end competitors for headline zkML metrics.",
     "The local repo does not yet have a d128 layer proof to compare on proof size or verifier time.",
-    "The local competitive claim is currently architectural: STARK-native fusion saves duplicated opening/decommitment plumbing.",
+    "The local competitive claim is architectural: STARK-native fusion saves duplicated opening/decommitment plumbing.",
+    "The executable package-accounting rows show a smaller verifier-facing package than the source statement chain, but they are external receipt accounting rather than native layer proof evidence.",
     "The next real block milestone is a parameterized d64 then d128 RMSNorm/SwiGLU/residual proof surface with the same statement bindings."
   ],
   "local_rows": [
@@ -114,17 +115,38 @@
       "system": "provable-transformer-vm",
       "unit": "linear_muls",
       "value": 196608
+    },
+    {
+      "comparison_status": "LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_NOT_MATCHED_LAYER_PROOF_BENCHMARK",
+      "local_status": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF",
+      "metric": "compressed artifact plus proof plus public signals",
+      "support": "0.324945x source; saves 9872 bytes; 12 / 12 package mutations rejected; 40 receipt mutations rejected",
+      "surface": "attention-derived d128 executable package without VK",
+      "system": "provable-transformer-vm",
+      "unit": "bytes",
+      "value": 4752
+    },
+    {
+      "comparison_status": "LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_WITH_SETUP_NOT_MATCHED_LAYER_PROOF_BENCHMARK",
+      "local_status": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF",
+      "metric": "compressed artifact plus proof plus public signals plus verification key",
+      "support": "0.725383x source; saves 4016 bytes; 17 public signals; VK counted as self-contained package",
+      "surface": "attention-derived d128 executable package with VK",
+      "system": "provable-transformer-vm",
+      "unit": "bytes",
+      "value": 10608
     }
   ],
   "non_claims": [
     "not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, or RISC Zero",
     "not a local d128 proof result",
     "not proof-size or verifier-time evidence for a local d128 transformer block",
+    "not native proof-size evidence from the external package-accounting rows",
     "not full transformer inference",
     "not exact real-valued Softmax",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:33153867ba85c312a3218d945b46dd86a323b52fbbebdd4e284e898a6783c27f",
+  "payload_commitment": "sha256:1f3102fded6ee40d98a4c7ba2759c8938786fe36845edf91e24d628bf27a3fb4",
   "schema": "zkai-may2026-competitor-metric-matrix-v1",
   "source_artifacts": [
     {
@@ -146,6 +168,11 @@
       "kind": "local_d128_target_json",
       "path": "docs/engineering/evidence/zkai-d128-layerwise-comparator-target-2026-05.json",
       "sha256": "bf1b5cb0dc3471d5c7421f091b4f94f986e38f2ed80e91f325f26fc8080617a0"
+    },
+    {
+      "kind": "local_one_block_package_accounting_json",
+      "path": "docs/engineering/evidence/zkai-one-block-executable-package-accounting-2026-05.json",
+      "sha256": "c7eae55c04fac6e1412752c07bfdf32deeb4e2059a51c3b279037905ce703277"
     }
   ],
   "validation_commands": [

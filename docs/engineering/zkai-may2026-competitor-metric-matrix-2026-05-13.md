@@ -15,7 +15,8 @@ The comparison posture is:
 > layerwise or end-to-end zkML proving. This repository should compare against
 > them honestly, but its current strongest local result is architectural:
 > STARK-native attention/Softmax-table fusion saves duplicated opening and
-> decommitment plumbing.
+> decommitment plumbing, and the attention-derived one-block route now has
+> explicit external package accounting.
 
 ## Evidence
 
@@ -27,6 +28,18 @@ The comparison posture is:
   `scripts/zkai_may2026_competitor_metric_matrix_gate.py`
 - Tests:
   `scripts/tests/test_zkai_may2026_competitor_metric_matrix_gate.py`
+
+## Dependency Discipline
+
+The evidence graph is intentionally acyclic:
+
+```text
+published zkML TSV -> one-block surface -> package accounting -> competitor matrix
+```
+
+The one-block surface reads the published zkML TSV directly for NANOZK context.
+The competitor matrix can therefore consume package accounting without feeding
+back into the surface that package accounting depends on.
 
 ## Source-Backed External Rows
 
@@ -50,6 +63,8 @@ These are source-backed context rows, not local reproductions.
 | Stwo attention/Softmax-table fusion | `GO_BOUNDED_ARCHITECTURE_MECHANISM` | `194,097` matched JSON proof bytes saved |
 | d64 RMSNorm/SwiGLU/residual block receipt | `GO_STATEMENT_BOUND_RECEIPT_COMPOSITION` | `49,600` checked slice rows |
 | d128 RMSNorm/SwiGLU/residual comparator target | `NO_GO_LOCAL_D128_PROOF_ARTIFACT_MISSING` | `196,608` estimated linear multiplications |
+| attention-derived d128 executable package without VK | `GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF` | `4,752` bytes, `0.324945x` source |
+| attention-derived d128 executable package with VK | `GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF` | `10,608` bytes, `0.725383x` source |
 
 ## Interpretation
 
@@ -61,15 +76,25 @@ The sharper claim is that the STARK-native route exposes a different mechanism:
 attention arithmetic and lookup-heavy table membership can share proof-system
 opening structure when fused into one native proof object.
 
-The next block milestone is not another wrapper around the width-4 block. It is
-a parameterized d64 then d128 RMSNorm/SwiGLU/residual proof surface with the
-same statement bindings used by the d128 comparator target.
+The new package-accounting rows are useful because they make the attention-derived
+one-block statement route comparable as an artifact package:
+
+```text
+source statement chain: 14,624 bytes
+compressed transcript + proof + public signals: 4,752 bytes
+compressed transcript + proof + public signals + VK: 10,608 bytes
+```
+
+This is still not a native layer proof. The next block milestone is a
+parameterized d64 then d128 RMSNorm/SwiGLU/residual proof surface with the same
+statement bindings used by the d128 comparator target.
 
 ## Non-Claims
 
 - Not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, or RISC Zero.
 - Not a local d128 proof result.
 - Not proof-size or verifier-time evidence for a local d128 transformer block.
+- Not native proof-size evidence from the external package-accounting rows.
 - Not full transformer inference.
 - Not exact real-valued Softmax.
 - Not production-ready.

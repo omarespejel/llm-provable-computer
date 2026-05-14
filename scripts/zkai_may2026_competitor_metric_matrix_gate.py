@@ -25,6 +25,7 @@ PUBLISHED_ZKML_NUMBERS = PAPER_EVIDENCE / "published-zkml-numbers-2026-04.tsv"
 FUSION_MECHANISM = ENGINEERING_EVIDENCE / "zkai-attention-kv-stwo-fusion-mechanism-ablation-2026-05.json"
 D64_BLOCK_RECEIPT = ENGINEERING_EVIDENCE / "zkai-d64-block-receipt-composition-gate-2026-05.json"
 D128_TARGET = ENGINEERING_EVIDENCE / "zkai-d128-layerwise-comparator-target-2026-05.json"
+PACKAGE_ACCOUNTING = ENGINEERING_EVIDENCE / "zkai-one-block-executable-package-accounting-2026-05.json"
 JSON_OUT = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.json"
 TSV_OUT = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.tsv"
 
@@ -48,10 +49,22 @@ NON_CLAIMS = [
     "not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, or RISC Zero",
     "not a local d128 proof result",
     "not proof-size or verifier-time evidence for a local d128 transformer block",
+    "not native proof-size evidence from the external package-accounting rows",
     "not full transformer inference",
     "not exact real-valued Softmax",
     "not production-ready",
 ]
+
+EXPECTED_PACKAGE_SOURCE_BYTES = 14_624
+EXPECTED_PACKAGE_WITHOUT_VK_BYTES = 4_752
+EXPECTED_PACKAGE_WITHOUT_VK_RATIO = 0.324945
+EXPECTED_PACKAGE_WITHOUT_VK_SAVING_BYTES = 9_872
+EXPECTED_PACKAGE_WITH_VK_BYTES = 10_608
+EXPECTED_PACKAGE_WITH_VK_RATIO = 0.725383
+EXPECTED_PACKAGE_WITH_VK_SAVING_BYTES = 4_016
+EXPECTED_PACKAGE_MUTATIONS = 12
+EXPECTED_PACKAGE_RECEIPT_MUTATIONS = 40
+EXPECTED_PACKAGE_PUBLIC_SIGNAL_COUNT = 17
 
 EXPECTED_EXTERNAL_ROWS = {
     ("NANOZK", "Transformer block proof", "Per-layer block proof"): {
@@ -179,7 +192,11 @@ def _source_from_bytes(path: pathlib.Path, kind: str, raw: bytes) -> dict[str, s
 
 def _parse_json_bytes(path: pathlib.Path, raw: bytes) -> dict[str, Any]:
     try:
-        payload = json.loads(raw.decode("utf-8"), parse_constant=_reject_json_constant)
+        payload = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as err:
         raise CompetitorMetricMatrixError(f"failed to load JSON source {path}: {err}") from err
     if not isinstance(payload, dict):
@@ -193,6 +210,15 @@ def load_json(path: pathlib.Path) -> dict[str, Any]:
 
 def _reject_json_constant(value: str) -> None:
     raise ValueError(f"non-finite JSON constant: {value}")
+
+
+def _reject_duplicate_json_keys(items: list[tuple[str, Any]]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in items:
+        if key in payload:
+            raise ValueError(f"duplicate JSON key: {key}")
+        payload[key] = value
+    return payload
 
 
 def _parse_tsv_bytes(path: pathlib.Path, raw: bytes) -> list[dict[str, str]]:
@@ -313,6 +339,13 @@ def _share_source_field(payload: dict[str, Any], path: tuple[str, ...], label: s
     return number
 
 
+def _bool_source_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> bool:
+    value = _source_field(payload, path, label)
+    if type(value) is not bool:
+        raise CompetitorMetricMatrixError(f"{label} must be boolean")
+    return value
+
+
 def _string_source_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> str:
     value = _source_field(payload, path, label)
     if not isinstance(value, str):
@@ -320,7 +353,12 @@ def _string_source_field(payload: dict[str, Any], path: tuple[str, ...], label: 
     return value
 
 
-def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any]) -> list[dict[str, Any]]:
+def _local_rows(
+    fusion: dict[str, Any],
+    d64: dict[str, Any],
+    d128: dict[str, Any],
+    package: dict[str, Any],
+) -> list[dict[str, Any]]:
     if _string_source_field(fusion, ("decision",), "fusion decision") != (
         "GO_STARK_NATIVE_FUSION_MECHANISM_ABLATION_FOR_PAPER_ARCHITECTURE_CLAIM"
     ):
@@ -329,6 +367,23 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
         raise CompetitorMetricMatrixError("d64 block receipt decision drift")
     if _string_source_field(d128, ("decision",), "d128 decision") != "NO_GO_D128_LAYERWISE_PROOF_ARTIFACT_MISSING":
         raise CompetitorMetricMatrixError("d128 target decision drift")
+    if (
+        _string_source_field(package, ("schema",), "package accounting schema")
+        != "zkai-one-block-executable-package-accounting-v1"
+    ):
+        raise CompetitorMetricMatrixError("package accounting schema drift")
+    if (
+        _string_source_field(package, ("decision",), "package accounting decision")
+        != "GO_ONE_BLOCK_EXECUTABLE_PACKAGE_ACCOUNTING_NO_GO_NATIVE_PROOF_SIZE"
+    ):
+        raise CompetitorMetricMatrixError("package accounting decision drift")
+    if (
+        _string_source_field(package, ("result",), "package accounting result")
+        != "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_BLOCK_PROOF"
+    ):
+        raise CompetitorMetricMatrixError("package accounting result drift")
+    if not _bool_source_field(package, ("all_mutations_rejected",), "package accounting all mutations rejected"):
+        raise CompetitorMetricMatrixError("package accounting mutations must all reject")
 
     fused_savings = _integer_source_field(fusion, ("route_matrix", "fused_savings_bytes_total"), "fusion savings")
     matched_profiles = _integer_source_field(
@@ -345,6 +400,32 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
         d128, ("summary", "target_estimated_linear_muls"), "d128 target linear multiplications"
     )
     first_blocker = _string_source_field(d128, ("summary", "first_blocker"), "d128 first blocker")
+    package_source_bytes = _integer_source_field(
+        package, ("summary", "source_statement_chain_bytes"), "package source bytes"
+    )
+    package_without_vk_bytes = _integer_source_field(
+        package, ("summary", "package_without_vk_bytes"), "package without VK bytes"
+    )
+    package_without_vk_ratio = _share_source_field(
+        package, ("summary", "package_without_vk_ratio_vs_source"), "package without VK ratio"
+    )
+    package_without_vk_saving = _integer_source_field(
+        package, ("summary", "package_without_vk_saving_bytes"), "package without VK saving"
+    )
+    package_with_vk_bytes = _integer_source_field(package, ("summary", "package_with_vk_bytes"), "package with VK bytes")
+    package_with_vk_ratio = _share_source_field(
+        package, ("summary", "package_with_vk_ratio_vs_source"), "package with VK ratio"
+    )
+    package_with_vk_saving = _integer_source_field(
+        package, ("summary", "package_with_vk_saving_bytes"), "package with VK saving"
+    )
+    package_cases = _integer_source_field(package, ("case_count",), "package mutation cases")
+    package_receipt_mutations = _integer_source_field(
+        package, ("summary", "receipt_mutations_rejected"), "package receipt mutations"
+    )
+    package_public_signals = _integer_source_field(
+        package, ("summary", "receipt_public_signal_count"), "package public signals"
+    )
     if fused_savings <= 0:
         raise CompetitorMetricMatrixError("fusion savings must be positive")
     if matched_profiles <= 0:
@@ -357,6 +438,21 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
         raise CompetitorMetricMatrixError("d64 mutation rejection summary drift")
     if target_linear_muls <= 0:
         raise CompetitorMetricMatrixError("d128 target linear multiplications must be positive")
+    expected_package_values = {
+        "package source bytes": (package_source_bytes, EXPECTED_PACKAGE_SOURCE_BYTES),
+        "package without VK bytes": (package_without_vk_bytes, EXPECTED_PACKAGE_WITHOUT_VK_BYTES),
+        "package without VK ratio": (package_without_vk_ratio, EXPECTED_PACKAGE_WITHOUT_VK_RATIO),
+        "package without VK saving": (package_without_vk_saving, EXPECTED_PACKAGE_WITHOUT_VK_SAVING_BYTES),
+        "package with VK bytes": (package_with_vk_bytes, EXPECTED_PACKAGE_WITH_VK_BYTES),
+        "package with VK ratio": (package_with_vk_ratio, EXPECTED_PACKAGE_WITH_VK_RATIO),
+        "package with VK saving": (package_with_vk_saving, EXPECTED_PACKAGE_WITH_VK_SAVING_BYTES),
+        "package mutation cases": (package_cases, EXPECTED_PACKAGE_MUTATIONS),
+        "package receipt mutations": (package_receipt_mutations, EXPECTED_PACKAGE_RECEIPT_MUTATIONS),
+        "package public signals": (package_public_signals, EXPECTED_PACKAGE_PUBLIC_SIGNAL_COUNT),
+    }
+    for label, (actual, expected) in expected_package_values.items():
+        if actual != expected:
+            raise CompetitorMetricMatrixError(f"{label} drift")
 
     return [
         {
@@ -388,6 +484,33 @@ def _local_rows(fusion: dict[str, Any], d64: dict[str, Any], d128: dict[str, Any
             "unit": "linear_muls",
             "support": first_blocker,
             "comparison_status": "TARGET_SPEC_ONLY_NOT_LOCAL_PROOF_RESULT",
+        },
+        {
+            "system": "provable-transformer-vm",
+            "surface": "attention-derived d128 executable package without VK",
+            "local_status": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF",
+            "metric": "compressed artifact plus proof plus public signals",
+            "value": package_without_vk_bytes,
+            "unit": "bytes",
+            "support": (
+                f"{package_without_vk_ratio:.6f}x source; saves {package_without_vk_saving} bytes; "
+                f"{package_cases} / {package_cases} package mutations rejected; "
+                f"{package_receipt_mutations} receipt mutations rejected"
+            ),
+            "comparison_status": "LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_NOT_MATCHED_LAYER_PROOF_BENCHMARK",
+        },
+        {
+            "system": "provable-transformer-vm",
+            "surface": "attention-derived d128 executable package with VK",
+            "local_status": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_LAYER_PROOF",
+            "metric": "compressed artifact plus proof plus public signals plus verification key",
+            "value": package_with_vk_bytes,
+            "unit": "bytes",
+            "support": (
+                f"{package_with_vk_ratio:.6f}x source; saves {package_with_vk_saving} bytes; "
+                f"{package_public_signals} public signals; VK counted as self-contained package"
+            ),
+            "comparison_status": "LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_WITH_SETUP_NOT_MATCHED_LAYER_PROOF_BENCHMARK",
         },
     ]
 
@@ -426,10 +549,12 @@ def build_payload_uncommitted() -> dict[str, Any]:
     fusion_raw = read_source_bytes(FUSION_MECHANISM, "fusion mechanism JSON")
     d64_raw = read_source_bytes(D64_BLOCK_RECEIPT, "d64 block receipt JSON")
     d128_raw = read_source_bytes(D128_TARGET, "d128 target JSON")
+    package_raw = read_source_bytes(PACKAGE_ACCOUNTING, "one-block package accounting JSON")
     published = _parse_tsv_bytes(PUBLISHED_ZKML_NUMBERS, published_raw)
     fusion = _parse_json_bytes(FUSION_MECHANISM, fusion_raw)
     d64 = _parse_json_bytes(D64_BLOCK_RECEIPT, d64_raw)
     d128 = _parse_json_bytes(D128_TARGET, d128_raw)
+    package = _parse_json_bytes(PACKAGE_ACCOUNTING, package_raw)
     return {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -439,13 +564,15 @@ def build_payload_uncommitted() -> dict[str, Any]:
             _source_from_bytes(FUSION_MECHANISM, "local_fusion_mechanism_json", fusion_raw),
             _source_from_bytes(D64_BLOCK_RECEIPT, "local_d64_block_receipt_json", d64_raw),
             _source_from_bytes(D128_TARGET, "local_d128_target_json", d128_raw),
+            _source_from_bytes(PACKAGE_ACCOUNTING, "local_one_block_package_accounting_json", package_raw),
         ],
         "external_rows": _external_rows(published),
-        "local_rows": _local_rows(fusion, d64, d128),
+        "local_rows": _local_rows(fusion, d64, d128, package),
         "interpretation": [
             "NANOZK and Jolt Atlas are the relevant layerwise/end-to-end competitors for headline zkML metrics.",
             "The local repo does not yet have a d128 layer proof to compare on proof size or verifier time.",
-            "The local competitive claim is currently architectural: STARK-native fusion saves duplicated opening/decommitment plumbing.",
+            "The local competitive claim is architectural: STARK-native fusion saves duplicated opening/decommitment plumbing.",
+            "The executable package-accounting rows show a smaller verifier-facing package than the source statement chain, but they are external receipt accounting rather than native layer proof evidence.",
             "The next real block milestone is a parameterized d64 then d128 RMSNorm/SwiGLU/residual proof surface with the same statement bindings.",
         ],
         "non_claims": NON_CLAIMS,
