@@ -258,6 +258,16 @@ class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
             after = set(pathlib.Path(tmp).iterdir())
         self.assertEqual(after, before)
 
+    def test_write_text_atomic_preserves_replace_error_when_cleanup_fails(self):
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            out = pathlib.Path(tmp) / "out.json"
+            with (
+                mock.patch.object(pathlib.Path, "replace", side_effect=RuntimeError("replace failed")),
+                mock.patch.object(pathlib.Path, "unlink", side_effect=PermissionError("cleanup failed")),
+                self.assertRaisesRegex(RuntimeError, "replace failed"),
+            ):
+                gate.write_text_atomic(out, "{}")
+
 
 if __name__ == "__main__":
     unittest.main()

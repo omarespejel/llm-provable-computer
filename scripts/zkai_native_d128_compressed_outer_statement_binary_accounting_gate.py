@@ -9,6 +9,7 @@ Stwo proof serialization or a matched NANOZK proof-size win.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import csv
 import io
@@ -624,8 +625,9 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
         os.fsync(handle.fileno())
     try:
         tmp_path.replace(path)
-    except BaseException:
-        tmp_path.unlink(missing_ok=True)
+    except Exception:
+        with contextlib.suppress(OSError):
+            tmp_path.unlink(missing_ok=True)
         raise
 
 
