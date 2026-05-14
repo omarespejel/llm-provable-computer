@@ -784,7 +784,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             if path.exists():
                 if path.is_symlink():
                     raise D128NativeBlockGapAccountingError("output path must not include symlink components")
-                original_bytes[path] = path.read_bytes()
+                original_bytes[path] = SURFACE.read_source_bytes(path, "existing output")
             else:
                 original_bytes[path] = None
         for index, (path, contents) in enumerate(outputs, start=1):
@@ -793,10 +793,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             temps.append(temp)
             replace_temp(temp, path, label)
             replaced.append(path)
-        for temp_path, _temp_name, parent_fd, _identity in temps:
+        for _temp_path, temp_name, parent_fd, _identity in temps:
             try:
-                if temp_path.exists():
-                    temp_path.unlink()
+                os.unlink(temp_name, dir_fd=parent_fd)
+            except FileNotFoundError:
+                pass
             finally:
                 os.close(parent_fd)
     except Exception as err:  # noqa: BLE001 - wrap write failures with rollback diagnostics.
@@ -811,10 +812,11 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
                     rollback_replace(path, original)
             except Exception as err:  # noqa: BLE001 - report rollback diagnostics.
                 rollback_errors.append(str(err) or type(err).__name__)
-        for temp_path, _temp_name, parent_fd, _identity in temps:
+        for _temp_path, temp_name, parent_fd, _identity in temps:
             try:
-                if temp_path.exists():
-                    temp_path.unlink()
+                os.unlink(temp_name, dir_fd=parent_fd)
+            except FileNotFoundError:
+                pass
             except Exception as err:  # noqa: BLE001
                 rollback_errors.append(str(err) or type(err).__name__)
             finally:
