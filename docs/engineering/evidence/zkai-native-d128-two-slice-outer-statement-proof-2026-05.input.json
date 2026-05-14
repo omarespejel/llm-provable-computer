@@ -17,13 +17,9 @@
   "proof_verifier_hardening": [
     "selected slice order checked before proof verification",
     "selected row count checked before proof verification",
-    "two-slice target commitment bound into every outer statement row",
-    "accumulator commitment bound into every outer statement row",
-    "verifier-handle commitment bound into every outer statement row",
-    "selected slice statement commitments bound as digest limbs",
-    "selected source evidence hashes bound as digest limbs",
-    "proof backend version labels bound as digest limbs",
-    "verifier-domain label bound as digest limbs",
+    "statement commitment binds selected slice IDs, source hashes, commitments, and verifier domain",
+    "public-instance commitment bound as compressed digest limbs",
+    "proof-native parameter commitment bound as compressed digest limbs",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing"

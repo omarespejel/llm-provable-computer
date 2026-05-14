@@ -35,11 +35,13 @@ class NativeD128TwoSliceOuterStatementGateTests(unittest.TestCase):
             result["result"],
             "NARROW_GO_NATIVE_STWO_OUTER_STATEMENT_BINDING_NOT_VERIFIER_EXECUTION",
         )
-        self.assertEqual(result["metrics"]["native_outer_statement_proof_bytes"], 11041)
-        self.assertEqual(result["metrics"]["proof_vs_nanozk_reported_row_ratio"], 1.600145)
+        self.assertEqual(result["metrics"]["native_outer_statement_proof_bytes"], 3516)
+        self.assertEqual(result["metrics"]["proof_vs_nanozk_reported_row_ratio"], 0.509565)
+        self.assertEqual(result["metrics"]["proof_saving_vs_prior_uncompressed_bytes"], 7525)
+        self.assertEqual(result["metrics"]["proof_saving_vs_prior_uncompressed_share"], 0.681551)
         self.assertIn("not a NANOZK proof-size win", result["non_claims"])
         self.assertIn(
-            "not smaller than NANOZK's paper-reported transformer block proof row",
+            "not a matched NANOZK proof-size win even though this payload is smaller than NANOZK's paper-reported row",
             result["non_claims"],
         )
         self.assertIn("not stable binary proof-size accounting", result["non_claims"])
