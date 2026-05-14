@@ -26,7 +26,7 @@ Source artifacts:
 - `docs/engineering/evidence/zkai-d128-block-receipt-composition-gate-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-snark-statement-receipt-2026-05.json`
-- `docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json`
+- `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`
 
 Checked local rows:
 
