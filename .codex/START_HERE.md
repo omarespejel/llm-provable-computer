@@ -93,8 +93,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 87. `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`
 88. `docs/engineering/zkai-native-d128-compressed-outer-statement-binary-accounting-2026-05-14.md`
 89. `docs/engineering/zkai-native-d128-two-slice-verifier-execution-target-2026-05-14.md`
-90. `docs/engineering/reproducibility.md`
-91. `git status --short --branch`
+90. `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`
+91. `docs/engineering/reproducibility.md`
+92. `git status --short --branch`
 
 ## What this repository is now
 
