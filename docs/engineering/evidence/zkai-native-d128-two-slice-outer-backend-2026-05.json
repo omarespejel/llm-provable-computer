@@ -122,8 +122,9 @@
       "reason": "the repository can build native Stwo slice proofs, but has no selected-verifier execution AIR for an outer proof",
       "required_for_go": false,
       "required_tokens": [
-        "toml_line:stwo = { version = \"2.2.0\", default-features = false, features = [\"std\", \"prover\"], optional = true }",
-        "toml_line:stwo-backend = [\"dep:stwo\", \"dep:stwo-constraint-framework\", \"dep:flate2\"]"
+        "toml_dependency:stwo.version=2.2.0",
+        "toml_dependency_features:stwo=std,prover",
+        "toml_feature_contains:stwo-backend=dep:stwo,dep:stwo-constraint-framework,dep:flate2"
       ],
       "required_tokens_present": true,
       "rows": null,
@@ -202,7 +203,7 @@
       "classification": "NO_GO_AUDIT_TESTS_NOT_NATIVE_OUTER_PROOF_TESTS",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "77a4d03f47071e3727c5e337e8095cd4176bc31ffa0c7b8e32b1547bce4a1e41",
+      "file_sha256": "2a9cdcd03ab301c780cd9e827b8a5cc0e415b2262f0290442444b80d02b62e3f",
       "kind": "current_no_go_audit_tests",
       "missing_required_tokens": [],
       "name": "current_no_go_gate_tests",
@@ -218,7 +219,7 @@
       "supports_native_outer_claim": false
     }
   ],
-  "case_count": 29,
+  "case_count": 39,
   "cases": [
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
@@ -272,8 +273,18 @@
     },
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
-      "error": "candidate inventory mismatch",
+      "error": "source artifacts mismatch",
       "index": 5,
+      "mutated_accepted": false,
+      "mutation": "source_payload_hash_drift",
+      "rejected": true,
+      "rejection_layer": "source_artifacts",
+      "surface": "source_artifacts"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "candidate inventory mismatch",
+      "index": 6,
       "mutated_accepted": false,
       "mutation": "inner_stwo_promoted_to_outer_backend",
       "rejected": true,
@@ -283,7 +294,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 6,
+      "index": 7,
       "mutated_accepted": false,
       "mutation": "accumulator_promoted_to_native_outer_proof",
       "rejected": true,
@@ -293,7 +304,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 7,
+      "index": 8,
       "mutated_accepted": false,
       "mutation": "compression_promoted_to_native_outer_proof",
       "rejected": true,
@@ -303,7 +314,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 8,
+      "index": 9,
       "mutated_accepted": false,
       "mutation": "snark_receipt_promoted_to_native_outer_proof",
       "rejected": true,
@@ -313,7 +324,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 9,
+      "index": 10,
       "mutated_accepted": false,
       "mutation": "required_backend_module_removed",
       "rejected": true,
@@ -323,7 +334,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 10,
+      "index": 11,
       "mutated_accepted": false,
       "mutation": "candidate_file_hash_tampered",
       "rejected": true,
@@ -333,7 +344,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "candidate inventory mismatch",
-      "index": 11,
+      "index": 12,
       "mutated_accepted": false,
       "mutation": "candidate_required_token_removed",
       "rejected": true,
@@ -343,7 +354,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "native outer attempt mismatch",
-      "index": 12,
+      "index": 13,
       "mutated_accepted": false,
       "mutation": "native_outer_artifact_claimed",
       "rejected": true,
@@ -353,7 +364,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "native outer attempt mismatch",
-      "index": 13,
+      "index": 14,
       "mutated_accepted": false,
       "mutation": "local_verifier_handle_claimed",
       "rejected": true,
@@ -363,7 +374,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "native outer attempt mismatch",
-      "index": 14,
+      "index": 15,
       "mutated_accepted": false,
       "mutation": "public_input_binding_claimed",
       "rejected": true,
@@ -373,7 +384,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "native outer attempt mismatch",
-      "index": 15,
+      "index": 16,
       "mutated_accepted": false,
       "mutation": "native_proof_bytes_smuggled",
       "rejected": true,
@@ -382,40 +393,30 @@
     },
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
-      "error": "claim guard mismatch",
-      "index": 16,
-      "mutated_accepted": false,
-      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
-      "rejected": true,
-      "rejection_layer": "claim_guard",
-      "surface": "claim_guard"
-    },
-    {
-      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
-      "error": "claim guard mismatch",
+      "error": "native outer attempt mismatch",
       "index": 17,
       "mutated_accepted": false,
-      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
+      "mutation": "selected_slice_ids_reordered",
       "rejected": true,
-      "rejection_layer": "claim_guard",
-      "surface": "claim_guard"
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
     },
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
-      "error": "claim guard mismatch",
+      "error": "native outer attempt mismatch",
       "index": 18,
       "mutated_accepted": false,
-      "mutation": "matched_nanozk_claim_enabled",
+      "mutation": "selected_checked_rows_drift",
       "rejected": true,
-      "rejection_layer": "claim_guard",
-      "surface": "claim_guard"
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
     },
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "native outer attempt mismatch",
       "index": 19,
       "mutated_accepted": false,
-      "mutation": "first_blocker_removed",
+      "mutation": "target_commitment_drift",
       "rejected": true,
       "rejection_layer": "native_outer_attempt",
       "surface": "native_outer_attempt"
@@ -425,7 +426,7 @@
       "error": "native outer attempt mismatch",
       "index": 20,
       "mutated_accepted": false,
-      "mutation": "missing_backend_feature_removed",
+      "mutation": "accumulator_commitment_drift",
       "rejected": true,
       "rejection_layer": "native_outer_attempt",
       "surface": "native_outer_attempt"
@@ -435,6 +436,106 @@
       "error": "native outer attempt mismatch",
       "index": 21,
       "mutated_accepted": false,
+      "mutation": "verifier_handle_commitment_drift",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 22,
+      "mutated_accepted": false,
+      "mutation": "required_bound_field_removed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 23,
+      "mutated_accepted": false,
+      "mutation": "verifier_domain_label_drift",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 24,
+      "mutated_accepted": false,
+      "mutation": "backend_version_label_drift",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 25,
+      "mutated_accepted": false,
+      "mutation": "proof_backend_version_label_drift",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 26,
+      "mutated_accepted": false,
+      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 27,
+      "mutated_accepted": false,
+      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "claim guard mismatch",
+      "index": 28,
+      "mutated_accepted": false,
+      "mutation": "matched_nanozk_claim_enabled",
+      "rejected": true,
+      "rejection_layer": "claim_guard",
+      "surface": "claim_guard"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 29,
+      "mutated_accepted": false,
+      "mutation": "first_blocker_removed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 30,
+      "mutated_accepted": false,
+      "mutation": "missing_backend_feature_removed",
+      "rejected": true,
+      "rejection_layer": "native_outer_attempt",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
+      "error": "native outer attempt mismatch",
+      "index": 31,
+      "mutated_accepted": false,
       "mutation": "go_gate_weakened",
       "rejected": true,
       "rejection_layer": "native_outer_attempt",
@@ -443,7 +544,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "decision mismatch",
-      "index": 22,
+      "index": 32,
       "mutated_accepted": false,
       "mutation": "decision_changed_to_go",
       "rejected": true,
@@ -453,7 +554,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "result mismatch",
-      "index": 23,
+      "index": 33,
       "mutated_accepted": false,
       "mutation": "result_changed_to_go",
       "rejected": true,
@@ -463,7 +564,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "issue mismatch",
-      "index": 24,
+      "index": 34,
       "mutated_accepted": false,
       "mutation": "issue_changed",
       "rejected": true,
@@ -473,7 +574,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "claim boundary mismatch",
-      "index": 25,
+      "index": 35,
       "mutated_accepted": false,
       "mutation": "claim_boundary_changed",
       "rejected": true,
@@ -483,7 +584,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "non_claims mismatch",
-      "index": 26,
+      "index": 36,
       "mutated_accepted": false,
       "mutation": "non_claim_removed",
       "rejected": true,
@@ -493,7 +594,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "validation_commands mismatch",
-      "index": 27,
+      "index": 37,
       "mutated_accepted": false,
       "mutation": "validation_command_drift",
       "rejected": true,
@@ -503,7 +604,7 @@
     {
       "baseline_result": "BOUNDED_NO_GO_WITH_INNER_STWO_AND_COMPACT_PACKAGE_SIGNAL",
       "error": "top-level payload key set mismatch: missing=[] extra=['invented_native_outer_metric']",
-      "index": 28,
+      "index": 38,
       "mutated_accepted": false,
       "mutation": "unknown_top_level_field_added",
       "rejected": true,
@@ -565,121 +666,171 @@
     },
     {
       "index": 5,
+      "mutation": "source_payload_hash_drift",
+      "surface": "source_artifacts"
+    },
+    {
+      "index": 6,
       "mutation": "inner_stwo_promoted_to_outer_backend",
       "surface": "candidate_inventory"
     },
     {
-      "index": 6,
+      "index": 7,
       "mutation": "accumulator_promoted_to_native_outer_proof",
       "surface": "candidate_inventory"
     },
     {
-      "index": 7,
+      "index": 8,
       "mutation": "compression_promoted_to_native_outer_proof",
       "surface": "candidate_inventory"
     },
     {
-      "index": 8,
+      "index": 9,
       "mutation": "snark_receipt_promoted_to_native_outer_proof",
       "surface": "candidate_inventory"
     },
     {
-      "index": 9,
+      "index": 10,
       "mutation": "required_backend_module_removed",
       "surface": "candidate_inventory"
     },
     {
-      "index": 10,
+      "index": 11,
       "mutation": "candidate_file_hash_tampered",
       "surface": "candidate_inventory"
     },
     {
-      "index": 11,
+      "index": 12,
       "mutation": "candidate_required_token_removed",
       "surface": "candidate_inventory"
     },
     {
-      "index": 12,
+      "index": 13,
       "mutation": "native_outer_artifact_claimed",
       "surface": "native_outer_attempt"
     },
     {
-      "index": 13,
+      "index": 14,
       "mutation": "local_verifier_handle_claimed",
       "surface": "native_outer_attempt"
     },
     {
-      "index": 14,
+      "index": 15,
       "mutation": "public_input_binding_claimed",
       "surface": "native_outer_attempt"
     },
     {
-      "index": 15,
+      "index": 16,
       "mutation": "native_proof_bytes_smuggled",
       "surface": "native_outer_attempt"
     },
     {
-      "index": 16,
-      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
-      "surface": "claim_guard"
-    },
-    {
       "index": 17,
-      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
-      "surface": "claim_guard"
+      "mutation": "selected_slice_ids_reordered",
+      "surface": "native_outer_attempt"
     },
     {
       "index": 18,
-      "mutation": "matched_nanozk_claim_enabled",
-      "surface": "claim_guard"
+      "mutation": "selected_checked_rows_drift",
+      "surface": "native_outer_attempt"
     },
     {
       "index": 19,
-      "mutation": "first_blocker_removed",
+      "mutation": "target_commitment_drift",
       "surface": "native_outer_attempt"
     },
     {
       "index": 20,
-      "mutation": "missing_backend_feature_removed",
+      "mutation": "accumulator_commitment_drift",
       "surface": "native_outer_attempt"
     },
     {
       "index": 21,
-      "mutation": "go_gate_weakened",
+      "mutation": "verifier_handle_commitment_drift",
       "surface": "native_outer_attempt"
     },
     {
       "index": 22,
+      "mutation": "required_bound_field_removed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 23,
+      "mutation": "verifier_domain_label_drift",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 24,
+      "mutation": "backend_version_label_drift",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 25,
+      "mutation": "proof_backend_version_label_drift",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 26,
+      "mutation": "package_bytes_relabelled_as_native_proof_bytes",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 27,
+      "mutation": "snark_bytes_relabelled_as_native_proof_bytes",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 28,
+      "mutation": "matched_nanozk_claim_enabled",
+      "surface": "claim_guard"
+    },
+    {
+      "index": 29,
+      "mutation": "first_blocker_removed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 30,
+      "mutation": "missing_backend_feature_removed",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 31,
+      "mutation": "go_gate_weakened",
+      "surface": "native_outer_attempt"
+    },
+    {
+      "index": 32,
       "mutation": "decision_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 23,
+      "index": 33,
       "mutation": "result_changed_to_go",
       "surface": "parser_or_schema"
     },
     {
-      "index": 24,
+      "index": 34,
       "mutation": "issue_changed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 25,
+      "index": 35,
       "mutation": "claim_boundary_changed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 26,
+      "index": 36,
       "mutation": "non_claim_removed",
       "surface": "parser_or_schema"
     },
     {
-      "index": 27,
+      "index": 37,
       "mutation": "validation_command_drift",
       "surface": "parser_or_schema"
     },
     {
-      "index": 28,
+      "index": 38,
       "mutation": "unknown_top_level_field_added",
       "surface": "parser_or_schema"
     }
@@ -711,12 +862,56 @@
     "native_outer_backend_result": "NO_GO_NATIVE_STWO_OUTER_VERIFIER_EXECUTION_BACKEND_MISSING",
     "next_backend_step": "build the native Stwo verifier-execution surface for the two selected slice verifiers before attempting a six-slice d128 block proof-size comparison",
     "no_go_gate": "no native verifier-execution AIR/backend exists, or any candidate result is only an inner proof, non-recursive accumulator, compressed transcript, external SNARK receipt, package accounting row, or unmatched external benchmark row",
+    "required_backend_versions": [
+      {
+        "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+        "slice_id": "rmsnorm_public_rows"
+      },
+      {
+        "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+        "slice_id": "rmsnorm_projection_bridge"
+      }
+    ],
+    "required_bound_fields": [
+      "selected_slice_ids",
+      "selected_checked_rows",
+      "two_slice_target_commitment",
+      "accumulator_commitment",
+      "accumulator_verifier_handle_commitment",
+      "selected_source_evidence_hashes",
+      "selected_slice_statement_commitments",
+      "selected_slice_public_instance_commitments",
+      "selected_slice_proof_native_parameter_commitments",
+      "verifier_domain_labels",
+      "required_backend_versions",
+      "selected_slice_proof_backend_versions"
+    ],
     "selected_checked_rows": 256,
     "selected_slice_ids": [
       "rmsnorm_public_rows",
       "rmsnorm_projection_bridge"
     ],
-    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6"
+    "selected_slice_proof_backend_versions": [
+      {
+        "proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+        "slice_id": "rmsnorm_public_rows"
+      },
+      {
+        "proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+        "slice_id": "rmsnorm_projection_bridge"
+      }
+    ],
+    "two_slice_target_commitment": "blake2b-256:5ac2c8571967d011d6854cd0ebb7cf14e29fd2bc2fc9867a7afa062b153003a6",
+    "verifier_domain_labels": [
+      {
+        "slice_id": "rmsnorm_public_rows",
+        "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+      },
+      {
+        "slice_id": "rmsnorm_projection_bridge",
+        "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1"
+      }
+    ]
   },
   "native_outer_backend_result": "NO_GO_NATIVE_STWO_OUTER_VERIFIER_EXECUTION_BACKEND_MISSING",
   "non_claims": [

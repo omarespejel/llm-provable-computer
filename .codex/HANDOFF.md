@@ -777,7 +777,7 @@ Tablero boundary.
 - The native d128 two-slice outer backend gate now audits that next experiment
   directly. It preserves the positive `256` selected rows, `4,435` byte
   proof-native compressed transcript, `802` byte external Groth16 statement
-  receipt, and broader `4,752` byte package signal, while rejecting `29 / 29`
+  receipt, and broader `4,752` byte package signal, while rejecting `39 / 39`
   overclaim mutations. The result remains
   `NO_GO_EXECUTABLE_NATIVE_D128_TWO_SLICE_OUTER_PROOF_BACKEND_MISSING`
   because no parameterized Stwo AIR/verifier-execution route exists for the
