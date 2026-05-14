@@ -800,6 +800,25 @@ Tablero boundary.
   `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.json`,
   and
   `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.tsv`.
+- Native d128 two-slice verifier-execution target handoff note: the selected
+  inner proof objects are now checked in and typed-accounted. The pinned
+  `rmsnorm_public_rows` inner Stwo proof is `22,425` JSON proof bytes and
+  `9,128` typed bytes; the pinned `rmsnorm_projection_bridge` inner Stwo proof
+  is `12,441` JSON proof bytes and `3,560` typed bytes. Together the selected
+  verifier-execution target is `34,866` JSON proof bytes and `12,688` typed
+  bytes, which is `9.916382x` and `7.080357x` the compact outer statement proof
+  respectively. The selected inner typed target is `1.838841x` NANOZK's
+  paper-reported `6.9 KB` row, while the compact outer statement proof remains
+  `0.259710x`; this is the clearest current boundary between an interesting
+  compact statement-binding signal and a matched verifier-execution comparison.
+  The gate rejects `24 / 24` target, metric, overclaim, and mutation-summary
+  drift cases. It remains not native verifier execution, not recursion, and not
+  a NANOZK proof-size win; see
+  `docs/engineering/zkai-native-d128-two-slice-verifier-execution-target-2026-05-14.md`,
+  `docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json`,
+  `docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-public-row-2026-05.envelope.json`,
+  and
+  `docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
