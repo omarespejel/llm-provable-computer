@@ -281,9 +281,7 @@ def load_json(path: pathlib.Path) -> dict[str, Any]:
     return require_dict(payload, str(path))
 
 
-def checked_compact_envelope_size(actual_size: int | None = None) -> int:
-    if actual_size is None:
-        actual_size = COMPACT_ENVELOPE_PATH.stat().st_size
+def checked_compact_envelope_size(actual_size: int) -> int:
     if actual_size != COMPACT_ENVELOPE_BYTES:
         raise CompactPreprocessedGateError(
             "compact envelope JSON size drift: "
@@ -423,7 +421,7 @@ def build_payload(
     prior_budget: dict[str, Any] | None = None,
     *,
     include_mutations: bool = True,
-    compact_envelope_size_bytes: int | None = None,
+    compact_envelope_size_bytes: int,
 ) -> dict[str, Any]:
     if cli_summary is None:
         cli_summary = run_binary_accounting_cli()
@@ -480,7 +478,17 @@ def validate_payload(
     validate_accounting_summary(cli_summary)
     validate_prior_budget(prior_budget)
 
-    expected = build_payload(cli_summary, prior_budget, include_mutations=False)
+    payload_aggregate = require_dict(payload.get("aggregate"), "aggregate")
+    compact_envelope_size_bytes = require_int(
+        payload_aggregate.get("compact_envelope_json_size_bytes"),
+        "compact_envelope_json_size_bytes",
+    )
+    expected = build_payload(
+        cli_summary,
+        prior_budget,
+        include_mutations=False,
+        compact_envelope_size_bytes=compact_envelope_size_bytes,
+    )
     comparable = copy.deepcopy(payload)
     mutation_fields = ("mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected")
     mutation_present = any(field in comparable for field in mutation_fields)
@@ -615,7 +623,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     cli_summary = run_binary_accounting_cli()
     prior_budget = load_json(PRIOR_BUDGET_PATH)
-    payload = build_payload(cli_summary, prior_budget, include_mutations=not args.skip_mutations)
+    payload = build_payload(
+        cli_summary,
+        prior_budget,
+        include_mutations=not args.skip_mutations,
+        compact_envelope_size_bytes=COMPACT_ENVELOPE_PATH.stat().st_size,
+    )
     if args.skip_mutations:
         validate_payload(payload, cli_summary, prior_budget, allow_missing_mutation_summary=True)
     write_json(args.write_json, payload)
