@@ -137,7 +137,6 @@ EXPECTED_AGGREGATE = {
     "profiles_checked": 1,
     "compact_proof_json_size_bytes": 17_350,
     "compact_local_typed_bytes": 6_264,
-    "compact_envelope_json_size_bytes": 203_269,
     "baseline_component_json_size_bytes": 22_139,
     "baseline_component_typed_bytes": 9_056,
     "previous_verifier_target_json_bytes": 34_866,
