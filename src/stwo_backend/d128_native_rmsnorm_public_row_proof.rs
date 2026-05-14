@@ -17,7 +17,7 @@ use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
-use stwo::prover::{prove, CommitmentSchemeProver};
+use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
 use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
@@ -867,6 +867,28 @@ fn public_row_component() -> FrameworkComponent<D128RmsnormPublicRowEval> {
         },
         SecureField::zero(),
     )
+}
+
+pub(crate) fn zkai_d128_rmsnorm_public_row_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        D128RmsnormPublicRowEval {
+            log_size: D128_RMSNORM_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
+pub(crate) fn zkai_d128_rmsnorm_public_row_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
+    preprocessed_column_ids()
+}
+
+pub(crate) fn zkai_d128_rmsnorm_public_row_trace(
+    input: &ZkAiD128RmsnormPublicRowProofInput,
+) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+    public_row_trace(input)
 }
 
 fn public_row_trace(

@@ -80,6 +80,8 @@ mod attention_kv_native_two_head_softmax_table_lookup_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_activation_swiglu_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_component_two_slice_reprove;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_down_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_gate_value_projection_proof;
@@ -945,6 +947,28 @@ pub use d128_native_activation_swiglu_proof::{
     ZKAI_D128_ACTIVATION_SWIGLU_ROW_COMMITMENT, ZKAI_D128_ACTIVATION_SWIGLU_SEMANTIC_SCOPE,
     ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
     ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_VERSION, ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_component_two_slice_reprove::{
+    build_zkai_d128_component_two_slice_reprove_input,
+    prove_zkai_d128_component_two_slice_reprove_envelope,
+    verify_zkai_d128_component_two_slice_reprove_envelope,
+    zkai_d128_component_two_slice_reprove_envelope_from_json_slice,
+    zkai_d128_component_two_slice_reprove_input_from_json_str,
+    ZkAiD128ComponentTwoSliceReproveEnvelope, ZkAiD128ComponentTwoSliceReproveInput,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_DECISION,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_INPUT_DECISION,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_INPUT_SCHEMA,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_JSON_BYTES,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_OPERATION,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_PROOF_VERSION,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_SELECTED_ROWS,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_SEMANTIC_SCOPE,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_SLICE_COUNT,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_STATEMENT_VERSION,
+    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_WIDTH,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_down_projection_proof::{
