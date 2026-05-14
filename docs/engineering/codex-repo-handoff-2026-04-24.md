@@ -987,41 +987,45 @@ Tablero boundary.
 - If a result is blocked or partial, write down the barrier instead of smoothing it over.
 - Promotion from engineering evidence into `docs/paper/` still requires an explicit promotion pass and stricter publication review, even after repeated-run timing upgrades.
 
-Recent d128 component-native result: the selected RMSNorm public-row and
-projection-bridge relations now have a single native Stwo reprove object. The
-checked proof is `22,139` JSON proof bytes and `9,056` local typed bytes, down
-from the prior selected inner-proof target of `34,866` JSON / `12,688` typed
-bytes. This removes `3,632` typed bytes (`28.6255%`) and closes `62.7505%` of
-the typed gap to NANOZK's paper-reported `6,900` byte d128 row. It is still
-`2,156` typed bytes above that row, so do not call it a NANOZK proof-size win.
+Recent d128 compact-preprocessed result: the selected public RMSNorm row and
+projection-bridge relations now have a smaller native Stwo reprove object. The
+checked proof is `17,350` JSON proof bytes and `6,264` local typed bytes, down
+from the prior component-native baseline of `22,139` JSON / `9,056` typed
+bytes. This removes `2,792` typed bytes (`30.8304%`) from that baseline and
+`6,424` typed bytes (`50.6305%`) from the earlier `12,688` typed-byte selected
+inner-proof target. It is `0.907826x` NANOZK's paper-reported `6,900` byte d128
+row under local typed accounting. Do not call it a matched NANOZK benchmark,
+a full d128 transformer-block proof, or proof that STARKs beat NANOZK.
 
 Reproducibility metadata:
 
 - Backend binary/version:
   `zkai_d128_component_native_two_slice_reprove` with
-  `stwo-d128-component-native-two-slice-reprove-v1`.
+  `stwo-d128-component-native-two-slice-compact-preprocessed-reprove-v1`.
 - Timing mode: proof-size accounting only, no timing claim.
 - Checked surface: `2` selected d128 components, `256` checked rows, width
   `128`, selected slices
   `rmsnorm_public_rows` and `rmsnorm_projection_bridge`.
 - Evidence paths:
   `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json`,
-  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json`,
-  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-component-native-two-slice-compact-preprocessed-reprove-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.json`,
   and
-  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.tsv`.
+  `docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.tsv`.
 - Reproduce command:
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json`.
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- verify-compact docs/engineering/evidence/zkai-d128-component-native-two-slice-compact-preprocessed-reprove-2026-05.envelope.json`.
 - Gate command:
-  `python3 scripts/zkai_d128_component_native_two_slice_reprove_gate.py --write-json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.tsv`.
+  `python3 scripts/zkai_d128_component_compact_preprocessed_reprove_gate.py --write-json docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.tsv`.
 
 ## Next sensible moves
 
-1. Treat `component_native_reprove` for the selected d128 two-slice target as a
-   positive GO: the native proof object is `9,056` typed bytes versus the prior
-   `12,688` typed-byte target. The next attack is the remaining `2,156` typed
-   bytes above NANOZK's paper-reported row, without weakening statement
-   commitments or relabeling the result as a matched benchmark.
+1. Treat `compact_preprocessed_component_native_reprove` for the selected
+   public d128 two-slice target as the current positive GO: the native proof
+   object is `6,264` typed bytes versus the prior `9,056` typed-byte
+   component-native baseline and the earlier `12,688` typed-byte target. It is
+   below NANOZK's paper-reported `6,900` byte row under local typed accounting,
+   but the next attack is extending the mechanism to later d128 block relations
+   without relabeling this selected public surface as a matched benchmark.
 2. Treat the family-matrix result as landed and lead with the growing-in-`N`
    curve shape rather than any one frontier ratio.
 3. Treat the `2x2` constant-surface explanation as landed and use follow-up

@@ -7,8 +7,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
     build_zkai_d128_component_two_slice_reprove_input,
+    prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope,
     prove_zkai_d128_component_two_slice_reprove_envelope,
+    verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope,
     verify_zkai_d128_component_two_slice_reprove_envelope,
+    zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope_from_json_slice,
     zkai_d128_component_two_slice_reprove_envelope_from_json_slice,
     zkai_d128_component_two_slice_reprove_input_from_json_str,
     zkai_d128_rmsnorm_public_row_input_from_json_str,
@@ -43,7 +46,7 @@ fn main() -> ExitCode {
 fn run() -> Result<String, String> {
     let mut args = std::env::args_os().skip(1).collect::<Vec<_>>();
     if args.is_empty() {
-        return Err("usage: zkai_d128_component_native_two_slice_reprove build-input <rmsnorm.json> <bridge.json> <input.json> | prove <input.json> <envelope.json> | verify <envelope.json>".to_string());
+        return Err("usage: zkai_d128_component_native_two_slice_reprove build-input <rmsnorm.json> <bridge.json> <input.json> | prove <input.json> <envelope.json> | verify <envelope.json> | prove-compact <input.json> <envelope.json> | verify-compact <envelope.json>".to_string());
     }
     let mode = args.remove(0).to_string_lossy().to_string();
     match mode.as_str() {
@@ -142,6 +145,54 @@ fn run() -> Result<String, String> {
             })
             .to_string())
         }
+        "prove-compact" => {
+            if args.len() != 2 {
+                return Err("usage: prove-compact <input.json> <envelope.json>".to_string());
+            }
+            let input_path = PathBuf::from(&args[0]);
+            let envelope_path = PathBuf::from(&args[1]);
+            let raw = read_bounded_utf8(
+                &input_path,
+                ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_JSON_BYTES,
+                "component-native compact input JSON",
+            )?;
+            let input = zkai_d128_component_two_slice_reprove_input_from_json_str(&raw)
+                .map_err(|error| error.to_string())?;
+            let envelope =
+                prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&input)
+                    .map_err(|error| error.to_string())?;
+            verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&envelope)
+                .map_err(|error| error.to_string())?;
+            let envelope_bytes = serde_json::to_vec_pretty(&envelope)
+                .map_err(|error| format!("failed to serialize compact envelope: {error}"))?;
+            if envelope_bytes.len() > ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES
+            {
+                return Err(format!(
+                    "compact envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+                    envelope_bytes.len(),
+                    ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES
+                ));
+            }
+            atomic_write_file(
+                &envelope_path,
+                &envelope_bytes,
+                "component-native compact envelope",
+            )?;
+            Ok(serde_json::json!({
+                "schema": "zkai-d128-component-native-two-slice-reprove-cli-summary-v1",
+                "mode": "prove-compact",
+                "input_path": input_path.display().to_string(),
+                "envelope_path": envelope_path.display().to_string(),
+                "proof_size_bytes": envelope.proof.len(),
+                "envelope_size_bytes": envelope_bytes.len(),
+                "statement_commitment": envelope.input.statement_commitment,
+                "public_instance_commitment": envelope.input.public_instance_commitment,
+                "selected_checked_rows": envelope.input.selected_checked_rows,
+                "selected_slice_ids": envelope.input.selected_slice_ids,
+                "claim_boundary": "compact_preprocessed_component_reprove_not_full_block_not_matched_nanozk_benchmark",
+            })
+            .to_string())
+        }
         "verify" => {
             if args.len() != 1 {
                 return Err("usage: verify <envelope.json>".to_string());
@@ -168,6 +219,38 @@ fn run() -> Result<String, String> {
                 "selected_slice_ids": envelope.input.selected_slice_ids,
                 "verified": true,
                 "claim_boundary": "component_native_reprove_not_verifier_execution_not_nanozk_win",
+            })
+            .to_string())
+        }
+        "verify-compact" => {
+            if args.len() != 1 {
+                return Err("usage: verify-compact <envelope.json>".to_string());
+            }
+            let envelope_path = PathBuf::from(&args[0]);
+            let raw = read_bounded_file(
+                &envelope_path,
+                ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES,
+                "component-native compact envelope JSON",
+            )?;
+            let envelope =
+                zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope_from_json_slice(
+                    &raw,
+                )
+                .map_err(|error| error.to_string())?;
+            verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&envelope)
+                .map_err(|error| error.to_string())?;
+            Ok(serde_json::json!({
+                "schema": "zkai-d128-component-native-two-slice-reprove-cli-summary-v1",
+                "mode": "verify-compact",
+                "envelope_path": envelope_path.display().to_string(),
+                "proof_size_bytes": envelope.proof.len(),
+                "envelope_size_bytes": raw.len(),
+                "statement_commitment": envelope.input.statement_commitment,
+                "public_instance_commitment": envelope.input.public_instance_commitment,
+                "selected_checked_rows": envelope.input.selected_checked_rows,
+                "selected_slice_ids": envelope.input.selected_slice_ids,
+                "verified": true,
+                "claim_boundary": "compact_preprocessed_component_reprove_not_full_block_not_matched_nanozk_benchmark",
             })
             .to_string())
         }

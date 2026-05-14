@@ -1,20 +1,26 @@
+use ark_ff::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 use stwo::core::air::{Component, Components};
 use stwo::core::channel::Blake2sM31Channel;
+use stwo::core::fields::m31::BaseField;
+use stwo::core::fields::qm31::SecureField;
 use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig};
 use stwo::core::poly::circle::CanonicCoset;
 use stwo::core::proof::StarkProof;
 use stwo::core::vcs_lifted::blake2_merkle::{Blake2sM31MerkleChannel, Blake2sM31MerkleHasher};
 use stwo::core::verifier::verify;
 use stwo::core::ColumnVec;
+use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
-use stwo::prover::poly::BitReversedOrder;
+use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
 use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
-use stwo_constraint_framework::TraceLocationAllocator;
+use stwo_constraint_framework::{
+    EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
+};
 
 use crate::error::{Result, VmError};
 use crate::proof::StarkProofBackend;
@@ -52,10 +58,18 @@ pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_PROOF_VERSION: &str =
     "stwo-d128-component-native-two-slice-reprove-v1";
 pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_STATEMENT_VERSION: &str =
     "zkai-d128-component-native-two-slice-reprove-statement-v1";
+pub const ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_PROOF_VERSION: &str =
+    "stwo-d128-component-native-two-slice-compact-preprocessed-reprove-v1";
+pub const ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_STATEMENT_VERSION: &str =
+    "zkai-d128-component-native-two-slice-compact-preprocessed-reprove-statement-v1";
 pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_SEMANTIC_SCOPE: &str =
     "component_native_reprove_of_rmsnorm_public_rows_and_projection_bridge";
+pub const ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_SEMANTIC_SCOPE: &str =
+    "component_native_reprove_of_public_rmsnorm_and_projection_bridge_using_compact_preprocessed_rows";
 pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_DECISION: &str =
     "GO_COMPONENT_NATIVE_TWO_SLICE_REPROVE_PROOF_OBJECT";
+pub const ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_DECISION: &str =
+    "GO_COMPONENT_NATIVE_TWO_SLICE_COMPACT_PREPROCESSED_PROOF_OBJECT";
 pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_OPERATION: &str =
     "d128_component_native_two_slice_reprove";
 pub const ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_WIDTH: usize = 128;
@@ -156,6 +170,18 @@ pub struct ZkAiD128ComponentTwoSliceReproveEnvelope {
     pub proof: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope {
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub decision: String,
+    pub input: ZkAiD128ComponentTwoSliceReproveInput,
+    pub proof: Vec<u8>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct D128ComponentTwoSliceReproveProofPayload {
@@ -226,6 +252,23 @@ pub fn zkai_d128_component_two_slice_reprove_envelope_from_json_slice(
     let envelope: ZkAiD128ComponentTwoSliceReproveEnvelope = serde_json::from_slice(raw_json)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     validate_reprove_envelope(&envelope)?;
+    Ok(envelope)
+}
+
+pub fn zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope_from_json_slice(
+    raw_json: &[u8],
+) -> Result<ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope> {
+    if raw_json.len() > ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES {
+        return Err(reprove_error(format!(
+            "compact preprocessed envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_ENVELOPE_JSON_BYTES
+        )));
+    }
+    let envelope: ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope =
+        serde_json::from_slice(raw_json)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_compact_preprocessed_reprove_envelope(&envelope)?;
     Ok(envelope)
 }
 
@@ -314,6 +357,33 @@ pub fn verify_zkai_d128_component_two_slice_reprove_envelope(
     verify_reprove_components(&envelope.input, &envelope.proof)
 }
 
+pub fn prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+) -> Result<ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope> {
+    validate_reprove_input(input)?;
+    Ok(
+        ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope {
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_PROOF_VERSION
+                .to_string(),
+            statement_version: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_STATEMENT_VERSION
+                .to_string(),
+            semantic_scope: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_SEMANTIC_SCOPE
+                .to_string(),
+            decision: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_DECISION.to_string(),
+            input: input.clone(),
+            proof: prove_compact_preprocessed_reprove_components(input)?,
+        },
+    )
+}
+
+pub fn verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(
+    envelope: &ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope,
+) -> Result<bool> {
+    validate_compact_preprocessed_reprove_envelope(envelope)?;
+    verify_compact_preprocessed_reprove_components(&envelope.input, &envelope.proof)
+}
+
 fn validate_reprove_envelope(envelope: &ZkAiD128ComponentTwoSliceReproveEnvelope) -> Result<()> {
     if envelope.proof_backend != StarkProofBackend::Stwo {
         return Err(reprove_error("proof backend is not Stwo"));
@@ -344,6 +414,49 @@ fn validate_reprove_envelope(envelope: &ZkAiD128ComponentTwoSliceReproveEnvelope
     if envelope.proof.len() > ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES {
         return Err(reprove_error(format!(
             "proof bytes exceed bounded verifier limit: got {}, max {}",
+            envelope.proof.len(),
+            ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES
+        )));
+    }
+    validate_reprove_input(&envelope.input)
+}
+
+fn validate_compact_preprocessed_reprove_envelope(
+    envelope: &ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope,
+) -> Result<()> {
+    if envelope.proof_backend != StarkProofBackend::Stwo {
+        return Err(reprove_error(
+            "compact preprocessed proof backend is not Stwo",
+        ));
+    }
+    expect_eq(
+        &envelope.proof_backend_version,
+        ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_PROOF_VERSION,
+        "compact preprocessed proof backend version",
+    )?;
+    expect_eq(
+        &envelope.statement_version,
+        ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_STATEMENT_VERSION,
+        "compact preprocessed statement version",
+    )?;
+    expect_eq(
+        &envelope.semantic_scope,
+        ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_SEMANTIC_SCOPE,
+        "compact preprocessed semantic scope",
+    )?;
+    expect_eq(
+        &envelope.decision,
+        ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_DECISION,
+        "compact preprocessed decision",
+    )?;
+    if envelope.proof.is_empty() {
+        return Err(reprove_error(
+            "compact preprocessed proof bytes must not be empty",
+        ));
+    }
+    if envelope.proof.len() > ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES {
+        return Err(reprove_error(format!(
+            "compact preprocessed proof bytes exceed bounded verifier limit: got {}, max {}",
             envelope.proof.len(),
             ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES
         )));
@@ -615,6 +728,106 @@ fn verify_reprove_components(
         .map_err(|error| reprove_error(format!("STARK verification failed: {error}")))
 }
 
+fn prove_compact_preprocessed_reprove_components(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+) -> Result<Vec<u8>> {
+    let preprocessed_ids = component_preprocessed_column_ids();
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let rmsnorm_component = compact_preprocessed_rmsnorm_component_with_allocator(&mut allocator);
+    let bridge_component = compact_preprocessed_bridge_component_with_allocator(&mut allocator);
+    let config = reprove_pcs_config();
+    let max_constraint_log_degree_bound = rmsnorm_component
+        .max_constraint_log_degree_bound()
+        .max(bridge_component.max_constraint_log_degree_bound());
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            max_constraint_log_degree_bound + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(component_trace(input));
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(compact_preprocessed_anchor_trace(input));
+    tree_builder.commit(channel);
+
+    let components: [&dyn ComponentProver<SimdBackend>; 2] =
+        [&rmsnorm_component, &bridge_component];
+    let stark_proof =
+        prove::<SimdBackend, Blake2sM31MerkleChannel>(&components, channel, commitment_scheme)
+            .map_err(|error| {
+                reprove_error(format!(
+                    "d128 compact preprocessed component reprove AIR proving failed: {error}"
+                ))
+            })?;
+    serde_json::to_vec(&D128ComponentTwoSliceReproveProofPayload { stark_proof })
+        .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+fn verify_compact_preprocessed_reprove_components(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+    proof: &[u8],
+) -> Result<bool> {
+    let payload: D128ComponentTwoSliceReproveProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let stark_proof = payload.stark_proof;
+    let config = validate_reprove_pcs_config(stark_proof.config)?;
+    let preprocessed_ids = component_preprocessed_column_ids();
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let rmsnorm_component = compact_preprocessed_rmsnorm_component_with_allocator(&mut allocator);
+    let bridge_component = compact_preprocessed_bridge_component_with_allocator(&mut allocator);
+    let components: Vec<&dyn Component> = vec![&rmsnorm_component, &bridge_component];
+    let sizes = Components {
+        components: components.clone(),
+        n_preprocessed_columns: preprocessed_ids.len(),
+    }
+    .column_log_sizes();
+    if sizes.len() != EXPECTED_TRACE_COMMITMENT_TREES {
+        return Err(reprove_error(format!(
+            "internal compact preprocessed component tree count drift: got {}, expected {}",
+            sizes.len(),
+            EXPECTED_TRACE_COMMITMENT_TREES
+        )));
+    }
+    if stark_proof.commitments.len() != EXPECTED_PROOF_COMMITMENTS {
+        return Err(reprove_error(format!(
+            "compact preprocessed proof commitment count mismatch: got {}, expected exactly {}",
+            stark_proof.commitments.len(),
+            EXPECTED_PROOF_COMMITMENTS
+        )));
+    }
+    let expected_roots = compact_preprocessed_reprove_commitment_roots(input, config)?;
+    if stark_proof.commitments[0] != expected_roots[0] {
+        return Err(reprove_error(
+            "compact preprocessed commitment does not match checked component rows",
+        ));
+    }
+    if stark_proof.commitments[1] != expected_roots[1] {
+        return Err(reprove_error(
+            "compact anchor commitment does not match checked component rows",
+        ));
+    }
+    let channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
+    verify(&components, channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| {
+            reprove_error(format!(
+                "compact preprocessed STARK verification failed: {error}"
+            ))
+        })
+}
+
 fn reprove_commitment_roots(
     input: &ZkAiD128ComponentTwoSliceReproveInput,
     config: PcsConfig,
@@ -654,6 +867,44 @@ fn reprove_commitment_roots(
     Ok(commitment_scheme.roots())
 }
 
+fn compact_preprocessed_reprove_commitment_roots(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+    config: PcsConfig,
+) -> Result<
+    stwo::core::pcs::TreeVec<
+        <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+    >,
+> {
+    let preprocessed_ids = component_preprocessed_column_ids();
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let rmsnorm_component = compact_preprocessed_rmsnorm_component_with_allocator(&mut allocator);
+    let bridge_component = compact_preprocessed_bridge_component_with_allocator(&mut allocator);
+    let max_constraint_log_degree_bound = rmsnorm_component
+        .max_constraint_log_degree_bound()
+        .max(bridge_component.max_constraint_log_degree_bound());
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            max_constraint_log_degree_bound + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(component_trace(input));
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(compact_preprocessed_anchor_trace(input));
+    tree_builder.commit(channel);
+
+    Ok(commitment_scheme.roots())
+}
+
 fn validate_reprove_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
     if !super::publication_v1_pcs_config_matches(&actual) {
         return Err(reprove_error(
@@ -682,6 +933,253 @@ fn component_trace(
         &input.projection_bridge_input,
     ));
     trace
+}
+
+const COMPACT_RMSNORM_LOG_SIZE: u32 = 7;
+const COMPACT_BRIDGE_LOG_SIZE: u32 = 7;
+const COMPACT_Q8_SCALE: i64 = 256;
+const COMPACT_Q8_REMAINDER_BITS: usize = 8;
+const COMPACT_RMSNORM_NORM_REMAINDER_GAP_BITS: usize = 31;
+const COMPACT_RMSNORM_SCALAR_RANGE_BITS: usize = 17;
+
+const COMPACT_RMSNORM_COLUMN_IDS: [&str; 9] = [
+    "zkai/d128/rmsnorm/index",
+    "zkai/d128/rmsnorm/input_q8",
+    "zkai/d128/rmsnorm/rms_scale_q8",
+    "zkai/d128/rmsnorm/input_square",
+    "zkai/d128/rmsnorm/scaled_floor",
+    "zkai/d128/rmsnorm/scale_remainder",
+    "zkai/d128/rmsnorm/normed_q8",
+    "zkai/d128/rmsnorm/norm_remainder",
+    "zkai/d128/rmsnorm/rms_q8",
+];
+const COMPACT_AVERAGE_SQUARE_FLOOR_COLUMN_ID: &str =
+    "zkai/d128/rmsnorm/scalar/average_square_floor";
+const COMPACT_SQRT_LOW_DELTA_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_low_delta";
+const COMPACT_SQRT_HIGH_GAP_COLUMN_ID: &str = "zkai/d128/rmsnorm/scalar/sqrt_high_gap";
+const COMPACT_BRIDGE_COLUMN_IDS: [&str; 3] = [
+    "zkai/d128/rmsnorm-to-projection/index",
+    "zkai/d128/rmsnorm-to-projection/rmsnorm_normed_q8",
+    "zkai/d128/rmsnorm-to-projection/projection_input_q8",
+];
+
+#[derive(Debug, Clone)]
+struct CompactPreprocessedRmsnormEval {
+    log_size: u32,
+}
+
+impl FrameworkEval for CompactPreprocessedRmsnormEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let anchor_index = eval.next_trace_mask();
+        let index = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[0],
+        ));
+        eval.add_constraint(anchor_index - index);
+
+        let input_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[1],
+        ));
+        let rms_scale_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[2],
+        ));
+        let input_square = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[3],
+        ));
+        let scaled_floor = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[4],
+        ));
+        let scale_remainder = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[5],
+        ));
+        let normed_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[6],
+        ));
+        let norm_remainder = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[7],
+        ));
+        let rms_q8 = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_RMSNORM_COLUMN_IDS[8],
+        ));
+        let average_square_floor = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
+        ));
+        let sqrt_low_delta = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_SQRT_LOW_DELTA_COLUMN_ID,
+        ));
+        let sqrt_high_gap = eval.get_preprocessed_column(compact_preprocessed_column_id(
+            COMPACT_SQRT_HIGH_GAP_COLUMN_ID,
+        ));
+
+        let one = E::F::from(BaseField::from(1u32));
+        let mut low_delta_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..COMPACT_RMSNORM_SCALAR_RANGE_BITS {
+            let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
+                &compact_scalar_bit_column_id("low", bit_index),
+            ));
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            low_delta_bits = low_delta_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
+        let mut high_gap_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..COMPACT_RMSNORM_SCALAR_RANGE_BITS {
+            let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
+                &compact_scalar_bit_column_id("high", bit_index),
+            ));
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            high_gap_bits = high_gap_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
+        let mut scale_remainder_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..COMPACT_Q8_REMAINDER_BITS {
+            let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
+                &compact_remainder_bit_column_id("scale", bit_index),
+            ));
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            scale_remainder_bits =
+                scale_remainder_bits + bit * E::F::from(BaseField::from(1u32 << bit_index));
+        }
+        let mut norm_remainder_gap_bits = E::F::from(BaseField::from(0u32));
+        for bit_index in 0..COMPACT_RMSNORM_NORM_REMAINDER_GAP_BITS {
+            let bit = eval.get_preprocessed_column(compact_preprocessed_column_id(
+                &compact_remainder_bit_column_id("norm_gap", bit_index),
+            ));
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+            let bit_weight = 1u32
+                .checked_shl(bit_index as u32)
+                .expect("compact norm remainder gap bit weight");
+            norm_remainder_gap_bits =
+                norm_remainder_gap_bits + bit * E::F::from(BaseField::from(bit_weight));
+        }
+
+        let q8_scale = E::F::from(BaseField::from(COMPACT_Q8_SCALE as u32));
+        eval.add_constraint(input_q8.clone() * input_q8.clone() - input_square);
+        eval.add_constraint(
+            input_q8 * rms_scale_q8
+                - scaled_floor.clone() * q8_scale.clone()
+                - scale_remainder.clone(),
+        );
+        eval.add_constraint(scale_remainder - scale_remainder_bits);
+        eval.add_constraint(
+            scaled_floor * q8_scale - normed_q8 * rms_q8.clone() - norm_remainder.clone(),
+        );
+        eval.add_constraint(
+            norm_remainder + norm_remainder_gap_bits + one.clone() - rms_q8.clone(),
+        );
+        eval.add_constraint(sqrt_low_delta.clone() - low_delta_bits);
+        eval.add_constraint(sqrt_high_gap.clone() - high_gap_bits);
+        eval.add_constraint(
+            rms_q8.clone() * rms_q8.clone() + sqrt_low_delta - average_square_floor.clone(),
+        );
+        let next_rms_q8 = rms_q8 + one.clone();
+        eval.add_constraint(
+            next_rms_q8.clone() * next_rms_q8 - average_square_floor - sqrt_high_gap - one,
+        );
+        eval
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CompactPreprocessedBridgeEval {
+    log_size: u32,
+}
+
+impl FrameworkEval for CompactPreprocessedBridgeEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let anchor_index = eval.next_trace_mask();
+        let index = eval
+            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[0]));
+        eval.add_constraint(anchor_index - index);
+        let rmsnorm_normed_q8 = eval
+            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[1]));
+        let projection_input_q8 = eval
+            .get_preprocessed_column(compact_preprocessed_column_id(COMPACT_BRIDGE_COLUMN_IDS[2]));
+        eval.add_constraint(projection_input_q8 - rmsnorm_normed_q8);
+        eval
+    }
+}
+
+fn compact_preprocessed_rmsnorm_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        CompactPreprocessedRmsnormEval {
+            log_size: COMPACT_RMSNORM_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
+fn compact_preprocessed_bridge_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        CompactPreprocessedBridgeEval {
+            log_size: COMPACT_BRIDGE_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
+fn compact_preprocessed_anchor_trace(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+    let domain = CanonicCoset::new(COMPACT_RMSNORM_LOG_SIZE).circle_domain();
+    let columns: Vec<Vec<BaseField>> = vec![
+        input
+            .rmsnorm_input
+            .rows
+            .iter()
+            .map(|row| compact_field_usize(row.index))
+            .collect(),
+        input
+            .projection_bridge_input
+            .rows
+            .iter()
+            .map(|row| compact_field_usize(row.index))
+            .collect(),
+    ];
+    columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
+                domain,
+                BaseColumn::from_iter(column),
+            )
+            .bit_reverse()
+        })
+        .collect()
+}
+
+fn compact_preprocessed_column_id(id: &str) -> PreProcessedColumnId {
+    PreProcessedColumnId { id: id.to_string() }
+}
+
+fn compact_scalar_bit_column_id(kind: &str, bit_index: usize) -> String {
+    format!("zkai/d128/rmsnorm/scalar/sqrt_{kind}_bit_{bit_index:02}")
+}
+
+fn compact_remainder_bit_column_id(kind: &str, bit_index: usize) -> String {
+    format!("zkai/d128/rmsnorm/remainder/{kind}_bit_{bit_index:02}")
+}
+
+fn compact_field_usize(value: usize) -> BaseField {
+    BaseField::from(value as u32)
 }
 
 fn statement_commitment(input: &ZkAiD128ComponentTwoSliceReproveInput) -> Result<String> {
@@ -840,5 +1338,34 @@ mod tests {
         let error =
             validate_reprove_envelope(&envelope).expect_err("empty proof bytes should reject");
         assert!(error.to_string().contains("proof bytes must not be empty"));
+    }
+
+    #[test]
+    fn compact_anchor_trace_has_one_column_per_selected_component() {
+        let input = fixture_input();
+        let trace = compact_preprocessed_anchor_trace(&input);
+        assert_eq!(trace.len(), EXPECTED_SELECTED_SLICE_IDS.len());
+    }
+
+    #[test]
+    fn rejects_empty_compact_preprocessed_proof_envelope() {
+        let input = fixture_input();
+        let envelope = ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope {
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_PROOF_VERSION
+                .to_string(),
+            statement_version: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_STATEMENT_VERSION
+                .to_string(),
+            semantic_scope: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_SEMANTIC_SCOPE
+                .to_string(),
+            decision: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_DECISION.to_string(),
+            input,
+            proof: Vec::new(),
+        };
+        let error = validate_compact_preprocessed_reprove_envelope(&envelope)
+            .expect_err("empty compact proof bytes should reject");
+        assert!(error
+            .to_string()
+            .contains("compact preprocessed proof bytes must not be empty"));
     }
 }
