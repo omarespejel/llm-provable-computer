@@ -97,6 +97,12 @@ class OneBlockExecutablePackageAccountingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "package summary drift"):
             gate.package_summary(compression, snark)
 
+        _scorecard, compression, snark, _sources = gate.checked_sources()
+        snark["receipt_metrics"]["proof_size_bytes"] -= 1
+        snark["receipt_metrics"]["public_signals_bytes"] += 1
+        with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "package summary drift"):
+            gate.package_summary(compression, snark)
+
     def test_tsv_and_write_outputs(self) -> None:
         tsv = gate.to_tsv(self.payload)
         self.assertIn("compressed artifact plus proof plus public signals\t4752\t0.324945\t9872", tsv)
@@ -168,6 +174,23 @@ class OneBlockExecutablePackageAccountingGateTests(unittest.TestCase):
             handle.write('{"value": Infinity}\n')
         try:
             with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "non-finite JSON constant"):
+                gate.load_json(path)
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_load_json_rejects_duplicate_keys(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.EVIDENCE_DIR,
+            prefix="one-block-package-accounting-duplicate-key-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write('{"value": 1, "value": 2}\n')
+        try:
+            with self.assertRaisesRegex(gate.OneBlockPackageAccountingError, "duplicate JSON key"):
                 gate.load_json(path)
         finally:
             path.unlink(missing_ok=True)
