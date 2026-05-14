@@ -41,6 +41,9 @@ The compact outer statement proof remains:
 - `0.259710x` NANOZK's paper-reported row in typed bytes.
 - `0.509565x` NANOZK's paper-reported row in JSON proof bytes.
 
+The gate rejects `29 / 29` target, row-field, metric, overclaim, validation,
+and mutation-summary drift cases.
+
 ## Interpretation
 
 This is the sharpest comparison boundary so far.

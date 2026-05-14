@@ -141,13 +141,38 @@
       "rejected": true
     },
     {
+      "error": "rmsnorm_public_rows_inner_stwo_proof proof_backend drift",
+      "name": "proof_backend_drift",
+      "rejected": true
+    },
+    {
+      "error": "rmsnorm_public_rows_inner_stwo_proof input drift",
+      "name": "input_descriptor_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "rmsnorm_projection_bridge_inner_stwo_proof record_stream_bytes drift",
+      "name": "record_stream_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "rmsnorm_projection_bridge_inner_stwo_proof grouped_reconstruction drift",
+      "name": "grouped_reconstruction_drift",
+      "rejected": true
+    },
+    {
+      "error": "compressed_outer_statement_binding_proof native_verifier_execution_status drift",
+      "name": "native_verifier_execution_status_drift",
+      "rejected": true
+    },
+    {
       "error": "payload field drift",
       "name": "unknown_top_level_field_added",
       "rejected": true
     }
   ],
-  "mutations_checked": 24,
-  "mutations_rejected": 24,
+  "mutations_checked": 29,
+  "mutations_rejected": 29,
   "native_verifier_execution_requirements": [
     "consume the pinned rmsnorm_public_rows proof envelope as verifier input",
     "consume the pinned rmsnorm_projection_bridge proof envelope as verifier input",
@@ -168,7 +193,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:06a8279adb031d0a350e6f965c154fd5b036d5dacd455b97ad750bbfd4db94f5",
+  "payload_commitment": "sha256:a46fa76264588965997dbb323cd94d3c4defcb2ad38230b6bd9420be631a2c85",
   "proof_objects": [
     {
       "envelope_sha256": "a8d8aca5db1adc1d6a187d3e30ccd3f3c8d9f26b3dd97cbd56ebe2d460c477f2",
@@ -285,6 +310,8 @@
     "python3 scripts/zkai_native_d128_two_slice_verifier_execution_target_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_native_d128_two_slice_verifier_execution_target_gate.py scripts/tests/test_zkai_native_d128_two_slice_verifier_execution_target_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_native_d128_two_slice_verifier_execution_target_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend --test zkai_d128_selected_two_slice_proof_envelopes_cli",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend --bin zkai_d128_selected_two_slice_proof_envelopes",
     "cargo +nightly-2025-07-14 fmt --check",
     "git diff --check",
     "just gate-fast",

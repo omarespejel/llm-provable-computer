@@ -79,10 +79,31 @@ EXPECTED_ROWS = {
         "proof_json_size_bytes": 22_425,
         "local_typed_bytes": 9_128,
         "envelope_size_bytes": 217_347,
+        "proof_backend": "stwo",
+        "input": {
+            "path": "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json",
+            "file_sha256": "d80f9f16e5f8aef3a8ec49271bb0616483cb6906731539aea2f73ba4678123ec",
+            "payload_sha256": "19688310ba6001e16b80c15532f74b59097222a1aa9be132ea66b11a116ded05",
+            "schema": "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3",
+            "decision": "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF",
+            "statement_commitment": "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8",
+            "public_instance_commitment": "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+            "proof_native_parameter_commitment": "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c",
+        },
+        "record_stream_bytes": 1_084,
+        "grouped_reconstruction": {
+            "fixed_overhead": 48,
+            "fri_decommitments": 1_856,
+            "fri_samples": 320,
+            "oods_samples": 2_848,
+            "queries_values": 2_136,
+            "trace_decommitments": 1_920,
+        },
         "record_stream_sha256": "29ea9b1ed4f4a076eadabb0d79bd25a179bc4ce130b902a62c7a31e80f56f049",
         "proof_sha256": "4cd3640021387e11367c3567a13033130451e4f6ce578b8fdd8a666002e97109",
         "envelope_sha256": "a8d8aca5db1adc1d6a187d3e30ccd3f3c8d9f26b3dd97cbd56ebe2d460c477f2",
         "object_class": "selected_inner_stwo_proof_envelope",
+        "native_verifier_execution_status": "target_input_only_not_executed_in_native_outer_proof",
     },
     "rmsnorm_projection_bridge_inner_stwo_proof": {
         "role": "rmsnorm_projection_bridge_inner_stwo_proof",
@@ -93,10 +114,31 @@ EXPECTED_ROWS = {
         "proof_json_size_bytes": 12_441,
         "local_typed_bytes": 3_560,
         "envelope_size_bytes": 117_771,
+        "proof_backend": "stwo",
+        "input": {
+            "path": "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json",
+            "file_sha256": "11f93a3ecee19c40ff14d154e054dab56a1b9c1a2dbb1d609a918e201e6fd849",
+            "payload_sha256": "e6e46f2e35df3177790c7dbdc5c519f4a7d62e8ed6cba0501ffac94db73975f3",
+            "schema": "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1",
+            "decision": "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
+            "statement_commitment": "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728",
+            "public_instance_commitment": "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383",
+            "proof_native_parameter_commitment": "blake2b-256:ff31d2b502dac1e7d9f9cca69c4bd31e93e068dab49884e61a300a99389d58c1",
+        },
+        "record_stream_bytes": 1_084,
+        "grouped_reconstruction": {
+            "fixed_overhead": 48,
+            "fri_decommitments": 1_344,
+            "fri_samples": 240,
+            "oods_samples": 224,
+            "queries_values": 168,
+            "trace_decommitments": 1_536,
+        },
         "record_stream_sha256": "a2eb1ac88df052adc5291c8ef87265812f66230300a426d7a18eaa9650a3ec1f",
         "proof_sha256": "08a33aff4f55ab30c6a8d419be571c8fe08855ddf1e3f122b635e1aa0befdd0e",
         "envelope_sha256": "1597c803881a3e57b63d2461abbc46f187361026c55f872722335219d7e4c5ef",
         "object_class": "selected_inner_stwo_proof_envelope",
+        "native_verifier_execution_status": "target_input_only_not_executed_in_native_outer_proof",
     },
     "compressed_outer_statement_binding_proof": {
         "role": "compressed_outer_statement_binding_proof",
@@ -107,10 +149,31 @@ EXPECTED_ROWS = {
         "proof_json_size_bytes": 3_516,
         "local_typed_bytes": 1_792,
         "envelope_size_bytes": 34_471,
+        "proof_backend": "stwo",
+        "input": {
+            "path": "zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json",
+            "file_sha256": "3e8526da8ae9e9491ddd225873c5e03a6128c957a18d5a43e3793e5c08133b07",
+            "payload_sha256": "29c8be2ff5189b0e5c34762cb68e86d41426792d63b42da7cf1e27ef9608443a",
+            "schema": "zkai-native-d128-two-slice-outer-statement-air-proof-input-v1",
+            "decision": "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_INPUT",
+            "statement_commitment": "blake2b-256:ab06c13b3bd24aad37285c4b6c759b9c30faf747af3248c2e45a2c245e7f8dc8",
+            "public_instance_commitment": "blake2b-256:dbb25a1e94bb38c2aeedfcf38b2cebd401427c633860577893e46389f3565beb",
+            "proof_native_parameter_commitment": "blake2b-256:9528113a0e62dc8565c2c5974d47c9859494a16fed307ef91881a2a2705fbf80",
+        },
+        "record_stream_bytes": 1_084,
+        "grouped_reconstruction": {
+            "fixed_overhead": 48,
+            "fri_decommitments": 32,
+            "fri_samples": 48,
+            "oods_samples": 960,
+            "queries_values": 480,
+            "trace_decommitments": 224,
+        },
         "record_stream_sha256": "3764bc286e5dffee3d9186861a5c2faeb44eff4add7a5c9613bb302e80197fad",
         "proof_sha256": "9977aeefe8021845a46a382be143824f10605b3ec676eaf0ed25e46f2d90e5f1",
         "envelope_sha256": "07254ada114c68ba129f90ccfa0d9a7aacbba2bc1ae64388e5a1bd12fe944aca",
         "object_class": "native_outer_statement_binding_proof_not_verifier_execution",
+        "native_verifier_execution_status": "target_input_only_not_executed_in_native_outer_proof",
     },
 }
 
@@ -159,6 +222,8 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_native_d128_two_slice_verifier_execution_target_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_native_d128_two_slice_verifier_execution_target_gate.py scripts/tests/test_zkai_native_d128_two_slice_verifier_execution_target_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_native_d128_two_slice_verifier_execution_target_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend --test zkai_d128_selected_two_slice_proof_envelopes_cli",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend --bin zkai_d128_selected_two_slice_proof_envelopes",
     "cargo +nightly-2025-07-14 fmt --check",
     "git diff --check",
     "just gate-fast",
@@ -199,6 +264,11 @@ MUTATION_NAMES = (
     "non_claim_removed",
     "validation_command_drift",
     "decision_changed_to_native_execution",
+    "proof_backend_drift",
+    "input_descriptor_hash_drift",
+    "record_stream_bytes_drift",
+    "grouped_reconstruction_drift",
+    "native_verifier_execution_status_drift",
     "unknown_top_level_field_added",
 )
 
@@ -366,10 +436,17 @@ def row_from_cli(role: str, cli_row: dict[str, Any]) -> dict[str, Any]:
     observed = {
         "proof_json_size_bytes": proof_json_size_bytes,
         "local_typed_bytes": local_typed_bytes,
+        "proof_backend": require_str(metadata.get("proof_backend"), f"{role}.proof_backend"),
+        "input": envelope_input_descriptor(expected["input_path"]),
+        "record_stream_bytes": require_int(accounting.get("record_stream_bytes"), f"{role}.record_stream_bytes"),
+        "grouped_reconstruction": require_dict(
+            accounting.get("grouped_reconstruction"), f"{role}.grouped_reconstruction"
+        ),
         "record_stream_sha256": record_stream_sha256,
         "proof_sha256": proof_sha256,
         "envelope_sha256": envelope_sha256,
         "envelope_size_bytes": envelope_size(expected["path"]),
+        "native_verifier_execution_status": expected["native_verifier_execution_status"],
     }
     for key, value in observed.items():
         if value != expected[key]:
@@ -378,21 +455,19 @@ def row_from_cli(role: str, cli_row: dict[str, Any]) -> dict[str, Any]:
         "role": role,
         "object_class": expected["object_class"],
         "path": path,
-        "input": envelope_input_descriptor(expected["input_path"]),
-        "proof_backend": require_str(metadata.get("proof_backend"), f"{role}.proof_backend"),
+        "input": observed["input"],
+        "proof_backend": observed["proof_backend"],
         "proof_backend_version": expected["proof_backend_version"],
         "statement_version": expected["statement_version"],
         "proof_json_size_bytes": proof_json_size_bytes,
         "local_typed_bytes": local_typed_bytes,
         "envelope_size_bytes": observed["envelope_size_bytes"],
-        "record_stream_bytes": require_int(accounting.get("record_stream_bytes"), f"{role}.record_stream_bytes"),
+        "record_stream_bytes": observed["record_stream_bytes"],
         "record_stream_sha256": record_stream_sha256,
         "proof_sha256": proof_sha256,
         "envelope_sha256": envelope_sha256,
-        "grouped_reconstruction": require_dict(
-            accounting.get("grouped_reconstruction"), f"{role}.grouped_reconstruction"
-        ),
-        "native_verifier_execution_status": "target_input_only_not_executed_in_native_outer_proof",
+        "grouped_reconstruction": observed["grouped_reconstruction"],
+        "native_verifier_execution_status": observed["native_verifier_execution_status"],
     }
 
 
@@ -561,6 +636,11 @@ def validate_payload(payload: dict[str, Any], *, allow_missing_mutation_summary:
             "proof_sha256",
             "envelope_sha256",
             "object_class",
+            "proof_backend",
+            "input",
+            "record_stream_bytes",
+            "grouped_reconstruction",
+            "native_verifier_execution_status",
         ):
             if row.get(key) != expected[key]:
                 raise VerifierExecutionTargetGateError(f"{role} {key} drift")
@@ -653,6 +733,16 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         mutated["validation_commands"] = mutated["validation_commands"][:-1]
     elif name == "decision_changed_to_native_execution":
         mutated["result"] = "NATIVE_VERIFIER_EXECUTION_READY"
+    elif name == "proof_backend_drift":
+        rows[0]["proof_backend"] = "mock"
+    elif name == "input_descriptor_hash_drift":
+        rows[0]["input"]["payload_sha256"] = "0" * 64
+    elif name == "record_stream_bytes_drift":
+        rows[1]["record_stream_bytes"] += 1
+    elif name == "grouped_reconstruction_drift":
+        rows[1]["grouped_reconstruction"]["fri_samples"] += 1
+    elif name == "native_verifier_execution_status_drift":
+        rows[2]["native_verifier_execution_status"] = "native_outer_verifier_execution_ready"
     elif name == "unknown_top_level_field_added":
         mutated["unexpected"] = True
     else:

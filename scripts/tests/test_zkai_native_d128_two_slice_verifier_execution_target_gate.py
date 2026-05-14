@@ -24,16 +24,9 @@ def cli_row(role: str) -> dict:
         },
         "local_binary_accounting": {
             "typed_size_estimate_bytes": expected["local_typed_bytes"],
-            "record_stream_bytes": 1084,
+            "record_stream_bytes": expected["record_stream_bytes"],
             "record_stream_sha256": expected["record_stream_sha256"],
-            "grouped_reconstruction": {
-                "fixed_overhead": 48,
-                "fri_decommitments": 32,
-                "fri_samples": 48,
-                "oods_samples": 1,
-                "queries_values": 1,
-                "trace_decommitments": 1,
-            },
+            "grouped_reconstruction": expected["grouped_reconstruction"],
         },
     }
 
@@ -77,6 +70,16 @@ class VerifierExecutionTargetGateTests(unittest.TestCase):
         mutated["proof_objects"][2]["object_class"] = "native_outer_verifier_execution_proof"
         mutated["payload_commitment"] = gate.payload_commitment(mutated)
         with self.assertRaisesRegex(gate.VerifierExecutionTargetGateError, "object_class drift"):
+            gate.validate_payload(mutated)
+
+    def test_rejects_unpinned_row_field_drift(self) -> None:
+        payload = gate.build_payload(cli_summary())
+        mutated = copy.deepcopy(payload)
+        mutated["proof_objects"][2]["native_verifier_execution_status"] = "native_outer_verifier_execution_ready"
+        mutated["payload_commitment"] = gate.payload_commitment(mutated)
+        with self.assertRaisesRegex(
+            gate.VerifierExecutionTargetGateError, "native_verifier_execution_status drift"
+        ):
             gate.validate_payload(mutated)
 
     def test_rejects_partial_mutation_summary(self) -> None:
