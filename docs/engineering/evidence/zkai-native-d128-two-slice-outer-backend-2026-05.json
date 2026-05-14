@@ -203,7 +203,7 @@
       "classification": "NO_GO_AUDIT_TESTS_NOT_NATIVE_OUTER_PROOF_TESTS",
       "exists": true,
       "expected_exists": true,
-      "file_sha256": "2a9cdcd03ab301c780cd9e827b8a5cc0e415b2262f0290442444b80d02b62e3f",
+      "file_sha256": "7af638b9c615854a16c429bc381596375549eddf827ed2cf1c5defa6dd6f8343",
       "kind": "current_no_go_audit_tests",
       "missing_required_tokens": [],
       "name": "current_no_go_gate_tests",

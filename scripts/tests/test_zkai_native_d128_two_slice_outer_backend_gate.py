@@ -158,6 +158,21 @@ class NativeD128TwoSliceOuterBackendGateTests(unittest.TestCase):
             {"source_artifacts", "candidate_inventory", "native_outer_attempt", "claim_guard", "parser_or_schema"},
         )
 
+    def test_source_payload_hash_mutation_is_path_based(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_artifacts"] = list(reversed(payload["source_artifacts"]))
+
+        mutated = GATE.mutate_payload(payload, "source_payload_hash_drift")
+        target = next(
+            source
+            for source in mutated["source_artifacts"]
+            if source["path"].endswith("zkai-native-d128-block-proof-object-route-2026-05.json")
+        )
+
+        self.assertEqual(target["payload_sha256"], "2" * 64)
+        with self.assertRaises(GATE.NativeD128TwoSliceOuterBackendError):
+            GATE.validate_core_payload(mutated)
+
     def test_rejects_stored_case_tampering_and_unknown_fields(self) -> None:
         payload = self.fresh_payload()
         payload["cases"][0]["rejected"] = False
