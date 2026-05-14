@@ -353,8 +353,9 @@ def build_aggregate(row: dict[str, Any]) -> dict[str, Any]:
             typed_bytes,
             NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES,
         ),
-        "typed_saves_vs_nanozk_paper_row_bytes": NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES - typed_bytes,
-        "proof_json_saves_vs_nanozk_paper_row_bytes": NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES
+        "unmatched_nanozk_paper_row_minus_local_typed_bytes": NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES
+        - typed_bytes,
+        "unmatched_nanozk_paper_row_minus_proof_json_bytes": NANOZK_PAPER_REPORTED_D128_BLOCK_PROOF_BYTES
         - proof_json_size,
         "record_stream_sha256": row["local_binary_accounting"]["record_stream_sha256"],
         "proof_sha256": row["proof_sha256"],

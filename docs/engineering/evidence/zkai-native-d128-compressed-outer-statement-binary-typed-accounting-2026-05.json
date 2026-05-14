@@ -7,13 +7,13 @@
     "local_typed_bytes": 1792,
     "profile_commitment": "blake2b-256:a9ff26a483fbf017617186936743c3dea6b98a7b9d98ac8fbc96d66c130d2a51",
     "profiles_checked": 1,
-    "proof_json_saves_vs_nanozk_paper_row_bytes": 3384,
     "proof_json_size_bytes": 3516,
     "proof_sha256": "9977aeefe8021845a46a382be143824f10605b3ec676eaf0ed25e46f2d90e5f1",
     "record_stream_sha256": "3764bc286e5dffee3d9186861a5c2faeb44eff4add7a5c9613bb302e80197fad",
     "role_checked": "compressed_outer_statement",
     "typed_ratio_vs_nanozk_paper_row": 0.25971,
-    "typed_saves_vs_nanozk_paper_row_bytes": 5108
+    "unmatched_nanozk_paper_row_minus_local_typed_bytes": 5108,
+    "unmatched_nanozk_paper_row_minus_proof_json_bytes": 3384
   },
   "all_mutations_rejected": true,
   "binary_serialization_status": "NO_GO_NOT_UPSTREAM_STWO_PROOF_SERIALIZATION",
@@ -143,7 +143,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:5243b149b9e071759a7c55b9d557421f3253a55ff04f94498fcac8789c0e69bc",
+  "payload_commitment": "blake2b-256:6939fe0d4be9ed9d623fd3994be86411548481abca0c4787ec7c0b03e8e16036",
   "profile_row": {
     "envelope_metadata": {
       "proof_backend": "stwo",
