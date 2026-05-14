@@ -92,6 +92,13 @@ def cli_summary():
     }
 
 
+def evidence_counts():
+    with gate.JSON_OUT.open(encoding="utf-8") as handle:
+        payload = gate.json.load(handle)
+    records = payload["profile_row"]["local_binary_accounting"]["records"]
+    return {record["path"]: record["item_count"] for record in records}
+
+
 class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
     def assert_rejects(self, payload, summary, message):
         with self.assertRaises(gate.BinaryTypedProofAccountingGateError) as ctx:
@@ -112,6 +119,14 @@ class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
         self.assertEqual(payload["mutations_checked"], len(gate.MUTATION_NAMES))
         self.assertEqual(payload["mutations_rejected"], len(gate.MUTATION_NAMES))
         self.assertTrue(payload["all_mutations_rejected"])
+
+    def test_fixture_counts_match_checked_evidence(self):
+        observed = evidence_counts()
+        self.assertEqual(
+            observed,
+            ACTUAL_COUNTS,
+            f"compressed d128 proof accounting counts drifted: expected {ACTUAL_COUNTS}, observed {observed}",
+        )
 
     def test_individual_mutations_reject(self):
         summary = cli_summary()
@@ -179,6 +194,29 @@ class NativeD128CompressedBinaryAccountingGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "escapes evidence dir"):
                 gate.validate_output_path(pathlib.Path(tmp) / "bad.json")
+
+    def symlink_or_skip(self, link: pathlib.Path, target: pathlib.Path) -> None:
+        try:
+            link.symlink_to(target, target_is_directory=target.is_dir())
+        except OSError as exc:
+            self.skipTest(f"symlinks unavailable: {exc}")
+
+    @unittest.skipUnless(hasattr(pathlib.Path, "symlink_to"), "symlinks unavailable")
+    def test_rejects_symlinked_evidence_dir_component(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "repo"
+            real_evidence = pathlib.Path(tmp) / "external-evidence"
+            engineering = root / "docs" / "engineering"
+            engineering.mkdir(parents=True)
+            real_evidence.mkdir()
+            evidence_link = engineering / "evidence"
+            self.symlink_or_skip(evidence_link, real_evidence)
+            with (
+                mock.patch.object(gate, "ROOT", root),
+                mock.patch.object(gate, "EVIDENCE_DIR", evidence_link),
+                self.assertRaisesRegex(gate.BinaryTypedProofAccountingGateError, "component must not be a symlink"),
+            ):
+                gate.validate_output_path(evidence_link / "out.json")
 
     def test_relative_output_path_is_repo_root_anchored(self):
         with tempfile.TemporaryDirectory() as tmp:

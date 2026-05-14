@@ -591,6 +591,7 @@ def validate_output_path(path: pathlib.Path) -> pathlib.Path:
     raw_path = path if path.is_absolute() else ROOT / path
     if raw_path.is_symlink():
         raise BinaryTypedProofAccountingGateError(f"output path must not be a symlink: {raw_path}")
+    reject_symlinked_path_components(EVIDENCE_DIR, "evidence dir")
     path = raw_path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
     if not path.parent.exists():
@@ -600,6 +601,18 @@ def validate_output_path(path: pathlib.Path) -> pathlib.Path:
     if evidence_root not in (path, *path.parents):
         raise BinaryTypedProofAccountingGateError(f"output path escapes evidence dir: {path}")
     return path
+
+
+def reject_symlinked_path_components(path: pathlib.Path, label: str) -> None:
+    try:
+        relative = path.relative_to(ROOT)
+    except ValueError as err:
+        raise BinaryTypedProofAccountingGateError(f"{label} is not under repo root: {path}") from err
+    current = ROOT
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            raise BinaryTypedProofAccountingGateError(f"{label} component must not be a symlink: {current}")
 
 
 def write_text_atomic(path: pathlib.Path, text: str) -> None:
