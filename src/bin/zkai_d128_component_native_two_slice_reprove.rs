@@ -372,12 +372,12 @@ fn publish_temp_file_with_backup(
                     };
                 }
                 if let Err(error) = fs::remove_file(&backup_path) {
-                    return Err(format!(
-                        "published {} {} but failed to remove backup {}: {error}",
+                    eprintln!(
+                        "warning: published {} {} but failed to remove backup {}: {error}",
                         label,
                         path.display(),
                         backup_path.display()
-                    ));
+                    );
                 }
                 return Ok(());
             }
