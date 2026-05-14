@@ -129,6 +129,16 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate-fast",
     "just gate",
 ];
+const EXPECTED_COMPACT_PREPROCESSED_VALIDATION_COMMANDS: &[&str] = &[
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- build-input docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- prove-compact docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json docs/engineering/evidence/zkai-d128-component-native-two-slice-compact-preprocessed-reprove-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- verify-compact docs/engineering/evidence/zkai-d128-component-native-two-slice-compact-preprocessed-reprove-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-component-native-two-slice-compact-preprocessed-reprove-2026-05.envelope.json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_component_two_slice_reprove",
+    "git diff --check",
+    "just gate-fast",
+    "just gate",
+];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -366,6 +376,12 @@ pub fn prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope
     input: &ZkAiD128ComponentTwoSliceReproveInput,
 ) -> Result<ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope> {
     validate_reprove_input(input)?;
+    let mut compact_input = input.clone();
+    compact_input.validation_commands = EXPECTED_COMPACT_PREPROCESSED_VALIDATION_COMMANDS
+        .iter()
+        .map(|value| value.to_string())
+        .collect();
+    validate_compact_preprocessed_reprove_input(&compact_input)?;
     Ok(
         ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope {
             proof_backend: StarkProofBackend::Stwo,
@@ -376,8 +392,8 @@ pub fn prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope
             semantic_scope: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_SEMANTIC_SCOPE
                 .to_string(),
             decision: ZKAI_D128_COMPONENT_TWO_SLICE_COMPACT_PREPROCESSED_DECISION.to_string(),
-            input: input.clone(),
-            proof: prove_compact_preprocessed_reprove_components(input)?,
+            input: compact_input.clone(),
+            proof: prove_compact_preprocessed_reprove_components(&compact_input)?,
         },
     )
 }
@@ -466,10 +482,26 @@ fn validate_compact_preprocessed_reprove_envelope(
             ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_MAX_PROOF_BYTES
         )));
     }
-    validate_reprove_input(&envelope.input)
+    validate_compact_preprocessed_reprove_input(&envelope.input)
 }
 
 fn validate_reprove_input(input: &ZkAiD128ComponentTwoSliceReproveInput) -> Result<()> {
+    validate_reprove_input_with_validation_commands(input, EXPECTED_VALIDATION_COMMANDS)
+}
+
+fn validate_compact_preprocessed_reprove_input(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+) -> Result<()> {
+    validate_reprove_input_with_validation_commands(
+        input,
+        EXPECTED_COMPACT_PREPROCESSED_VALIDATION_COMMANDS,
+    )
+}
+
+fn validate_reprove_input_with_validation_commands(
+    input: &ZkAiD128ComponentTwoSliceReproveInput,
+    expected_validation_commands: &[&str],
+) -> Result<()> {
     expect_eq(
         &input.schema,
         ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_INPUT_SCHEMA,
@@ -601,7 +633,7 @@ fn validate_reprove_input(input: &ZkAiD128ComponentTwoSliceReproveInput) -> Resu
     )?;
     expect_str_list_eq(
         &input.validation_commands,
-        EXPECTED_VALIDATION_COMMANDS,
+        expected_validation_commands,
         "validation commands",
     )?;
     let statement = statement_commitment(input)?;
@@ -756,12 +788,28 @@ fn prove_compact_preprocessed_reprove_components(
         CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
     commitment_scheme.set_store_polynomials_coefficients();
 
+    let compact_component_trace = component_trace(input);
+    if compact_component_trace.len() != preprocessed_ids.len() {
+        return Err(reprove_error(format!(
+            "compact preprocessed component trace column count drift: got {}, expected {}",
+            compact_component_trace.len(),
+            preprocessed_ids.len()
+        )));
+    }
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(component_trace(input));
+    tree_builder.extend_evals(compact_component_trace);
     tree_builder.commit(channel);
 
+    let compact_anchor_trace = compact_preprocessed_anchor_trace(input);
+    if compact_anchor_trace.len() != EXPECTED_SELECTED_SLICE_IDS.len() {
+        return Err(reprove_error(format!(
+            "compact anchor trace column count drift: got {}, expected {}",
+            compact_anchor_trace.len(),
+            EXPECTED_SELECTED_SLICE_IDS.len()
+        )));
+    }
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(compact_preprocessed_anchor_trace(input));
+    tree_builder.extend_evals(compact_anchor_trace);
     tree_builder.commit(channel);
 
     let components: [&dyn ComponentProver<SimdBackend>; 2] =
@@ -899,12 +947,28 @@ fn compact_preprocessed_reprove_commitment_roots(
         CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
     commitment_scheme.set_store_polynomials_coefficients();
 
+    let compact_component_trace = component_trace(input);
+    if compact_component_trace.len() != preprocessed_ids.len() {
+        return Err(reprove_error(format!(
+            "compact preprocessed component trace column count drift: got {}, expected {}",
+            compact_component_trace.len(),
+            preprocessed_ids.len()
+        )));
+    }
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(component_trace(input));
+    tree_builder.extend_evals(compact_component_trace);
     tree_builder.commit(channel);
 
+    let compact_anchor_trace = compact_preprocessed_anchor_trace(input);
+    if compact_anchor_trace.len() != EXPECTED_SELECTED_SLICE_IDS.len() {
+        return Err(reprove_error(format!(
+            "compact anchor trace column count drift: got {}, expected {}",
+            compact_anchor_trace.len(),
+            EXPECTED_SELECTED_SLICE_IDS.len()
+        )));
+    }
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(compact_preprocessed_anchor_trace(input));
+    tree_builder.extend_evals(compact_anchor_trace);
     tree_builder.commit(channel);
 
     Ok(commitment_scheme.roots())
@@ -1326,6 +1390,15 @@ mod tests {
     }
 
     #[test]
+    fn compact_preprocessed_trace_column_count_matches_preprocessed_columns() {
+        let input = fixture_input();
+        assert_eq!(
+            component_trace(&input).len(),
+            component_preprocessed_column_ids().len()
+        );
+    }
+
+    #[test]
     fn rejects_empty_compact_preprocessed_proof_envelope() {
         let input = fixture_input();
         let envelope = ZkAiD128ComponentTwoSliceCompactPreprocessedReproveEnvelope {
@@ -1353,6 +1426,14 @@ mod tests {
         let mut envelope =
             prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&input)
                 .expect("compact proof should prove");
+        let expected_compact_commands = EXPECTED_COMPACT_PREPROCESSED_VALIDATION_COMMANDS
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            envelope.input.validation_commands,
+            expected_compact_commands
+        );
         assert!(
             verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&envelope)
                 .expect("compact proof should verify")
