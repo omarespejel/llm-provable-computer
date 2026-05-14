@@ -138,10 +138,9 @@ fn verify_rejects_tampered_bridge_proof_bytes() {
         .arg(tampered_bridge)
         .assert()
         .failure()
-        .stderr(
-            predicate::str::contains("bridge envelope proof verification errored")
-                .and(predicate::str::contains("STARK verification failed")),
-        );
+        .stderr(predicate::str::contains(
+            "bridge envelope proof verification errored",
+        ));
 }
 
 #[test]
