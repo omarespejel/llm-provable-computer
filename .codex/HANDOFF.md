@@ -36,7 +36,7 @@ Reproducibility metadata:
 - Timing mode: proof-size accounting only, no timing claim.
 - Checked surface: `2` selected d128 components, `256` checked rows, width
   `128`, selected slices
-  `d128_rmsnorm_public_row` and `d128_rmsnorm_to_projection_bridge`.
+  `rmsnorm_public_rows` and `rmsnorm_projection_bridge`.
 - Evidence paths:
   `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json`,
   `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json`,
