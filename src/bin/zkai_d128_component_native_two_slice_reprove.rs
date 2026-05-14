@@ -266,18 +266,45 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
         ));
     }
     drop(file);
-    if let Err(error) = fs::rename(&tmp_path, path) {
-        let _ = fs::remove_file(&tmp_path);
-        return Err(format!(
-            "failed to publish {} {}: {error}",
-            label,
-            path.display()
-        ));
-    }
+    publish_temp_file(&tmp_path, path, label)?;
     if let Err(error) = sync_parent_directory(parent, label, path) {
         eprintln!("warning: {error}");
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
+    match fs::rename(tmp_path, path) {
+        Ok(()) => Ok(()),
+        Err(first_error) if path.exists() => {
+            if let Err(remove_error) = fs::remove_file(path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to replace existing {} {} after publish error {first_error}: {remove_error}",
+                    label,
+                    path.display()
+                ));
+            }
+            if let Err(second_error) = fs::rename(tmp_path, path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to publish replacement {} {} after removing existing destination: {second_error}",
+                    label,
+                    path.display()
+                ));
+            }
+            Ok(())
+        }
+        Err(error) => {
+            let _ = fs::remove_file(tmp_path);
+            Err(format!(
+                "failed to publish {} {}: {error}",
+                label,
+                path.display()
+            ))
+        }
+    }
 }
 
 #[cfg(all(feature = "stwo-backend", unix))]
