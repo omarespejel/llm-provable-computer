@@ -764,6 +764,16 @@ Tablero boundary.
   for native block proof-size evidence, recursion, timing, production setup, or
   matched competitor benchmarking. See
   `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`.
+- The native d128 block proof-object route is now explicitly bounded. The gate
+  records the full `197,504`-row d128 verifier accumulator, the `199,553`-row
+  attention-derived statement chain, the `2,559`-byte compressed input
+  contract, the `4,752`-byte external package without VK, and NANOZK's
+  source-backed `6,900` byte row in one route table, while rejecting `13 / 13`
+  overclaim mutations. The result remains
+  `NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING`; the next
+  minimal experiment is a native two-slice outer proof backend before any
+  six-slice proof-size or NANOZK comparison claim. See
+  `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`.
 
 ## Source-of-truth documents
 

@@ -63,8 +63,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 52. `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`
 53. `docs/engineering/zkai-attention-derived-d128-snark-statement-receipt-2026-05-14.md`
 54. `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`
-55. `docs/engineering/reproducibility.md`
-56. `git status --short --branch`
+55. `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`
+56. `docs/engineering/reproducibility.md`
+57. `git status --short --branch`
 
 ## Current lane split
 
@@ -732,6 +733,16 @@ Tablero boundary.
   for native block proof-size evidence, recursion, timing, production setup, or
   matched competitor benchmarking; see
   `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`.
+- The native d128 block proof-object route is now explicitly bounded. The gate
+  records the full `197,504`-row d128 verifier accumulator, the `199,553`-row
+  attention-derived statement chain, the `2,559`-byte compressed input
+  contract, the `4,752`-byte external package without VK, and NANOZK's
+  source-backed `6,900` byte row in one route table, while rejecting `13 / 13`
+  overclaim mutations. The result remains
+  `NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING`; the next
+  minimal experiment is a native two-slice outer proof backend before any
+  six-slice proof-size or NANOZK comparison claim; see
+  `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
