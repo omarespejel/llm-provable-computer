@@ -740,16 +740,27 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             return (path.parent / temp_name, temp_name, parent_fd, identity)
         except Exception:
             if file_fd is not None:
-                os.close(file_fd)
+                try:
+                    os.close(file_fd)
+                except OSError as cleanup_error:
+                    print(f"warning: failed to close temporary output fd: {cleanup_error}", file=sys.stderr)
             try:
                 if temp_name is not None:
                     try:
                         os.unlink(temp_name, dir_fd=parent_fd)
-                        os.fsync(parent_fd)
                     except FileNotFoundError:
                         pass
+                    except OSError as cleanup_error:
+                        print(f"warning: failed to remove temporary output: {cleanup_error}", file=sys.stderr)
+                    try:
+                        os.fsync(parent_fd)
+                    except OSError as cleanup_error:
+                        print(f"warning: failed to fsync output directory during cleanup: {cleanup_error}", file=sys.stderr)
             finally:
-                os.close(parent_fd)
+                try:
+                    os.close(parent_fd)
+                except OSError as cleanup_error:
+                    print(f"warning: failed to close output directory fd during cleanup: {cleanup_error}", file=sys.stderr)
             raise
 
     def replace_temp(temp: tuple[pathlib.Path, str, int, tuple[int, int]], path: pathlib.Path, label: str) -> None:
