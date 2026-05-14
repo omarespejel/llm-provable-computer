@@ -762,29 +762,20 @@ fn outer_statement_trace(
 fn digest_group_columns(
     input: &ZkAiD128TwoSliceOuterStatementInput,
 ) -> Result<Vec<Vec<Vec<BaseField>>>> {
+    let row_count = input.rows.len();
     COMPRESSED_DIGEST_COLUMN_GROUPS
         .iter()
         .map(|group| {
-            (0..DIGEST_LIMBS)
-                .map(|limb_index| {
-                    let column = input
-                        .rows
-                        .iter()
-                        .map(|row| {
-                            row_digest_limbs(input, row, group)
-                                .map(|limbs| BaseField::from(limbs[limb_index] as u32))
-                        })
-                        .collect::<Result<Vec<_>>>()?;
-                    Ok(column)
-                })
-                .collect::<Result<Vec<_>>>()
+            let limbs = compressed_digest_limbs(input, group)?;
+            Ok((0..DIGEST_LIMBS)
+                .map(|limb_index| vec![BaseField::from(limbs[limb_index] as u32); row_count])
+                .collect())
         })
         .collect()
 }
 
-fn row_digest_limbs(
+fn compressed_digest_limbs(
     input: &ZkAiD128TwoSliceOuterStatementInput,
-    _row: &D128TwoSliceOuterStatementRow,
     group: &str,
 ) -> Result<Vec<u16>> {
     match group {
@@ -1137,6 +1128,40 @@ mod tests {
         envelope.input.rows[0].source_file_sha256 =
             ZKAI_D128_RMSNORM_PUBLIC_ROW_SOURCE_FILE_SHA256.replace('d', "e");
         assert!(verify_zkai_d128_two_slice_outer_statement_envelope(&envelope).is_err());
+    }
+
+    #[test]
+    fn outer_statement_rejects_compressed_public_instance_tamper_after_proving() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d128_two_slice_outer_statement_envelope(&input).expect("outer proof");
+        envelope.input.public_instance_commitment = format!("blake2b-256:{}", "11".repeat(32));
+        let error = verify_zkai_d128_two_slice_outer_statement_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("public instance commitment"));
+    }
+
+    #[test]
+    fn outer_statement_rejects_compressed_proof_parameter_tamper_after_proving() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d128_two_slice_outer_statement_envelope(&input).expect("outer proof");
+        envelope.input.proof_native_parameter_commitment =
+            format!("blake2b-256:{}", "22".repeat(32));
+        let error = verify_zkai_d128_two_slice_outer_statement_envelope(&envelope).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("proof-native parameter commitment"));
+    }
+
+    #[test]
+    fn outer_statement_rejects_legacy_uncompressed_version_relabel() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d128_two_slice_outer_statement_envelope(&input).expect("outer proof");
+        envelope.proof_backend_version =
+            "stwo-d128-two-slice-outer-statement-air-proof-v1".to_string();
+        let error = verify_zkai_d128_two_slice_outer_statement_envelope(&envelope).unwrap_err();
+        assert!(error.to_string().contains("proof backend version"));
     }
 
     #[test]
