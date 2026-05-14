@@ -741,13 +741,15 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         except Exception:
             if file_fd is not None:
                 os.close(file_fd)
-            if temp_name is not None:
-                try:
-                    os.unlink(temp_name, dir_fd=parent_fd)
-                    os.fsync(parent_fd)
-                except FileNotFoundError:
-                    pass
-            os.close(parent_fd)
+            try:
+                if temp_name is not None:
+                    try:
+                        os.unlink(temp_name, dir_fd=parent_fd)
+                        os.fsync(parent_fd)
+                    except FileNotFoundError:
+                        pass
+            finally:
+                os.close(parent_fd)
             raise
 
     def replace_temp(temp: tuple[pathlib.Path, str, int, tuple[int, int]], path: pathlib.Path, label: str) -> None:

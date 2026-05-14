@@ -192,6 +192,57 @@ class D128NativeBlockGapAccountingGateTests(unittest.TestCase):
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
 
+    def test_temp_cleanup_closes_parent_when_cleanup_fsync_fails(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="d128-native-block-gap-cleanup-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+        json_path.unlink()
+
+        original_assert_identity = gate._assert_directory_identity
+        original_fsync = gate.os.fsync
+        original_close = gate.os.close
+        state = {"assert_calls": 0, "closed_directory": False}
+
+        try:
+            def fail_after_temp_write(path, identity, label):
+                original_assert_identity(path, identity, label)
+                if label == "output path 1":
+                    state["assert_calls"] += 1
+                    if state["assert_calls"] == 2:
+                        raise OSError("simulated post-temp identity failure")
+
+            def fail_directory_fsync(fd, *args, **kwargs):
+                mode = gate.os.fstat(fd).st_mode
+                if gate.stat_module.S_ISDIR(mode):
+                    raise OSError("simulated cleanup fsync failure")
+                return original_fsync(fd, *args, **kwargs)
+
+            def record_directory_close(fd, *args, **kwargs):
+                try:
+                    mode = gate.os.fstat(fd).st_mode
+                except OSError:
+                    mode = 0
+                if gate.stat_module.S_ISDIR(mode):
+                    state["closed_directory"] = True
+                return original_close(fd, *args, **kwargs)
+
+            gate._assert_directory_identity = fail_after_temp_write
+            gate.os.fsync = fail_directory_fsync
+            gate.os.close = record_directory_close
+            with self.assertRaisesRegex(gate.D128NativeBlockGapAccountingError, "failed to write output path"):
+                gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), None)
+            self.assertTrue(state["closed_directory"])
+            self.assertFalse(json_path.exists())
+        finally:
+            gate._assert_directory_identity = original_assert_identity
+            gate.os.fsync = original_fsync
+            gate.os.close = original_close
+            json_path.unlink(missing_ok=True)
+
     def test_loaders_reject_duplicate_keys_and_columns(self) -> None:
         with tempfile.NamedTemporaryFile(
             "w",
