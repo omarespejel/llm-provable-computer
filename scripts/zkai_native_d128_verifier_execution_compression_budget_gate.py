@@ -589,7 +589,7 @@ def collect_mutation_rejections(cases: tuple[dict[str, Any], ...]) -> list[dict[
     for case in cases:
         try:
             validate_payload(case["payload"], allow_missing_mutation_summary=True)
-        except Exception as err:
+        except CompressionBudgetGateError as err:
             rejected.append({"name": case["name"], "rejected": True, "error": str(err)})
         else:
             rejected.append({"name": case["name"], "rejected": False, "error": ""})
@@ -628,8 +628,8 @@ def validate_output_path(path: pathlib.Path) -> pathlib.Path:
         resolved.relative_to(EVIDENCE_DIR.resolve())
     except ValueError as err:
         raise CompressionBudgetGateError(f"output path must be under evidence dir: {raw_path}") from err
-    if not resolved.parent.exists():
-        raise CompressionBudgetGateError(f"output parent does not exist: {resolved.parent}")
+    if not resolved.parent.exists() or not resolved.parent.is_dir():
+        raise CompressionBudgetGateError(f"output parent must be an existing directory: {resolved.parent}")
     if resolved.exists() and resolved.is_dir():
         raise CompressionBudgetGateError(f"output path must be a file: {resolved}")
     return resolved
