@@ -108,6 +108,7 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_component_two_slice_reprove",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

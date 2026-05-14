@@ -277,24 +277,14 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
 fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
     match fs::rename(tmp_path, path) {
         Ok(()) => Ok(()),
-        Err(first_error) if path.exists() => {
-            if let Err(remove_error) = fs::remove_file(path) {
-                let _ = fs::remove_file(tmp_path);
-                return Err(format!(
-                    "failed to replace existing {} {} after publish error {first_error}: {remove_error}",
-                    label,
-                    path.display()
-                ));
-            }
-            if let Err(second_error) = fs::rename(tmp_path, path) {
-                let _ = fs::remove_file(tmp_path);
-                return Err(format!(
-                    "failed to publish replacement {} {} after removing existing destination: {second_error}",
-                    label,
-                    path.display()
-                ));
-            }
-            Ok(())
+        Err(first_error)
+            if path.try_exists().unwrap_or(false)
+                && matches!(
+                    first_error.kind(),
+                    std::io::ErrorKind::AlreadyExists | std::io::ErrorKind::PermissionDenied
+                ) =>
+        {
+            publish_temp_file_with_backup(tmp_path, path, label, first_error)
         }
         Err(error) => {
             let _ = fs::remove_file(tmp_path);
@@ -305,6 +295,122 @@ fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), St
             ))
         }
     }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn publish_temp_file_with_backup(
+    tmp_path: &Path,
+    path: &Path,
+    label: &str,
+    first_error: std::io::Error,
+) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| format!("{} {} has no file name", label, path.display()))?
+        .to_string_lossy();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| {
+            format!(
+                "system time before epoch while replacing {} {}: {error}",
+                label,
+                path.display()
+            )
+        })?
+        .as_nanos();
+    let mut last_backup_collision = None;
+    for attempt in 0..16 {
+        let backup_path = parent.join(format!(
+            ".{}.{}.{}.{}.bak",
+            file_name,
+            process::id(),
+            nonce,
+            attempt
+        ));
+        match fs::rename(path, &backup_path) {
+            Ok(()) => {
+                if let Err(error) = sync_parent_directory(parent, label, path) {
+                    let _ = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(parent, label, path);
+                    let _ = fs::remove_file(tmp_path);
+                    return Err(error);
+                }
+                if let Err(second_error) = fs::rename(tmp_path, path) {
+                    let restore_result = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(parent, label, path);
+                    let _ = fs::remove_file(tmp_path);
+                    return match restore_result {
+                        Ok(()) => Err(format!(
+                            "failed to publish replacement {} {} after backup: {second_error}",
+                            label,
+                            path.display()
+                        )),
+                        Err(restore_error) => Err(format!(
+                            "failed to publish replacement {} {} after backup and could not restore {}: publish error {second_error}; restore error {restore_error}",
+                            label,
+                            path.display(),
+                            backup_path.display()
+                        )),
+                    };
+                }
+                if let Err(error) = sync_parent_directory(parent, label, path) {
+                    let _ = fs::remove_file(path);
+                    let restore_result = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(parent, label, path);
+                    return match restore_result {
+                        Ok(()) => Err(error),
+                        Err(restore_error) => Err(format!(
+                            "published {} {} but could not durably finalize it and could not restore {}: {restore_error}",
+                            label,
+                            path.display(),
+                            backup_path.display()
+                        )),
+                    };
+                }
+                if let Err(error) = fs::remove_file(&backup_path) {
+                    return Err(format!(
+                        "published {} {} but failed to remove backup {}: {error}",
+                        label,
+                        path.display(),
+                        backup_path.display()
+                    ));
+                }
+                return Ok(());
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                last_backup_collision = Some(error);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to publish {} {} because destination disappeared after overwrite error {first_error}: {error}",
+                    label,
+                    path.display()
+                ));
+            }
+            Err(error) => {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to back up existing {} {} after overwrite error {first_error}: {error}",
+                    label,
+                    path.display()
+                ));
+            }
+        }
+    }
+    let _ = fs::remove_file(tmp_path);
+    Err(format!(
+        "failed to allocate backup path while publishing {} {} after overwrite error {first_error}: {}",
+        label,
+        path.display(),
+        last_backup_collision
+            .map(|error| error.to_string())
+            .unwrap_or_else(|| "backup path collision".to_string())
+    ))
 }
 
 #[cfg(all(feature = "stwo-backend", unix))]

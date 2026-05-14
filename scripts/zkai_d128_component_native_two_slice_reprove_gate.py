@@ -78,7 +78,7 @@ PREVIOUS_TARGET_TYPED_BYTES = 12_688
 PREVIOUS_TARGET_JSON_BYTES = 34_866
 EXPECTED_PROOF_JSON_BYTES = 22_139
 EXPECTED_LOCAL_TYPED_BYTES = 9_056
-EXPECTED_ENVELOPE_BYTES = 241_480
+EXPECTED_ENVELOPE_BYTES = 241_499
 
 EXPECTED_ROLE = {
     "role": "component_native_two_slice_reprove",
@@ -107,7 +107,7 @@ EXPECTED_AGGREGATE = {
     "previous_verifier_target_json_bytes": 34_866,
     "proof_json_size_bytes": 22_139,
     "local_typed_bytes": 9_056,
-    "envelope_json_size_bytes": 241_480,
+    "envelope_json_size_bytes": 241_499,
     "json_minus_local_typed_bytes": 13_083,
     "json_over_local_typed_ratio": 2.444678,
     "typed_saving_vs_previous_target_bytes": 3_632,

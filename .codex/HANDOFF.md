@@ -28,6 +28,26 @@ bytes. This removes `3,632` typed bytes (`28.6255%`) and closes `62.7505%` of
 the typed gap to NANOZK's paper-reported `6,900` byte d128 row. It is still
 `2,156` typed bytes above that row, so do not call it a NANOZK proof-size win.
 
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_component_native_two_slice_reprove` with
+  `stwo-d128-component-native-two-slice-reprove-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: `2` selected d128 components, `256` checked rows, width
+  `128`, selected slices
+  `d128_rmsnorm_public_row` and `d128_rmsnorm_to_projection_bridge`.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.tsv`.
+- Reproduce command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_d128_component_native_two_slice_reprove_gate.py --write-json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.tsv`.
+
 ### Publication/default lane
 
 - Keep the current paper package and shipped default backend on the conservative carry-free route.

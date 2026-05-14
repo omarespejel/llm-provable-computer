@@ -1,7 +1,7 @@
 {
   "aggregate": {
     "comparison_status": "smaller_than_previous_typed_target_still_above_nanozk_paper_row",
-    "envelope_json_size_bytes": 241480,
+    "envelope_json_size_bytes": 241499,
     "json_minus_local_typed_bytes": 13083,
     "json_over_local_typed_ratio": 2.444678,
     "json_ratio_vs_nanozk_paper_row": 3.208551,
@@ -27,7 +27,7 @@
   "cli_accounting_domain": "zkai:stwo:local-binary-proof-accounting",
   "cli_accounting_format_version": "v1",
   "cli_schema": "zkai-stwo-local-binary-proof-accounting-cli-v1",
-  "cli_summary_commitment": "sha256:d3e23c188f2fa24f64a3a5c18af6111925d40161d8edd036ac732d0610d086a3",
+  "cli_summary_commitment": "sha256:a7f2b475c9b0bb339b1bd8867ed569d6f05e23f437790a1efe8dd4553381f55f",
   "cli_upstream_stwo_serialization_status": "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY",
   "decision": "GO_D128_COMPONENT_NATIVE_TWO_SLICE_REPROVE_PROOF_OBJECT",
   "first_blocker": "component-native reproving closes most of the 12,688-to-6,900 typed-byte gap, but the checked proof is still 9,056 local typed bytes, 2,156 bytes above NANOZK's paper-reported d128 block-proof row",
@@ -144,7 +144,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:3d24f871f5ad3d89aea7ef27bc57a72d91f5d1e769fba08890f269e5e56693ed",
+  "payload_commitment": "sha256:9c13a7c56b8d4eaee7730ac201c6828cb18a8ef153887148c394054c8c08e1a3",
   "profile_row": {
     "envelope_metadata": {
       "proof_backend": "stwo",
@@ -154,7 +154,7 @@
       "target_id": null,
       "verifier_domain": null
     },
-    "envelope_sha256": "becbbf79571c28b2a45cb9261178fea150145534fcc462b215d0a7b2fd5f2a74",
+    "envelope_sha256": "410a2a2a2f88087909441172918783325f8995c738ecc887a8a00e9c7bdfa744",
     "evidence_relative_path": "zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
     "local_binary_accounting": {
       "component_sum_bytes": 9056,
