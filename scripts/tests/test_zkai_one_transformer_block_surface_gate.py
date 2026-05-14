@@ -86,21 +86,21 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         d128 = gate.load_json(gate.D128_BLOCK_RECEIPT)
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
-        matrix = gate.load_json(gate.COMPETITOR_MATRIX)
+        published_rows = gate.load_tsv(gate.PUBLISHED_ZKML_NUMBERS)
 
         fusion["route_matrix"]["fused_savings_bytes_total"] = 0
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "fusion metrics must be positive"):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         fusion = gate.load_json(gate.FUSION_MECHANISM)
         d128["summary"]["mutations_rejected"] = d128["summary"]["mutation_cases"] - 1
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "d128 mutation rejection count drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         d128 = gate.load_json(gate.D128_BLOCK_RECEIPT)
         attention_derived["summary"]["edge_count"] = 10
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "attention-derived d128 chain edge count drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived["summary"].pop("block_statement_commitment")
@@ -108,7 +108,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 chain summary block statement commitment",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived["summary"]["block_statement_commitment"] = "blake2b-256:" + "00" * 32
@@ -116,7 +116,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 chain summary commitment drift",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived_snark["receipt_metrics"]["proof_size_bytes"] = 1
@@ -124,7 +124,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 SNARK receipt metric drift: proof_size_bytes",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         attention_derived_snark["source_route_metrics"]["source_relation_rows"] = 1
@@ -132,7 +132,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 SNARK source relation rows mismatch",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         attention_derived_snark["source_route_metrics"].pop("compressed_to_source_ratio")
@@ -140,7 +140,7 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 SNARK compressed/source ratio",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         attention_derived_snark["source_route_metrics"]["compressed_to_source_ratio"] = 1.0
@@ -148,32 +148,32 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
             gate.OneTransformerBlockSurfaceError,
             "attention-derived d128 SNARK compressed/source ratio drift",
         ):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
         attention_derived = gate.load_json(gate.ATTENTION_DERIVED_D128_CHAIN)
         attention_derived_snark = gate.load_json(gate.ATTENTION_DERIVED_D128_SNARK_RECEIPT)
         nanozk_block_row = next(
             row
-            for row in matrix["external_rows"]
+            for row in published_rows
             if row.get("system") == "NANOZK"
             and row.get("workload_label") == "Transformer block proof"
             and row.get("workload_scope") == "Per-layer block proof"
         )
         nanozk_block_row["proof_size_reported"] = "1 byte"
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift"):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
-        matrix = gate.load_json(gate.COMPETITOR_MATRIX)
+        published_rows = gate.load_tsv(gate.PUBLISHED_ZKML_NUMBERS)
         nanozk_block_row = next(
             row
-            for row in matrix["external_rows"]
+            for row in published_rows
             if row.get("system") == "NANOZK"
             and row.get("workload_label") == "Transformer block proof"
             and row.get("workload_scope") == "Per-layer block proof"
         )
         nanozk_block_row.pop("model_or_dims", None)
         with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "NANOZK row drift: model_or_dims"):
-            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+            gate._component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
 
     def test_tsv_contains_component_rows(self):
         tsv = gate.to_tsv(self.payload)
@@ -270,6 +270,39 @@ class OneTransformerBlockSurfaceGateTests(unittest.TestCase):
         try:
             with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "non-finite JSON constant"):
                 gate.load_json(path)
+        finally:
+            path.unlink(missing_ok=True)
+
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="one-block-duplicate-json-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write('{"value": 1, "value": 2}\n')
+        try:
+            with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "duplicate JSON key"):
+                gate.load_json(path)
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_load_tsv_rejects_duplicate_columns(self):
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="one-block-duplicate-tsv-",
+            suffix=".tsv",
+            delete=False,
+        ) as handle:
+            path = pathlib.Path(handle.name)
+            handle.write("system\tsystem\nNANOZK\tNANOZK\n")
+        try:
+            with self.assertRaisesRegex(gate.OneTransformerBlockSurfaceError, "duplicate columns"):
+                gate.load_tsv(path)
         finally:
             path.unlink(missing_ok=True)
 

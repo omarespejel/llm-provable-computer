@@ -7,3 +7,5 @@ external	EZKL (reported by Jolt Atlas)	NanoGPT proof	237	0.34	NA			SOURCE_BACKED
 local	provable-transformer-vm	Stwo attention/Softmax-table fusion				matched route JSON proof-byte saving	194097	LOCAL_MECHANISM_EVIDENCE_NOT_LAYERWISE_FULL_MODEL_BENCHMARK
 local	provable-transformer-vm	d64 RMSNorm/SwiGLU/residual block receipt				checked slice rows	49600	LOCAL_RECEIPT_CHAIN_NOT_RECURSIVE_PROOF_COMPRESSION
 local	provable-transformer-vm	d128 RMSNorm/SwiGLU/residual comparator target				target estimated linear multiplications	196608	TARGET_SPEC_ONLY_NOT_LOCAL_PROOF_RESULT
+local	provable-transformer-vm	attention-derived d128 executable package without VK				compressed artifact plus proof plus public signals	4752	LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_NOT_MATCHED_LAYER_PROOF_BENCHMARK
+local	provable-transformer-vm	attention-derived d128 executable package with VK				compressed artifact plus proof plus public signals plus verification key	10608	LOCAL_EXECUTABLE_PACKAGE_ACCOUNTING_WITH_SETUP_NOT_MATCHED_LAYER_PROOF_BENCHMARK

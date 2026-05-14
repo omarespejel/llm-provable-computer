@@ -120,16 +120,16 @@
       "surface": "compressed artifact plus proof plus public signals plus verification key"
     }
   ],
-  "payload_commitment": "sha256:f4f879fac1dfe2807c1b52c4204acbb5023289dcde1911a2fbf10f981a68f247",
+  "payload_commitment": "sha256:327ccbc9bd6b46d507cd347e39e07eb6de6e58b2f5df24aab411ce066fe825ba",
   "result": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_BLOCK_PROOF",
   "schema": "zkai-one-block-executable-package-accounting-v1",
   "source_artifacts": [
     {
       "decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
-      "file_sha256": "d287744e8dc8a8227fba110f47f86d5da7bac80353835dc1c2e054e20ec804e6",
+      "file_sha256": "e02fa957b2ca7d54056d564b53fd64bcdb5b94983dc1c7d59e4dc3c017436022",
       "kind": "one_block_scorecard_json",
       "path": "docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json",
-      "payload_sha256": "22bbef36def7139aa7a9ccbca03f822a9ee2d070a99f258538f4c088cb1c3501",
+      "payload_sha256": "315729692adf873a6fab16882f03f8b349ee87b7a13d1030ffcc0660d1a48fc6",
       "schema": "zkai-one-transformer-block-surface-v1"
     },
     {

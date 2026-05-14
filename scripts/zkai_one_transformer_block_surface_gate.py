@@ -19,6 +19,7 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ENGINEERING_EVIDENCE = ROOT / "docs" / "engineering" / "evidence"
+PAPER_EVIDENCE = ROOT / "docs" / "paper" / "evidence"
 JSON_OUT = ENGINEERING_EVIDENCE / "zkai-one-transformer-block-surface-2026-05.json"
 TSV_OUT = ENGINEERING_EVIDENCE / "zkai-one-transformer-block-surface-2026-05.tsv"
 
@@ -31,7 +32,7 @@ ATTENTION_DERIVED_D128_CHAIN = (
 ATTENTION_DERIVED_D128_SNARK_RECEIPT = (
     ENGINEERING_EVIDENCE / "zkai-attention-derived-d128-snark-statement-receipt-2026-05.json"
 )
-COMPETITOR_MATRIX = ENGINEERING_EVIDENCE / "zkai-may2026-competitor-metric-matrix.json"
+PUBLISHED_ZKML_NUMBERS = PAPER_EVIDENCE / "published-zkml-numbers-2026-04.tsv"
 EXPECTED_ATTENTION_DERIVED_D128_BLOCK_STATEMENT_COMMITMENT = (
     "blake2b-256:5954b84283b2880c878c70ed533935925de1e14026126a406ad04f66c7ce14a5"
 )
@@ -104,6 +105,15 @@ def _reject_json_constant(value: str) -> None:
     raise ValueError(f"non-finite JSON constant: {value}")
 
 
+def _reject_duplicate_json_keys(items: list[tuple[str, Any]]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in items:
+        if key in payload:
+            raise ValueError(f"duplicate JSON key: {key}")
+        payload[key] = value
+    return payload
+
+
 def read_source_bytes(path: pathlib.Path, label: str) -> bytes:
     root = ROOT.resolve()
     candidate = pathlib.Path(os.path.abspath(path if path.is_absolute() else ROOT / path))
@@ -155,7 +165,11 @@ def _source_from_bytes(path: pathlib.Path, kind: str, raw: bytes) -> dict[str, s
 
 def _parse_json_bytes(path: pathlib.Path, raw: bytes) -> dict[str, Any]:
     try:
-        payload = json.loads(raw.decode("utf-8"), parse_constant=_reject_json_constant)
+        payload = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as err:
         raise OneTransformerBlockSurfaceError(f"failed to load JSON source {path}: {err}") from err
     if not isinstance(payload, dict):
@@ -163,19 +177,38 @@ def _parse_json_bytes(path: pathlib.Path, raw: bytes) -> dict[str, Any]:
     return payload
 
 
+def _parse_tsv_bytes(path: pathlib.Path, raw: bytes) -> list[dict[str, str]]:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as err:
+        raise OneTransformerBlockSurfaceError(f"failed to load TSV source {path}: {err}") from err
+    reader = csv.DictReader(io.StringIO(text), delimiter="\t")
+    fieldname_list = reader.fieldnames or []
+    duplicate_fields = sorted({field for field in fieldname_list if fieldname_list.count(field) > 1})
+    if duplicate_fields:
+        raise OneTransformerBlockSurfaceError(f"TSV source has duplicate columns: {duplicate_fields}")
+    rows = list(reader)
+    if not rows:
+        raise OneTransformerBlockSurfaceError(f"TSV source must not be empty: {path}")
+    for index, row in enumerate(rows, start=2):
+        if None in row:
+            raise OneTransformerBlockSurfaceError(f"TSV source row {index} has extra cells")
+        if any(value is None for value in row.values()):
+            raise OneTransformerBlockSurfaceError(f"TSV source row {index} has missing cells")
+    return rows
+
+
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     return _parse_json_bytes(path, read_source_bytes(path, "JSON"))
+
+
+def load_tsv(path: pathlib.Path) -> list[dict[str, str]]:
+    return _parse_tsv_bytes(path, read_source_bytes(path, "TSV"))
 
 
 def _dict(value: Any, field: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise OneTransformerBlockSurfaceError(f"{field} must be object")
-    return value
-
-
-def _list(value: Any, field: str) -> list[Any]:
-    if not isinstance(value, list):
-        raise OneTransformerBlockSurfaceError(f"{field} must be list")
     return value
 
 
@@ -209,15 +242,7 @@ def _float_field(payload: dict[str, Any], path: tuple[str, ...], label: str) -> 
     return value_float
 
 
-def _nanozk_block_row(matrix: dict[str, Any]) -> dict[str, Any]:
-    if _string_field(matrix, ("schema",), "competitor matrix schema") != "zkai-may2026-competitor-metric-matrix-v1":
-        raise OneTransformerBlockSurfaceError("competitor matrix schema drift")
-    if (
-        _string_field(matrix, ("decision",), "competitor matrix decision")
-        != "GO_SOURCE_BACKED_COMPETITOR_MATRIX_NO_GO_MATCHED_BENCHMARK_CLAIMS"
-    ):
-        raise OneTransformerBlockSurfaceError("competitor matrix decision drift")
-    rows = _list(matrix.get("external_rows"), "competitor matrix external_rows")
+def _nanozk_block_row(rows: list[dict[str, str]]) -> dict[str, str]:
     matches = [
         row
         for row in rows
@@ -394,7 +419,7 @@ def _component_rows(
     d128: dict[str, Any],
     attention_derived_d128: dict[str, Any],
     attention_derived_d128_snark: dict[str, Any],
-    matrix: dict[str, Any],
+    published_rows: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
     if _string_field(fusion, ("schema",), "fusion schema") != "zkai-attention-kv-stwo-fusion-mechanism-ablation-v1":
         raise OneTransformerBlockSurfaceError("fusion schema drift")
@@ -412,7 +437,7 @@ def _component_rows(
         attention_derived_d128_snark,
         attention_derived_summary,
     )
-    nanozk = _nanozk_block_row(matrix)
+    nanozk = _nanozk_block_row(published_rows)
     receipt_metrics = snark_summary["receipt_metrics"]
 
     fused_savings = _int_field(fusion, ("route_matrix", "fused_savings_bytes_total"), "fusion savings")
@@ -504,14 +529,14 @@ def build_payload_uncommitted() -> dict[str, Any]:
         ATTENTION_DERIVED_D128_SNARK_RECEIPT,
         "attention-derived d128 SNARK receipt JSON",
     )
-    matrix_raw = read_source_bytes(COMPETITOR_MATRIX, "competitor matrix JSON")
+    published_raw = read_source_bytes(PUBLISHED_ZKML_NUMBERS, "published zkML TSV")
     fusion = _parse_json_bytes(FUSION_MECHANISM, fusion_raw)
     d64 = _parse_json_bytes(D64_BLOCK_RECEIPT, d64_raw)
     d128 = _parse_json_bytes(D128_BLOCK_RECEIPT, d128_raw)
     attention_derived = _parse_json_bytes(ATTENTION_DERIVED_D128_CHAIN, attention_derived_raw)
     attention_derived_snark = _parse_json_bytes(ATTENTION_DERIVED_D128_SNARK_RECEIPT, attention_derived_snark_raw)
-    matrix = _parse_json_bytes(COMPETITOR_MATRIX, matrix_raw)
-    component_rows = _component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, matrix)
+    published_rows = _parse_tsv_bytes(PUBLISHED_ZKML_NUMBERS, published_raw)
+    component_rows = _component_rows(fusion, d64, d128, attention_derived, attention_derived_snark, published_rows)
     d64_row = next(row for row in component_rows if row["surface"].startswith("d64 "))
     d128_row = next(row for row in component_rows if row["surface"].startswith("d128 "))
     attention_derived_row = next(
@@ -544,7 +569,7 @@ def build_payload_uncommitted() -> dict[str, Any]:
                 "local_attention_derived_d128_snark_statement_receipt_json",
                 attention_derived_snark_raw,
             ),
-            _source_from_bytes(COMPETITOR_MATRIX, "source_backed_competitor_matrix_json", matrix_raw),
+            _source_from_bytes(PUBLISHED_ZKML_NUMBERS, "published_zkml_numbers_tsv", published_raw),
         ],
         "component_rows": component_rows,
         "block_component_map": [

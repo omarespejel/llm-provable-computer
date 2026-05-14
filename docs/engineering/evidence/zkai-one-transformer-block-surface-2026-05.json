@@ -105,7 +105,7 @@
     "not full autoregressive inference",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:085b3fe4014e3b4c939389983b15d08b45abe34c5d71a6d25616953c0f80beba",
+  "payload_commitment": "sha256:7fad85e369c847672970fb2ed0f7d8ec8e36912b2817923d20f55ad7fd66d8f7",
   "schema": "zkai-one-transformer-block-surface-v1",
   "source_artifacts": [
     {
@@ -134,9 +134,9 @@
       "sha256": "0b2f311210c9102b758a1987441a0ef44044998636e6b7bf3ccd19e0558b60fc"
     },
     {
-      "kind": "source_backed_competitor_matrix_json",
-      "path": "docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json",
-      "sha256": "ed838fd9137d66fb2acbf72e3ac82fca4774a4d0f6d9b935a74674cfd671249d"
+      "kind": "published_zkml_numbers_tsv",
+      "path": "docs/paper/evidence/published-zkml-numbers-2026-04.tsv",
+      "sha256": "aa16aa98493ecf9f984d238875890c81b4525ebde21463b76010c92f6767390b"
     }
   ],
   "summary": {
