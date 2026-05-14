@@ -20,6 +20,14 @@ before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 
+Recent d128 component-native result: the selected RMSNorm public-row and
+projection-bridge relations now have a single native Stwo reprove object. The
+checked proof is `22,139` JSON proof bytes and `9,056` local typed bytes, down
+from the prior selected inner-proof target of `34,866` JSON / `12,688` typed
+bytes. This removes `3,632` typed bytes (`28.6255%`) and closes `62.7505%` of
+the typed gap to NANOZK's paper-reported `6,900` byte d128 row. It is still
+`2,156` typed bytes above that row, so do not call it a NANOZK proof-size win.
+
 ### Publication/default lane
 
 - Keep the current paper package and shipped default backend on the conservative carry-free route.
@@ -948,10 +956,11 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Attack `component_native_reprove` for the selected d128 two-slice target:
-   re-express the RMSNorm/public-row and projection-bridge relations as native
-   Stwo components with the same source and statement commitments, then compare
-   that proof object against the `12,688` typed-byte verifier target.
+1. Treat `component_native_reprove` for the selected d128 two-slice target as a
+   positive GO: the native proof object is `9,056` typed bytes versus the prior
+   `12,688` typed-byte target. The next attack is the remaining `2,156` typed
+   bytes above NANOZK's paper-reported row, without weakening statement
+   commitments or relabeling the result as a matched benchmark.
 2. Treat the family-matrix result as landed: default, `2x2`, and `3x3` all now
    reproduce the same replay-avoidance mechanism on the experimental lane, and
    lead with the growing-in-`N` curve shape rather than any one frontier ratio.

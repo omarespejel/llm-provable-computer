@@ -1,0 +1,323 @@
+{
+  "aggregate": {
+    "comparison_status": "smaller_than_previous_typed_target_still_above_nanozk_paper_row",
+    "envelope_json_size_bytes": 241480,
+    "json_minus_local_typed_bytes": 13083,
+    "json_over_local_typed_ratio": 2.444678,
+    "json_ratio_vs_nanozk_paper_row": 3.208551,
+    "json_ratio_vs_previous_target": 0.634974,
+    "json_saving_ratio_vs_previous_target": 0.365026,
+    "json_saving_vs_previous_target_bytes": 12727,
+    "local_typed_bytes": 9056,
+    "previous_verifier_target_json_bytes": 34866,
+    "previous_verifier_target_typed_bytes": 12688,
+    "profiles_checked": 1,
+    "proof_json_size_bytes": 22139,
+    "role_checked": "component_native_two_slice_reprove",
+    "typed_gap_closed_vs_prior_budget": 0.627505,
+    "typed_ratio_vs_nanozk_paper_row": 1.312464,
+    "typed_ratio_vs_previous_target": 0.713745,
+    "typed_remaining_gap_to_nanozk_paper_row_bytes": 2156,
+    "typed_remaining_reduction_ratio_to_equal_nanozk": 0.238074,
+    "typed_saving_ratio_vs_previous_target": 0.286255,
+    "typed_saving_vs_previous_target_bytes": 3632
+  },
+  "all_mutations_rejected": true,
+  "claim_boundary": "D128_COMPONENT_NATIVE_TWO_SLICE_REPROVE_REDUCES_THE_COMPARABLE_TYPED_TARGET_NOT_A_MATCHED_NANOZK_PROOF_SIZE_WIN",
+  "cli_accounting_domain": "zkai:stwo:local-binary-proof-accounting",
+  "cli_accounting_format_version": "v1",
+  "cli_schema": "zkai-stwo-local-binary-proof-accounting-cli-v1",
+  "cli_summary_commitment": "sha256:d3e23c188f2fa24f64a3a5c18af6111925d40161d8edd036ac732d0610d086a3",
+  "cli_upstream_stwo_serialization_status": "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY",
+  "decision": "GO_D128_COMPONENT_NATIVE_TWO_SLICE_REPROVE_PROOF_OBJECT",
+  "first_blocker": "component-native reproving closes most of the 12,688-to-6,900 typed-byte gap, but the checked proof is still 9,056 local typed bytes, 2,156 bytes above NANOZK's paper-reported d128 block-proof row",
+  "mutation_cases": [
+    {
+      "error": "schema drift",
+      "name": "schema_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "decision drift",
+      "name": "decision_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "result drift",
+      "name": "result_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "claim_boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "source evidence drift",
+      "name": "prior_budget_source_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "profile row drift",
+      "name": "role_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "profile row drift",
+      "name": "proof_backend_version_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "profile row drift",
+      "name": "proof_json_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "profile row drift",
+      "name": "local_typed_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "previous_target_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "nanozk_paper_reported_d128_block_proof_bytes drift",
+      "name": "nanozk_baseline_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "gap_closed_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "aggregate drift",
+      "name": "comparison_status_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "first_blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "profile row drift",
+      "name": "record_stream_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "validation commands drift",
+      "name": "validation_command_drift",
+      "rejected": true
+    },
+    {
+      "error": "payload commitment drift",
+      "name": "payload_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_field_injection",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 19,
+  "mutations_rejected": 19,
+  "nanozk_paper_reported_d128_block_proof_bytes": 6900,
+  "next_research_step": "attack the remaining 2,156 typed bytes by reducing query/decommitment footprint or by fusing additional model-faithful d128 block relations under the same native proof plumbing without dropping statement commitments",
+  "non_claims": [
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK benchmark",
+    "not locally reproduced NANOZK evidence",
+    "not native verifier execution of the selected inner Stwo proofs",
+    "not recursion or proof-carrying data",
+    "not a native full d128 transformer-block proof",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:3d24f871f5ad3d89aea7ef27bc57a72d91f5d1e769fba08890f269e5e56693ed",
+  "profile_row": {
+    "envelope_metadata": {
+      "proof_backend": "stwo",
+      "proof_backend_version": "stwo-d128-component-native-two-slice-reprove-v1",
+      "proof_schema_version": null,
+      "statement_version": "zkai-d128-component-native-two-slice-reprove-statement-v1",
+      "target_id": null,
+      "verifier_domain": null
+    },
+    "envelope_sha256": "becbbf79571c28b2a45cb9261178fea150145534fcc462b215d0a7b2fd5f2a74",
+    "evidence_relative_path": "zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
+    "local_binary_accounting": {
+      "component_sum_bytes": 9056,
+      "format_domain": "zkai:stwo:local-binary-proof-accounting",
+      "format_version": "v1",
+      "grouped_reconstruction": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 2944,
+        "queries_values": 2208,
+        "trace_decommitments": 1824
+      },
+      "json_minus_local_typed_bytes": 13083,
+      "json_over_local_typed_ratio": 2.444678,
+      "record_count": 13,
+      "record_stream_bytes": 1084,
+      "record_stream_sha256": "f79276d221c92de124c251078b7848704528af04509a189a7d4a1cc1b510ebf1",
+      "records": [
+        {
+          "item_count": 3,
+          "item_size_bytes": 32,
+          "path": "pcs.commitments",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 96
+        },
+        {
+          "item_count": 54,
+          "item_size_bytes": 32,
+          "path": "pcs.trace_decommitments.hash_witness",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 1728
+        },
+        {
+          "item_count": 184,
+          "item_size_bytes": 16,
+          "path": "pcs.sampled_values",
+          "scalar_kind": "secure_field",
+          "total_bytes": 2944
+        },
+        {
+          "item_count": 552,
+          "item_size_bytes": 4,
+          "path": "pcs.queried_values",
+          "scalar_kind": "base_field",
+          "total_bytes": 2208
+        },
+        {
+          "item_count": 3,
+          "item_size_bytes": 16,
+          "path": "pcs.fri.first_layer.fri_witness",
+          "scalar_kind": "secure_field",
+          "total_bytes": 48
+        },
+        {
+          "item_count": 15,
+          "item_size_bytes": 16,
+          "path": "pcs.fri.inner_layers.fri_witness",
+          "scalar_kind": "secure_field",
+          "total_bytes": 240
+        },
+        {
+          "item_count": 1,
+          "item_size_bytes": 16,
+          "path": "pcs.fri.last_layer_poly",
+          "scalar_kind": "secure_field",
+          "total_bytes": 16
+        },
+        {
+          "item_count": 1,
+          "item_size_bytes": 32,
+          "path": "pcs.fri.first_layer.commitment",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 32
+        },
+        {
+          "item_count": 6,
+          "item_size_bytes": 32,
+          "path": "pcs.fri.inner_layers.commitments",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 192
+        },
+        {
+          "item_count": 15,
+          "item_size_bytes": 32,
+          "path": "pcs.fri.first_layer.decommitment.hash_witness",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 480
+        },
+        {
+          "item_count": 32,
+          "item_size_bytes": 32,
+          "path": "pcs.fri.inner_layers.decommitment.hash_witness",
+          "scalar_kind": "blake2s_hash",
+          "total_bytes": 1024
+        },
+        {
+          "item_count": 1,
+          "item_size_bytes": 8,
+          "path": "pcs.proof_of_work",
+          "scalar_kind": "u64_le",
+          "total_bytes": 8
+        },
+        {
+          "item_count": 1,
+          "item_size_bytes": 40,
+          "path": "pcs.config",
+          "scalar_kind": "pcs_config",
+          "total_bytes": 40
+        }
+      ],
+      "stwo_grouped_breakdown": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1728,
+        "fri_samples": 304,
+        "oods_samples": 2944,
+        "queries_values": 2208,
+        "trace_decommitments": 1824
+      },
+      "typed_size_estimate_bytes": 9056,
+      "upstream_stwo_serialization_status": "NOT_UPSTREAM_STWO_SERIALIZATION_LOCAL_ACCOUNTING_RECORD_STREAM_ONLY"
+    },
+    "proof_json_size_bytes": 22139,
+    "proof_sha256": "ba7ed91c02b44aa61ff8b381c6c50536721a6c8e48202dd9fdd48b536a0c2319",
+    "role": "component_native_two_slice_reprove"
+  },
+  "proof_payload_kind": "utf8_json_object_with_single_stark_proof_field",
+  "question": "Can the selected d128 RMSNorm public-row and projection-bridge relations be reproven as native Stwo components with one shared proof object smaller than the selected inner-proof verifier-execution target?",
+  "result": "GO_STRUCTURAL_SAVING_STILL_ABOVE_NANOZK_REPORTED_ROW",
+  "route_id": "native_stwo_d128_component_native_two_slice_reprove",
+  "schema": "zkai-d128-component-native-two-slice-reprove-gate-v1",
+  "size_constants": {
+    "base_field_bytes": 4,
+    "blake2s_hash_bytes": 32,
+    "pcs_config_bytes": 40,
+    "proof_of_work_bytes": 8,
+    "secure_field_bytes": 16
+  },
+  "source_evidence": [
+    {
+      "decision": "GO_D128_VERIFIER_EXECUTION_COMPRESSION_BUDGET_PINNED",
+      "file_sha256": "cbb8068b7339571b8f2141fea6390813566c48e919d13c86cfb1f605f0a661b5",
+      "path": "docs/engineering/evidence/zkai-native-d128-verifier-execution-compression-budget-2026-05.json",
+      "payload_commitment": "sha256:21e5df1f455e22b2587be69093b3bfda3d4ff1235a5dd8524b96a4c2c713679b",
+      "payload_sha256": "dbcdfbb65165b7bdc4bfb325bebd94dc3ec639414aeb6361f45ffd3e62b67709",
+      "schema": "zkai-native-d128-verifier-execution-compression-budget-gate-v1",
+      "source_id": "verifier_execution_compression_budget"
+    }
+  ],
+  "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- build-input docs/engineering/evidence/zkai-d128-native-rmsnorm-public-row-proof-2026-05.json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- prove docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_component_native_two_slice_reprove -- verify docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
+    "python3 scripts/zkai_d128_component_native_two_slice_reprove_gate.py --write-json docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-gate-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_d128_component_native_two_slice_reprove_gate.py scripts/tests/test_zkai_d128_component_native_two_slice_reprove_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_d128_component_native_two_slice_reprove_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_component_two_slice_reprove --lib",
+    "cargo +nightly-2025-07-14 fmt --check",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
