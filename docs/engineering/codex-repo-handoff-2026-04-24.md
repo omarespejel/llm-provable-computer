@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `f07446a3c4e2f8097a455c26fe9612d29932840e` (matches
+**Mainline tip at last refresh:** `b06a449d598f78913da9e9bed9dd3304cd6e8957` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -64,8 +64,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 53. `docs/engineering/zkai-attention-derived-d128-snark-statement-receipt-2026-05-14.md`
 54. `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`
 55. `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`
-56. `docs/engineering/reproducibility.md`
-57. `git status --short --branch`
+56. `docs/engineering/zkai-native-d128-compressed-outer-statement-binary-accounting-2026-05-14.md`
+57. `docs/engineering/reproducibility.md`
+58. `git status --short --branch`
 
 ## Current lane split
 
@@ -787,6 +788,18 @@ Tablero boundary.
   see `docs/engineering/zkai-native-d128-two-slice-digest-compression-2026-05-14.md`
   and
   `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`.
+- The compressed d128 outer statement proof now also has repo-owned local
+  binary/typed accounting. The checked JSON proof payload remains `3,516`
+  bytes, while typed `StarkProof` field accounting is `1,792` bytes, with
+  `1,724` bytes of JSON overhead and a `1.962054x` JSON/typed ratio. The typed
+  view is `0.259710x` NANOZK's paper-reported `6.9 KB` row, and the JSON proof
+  view remains `0.509565x`; this is only an interesting-range signal, not a
+  matched NANOZK benchmark. The gate rejects `20 / 20` overclaim, metric,
+  digest, baseline-smuggling, and output-path mutations; see
+  `docs/engineering/zkai-native-d128-compressed-outer-statement-binary-accounting-2026-05-14.md`,
+  `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.tsv`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact

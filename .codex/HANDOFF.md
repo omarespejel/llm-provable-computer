@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-05-13
+Last refreshed: 2026-05-14
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `f07446a3c4e2f8097a455c26fe9612d29932840e`
+Mainline reference at refresh: `b06a449d598f78913da9e9bed9dd3304cd6e8957`
 
 ## Immediate orientation
 
@@ -818,6 +818,18 @@ Tablero boundary.
   See `docs/engineering/zkai-native-d128-two-slice-digest-compression-2026-05-14.md`
   and
   `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`.
+- The compressed d128 outer statement proof now also has repo-owned local
+  binary/typed accounting. The checked JSON proof payload remains `3,516`
+  bytes, while typed `StarkProof` field accounting is `1,792` bytes, with
+  `1,724` bytes of JSON overhead and a `1.962054x` JSON/typed ratio. The typed
+  view is `0.259710x` NANOZK's paper-reported `6.9 KB` row, and the JSON proof
+  view remains `0.509565x`; this is only an interesting-range signal, not a
+  matched NANOZK benchmark. The gate rejects `20 / 20` overclaim, metric,
+  digest, baseline-smuggling, and output-path mutations. See
+  `docs/engineering/zkai-native-d128-compressed-outer-statement-binary-accounting-2026-05-14.md`,
+  `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.tsv`.
 
 ## Source-of-truth documents
 
