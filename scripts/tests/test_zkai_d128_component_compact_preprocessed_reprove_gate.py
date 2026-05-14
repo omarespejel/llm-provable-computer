@@ -94,9 +94,20 @@ def prior_budget():
     }
 
 
+def build_payload(summary=None, budget=None, **kwargs):
+    return gate.build_payload(
+        cli_summary() if summary is None else summary,
+        prior_budget() if budget is None else budget,
+        compact_envelope_size_bytes=kwargs.pop(
+            "compact_envelope_size_bytes", gate.COMPACT_ENVELOPE_BYTES
+        ),
+        **kwargs,
+    )
+
+
 class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
     def test_build_payload_records_below_nanozk_signal_without_overclaim(self):
-        payload = gate.build_payload(cli_summary(), prior_budget())
+        payload = build_payload()
 
         self.assertEqual(payload["decision"], gate.DECISION)
         self.assertEqual(payload["result"], gate.RESULT)
@@ -117,7 +128,7 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
     def test_individual_mutations_reject(self):
         summary = cli_summary()
         budget = prior_budget()
-        payload = gate.build_payload(summary, budget, include_mutations=False)
+        payload = build_payload(summary, budget, include_mutations=False)
         for name in gate.MUTATION_NAMES:
             mutated = gate.mutate_payload(payload, name)
             with self.assertRaises(gate.CompactPreprocessedGateError, msg=name):
@@ -127,33 +138,31 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
         summary = cli_summary()
         summary["rows"][0]["local_binary_accounting"]["records"][2]["item_count"] -= 1
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact record counts drift"):
-            gate.build_payload(summary, prior_budget(), include_mutations=False)
+            build_payload(summary, include_mutations=False)
 
     def test_rejects_duplicate_or_unexpected_accounting_rows(self):
         summary = cli_summary()
         summary["rows"].append(copy.deepcopy(summary["rows"][0]))
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "duplicate accounting row"):
-            gate.build_payload(summary, prior_budget(), include_mutations=False)
+            build_payload(summary, include_mutations=False)
 
         summary = cli_summary()
         extra = copy.deepcopy(summary["rows"][0])
         extra["evidence_relative_path"] = "unexpected-envelope.json"
         summary["rows"].append(extra)
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "accounting row set drift"):
-            gate.build_payload(summary, prior_budget(), include_mutations=False)
+            build_payload(summary, include_mutations=False)
 
     def test_rejects_envelope_size_drift(self):
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact envelope JSON size drift"):
-            gate.build_payload(
-                cli_summary(),
-                prior_budget(),
+            build_payload(
                 include_mutations=False,
                 compact_envelope_size_bytes=gate.COMPACT_ENVELOPE_BYTES + 1,
             )
 
     def test_rejects_bool_encoded_metrics(self):
         summary = cli_summary()
-        payload = gate.build_payload(summary, prior_budget(), include_mutations=False)
+        payload = build_payload(summary, include_mutations=False)
         payload["aggregate"]["compact_local_typed_bytes"] = True
         payload["payload_commitment"] = gate.payload_commitment(payload)
         with self.assertRaises(gate.CompactPreprocessedGateError):
@@ -162,7 +171,7 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
     def test_rejects_mutation_case_content_tamper(self):
         summary = cli_summary()
         budget = prior_budget()
-        payload = gate.build_payload(summary, budget)
+        payload = build_payload(summary, budget)
         payload["mutation_cases"][0]["error"] = "tampered while counts stay fixed"
         payload["payload_commitment"] = gate.payload_commitment(payload)
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "mutation case evidence drift"):
