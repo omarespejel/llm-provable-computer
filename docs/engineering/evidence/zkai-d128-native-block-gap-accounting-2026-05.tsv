@@ -1,0 +1,6 @@
+surface	metric	value	unit	ratio	comparison_status
+NANOZK transformer block proof	source-backed reported proof size	6900	decimal_bytes		EXTERNAL_CONTEXT_ONLY
+local attention-derived package without VK	package bytes versus NANOZK reported bytes	4752	bytes	0.688696	INTERESTING_SMALLER_PACKAGE_NOT_MATCHED_PROOF_BENCHMARK
+local attention-derived package with VK	self-contained package bytes versus NANOZK reported bytes	10608	bytes	1.537391	LARGER_WITH_SETUP_NOT_MATCHED_PROOF_BENCHMARK
+d128 receipt chain to attention-derived statement chain	extra relation rows for attention-to-block statement binding	2049	rows	1.010374	LOCAL_BLOCK_SURFACE_SHAPE_SIGNAL
+native d128 block proof object	proof bytes		bytes		MISSING_REQUIRED_FOR_MATCHED_BENCHMARK

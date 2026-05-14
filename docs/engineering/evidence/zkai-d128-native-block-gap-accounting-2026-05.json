@@ -1,0 +1,221 @@
+{
+  "all_mutations_rejected": true,
+  "blockers": [
+    "native aggregated d128 transformer-block proof object is missing",
+    "matched workload is missing: local attention-derived d128 package is not NANOZK GPT-2-scale d768 block",
+    "native verifier-time and prover-time evidence are missing",
+    "recursion or proof-carrying aggregation over the six Stwo slice proofs is missing",
+    "verification-key/setup accounting is still external and not production setup evidence"
+  ],
+  "case_count": 12,
+  "cases": [
+    {
+      "error": "summary drift",
+      "mutation": "native_block_proof_size_smuggled",
+      "rejected": true
+    },
+    {
+      "error": "claim guard drift",
+      "mutation": "matched_benchmark_claim_enabled",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "nanozk_size_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "package_without_vk_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "package_with_vk_bytes_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "d128_rows_drift",
+      "rejected": true
+    },
+    {
+      "error": "summary drift",
+      "mutation": "attention_chain_rows_drift",
+      "rejected": true
+    },
+    {
+      "error": "source artifact drift",
+      "mutation": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "non-claims drift",
+      "mutation": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "claim boundary drift",
+      "mutation": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "result drift",
+      "mutation": "result_changed_to_size_win",
+      "rejected": true
+    },
+    {
+      "error": "payload drift",
+      "mutation": "mutation_rejection_disabled",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "D128_BLOCK_SURFACE_GAP_ACCOUNTING_ONLY_NOT_NATIVE_PROOF_SIZE_NOT_MATCHED_NANOZK_BENCHMARK_NOT_RECURSION_NOT_TIMING",
+  "claim_guard": {
+    "matched_benchmark_claim_allowed": false,
+    "reason": "the local row is an external executable statement package over an attention-derived d128 input contract, not a native or matched transformer-block proof object",
+    "tempting_observation": "local package without VK is byte-smaller than NANOZK reported block proof row"
+  },
+  "decision": "GO_D128_NATIVE_BLOCK_GAP_ACCOUNTING_NO_GO_MATCHED_LAYER_PROOF",
+  "gap_rows": [
+    {
+      "comparison_status": "EXTERNAL_CONTEXT_ONLY",
+      "metric": "source-backed reported proof size",
+      "surface": "NANOZK transformer block proof",
+      "unit": "decimal_bytes",
+      "value": 6900
+    },
+    {
+      "comparison_status": "INTERESTING_SMALLER_PACKAGE_NOT_MATCHED_PROOF_BENCHMARK",
+      "metric": "package bytes versus NANOZK reported bytes",
+      "ratio_vs_nanozk_reported": 0.688696,
+      "surface": "local attention-derived package without VK",
+      "unit": "bytes",
+      "value": 4752
+    },
+    {
+      "comparison_status": "LARGER_WITH_SETUP_NOT_MATCHED_PROOF_BENCHMARK",
+      "metric": "self-contained package bytes versus NANOZK reported bytes",
+      "ratio_vs_nanozk_reported": 1.537391,
+      "surface": "local attention-derived package with VK",
+      "unit": "bytes",
+      "value": 10608
+    },
+    {
+      "comparison_status": "LOCAL_BLOCK_SURFACE_SHAPE_SIGNAL",
+      "metric": "extra relation rows for attention-to-block statement binding",
+      "ratio_vs_d128_receipt": 1.010374,
+      "surface": "d128 receipt chain to attention-derived statement chain",
+      "unit": "rows",
+      "value": 2049
+    },
+    {
+      "comparison_status": "MISSING_REQUIRED_FOR_MATCHED_BENCHMARK",
+      "metric": "proof bytes",
+      "surface": "native d128 block proof object",
+      "unit": "bytes",
+      "value": null
+    }
+  ],
+  "mutation_inventory": [
+    "native_block_proof_size_smuggled",
+    "matched_benchmark_claim_enabled",
+    "nanozk_size_drift",
+    "package_without_vk_bytes_drift",
+    "package_with_vk_bytes_drift",
+    "d128_rows_drift",
+    "attention_chain_rows_drift",
+    "source_artifact_hash_drift",
+    "non_claim_removed",
+    "claim_boundary_overclaim",
+    "result_changed_to_size_win",
+    "mutation_rejection_disabled"
+  ],
+  "non_claims": [
+    "not a native d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, RISC Zero, or Obelyzk",
+    "not verifier-time or prover-time evidence",
+    "not recursive aggregation or proof-carrying data",
+    "not verification of the six Stwo slice proofs inside the external Groth16 receipt",
+    "not full transformer inference",
+    "not exact real-valued Softmax, LayerNorm, or GELU",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:94479c79fb1f3b253148ffca5e1ffe2a612d0280f7fd9e50a7291ac390f2e6fb",
+  "result": "GO_INTERESTING_PACKAGE_SIGNAL_NO_GO_NANOZK_SIZE_WIN",
+  "schema": "zkai-d128-native-block-gap-accounting-v1",
+  "source_artifacts": [
+    {
+      "decision": "GO_ONE_TRANSFORMER_BLOCK_SURFACE_NO_GO_MATCHED_LAYER_PROOF",
+      "file_sha256": "e02fa957b2ca7d54056d564b53fd64bcdb5b94983dc1c7d59e4dc3c017436022",
+      "kind": "one_block_surface_json",
+      "path": "docs/engineering/evidence/zkai-one-transformer-block-surface-2026-05.json",
+      "payload_sha256": "315729692adf873a6fab16882f03f8b349ee87b7a13d1030ffcc0660d1a48fc6",
+      "schema": "zkai-one-transformer-block-surface-v1"
+    },
+    {
+      "decision": "GO_ONE_BLOCK_EXECUTABLE_PACKAGE_ACCOUNTING_NO_GO_NATIVE_PROOF_SIZE",
+      "file_sha256": "c7eae55c04fac6e1412752c07bfdf32deeb4e2059a51c3b279037905ce703277",
+      "kind": "one_block_package_accounting_json",
+      "path": "docs/engineering/evidence/zkai-one-block-executable-package-accounting-2026-05.json",
+      "payload_sha256": "01b8848c084952c3f5dd3c67d30d23c192bdbcfb67faa311cc64e4d804d85f16",
+      "schema": "zkai-one-block-executable-package-accounting-v1"
+    },
+    {
+      "decision": "GO_SOURCE_BACKED_COMPETITOR_MATRIX_NO_GO_MATCHED_BENCHMARK_CLAIMS",
+      "file_sha256": "275b2494effb9658dba051cd77231ae572c55a282dcd752b592b2a7e6172e01a",
+      "kind": "competitor_metric_matrix_json",
+      "path": "docs/engineering/evidence/zkai-may2026-competitor-metric-matrix.json",
+      "payload_sha256": "114af1b6d149d9049a15c0f5ea3bd4fedc4505c8b7e014212248c77205311ca0",
+      "schema": "zkai-may2026-competitor-metric-matrix-v1"
+    },
+    {
+      "file_sha256": "aa16aa98493ecf9f984d238875890c81b4525ebde21463b76010c92f6767390b",
+      "kind": "published_zkml_numbers_tsv",
+      "path": "docs/paper/evidence/published-zkml-numbers-2026-04.tsv",
+      "row_count": 11
+    }
+  ],
+  "summary": {
+    "attention_derived_statement_chain_extra_rows_vs_d128_receipt": 2049,
+    "attention_derived_statement_chain_rows": 199553,
+    "attention_derived_statement_chain_vs_d128_receipt_ratio": 1.010374,
+    "compressed_statement_chain_bytes": 2559,
+    "compressed_statement_chain_vs_nanozk_reported_ratio": 0.37087,
+    "d128_checked_rows": 197504,
+    "d128_over_d64_checked_row_ratio": 3.981935,
+    "d64_checked_rows": 49600,
+    "external_receipt_overhead_without_vk_bytes": 2193,
+    "external_receipt_overhead_without_vk_share_of_source": 0.149959,
+    "go_result": "GO for treating the byte comparison as a prioritization signal for native aggregation work.",
+    "local_package_with_vk_bytes": 10608,
+    "local_package_with_vk_vs_nanozk_reported_ratio": 1.537391,
+    "local_package_without_vk_bytes": 4752,
+    "local_package_without_vk_less_than_nanozk_reported_bytes": true,
+    "local_package_without_vk_vs_nanozk_reported_ratio": 0.688696,
+    "matched_benchmark_claim_allowed": false,
+    "nanozk_reported_block_proof_bytes_decimal": 6900,
+    "nanozk_reported_block_proof_size": "6.9 KB",
+    "nanozk_reported_prove_seconds": "6.3",
+    "nanozk_reported_verify_seconds": "0.023",
+    "native_d128_block_proof_bytes": null,
+    "native_d128_block_verifier_time_ms": null,
+    "no_go_result": "NO-GO for claiming a smaller proof than NANOZK until a native or matched d128 block proof object exists.",
+    "snark_statement_receipt_proof_bytes": 807,
+    "snark_statement_receipt_proof_vs_nanozk_reported_ratio": 0.116957,
+    "source_statement_chain_bytes": 14624,
+    "source_statement_chain_vs_nanozk_reported_ratio": 2.11942,
+    "strongest_claim": "The attention-derived d128 route has an external verifier-facing package that is byte-smaller than the source-backed NANOZK block proof size row, but the object classes are different.",
+    "verification_key_overhead_bytes": 5856,
+    "verification_key_overhead_vs_package_without_vk_ratio": 1.232323
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_d128_native_block_gap_accounting_gate.py --write-json docs/engineering/evidence/zkai-d128-native-block-gap-accounting-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-native-block-gap-accounting-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_d128_native_block_gap_accounting_gate.py scripts/tests/test_zkai_d128_native_block_gap_accounting_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_d128_native_block_gap_accounting_gate",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
