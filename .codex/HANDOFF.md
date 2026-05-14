@@ -841,8 +841,8 @@ Tablero boundary.
   paper-reported `6.9 KB` row, while the compact outer statement proof remains
   `0.259710x`; this is the clearest current boundary between an interesting
   compact statement-binding signal and a matched verifier-execution comparison.
-  The gate rejects `24 / 24` target, metric, overclaim, and mutation-summary
-  drift cases. It remains not native verifier execution, not recursion, and not
+  The gate rejects `29 / 29` target, row-field, metric, overclaim, and
+  mutation-summary drift cases. It remains not native verifier execution, not recursion, and not
   a NANOZK proof-size win; see
   `docs/engineering/zkai-native-d128-two-slice-verifier-execution-target-2026-05-14.md`,
   `docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json`,
