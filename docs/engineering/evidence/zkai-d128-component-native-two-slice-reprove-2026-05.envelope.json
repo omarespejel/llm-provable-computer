@@ -2218,7 +2218,8 @@
       "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.envelope.json",
       "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_component_two_slice_reprove",
       "git diff --check",
-      "just gate-fast"
+      "just gate-fast",
+      "just gate"
     ]
   },
   "proof": [
