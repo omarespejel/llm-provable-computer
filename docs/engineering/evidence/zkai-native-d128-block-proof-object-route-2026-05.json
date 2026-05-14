@@ -1,0 +1,272 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 13,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "full_accumulator_promoted_to_native_proof",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "two_slice_no_go_changed_to_go",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "attention_input_contract_promoted_to_proof",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "package_without_vk_promoted_to_proof_size",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "native_proof_bytes_smuggled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "claim_guard drift",
+      "mutation": "matched_nanozk_claim_enabled",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "mutation": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "mutation": "next_minimal_experiment_weakened",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non_claims drift",
+      "mutation": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source_artifacts drift",
+      "mutation": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "route_rows drift",
+      "mutation": "route_row_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "result drift",
+      "mutation": "result_changed_to_go",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "validation_commands drift",
+      "mutation": "validation_command_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "D128_NATIVE_BLOCK_PROOF_OBJECT_ROUTE_ONLY_NOT_PROOF_SIZE_WIN_NOT_MATCHED_NANOZK_BENCHMARK_NOT_RECURSION_NOT_TIMING",
+  "claim_guard": {
+    "matched_nanozk_claim_allowed": false,
+    "native_d128_block_proof_object_exists": false,
+    "native_proof_size_claim_allowed": false,
+    "package_bytes_are_proof_bytes": false
+  },
+  "decision": "NO_GO_NATIVE_D128_BLOCK_PROOF_OBJECT_BACKEND_MISSING",
+  "issue": 387,
+  "mutation_inventory": [
+    "full_accumulator_promoted_to_native_proof",
+    "two_slice_no_go_changed_to_go",
+    "attention_input_contract_promoted_to_proof",
+    "package_without_vk_promoted_to_proof_size",
+    "native_proof_bytes_smuggled",
+    "matched_nanozk_claim_enabled",
+    "first_blocker_removed",
+    "next_minimal_experiment_weakened",
+    "non_claim_removed",
+    "source_artifact_hash_drift",
+    "route_row_removed",
+    "result_changed_to_go",
+    "validation_command_drift"
+  ],
+  "non_claims": [
+    "not a native d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched benchmark against NANOZK, Jolt Atlas, EZKL, DeepProve-1, RISC Zero, or Obelyzk",
+    "not verifier-time or prover-time evidence",
+    "not recursive aggregation or proof-carrying data",
+    "not verification of the six Stwo slice proofs inside the external Groth16 receipt",
+    "not full transformer inference",
+    "not exact real-valued Softmax, LayerNorm, or GELU",
+    "not production-ready"
+  ],
+  "payload_commitment": "sha256:5e226df688e325a16d02fc4d3ead41b3dd3eedf0896fc234aa3e9496e66ca63c",
+  "result": "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET",
+  "route_rows": [
+    {
+      "bytes": null,
+      "can_support_native_claim": false,
+      "claim_boundary": "binds receipts and public inputs; does not prove slice verifiers inside an outer proof",
+      "object_class": "non_recursive_verifier_accumulator",
+      "ratio_vs_nanozk_reported": null,
+      "row_id": "full_d128_verifier_accumulator",
+      "rows": 197504,
+      "status": "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_NOT_OUTER_PROOF",
+      "surface": "six-slice d128 verifier-facing accumulator"
+    },
+    {
+      "bytes": null,
+      "can_support_native_claim": false,
+      "claim_boundary": "the smaller two-slice target is already blocked before proof metrics",
+      "object_class": "missing_native_outer_proof_object",
+      "ratio_vs_nanozk_reported": null,
+      "row_id": "two_slice_outer_proof_target",
+      "rows": 256,
+      "status": "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
+      "surface": "smallest d128 two-slice outer proof target"
+    },
+    {
+      "bytes": 2559,
+      "can_support_native_claim": false,
+      "claim_boundary": "compressed transcript and input contract; not proof-size evidence",
+      "object_class": "checked_input_contract_not_proof",
+      "ratio_vs_nanozk_reported": 0.37087,
+      "row_id": "attention_derived_outer_input_contract",
+      "rows": 199553,
+      "status": "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT_NOT_OUTER_PROOF",
+      "surface": "attention-derived d128 compressed outer-proof input contract"
+    },
+    {
+      "bytes": 4752,
+      "can_support_native_claim": false,
+      "claim_boundary": "compact package signal only; object class differs from NANOZK block proof row",
+      "object_class": "external_statement_package_not_native_proof",
+      "ratio_vs_nanozk_reported": 0.688696,
+      "row_id": "external_package_without_vk",
+      "rows": null,
+      "status": "GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF",
+      "surface": "external verifier-facing package without reusable VK"
+    },
+    {
+      "bytes": null,
+      "can_support_native_claim": false,
+      "claim_boundary": "required before native proof-size, timing, or matched NANOZK claims",
+      "object_class": "missing_required_native_proof_object",
+      "ratio_vs_nanozk_reported": null,
+      "row_id": "native_d128_block_proof_object",
+      "rows": null,
+      "status": "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING",
+      "surface": "single native or matched d128 transformer-block proof object"
+    },
+    {
+      "bytes": 6900,
+      "can_support_native_claim": false,
+      "claim_boundary": "external context row only; not reproduced locally and not matched workload evidence",
+      "object_class": "paper_reported_external_proof_row",
+      "ratio_vs_nanozk_reported": 1.0,
+      "row_id": "external_nanozk_context",
+      "rows": null,
+      "status": "SOURCE_BACKED_EXTERNAL_CONTEXT_NOT_LOCALLY_REPRODUCED",
+      "surface": "NANOZK paper-reported transformer block proof row"
+    }
+  ],
+  "schema": "zkai-native-d128-block-proof-object-route-v1",
+  "source_artifacts": [
+    {
+      "decision": "NO_GO_ATTENTION_DERIVED_D128_OUTER_PROOF_OBJECT_MISSING",
+      "file_sha256": "18946cb4c29b5cf0a2e1e3a8a553fac38c949c4353998d9d6f224a16870aedab",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-outer-proof-route-2026-05.json",
+      "payload_sha256": "2bf200058efb249fb638c99ce5232f6955b904b30307c6b1c06a1fccd7693ece",
+      "result": "BOUNDED_NO_GO",
+      "schema": "zkai-attention-derived-d128-outer-proof-route-gate-v1"
+    },
+    {
+      "decision": "GO_D128_NATIVE_BLOCK_GAP_ACCOUNTING_NO_GO_MATCHED_LAYER_PROOF",
+      "file_sha256": "d07bd9cc004ab0610c9b2dcc16c791ce7a63fcef8afae3a3b49e092df138ad0b",
+      "path": "docs/engineering/evidence/zkai-d128-native-block-gap-accounting-2026-05.json",
+      "payload_sha256": "75da4883af8f0a5fecb07f86bdc1f4db5d02eddf51b3f737b2348e7812ca1ba9",
+      "result": "GO_INTERESTING_PACKAGE_SIGNAL_NO_GO_NANOZK_SIZE_WIN",
+      "schema": "zkai-d128-native-block-gap-accounting-v1"
+    },
+    {
+      "decision": "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_BACKEND",
+      "file_sha256": "18fdb95015a948cb57a78dcaf35ed6359d818cf2df7b1a47c4383b944720b848",
+      "path": "docs/engineering/evidence/zkai-d128-full-block-accumulator-backend-2026-05.json",
+      "payload_sha256": "2724b3a673bec346f5df0abaeadb3b8d4301f5efe090288026d10cc31b7d2fd9",
+      "result": "GO",
+      "schema": "zkai-d128-full-block-accumulator-backend-v1"
+    },
+    {
+      "decision": "GO_MATCHED_D64_D128_EVIDENCE_TABLE_NO_GO_NATIVE_PROOF_SIZE_WIN",
+      "file_sha256": "e6e2182e3b7a3a042f224e9be7c2c7292c3a988fb81f42f8554e0b4b2e650b28",
+      "path": "docs/engineering/evidence/zkai-matched-d64-d128-evidence-table-2026-05.json",
+      "payload_sha256": "85ee4876183abbaa4fdf8e3a43b430dcfe30b1a84700a0626e34a8343d80a44a",
+      "result": "GO_OBJECT_CLASS_SEPARATION_NO_GO_MATCHED_BENCHMARK",
+      "schema": "zkai-matched-d64-d128-evidence-table-v1"
+    },
+    {
+      "decision": "GO_ONE_BLOCK_EXECUTABLE_PACKAGE_ACCOUNTING_NO_GO_NATIVE_PROOF_SIZE",
+      "file_sha256": "c7eae55c04fac6e1412752c07bfdf32deeb4e2059a51c3b279037905ce703277",
+      "path": "docs/engineering/evidence/zkai-one-block-executable-package-accounting-2026-05.json",
+      "payload_sha256": "01b8848c084952c3f5dd3c67d30d23c192bdbcfb67faa311cc64e4d804d85f16",
+      "result": "GO_EXTERNAL_RECEIPT_PACKAGE_ACCOUNTING_NO_GO_NATIVE_BLOCK_PROOF",
+      "schema": "zkai-one-block-executable-package-accounting-v1"
+    },
+    {
+      "decision": "NO_GO_D128_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING",
+      "file_sha256": "59eb3fd4a9bc6c3e84a7b8a57156326c6442d974c4f336d23e1069ab31fdd834",
+      "path": "docs/engineering/evidence/zkai-d128-two-slice-outer-proof-object-spike-2026-05.json",
+      "payload_sha256": "44e398e031da32049e5be145f1278d107f4482dae9537db9893528a831731bd8",
+      "result": "BOUNDED_NO_GO",
+      "schema": "zkai-d128-two-slice-outer-proof-object-spike-v1"
+    }
+  ],
+  "summary": {
+    "attention_derived_statement_chain_extra_rows_vs_d128_receipt": 2049,
+    "attention_derived_statement_chain_rows": 199553,
+    "compressed_statement_chain_bytes": 2559,
+    "compressed_statement_chain_ratio": 0.174986,
+    "d128_checked_rows": 197504,
+    "first_blocker": "the repository still has no executable native outer proof backend that proves the d128 slice-verifier checks and binds the block proof-object public inputs; the two-slice target is already NO-GO, so the six-slice d128 block cannot be claimed as one native proof object",
+    "go_gate": "one executable native proof object verifies locally, binds block statement, slice statements, source hashes, and native proof-object public inputs, rejects relabeling mutations, and emits proof bytes from that object",
+    "matched_nanozk_claim_allowed": false,
+    "nanozk_reported_block_proof_bytes_decimal": 6900,
+    "native_block_proof_object_status": "NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING",
+    "native_proof_size_claim_allowed": false,
+    "next_minimal_experiment": "implement the smallest native two-slice outer proof backend over rmsnorm_public_rows and rmsnorm_projection_bridge verifier checks, with public-input binding and relabeling rejection, before trying the full six-slice d128 block",
+    "no_go_gate": "no executable native outer backend exists, the two-slice target cannot be proven, or any compact package row must be classified as an external statement package rather than a native d128 block proof object",
+    "package_bytes_are_proof_bytes": false,
+    "package_with_vk_bytes": 10608,
+    "package_with_vk_vs_nanozk_reported_ratio": 1.537391,
+    "package_without_vk_bytes": 4752,
+    "package_without_vk_vs_nanozk_reported_ratio": 0.688696,
+    "source_statement_chain_bytes": 14624,
+    "strongest_positive_signal": "the full d128 verifier accumulator binds 197,504 checked rows and the external package without VK is 4,752 bytes, but neither is a native proof object",
+    "two_slice_outer_target_rows": 256
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_d128_block_proof_object_route_gate.py --write-json docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_d128_block_proof_object_route_gate.py scripts/tests/test_zkai_native_d128_block_proof_object_route_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_d128_block_proof_object_route_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
