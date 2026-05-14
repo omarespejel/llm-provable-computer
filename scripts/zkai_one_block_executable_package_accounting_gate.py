@@ -124,6 +124,15 @@ def _reject_json_constant(value: str) -> None:
     raise ValueError(f"non-finite JSON constant: {value}")
 
 
+def _reject_duplicate_json_keys(items: list[tuple[str, Any]]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in items:
+        if key in payload:
+            raise ValueError(f"duplicate JSON key: {key}")
+        payload[key] = value
+    return payload
+
+
 def _dict(value: Any, field: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise OneBlockPackageAccountingError(f"{field} must be object")
@@ -139,7 +148,11 @@ def _int(value: Any, field: str) -> int:
 def load_json(path: pathlib.Path) -> tuple[dict[str, Any], bytes]:
     try:
         raw = SURFACE.read_source_bytes(path, str(path.relative_to(ROOT)))
-        payload = json.loads(raw.decode("utf-8"), parse_constant=_reject_json_constant)
+        payload = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
     except Exception as err:
         raise OneBlockPackageAccountingError(f"failed to load source evidence {path}: {err}") from err
     if not isinstance(payload, dict):
@@ -273,6 +286,11 @@ def package_summary(compression: dict[str, Any], snark: dict[str, Any]) -> dict[
         "no_go_result": "NO-GO for native block proof-size evidence, recursion, verifier-time evidence, production setup, or matched competitor benchmark.",
     }
     expected = {
+        "source_statement_chain_bytes": EXPECTED_SOURCE_CHAIN_BYTES,
+        "compressed_statement_chain_bytes": EXPECTED_COMPRESSED_ARTIFACT_BYTES,
+        "snark_proof_bytes": EXPECTED_PROOF_BYTES,
+        "snark_public_signals_bytes": EXPECTED_PUBLIC_SIGNALS_BYTES,
+        "snark_verification_key_bytes": EXPECTED_VERIFICATION_KEY_BYTES,
         "package_without_vk_bytes": EXPECTED_PACKAGE_WITHOUT_VK_BYTES,
         "package_without_vk_ratio_vs_source": EXPECTED_PACKAGE_WITHOUT_VK_RATIO,
         "package_without_vk_saving_bytes": EXPECTED_SAVING_WITHOUT_VK_BYTES,
