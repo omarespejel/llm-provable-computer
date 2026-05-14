@@ -233,10 +233,16 @@ class D128NativeBlockGapAccountingGateTests(unittest.TestCase):
             gate._assert_directory_identity = fail_after_temp_write
             gate.os.fsync = fail_directory_fsync
             gate.os.close = record_directory_close
-            with self.assertRaisesRegex(gate.D128NativeBlockGapAccountingError, "failed to write output path"):
-                gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), None)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                with self.assertRaisesRegex(
+                    gate.D128NativeBlockGapAccountingError,
+                    "simulated post-temp identity failure",
+                ):
+                    gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), None)
             self.assertTrue(state["closed_directory"])
             self.assertFalse(json_path.exists())
+            self.assertIn("warning: failed to fsync output directory during cleanup", stderr.getvalue())
         finally:
             gate._assert_directory_identity = original_assert_identity
             gate.os.fsync = original_fsync
