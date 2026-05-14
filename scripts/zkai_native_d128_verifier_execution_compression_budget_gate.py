@@ -529,10 +529,10 @@ def validate_mutation_summary(payload: dict[str, Any]) -> None:
     if payload.get("all_mutations_rejected") is not True:
         raise CompressionBudgetGateError("mutation rejection summary drift")
     for case in cases:
-        case = require_dict(case, "mutation case")
-        if case.get("rejected") is not True:
+        case_dict = require_dict(case, "mutation case")
+        if case_dict.get("rejected") is not True:
             raise CompressionBudgetGateError("mutation was not rejected")
-        require_str(case.get("error"), "mutation error")
+        require_str(case_dict.get("error"), "mutation error")
 
 
 def mutation_cases(payload: dict[str, Any]) -> tuple[dict[str, Any], ...]:
