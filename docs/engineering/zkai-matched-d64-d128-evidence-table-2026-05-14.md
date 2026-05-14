@@ -98,10 +98,15 @@ aggregation.
 
 ## Validation
 
+The full `just gate` path is included for local release validation; if the
+dependency cache or network blocks it, record the exact blocker instead of
+claiming a pass.
+
 ```bash
 python3 scripts/zkai_matched_d64_d128_evidence_table_gate.py --write-json docs/engineering/evidence/zkai-matched-d64-d128-evidence-table-2026-05.json --write-tsv docs/engineering/evidence/zkai-matched-d64-d128-evidence-table-2026-05.tsv
 python3 -m py_compile scripts/zkai_matched_d64_d128_evidence_table_gate.py scripts/tests/test_zkai_matched_d64_d128_evidence_table_gate.py
 python3 -m unittest scripts.tests.test_zkai_matched_d64_d128_evidence_table_gate
 git diff --check
 just gate-fast
+just gate
 ```

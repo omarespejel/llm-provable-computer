@@ -23,6 +23,7 @@ class MatchedD64D128EvidenceTableGateTests(unittest.TestCase):
         self.assertEqual(self.payload["summary"]["d128_package_without_vk_bytes"], 4752)
         self.assertEqual(self.payload["summary"]["native_d128_block_proof_bytes"], None)
         self.assertIn("STARK-native proof objects", json.dumps(self.payload))
+        self.assertIn("just gate", self.payload["validation_commands"])
 
     def test_rows_have_required_boundaries_and_expected_backend_classes(self) -> None:
         rows = {row["row_id"]: row for row in self.payload["evidence_rows"]}
@@ -72,6 +73,24 @@ class MatchedD64D128EvidenceTableGateTests(unittest.TestCase):
         mutated["payload_commitment"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(gate.MatchedD64D128EvidenceTableError, "payload commitment drift"):
             gate.validate_payload(mutated)
+
+    def test_missing_required_rows_use_gate_specific_errors(self) -> None:
+        rows = [row for row in gate.evidence_rows() if row["row_id"] != "missing_native_d128_block_proof_object"]
+        with self.assertRaisesRegex(
+            gate.MatchedD64D128EvidenceTableError,
+            "missing required evidence row: missing_native_d128_block_proof_object",
+        ):
+            gate.build_summary(rows)
+
+        rows = json.loads(json.dumps(gate.evidence_rows()))
+        for row in rows:
+            if row["row_id"] == "local_d128_package_without_vk_bytes":
+                row["row_id"] = "renamed_local_d128_package_without_vk_bytes"
+        with self.assertRaisesRegex(
+            gate.MatchedD64D128EvidenceTableError,
+            "missing required evidence row: local_d128_package_without_vk_bytes",
+        ):
+            gate.validate_rows(rows)
 
     def test_loaders_reject_duplicate_json_keys_and_tsv_columns(self) -> None:
         with tempfile.NamedTemporaryFile(
