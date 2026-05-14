@@ -13,6 +13,20 @@ fn verifier_cli() -> Command {
     Command::cargo_bin("zkai_d128_selected_two_slice_proof_envelopes").expect("resolve CLI binary")
 }
 
+fn write_tampered_proof(source: PathBuf, target: &Path) {
+    let mut envelope: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(source).expect("read source envelope"))
+            .expect("parse source envelope");
+    let proof = envelope["proof"].as_array_mut().expect("proof array");
+    let first = proof[0].as_u64().expect("proof byte");
+    proof[0] = serde_json::Value::from((first + 1) % 256);
+    std::fs::write(
+        target,
+        serde_json::to_vec_pretty(&envelope).expect("serialize tampered envelope"),
+    )
+    .expect("write tampered envelope");
+}
+
 #[test]
 fn verify_accepts_checked_evidence_envelopes() {
     let rmsnorm = fixture_path(
@@ -77,22 +91,54 @@ fn verify_rejects_tampered_rmsnorm_proof_bytes() {
         "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json",
     );
     let tampered = dir.path().join("tampered-rmsnorm.json");
-    let mut envelope: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(original).expect("read original envelope"))
-            .expect("parse original envelope");
-    let proof = envelope["proof"].as_array_mut().expect("proof array");
-    let first = proof[0].as_u64().expect("proof byte");
-    proof[0] = serde_json::Value::from((first + 1) % 256);
-    std::fs::write(
-        &tampered,
-        serde_json::to_vec_pretty(&envelope).expect("serialize tampered envelope"),
-    )
-    .expect("write tampered envelope");
+    write_tampered_proof(original, &tampered);
 
     verifier_cli()
         .arg("verify")
         .arg(tampered)
         .arg(bridge)
+        .assert()
+        .failure();
+}
+
+#[test]
+fn verify_rejects_tampered_bridge_proof_bytes() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let rmsnorm = fixture_path(
+        "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-public-row-2026-05.envelope.json",
+    );
+    let original_bridge = fixture_path(
+        "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json",
+    );
+    let tampered_bridge = dir.path().join("tampered-bridge.json");
+    write_tampered_proof(original_bridge, &tampered_bridge);
+
+    verifier_cli()
+        .arg("verify")
+        .arg(rmsnorm)
+        .arg(tampered_bridge)
+        .assert()
+        .failure();
+}
+
+#[test]
+fn verify_rejects_tampered_rmsnorm_and_bridge_proof_bytes() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let original_rmsnorm = fixture_path(
+        "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-public-row-2026-05.envelope.json",
+    );
+    let original_bridge = fixture_path(
+        "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json",
+    );
+    let tampered_rmsnorm = dir.path().join("tampered-rmsnorm.json");
+    let tampered_bridge = dir.path().join("tampered-bridge.json");
+    write_tampered_proof(original_rmsnorm, &tampered_rmsnorm);
+    write_tampered_proof(original_bridge, &tampered_bridge);
+
+    verifier_cli()
+        .arg("verify")
+        .arg(tampered_rmsnorm)
+        .arg(tampered_bridge)
         .assert()
         .failure();
 }
