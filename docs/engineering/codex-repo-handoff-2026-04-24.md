@@ -65,8 +65,9 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 54. `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`
 55. `docs/engineering/zkai-native-d128-block-proof-object-route-2026-05-14.md`
 56. `docs/engineering/zkai-native-d128-compressed-outer-statement-binary-accounting-2026-05-14.md`
-57. `docs/engineering/reproducibility.md`
-58. `git status --short --branch`
+57. `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`
+58. `docs/engineering/reproducibility.md`
+59. `git status --short --branch`
 
 ## Current lane split
 
@@ -819,6 +820,23 @@ Tablero boundary.
   `docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-public-row-2026-05.envelope.json`,
   and
   `docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json`.
+- Native d128 verifier-execution compression budget handoff note: the honest
+  NANOZK-distance question is now pinned as a budget over the comparable target,
+  not over the compact statement-binding object. The compact outer statement
+  proof is `1,792` local typed bytes (`0.259710x` NANOZK's paper-reported
+  `6.9 KB` row), but it remains not comparable because it does not execute the
+  selected inner Stwo verifier checks. The comparable selected verifier target
+  is `12,688` local typed bytes and `34,866` JSON proof bytes, so matching
+  NANOZK's paper row would require removing `5,788` typed bytes (`45.6179%`) or
+  `27,966` JSON bytes (`80.2099%`). The gate rejects `18 / 18` source, metric,
+  comparison, route-classification, claim-boundary, validation-command, and
+  payload-commitment mutations. Next attack component-native reprove first;
+  native verifier-execution AIR second if component-native reprove cannot
+  preserve the same source and statement commitments. See
+  `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`,
+  `docs/engineering/evidence/zkai-native-d128-verifier-execution-compression-budget-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-d128-verifier-execution-compression-budget-2026-05.tsv`.
 - The d128 down-projection handle consumes `hidden_activation_commitment`,
   checks `65,536` multiplication rows, rejects relabeling
   `residual_delta_commitment` as the full output, and emits an exact
@@ -971,9 +989,10 @@ Tablero boundary.
 
 ## Next sensible moves
 
-1. Treat the narrow source-backed Obelyzk Sepolia comparator as landed and keep
-   it in the paper lane as a deployment calibration, not a matched local
-   verifier-time row.
+1. Attack `component_native_reprove` for the selected d128 two-slice target:
+   re-express the RMSNorm/public-row and projection-bridge relations as native
+   Stwo components with the same source and statement commitments, then compare
+   that proof object against the `12,688` typed-byte verifier target.
 2. Treat the family-matrix result as landed and lead with the growing-in-`N`
    curve shape rather than any one frontier ratio.
 3. Treat the `2x2` constant-surface explanation as landed and use follow-up

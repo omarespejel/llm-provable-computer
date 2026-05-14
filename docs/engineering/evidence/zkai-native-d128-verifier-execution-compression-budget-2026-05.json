@@ -1,0 +1,223 @@
+{
+  "all_mutations_rejected": true,
+  "attack_paths": [
+    {
+      "classification": "PROMISING_STARK_NATIVE_ROUTE",
+      "comparison_status": "potentially_comparable_after_same_statement_binding_and_native_constraints",
+      "next_gate": "prove or no-go a two-slice component-native reprove with the same source and statement commitments",
+      "path_id": "component_native_reprove",
+      "why": "replace inner-proof verification with native Stwo constraints for the selected RMSNorm and projection-bridge relations, avoiding the 12,688-byte inner-proof target"
+    },
+    {
+      "classification": "STRICT_VERIFIER_EXECUTION_ROUTE",
+      "comparison_status": "comparable_after_native_outer_air_executes_selected_inner_verifier_checks",
+      "next_gate": "build the smallest verifier-execution AIR or record a bounded no-go with row and byte reasons",
+      "path_id": "native_stwo_verifier_execution_air",
+      "why": "consume the pinned proof envelopes and execute their selected verifier checks inside a native Stwo outer proof object"
+    },
+    {
+      "classification": "NOT_NANOZK_COMPARABLE_BUT_USEFUL_FOR_ARCHITECTURE",
+      "comparison_status": "not_comparable_to_block_proof_size",
+      "next_gate": "keep as a binding primitive and never promote its 1,792 typed bytes as a matched NANOZK win",
+      "path_id": "semantic_digest_binding",
+      "why": "the compact proof binds statement and source commitments, but host verification remains outside the native proof object"
+    },
+    {
+      "classification": "CONTROL_NOT_NATIVE_STARK",
+      "comparison_status": "useful_control_not_core_breakthrough_path",
+      "next_gate": "only compare as external receipt controls with explicit backend and setup caveats",
+      "path_id": "external_receipt_controls",
+      "why": "SNARK or zkVM receipts can calibrate verifier surfaces but do not prove the STARK-native thesis"
+    }
+  ],
+  "claim_boundary": "D128_VERIFIER_EXECUTION_COMPRESSION_BUDGET_PINNED_FOR_NEXT_NATIVE_STWO_ATTACK_NOT_A_COMPACT_STATEMENT_BINDING_NANOZK_WIN",
+  "comparison_baseline": {
+    "nanozk_paper_reported_d128_block_proof_bytes": 6900,
+    "status": "paper_reported_not_locally_reproduced_not_matched_object_class"
+  },
+  "comparison_objects": {
+    "compact_statement_binding": {
+      "comparable_to_nanozk_block_proof": false,
+      "local_typed_bytes": 1792,
+      "object_class": "native_outer_statement_binding_proof_not_verifier_execution",
+      "proof_json_size_bytes": 3516,
+      "ratio_vs_nanozk_json": 0.509565,
+      "ratio_vs_nanozk_typed": 0.25971,
+      "reason_not_comparable": "binds host-verified selected slice statements but does not execute the selected inner Stwo verifier checks",
+      "status": "real_compact_binding_object_not_comparable_to_nanozk_block_proof"
+    },
+    "selected_inner_verifier_execution_target": {
+      "comparable_to_nanozk_block_proof": "candidate_after_native_execution_or_component_reprove",
+      "local_typed_bytes": 12688,
+      "object_class": "selected_inner_stwo_proof_envelopes_target_for_native_verifier_execution",
+      "proof_json_size_bytes": 34866,
+      "ratio_vs_nanozk_json": 5.053043,
+      "ratio_vs_nanozk_typed": 1.838841,
+      "reason_not_comparable": "the proof envelopes are target inputs, not one native d128 block proof object yet",
+      "status": "target_surface_concrete_but_not_executed_by_native_outer_air"
+    }
+  },
+  "compression_budget": {
+    "compact_statement_json_bytes": 3516,
+    "compact_statement_json_share_of_target": 0.100843,
+    "compact_statement_typed_bytes": 1792,
+    "compact_statement_typed_share_of_target": 0.141236,
+    "current_target_json_over_compact_statement": 9.916382,
+    "current_target_json_over_nanozk": 5.053043,
+    "current_target_typed_over_compact_statement": 7.080357,
+    "current_target_typed_over_nanozk": 1.838841,
+    "current_verifier_target_json_bytes": 34866,
+    "current_verifier_target_typed_bytes": 12688,
+    "json_bytes_to_remove_to_equal_nanozk": 27966,
+    "json_required_reduction_ratio": 0.802099,
+    "json_required_share_of_current_target": 0.197901,
+    "nanozk_paper_reported_d128_block_proof_bytes": 6900,
+    "typed_bytes_to_remove_to_equal_nanozk": 5788,
+    "typed_required_reduction_ratio": 0.456179,
+    "typed_required_share_of_current_target": 0.543821
+  },
+  "decision": "GO_D128_VERIFIER_EXECUTION_COMPRESSION_BUDGET_PINNED",
+  "first_blocker": "the compact outer statement proof is small, but the comparable object class is the selected inner verifier-execution target at 12,688 local typed bytes, and the repo still lacks a native Stwo AIR or component-native reprove that replaces that target",
+  "mutation_cases": [
+    {
+      "error": "source evidence drift",
+      "name": "target_source_file_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "source evidence drift",
+      "name": "compact_source_payload_hash_drift",
+      "rejected": true
+    },
+    {
+      "error": "comparison objects drift",
+      "name": "target_typed_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "comparison objects drift",
+      "name": "target_json_metric_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "comparison objects drift",
+      "name": "compact_promoted_to_comparable",
+      "rejected": true
+    },
+    {
+      "error": "NANOZK baseline drift",
+      "name": "nanozk_baseline_smuggling",
+      "rejected": true
+    },
+    {
+      "error": "compression budget drift",
+      "name": "typed_reduction_budget_drift",
+      "rejected": true
+    },
+    {
+      "error": "compression budget drift",
+      "name": "json_reduction_budget_drift",
+      "rejected": true
+    },
+    {
+      "error": "claim boundary drift",
+      "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "result drift",
+      "name": "result_changed_to_win",
+      "rejected": true
+    },
+    {
+      "error": "first blocker drift",
+      "name": "first_blocker_removed",
+      "rejected": true
+    },
+    {
+      "error": "attack paths drift",
+      "name": "component_native_route_demoted",
+      "rejected": true
+    },
+    {
+      "error": "attack paths drift",
+      "name": "semantic_digest_promoted",
+      "rejected": true
+    },
+    {
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "error": "validation commands drift",
+      "name": "validation_command_drift",
+      "rejected": true
+    },
+    {
+      "error": "source evidence drift",
+      "name": "source_decision_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "payload commitment drift",
+      "name": "payload_commitment_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "payload field drift",
+      "name": "unknown_top_level_field_added",
+      "rejected": true
+    }
+  ],
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
+  "next_research_step": "try component_native_reprove first, then native_stwo_verifier_execution_air if the component route cannot preserve the same source and statement commitments",
+  "non_claims": [
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK benchmark",
+    "not native verifier execution of the selected inner Stwo proofs",
+    "not a native d128 transformer-block proof",
+    "not recursion or proof-carrying data",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:21e5df1f455e22b2587be69093b3bfda3d4ff1235a5dd8524b96a4c2c713679b",
+  "question": "How much must the real d128 verifier-execution target shrink before it can be compared honestly with NANOZK's paper-reported d128 block-proof row?",
+  "result": "BUDGET_PINNED_NOT_NANOZK_WIN",
+  "schema": "zkai-native-d128-verifier-execution-compression-budget-gate-v1",
+  "source_evidence": [
+    {
+      "decision": "GO_SELECTED_INNER_PROOF_OBJECTS_PINNED_NATIVE_VERIFIER_EXECUTION_TARGET",
+      "file_sha256": "a8a79771e10e58ba1b493487c0e64c44abaa2a254dc9a818f67eea99453e3564",
+      "path": "docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json",
+      "payload_commitment": "sha256:a46fa76264588965997dbb323cd94d3c4defcb2ad38230b6bd9420be631a2c85",
+      "payload_sha256": "0230bc05165c94f4f314c39bb39afca80b5fc25e46488347bf244778a04f8aac",
+      "schema": "zkai-native-d128-two-slice-verifier-execution-target-gate-v1",
+      "source_id": "verifier_execution_target"
+    },
+    {
+      "decision": "GO_LOCAL_BINARY_TYPED_ACCOUNTING_FOR_COMPRESSED_D128_OUTER_STATEMENT_PROOF",
+      "file_sha256": "28345bdaa1e479cd857a614c31cf98a12aaede6a8d00e2e4b46807903ee01bf0",
+      "path": "docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.json",
+      "payload_commitment": "blake2b-256:0b313a71788decd2e4c20ce4630d788c8d97c34e30d888d1caefacc68a2b7683",
+      "payload_sha256": "54bf65728400d4143425332d2e94a4c5eed826fea2e1def3eae5a9d59d6ac119",
+      "schema": "zkai-native-d128-compressed-outer-statement-binary-typed-accounting-gate-v1",
+      "source_id": "compact_statement_typed_accounting"
+    }
+  ],
+  "validation_commands": [
+    "python3 scripts/zkai_native_d128_two_slice_verifier_execution_target_gate.py --write-json docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-two-slice-verifier-execution-target-2026-05.tsv",
+    "python3 scripts/zkai_native_d128_compressed_outer_statement_binary_accounting_gate.py --write-json docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-compressed-outer-statement-binary-typed-accounting-2026-05.tsv",
+    "python3 scripts/zkai_native_d128_verifier_execution_compression_budget_gate.py --write-json docs/engineering/evidence/zkai-native-d128-verifier-execution-compression-budget-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-d128-verifier-execution-compression-budget-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_d128_verifier_execution_compression_budget_gate.py scripts/tests/test_zkai_native_d128_verifier_execution_compression_budget_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_d128_verifier_execution_compression_budget_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
