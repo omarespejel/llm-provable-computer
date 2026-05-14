@@ -17,9 +17,25 @@ fn write_tampered_proof(source: PathBuf, target: &Path) {
     let mut envelope: serde_json::Value =
         serde_json::from_slice(&std::fs::read(source).expect("read source envelope"))
             .expect("parse source envelope");
-    let proof = envelope["proof"].as_array_mut().expect("proof array");
-    let first = proof[0].as_u64().expect("proof byte");
-    proof[0] = serde_json::Value::from((first + 1) % 256);
+    let proof_bytes: Vec<u8> = envelope["proof"]
+        .as_array()
+        .expect("proof array")
+        .iter()
+        .map(|byte| byte.as_u64().expect("proof byte") as u8)
+        .collect();
+    let mut proof_payload: serde_json::Value =
+        serde_json::from_slice(&proof_bytes).expect("parse inner proof payload");
+    let proof_of_work = proof_payload["stark_proof"]["proof_of_work"]
+        .as_u64()
+        .expect("proof_of_work");
+    proof_payload["stark_proof"]["proof_of_work"] = serde_json::Value::from(proof_of_work + 1);
+    let tampered_proof = serde_json::to_vec(&proof_payload).expect("serialize inner proof payload");
+    envelope["proof"] = serde_json::Value::Array(
+        tampered_proof
+            .into_iter()
+            .map(serde_json::Value::from)
+            .collect(),
+    );
     std::fs::write(
         target,
         serde_json::to_vec_pretty(&envelope).expect("serialize tampered envelope"),
@@ -98,7 +114,10 @@ fn verify_rejects_tampered_rmsnorm_proof_bytes() {
         .arg(tampered)
         .arg(bridge)
         .assert()
-        .failure();
+        .failure()
+        .stderr(predicate::str::contains(
+            "rmsnorm envelope proof verification returned false",
+        ));
 }
 
 #[test]
@@ -118,7 +137,8 @@ fn verify_rejects_tampered_bridge_proof_bytes() {
         .arg(rmsnorm)
         .arg(tampered_bridge)
         .assert()
-        .failure();
+        .failure()
+        .stderr(predicate::str::contains("STARK verification failed"));
 }
 
 #[test]
@@ -140,5 +160,8 @@ fn verify_rejects_tampered_rmsnorm_and_bridge_proof_bytes() {
         .arg(tampered_rmsnorm)
         .arg(tampered_bridge)
         .assert()
-        .failure();
+        .failure()
+        .stderr(predicate::str::contains(
+            "rmsnorm envelope proof verification returned false",
+        ));
 }
