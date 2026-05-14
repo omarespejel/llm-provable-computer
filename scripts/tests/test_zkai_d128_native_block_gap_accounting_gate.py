@@ -158,6 +158,35 @@ class D128NativeBlockGapAccountingGateTests(unittest.TestCase):
             json_path.unlink(missing_ok=True)
             tsv_path.unlink(missing_ok=True)
 
+    def test_success_path_close_failure_does_not_roll_back_outputs(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            dir=gate.ENGINEERING_EVIDENCE,
+            prefix="d128-native-block-gap-close-",
+            suffix=".json",
+            delete=False,
+        ) as handle:
+            json_path = pathlib.Path(handle.name)
+        json_path.unlink()
+        tsv_path = json_path.with_suffix(".tsv")
+        tsv_path.unlink(missing_ok=True)
+
+        original_close = gate.os.close
+        try:
+            def close_then_fail_for_directory(fd, *args, **kwargs):
+                mode = gate.os.fstat(fd).st_mode
+                original_close(fd, *args, **kwargs)
+                if gate.stat_module.S_ISDIR(mode):
+                    raise OSError("simulated directory close failure")
+
+            gate.os.close = close_then_fail_for_directory
+            gate.write_outputs(self.payload, json_path.relative_to(gate.ROOT), tsv_path.relative_to(gate.ROOT))
+            self.assertEqual(json.loads(json_path.read_text(encoding="utf-8")), self.payload)
+            self.assertIn("comparison_status", tsv_path.read_text(encoding="utf-8"))
+        finally:
+            gate.os.close = original_close
+            json_path.unlink(missing_ok=True)
+            tsv_path.unlink(missing_ok=True)
+
     def test_loaders_reject_duplicate_keys_and_columns(self) -> None:
         with tempfile.NamedTemporaryFile(
             "w",
