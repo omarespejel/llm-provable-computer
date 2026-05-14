@@ -37,6 +37,28 @@ block proof-object public inputs.
 | Native d128 block proof object | `NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING` | | | required before proof-size, timing, or matched NANOZK claims |
 | NANOZK reported block row | `SOURCE_BACKED_EXTERNAL_CONTEXT_NOT_LOCALLY_REPRODUCED` | | `6,900` | external context only |
 
+Metadata for the rows above:
+
+- Block target: `rmsnorm-swiglu-residual-d128-v1`; receipt version:
+  `zkai-d128-block-receipt-v1`; required backend:
+  `stwo-rmsnorm-swiglu-residual-d128-v1`.
+- Slice backend versions:
+  `stwo-d128-rmsnorm-public-row-air-proof-v3`,
+  `stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1`,
+  `stwo-d128-gate-value-projection-air-proof-v1`,
+  `stwo-d128-activation-swiglu-air-proof-v1`,
+  `stwo-d128-down-projection-air-proof-v1`,
+  `stwo-d128-residual-add-air-proof-v1`.
+- Step counts: six d128 slice receipts; `197,504` full-accumulator checked
+  rows; `199,553` attention-derived source relation rows; `256` selected
+  two-slice target rows; `13 / 13` route-gate mutations rejected.
+- Timing mode: no prover/verifier timing collected in this route. Timing
+  fields remain null because the native d128 outer proof object is missing.
+- Evidence paths: `docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.json`
+  and `docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.tsv`.
+- Reproduction command: the first command under `Reproduce` regenerates the
+  JSON and TSV evidence from the checked source artifacts.
+
 ## Interpretation
 
 The important human meaning is:
