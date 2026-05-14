@@ -285,7 +285,7 @@
     "not exact real-valued Softmax, LayerNorm, or GELU",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:1aba24e48399c38d1ba71b6718c0c0fcfef22dd1e0ed27ead5c4d68b663caf73",
+  "payload_commitment": "sha256:410026d6b6f28cba2c16a280735c856ef7e2a3cf1b428cfa704c53ba9f6bf609",
   "result": "GO_OBJECT_CLASS_SEPARATION_NO_GO_MATCHED_BENCHMARK",
   "schema": "zkai-matched-d64-d128-evidence-table-v1",
   "source_artifacts": [
@@ -383,6 +383,7 @@
     "python3 -m py_compile scripts/zkai_matched_d64_d128_evidence_table_gate.py scripts/tests/test_zkai_matched_d64_d128_evidence_table_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_matched_d64_d128_evidence_table_gate",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

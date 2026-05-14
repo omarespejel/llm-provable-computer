@@ -97,6 +97,7 @@ VALIDATION_COMMANDS = [
     "python3 -m unittest scripts.tests.test_zkai_matched_d64_d128_evidence_table_gate",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 ]
 
 REQUIRED_ROW_FIELDS = (
@@ -243,7 +244,7 @@ def _parse_reported_size_bytes(value: str) -> int:
         kilobytes = float(parts[0])
     except ValueError as err:
         raise MatchedD64D128EvidenceTableError(f"unsupported reported proof size: {value}") from err
-    return int(round(kilobytes * 1000))
+    return round(kilobytes * 1000)
 
 
 def _nanozk_block_row(rows: list[dict[str, str]]) -> dict[str, str]:
@@ -579,6 +580,13 @@ def evidence_rows() -> list[dict[str, Any]]:
     ]
 
 
+def _require_row(rows_by_id: dict[str, dict[str, Any]], row_id: str) -> dict[str, Any]:
+    try:
+        return rows_by_id[row_id]
+    except KeyError as err:
+        raise MatchedD64D128EvidenceTableError(f"missing required evidence row: {row_id}") from err
+
+
 def validate_rows(rows: list[dict[str, Any]]) -> None:
     if len(rows) != 11:
         raise MatchedD64D128EvidenceTableError("unexpected evidence row count")
@@ -592,7 +600,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> None:
             if field != "value" and row[field] in ("", None):
                 raise MatchedD64D128EvidenceTableError(f"evidence row has empty field: {field}")
     by_id = {row["row_id"]: row for row in rows}
-    package = by_id["local_d128_package_without_vk_bytes"]
+    package = _require_row(by_id, "local_d128_package_without_vk_bytes")
     if package["object_class"] != "verifier_facing_package_without_vk_bytes":
         raise MatchedD64D128EvidenceTableError("package row object-class drift")
     if package["value"] != EXPECTED_PACKAGE_WITHOUT_VK_BYTES:
@@ -601,16 +609,17 @@ def validate_rows(rows: list[dict[str, Any]]) -> None:
         raise MatchedD64D128EvidenceTableError("package row NANOZK ratio drift")
     if "not matched proof-size evidence" not in package["comparison_boundary"]:
         raise MatchedD64D128EvidenceTableError("package row boundary drift")
-    nanozk = by_id["external_nanozk_reported_transformer_block_proof_bytes"]
+    nanozk = _require_row(by_id, "external_nanozk_reported_transformer_block_proof_bytes")
     if nanozk["evidence_status"] != "paper_reported_not_locally_reproduced":
         raise MatchedD64D128EvidenceTableError("NANOZK reproduction status drift")
-    missing = by_id["missing_native_d128_block_proof_object"]
+    missing = _require_row(by_id, "missing_native_d128_block_proof_object")
     if missing["value"] is not None:
         raise MatchedD64D128EvidenceTableError("missing native proof row must stay null")
 
 
 def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_id = {row["row_id"]: row for row in rows}
+    missing = _require_row(by_id, "missing_native_d128_block_proof_object")
     summary = {
         "table_row_count": len(rows),
         "locally_checked_row_count": sum(1 for row in rows if row["evidence_status"] == "locally_checked_artifact"),
@@ -636,7 +645,7 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "d128_package_with_vk_bytes": EXPECTED_PACKAGE_WITH_VK_BYTES,
         "d128_package_with_vk_vs_nanozk_reported_ratio": EXPECTED_PACKAGE_WITH_VK_VS_NANOZK,
         "nanozk_reported_block_proof_bytes_decimal": EXPECTED_NANOZK_BLOCK_BYTES,
-        "native_d128_block_proof_bytes": by_id["missing_native_d128_block_proof_object"]["value"],
+        "native_d128_block_proof_bytes": missing["value"],
         "matched_benchmark_claim_allowed": False,
         "stark_native_claim_allowed": (
             "Stwo-native d64/d128 receipt-chain rows exist and scale to d128; proof-size claims do not."
