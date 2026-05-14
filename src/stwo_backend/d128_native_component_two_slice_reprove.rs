@@ -800,6 +800,13 @@ fn reprove_error(message: impl Into<String>) -> VmError {
 mod tests {
     use super::*;
 
+    fn fixture_input() -> ZkAiD128ComponentTwoSliceReproveInput {
+        zkai_d128_component_two_slice_reprove_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-d128-component-native-two-slice-reprove-2026-05.input.json"
+        ))
+        .expect("checked component-native input fixture should parse")
+    }
+
     #[test]
     fn component_preprocessed_columns_are_unique() {
         let ids = component_preprocessed_column_ids();
@@ -807,5 +814,30 @@ mod tests {
         labels.sort();
         labels.dedup();
         assert_eq!(labels.len(), ids.len());
+    }
+
+    #[test]
+    fn rejects_selected_slice_id_order_drift() {
+        let mut input = fixture_input();
+        input.selected_slice_ids.swap(0, 1);
+        let error = validate_reprove_input(&input).expect_err("slice-id order drift should reject");
+        assert!(error.to_string().contains("selected slice id order drift"));
+    }
+
+    #[test]
+    fn rejects_empty_proof_envelope() {
+        let input = fixture_input();
+        let envelope = ZkAiD128ComponentTwoSliceReproveEnvelope {
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_PROOF_VERSION.to_string(),
+            statement_version: ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_STATEMENT_VERSION.to_string(),
+            semantic_scope: ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_SEMANTIC_SCOPE.to_string(),
+            decision: ZKAI_D128_COMPONENT_TWO_SLICE_REPROVE_DECISION.to_string(),
+            input,
+            proof: Vec::new(),
+        };
+        let error =
+            validate_reprove_envelope(&envelope).expect_err("empty proof bytes should reject");
+        assert!(error.to_string().contains("proof bytes must not be empty"));
     }
 }
