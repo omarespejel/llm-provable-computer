@@ -940,8 +940,7 @@ fn component_trace(
     trace
 }
 
-const COMPACT_RMSNORM_LOG_SIZE: u32 = 7;
-const COMPACT_BRIDGE_LOG_SIZE: u32 = 7;
+const COMPACT_LOG_SIZE: u32 = 7;
 const COMPACT_Q8_SCALE: i64 = 256;
 const COMPACT_Q8_REMAINDER_BITS: usize = 8;
 const COMPACT_RMSNORM_NORM_REMAINDER_GAP_BITS: usize = 31;
@@ -1105,7 +1104,7 @@ fn compact_preprocessed_rmsnorm_component_with_allocator(
     FrameworkComponent::new(
         allocator,
         CompactPreprocessedRmsnormEval {
-            log_size: COMPACT_RMSNORM_LOG_SIZE,
+            log_size: COMPACT_LOG_SIZE,
         },
         SecureField::zero(),
     )
@@ -1117,7 +1116,7 @@ fn compact_preprocessed_bridge_component_with_allocator(
     FrameworkComponent::new(
         allocator,
         CompactPreprocessedBridgeEval {
-            log_size: COMPACT_BRIDGE_LOG_SIZE,
+            log_size: COMPACT_LOG_SIZE,
         },
         SecureField::zero(),
     )
@@ -1126,7 +1125,7 @@ fn compact_preprocessed_bridge_component_with_allocator(
 fn compact_preprocessed_anchor_trace(
     input: &ZkAiD128ComponentTwoSliceReproveInput,
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
-    let domain = CanonicCoset::new(COMPACT_RMSNORM_LOG_SIZE).circle_domain();
+    let domain = CanonicCoset::new(COMPACT_LOG_SIZE).circle_domain();
     let columns: Vec<Vec<BaseField>> = vec![
         input
             .rmsnorm_input
@@ -1346,5 +1345,30 @@ mod tests {
         assert!(error
             .to_string()
             .contains("compact preprocessed proof bytes must not be empty"));
+    }
+
+    #[test]
+    fn compact_preprocessed_rejects_tampered_anchor_commitment() {
+        let input = fixture_input();
+        let mut envelope =
+            prove_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&input)
+                .expect("compact proof should prove");
+        assert!(
+            verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&envelope)
+                .expect("compact proof should verify")
+        );
+
+        let mut payload: serde_json::Value =
+            serde_json::from_slice(&envelope.proof).expect("compact proof payload should parse");
+        let first_commitment = payload["stark_proof"]["commitments"][0].clone();
+        payload["stark_proof"]["commitments"][1] = first_commitment;
+        envelope.proof = serde_json::to_vec(&payload).expect("compact proof payload should encode");
+
+        let error =
+            verify_zkai_d128_component_two_slice_compact_preprocessed_reprove_envelope(&envelope)
+                .expect_err("tampered compact anchor commitment should reject");
+        assert!(error
+            .to_string()
+            .contains("compact anchor commitment does not match checked component rows"));
     }
 }
