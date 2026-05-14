@@ -1,5 +1,6 @@
 import copy
 import pathlib
+import shutil
 import tempfile
 import unittest
 
@@ -66,8 +67,34 @@ class VerifierExecutionCompressionBudgetGateTests(unittest.TestCase):
         self.assertIn("selected_inner_verifier_execution_target", tsv)
 
     def test_output_path_rejects_escape(self) -> None:
-        with self.assertRaisesRegex(gate.CompressionBudgetGateError, "under evidence dir|escapes repository"):
+        with self.assertRaisesRegex(
+            gate.CompressionBudgetGateError, "under evidence dir|escapes repository|under repo root"
+        ):
             gate.validate_output_path(pathlib.Path(tempfile.gettempdir()) / "outside.json")
+
+    def test_output_path_rejects_symlink_parent(self) -> None:
+        link = gate.EVIDENCE_DIR / ".tmp-budget-symlink-parent"
+        with tempfile.TemporaryDirectory() as target:
+            try:
+                link.symlink_to(target, target_is_directory=True)
+                with self.assertRaisesRegex(gate.CompressionBudgetGateError, "component must not be a symlink"):
+                    gate.validate_output_path(link / "out.json")
+            finally:
+                link.unlink(missing_ok=True)
+
+    def test_output_path_rejects_missing_parent(self) -> None:
+        out = gate.EVIDENCE_DIR / ".tmp-budget-missing-parent" / "out.json"
+        with self.assertRaisesRegex(gate.CompressionBudgetGateError, "output parent does not exist"):
+            gate.validate_output_path(out)
+
+    def test_output_path_rejects_directory(self) -> None:
+        out = gate.EVIDENCE_DIR / ".tmp-budget-output-dir"
+        try:
+            out.mkdir(exist_ok=True)
+            with self.assertRaisesRegex(gate.CompressionBudgetGateError, "output path must be a file"):
+                gate.validate_output_path(out)
+        finally:
+            shutil.rmtree(out, ignore_errors=True)
 
     def test_atomic_write_roundtrip_under_evidence_dir(self) -> None:
         payload = gate.build_payload()

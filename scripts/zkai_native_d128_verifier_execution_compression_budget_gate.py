@@ -607,30 +607,31 @@ def to_tsv(payload: dict[str, Any]) -> str:
     return output.getvalue()
 
 
-def reject_symlinked_path_components(path: pathlib.Path) -> None:
-    root = ROOT.resolve()
-    resolved = path.resolve()
+def reject_symlinked_path_components(path: pathlib.Path, label: str) -> None:
     try:
-        relative_parts = resolved.relative_to(root).parts
+        relative = path.relative_to(ROOT)
     except ValueError as err:
-        raise CompressionBudgetGateError(f"output path escapes repository: {path}") from err
-    current = root
-    for part in relative_parts[:-1]:
+        raise CompressionBudgetGateError(f"{label} is not under repo root: {path}") from err
+    current = ROOT
+    for part in relative.parts:
         current = current / part
-        if current.exists() and current.is_symlink():
-            raise CompressionBudgetGateError(f"output parent component is symlink: {current}")
+        if current.is_symlink():
+            raise CompressionBudgetGateError(f"{label} component must not be a symlink: {current}")
 
 
 def validate_output_path(path: pathlib.Path) -> pathlib.Path:
     raw_path = path if path.is_absolute() else ROOT / path
-    reject_symlinked_path_components(raw_path)
-    if raw_path.exists() and raw_path.is_symlink():
-        raise CompressionBudgetGateError(f"refusing to write symlink output: {raw_path}")
+    reject_symlinked_path_components(EVIDENCE_DIR, "evidence dir")
+    reject_symlinked_path_components(raw_path, "output path")
     resolved = raw_path.resolve()
     try:
         resolved.relative_to(EVIDENCE_DIR.resolve())
     except ValueError as err:
         raise CompressionBudgetGateError(f"output path must be under evidence dir: {raw_path}") from err
+    if not resolved.parent.exists():
+        raise CompressionBudgetGateError(f"output parent does not exist: {resolved.parent}")
+    if resolved.exists() and resolved.is_dir():
+        raise CompressionBudgetGateError(f"output path must be a file: {resolved}")
     return resolved
 
 
