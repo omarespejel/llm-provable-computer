@@ -59,6 +59,9 @@ class NativeD128BlockProofObjectRouteGateTests(unittest.TestCase):
         self.assertEqual(rows["attention_derived_outer_input_contract"]["bytes"], 2559)
         self.assertEqual(rows["external_package_without_vk"]["bytes"], 4752)
         self.assertEqual(rows["external_package_without_vk"]["ratio_vs_nanozk_reported"], 0.688696)
+        self.assertEqual(rows["external_package_with_vk"]["status"], gate.PACKAGE_WITH_VK_STATUS)
+        self.assertEqual(rows["external_package_with_vk"]["bytes"], 10608)
+        self.assertEqual(rows["external_package_with_vk"]["ratio_vs_nanozk_reported"], 1.537391)
         self.assertEqual(rows["native_d128_block_proof_object"]["status"], gate.NATIVE_PROOF_OBJECT_STATUS)
         self.assertIsNone(rows["native_d128_block_proof_object"]["bytes"])
         self.assertEqual(rows["external_nanozk_context"]["bytes"], 6900)
@@ -134,6 +137,7 @@ class NativeD128BlockProofObjectRouteGateTests(unittest.TestCase):
         self.assertIn("row_id\tsurface\tstatus\tobject_class", tsv)
         self.assertIn("native_d128_block_proof_object", tsv)
         self.assertIn("external_package_without_vk", tsv)
+        self.assertIn("external_package_with_vk", tsv)
 
         with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as raw_tmp:
             tmp = pathlib.Path(raw_tmp)

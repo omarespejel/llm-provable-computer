@@ -34,6 +34,7 @@ block proof-object public inputs.
 | Smallest d128 two-slice outer target | `NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING` | `256` | | blocked before metrics |
 | Attention-derived compressed input contract | `GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT_NOT_OUTER_PROOF` | `199,553` | `2,559` | compressed transcript, not proof-size evidence |
 | External package without VK | `GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF` | | `4,752` | compact package signal, not a native proof |
+| External package with VK | `GO_SELF_CONTAINED_VERIFIER_FACING_PACKAGE_WITH_VK_NOT_NATIVE_PROOF` | | `10,608` | includes reusable VK bytes; still packaging evidence, not a native proof |
 | Native d128 block proof object | `NO_GO_EXECUTABLE_NATIVE_D128_BLOCK_OUTER_PROOF_BACKEND_MISSING` | | | required before proof-size, timing, or matched NANOZK claims |
 | NANOZK reported block row | `SOURCE_BACKED_EXTERNAL_CONTEXT_NOT_LOCALLY_REPRODUCED` | | `6,900` | external context only |
 
@@ -52,6 +53,7 @@ Metadata for the rows above:
 - Step counts: six d128 slice receipts; `197,504` full-accumulator checked
   rows; `199,553` attention-derived source relation rows; `256` selected
   two-slice target rows; `13 / 13` route-gate mutations rejected.
+- Package byte classes: `4,752` bytes without VK; `10,608` bytes with VK.
 - Timing mode: no prover/verifier timing collected in this route. Timing
   fields remain null because the native d128 outer proof object is missing.
 - Evidence paths: `docs/engineering/evidence/zkai-native-d128-block-proof-object-route-2026-05.json`

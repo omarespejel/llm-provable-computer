@@ -116,7 +116,7 @@
     "not exact real-valued Softmax, LayerNorm, or GELU",
     "not production-ready"
   ],
-  "payload_commitment": "sha256:f13684336a2c6c4577e6ea4d137288eae871e527ae33a603fcc64d20423a9444",
+  "payload_commitment": "sha256:9719ffa4cad137eca757fdec9b995be399f670a3ca261f3d5bcfe92893b1d55e",
   "result": "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET",
   "route_rows": [
     {
@@ -162,6 +162,17 @@
       "rows": null,
       "status": "GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF",
       "surface": "external verifier-facing package without reusable VK"
+    },
+    {
+      "bytes": 10608,
+      "can_support_native_claim": false,
+      "claim_boundary": "self-contained package bytes include reusable VK; still not a native proof object",
+      "object_class": "external_statement_package_with_vk_not_native_proof",
+      "ratio_vs_nanozk_reported": 1.537391,
+      "row_id": "external_package_with_vk",
+      "rows": null,
+      "status": "GO_SELF_CONTAINED_VERIFIER_FACING_PACKAGE_WITH_VK_NOT_NATIVE_PROOF",
+      "surface": "external verifier-facing package with reusable VK"
     },
     {
       "bytes": null,

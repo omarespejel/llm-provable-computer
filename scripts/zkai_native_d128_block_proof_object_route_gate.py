@@ -39,6 +39,7 @@ FULL_ACCUMULATOR_STATUS = "GO_D128_FULL_BLOCK_VERIFIER_ACCUMULATOR_NOT_OUTER_PRO
 TWO_SLICE_STATUS = "NO_GO_EXECUTABLE_TWO_SLICE_OUTER_PROOF_OBJECT_MISSING"
 ATTENTION_INPUT_STATUS = "GO_ATTENTION_DERIVED_D128_OUTER_PROOF_INPUT_CONTRACT_NOT_OUTER_PROOF"
 PACKAGE_STATUS = "GO_COMPACT_VERIFIER_FACING_PACKAGE_NOT_NATIVE_PROOF"
+PACKAGE_WITH_VK_STATUS = "GO_SELF_CONTAINED_VERIFIER_FACING_PACKAGE_WITH_VK_NOT_NATIVE_PROOF"
 SCHEMA = "zkai-native-d128-block-proof-object-route-v1"
 DECISION = NATIVE_PROOF_OBJECT_STATUS
 RESULT = "BOUNDED_NO_GO_WITH_STRONG_NEXT_BACKEND_TARGET"
@@ -379,6 +380,17 @@ def route_rows(sources: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "claim_boundary": "compact package signal only; object class differs from NANOZK block proof row",
         },
         {
+            "row_id": "external_package_with_vk",
+            "surface": "external verifier-facing package with reusable VK",
+            "status": PACKAGE_WITH_VK_STATUS,
+            "object_class": "external_statement_package_with_vk_not_native_proof",
+            "rows": None,
+            "bytes": package_summary["package_with_vk_bytes"],
+            "ratio_vs_nanozk_reported": EXPECTED_PACKAGE_WITH_VK_VS_NANOZK,
+            "can_support_native_claim": False,
+            "claim_boundary": "self-contained package bytes include reusable VK; still not a native proof object",
+        },
+        {
             "row_id": "native_d128_block_proof_object",
             "surface": "single native or matched d128 transformer-block proof object",
             "status": NATIVE_PROOF_OBJECT_STATUS,
@@ -410,6 +422,7 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "two_slice_outer_proof_target",
         "attention_derived_outer_input_contract",
         "external_package_without_vk",
+        "external_package_with_vk",
         "native_d128_block_proof_object",
         "external_nanozk_context",
     }
@@ -515,6 +528,11 @@ def validate_core_payload(
                 raise NativeD128BlockProofObjectRouteError("package bytes drift")
             if item["ratio_vs_nanozk_reported"] != EXPECTED_PACKAGE_WITHOUT_VK_VS_NANOZK:
                 raise NativeD128BlockProofObjectRouteError("package NANOZK ratio drift")
+        if item["row_id"] == "external_package_with_vk":
+            if item["bytes"] != EXPECTED_PACKAGE_WITH_VK_BYTES:
+                raise NativeD128BlockProofObjectRouteError("package with VK bytes drift")
+            if item["ratio_vs_nanozk_reported"] != EXPECTED_PACKAGE_WITH_VK_VS_NANOZK:
+                raise NativeD128BlockProofObjectRouteError("package with VK NANOZK ratio drift")
         if item["row_id"] == "native_d128_block_proof_object":
             if item["bytes"] is not None:
                 raise NativeD128BlockProofObjectRouteError("native proof bytes smuggled")
