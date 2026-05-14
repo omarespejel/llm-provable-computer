@@ -84,8 +84,19 @@ class VerifierExecutionCompressionBudgetGateTests(unittest.TestCase):
 
     def test_output_path_rejects_missing_parent(self) -> None:
         out = gate.EVIDENCE_DIR / ".tmp-budget-missing-parent" / "out.json"
-        with self.assertRaisesRegex(gate.CompressionBudgetGateError, "output parent does not exist"):
+        with self.assertRaisesRegex(gate.CompressionBudgetGateError, "output parent must be an existing directory"):
             gate.validate_output_path(out)
+
+    def test_output_path_rejects_file_parent(self) -> None:
+        parent = gate.EVIDENCE_DIR / ".tmp-budget-file-parent"
+        try:
+            parent.write_text("not a directory", encoding="utf-8")
+            with self.assertRaisesRegex(
+                gate.CompressionBudgetGateError, "output parent must be an existing directory"
+            ):
+                gate.validate_output_path(parent / "out.json")
+        finally:
+            parent.unlink(missing_ok=True)
 
     def test_output_path_rejects_directory(self) -> None:
         out = gate.EVIDENCE_DIR / ".tmp-budget-output-dir"
