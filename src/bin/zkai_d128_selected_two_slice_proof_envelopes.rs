@@ -18,6 +18,9 @@ use llm_provable_computer::stwo_backend::{
 };
 
 #[cfg(feature = "stwo-backend")]
+// MAX_ENVELOPE_JSON_BYTES is a conservative 4 MiB cap to avoid unbounded JSON
+// envelope allocation. Current checked envelopes are much smaller, around
+// 217 KiB for rmsnorm and 117 KiB for the bridge, with room for growth.
 const MAX_ENVELOPE_JSON_BYTES: usize = 4 * 1024 * 1024;
 
 #[cfg(feature = "stwo-backend")]
