@@ -50,6 +50,24 @@ fn verify_rejects_malformed_rmsnorm_json() {
 }
 
 #[test]
+fn verify_rejects_oversized_rmsnorm_json_before_parsing() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let oversized = dir.path().join("oversized-rmsnorm.json");
+    std::fs::write(&oversized, vec![b' '; 4 * 1024 * 1024 + 1]).expect("write oversized envelope");
+    let bridge = fixture_path(
+        "docs/engineering/evidence/zkai-native-d128-verifier-execution-target-rmsnorm-projection-bridge-2026-05.envelope.json",
+    );
+
+    verifier_cli()
+        .arg("verify")
+        .arg(oversized)
+        .arg(bridge)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("exceeds max size"));
+}
+
+#[test]
 fn verify_rejects_tampered_rmsnorm_proof_bytes() {
     let dir = tempfile::tempdir().expect("temp dir");
     let original = fixture_path(
