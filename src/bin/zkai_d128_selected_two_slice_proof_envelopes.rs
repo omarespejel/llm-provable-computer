@@ -69,8 +69,10 @@ fn run() -> Result<String, String> {
                 .map_err(|error| error.to_string())?;
             let rmsnorm_envelope = prove_zkai_d128_rmsnorm_public_row_envelope(&rmsnorm_input)
                 .map_err(|error| error.to_string())?;
-            verify_zkai_d128_rmsnorm_public_row_envelope(&rmsnorm_envelope)
-                .map_err(|error| error.to_string())?;
+            require_verified(
+                verify_zkai_d128_rmsnorm_public_row_envelope(&rmsnorm_envelope),
+                "rmsnorm envelope",
+            )?;
 
             let bridge_input = read_input_text(
                 &bridge_input_path,
@@ -83,8 +85,10 @@ fn run() -> Result<String, String> {
             let bridge_envelope =
                 prove_zkai_d128_rmsnorm_to_projection_bridge_envelope(&bridge_input)
                     .map_err(|error| error.to_string())?;
-            verify_zkai_d128_rmsnorm_to_projection_bridge_envelope(&bridge_envelope)
-                .map_err(|error| error.to_string())?;
+            require_verified(
+                verify_zkai_d128_rmsnorm_to_projection_bridge_envelope(&bridge_envelope),
+                "bridge envelope",
+            )?;
 
             let rmsnorm_bytes = envelope_json_bytes(&rmsnorm_envelope, "rmsnorm envelope")?;
             let bridge_bytes = envelope_json_bytes(&bridge_envelope, "bridge envelope")?;
@@ -124,8 +128,10 @@ fn run() -> Result<String, String> {
             let rmsnorm_envelope: ZkAiD128RmsnormPublicRowProofEnvelope =
                 serde_json::from_slice(&rmsnorm_raw)
                     .map_err(|error| format!("failed to parse rmsnorm envelope: {error}"))?;
-            verify_zkai_d128_rmsnorm_public_row_envelope(&rmsnorm_envelope)
-                .map_err(|error| error.to_string())?;
+            require_verified(
+                verify_zkai_d128_rmsnorm_public_row_envelope(&rmsnorm_envelope),
+                "rmsnorm envelope",
+            )?;
 
             let bridge_raw = read_bounded_file(
                 &bridge_envelope_path,
@@ -135,8 +141,10 @@ fn run() -> Result<String, String> {
             let bridge_envelope: ZkAiD128RmsnormToProjectionBridgeEnvelope =
                 serde_json::from_slice(&bridge_raw)
                     .map_err(|error| format!("failed to parse bridge envelope: {error}"))?;
-            verify_zkai_d128_rmsnorm_to_projection_bridge_envelope(&bridge_envelope)
-                .map_err(|error| error.to_string())?;
+            require_verified(
+                verify_zkai_d128_rmsnorm_to_projection_bridge_envelope(&bridge_envelope),
+                "bridge envelope",
+            )?;
             Ok(serde_json::json!({
                 "schema": "zkai-d128-selected-two-slice-proof-envelopes-cli-summary-v1",
                 "mode": "verify",
@@ -155,6 +163,18 @@ fn run() -> Result<String, String> {
             .to_string())
         }
         _ => Err(format!("unknown mode: {mode}")),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn require_verified<E: std::fmt::Display>(
+    verified: Result<bool, E>,
+    label: &str,
+) -> Result<(), String> {
+    match verified {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(format!("{label} proof verification returned false")),
+        Err(error) => Err(error.to_string()),
     }
 }
 
