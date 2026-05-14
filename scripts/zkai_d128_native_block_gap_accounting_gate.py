@@ -796,11 +796,15 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             temps.append(temp)
             replace_temp(temp, path, label)
             replaced.append(path)
-        for _temp_path, _temp_name, parent_fd, _identity in temps:
-            os.close(parent_fd)
     except Exception as err:  # noqa: BLE001 - wrap write failures with rollback diagnostics.
         write_error = err
-    if write_error is not None:
+    if write_error is None:
+        for _temp_path, _temp_name, parent_fd, _identity in temps:
+            try:
+                os.close(parent_fd)
+            except OSError:
+                pass
+    else:
         for path in reversed(replaced):
             try:
                 original = original_bytes.get(path)
