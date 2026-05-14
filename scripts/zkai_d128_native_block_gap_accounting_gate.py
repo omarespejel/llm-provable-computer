@@ -673,8 +673,8 @@ def _assert_directory_identity(path: pathlib.Path, identity: tuple[int, int], la
 
 def _open_stable_directory(path: pathlib.Path, label: str) -> tuple[int, tuple[int, int]]:
     _assert_no_repo_symlink_components(path, label)
-    path.mkdir(parents=True, exist_ok=True)
-    _assert_no_repo_symlink_components(path, label)
+    if not path.exists():
+        raise D128NativeBlockGapAccountingError(f"{label} parent directory must already exist")
     identity = _directory_identity(path, label)
     flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -744,6 +744,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             if temp_name is not None:
                 try:
                     os.unlink(temp_name, dir_fd=parent_fd)
+                    os.fsync(parent_fd)
                 except FileNotFoundError:
                     pass
             os.close(parent_fd)
@@ -755,6 +756,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         if path.is_symlink():
             raise D128NativeBlockGapAccountingError(f"{label} must not include symlink components")
         os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        os.fsync(parent_fd)
         _assert_directory_identity(path.parent, identity, label)
 
     def rollback_replace(path: pathlib.Path, contents: bytes) -> None:
@@ -775,6 +777,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
                 os.unlink(path.name, dir_fd=parent_fd)
             except FileNotFoundError:
                 pass
+            os.fsync(parent_fd)
             _assert_directory_identity(path.parent, identity, "rollback output path")
         finally:
             os.close(parent_fd)
@@ -796,6 +799,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         for _temp_path, temp_name, parent_fd, _identity in temps:
             try:
                 os.unlink(temp_name, dir_fd=parent_fd)
+                os.fsync(parent_fd)
             except FileNotFoundError:
                 pass
             finally:
@@ -815,6 +819,7 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
         for _temp_path, temp_name, parent_fd, _identity in temps:
             try:
                 os.unlink(temp_name, dir_fd=parent_fd)
+                os.fsync(parent_fd)
             except FileNotFoundError:
                 pass
             except Exception as err:  # noqa: BLE001
