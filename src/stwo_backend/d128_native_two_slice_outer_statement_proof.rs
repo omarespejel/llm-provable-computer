@@ -41,7 +41,7 @@ pub const ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_INPUT_SCHEMA: &str =
 pub const ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_INPUT_DECISION: &str =
     "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_INPUT";
 pub const ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_PROOF_VERSION: &str =
-    "stwo-d128-two-slice-outer-statement-air-proof-v1";
+    "stwo-d128-two-slice-outer-statement-air-proof-v2-compressed-digest";
 pub const ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_STATEMENT_VERSION: &str =
     "zkai-d128-two-slice-outer-statement-v1";
 pub const ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_SEMANTIC_SCOPE: &str =
@@ -85,17 +85,10 @@ pub const ZKAI_D128_RMSNORM_PROJECTION_BRIDGE_SOURCE_PAYLOAD_SHA256: &str =
 
 const D128_OUTER_LOG_SIZE: u32 = 1;
 const DIGEST_LIMBS: usize = 16;
-const DIGEST_COLUMN_GROUPS: [&str; 10] = [
-    "two_slice_target_commitment",
-    "accumulator_commitment",
-    "verifier_handle_commitment",
-    "slice_statement_commitment",
-    "slice_public_instance_commitment",
-    "slice_proof_native_parameter_commitment",
-    "source_file_sha256",
-    "source_payload_sha256",
-    "proof_backend_version_label",
-    "verifier_domain_label",
+const COMPRESSED_DIGEST_COLUMN_GROUPS: [&str; 3] = [
+    "statement_commitment",
+    "public_instance_commitment",
+    "proof_native_parameter_commitment",
 ];
 const ZKAI_D128_TWO_SLICE_OUTER_EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const ZKAI_D128_TWO_SLICE_OUTER_EXPECTED_PROOF_COMMITMENTS: usize = 3;
@@ -103,7 +96,6 @@ const PROOF_NATIVE_PARAMETER_KIND: &str = "d128-two-slice-outer-statement-parame
 const PUBLIC_INSTANCE_DOMAIN: &str = "ptvm:zkai:d128-two-slice-outer-public-instance:v1";
 const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:d128-two-slice-outer-proof-native-parameter:v1";
-const LABEL_COMMITMENT_DOMAIN: &str = "ptvm:zkai:d128-two-slice-outer-label:v1";
 
 const EXPECTED_SELECTED_SLICE_IDS: [&str; 2] = ["rmsnorm_public_rows", "rmsnorm_projection_bridge"];
 
@@ -120,13 +112,9 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "selected slice order checked before proof verification",
     "selected row count checked before proof verification",
-    "two-slice target commitment bound into every outer statement row",
-    "accumulator commitment bound into every outer statement row",
-    "verifier-handle commitment bound into every outer statement row",
-    "selected slice statement commitments bound as digest limbs",
-    "selected source evidence hashes bound as digest limbs",
-    "proof backend version labels bound as digest limbs",
-    "verifier-domain label bound as digest limbs",
+    "statement commitment binds selected slice IDs, source hashes, commitments, and verifier domain",
+    "public-instance commitment bound as compressed digest limbs",
+    "proof-native parameter commitment bound as compressed digest limbs",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing",
@@ -167,10 +155,11 @@ impl FrameworkEval for D128TwoSliceOuterStatementEval {
         eval.add_constraint(row_count - E::F::from(BaseField::from(128u32)));
         eval.add_constraint(verified - one);
 
-        // Digest limbs are verifier-bound by the checked base-trace root.
-        // The AIR still registers them as trace columns so the proof object
-        // commits to the exact row surface that the host verifier recomputes.
-        for _group in DIGEST_COLUMN_GROUPS {
+        // Compressed digest limbs are verifier-bound by the checked base-trace
+        // root. The statement commitment expands back to the selected row
+        // fields during host validation, while the native proof commits to the
+        // smaller verifier-facing digest surface.
+        for _group in COMPRESSED_DIGEST_COLUMN_GROUPS {
             for _limb_index in 0..DIGEST_LIMBS {
                 let _ = eval.next_trace_mask();
             }
@@ -773,7 +762,7 @@ fn outer_statement_trace(
 fn digest_group_columns(
     input: &ZkAiD128TwoSliceOuterStatementInput,
 ) -> Result<Vec<Vec<Vec<BaseField>>>> {
-    DIGEST_COLUMN_GROUPS
+    COMPRESSED_DIGEST_COLUMN_GROUPS
         .iter()
         .map(|group| {
             (0..DIGEST_LIMBS)
@@ -795,23 +784,16 @@ fn digest_group_columns(
 
 fn row_digest_limbs(
     input: &ZkAiD128TwoSliceOuterStatementInput,
-    row: &D128TwoSliceOuterStatementRow,
+    _row: &D128TwoSliceOuterStatementRow,
     group: &str,
 ) -> Result<Vec<u16>> {
     match group {
-        "two_slice_target_commitment" => digest_limbs(&input.two_slice_target_commitment),
-        "accumulator_commitment" => digest_limbs(&input.accumulator_commitment),
-        "verifier_handle_commitment" => digest_limbs(&input.accumulator_verifier_handle_commitment),
-        "slice_statement_commitment" => digest_limbs(&row.statement_commitment),
-        "slice_public_instance_commitment" => digest_limbs(&row.public_instance_commitment),
-        "slice_proof_native_parameter_commitment" => {
-            digest_limbs(&row.proof_native_parameter_commitment)
+        "statement_commitment" => digest_limbs(&input.statement_commitment),
+        "public_instance_commitment" => digest_limbs(&input.public_instance_commitment),
+        "proof_native_parameter_commitment" => {
+            digest_limbs(&input.proof_native_parameter_commitment)
         }
-        "source_file_sha256" => digest_limbs(&row.source_file_sha256),
-        "source_payload_sha256" => digest_limbs(&row.source_payload_sha256),
-        "proof_backend_version_label" => label_limbs(&row.proof_backend_version),
-        "verifier_domain_label" => label_limbs(&row.verifier_domain),
-        _ => unreachable!("unknown digest group"),
+        _ => unreachable!("unknown compressed digest group"),
     }
 }
 
@@ -837,13 +819,6 @@ fn digest_limbs(value: &str) -> Result<Vec<u16>> {
                 .map_err(|error| outer_error(format!("digest limb parse failed: {error}")))
         })
         .collect()
-}
-
-fn label_limbs(value: &str) -> Result<Vec<u16>> {
-    digest_limbs(&blake2b_commitment_bytes(
-        value.as_bytes(),
-        LABEL_COMMITMENT_DOMAIN,
-    ))
 }
 
 fn statement_commitment(input: &ZkAiD128TwoSliceOuterStatementInput) -> String {
@@ -1235,7 +1210,10 @@ mod tests {
         let sizes = component.trace_log_degree_bounds();
         assert_eq!(sizes.len(), 2);
         assert!(sizes[0].is_empty());
-        assert!(!sizes[1].is_empty());
+        assert_eq!(
+            sizes[1].len(),
+            4 + COMPRESSED_DIGEST_COLUMN_GROUPS.len() * DIGEST_LIMBS
+        );
         let roots = outer_commitment_roots(&input, outer_pcs_config()).expect("roots");
         assert_eq!(roots.len(), 2);
         assert_ne!(roots[0], roots[1]);

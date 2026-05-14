@@ -186,25 +186,30 @@
       "why": "turn this host-verified binding proof into the real issue #583 target"
     },
     {
-      "title": "Digest-binding compression for outer statement rows",
-      "why": "the 11,041-byte proof still binds many digest limbs directly; a smaller public-input hash layer may reduce fixed overhead"
+      "title": "Stable binary encoding for compressed native Stwo proof payloads",
+      "why": "the 3,516-byte result is still JSON-serialized native Stwo proof material, not stable binary proof-size accounting"
     }
   ],
   "interpretation": {
-    "human": "A real native Stwo proof now binds the two selected d128 slice-result rows, their source hashes, statement commitments, backend labels, and verifier-domain labels. The proof uses an empty preprocessed tree and a verifier-recomputed base-trace root. This is useful progress toward an outer route, but it is not recursive verifier execution.",
+    "human": "A real native Stwo proof now binds the two selected d128 slice-result rows through the recomputed statement, public-instance, and proof-parameter commitments. The proof uses an empty preprocessed tree and a verifier-recomputed compressed base-trace root. This is useful progress toward an outer route, but it is not recursive verifier execution.",
     "next_backend_step": "Replace host-verified result binding with native Stwo verifier-execution constraints for the selected inner proofs.",
-    "why_not_nanozk_win": "The 11,041-byte native outer statement proof payload is JSON-serialized native Stwo proof material, is a different object class, and is 1.600145x the NANOZK paper-reported 6.9 KB row, so it must not be presented as a matched NANOZK proof-size win or as stable binary proof-size accounting."
+    "why_not_nanozk_win": "The 3,516-byte native outer statement proof payload is smaller than the NANOZK paper-reported 6.9 KB row, but it is JSON-serialized native Stwo proof material for a host-verified outer statement object. The object class is different, so it must not be presented as a matched NANOZK proof-size win or as stable binary proof-size accounting."
   },
   "issue": 583,
   "metrics": {
+    "envelope_saving_vs_prior_uncompressed_bytes": 60393,
     "nanozk_reported_transformer_block_proof_bytes": 6900,
-    "native_outer_statement_envelope_bytes": 94864,
-    "native_outer_statement_proof_bytes": 11041,
-    "native_outer_statement_proof_sha256": "8cd1352ea9cff6dfd2a4b25fc881649679c10a1751be7568e72936ac3f397d9e",
+    "native_outer_statement_envelope_bytes": 34471,
+    "native_outer_statement_proof_bytes": 3516,
+    "native_outer_statement_proof_sha256": "9977aeefe8021845a46a382be143824f10605b3ec676eaf0ed25e46f2d90e5f1",
     "package_with_vk_bytes_from_prior_gate": 10608,
     "package_without_vk_bytes_from_prior_gate": 4752,
+    "prior_uncompressed_outer_statement_envelope_bytes": 94864,
+    "prior_uncompressed_outer_statement_proof_bytes": 11041,
     "proof_native_parameter_commitment": "blake2b-256:9528113a0e62dc8565c2c5974d47c9859494a16fed307ef91881a2a2705fbf80",
-    "proof_vs_nanozk_reported_row_ratio": 1.600145,
+    "proof_saving_vs_prior_uncompressed_bytes": 7525,
+    "proof_saving_vs_prior_uncompressed_share": 0.681551,
+    "proof_vs_nanozk_reported_row_ratio": 0.509565,
     "public_instance_commitment": "blake2b-256:dbb25a1e94bb38c2aeedfcf38b2cebd401427c633860577893e46389f3565beb",
     "selected_checked_rows": 256,
     "selected_slice_ids": [
@@ -250,21 +255,21 @@
     "not production-ready zkML",
     "not a native d128 two-slice recursive outer proof",
     "not proof that Stwo verifies the selected inner Stwo proofs inside Stwo",
-    "not smaller than NANOZK's paper-reported transformer block proof row",
+    "not a matched NANOZK proof-size win even though this payload is smaller than NANOZK's paper-reported row",
     "not stable binary proof-size accounting"
   ],
   "result": "NARROW_GO_NATIVE_STWO_OUTER_STATEMENT_BINDING_NOT_VERIFIER_EXECUTION",
   "schema": "zkai-native-d128-two-slice-outer-statement-gate-v1",
   "source_artifacts": {
     "envelope_json": {
-      "bytes": 94864,
+      "bytes": 34471,
       "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json",
-      "sha256": "4f7006bd8af151bf0303317fc50c51d2c309d37caa4f5dcb1901bba5cc7e9efe"
+      "sha256": "07254ada114c68ba129f90ccfa0d9a7aacbba2bc1ae64388e5a1bd12fe944aca"
     },
     "input_json": {
-      "bytes": 5688,
+      "bytes": 5485,
       "path": "docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json",
-      "sha256": "0da299ee1b3f50f862d96bc01ca8c934f76b9393d05783d4e1f17a6fb1c41402"
+      "sha256": "3e8526da8ae9e9491ddd225873c5e03a6128c957a18d5a43e3793e5c08133b07"
     },
     "input_tsv": {
       "bytes": 875,

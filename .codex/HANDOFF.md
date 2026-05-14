@@ -790,14 +790,17 @@ Tablero boundary.
   statement commitments, public-instance commitments, proof-native parameter
   commitments, source evidence hashes, backend labels, verifier-domain labels,
   the two-slice target commitment, the accumulator commitment, and the
-  verifier-handle commitment. The checked JSON-serialized native Stwo proof
-  payload is `11,041` bytes, the envelope is `94,864` bytes, and the gate
-  rejects `25 / 25` artifact/relabeling/schema/list-order mutations, including
-  unknown envelope-key rejection. The proof uses an empty
-  preprocessed tree plus a verifier-recomputed base-trace root for the checked
-  row surface. Backend/profile:
+  verifier-handle commitment through the statement commitment. After digest
+  compression, the checked JSON-serialized native Stwo proof payload is `3,516`
+  bytes, the envelope is `34,471` bytes, and the gate rejects `25 / 25`
+  artifact/relabeling/schema/list-order mutations, including unknown
+  envelope-key rejection. This saves `7,525` proof bytes (`68.1551%`) and
+  `60,393` envelope bytes (`63.6627%`) versus the prior uncompressed native
+  outer statement route. The proof uses an empty preprocessed tree plus a
+  verifier-recomputed compressed base-trace root for the checked row surface.
+  Backend/profile:
   `Rust nightly-2025-07-14` with `--features stwo-backend`; backend version:
-  `stwo-d128-two-slice-outer-statement-air-proof-v1`; timing mode:
+  `stwo-d128-two-slice-outer-statement-air-proof-v2-compressed-digest`; timing mode:
   `proof_existence_and_byte_accounting_only_not_public_benchmark`; evidence:
   `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json`,
   `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.tsv`,
@@ -807,10 +810,12 @@ Tablero boundary.
   `docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-gate-2026-05.tsv`;
   reproduction command:
   `cargo +nightly-2025-07-14 run --bin zkai_native_d128_two_slice_outer_statement_proof --features stwo-backend -- prove docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.input.json docs/engineering/evidence/zkai-native-d128-two-slice-outer-statement-proof-2026-05.envelope.json`.
-  This is `1.600145x`
-  NANOZK's paper-reported `6.9 KB` row and must not be reported as a NANOZK
-  proof-size win, recursion, PCD, native verifier execution, stable binary
-  proof-size accounting, or a full d128 transformer-block proof. See
+  This is `0.509565x`
+  NANOZK's paper-reported `6.9 KB` row but must still not be reported as a
+  matched NANOZK proof-size win, recursion, PCD, native verifier execution,
+  stable binary proof-size accounting, or a full d128 transformer-block proof.
+  See `docs/engineering/zkai-native-d128-two-slice-digest-compression-2026-05-14.md`
+  and
   `docs/engineering/zkai-native-d128-two-slice-outer-statement-proof-2026-05-14.md`.
 
 ## Source-of-truth documents

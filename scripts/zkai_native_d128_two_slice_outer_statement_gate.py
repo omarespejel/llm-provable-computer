@@ -33,19 +33,19 @@ RESULT = "NARROW_GO_NATIVE_STWO_OUTER_STATEMENT_BINDING_NOT_VERIFIER_EXECUTION"
 ISSUE = 583
 CLAIM_BOUNDARY = "HOST_VERIFIED_OUTER_STATEMENT_BINDING_NOT_NATIVE_VERIFIER_EXECUTION"
 
-EXPECTED_INPUT_BYTES = 5_688
-EXPECTED_INPUT_SHA256 = "0da299ee1b3f50f862d96bc01ca8c934f76b9393d05783d4e1f17a6fb1c41402"
+EXPECTED_INPUT_BYTES = 5_485
+EXPECTED_INPUT_SHA256 = "3e8526da8ae9e9491ddd225873c5e03a6128c957a18d5a43e3793e5c08133b07"
 EXPECTED_INPUT_TSV_BYTES = 875
 EXPECTED_INPUT_TSV_SHA256 = "9e409cfd67a83b999e87dc5888a6ea7d82d5bd27feea637f5b4966420da3e41c"
-EXPECTED_ENVELOPE_BYTES = 94_864
-EXPECTED_ENVELOPE_SHA256 = "4f7006bd8af151bf0303317fc50c51d2c309d37caa4f5dcb1901bba5cc7e9efe"
-EXPECTED_PROOF_BYTES = 11_041
-EXPECTED_PROOF_SHA256 = "8cd1352ea9cff6dfd2a4b25fc881649679c10a1751be7568e72936ac3f397d9e"
+EXPECTED_ENVELOPE_BYTES = 34_471
+EXPECTED_ENVELOPE_SHA256 = "07254ada114c68ba129f90ccfa0d9a7aacbba2bc1ae64388e5a1bd12fe944aca"
+EXPECTED_PROOF_BYTES = 3_516
+EXPECTED_PROOF_SHA256 = "9977aeefe8021845a46a382be143824f10605b3ec676eaf0ed25e46f2d90e5f1"
 
 EXPECTED_INPUT_SCHEMA = "zkai-native-d128-two-slice-outer-statement-air-proof-input-v1"
 EXPECTED_INPUT_DECISION = "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_INPUT"
 EXPECTED_PROOF_BACKEND = "stwo"
-EXPECTED_PROOF_BACKEND_VERSION = "stwo-d128-two-slice-outer-statement-air-proof-v1"
+EXPECTED_PROOF_BACKEND_VERSION = "stwo-d128-two-slice-outer-statement-air-proof-v2-compressed-digest"
 EXPECTED_STATEMENT_VERSION = "zkai-d128-two-slice-outer-statement-v1"
 EXPECTED_SEMANTIC_SCOPE = "host_verified_two_slice_inner_stwo_results_bound_by_native_outer_statement_air"
 EXPECTED_ENVELOPE_DECISION = "NARROW_GO_HOST_VERIFIED_D128_TWO_SLICE_OUTER_STATEMENT_AIR_PROOF"
@@ -157,13 +157,9 @@ EXPECTED_NON_CLAIMS = [
 EXPECTED_PROOF_VERIFIER_HARDENING = [
     "selected slice order checked before proof verification",
     "selected row count checked before proof verification",
-    "two-slice target commitment bound into every outer statement row",
-    "accumulator commitment bound into every outer statement row",
-    "verifier-handle commitment bound into every outer statement row",
-    "selected slice statement commitments bound as digest limbs",
-    "selected source evidence hashes bound as digest limbs",
-    "proof backend version labels bound as digest limbs",
-    "verifier-domain label bound as digest limbs",
+    "statement commitment binds selected slice IDs, source hashes, commitments, and verifier domain",
+    "public-instance commitment bound as compressed digest limbs",
+    "proof-native parameter commitment bound as compressed digest limbs",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing",
@@ -182,7 +178,7 @@ VALIDATION_COMMANDS = [
 NON_CLAIMS = EXPECTED_NON_CLAIMS + [
     "not a native d128 two-slice recursive outer proof",
     "not proof that Stwo verifies the selected inner Stwo proofs inside Stwo",
-    "not smaller than NANOZK's paper-reported transformer block proof row",
+    "not a matched NANOZK proof-size win even though this payload is smaller than NANOZK's paper-reported row",
     "not stable binary proof-size accounting",
 ]
 
@@ -192,8 +188,8 @@ FOLLOWUP_ISSUES = [
         "why": "turn this host-verified binding proof into the real issue #583 target",
     },
     {
-        "title": "Digest-binding compression for outer statement rows",
-        "why": "the 11,041-byte proof still binds many digest limbs directly; a smaller public-input hash layer may reduce fixed overhead",
+        "title": "Stable binary encoding for compressed native Stwo proof payloads",
+        "why": "the 3,516-byte result is still JSON-serialized native Stwo proof material, not stable binary proof-size accounting",
     },
 ]
 
@@ -348,6 +344,11 @@ def build_result(envelope: dict[str, Any], input_obj: dict[str, Any], cases: lis
             "native_outer_statement_proof_bytes": len(proof),
             "native_outer_statement_envelope_bytes": EXPECTED_ENVELOPE_BYTES,
             "native_outer_statement_proof_sha256": sha256_hex(proof),
+            "prior_uncompressed_outer_statement_proof_bytes": 11_041,
+            "prior_uncompressed_outer_statement_envelope_bytes": 94_864,
+            "proof_saving_vs_prior_uncompressed_bytes": 11_041 - len(proof),
+            "proof_saving_vs_prior_uncompressed_share": ratio(11_041 - len(proof), 11_041),
+            "envelope_saving_vs_prior_uncompressed_bytes": 94_864 - EXPECTED_ENVELOPE_BYTES,
             "statement_commitment": input_obj["statement_commitment"],
             "public_instance_commitment": input_obj["public_instance_commitment"],
             "proof_native_parameter_commitment": input_obj["proof_native_parameter_commitment"],
@@ -358,16 +359,17 @@ def build_result(envelope: dict[str, Any], input_obj: dict[str, Any], cases: lis
         },
         "interpretation": {
             "human": (
-                "A real native Stwo proof now binds the two selected d128 slice-result rows, "
-                "their source hashes, statement commitments, backend labels, and verifier-domain labels. "
-                "The proof uses an empty preprocessed tree and a verifier-recomputed base-trace root. "
+                "A real native Stwo proof now binds the two selected d128 slice-result rows "
+                "through the recomputed statement, public-instance, and proof-parameter commitments. "
+                "The proof uses an empty preprocessed tree and a verifier-recomputed compressed base-trace root. "
                 "This is useful progress toward an outer route, but it is not recursive verifier execution."
             ),
             "why_not_nanozk_win": (
-                "The 11,041-byte native outer statement proof payload is JSON-serialized native "
-                "Stwo proof material, is a different object class, and is 1.600145x the NANOZK "
-                "paper-reported 6.9 KB row, so it must not be presented as a matched NANOZK "
-                "proof-size win or as stable binary proof-size accounting."
+                "The 3,516-byte native outer statement proof payload is smaller than the NANOZK "
+                "paper-reported 6.9 KB row, but it is JSON-serialized native Stwo proof material "
+                "for a host-verified outer statement object. The object class is different, so it "
+                "must not be presented as a matched NANOZK proof-size win or as stable binary "
+                "proof-size accounting."
             ),
             "next_backend_step": (
                 "Replace host-verified result binding with native Stwo verifier-execution constraints "
