@@ -796,14 +796,8 @@ def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_p
             temps.append(temp)
             replace_temp(temp, path, label)
             replaced.append(path)
-        for _temp_path, temp_name, parent_fd, _identity in temps:
-            try:
-                os.unlink(temp_name, dir_fd=parent_fd)
-                os.fsync(parent_fd)
-            except FileNotFoundError:
-                pass
-            finally:
-                os.close(parent_fd)
+        for _temp_path, _temp_name, parent_fd, _identity in temps:
+            os.close(parent_fd)
     except Exception as err:  # noqa: BLE001 - wrap write failures with rollback diagnostics.
         write_error = err
     if write_error is not None:
