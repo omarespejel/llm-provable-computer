@@ -184,6 +184,29 @@ fn read_bounded_utf8(path: &Path, max_bytes: usize, label: &str) -> Result<Strin
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
+    let preflight_metadata = fs::symlink_metadata(path)
+        .map_err(|error| format!("failed to stat {} {}: {error}", label, path.display()))?;
+    if preflight_metadata.file_type().is_symlink() {
+        return Err(format!(
+            "{} {} is a symlink, expected a regular file",
+            label,
+            path.display()
+        ));
+    }
+    if !preflight_metadata.is_file() {
+        return Err(format!(
+            "{} {} is not a regular file",
+            label,
+            path.display()
+        ));
+    }
+    if preflight_metadata.len() > max_bytes as u64 {
+        return Err(format!(
+            "{label} exceeds max size: got {} bytes, limit {} bytes",
+            preflight_metadata.len(),
+            max_bytes
+        ));
+    }
     let file = fs::File::open(path)
         .map_err(|error| format!("failed to open {} {}: {error}", label, path.display()))?;
     let metadata = file.metadata().map_err(|error| {
@@ -195,14 +218,14 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
     })?;
     if !metadata.is_file() {
         return Err(format!(
-            "{} {} is not a regular file",
+            "{} {} is not a regular file after open",
             label,
             path.display()
         ));
     }
     if metadata.len() > max_bytes as u64 {
         return Err(format!(
-            "{label} exceeds max size: got {} bytes, limit {} bytes",
+            "{label} exceeds max size after open: got {} bytes, limit {} bytes",
             metadata.len(),
             max_bytes
         ));
@@ -277,19 +300,38 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
 fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
     match fs::rename(tmp_path, path) {
         Ok(()) => Ok(()),
-        Err(first_error)
-            if path.try_exists().unwrap_or(false)
-                && matches!(
-                    first_error.kind(),
-                    std::io::ErrorKind::AlreadyExists | std::io::ErrorKind::PermissionDenied
-                ) =>
-        {
-            publish_temp_file_with_backup(tmp_path, path, label, first_error)
-        }
-        Err(error) => {
+        Err(first_error) => {
+            if matches!(
+                first_error.kind(),
+                std::io::ErrorKind::AlreadyExists | std::io::ErrorKind::PermissionDenied
+            ) {
+                match path.try_exists() {
+                    Ok(true) => {
+                        return publish_temp_file_with_backup(tmp_path, path, label, first_error);
+                    }
+                    Ok(false) => {
+                        return fs::rename(tmp_path, path).map_err(|retry_error| {
+                            let _ = fs::remove_file(tmp_path);
+                            format!(
+                                "failed to publish {} {} after destination disappeared following publish error {first_error}: retry error {retry_error}",
+                                label,
+                                path.display()
+                            )
+                        });
+                    }
+                    Err(exists_error) => {
+                        let _ = fs::remove_file(tmp_path);
+                        return Err(format!(
+                            "failed to inspect destination {} {} after publish error {first_error}: {exists_error}",
+                            label,
+                            path.display()
+                        ));
+                    }
+                }
+            }
             let _ = fs::remove_file(tmp_path);
             Err(format!(
-                "failed to publish {} {}: {error}",
+                "failed to publish {} {}: {first_error}",
                 label,
                 path.display()
             ))
