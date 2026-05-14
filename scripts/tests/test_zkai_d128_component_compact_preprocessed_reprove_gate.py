@@ -129,6 +129,19 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact record counts drift"):
             gate.build_payload(summary, prior_budget(), include_mutations=False)
 
+    def test_rejects_duplicate_or_unexpected_accounting_rows(self):
+        summary = cli_summary()
+        summary["rows"].append(copy.deepcopy(summary["rows"][0]))
+        with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "duplicate accounting row"):
+            gate.build_payload(summary, prior_budget(), include_mutations=False)
+
+        summary = cli_summary()
+        extra = copy.deepcopy(summary["rows"][0])
+        extra["evidence_relative_path"] = "unexpected-envelope.json"
+        summary["rows"].append(extra)
+        with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "accounting row set drift"):
+            gate.build_payload(summary, prior_budget(), include_mutations=False)
+
     def test_rejects_envelope_size_drift(self):
         with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "compact envelope JSON size drift"):
             gate.build_payload(
@@ -145,6 +158,15 @@ class D128CompactPreprocessedReproveGateTests(unittest.TestCase):
         payload["payload_commitment"] = gate.payload_commitment(payload)
         with self.assertRaises(gate.CompactPreprocessedGateError):
             gate.validate_payload(payload, summary, prior_budget(), allow_missing_mutation_summary=True)
+
+    def test_rejects_mutation_case_content_tamper(self):
+        summary = cli_summary()
+        budget = prior_budget()
+        payload = gate.build_payload(summary, budget)
+        payload["mutation_cases"][0]["error"] = "tampered while counts stay fixed"
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        with self.assertRaisesRegex(gate.CompactPreprocessedGateError, "mutation case evidence drift"):
+            gate.validate_payload(payload, summary, budget)
 
 
 if __name__ == "__main__":

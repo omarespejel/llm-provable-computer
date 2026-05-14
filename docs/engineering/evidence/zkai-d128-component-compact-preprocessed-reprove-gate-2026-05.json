@@ -394,7 +394,7 @@
       "rejected": true
     },
     {
-      "error": "payload drift from checked accounting summary",
+      "error": "payload commitment mismatch",
       "name": "payload_commitment_relabeling",
       "rejected": true
     },
@@ -418,7 +418,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:eb212327d4a56395831b26d4890402e8a4dccae3ddc4f48e861278c3026a88f9",
+  "payload_commitment": "sha256:8f9736064455c0d788050f16a1f7711643ec73305e36e055f349a3a39222cece",
   "question": "Can the selected public d128 RMSNorm and projection-bridge relations be reproven with preprocessed public columns instead of duplicated public trace columns, while preserving statement binding and local verification?",
   "result": "GO_BELOW_NANOZK_REPORTED_ROW_UNDER_LOCAL_TYPED_ACCOUNTING_WITH_STRICT_NON_CLAIMS",
   "route_id": "native_stwo_d128_component_compact_preprocessed_two_slice_reprove",

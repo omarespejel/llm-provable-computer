@@ -247,8 +247,7 @@ def rounded_ratio(numerator: int, denominator: int) -> float:
 
 def payload_commitment(payload: dict[str, Any]) -> str:
     canonical = copy.deepcopy(payload)
-    for key in ("payload_commitment", "mutation_cases", "mutations_checked", "mutations_rejected", "all_mutations_rejected"):
-        canonical.pop(key, None)
+    canonical.pop("payload_commitment", None)
     raw = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
@@ -343,6 +342,8 @@ def row_by_relative_path(cli_summary: dict[str, Any]) -> dict[str, dict[str, Any
     for row in rows:
         row_dict = require_dict(row, "cli row")
         path = require_str(row_dict.get("evidence_relative_path"), "evidence_relative_path")
+        if path in out:
+            raise CompactPreprocessedGateError(f"duplicate accounting row for {path}")
         out[path] = row_dict
     return out
 
@@ -375,6 +376,9 @@ def validate_accounting_summary(cli_summary: dict[str, Any]) -> tuple[dict[str, 
         raise CompactPreprocessedGateError("safety policy drift")
 
     by_path = row_by_relative_path(cli_summary)
+    expected_paths = {EXPECTED_COMPACT_ROLE["path"], EXPECTED_BASELINE_ROLE["path"]}
+    if set(by_path) != expected_paths:
+        raise CompactPreprocessedGateError("accounting row set drift")
     compact = require_dict(by_path.get(EXPECTED_COMPACT_ROLE["path"]), "compact accounting row")
     baseline = require_dict(by_path.get(EXPECTED_BASELINE_ROLE["path"]), "baseline accounting row")
     validate_role(compact, EXPECTED_COMPACT_ROLE, COMPACT_PROOF_JSON_BYTES, COMPACT_LOCAL_TYPED_BYTES)
@@ -483,6 +487,8 @@ def validate_payload(
     mutation_present = any(field in comparable for field in mutation_fields)
     for field in mutation_fields:
         comparable.pop(field, None)
+    comparable.pop("payload_commitment", None)
+    expected.pop("payload_commitment", None)
     if comparable != expected:
         raise CompactPreprocessedGateError("payload drift from checked accounting summary")
     if payload.get("payload_commitment") != payload_commitment(payload):
@@ -490,6 +496,9 @@ def validate_payload(
     if not allow_missing_mutation_summary and not mutation_present:
         raise CompactPreprocessedGateError("mutation summary missing")
     if mutation_present:
+        mutation_cases = require_list(payload.get("mutation_cases"), "mutation_cases")
+        if mutation_cases != run_mutations(expected, cli_summary, prior_budget):
+            raise CompactPreprocessedGateError("mutation case evidence drift")
         if payload.get("mutations_checked") != len(MUTATION_NAMES):
             raise CompactPreprocessedGateError("mutation count drift")
         if payload.get("mutations_rejected") != len(MUTATION_NAMES):

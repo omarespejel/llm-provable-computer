@@ -105,6 +105,15 @@ evidence.`
 - Not full transformer inference.
 - Not production-ready zkML.
 
+## Reproducibility Metadata
+
+- Backend binary/version: `zkai_d128_component_native_two_slice_reprove` with
+  `stwo-d128-component-native-two-slice-compact-preprocessed-reprove-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: `2` selected d128 components, `256` checked rows, width
+  `128`, selected slices `rmsnorm_public_rows` and
+  `rmsnorm_projection_bridge`.
+
 ## Evidence
 
 - Input:
