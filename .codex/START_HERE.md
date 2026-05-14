@@ -84,8 +84,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 78. `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`
 79. `docs/engineering/zkai-attention-derived-d128-outer-proof-route-2026-05-13.md`
 80. `docs/engineering/zkai-attention-derived-d128-snark-statement-receipt-2026-05-14.md`
-81. `docs/engineering/reproducibility.md`
-82. `git status --short --branch`
+81. `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`
+82. `docs/engineering/reproducibility.md`
+83. `git status --short --branch`
 
 ## What this repository is now
 

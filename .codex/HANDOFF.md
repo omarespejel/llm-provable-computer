@@ -754,6 +754,16 @@ Tablero boundary.
   input contract, not verification of the six Stwo slice proofs inside Groth16,
   not recursion/PCD, and not the missing STARK-native outer proof backend. See
   `docs/engineering/zkai-attention-derived-d128-snark-statement-receipt-2026-05-14.md`.
+- The executable one-block package-accounting gate now compares the
+  attention-derived source statement-chain artifact against the compressed
+  transcript plus external receipt artifacts. The source statement chain is
+  `14,624` bytes; compressed transcript + proof + public signals is `4,752`
+  bytes (`0.324945x`, saving `9,872` bytes); including the reusable
+  verification key is `10,608` bytes (`0.725383x`, saving `4,016` bytes).
+  The gate rejects `12 / 12` package-accounting mutations and remains a no-go
+  for native block proof-size evidence, recursion, timing, production setup, or
+  matched competitor benchmarking. See
+  `docs/engineering/zkai-one-block-executable-package-accounting-2026-05-14.md`.
 
 ## Source-of-truth documents
 
