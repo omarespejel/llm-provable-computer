@@ -374,12 +374,15 @@ fn publish_temp_file_with_backup(
             Ok(())
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            let _ = fs::remove_file(tmp_path);
-            Err(format!(
-                "failed to publish {} {} because destination disappeared after overwrite error {first_error}: {error}",
-                label,
-                path.display()
-            ))
+            fs::rename(tmp_path, path).map_err(|recovery_error| {
+                let _ = fs::remove_file(tmp_path);
+                format!(
+                    "failed to recover publish for {} {} after destination disappeared while backing up to {} following overwrite error {first_error}: backup error {error}; recovery error {recovery_error}",
+                    label,
+                    path.display(),
+                    backup_path.display()
+                )
+            })
         }
         Err(error) => {
             let _ = fs::remove_file(tmp_path);
