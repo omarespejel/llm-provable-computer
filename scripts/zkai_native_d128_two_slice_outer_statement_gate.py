@@ -390,6 +390,10 @@ def mutations() -> list[Mutation]:
     return [
         ("proof_backend_relabelled", lambda e: e.update({"proof_backend": "Groth16"})),
         ("proof_backend_version_drift", lambda e: e.update({"proof_backend_version": "stwo-drift"})),
+        (
+            "proof_backend_version_relabelled_as_uncompressed_v1",
+            lambda e: e.update({"proof_backend_version": "stwo-d128-two-slice-outer-statement-air-proof-v1"}),
+        ),
         ("statement_version_drift", lambda e: e.update({"statement_version": "zkai-drift"})),
         ("semantic_scope_drift", lambda e: e.update({"semantic_scope": "native_verifier_execution"})),
         ("envelope_unknown_top_level_key", lambda e: e.update({"unexpected_claim": "native verifier execution"})),
@@ -414,6 +418,14 @@ def mutations() -> list[Mutation]:
         ("target_commitment_drift", lambda e: e["input"].update({"two_slice_target_commitment": "blake2b-256:" + "bb" * 32})),
         ("accumulator_commitment_drift", lambda e: e["input"].update({"accumulator_commitment": "blake2b-256:" + "cc" * 32})),
         ("verifier_handle_commitment_drift", lambda e: e["input"].update({"accumulator_verifier_handle_commitment": "blake2b-256:" + "dd" * 32})),
+        (
+            "compressed_public_instance_commitment_drift",
+            lambda e: e["input"].update({"public_instance_commitment": "blake2b-256:" + "11" * 32}),
+        ),
+        (
+            "compressed_proof_native_parameter_commitment_drift",
+            lambda e: e["input"].update({"proof_native_parameter_commitment": "blake2b-256:" + "22" * 32}),
+        ),
         ("selected_slice_ids_reordered", lambda e: e["input"].update({"selected_slice_ids": list(reversed(e["input"]["selected_slice_ids"]))})),
         ("row_source_hash_drift", lambda e: e["input"]["rows"][0].update({"source_payload_sha256": "ee" * 32})),
         ("row_proof_backend_version_drift", lambda e: e["input"]["rows"][1].update({"proof_backend_version": "stwo-drift"})),
