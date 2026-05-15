@@ -82,6 +82,12 @@ persists across a fuller block surface.
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json`
 - fused envelope:
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`
+- gate/value comparator input:
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`
+- gate/value comparator envelope:
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json`
+- activation input:
+  `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json`
 - activation envelope:
   `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json`
 - binary accounting:
@@ -126,4 +132,5 @@ python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_fused_gat
 cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib
 git diff --check
 just gate-fast
+just gate
 ```

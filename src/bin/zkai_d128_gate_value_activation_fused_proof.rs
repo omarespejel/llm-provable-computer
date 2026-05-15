@@ -241,7 +241,8 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), String> {
     let parent = path
         .parent()
-        .ok_or_else(|| format!("{label} output has no parent: {}", path.display()))?;
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)
         .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
     let unique = SystemTime::now()

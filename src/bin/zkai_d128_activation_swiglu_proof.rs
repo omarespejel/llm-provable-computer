@@ -189,9 +189,12 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), String> {
     let parent = path
         .parent()
-        .ok_or_else(|| format!("{label} output has no parent: {}", path.display()))?;
-    fs::create_dir_all(parent)
-        .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+        .filter(|parent| !parent.as_os_str().is_empty());
+    if let Some(parent) = parent {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+    }
+    let parent = parent.unwrap_or_else(|| Path::new("."));
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|error| format!("system clock before UNIX_EPOCH: {error}"))?

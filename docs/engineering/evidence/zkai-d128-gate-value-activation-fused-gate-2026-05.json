@@ -197,7 +197,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:3742a2d4127fe221a3c78e506818337473dc72938da53ee716904baa2b10b924",
+  "payload_commitment": "sha256:cb3574617cf50b3ceeb9ff0ea691d64bd61d2e58148a573a1f2ab5c1f0475459",
   "question": "Can a native Stwo proof over adjacent d128 gate/value and activation/SwiGLU components share proof plumbing and beat the two separate native proof objects?",
   "result": "GO_FUSED_ADJACENT_DENSE_ACTIVATION_SAVES_5520_TYPED_BYTES",
   "roles": {
@@ -210,7 +210,7 @@
       "statement_version": "zkai-d128-activation-swiglu-statement-v1"
     },
     "zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json": {
-      "envelope_json_size_bytes": 565359,
+      "envelope_json_size_bytes": 565378,
       "local_typed_bytes": 17760,
       "proof_backend_version": "stwo-d128-gate-value-activation-fused-air-proof-v1",
       "proof_json_size_bytes": 62865,
@@ -238,6 +238,7 @@
     "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_fused_gate",
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

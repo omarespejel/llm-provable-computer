@@ -104,6 +104,9 @@ Reproducibility metadata:
 - Evidence paths:
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json`,
   `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json`,
