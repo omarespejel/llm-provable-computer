@@ -6,6 +6,7 @@ import os
 import pathlib
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -144,10 +145,25 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             )
             redirected = tmp_path / "redirected.txt"
             redirected.write_text("do-not-touch", encoding="utf-8")
-            old_tmp.symlink_to(redirected)
+            try:
+                old_tmp.symlink_to(redirected)
+            except OSError as err:
+                self.skipTest(f"symlink creation unavailable: {err}")
             GATE.atomic_write(target, text)
             self.assertEqual(redirected.read_text(encoding="utf-8"), "do-not-touch")
             self.assertEqual(target.read_text(encoding="utf-8"), text)
+
+    def test_atomic_write_cleanup_does_not_mask_replace_error(self) -> None:
+        tmp_root = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=tmp_root) as tmp:
+            target = pathlib.Path(tmp) / "native-mlp-route.json"
+            text = GATE.pretty_json(self.payload) + "\n"
+            with (
+                mock.patch.object(GATE.os, "replace", side_effect=RuntimeError("replace failed")),
+                mock.patch.object(GATE.pathlib.Path, "unlink", side_effect=OSError("cleanup failed")),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "replace failed"):
+                    GATE.atomic_write(target, text)
 
 
 if __name__ == "__main__":

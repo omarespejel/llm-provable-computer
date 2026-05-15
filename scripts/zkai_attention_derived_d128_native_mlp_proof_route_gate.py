@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import csv
 import hashlib
@@ -657,9 +658,11 @@ def atomic_write(path: pathlib.Path, text: str) -> None:
         os.replace(tmp, path)
     except Exception:
         if fd is not None:
-            os.close(fd)
+            with contextlib.suppress(OSError):
+                os.close(fd)
         if tmp is not None:
-            tmp.unlink(missing_ok=True)
+            with contextlib.suppress(OSError):
+                tmp.unlink(missing_ok=True)
         raise
 
 
