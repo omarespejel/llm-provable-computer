@@ -1,4 +1,5 @@
 import copy
+import tempfile
 import unittest
 from unittest import mock
 
@@ -53,6 +54,17 @@ class GateValueActivationFusedGateTests(unittest.TestCase):
         expected = gate.EXPECTED_ROLES[gate.FUSED_ENVELOPE_PATH.name]
         with self.assertRaises(gate.FusedGateError):
             gate.validate_envelope(gate.EVIDENCE_DIR / "__missing_d128_fused_envelope.json", expected)
+
+    def test_atomic_output_rejects_symlink(self) -> None:
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            temp_path = gate.pathlib.Path(temp_dir)
+            target = temp_path / "target.json"
+            link = temp_path / "out.json"
+            target.write_text("{}", encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaises(gate.FusedGateError):
+                gate.write_json(link, payload)
 
 
 if __name__ == "__main__":
