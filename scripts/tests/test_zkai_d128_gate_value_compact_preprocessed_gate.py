@@ -220,6 +220,12 @@ class D128GateValueCompactPreprocessedGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.GateValueCompactGateError, "record item size drift"):
             build_payload(summary, include_mutations=False)
 
+    def test_rejects_record_scalar_kind_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["local_binary_accounting"]["records"][0]["scalar_kind"] = "secure_field"
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "record scalar kind drift"):
+            build_payload(summary, include_mutations=False)
+
     def test_rejects_record_total_bytes_drift(self):
         summary = cli_summary()
         summary["rows"][0]["local_binary_accounting"]["records"][0]["total_bytes"] += 1
