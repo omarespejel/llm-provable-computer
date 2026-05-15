@@ -237,7 +237,10 @@ def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
         raise FusedGateError(f"failed to stat {label}: {err}") from err
     if not stat.S_ISREG(pre.st_mode):
         raise FusedGateError(f"{label} is not a regular file: {path}")
-    fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError as err:
+        raise FusedGateError(f"failed to open {label}: {err}") from err
     try:
         post = os.fstat(fd)
         if (pre.st_dev, pre.st_ino) != (post.st_dev, post.st_ino):
@@ -296,7 +299,11 @@ def validate_accounting_row(row: dict[str, Any], expected: dict[str, Any]) -> No
 
 
 def validate_envelope(path: pathlib.Path, expected: dict[str, Any]) -> dict[str, Any]:
-    if path.stat().st_size != expected["envelope_json_size_bytes"]:
+    try:
+        envelope_size = path.stat().st_size
+    except OSError as err:
+        raise FusedGateError(f"failed to stat {expected['role']} envelope: {err}") from err
+    if envelope_size != expected["envelope_json_size_bytes"]:
         raise FusedGateError(f"{expected['role']} envelope byte-size drift")
     envelope = require_dict(read_json(path, 16 * 1024 * 1024, expected["role"]), expected["role"])
     if envelope.get("proof_backend_version") != expected["proof_backend_version"]:
