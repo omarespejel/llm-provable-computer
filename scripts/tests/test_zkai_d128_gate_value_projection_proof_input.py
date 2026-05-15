@@ -114,6 +114,19 @@ class ZkAiD128GateValueProjectionProofInputTests(unittest.TestCase):
         payload.pop("source_bridge_statement_commitment")
         payload.pop("source_bridge_public_instance_commitment")
         GATE_VALUE.validate_payload(payload)
+        self.assertEqual(
+            payload["source_bridge_statement_commitment"],
+            GATE_VALUE.SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["source_bridge_public_instance_commitment"],
+            GATE_VALUE.SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        )
+        rows = GATE_VALUE.rows_for_tsv(payload, validated=True)
+        self.assertEqual(
+            rows[0]["source_bridge_statement_commitment"],
+            GATE_VALUE.SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+        )
 
     def test_legacy_payload_shape_rejects_non_synthetic_projection_anchor(self) -> None:
         bridge = GATE_VALUE.load_bridge(
