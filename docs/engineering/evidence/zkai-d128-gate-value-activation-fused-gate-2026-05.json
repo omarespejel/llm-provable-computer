@@ -1,0 +1,243 @@
+{
+  "aggregate": {
+    "activation_row_count": 512,
+    "comparison_status": "fused_adjacent_native_proof_saves_typed_bytes_vs_separate_objects",
+    "fused_local_typed_bytes": 17760,
+    "fused_proof_json_size_bytes": 62865,
+    "gate_value_row_count": 131072,
+    "json_ratio_vs_separate": 0.763119,
+    "json_saving_ratio_vs_separate": 0.236881,
+    "json_saving_vs_separate_bytes": 19514,
+    "profiles_checked": 1,
+    "separate_local_typed_bytes": 23280,
+    "separate_proof_json_size_bytes": 82379,
+    "typed_ratio_vs_separate": 0.762887,
+    "typed_saving_ratio_vs_separate": 0.237113,
+    "typed_saving_vs_separate_bytes": 5520
+  },
+  "claim_boundary": "FUSED_D128_GATE_VALUE_PLUS_ACTIVATION_SAVES_TYPED_PROOF_BYTES_VS_SEPARATE_NATIVE_OBJECTS_NOT_A_FULL_BLOCK_PROOF_NOT_A_NANOZK_BENCHMARK",
+  "decision": "GO_D128_GATE_VALUE_ACTIVATION_FUSED_TYPED_PROOF_SAVING",
+  "evidence": {
+    "accounting_json": "docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json",
+    "activation_envelope": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
+    "fused_envelope": "docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json",
+    "gate_value_envelope": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json"
+  },
+  "first_blocker": "The fused proof saves typed bytes against the two separate native proof objects, but it still covers only gate/value plus activation/SwiGLU, not the full d128 transformer block and not a matched NANOZK workload.",
+  "grouped_breakdown": {
+    "fused_gate_value_activation": {
+      "fixed_overhead": 48,
+      "fri_decommitments": 11328,
+      "fri_samples": 752,
+      "oods_samples": 640,
+      "queries_values": 480,
+      "trace_decommitments": 4512
+    },
+    "separate_activation_swiglu": {
+      "fixed_overhead": 48,
+      "fri_decommitments": 3232,
+      "fri_samples": 416,
+      "oods_samples": 416,
+      "queries_values": 312,
+      "trace_decommitments": 2496
+    },
+    "separate_gate_value": {
+      "fixed_overhead": 48,
+      "fri_decommitments": 10656,
+      "fri_samples": 720,
+      "oods_samples": 352,
+      "queries_values": 264,
+      "trace_decommitments": 4320
+    }
+  },
+  "grouped_delta_vs_separate_bytes": {
+    "fixed_overhead": -48,
+    "fri_decommitments": -2560,
+    "fri_samples": -384,
+    "oods_samples": -128,
+    "queries_values": -96,
+    "trace_decommitments": -2304
+  },
+  "mechanism": [
+    "gate/value projection and activation/SwiGLU are proved as two components inside one native Stwo proof",
+    "the fused proof commits one shared preprocessed tree and one shared base tree for both adjacent components",
+    "the source handoff is explicit: activation source commitments and vectors must match the gate/value output",
+    "the saving is mostly shared FRI and Merkle decommitment plumbing, not a JSON formatting effect",
+    "the same publication-v1 PCS profile is used; no verifier query weakening is claimed"
+  ],
+  "mutation_inventory": {
+    "all_mutations_rejected": true,
+    "case_count": 18,
+    "cases": [
+      "schema_relabeling",
+      "decision_overclaim",
+      "result_overclaim",
+      "claim_boundary_overclaim",
+      "fused_typed_metric_smuggling",
+      "separate_typed_metric_smuggling",
+      "typed_saving_metric_smuggling",
+      "typed_ratio_metric_smuggling",
+      "json_saving_metric_smuggling",
+      "comparison_status_overclaim",
+      "grouped_delta_smuggling",
+      "role_backend_version_relabeling",
+      "non_claim_removed",
+      "mechanism_removed",
+      "first_blocker_removed",
+      "validation_command_drift",
+      "payload_commitment_relabeling",
+      "unknown_field_injection"
+    ]
+  },
+  "mutation_result": {
+    "all_mutations_rejected": true,
+    "case_count": 18,
+    "cases": [
+      {
+        "error": "schema drift",
+        "name": "schema_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "decision drift",
+        "name": "decision_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "result drift",
+        "name": "result_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "claim_boundary drift",
+        "name": "claim_boundary_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "fused_typed_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "separate_typed_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "typed_saving_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "typed_ratio_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "json_saving_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "comparison_status_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "grouped delta mismatch",
+        "name": "grouped_delta_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "roles mismatch",
+        "name": "role_backend_version_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "non-claims mismatch",
+        "name": "non_claim_removed",
+        "rejected": true
+      },
+      {
+        "error": "mechanism mismatch",
+        "name": "mechanism_removed",
+        "rejected": true
+      },
+      {
+        "error": "first_blocker drift",
+        "name": "first_blocker_removed",
+        "rejected": true
+      },
+      {
+        "error": "validation commands mismatch",
+        "name": "validation_command_drift",
+        "rejected": true
+      },
+      {
+        "error": "payload commitment mismatch",
+        "name": "payload_commitment_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "payload keys drift: ['mutation_result', 'unexpected']",
+        "name": "unknown_field_injection",
+        "rejected": true
+      }
+    ]
+  },
+  "next_research_step": "extend the fusion probe to include down-projection or a lookup-heavy sidecar, then check whether the saving persists across the fuller block surface",
+  "non_claims": [
+    "not a full d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not recursion or proof-carrying data",
+    "not private parameter-opening proof",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:3742a2d4127fe221a3c78e506818337473dc72938da53ee716904baa2b10b924",
+  "question": "Can a native Stwo proof over adjacent d128 gate/value and activation/SwiGLU components share proof plumbing and beat the two separate native proof objects?",
+  "result": "GO_FUSED_ADJACENT_DENSE_ACTIVATION_SAVES_5520_TYPED_BYTES",
+  "roles": {
+    "zkai-d128-activation-swiglu-proof-2026-05.envelope.json": {
+      "envelope_json_size_bytes": 226819,
+      "local_typed_bytes": 6920,
+      "proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+      "proof_json_size_bytes": 24449,
+      "role": "separate_activation_swiglu",
+      "statement_version": "zkai-d128-activation-swiglu-statement-v1"
+    },
+    "zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json": {
+      "envelope_json_size_bytes": 565359,
+      "local_typed_bytes": 17760,
+      "proof_backend_version": "stwo-d128-gate-value-activation-fused-air-proof-v1",
+      "proof_json_size_bytes": 62865,
+      "role": "fused_gate_value_activation",
+      "statement_version": "zkai-d128-gate-value-activation-fused-statement-v1"
+    },
+    "zkai-d128-gate-value-projection-proof-2026-05.envelope.json": {
+      "envelope_json_size_bytes": 483523,
+      "local_typed_bytes": 16360,
+      "proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
+      "proof_json_size_bytes": 57930,
+      "role": "separate_gate_value",
+      "statement_version": "zkai-d128-gate-value-projection-statement-v1"
+    }
+  },
+  "route_id": "native_stwo_d128_gate_value_projection_plus_activation_swiglu_fused",
+  "schema": "zkai-d128-gate-value-activation-fused-gate-v1",
+  "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_fused_proof -- build-input docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_fused_proof -- prove docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json",
+    "python3 scripts/zkai_d128_gate_value_activation_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_fused_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
+    "git diff --check",
+    "just gate-fast"
+  ]
+}

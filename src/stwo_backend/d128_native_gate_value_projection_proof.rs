@@ -19,7 +19,7 @@ use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
-use stwo::prover::{prove, CommitmentSchemeProver};
+use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
 use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
@@ -1116,6 +1116,18 @@ fn gate_value_component() -> FrameworkComponent<D128GateValueProjectionEval> {
     )
 }
 
+pub(super) fn zkai_d128_gate_value_projection_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        D128GateValueProjectionEval {
+            log_size: D128_GATE_VALUE_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
 fn compact_preprocessed_gate_value_component(
 ) -> FrameworkComponent<D128CompactPreprocessedGateValueProjectionEval> {
     FrameworkComponent::new(
@@ -1162,6 +1174,12 @@ fn gate_value_trace(
         .collect())
 }
 
+pub(super) fn zkai_d128_gate_value_projection_trace(
+    rows: &[D128GateValueProjectionMulRow],
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    gate_value_trace(rows)
+}
+
 fn compact_preprocessed_gate_value_anchor_trace(
     rows: &[D128GateValueProjectionMulRow],
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
@@ -1184,6 +1202,17 @@ fn compact_preprocessed_gate_value_anchor_trace(
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
     COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
+}
+
+pub(super) fn zkai_d128_gate_value_projection_preprocessed_column_ids() -> Vec<PreProcessedColumnId>
+{
+    preprocessed_column_ids()
+}
+
+pub(super) fn zkai_d128_gate_value_projection_rows(
+    input: &ZkAiD128GateValueProjectionProofInput,
+) -> Result<Vec<D128GateValueProjectionMulRow>> {
+    build_rows(&input.projection_input_q8)
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {

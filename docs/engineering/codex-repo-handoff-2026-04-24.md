@@ -1050,20 +1050,58 @@ Reproducibility metadata:
 - Gate command:
   `python3 scripts/zkai_d128_gate_value_compact_preprocessed_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.tsv`.
 
+Recent d128 adjacent-fusion result: the next scoped experiment after that
+NO-GO is positive. A single native Stwo proof now fuses d128 gate/value
+projection with activation/SwiGLU. It verifies locally and is smaller than the
+two separate native proof objects. Separate proof objects are `82,379` JSON
+proof bytes / `23,280` local typed bytes; the fused object is `62,865` JSON /
+`17,760` typed. The fused route saves `19,514` JSON bytes and `5,520` local
+typed proof-field bytes (`23.7113%`, ratio `0.762887x`). The checked grouped
+delta shows the saving is dominated by shared FRI and trace Merkle
+decommitment/opening plumbing. Treat this as evidence for adjacent
+STARK-native component fusion, not as a full d128 block proof or a NANOZK
+benchmark win.
+
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_gate_value_activation_fused_proof` with
+  `stwo-d128-gate-value-activation-fused-air-proof-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: d128 gate/value projection (`131,072` rows) plus
+  activation/SwiGLU (`512` rows), publication-v1 PCS profile.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv`.
+- Reproduce command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_d128_gate_value_activation_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv`.
+
 ## Next sensible moves
 
-1. Treat `compact_preprocessed_component_native_reprove` for the selected
+1. Treat `gate_value_activation_fused` as the current positive dense-adjacent
+   fusion result: the native fused proof saves `5,520` local typed bytes
+   (`23.7113%`) versus separate gate/value and activation proof objects. The
+   next attack is adding down-projection or a lookup-heavy sidecar, while
+   keeping the non-claim boundary strict.
+2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte
    component-native baseline and the earlier `12,688` typed-byte target. It is
    below NANOZK's paper-reported `6,900` byte row under local typed accounting,
    but the next attack is extending the mechanism to later d128 block relations
    without relabeling this selected public surface as a matched benchmark.
-2. Treat the family-matrix result as landed and lead with the growing-in-`N`
+3. Treat the family-matrix result as landed and lead with the growing-in-`N`
    curve shape rather than any one frontier ratio.
-3. Treat the `2x2` constant-surface explanation as landed and use follow-up
+4. Treat the `2x2` constant-surface explanation as landed and use follow-up
    issue `#257` only if a deeper replay-only decomposition still looks useful.
-4. Run the internal hardening packet before making stronger claims:
+5. Run the internal hardening packet before making stronger claims:
    - `scripts/run_tablero_formal_contract_suite.sh`
    - `scripts/run_tablero_hardening_preflight.sh --mode core`
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`

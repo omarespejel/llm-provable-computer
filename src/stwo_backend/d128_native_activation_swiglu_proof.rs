@@ -17,7 +17,7 @@ use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
-use stwo::prover::{prove, CommitmentSchemeProver};
+use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
 use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
@@ -821,6 +821,18 @@ fn activation_swiglu_component() -> FrameworkComponent<D128ActivationSwiGluEval>
     )
 }
 
+pub(super) fn zkai_d128_activation_swiglu_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        D128ActivationSwiGluEval {
+            log_size: D128_ACTIVATION_SWIGLU_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
 fn activation_swiglu_trace(
     input: &ZkAiD128ActivationSwiGluProofInput,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
@@ -859,8 +871,18 @@ fn activation_swiglu_trace(
         .collect())
 }
 
+pub(super) fn zkai_d128_activation_swiglu_trace(
+    input: &ZkAiD128ActivationSwiGluProofInput,
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    activation_swiglu_trace(input)
+}
+
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
     COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
+}
+
+pub(super) fn zkai_d128_activation_swiglu_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
+    preprocessed_column_ids()
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {

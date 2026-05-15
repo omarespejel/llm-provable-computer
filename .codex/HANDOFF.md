@@ -81,6 +81,39 @@ Reproducibility metadata:
 - Gate command:
   `python3 scripts/zkai_d128_gate_value_compact_preprocessed_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.tsv`.
 
+Recent d128 adjacent-fusion result: the next scoped experiment after that
+NO-GO is positive. A single native Stwo proof now fuses d128 gate/value
+projection with activation/SwiGLU. It verifies locally and is smaller than the
+two separate native proof objects. Separate proof objects are `82,379` JSON
+proof bytes / `23,280` local typed bytes; the fused object is `62,865` JSON /
+`17,760` typed. The fused route saves `19,514` JSON bytes and `5,520` local
+typed proof-field bytes (`23.7113%`, ratio `0.762887x`). The checked grouped
+delta shows the saving is dominated by shared FRI and trace Merkle
+decommitment/opening plumbing. Treat this as evidence for adjacent
+STARK-native component fusion, not as a full d128 block proof or a NANOZK
+benchmark win.
+
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_gate_value_activation_fused_proof` with
+  `stwo-d128-gate-value-activation-fused-air-proof-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: d128 gate/value projection (`131,072` rows) plus
+  activation/SwiGLU (`512` rows), publication-v1 PCS profile.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv`.
+- Reproduce command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_d128_gate_value_activation_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv`.
+
 ### Publication/default lane
 
 - Keep the current paper package and shipped default backend on the conservative carry-free route.
