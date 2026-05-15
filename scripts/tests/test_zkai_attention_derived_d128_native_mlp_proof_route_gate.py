@@ -45,6 +45,20 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         )
         self.assertFalse(self.payload["comparison"]["current_native_fused_proof_can_be_reused_for_derived_input"])
 
+    def test_binds_current_mlp_input_and_envelope_commitments(self) -> None:
+        comparison = self.payload["comparison"]
+        self.assertEqual(
+            comparison["current_mlp_fused_envelope_input_activation_commitment"],
+            comparison["current_mlp_input_activation_commitment"],
+        )
+        context = copy.deepcopy(self.context)
+        context["comparison"]["current_mlp_fused_envelope_input_activation_commitment"] = "blake2b-256:" + "55" * 32
+        with self.assertRaisesRegex(
+            GATE.NativeMlpProofRouteError,
+            "current MLP envelope/input activation commitment mismatch",
+        ):
+            GATE.build_core_payload(context)
+
     def test_only_first_component_is_currently_native_input_shape(self) -> None:
         rows = {row["component_id"]: row for row in self.payload["component_input_frontier"]}
         self.assertEqual(rows["rmsnorm_public_rows"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
@@ -106,7 +120,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertIn("\t5", tsv.splitlines()[1])
 
     def test_written_payload_round_trip(self) -> None:
-        tmp_root = ROOT / ".codex"
+        tmp_root = ROOT / "docs" / "engineering" / "evidence"
         with tempfile.TemporaryDirectory(dir=tmp_root) as tmp:
             json_path = pathlib.Path(tmp) / "native-mlp-route.json"
             tsv_path = pathlib.Path(tmp) / "native-mlp-route.tsv"

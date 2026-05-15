@@ -94,6 +94,8 @@ This gate records:
 
 ## Evidence
 
+- current MLP proof backend version:
+  `stwo-d128-rmsnorm-mlp-fused-air-proof-v1`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`
 - `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
