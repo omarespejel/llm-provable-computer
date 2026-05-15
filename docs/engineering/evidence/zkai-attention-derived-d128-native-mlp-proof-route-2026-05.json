@@ -155,18 +155,16 @@
         "value_projection_output_commitment": "blake2b-256:b63e4d4fd6f1c3ba867f4cce7c332deafa67f003d2208bbbe1013b075b7b4781"
       },
       "component_id": "gate_value_projection",
-      "decision": "GO_ATTENTION_DERIVED_D128_GATE_VALUE_PROJECTION_INPUT",
-      "decision_matches_native": false,
-      "missing_required_native_fields": [
-        "validation_commands"
-      ],
-      "native_component_input_status": "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT",
-      "payload_key": "gate_value_projection_payload",
+      "decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
+      "decision_matches_native": true,
+      "missing_required_native_fields": [],
+      "native_component_input_status": "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE",
+      "payload_key": "root",
       "required_native_decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
       "required_native_schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
-      "schema": "zkai-attention-derived-d128-gate-value-projection-input-v1",
-      "schema_matches_native": false,
-      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-projection-boundary-2026-05.json"
+      "schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
+      "schema_matches_native": true,
+      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
     },
     {
       "commitments": {
@@ -258,7 +256,7 @@
     }
   ],
   "decision": "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED",
-  "first_blocker": "the attention-derived gate/value projection slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
+  "first_blocker": "the attention-derived activation/SwiGLU slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
   "missing_native_artifacts": [
     {
       "exists": false,
@@ -305,7 +303,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:4dd92b0be11b1bffeb578433d6b4b820be8e026de439d3491537edf198bc8f32",
+  "payload_commitment": "sha256:0975502c8f3e4e839b263966f70a490e3b416a2332d8d07c52a50c3aa7f0528f",
   "result": "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED",
   "schema": "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1",
   "source_artifacts": [
@@ -326,6 +324,12 @@
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-down-projection-2026-05.json",
       "payload_sha256": "8f8d23b61d7dc3131826d9d54d4f5be5290c3905d1c89d62a83270bcc1bd27ae",
       "sha256": "ba445196546ffd68fc8e533731e4d7fdb36822e353de4a89c90c6cdc5b26818c"
+    },
+    {
+      "id": "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json",
+      "payload_sha256": "6644922e4e66bcf4ac099392039f5d819748254a941a201f55b46de56880f39f",
+      "sha256": "ba6912a0109e67f932f6d3348df21cd2796070e805d353082c990a985d241405"
     },
     {
       "id": "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05",
@@ -379,10 +383,10 @@
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
     "go_result": "GO for a value-connected attention-derived d128 statement chain",
     "missing_native_artifacts": 3,
-    "native_compatible_components": 2,
-    "native_incompatible_components": 4,
+    "native_compatible_components": 3,
+    "native_incompatible_components": 3,
     "no_go_result": "NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof today",
-    "route_commitment": "blake2b-256:1b7911db6f573a9a959f43fce3324c459c545a671d3a5f2a97b6f42e0eed5b2f",
+    "route_commitment": "blake2b-256:55ed7721ba2efde50c8021a56defded7e689982ab922ccda5ba5e635831cecf0",
     "row_ratio": 1.010374,
     "value_connected_chain_rows": 199553
   },

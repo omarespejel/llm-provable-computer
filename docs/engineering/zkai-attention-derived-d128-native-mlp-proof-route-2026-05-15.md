@@ -9,10 +9,10 @@ native RMSNorm-MLP fused proof.
 
 This is a route-classification result, not a rejection of the fusion thesis. The
 value-connected statement chain exists, and the current MLP-side native fused
-proof remains strong. The first downstream blocker has moved: the
-attention-derived RMSNorm-to-projection bridge is now a native component proof
-input, while gate/value projection is still only a checked statement-chain
-payload.
+proof remains strong. The first downstream blockers have moved: the
+attention-derived RMSNorm public-row payload, RMSNorm-to-projection bridge, and
+gate/value projection are now native component proof inputs. Activation/SwiGLU
+is still only a checked statement-chain payload.
 
 Decision:
 
@@ -44,28 +44,27 @@ derived chain.
 - current RMSNorm-MLP fused typed bytes: `24,832`
 - current six-separate typed bytes: `56,976`
 - current typed saving: `32,144` bytes, `56.4167%`
-- native-compatible attention-derived components today: `2 / 6`
-- native-incompatible attention-derived components today: `4 / 6`
+- native-compatible attention-derived components today: `3 / 6`
+- native-incompatible attention-derived components today: `3 / 6`
 - missing required native attention-derived proof artifacts: `3`
 - mutation gate: `13 / 13` mutations rejected
 
 ## First Blocker
 
-The derived RMSNorm public-row payload and RMSNorm-to-projection bridge now have
-the current native component input shape. The next blocker is gate/value
-projection: the fused proof builder still rejects the derived projection-input
-commitment:
+The derived RMSNorm public-row payload, RMSNorm-to-projection bridge, and
+gate/value projection now have the current native component input shape. The
+next blocker is activation/SwiGLU: the activation input is still pinned to the
+older synthetic gate/value output commitment:
 
-`blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba`
+`blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3`
 
-because the gate/value validator is pinned to the older synthetic projection
-input commitment:
+while the attention-derived native gate/value proof emits:
 
-`blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17`
+`blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`
 
-The downstream gate/value, activation, down-projection, and residual-add
-payloads are still statement-chain artifacts unless they are regenerated or
-parameterized as native component proof inputs.
+The downstream activation, down-projection, and residual-add payloads are still
+statement-chain artifacts unless they are regenerated or parameterized as native
+component proof inputs.
 
 The next real implementation step is to parameterize or regenerate those
 downstream inputs as native component proof inputs, then rerun the
@@ -111,6 +110,9 @@ This gate records:
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json`
 
@@ -120,6 +122,9 @@ This gate records:
 python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input
 cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend
+python3 scripts/zkai_d128_gate_value_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json
 python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv
 python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py
 python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate

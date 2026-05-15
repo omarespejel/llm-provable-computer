@@ -103,8 +103,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 97. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
 98. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
 99. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
-100. `docs/engineering/reproducibility.md`
-101. `git status --short --branch`
+100. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+101. `docs/engineering/reproducibility.md`
+102. `git status --short --branch`
 
 ## What this repository is now
 
@@ -144,11 +145,14 @@ This repository currently has three live lanes.
      `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
    - The attention-derived native MLP proof-route gate now narrows that next
      experiment: the value-connected d128 statement chain is a GO at `199,553`
-     rows, but only `1 / 6` derived slice payloads currently have the native
-     component input shape accepted by the RMSNorm-MLP fused proof builder. The
-     existing fused proof consumes the older synthetic input commitment, so it
-     must not be relabeled as attention-derived. See
-     `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
+     rows, and `3 / 6` derived slice payloads currently have the native
+     component input shape accepted by the downstream native verifiers. The
+     remaining first blocker is activation/SwiGLU, and the existing fused proof
+     consumes the older synthetic input commitment, so it must not be relabeled
+     as attention-derived. See
+     `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
+     and
+     `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the
@@ -614,17 +618,19 @@ This repository currently has three live lanes.
      current-vs-derived d128 input mismatch remains `127 / 128`. See
      `docs/engineering/zkai-attention-derived-d128-rmsnorm-public-row-2026-05-13.md`.
    - The same attention-derived lane now feeds the derived RMSNorm output into
-     a d128 projection boundary and deterministic gate/value projection input.
+     a native d128 gate/value projection input and proof object.
      The derived projection-input commitment is
      `blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba`;
      the derived gate/value projection output commitment is
      `blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2`;
-     the surface accounts for `131,072` gate/value multiplication rows and
-     rejects `12 / 12` local overclaim/binding mutations. This remains a NO-GO
-     for claiming existing d128 full-block consumption because the current
-     fixture mismatches `127 / 128` projection inputs and `512 / 512` gate and
-     value projection outputs. See
-     `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`.
+     the surface accounts for `131,072` gate/value multiplication rows, proves
+     a `64,651` byte native Stwo proof, verifies true, and moves the native
+     route frontier to `3 / 6`. This remains a NO-GO for claiming a regenerated
+     attention-derived RMSNorm-MLP fused proof because activation/SwiGLU still
+     consumes the older synthetic gate/value output commitment. See
+     `docs/engineering/zkai-attention-derived-d128-projection-boundary-2026-05-13.md`
+     and
+     `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`.
    - The d128 lane now has receipt-composition, range-policy-bound full-block
      public inputs, two-slice accumulator, full-block accumulator, and
      proof-native two-slice transcript-compression GO results, plus checked

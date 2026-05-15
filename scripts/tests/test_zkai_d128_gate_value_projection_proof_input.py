@@ -30,6 +30,11 @@ class ZkAiD128GateValueProjectionProofInputTests(unittest.TestCase):
         self.assertEqual(payload["row_count"], 2 * GATE_VALUE.FF_DIM * GATE_VALUE.WIDTH)
         self.assertEqual(len(payload["projection_input_q8"]), GATE_VALUE.WIDTH)
         self.assertEqual(payload["source_projection_input_row_commitment"], GATE_VALUE.PROJECTION_INPUT_ROW_COMMITMENT)
+        self.assertEqual(payload["source_bridge_statement_commitment"], GATE_VALUE.SOURCE_BRIDGE_STATEMENT_COMMITMENT)
+        self.assertEqual(
+            payload["source_bridge_public_instance_commitment"],
+            GATE_VALUE.SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        )
         self.assertEqual(payload["gate_matrix_root"], GATE_VALUE.GATE_MATRIX_ROOT)
         self.assertEqual(payload["value_matrix_root"], GATE_VALUE.VALUE_MATRIX_ROOT)
         self.assertNotEqual(payload["gate_value_projection_output_commitment"], GATE_VALUE.OUTPUT_ACTIVATION_COMMITMENT)
@@ -51,8 +56,58 @@ class ZkAiD128GateValueProjectionProofInputTests(unittest.TestCase):
     def test_payload_rejects_source_bridge_projection_commitment_drift(self) -> None:
         bridge = copy.deepcopy(GATE_VALUE.load_bridge())
         bridge["projection_input_row_commitment"] = "blake2b-256:" + "66" * 32
-        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "projection_input_row_commitment"):
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "source anchor"):
             GATE_VALUE.build_payload(bridge)
+
+    def test_payload_builds_from_attention_derived_bridge(self) -> None:
+        bridge = GATE_VALUE.load_bridge(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+        )
+        payload = GATE_VALUE.build_payload(bridge)
+        GATE_VALUE.validate_payload(payload)
+        self.assertEqual(
+            payload["source_projection_input_row_commitment"],
+            GATE_VALUE.DERIVED_PROJECTION_INPUT_ROW_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["source_bridge_statement_commitment"],
+            GATE_VALUE.DERIVED_BRIDGE_STATEMENT_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["source_bridge_public_instance_commitment"],
+            GATE_VALUE.DERIVED_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        )
+        self.assertEqual(payload["validation_commands"], GATE_VALUE.DERIVED_VALIDATION_COMMANDS)
+        self.assertNotEqual(payload["gate_projection_output_commitment"], GATE_VALUE.GATE_PROJECTION_OUTPUT_COMMITMENT)
+        self.assertNotEqual(
+            payload["gate_value_projection_output_commitment"],
+            GATE_VALUE.GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        )
+
+    def test_payload_rejects_unapproved_self_consistent_bridge_anchor(self) -> None:
+        bridge = copy.deepcopy(
+            GATE_VALUE.load_bridge(
+                ROOT
+                / "docs"
+                / "engineering"
+                / "evidence"
+                / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+            )
+        )
+        bridge["statement_commitment"] = "blake2b-256:" + "12" * 32
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "source anchor"):
+            GATE_VALUE.build_payload(bridge)
+
+    def test_payload_rejects_source_bridge_statement_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_bridge_statement_commitment"] = GATE_VALUE.DERIVED_BRIDGE_STATEMENT_COMMITMENT
+        payload["validation_commands"] = GATE_VALUE.DERIVED_VALIDATION_COMMANDS
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "source anchor"):
+            GATE_VALUE.validate_payload(payload)
 
     def test_payload_rejects_projection_input_vector_drift(self) -> None:
         payload = self.fresh_payload()
