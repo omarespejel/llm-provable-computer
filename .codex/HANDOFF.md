@@ -1079,6 +1079,17 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
+Current strongest d128 fusion result: a four-component native Stwo proof now
+fuses gate/value projection, activation/SwiGLU, down-projection, and
+residual-add (`197,248` rows) into one proof object. The fused proof is
+`67,979` JSON proof bytes / `19,344` local typed proof-field bytes versus
+`156,495` JSON / `44,288` typed bytes for four separate native proof objects,
+saving `88,516` JSON bytes and `24,944` typed bytes (`56.3223%` typed saving,
+`0.436777x` typed ratio). The gate rejects `21 / 21` mutations. This is still
+not a full transformer block with RMSNorm native fusion, not attention plus MLP
+in one proof object, and not a NANOZK benchmark win. Evidence:
+`docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`.
+
 1. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte

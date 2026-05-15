@@ -1,0 +1,194 @@
+{
+  "aggregate": {
+    "activation_row_count": 512,
+    "comparison_status": "fused_four_component_native_proof_saves_typed_bytes_vs_separate_objects",
+    "down_projection_row_count": 65536,
+    "fused_local_typed_bytes": 19344,
+    "fused_proof_json_size_bytes": 67979,
+    "fused_total_row_count": 197248,
+    "gate_value_row_count": 131072,
+    "json_ratio_vs_separate": 0.434384,
+    "json_saving_ratio_vs_separate": 0.565616,
+    "json_saving_vs_separate_bytes": 88516,
+    "profiles_checked": 1,
+    "residual_add_row_count": 128,
+    "separate_local_typed_bytes": 44288,
+    "separate_proof_json_size_bytes": 156495,
+    "typed_ratio_vs_separate": 0.436777,
+    "typed_saving_ratio_vs_separate": 0.563223,
+    "typed_saving_vs_separate_bytes": 24944
+  },
+  "claim_boundary": "FUSED_D128_GATE_VALUE_PLUS_ACTIVATION_PLUS_DOWN_PROJECTION_PLUS_RESIDUAL_ADD_SAVES_TYPED_PROOF_BYTES_VS_FOUR_SEPARATE_NATIVE_OBJECTS_NOT_A_FULL_TRANSFORMER_BLOCK_NOT_A_NANOZK_BENCHMARK",
+  "decision": "GO_D128_GATE_VALUE_ACTIVATION_DOWN_RESIDUAL_FUSED_TYPED_PROOF_SAVING",
+  "evidence_paths": {
+    "accounting_json": "docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-binary-accounting-2026-05.json",
+    "activation_envelope": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
+    "down_projection_envelope": "docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json",
+    "fused_envelope": "docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json",
+    "gate_value_envelope": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json",
+    "residual_add_envelope": "docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.envelope.json"
+  },
+  "first_blocker": "The fused proof covers gate/value, activation/SwiGLU, down-projection, and residual-add, but still does not fuse RMSNorm or attention into the same native block object.",
+  "grouped_delta_bytes": {
+    "fixed_overhead": -144,
+    "fri_decommitments": -14272,
+    "fri_samples": -1408,
+    "oods_samples": -384,
+    "queries_values": -288,
+    "trace_decommitments": -8448
+  },
+  "mechanism": [
+    "gate/value, activation/SwiGLU, down-projection, and residual-add are proved as four components inside one native Stwo proof",
+    "the fused proof shares one preprocessed tree and one base tree across all four adjacent components",
+    "the source handoff is explicit from gate/value outputs to activation inputs and from activation hidden output to down-projection input",
+    "the residual-add handoff is explicit from down-projection residual deltas and remainders to residual-add inputs",
+    "the saving is dominated by shared FRI and trace Merkle opening/decommitment plumbing",
+    "the same publication-v1 PCS profile is used; no verifier query weakening is claimed"
+  ],
+  "mutation_rejections": {
+    "claim_boundary_overclaim": "rejected",
+    "comparison_status_overclaim": "rejected",
+    "decision_overclaim": "rejected",
+    "evidence_path_drift": "rejected",
+    "first_blocker_removed": "rejected",
+    "fused_typed_metric_smuggling": "rejected",
+    "grouped_delta_smuggling": "rejected",
+    "json_saving_metric_smuggling": "rejected",
+    "mechanism_removed": "rejected",
+    "non_claim_removed": "rejected",
+    "payload_commitment_relabeling": "rejected",
+    "residual_role_removed": "rejected",
+    "residual_row_metric_smuggling": "rejected",
+    "result_overclaim": "rejected",
+    "role_backend_version_relabeling": "rejected",
+    "schema_relabeling": "rejected",
+    "separate_typed_metric_smuggling": "rejected",
+    "typed_ratio_metric_smuggling": "rejected",
+    "typed_saving_metric_smuggling": "rejected",
+    "unknown_field_injection": "rejected",
+    "validation_command_drift": "rejected"
+  },
+  "next_research_step": "test whether adding RMSNorm or a lookup-heavy attention sidecar preserves the shared proof-plumbing saving",
+  "non_claims": [
+    "not a full transformer block with RMSNorm native fusion",
+    "not attention plus MLP in one proof object",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not recursion or proof-carrying data",
+    "not private parameter-opening proof",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:df77c3cac1175e654abe7e333953092161e807fe171230791c2c340647956709",
+  "question": "Does the adjacent native Stwo fusion saving survive through residual-add?",
+  "result": "GO_FOUR_COMPONENT_D128_FUSION_SAVES_24944_TYPED_BYTES",
+  "roles": [
+    {
+      "envelope_sha256": "561a659e35f6afbe5b59d38d2737ce7e378b35fcfed1b12f0d38f09fbacde2dd",
+      "grouped_typed_bytes": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 12128,
+        "fri_samples": 784,
+        "oods_samples": 960,
+        "queries_values": 720,
+        "trace_decommitments": 4704
+      },
+      "local_typed_bytes": 19344,
+      "path": "docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json",
+      "proof_backend_version": "stwo-d128-gate-value-activation-down-residual-fused-air-proof-v1",
+      "proof_json_size_bytes": 67979,
+      "proof_sha256": "09a04023c27cd0aca4a140dc642a75fc1d34d5782160dc58bdd535dd5284cdbc",
+      "role": "fused_gate_value_activation_down_residual",
+      "statement_version": "zkai-d128-gate-value-activation-down-residual-fused-statement-v1"
+    },
+    {
+      "envelope_sha256": "411d3ee29ea16daf751b61bfe72568b9f1c29e47e0905061edf97bf36ef4d6e4",
+      "grouped_typed_bytes": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10656,
+        "fri_samples": 720,
+        "oods_samples": 352,
+        "queries_values": 264,
+        "trace_decommitments": 4320
+      },
+      "local_typed_bytes": 16360,
+      "path": "docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json",
+      "proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
+      "proof_json_size_bytes": 57930,
+      "proof_sha256": "6b86193b7b15197b2e6bc8304e55851e76ca9b6ef06684abbd45dc0037812c4c",
+      "role": "separate_gate_value",
+      "statement_version": "zkai-d128-gate-value-projection-statement-v1"
+    },
+    {
+      "envelope_sha256": "c664e6d4eead32116451365e46c0910a5cf28b47731a04c9bf59c6dc2a5c3ad1",
+      "grouped_typed_bytes": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 416,
+        "queries_values": 312,
+        "trace_decommitments": 2496
+      },
+      "local_typed_bytes": 6920,
+      "path": "docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
+      "proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+      "proof_json_size_bytes": 24449,
+      "proof_sha256": "98f677f844f67f1095046d7bf9267f2acd5c68f5f69e137e6e344a17b9ecccfd",
+      "role": "separate_activation_swiglu",
+      "statement_version": "zkai-d128-activation-swiglu-statement-v1"
+    },
+    {
+      "envelope_sha256": "5a9f768e22cc0d0b07911eb40e9f25be1ef40a2629f8e9a623f2d236f9449c16",
+      "grouped_typed_bytes": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10656,
+        "fri_samples": 736,
+        "oods_samples": 320,
+        "queries_values": 240,
+        "trace_decommitments": 4416
+      },
+      "local_typed_bytes": 16416,
+      "path": "docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json",
+      "proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+      "proof_json_size_bytes": 58136,
+      "proof_sha256": "34df4ed71f04f9072964a52c996d82df80c62a2f1b56ef7956c738e04909b05c",
+      "role": "separate_down_projection",
+      "statement_version": "zkai-d128-down-projection-statement-v1"
+    },
+    {
+      "envelope_sha256": "20207da4f43937f272331311ccfe4c4a07c5530a135e96e4ccd04443b7c9125e",
+      "grouped_typed_bytes": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1856,
+        "fri_samples": 320,
+        "oods_samples": 256,
+        "queries_values": 192,
+        "trace_decommitments": 1920
+      },
+      "local_typed_bytes": 4592,
+      "path": "docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.envelope.json",
+      "proof_backend_version": "stwo-d128-residual-add-air-proof-v1",
+      "proof_json_size_bytes": 15980,
+      "proof_sha256": "b41f5d0b9d399e4329a441a96b14fe9399dc05395b78c56fc1f44703a65d50b5",
+      "role": "separate_residual_add",
+      "statement_version": "zkai-d128-residual-add-statement-v1"
+    }
+  ],
+  "route_id": "native_stwo_d128_gate_value_projection_plus_activation_swiglu_plus_down_projection_plus_residual_add_fused",
+  "schema": "zkai-d128-gate-value-activation-down-residual-fused-gate-v1",
+  "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- prove docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_residual_fused_proof -- build-input docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_residual_fused_proof -- prove docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_residual_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-binary-accounting-2026-05.json",
+    "python3 scripts/zkai_d128_gate_value_activation_down_residual_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_down_residual_fused_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

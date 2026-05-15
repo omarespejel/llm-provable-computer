@@ -1122,11 +1122,23 @@ Reproducibility metadata:
 
 ## Next sensible moves
 
-1. Treat `gate_value_activation_fused` as the current positive dense-adjacent
-   fusion result: the native fused proof saves `5,520` local typed bytes
-   (`23.7113%`) versus separate gate/value and activation proof objects. The
-   next attack is adding down-projection or a lookup-heavy sidecar, while
-   keeping the non-claim boundary strict.
+Current strongest d128 fusion result: a four-component native Stwo proof now
+fuses gate/value projection, activation/SwiGLU, down-projection, and
+residual-add (`197,248` rows) into one proof object. The fused proof is
+`67,979` JSON proof bytes / `19,344` local typed proof-field bytes versus
+`156,495` JSON / `44,288` typed bytes for four separate native proof objects,
+saving `88,516` JSON bytes and `24,944` typed bytes (`56.3223%` typed saving,
+`0.436777x` typed ratio). The gate rejects `21 / 21` mutations. This is still
+not a full transformer block with RMSNorm native fusion, not attention plus MLP
+in one proof object, and not a NANOZK benchmark win. Evidence:
+`docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`.
+
+1. Treat `gate_value_activation_down_residual_fused` as the current positive
+   dense MLP-side fusion result: the native fused proof saves `24,944` local
+   typed bytes (`56.3223%`) versus separate gate/value, activation,
+   down-projection, and residual-add proof objects. The next attack is adding
+   RMSNorm-native fusion or a lookup-heavy sidecar, while keeping the non-claim
+   boundary strict.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte
