@@ -98,6 +98,13 @@
     "derived_native_activation_proof_bytes": 24455,
     "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
     "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
+    "derived_native_down_envelope_bytes": 480346,
+    "derived_native_down_projection_mul_row_commitment": "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278",
+    "derived_native_down_proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+    "derived_native_down_proof_bytes": 58151,
+    "derived_native_down_public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
+    "derived_native_down_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+    "derived_native_down_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
     "extra_rows_vs_current_mlp_fused": 2049,
     "row_ratio": 1.010374,
     "value_connected_chain_rows": 199553
@@ -203,28 +210,24 @@
       "commitments": {
         "down_projection_mul_row_commitment": "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278",
         "proof_native_parameter_commitment": "blake2b-256:ee69217168238b20e0b46a722554b42abe4fd5c599231f130d25ca7e4b432aef",
-        "public_instance_commitment": "blake2b-256:40e70ea64413651ce9be19e749d5ce1798913a2b336457d51263bc9b4b2caaf1",
+        "public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
         "residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
-        "source_activation_swiglu_payload_commitment": "sha256:bf058e95c387d536d85a2a9b455c0f211ecfc7bc1f71ba4df3b17aec9442b302",
-        "source_activation_swiglu_public_instance_commitment": "blake2b-256:c6bda5d1b9ca94e8f61ef0173287d97cb9310a794148c30b0b887171614f7f3f",
-        "source_activation_swiglu_statement_commitment": "blake2b-256:c5f7477df93b9ac35f81774c3505f89101c7be676c47e9f1dc6160566ff2dbef",
+        "source_activation_swiglu_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
+        "source_activation_swiglu_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
         "source_hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
-        "statement_commitment": "blake2b-256:5477f0c19e1f36e9f6c3627827c85751f48f7b7853f9ed62a0a5dcc5c20c73f9"
+        "statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e"
       },
       "component_id": "down_projection",
-      "decision": "GO_ATTENTION_DERIVED_D128_DOWN_PROJECTION_INPUT",
-      "decision_matches_native": false,
-      "missing_required_native_fields": [
-        "validation_commands",
-        "proof_verifier_hardening"
-      ],
-      "native_component_input_status": "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT",
-      "payload_key": "down_projection_payload",
+      "decision": "GO_INPUT_FOR_D128_DOWN_PROJECTION_AIR_PROOF",
+      "decision_matches_native": true,
+      "missing_required_native_fields": [],
+      "native_component_input_status": "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE",
+      "payload_key": "root",
       "required_native_decision": "GO_INPUT_FOR_D128_DOWN_PROJECTION_AIR_PROOF",
       "required_native_schema": "zkai-d128-down-projection-air-proof-input-v1",
-      "schema": "zkai-attention-derived-d128-down-projection-input-v1",
-      "schema_matches_native": false,
-      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-down-projection-2026-05.json"
+      "schema": "zkai-d128-down-projection-air-proof-input-v1",
+      "schema_matches_native": true,
+      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json"
     },
     {
       "commitments": {
@@ -258,7 +261,7 @@
     }
   ],
   "decision": "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED",
-  "first_blocker": "the attention-derived down-projection slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
+  "first_blocker": "the attention-derived residual-add slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
   "missing_native_artifacts": [
     {
       "exists": false,
@@ -305,7 +308,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:e36858566753d585c0b22f78c52bd2beb55e6e0b570a57a2855948f495271cf0",
+  "payload_commitment": "sha256:e87d0b69cc97774d9fa582186f5fa4468f7e95c8ffdf1a2052503ae60b5c1100",
   "result": "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED",
   "schema": "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1",
   "source_artifacts": [
@@ -314,12 +317,6 @@
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json",
       "payload_sha256": "cef36f89cfc7dc7eaec2531de78a3622ad83f0e029b92c999a95b25468940e3f",
       "sha256": "990602eefeaceb98a9272d00acfd9b1ef387d34d0218d9ae1a736afc2f6163a3"
-    },
-    {
-      "id": "zkai-attention-derived-d128-down-projection-2026-05",
-      "path": "docs/engineering/evidence/zkai-attention-derived-d128-down-projection-2026-05.json",
-      "payload_sha256": "8f8d23b61d7dc3131826d9d54d4f5be5290c3905d1c89d62a83270bcc1bd27ae",
-      "sha256": "ba445196546ffd68fc8e533731e4d7fdb36822e353de4a89c90c6cdc5b26818c"
     },
     {
       "id": "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope",
@@ -332,6 +329,18 @@
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json",
       "payload_sha256": "fccf5504f5165216a29a455deab3d6919b5e5fa902b1f47a6891a0d3d0f504d8",
       "sha256": "320da30fdaf00215088b35c21e40a4bad3ae5a57808c88347d21718408fe0c49"
+    },
+    {
+      "id": "zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json",
+      "payload_sha256": "a4584b82f7c910376a6d2ea83aed821fee797175b15af357aa9dd042dd0218c0",
+      "sha256": "482b28b47f5be1232aee786cfd26372480e7d847ed98656d0210542d160881ed"
+    },
+    {
+      "id": "zkai-attention-derived-d128-native-down-projection-proof-2026-05",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json",
+      "payload_sha256": "d0a5e9a1161a1ba38395200a18e3be4302331cbe08ab0c4a96ad2cb21195d915",
+      "sha256": "b832f2a2a8ecc67275eff33dd402619a4671a0118ce59c0a9407b2b7045b8f18"
     },
     {
       "id": "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05",
@@ -395,12 +404,19 @@
     "derived_native_activation_proof_bytes": 24455,
     "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
     "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
+    "derived_native_down_envelope_bytes": 480346,
+    "derived_native_down_projection_mul_row_commitment": "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278",
+    "derived_native_down_proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+    "derived_native_down_proof_bytes": 58151,
+    "derived_native_down_public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
+    "derived_native_down_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+    "derived_native_down_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
     "go_result": "GO for a value-connected attention-derived d128 statement chain",
     "missing_native_artifacts": 3,
-    "native_compatible_components": 4,
-    "native_incompatible_components": 2,
+    "native_compatible_components": 5,
+    "native_incompatible_components": 1,
     "no_go_result": "NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof today",
-    "route_commitment": "blake2b-256:5fb5177cbfab9e29a38e36b733caa6fb246c068d78374ea5f95faf5197df3e7a",
+    "route_commitment": "blake2b-256:76fcda5f1abfbb30b65af43df601373d69c473dce2019e225ac5365c41c2db36",
     "row_ratio": 1.010374,
     "value_connected_chain_rows": 199553
   },

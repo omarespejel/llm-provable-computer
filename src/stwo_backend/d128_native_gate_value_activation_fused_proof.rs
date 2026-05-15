@@ -2628,7 +2628,7 @@ mod tests {
             .expect_err("activation-to-down commitment drift should reject");
         assert!(error
             .to_string()
-            .contains("source activation/SwiGLU statement commitment"));
+            .contains("synthetic anchor: statement_commitment mismatch"));
     }
 
     #[test]

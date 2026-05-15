@@ -20,21 +20,22 @@ before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 
-Recent attention-derived d128 native activation/SwiGLU result: the derived
-gate/value projection proof now feeds a native activation/SwiGLU proof input and
-proof object. The checked derived activation/SwiGLU proof has `512` rows,
-`24,455` proof bytes, a `227,031` byte envelope, and verifies true. The route
-frontier moves to `4 / 6` native-compatible components: RMSNorm public rows,
-RMSNorm-to-projection bridge, gate/value projection, and activation/SwiGLU.
-This is not a regenerated attention-derived RMSNorm-MLP fused proof and not a
-NANOZK benchmark win; down-projection is now the first blocker because it is
-still a statement-chain payload rather than a native component proof input.
+Recent attention-derived d128 native down-projection result: the derived
+activation/SwiGLU proof now feeds a native down-projection proof input and proof
+object. The checked derived down-projection proof has `65,536` rows, `58,151`
+proof bytes, a `480,346` byte envelope, and verifies true. The route frontier
+moves to `5 / 6` native-compatible components: RMSNorm public rows,
+RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and
+down-projection. This is not a regenerated attention-derived RMSNorm-MLP fused
+proof and not a NANOZK benchmark win; residual-add is now the first blocker
+because it is still a statement-chain payload rather than a native component
+proof input.
 
 Reproducibility metadata:
 
 - Backend binary/version:
-  `zkai_d128_activation_swiglu_proof` with
-  `stwo-d128-activation-swiglu-air-proof-v1`.
+  `zkai_d128_down_projection_proof` with
+  `stwo-d128-down-projection-air-proof-v1`.
 - Timing mode: proof-size/count and verifier-result evidence only, no timing
   claim.
 - Evidence paths:
@@ -44,15 +45,18 @@ Reproducibility metadata:
   `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`,
   and
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
 - Reproduce command:
-  `python3 scripts/zkai_d128_activation_swiglu_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv`.
+  `python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`.
 - Prove/verify commands:
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json`
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
   and
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json`.
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`.
 
 Recent d128 compact-preprocessed result: the selected public RMSNorm row and
 projection-bridge relations now have a smaller native Stwo reprove object. The
@@ -1193,13 +1197,13 @@ Validate with
 Current attention-derived native MLP proof-route result: the value-connected
 attention-derived d128 statement chain remains a GO at `199,553` rows, but the
 regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
-`4 / 6` derived slice payloads currently have the native component input shape:
+`5 / 6` derived slice payloads currently have the native component input shape:
 RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection, and
-activation/SwiGLU. Down-projection and residual-add are still statement-chain
-payloads that must be parameterized or regenerated as native component proof
-inputs. The derived native activation/SwiGLU proof is `24,455` proof bytes with
-a `227,031` byte envelope and hidden activation commitment
-`blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`.
+activation/SwiGLU, and down-projection. Residual-add is still a statement-chain
+payload that must be parameterized or regenerated as a native component proof
+input. The derived native down-projection proof is `58,151` proof bytes with a
+`480,346` byte envelope and residual-delta commitment
+`blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`.
 The existing MLP fused proof consumes the older synthetic input commitment
 `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
 not the value-derived commitment
@@ -1207,7 +1211,7 @@ not the value-derived commitment
 Evidence:
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 and
-`docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`.
+`docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`.
 Machine-readable evidence:
 `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 and

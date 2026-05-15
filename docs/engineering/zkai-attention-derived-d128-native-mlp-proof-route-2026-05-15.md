@@ -11,8 +11,9 @@ This is a route-classification result, not a rejection of the fusion thesis. The
 value-connected statement chain exists, and the current MLP-side native fused
 proof remains strong. The first downstream blockers have moved: the
 attention-derived RMSNorm public-row payload, RMSNorm-to-projection bridge,
-gate/value projection, and activation/SwiGLU are now native component proof
-inputs. Down-projection is still only a checked statement-chain payload.
+gate/value projection, activation/SwiGLU, and down-projection are now native
+component proof inputs. Residual-add is still only a checked statement-chain
+payload.
 
 Decision:
 
@@ -44,30 +45,37 @@ derived chain.
 - current RMSNorm-MLP fused typed bytes: `24,832`
 - current six-separate typed bytes: `56,976`
 - current typed saving: `32,144` bytes, `56.4167%`
-- native-compatible attention-derived components today: `4 / 6`
-- native-incompatible attention-derived components today: `2 / 6`
+- native-compatible attention-derived components today: `5 / 6`
+- native-incompatible attention-derived components today: `1 / 6`
 - missing required native attention-derived proof artifacts: `3`
 - mutation gate: `13 / 13` mutations rejected
 - derived native activation/SwiGLU proof bytes: `24,455`
 - derived native activation/SwiGLU envelope bytes: `227,031`
+- derived native down-projection proof bytes: `58,151`
+- derived native down-projection envelope bytes: `480,346`
 
 ## First Blocker
 
 The derived RMSNorm public-row payload, RMSNorm-to-projection bridge,
-gate/value projection, and activation/SwiGLU now have the current native
-component input shape. The next blocker is down-projection: the checked
-attention-derived down-projection artifact is still a statement-chain payload,
-not a native component proof input.
+gate/value projection, activation/SwiGLU, and down-projection now have the
+current native component input shape. The next blocker is residual-add: the
+checked attention-derived residual-add artifact is still a statement-chain
+payload, not a native component proof input.
 
 The attention-derived native activation/SwiGLU proof emits hidden activation:
 
 `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`
 
-Down-projection and residual-add remain statement-chain artifacts unless they
-are regenerated or parameterized as native component proof inputs.
+The derived native down-projection proof consumes that hidden activation and
+emits residual delta:
 
-The next real implementation step is to parameterize or regenerate those
-downstream inputs as native component proof inputs, then rerun the
+`blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`
+
+Residual-add remains a statement-chain artifact unless it is regenerated or
+parameterized as a native component proof input.
+
+The next real implementation step is to parameterize or regenerate residual-add
+as a native component proof input, then rerun the
 RMSNorm-MLP fused proof builder on the derived commitment.
 
 Follow-up issue: `#608`.
@@ -116,6 +124,9 @@ This gate records:
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`
+- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
 - `docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json`
 
@@ -132,6 +143,10 @@ python3 scripts/zkai_d128_activation_swiglu_proof_input.py --source-json docs/en
 python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json
+python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv
+python3 -m unittest scripts.tests.test_zkai_d128_down_projection_proof_input
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json
 python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv
 python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py
 python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate
