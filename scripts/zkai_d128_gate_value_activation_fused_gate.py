@@ -14,6 +14,7 @@ import argparse
 import copy
 import csv
 import hashlib
+import io
 import json
 import os
 import pathlib
@@ -29,11 +30,16 @@ ACTIVATION_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-activation-swiglu-proof-202
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-fused-gate-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-fused-gate-2026-05.tsv"
 
+
+def repo_relative_posix(path: pathlib.Path) -> str:
+    return path.relative_to(ROOT).as_posix()
+
+
 EXPECTED_EVIDENCE = {
-    "accounting_json": str(ACCOUNTING_PATH.relative_to(ROOT)),
-    "fused_envelope": str(FUSED_ENVELOPE_PATH.relative_to(ROOT)),
-    "gate_value_envelope": str(GATE_VALUE_ENVELOPE_PATH.relative_to(ROOT)),
-    "activation_envelope": str(ACTIVATION_ENVELOPE_PATH.relative_to(ROOT)),
+    "accounting_json": repo_relative_posix(ACCOUNTING_PATH),
+    "fused_envelope": repo_relative_posix(FUSED_ENVELOPE_PATH),
+    "gate_value_envelope": repo_relative_posix(GATE_VALUE_ENVELOPE_PATH),
+    "activation_envelope": repo_relative_posix(ACTIVATION_ENVELOPE_PATH),
 }
 
 SCHEMA = "zkai-d128-gate-value-activation-fused-gate-v1"
@@ -522,19 +528,65 @@ def run_mutations(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def resolve_repo_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise FusedGateError(f"{label} output must not be a symlink: {path}")
+    parent = candidate.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    resolved_parent = parent.resolve(strict=True)
+    try:
+        resolved_parent.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise FusedGateError(f"{label} output escapes repository: {path}") from err
+    resolved = resolved_parent / candidate.name
+    try:
+        existing = resolved.lstat()
+    except FileNotFoundError:
+        return resolved
+    except OSError as err:
+        raise FusedGateError(f"failed to stat {label} output: {err}") from err
+    if not stat.S_ISREG(existing.st_mode):
+        raise FusedGateError(f"{label} output is not a regular file: {path}")
+    return resolved
+
+
+def write_bytes_atomic(path: pathlib.Path, data: bytes, label: str) -> None:
+    resolved = resolve_repo_output_path(path, label)
+    tmp = resolved.parent / f".{resolved.name}.{os.getpid()}.tmp"
+    fd: int | None = None
+    try:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(tmp, flags, 0o600)
+        os.write(fd, data)
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
+        os.replace(tmp, resolved)
+    except OSError as err:
+        raise FusedGateError(f"failed to atomically write {label}: {err}") from err
+    finally:
+        if fd is not None:
+            os.close(fd)
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    write_bytes_atomic(path, data, "gate JSON")
 
 
 def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     row = {column: payload["aggregate"].get(column, payload.get(column)) for column in TSV_COLUMNS}
     row["route_id"] = payload["route_id"]
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
-        writer.writeheader()
-        writer.writerow(row)
+    handle = io.StringIO(newline="")
+    writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
+    writer.writeheader()
+    writer.writerow(row)
+    write_bytes_atomic(path, handle.getvalue().encode("utf-8"), "gate TSV")
 
 
 def main() -> None:
