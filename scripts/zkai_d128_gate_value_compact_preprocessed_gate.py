@@ -18,6 +18,7 @@ import io
 import json
 import os
 import pathlib
+import stat
 import subprocess
 import sys
 import tempfile
@@ -680,7 +681,7 @@ def write_bytes_atomic(path: pathlib.Path, data: bytes) -> None:
         metadata = path.lstat()
     except FileNotFoundError:
         metadata = None
-    if metadata is not None and pathlib.Path(path).is_symlink():
+    if metadata is not None and stat.S_ISLNK(metadata.st_mode):
         raise GateValueCompactGateError(f"refusing to overwrite symlink: {path}")
     tmp_name: str | None = None
     try:

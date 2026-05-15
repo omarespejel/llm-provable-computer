@@ -239,7 +239,7 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             "{label} exceeds max size: got {size} bytes, limit {max_bytes} bytes"
         ));
     }
-    let mut bytes = Vec::with_capacity(size);
+    let mut bytes = Vec::with_capacity(max_bytes.min(size));
     file.take(max_bytes.saturating_add(1) as u64)
         .read_to_end(&mut bytes)
         .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
