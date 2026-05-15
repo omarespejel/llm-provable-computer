@@ -102,6 +102,28 @@ EXPECTED_RECORD_PATHS = (
     "pcs.proof_of_work",
     "pcs.config",
 )
+EXPECTED_RECORD_SCALAR_KINDS = {
+    "pcs.commitments": "blake2s_hash",
+    "pcs.trace_decommitments.hash_witness": "blake2s_hash",
+    "pcs.sampled_values": "secure_field",
+    "pcs.queried_values": "base_field",
+    "pcs.fri.first_layer.fri_witness": "secure_field",
+    "pcs.fri.inner_layers.fri_witness": "secure_field",
+    "pcs.fri.last_layer_poly": "secure_field",
+    "pcs.fri.first_layer.commitment": "blake2s_hash",
+    "pcs.fri.inner_layers.commitments": "blake2s_hash",
+    "pcs.fri.first_layer.decommitment.hash_witness": "blake2s_hash",
+    "pcs.fri.inner_layers.decommitment.hash_witness": "blake2s_hash",
+    "pcs.proof_of_work": "u64_le",
+    "pcs.config": "pcs_config",
+}
+EXPECTED_RECORD_SIZE_KEYS = {
+    "base_field": "base_field_bytes",
+    "secure_field": "secure_field_bytes",
+    "blake2s_hash": "blake2s_hash_bytes",
+    "u64_le": "proof_of_work_bytes",
+    "pcs_config": "pcs_config_bytes",
+}
 EXPECTED_COMPACT_RECORD_COUNTS = {
     "pcs.commitments": 3,
     "pcs.trace_decommitments.hash_witness": 147,
@@ -209,7 +231,10 @@ MUTATION_NAMES = (
     "schema_relabeling",
     "decision_overclaim",
     "result_overclaim",
+    "route_id_relabeling",
+    "question_relabeling",
     "claim_boundary_overclaim",
+    "next_research_step_relabeling",
     "compact_typed_metric_smuggling",
     "baseline_typed_metric_smuggling",
     "comparison_status_overclaim",
@@ -304,9 +329,31 @@ def validate_cli_summary(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     if require_dict(summary.get("safety"), "safety") != EXPECTED_SAFETY:
         raise GateValueCompactGateError("safety policy drift")
     rows = rows_by_role(summary)
-    validate_accounting_row(rows[COMPACT_ROLE], COMPACT_RELATIVE_PATH, COMPACT_PROOF_JSON_BYTES, COMPACT_LOCAL_TYPED_BYTES, EXPECTED_COMPACT_RECORD_COUNTS)
-    validate_accounting_row(rows[BASELINE_ROLE], BASELINE_RELATIVE_PATH, BASELINE_PROOF_JSON_BYTES, BASELINE_LOCAL_TYPED_BYTES, EXPECTED_BASELINE_RECORD_COUNTS)
+    validate_accounting_row(
+        rows[COMPACT_ROLE],
+        COMPACT_RELATIVE_PATH,
+        COMPACT_PROOF_JSON_BYTES,
+        COMPACT_LOCAL_TYPED_BYTES,
+        COMPACT_STATEMENT_VERSION,
+        EXPECTED_COMPACT_RECORD_COUNTS,
+    )
+    validate_accounting_row(
+        rows[BASELINE_ROLE],
+        BASELINE_RELATIVE_PATH,
+        BASELINE_PROOF_JSON_BYTES,
+        BASELINE_LOCAL_TYPED_BYTES,
+        BASELINE_STATEMENT_VERSION,
+        EXPECTED_BASELINE_RECORD_COUNTS,
+    )
     return rows
+
+
+def expected_record_item_size(path: str) -> int:
+    scalar_kind = EXPECTED_RECORD_SCALAR_KINDS.get(path)
+    if scalar_kind is None:
+        raise GateValueCompactGateError(f"unexpected record path: {path!r}")
+    size_key = EXPECTED_RECORD_SIZE_KEYS[scalar_kind]
+    return EXPECTED_SIZE_CONSTANTS[size_key]
 
 
 def validate_accounting_row(
@@ -314,21 +361,57 @@ def validate_accounting_row(
     relative_path: str,
     proof_json_size: int,
     local_typed_bytes: int,
+    expected_statement_version: str,
     expected_counts: dict[str, int],
 ) -> None:
     if row.get("evidence_relative_path") != relative_path:
         raise GateValueCompactGateError("evidence relative path drift")
     if require_exact_int(row.get("proof_json_size_bytes"), "proof JSON bytes") != proof_json_size:
         raise GateValueCompactGateError("proof JSON byte drift")
+    metadata = require_dict(row.get("envelope_metadata"), "envelope metadata")
+    if metadata.get("statement_version") != expected_statement_version:
+        raise GateValueCompactGateError("statement version drift")
     accounting = require_dict(row.get("local_binary_accounting"), "local binary accounting")
     if require_exact_int(accounting.get("typed_size_estimate_bytes"), "typed size") != local_typed_bytes:
         raise GateValueCompactGateError("typed size drift")
     if require_exact_int(accounting.get("component_sum_bytes"), "component sum") != local_typed_bytes:
         raise GateValueCompactGateError("component sum drift")
     records = require_list(accounting.get("records"), "records")
-    counts = {require_dict(record, "record").get("path"): require_exact_int(require_dict(record, "record").get("item_count"), "record count") for record in records}
+    if require_exact_int(accounting.get("record_count"), "accounting record count") != len(records):
+        raise GateValueCompactGateError("accounting record count drift")
+    if len(records) != len(expected_counts):
+        raise GateValueCompactGateError("record path set drift")
+    counts: dict[str, int] = {}
+    paths = []
+    recomputed_total = 0
+    for item in records:
+        record = require_dict(item, "record")
+        path = record.get("path")
+        if not isinstance(path, str):
+            raise GateValueCompactGateError("record path must be string")
+        if path in counts:
+            raise GateValueCompactGateError(f"duplicate record path: {path}")
+        if path not in expected_counts:
+            raise GateValueCompactGateError(f"unexpected record path: {path}")
+        paths.append(path)
+        count = require_exact_int(record.get("item_count"), f"{path} item count")
+        scalar_kind = EXPECTED_RECORD_SCALAR_KINDS[path]
+        if record.get("scalar_kind") != scalar_kind:
+            raise GateValueCompactGateError(f"record scalar kind drift: {path}")
+        item_size = expected_record_item_size(path)
+        if require_exact_int(record.get("item_size_bytes"), f"{path} item size") != item_size:
+            raise GateValueCompactGateError(f"record item size drift: {path}")
+        total_bytes = require_exact_int(record.get("total_bytes"), f"{path} total bytes")
+        if total_bytes != count * item_size:
+            raise GateValueCompactGateError(f"record total bytes drift: {path}")
+        counts[path] = count
+        recomputed_total += total_bytes
+    if tuple(paths) != EXPECTED_RECORD_PATHS:
+        raise GateValueCompactGateError("record path order drift")
     if counts != expected_counts:
         raise GateValueCompactGateError("record counts drift")
+    if recomputed_total != local_typed_bytes:
+        raise GateValueCompactGateError("record byte total drift")
 
 
 def grouped_delta(rows: dict[str, dict[str, Any]]) -> dict[str, int]:
@@ -440,10 +523,16 @@ def validate_payload(
         raise GateValueCompactGateError("decision drift")
     if payload["result"] != RESULT:
         raise GateValueCompactGateError("result drift")
+    if payload["route_id"] != ROUTE_ID:
+        raise GateValueCompactGateError("route id drift")
+    if payload["question"] != QUESTION:
+        raise GateValueCompactGateError("question drift")
     if payload["claim_boundary"] != CLAIM_BOUNDARY:
         raise GateValueCompactGateError("claim boundary drift")
     if payload["first_blocker"] != FIRST_BLOCKER:
         raise GateValueCompactGateError("first blocker drift")
+    if payload["next_research_step"] != NEXT_RESEARCH_STEP:
+        raise GateValueCompactGateError("next research step drift")
     aggregate = require_dict(payload["aggregate"], "aggregate")
     if aggregate != EXPECTED_AGGREGATE:
         raise GateValueCompactGateError("aggregate drift")
@@ -493,8 +582,14 @@ def mutate_payload(payload: dict[str, Any], name: str) -> dict[str, Any]:
         mutated["decision"] = "GO_D128_GATE_VALUE_COMPACT_PREPROCESSED_SIZE_WIN"
     elif name == "result_overclaim":
         mutated["result"] = "GO_COMPACT_PREPROCESSED_DENSE_GATE_VALUE_SMALLER_THAN_BASELINE"
+    elif name == "route_id_relabeling":
+        mutated["route_id"] = "native_stwo_d128_gate_value_compact_preprocessed_size_win"
+    elif name == "question_relabeling":
+        mutated["question"] = "Did compact-preprocessed beat the dense d128 baseline?"
     elif name == "claim_boundary_overclaim":
         mutated["claim_boundary"] = "COMPACT_DENSE_GATE_VALUE_BEATS_BASELINE_AND_NANOZK"
+    elif name == "next_research_step_relabeling":
+        mutated["next_research_step"] = "promote compact-preprocessed as the dense-arithmetic path"
     elif name == "compact_typed_metric_smuggling":
         mutated["aggregate"]["compact_local_typed_bytes"] -= 1
     elif name == "baseline_typed_metric_smuggling":

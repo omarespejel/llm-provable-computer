@@ -75,8 +75,23 @@
       "rejected": true
     },
     {
+      "error": "route id drift",
+      "name": "route_id_relabeling",
+      "rejected": true
+    },
+    {
+      "error": "question drift",
+      "name": "question_relabeling",
+      "rejected": true
+    },
+    {
       "error": "claim boundary drift",
       "name": "claim_boundary_overclaim",
+      "rejected": true
+    },
+    {
+      "error": "next research step drift",
+      "name": "next_research_step_relabeling",
       "rejected": true
     },
     {
@@ -135,8 +150,8 @@
       "rejected": true
     }
   ],
-  "mutations_checked": 15,
-  "mutations_rejected": 15,
+  "mutations_checked": 18,
+  "mutations_rejected": 18,
   "next_research_step": "do not push compact-preprocessed as the dense-arithmetic path; instead test fusion or component aggregation across adjacent dense and lookup-heavy relations",
   "non_claims": [
     "not a full d128 transformer-block proof",
@@ -149,7 +164,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:ea922aae2b2ba129b35426ad10d8abb6f7154f884900b453a1ad4d366af10de1",
+  "payload_commitment": "sha256:127a4c63252bc07a235a91d62ec00aff3f44e7fe5d2986e067a93baab943a709",
   "question": "Does the compact-preprocessed proof architecture that helped the public two-slice d128 surface also reduce proof-field bytes on the dense d128 gate/value projection relation?",
   "result": "NO_GO_COMPACT_PREPROCESSED_DENSE_GATE_VALUE_IS_LARGER_THAN_BASELINE",
   "route_id": "native_stwo_d128_gate_value_compact_preprocessed_probe",

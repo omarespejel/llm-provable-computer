@@ -32,6 +32,7 @@ The compact proof is:
 - `8,288` JSON proof bytes larger
 - `2,312` typed proof-field bytes larger
 - `14.1320%` larger under local typed accounting
+- Mutation gate: 18/18 rejected
 
 ## Why It Matters
 
@@ -74,6 +75,8 @@ The result also protects the paper narrative from overclaiming. We can now say:
 
 ## Artifacts
 
+- baseline input:
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`
 - baseline envelope:
   `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json`
 - compact envelope:

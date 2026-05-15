@@ -157,10 +157,73 @@ class D128GateValueCompactPreprocessedGateTests(unittest.TestCase):
             with self.assertRaises(gate.GateValueCompactGateError, msg=name):
                 gate.validate_payload(mutated, summary, allow_missing_mutation_summary=True)
 
-    def test_rejects_record_count_drift(self):
+    def test_rejects_record_item_count_drift(self):
         summary = cli_summary()
-        summary["rows"][0]["local_binary_accounting"]["records"][1]["item_count"] -= 1
+        record = summary["rows"][0]["local_binary_accounting"]["records"][1]
+        record["item_count"] -= 1
+        record["total_bytes"] = record["item_count"] * record["item_size_bytes"]
         with self.assertRaisesRegex(gate.GateValueCompactGateError, "record counts drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_payload_route_question_and_next_step_drift(self):
+        summary = cli_summary()
+        payload = build_payload(summary, include_mutations=False)
+        for field, value, expected_error in (
+            ("route_id", "unexpected-route", "route id drift"),
+            ("question", "Did this beat NANOZK?", "question drift"),
+            ("next_research_step", "promote direct dense compaction", "next research step drift"),
+        ):
+            mutated = copy.deepcopy(payload)
+            mutated[field] = value
+            mutated["payload_commitment"] = gate.payload_commitment(mutated)
+            with self.assertRaisesRegex(gate.GateValueCompactGateError, expected_error):
+                gate.validate_payload(mutated, summary, allow_missing_mutation_summary=True)
+
+    def test_rejects_statement_version_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["envelope_metadata"]["statement_version"] = "v0"
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "statement version drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_accounting_record_count_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["local_binary_accounting"]["record_count"] += 1
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "accounting record count drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_duplicate_record_path(self):
+        summary = cli_summary()
+        accounting = summary["rows"][0]["local_binary_accounting"]
+        accounting["records"][-1] = copy.deepcopy(accounting["records"][-2])
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "duplicate record path"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_extra_record_path(self):
+        summary = cli_summary()
+        accounting = summary["rows"][0]["local_binary_accounting"]
+        extra = copy.deepcopy(accounting["records"][-1])
+        extra["path"] = "pcs.unexpected"
+        accounting["records"][-1] = extra
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "unexpected record path"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_record_path_order_drift(self):
+        summary = cli_summary()
+        records = summary["rows"][0]["local_binary_accounting"]["records"]
+        records[0], records[1] = records[1], records[0]
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "record path order drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_record_item_size_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["local_binary_accounting"]["records"][0]["item_size_bytes"] += 1
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "record item size drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_record_total_bytes_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["local_binary_accounting"]["records"][0]["total_bytes"] += 1
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "record total bytes drift"):
             build_payload(summary, include_mutations=False)
 
     def test_rejects_duplicate_accounting_row(self):
