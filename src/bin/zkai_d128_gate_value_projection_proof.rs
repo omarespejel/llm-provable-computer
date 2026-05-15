@@ -321,3 +321,40 @@ fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), St
         }
     }
 }
+
+#[cfg(all(test, feature = "stwo-backend", unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn read_bounded_file_rejects_symlink_input() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("input.json");
+        fs::write(&target, b"{}").expect("write target");
+        symlink(&target, &link).expect("create symlink");
+
+        let error = read_bounded_file(&link, 1024, "test input").expect_err("symlink must reject");
+        assert!(
+            error.contains("without following symlinks") || error.contains("symlink"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn atomic_write_file_rejects_symlink_target() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("output.json");
+        fs::write(&target, b"{}").expect("write target");
+        symlink(&target, &link).expect("create symlink");
+
+        let error =
+            atomic_write_file(&link, b"{}", "test output").expect_err("symlink must reject");
+        assert!(
+            error.contains("refusing to overwrite symlink"),
+            "unexpected error: {error}"
+        );
+    }
+}
