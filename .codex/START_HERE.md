@@ -99,8 +99,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 93. `docs/engineering/zkai-d128-gate-value-activation-fused-proof-2026-05-15.md`
 94. `docs/engineering/zkai-d128-gate-value-activation-down-fused-proof-2026-05-15.md`
 95. `docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`
-96. `docs/engineering/reproducibility.md`
-97. `git status --short --branch`
+96. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
+97. `docs/engineering/reproducibility.md`
+98. `git status --short --branch`
 
 ## What this repository is now
 
@@ -117,6 +118,14 @@ This repository currently has three live lanes.
 
 3. Verifiable-AI statement-bound transformer lane
    - The `d=64` native route has a six-slice proof-backed receipt chain.
+   - The current strongest `d=128` native fusion result is
+     `rmsnorm_mlp_fused`: one Stwo proof fuses RMSNorm public rows,
+     RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
+     down-projection, and residual-add (`197,504` rows). It is `24,832` typed
+     bytes versus `56,976` typed bytes for six separate native proof objects,
+     saving `32,144` typed bytes (`56.4167%`). It is not attention plus MLP,
+     not a full transformer block, and not a NANOZK benchmark win; see
+     `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the

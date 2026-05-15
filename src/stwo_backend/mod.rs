@@ -90,6 +90,8 @@ mod d128_native_gate_value_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_residual_add_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_rmsnorm_mlp_fused_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_public_row_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_rmsnorm_to_projection_bridge_proof;
@@ -1086,6 +1088,19 @@ pub use d128_native_residual_add_proof::{
     ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
     ZKAI_D128_RESIDUAL_ADD_SEMANTIC_SCOPE, ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
     ZKAI_D128_RESIDUAL_ADD_STATEMENT_VERSION,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_rmsnorm_mlp_fused_proof::{
+    build_zkai_d128_rmsnorm_mlp_fused_input, prove_zkai_d128_rmsnorm_mlp_fused_envelope,
+    verify_zkai_d128_rmsnorm_mlp_fused_envelope,
+    zkai_d128_rmsnorm_mlp_fused_envelope_from_json_slice,
+    zkai_d128_rmsnorm_mlp_fused_input_from_json_str, ZkAiD128RmsnormMlpFusedEnvelope,
+    ZkAiD128RmsnormMlpFusedInput, ZKAI_D128_RMSNORM_MLP_FUSED_DECISION,
+    ZKAI_D128_RMSNORM_MLP_FUSED_INPUT_DECISION, ZKAI_D128_RMSNORM_MLP_FUSED_INPUT_SCHEMA,
+    ZKAI_D128_RMSNORM_MLP_FUSED_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_D128_RMSNORM_MLP_FUSED_MAX_JSON_BYTES, ZKAI_D128_RMSNORM_MLP_FUSED_MAX_PROOF_BYTES,
+    ZKAI_D128_RMSNORM_MLP_FUSED_PROOF_VERSION, ZKAI_D128_RMSNORM_MLP_FUSED_ROUTE_ID,
+    ZKAI_D128_RMSNORM_MLP_FUSED_SEMANTIC_SCOPE, ZKAI_D128_RMSNORM_MLP_FUSED_STATEMENT_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_rmsnorm_public_row_proof::{

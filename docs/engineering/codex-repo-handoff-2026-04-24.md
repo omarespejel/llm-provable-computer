@@ -1122,34 +1122,38 @@ Reproducibility metadata:
 
 ## Next sensible moves
 
-Current strongest d128 fusion result: a four-component native Stwo proof now
-fuses gate/value projection, activation/SwiGLU, down-projection, and
-residual-add (`197,248` rows) into one proof object. The fused proof is
-`67,979` JSON proof bytes / `19,344` local typed proof-field bytes versus
-`156,495` JSON / `44,288` typed bytes for four separate native proof objects,
-saving `88,516` JSON bytes and `24,944` typed bytes (`56.3223%` typed saving,
-`0.436777x` typed ratio). The gate rejects `21 / 21` mutations. This is still
-not a full transformer block with RMSNorm native fusion, not attention plus MLP
-in one proof object, and not a NANOZK benchmark win. Evidence:
-`docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`.
+Current strongest d128 fusion result: a six-component native Stwo proof now
+fuses RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
+activation/SwiGLU, down-projection, and residual-add (`197,504` rows) into one
+proof object. The fused proof is `77,181` JSON proof bytes / `24,832` local
+typed proof-field bytes versus `191,361` JSON / `56,976` typed bytes for six
+separate native proof objects, saving `114,180` JSON bytes and `32,144` typed
+bytes (`56.4167%` typed saving, `0.435833x` typed ratio). The gate rejects
+`9 / 9` claim/metric/commitment mutations, while Rust tests reject handoff drift on the
+bridge-to-gate and RMSNorm-to-residual edges plus crafted top-level
+statement-field drift. This is still not attention plus
+MLP in one proof object, not a full transformer block, and not a NANOZK
+benchmark win. Evidence:
+`docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`.
 Repro metadata: proof backend version
-`stwo-d128-gate-value-activation-down-residual-fused-air-proof-v1`, statement
-version `zkai-d128-gate-value-activation-down-residual-fused-statement-v1`,
+`stwo-d128-rmsnorm-mlp-fused-air-proof-v1`, statement version
+`zkai-d128-rmsnorm-mlp-fused-statement-v1`,
 Stwo dependency `2.2.0`, timing mode `none; proof-size/count gate only`.
 Machine-readable evidence:
-`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.input.json`,
-`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json`,
-`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-binary-accounting-2026-05.json`,
-`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.json`.
+`docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-proof-2026-05.input.json`,
+`docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json`,
+`docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json`,
+`docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.tsv`.
 Validate with
-`python3 scripts/zkai_d128_gate_value_activation_down_residual_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.tsv`.
+`python3 scripts/zkai_d128_rmsnorm_mlp_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.tsv`.
 
-1. Treat `gate_value_activation_down_residual_fused` as the current positive
-   dense MLP-side fusion result: the native fused proof saves `24,944` local
-   typed bytes (`56.3223%`) versus separate gate/value, activation,
-   down-projection, and residual-add proof objects. The next attack is adding
-   RMSNorm-native fusion or a lookup-heavy sidecar, while keeping the non-claim
-   boundary strict.
+1. Treat `rmsnorm_mlp_fused` as the current positive MLP-side fusion result:
+   the native fused proof saves `32,144` local typed bytes (`56.4167%`) versus
+   separate RMSNorm, bridge, gate/value, activation, down-projection, and
+   residual-add proof objects. The next attack is adding attention into the same
+   native proof object or proving that it should remain a separate boundary,
+   while keeping the non-claim boundary strict.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte
