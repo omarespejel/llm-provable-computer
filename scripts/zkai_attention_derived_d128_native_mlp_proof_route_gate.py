@@ -328,10 +328,16 @@ def build_context() -> dict[str, Any]:
         current_input.get("input_activation_commitment"),
         "current MLP fused input activation commitment",
     )
+    envelope_input_commitment = _commitment(
+        _dict(current_envelope.get("input"), "current envelope input").get("input_activation_commitment"),
+        "current envelope input activation commitment",
+    )
     if derived_input_commitment != EXPECTED_DERIVED_INPUT_COMMITMENT:
         raise NativeMlpProofRouteError("derived input commitment drift")
     if current_input_commitment != EXPECTED_CURRENT_INPUT_COMMITMENT:
         raise NativeMlpProofRouteError("current MLP input commitment drift")
+    if envelope_input_commitment != current_input_commitment:
+        raise NativeMlpProofRouteError("current MLP envelope/input activation commitment mismatch")
     rows = _int(chain_summary.get("accounted_relation_rows"), "attention-derived relation rows")
     mlp_rows = _int(current_aggregate.get("fused_total_row_count"), "current MLP fused rows")
     if mlp_rows <= 0:
@@ -354,10 +360,7 @@ def build_context() -> dict[str, Any]:
         "comparison": {
             "derived_input_activation_commitment": derived_input_commitment,
             "current_mlp_input_activation_commitment": current_input_commitment,
-            "current_mlp_fused_envelope_input_activation_commitment": _commitment(
-                _dict(current_envelope.get("input"), "current envelope input").get("input_activation_commitment"),
-                "current envelope input activation commitment",
-            ),
+            "current_mlp_fused_envelope_input_activation_commitment": envelope_input_commitment,
             "current_mlp_proof_backend_version": _str(
                 current_envelope.get("proof_backend_version"),
                 "current MLP proof backend version",
@@ -397,6 +400,11 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
     comparison = context["comparison"]
     if _int(comparison.get("current_mlp_fused_rows"), "current MLP fused rows") <= 0:
         raise NativeMlpProofRouteError("current MLP fused rows must be positive before carrying row_ratio")
+    if (
+        comparison.get("current_mlp_fused_envelope_input_activation_commitment")
+        != comparison.get("current_mlp_input_activation_commitment")
+    ):
+        raise NativeMlpProofRouteError("current MLP envelope/input activation commitment mismatch")
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,
