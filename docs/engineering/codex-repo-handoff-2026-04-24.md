@@ -1199,13 +1199,34 @@ and
 Validate with
 `python3 scripts/zkai_d128_value_adapter_policy_frontier_gate.py --write-json docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
 
+Current attention-derived native MLP proof-route result: the value-connected
+attention-derived d128 statement chain remains a GO at `199,553` rows, but the
+regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
+`1 / 6` derived slice payloads currently have the native component input shape
+accepted by the current Stwo RMSNorm-MLP fused proof builder; `5 / 6` are
+statement-chain payloads that must be parameterized or regenerated as native
+component proof inputs. The existing MLP fused proof consumes the older
+synthetic input commitment
+`blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
+not the value-derived commitment
+`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`.
+Evidence:
+`docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
+Machine-readable evidence:
+`docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
+and
+`docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
+Validate with
+`python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
+
 1. Treat `rmsnorm_mlp_fused` as the current positive MLP-side fusion result:
    the native fused proof saves `32,144` local typed bytes (`56.4167%`) versus
    separate RMSNorm, bridge, gate/value, activation, down-projection, and
    residual-add proof objects. The current attention-to-RMSNorm boundary gate
-   and value-adapter policy frontier prove the immediate single-proof route is
-   blocked by value handoff, not row count: regenerate a value-derived d128
-   fixture before claiming attention plus MLP.
+   value-adapter policy frontier, and native MLP proof-route gate prove the
+   immediate single-proof route is blocked by value handoff/native input
+   parameterization, not row count: regenerate downstream derived slice payloads
+   as native component proof inputs before claiming attention plus MLP.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte

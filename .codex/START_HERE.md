@@ -102,8 +102,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 96. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
 97. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
 98. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
-99. `docs/engineering/reproducibility.md`
-100. `git status --short --branch`
+99. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
+100. `docs/engineering/reproducibility.md`
+101. `git status --short --branch`
 
 ## What this repository is now
 
@@ -141,6 +142,13 @@ This repository currently has three live lanes.
      absolute error `49.796875`. The next honest experiment is to regenerate a
      d128 RMSNorm input from attention-derived values; see
      `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
+   - The attention-derived native MLP proof-route gate now narrows that next
+     experiment: the value-connected d128 statement chain is a GO at `199,553`
+     rows, but only `1 / 6` derived slice payloads currently have the native
+     component input shape accepted by the RMSNorm-MLP fused proof builder. The
+     existing fused proof consumes the older synthetic input commitment, so it
+     must not be relabeled as attention-derived. See
+     `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the
