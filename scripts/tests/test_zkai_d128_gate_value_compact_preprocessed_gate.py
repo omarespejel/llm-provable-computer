@@ -226,6 +226,18 @@ class D128GateValueCompactPreprocessedGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.GateValueCompactGateError, "record total bytes drift"):
             build_payload(summary, include_mutations=False)
 
+    def test_rejects_grouped_reconstruction_drift(self):
+        summary = cli_summary()
+        summary["rows"][0]["local_binary_accounting"]["grouped_reconstruction"]["fixed_overhead"] += 1
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "compact grouped_reconstruction drift"):
+            build_payload(summary, include_mutations=False)
+
+    def test_rejects_stwo_grouped_breakdown_drift(self):
+        summary = cli_summary()
+        summary["rows"][1]["local_binary_accounting"]["stwo_grouped_breakdown"]["fixed_overhead"] += 1
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "baseline stwo_grouped_breakdown drift"):
+            build_payload(summary, include_mutations=False)
+
     def test_rejects_duplicate_accounting_row(self):
         summary = cli_summary()
         summary["rows"].append(copy.deepcopy(summary["rows"][0]))

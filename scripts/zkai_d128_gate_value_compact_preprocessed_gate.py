@@ -332,6 +332,7 @@ def validate_cli_summary(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     rows = rows_by_role(summary)
     validate_accounting_row(
         rows[COMPACT_ROLE],
+        COMPACT_ROLE,
         COMPACT_RELATIVE_PATH,
         COMPACT_PROOF_JSON_BYTES,
         COMPACT_LOCAL_TYPED_BYTES,
@@ -340,6 +341,7 @@ def validate_cli_summary(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     )
     validate_accounting_row(
         rows[BASELINE_ROLE],
+        BASELINE_ROLE,
         BASELINE_RELATIVE_PATH,
         BASELINE_PROOF_JSON_BYTES,
         BASELINE_LOCAL_TYPED_BYTES,
@@ -357,8 +359,30 @@ def expected_record_item_size(path: str) -> int:
     return EXPECTED_SIZE_CONSTANTS[size_key]
 
 
+def expected_grouped_reconstruction(expected_counts: dict[str, int]) -> dict[str, int]:
+    by_path = {
+        path: expected_counts[path] * expected_record_item_size(path)
+        for path in EXPECTED_RECORD_PATHS
+    }
+    return {
+        "fixed_overhead": by_path["pcs.proof_of_work"] + by_path["pcs.config"],
+        "fri_decommitments": by_path["pcs.fri.first_layer.commitment"]
+        + by_path["pcs.fri.inner_layers.commitments"]
+        + by_path["pcs.fri.first_layer.decommitment.hash_witness"]
+        + by_path["pcs.fri.inner_layers.decommitment.hash_witness"],
+        "fri_samples": by_path["pcs.fri.first_layer.fri_witness"]
+        + by_path["pcs.fri.inner_layers.fri_witness"]
+        + by_path["pcs.fri.last_layer_poly"],
+        "oods_samples": by_path["pcs.sampled_values"],
+        "queries_values": by_path["pcs.queried_values"],
+        "trace_decommitments": by_path["pcs.commitments"]
+        + by_path["pcs.trace_decommitments.hash_witness"],
+    }
+
+
 def validate_accounting_row(
     row: dict[str, Any],
+    role: str,
     relative_path: str,
     proof_json_size: int,
     local_typed_bytes: int,
@@ -413,6 +437,12 @@ def validate_accounting_row(
         raise GateValueCompactGateError("record counts drift")
     if recomputed_total != local_typed_bytes:
         raise GateValueCompactGateError("record byte total drift")
+    role_label = "compact" if role == COMPACT_ROLE else "baseline"
+    expected_grouped = expected_grouped_reconstruction(expected_counts)
+    if require_dict(accounting.get("grouped_reconstruction"), f"{role_label} grouped") != expected_grouped:
+        raise GateValueCompactGateError(f"{role_label} grouped_reconstruction drift")
+    if require_dict(accounting.get("stwo_grouped_breakdown"), f"{role_label} stwo grouped") != expected_grouped:
+        raise GateValueCompactGateError(f"{role_label} stwo_grouped_breakdown drift")
 
 
 def grouped_delta(rows: dict[str, dict[str, Any]]) -> dict[str, int]:

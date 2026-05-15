@@ -219,10 +219,23 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             })?
     };
     #[cfg(not(unix))]
-    let file = fs::OpenOptions::new()
-        .read(true)
-        .open(path)
-        .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?;
+    let file = {
+        let metadata = fs::symlink_metadata(path)
+            .map_err(|error| format!("failed to stat {label} {}: {error}", path.display()))?;
+        if metadata.file_type().is_symlink() {
+            return Err(format!("refusing symlink for {label}: {}", path.display()));
+        }
+        if !metadata.is_file() {
+            return Err(format!(
+                "expected regular file for {label}: {}",
+                path.display()
+            ));
+        }
+        fs::OpenOptions::new()
+            .read(true)
+            .open(path)
+            .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?
+    };
     let metadata = file
         .metadata()
         .map_err(|error| format!("failed to stat opened {label} {}: {error}", path.display()))?;
