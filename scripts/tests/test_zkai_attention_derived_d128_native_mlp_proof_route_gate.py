@@ -95,6 +95,30 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
         )
 
+    def test_rejects_coordinated_activation_down_statement_drift(self) -> None:
+        original_load_json = GATE._load_json
+        drifted_statement = "blake2b-256:" + "11" * 32
+
+        def load_with_coordinated_drift(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            payload = copy.deepcopy(payload)
+            if path == GATE.DERIVED_NATIVE_ACTIVATION:
+                payload["statement_commitment"] = drifted_statement
+            if path == GATE.DERIVED_NATIVE_ACTIVATION_ENVELOPE:
+                payload["input"]["statement_commitment"] = drifted_statement
+            if path == GATE.DERIVED_NATIVE_DOWN:
+                payload["source_activation_swiglu_statement_commitment"] = drifted_statement
+            if path == GATE.DERIVED_NATIVE_DOWN_ENVELOPE:
+                payload["input"]["source_activation_swiglu_statement_commitment"] = drifted_statement
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_coordinated_drift):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "derived native activation statement_commitment drift",
+            ):
+                GATE.build_context()
+
     def test_pins_missing_native_attention_derived_artifacts(self) -> None:
         missing = self.payload["missing_native_artifacts"]
         self.assertEqual(len(missing), 3)

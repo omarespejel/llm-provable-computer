@@ -64,6 +64,27 @@ EXPECTED_DERIVED_INPUT_COMMITMENT = (
 EXPECTED_CURRENT_INPUT_COMMITMENT = (
     "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78"
 )
+EXPECTED_NATIVE_ACTIVATION_STATEMENT_COMMITMENT = (
+    "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738"
+)
+EXPECTED_NATIVE_ACTIVATION_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb"
+)
+EXPECTED_NATIVE_ACTIVATION_HIDDEN_COMMITMENT = (
+    "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4"
+)
+EXPECTED_NATIVE_DOWN_STATEMENT_COMMITMENT = (
+    "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e"
+)
+EXPECTED_NATIVE_DOWN_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735"
+)
+EXPECTED_NATIVE_DOWN_RESIDUAL_DELTA_COMMITMENT = (
+    "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec"
+)
+EXPECTED_NATIVE_DOWN_MUL_ROW_COMMITMENT = (
+    "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278"
+)
 
 REQUIRED_NATIVE_PROOF_ARTIFACTS = (
     "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
@@ -388,6 +409,61 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("derived native down proof backend version drift")
     if native_down_envelope.get("decision") != "GO_D128_DOWN_PROJECTION_AIR_PROOF":
         raise NativeMlpProofRouteError("derived native down proof decision drift")
+    expected_commitments = (
+        (
+            native_activation.get("statement_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_STATEMENT_COMMITMENT,
+            "derived native activation statement_commitment",
+        ),
+        (
+            native_activation.get("public_instance_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native activation public_instance_commitment",
+        ),
+        (
+            native_activation.get("hidden_activation_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_HIDDEN_COMMITMENT,
+            "derived native activation hidden_activation_commitment",
+        ),
+        (
+            native_down.get("statement_commitment"),
+            EXPECTED_NATIVE_DOWN_STATEMENT_COMMITMENT,
+            "derived native down statement_commitment",
+        ),
+        (
+            native_down.get("public_instance_commitment"),
+            EXPECTED_NATIVE_DOWN_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native down public_instance_commitment",
+        ),
+        (
+            native_down.get("residual_delta_commitment"),
+            EXPECTED_NATIVE_DOWN_RESIDUAL_DELTA_COMMITMENT,
+            "derived native down residual_delta_commitment",
+        ),
+        (
+            native_down.get("down_projection_mul_row_commitment"),
+            EXPECTED_NATIVE_DOWN_MUL_ROW_COMMITMENT,
+            "derived native down down_projection_mul_row_commitment",
+        ),
+        (
+            native_down.get("source_activation_swiglu_statement_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_STATEMENT_COMMITMENT,
+            "derived native down source_activation_swiglu_statement_commitment",
+        ),
+        (
+            native_down.get("source_activation_swiglu_public_instance_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native down source_activation_swiglu_public_instance_commitment",
+        ),
+        (
+            native_down.get("source_hidden_activation_commitment"),
+            EXPECTED_NATIVE_ACTIVATION_HIDDEN_COMMITMENT,
+            "derived native down source_hidden_activation_commitment",
+        ),
+    )
+    for actual, expected, label in expected_commitments:
+        if actual != expected:
+            raise NativeMlpProofRouteError(f"{label} drift")
     if native_down.get("source_hidden_activation_commitment") != native_activation.get("hidden_activation_commitment"):
         raise NativeMlpProofRouteError("derived native activation/down hidden commitment mismatch")
     if native_down.get("source_activation_swiglu_statement_commitment") != native_activation.get("statement_commitment"):

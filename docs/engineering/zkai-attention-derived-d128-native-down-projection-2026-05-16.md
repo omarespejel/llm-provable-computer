@@ -23,6 +23,18 @@ Residual-add remains the first blocker.
 - rows: `65,536`
 - proof bytes: `58,151`
 - envelope bytes: `480,346`
+- backend: `Stwo`
+- proof backend version: `stwo-d128-down-projection-air-proof-v1`
+- statement version: `zkai-d128-down-projection-statement-v1`
+- semantic scope: `d128_down_projection_rows_bound_to_hidden_activation_receipt`
+- timing mode: not measured; this is correctness, route, and byte-accounting
+  evidence only
+- evidence path:
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
+- generation command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
+- verification command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
 - verified: `true`
 - source hidden activation:
   `blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`
@@ -55,7 +67,10 @@ honestly.
 - NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof.
 - NO-GO for attention plus MLP in one proof object.
 - NO-GO for NANOZK benchmark claims.
-- No timing claim.
+- NO-GO for timing claims; no median timing harness was run for this slice.
+- Backend and evidence are pinned to
+  `stwo-d128-down-projection-air-proof-v1` and
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`.
 
 ## Evidence
 
