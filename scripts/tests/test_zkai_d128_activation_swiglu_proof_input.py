@@ -77,6 +77,35 @@ class ZkAiD128ActivationSwiGluProofInputTests(unittest.TestCase):
         )
         self.assertEqual(payload["validation_commands"], ACTIVATION_SWIGLU.DERIVED_VALIDATION_COMMANDS)
 
+    def test_source_anchor_rejects_unknown_commitment_tuple(self) -> None:
+        source = copy.deepcopy(ACTIVATION_SWIGLU.load_source())
+        source["statement_commitment"] = "blake2b-256:" + "91" * 32
+        source["public_instance_commitment"] = "blake2b-256:" + "92" * 32
+        source["gate_projection_output_commitment"] = "blake2b-256:" + "93" * 32
+        source["value_projection_output_commitment"] = "blake2b-256:" + "94" * 32
+        source["gate_value_projection_output_commitment"] = "blake2b-256:" + "95" * 32
+        with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "anchor is not approved"):
+            ACTIVATION_SWIGLU.source_gate_value_anchor(source)
+
+    def test_source_anchor_rejects_partial_anchor_match(self) -> None:
+        source = copy.deepcopy(ACTIVATION_SWIGLU.load_source())
+        source["gate_value_projection_output_commitment"] = ACTIVATION_SWIGLU.DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT
+        with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "anchor is not approved"):
+            ACTIVATION_SWIGLU.source_gate_value_anchor(source)
+
+    def test_payload_rejects_validation_commands_from_wrong_anchor(self) -> None:
+        source = ACTIVATION_SWIGLU.load_source(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+        )
+        payload = ACTIVATION_SWIGLU.build_payload(source)
+        payload["validation_commands"] = ACTIVATION_SWIGLU.VALIDATION_COMMANDS
+        with self.assertRaisesRegex(ACTIVATION_SWIGLU.ActivationSwiGluInputError, "validation_commands"):
+            ACTIVATION_SWIGLU.validate_payload(payload)
+
     def test_payload_rejects_hidden_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
         payload["hidden_activation_commitment"] = ACTIVATION_SWIGLU.OUTPUT_ACTIVATION_COMMITMENT
