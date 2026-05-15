@@ -31,6 +31,7 @@ use crate::proof::StarkProofBackend;
 use super::d128_native_rmsnorm_to_projection_bridge_proof::{
     ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
+    ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
 };
 
@@ -77,6 +78,12 @@ pub const ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
     "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT: &str =
     "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf";
+pub const ZKAI_D128_ATTENTION_DERIVED_PROJECTION_INPUT_ROW_COMMITMENT: &str =
+    "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba";
+pub const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:85a4f027ea7570b388a585fb53cb9c66a7358e2431730e044e39f4bdea859abf";
+pub const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT:
+    &str = "blake2b-256:7939a60307f2b0f078e55430faf45cde8598158dd2090c5d65bf4fd72e436f4b";
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const ZKAI_D128_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
@@ -112,6 +119,13 @@ const MATRIX_ROW_LEAF_DOMAIN: &str = "ptvm:zkai:d128:param-matrix-row-leaf:v1";
 const MATRIX_ROW_TREE_DOMAIN: &str = "ptvm:zkai:d128:param-matrix-row-tree:v1";
 static EXPECTED_GATE_MATRIX_ROOT: OnceLock<String> = OnceLock::new();
 static EXPECTED_VALUE_MATRIX_ROOT: OnceLock<String> = OnceLock::new();
+
+#[derive(Debug, Clone, Copy)]
+struct SourceBridgeAnchor {
+    statement_commitment: &'static str,
+    public_instance_commitment: &'static str,
+    projection_input_row_commitment: &'static str,
+}
 
 const COLUMN_IDS: [&str; 7] = [
     "zkai/d128/gate-value-projection/row-index",
@@ -257,6 +271,10 @@ pub struct ZkAiD128GateValueProjectionProofInput {
     pub gate_projection_mul_rows: usize,
     pub value_projection_mul_rows: usize,
     pub source_bridge_proof_version: String,
+    #[serde(default)]
+    pub source_bridge_statement_commitment: Option<String>,
+    #[serde(default)]
+    pub source_bridge_public_instance_commitment: Option<String>,
     pub source_projection_input_row_commitment: String,
     pub gate_matrix_root: String,
     pub value_matrix_root: String,
@@ -541,11 +559,7 @@ fn validate_gate_value_input(
         ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
         "source bridge proof version",
     )?;
-    expect_eq(
-        &input.source_projection_input_row_commitment,
-        ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
-        "source projection input row commitment",
-    )?;
+    let source_anchor = approved_source_bridge_anchor(input)?;
     let expected_gate_matrix_root = expected_gate_matrix_root();
     let expected_value_matrix_root = expected_value_matrix_root();
     expect_eq(
@@ -573,41 +587,32 @@ fn validate_gate_value_input(
         ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_NATIVE_PARAMETER_COMMITMENT,
         "proof-native parameter commitment",
     )?;
-    expect_eq(
-        &input.gate_projection_output_commitment,
-        ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
-        "gate projection output commitment",
-    )?;
-    expect_eq(
-        &input.value_projection_output_commitment,
-        ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
-        "value projection output commitment",
-    )?;
     if input.gate_value_projection_output_commitment == ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT {
         return Err(gate_value_error(
             "gate/value projection output commitment must not relabel as full output activation commitment",
         ));
     }
-    expect_eq(
+    require_blake2b_commitment(
+        &input.gate_projection_output_commitment,
+        "gate projection output commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.value_projection_output_commitment,
+        "value projection output commitment",
+    )?;
+    require_blake2b_commitment(
         &input.gate_value_projection_output_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
         "gate/value projection output commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.gate_value_projection_mul_row_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT,
         "gate/value projection row commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.public_instance_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
         "public instance commitment",
     )?;
-    expect_eq(
-        &input.statement_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
-        "statement commitment",
-    )?;
+    require_blake2b_commitment(&input.statement_commitment, "statement commitment")?;
     expect_str_set_eq(
         input.non_claims.iter().map(String::as_str),
         EXPECTED_NON_CLAIMS,
@@ -697,6 +702,11 @@ fn validate_gate_value_input(
         ),
         &input.source_projection_input_row_commitment,
         "projection input recomputed commitment",
+    )?;
+    expect_eq(
+        &input.source_projection_input_row_commitment,
+        source_anchor.projection_input_row_commitment,
+        "source projection input row approved anchor",
     )?;
     let recomputed_gate =
         projection_outputs_from_accumulators(&gate_accumulators, "gate projection output")?;
@@ -799,6 +809,51 @@ fn validate_gate_value_row(
         "row-order input index",
     )?;
     Ok(())
+}
+
+fn approved_source_bridge_anchor(
+    input: &ZkAiD128GateValueProjectionProofInput,
+) -> Result<SourceBridgeAnchor> {
+    let statement = input
+        .source_bridge_statement_commitment
+        .as_deref()
+        .unwrap_or(ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT);
+    let public_instance = input
+        .source_bridge_public_instance_commitment
+        .as_deref()
+        .unwrap_or(ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT);
+    require_blake2b_commitment(statement, "source bridge statement commitment")?;
+    require_blake2b_commitment(public_instance, "source bridge public instance commitment")?;
+    require_blake2b_commitment(
+        &input.source_projection_input_row_commitment,
+        "source projection input row commitment",
+    )?;
+
+    let anchors = [
+        SourceBridgeAnchor {
+            statement_commitment: ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+            public_instance_commitment:
+                ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            projection_input_row_commitment: ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
+        },
+        SourceBridgeAnchor {
+            statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+            public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            projection_input_row_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_PROJECTION_INPUT_ROW_COMMITMENT,
+        },
+    ];
+    anchors
+        .into_iter()
+        .find(|anchor| {
+            statement == anchor.statement_commitment
+                && public_instance == anchor.public_instance_commitment
+                && input.source_projection_input_row_commitment
+                    == anchor.projection_input_row_commitment
+        })
+        .ok_or_else(|| gate_value_error("source bridge anchor is not approved"))
 }
 
 fn projection_outputs_from_accumulators(accumulators: &[i64], label: &str) -> Result<Vec<i64>> {
@@ -1274,6 +1329,10 @@ fn proof_native_parameter_commitment(gate_root: &str, value_root: &str) -> Strin
 }
 
 fn statement_commitment(input: &ZkAiD128GateValueProjectionProofInput) -> String {
+    let source_bridge_statement = input
+        .source_bridge_statement_commitment
+        .as_deref()
+        .unwrap_or(ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT);
     let payload = format!(
         "{{\"ff_dim\":{},\"gate_matrix_root\":\"{}\",\"gate_projection_output_commitment\":\"{}\",\"gate_value_projection_mul_row_commitment\":\"{}\",\"gate_value_projection_output_commitment\":\"{}\",\"operation\":\"gate_value_projection\",\"proof_native_parameter_commitment\":\"{}\",\"required_backend_version\":\"{}\",\"row_count\":{},\"source_bridge_proof_version\":\"{}\",\"source_bridge_statement_commitment\":\"{}\",\"source_projection_input_row_commitment\":\"{}\",\"target_commitment\":\"{}\",\"target_id\":\"{}\",\"value_matrix_root\":\"{}\",\"value_projection_output_commitment\":\"{}\",\"verifier_domain\":\"{}\",\"width\":{}}}",
         input.ff_dim,
@@ -1285,7 +1344,7 @@ fn statement_commitment(input: &ZkAiD128GateValueProjectionProofInput) -> String
         ZKAI_D128_REQUIRED_BACKEND_VERSION,
         input.row_count,
         ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+        source_bridge_statement,
         input.source_projection_input_row_commitment,
         ZKAI_D128_TARGET_COMMITMENT,
         ZKAI_D128_TARGET_ID,
@@ -1458,6 +1517,15 @@ fn expect_eq(actual: &str, expected: &str, label: &str) -> Result<()> {
     Ok(())
 }
 
+fn require_blake2b_commitment(actual: &str, label: &str) -> Result<()> {
+    if !actual.starts_with("blake2b-256:") {
+        return Err(gate_value_error(format!(
+            "{label} must be a blake2b-256 commitment"
+        )));
+    }
+    parse_blake2b_hex(actual).map(|_| ())
+}
+
 fn expect_usize(actual: usize, expected: usize, label: &str) -> Result<()> {
     if actual != expected {
         return Err(gate_value_error(format!(
@@ -1527,9 +1595,17 @@ mod tests {
     const INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json"
     );
+    const DERIVED_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiD128GateValueProjectionProofInput {
         zkai_d128_gate_value_projection_input_from_json_str(INPUT_JSON).expect("gate/value input")
+    }
+
+    fn derived_input() -> ZkAiD128GateValueProjectionProofInput {
+        zkai_d128_gate_value_projection_input_from_json_str(DERIVED_INPUT_JSON)
+            .expect("attention-derived gate/value input")
     }
 
     #[test]
@@ -1564,6 +1640,32 @@ mod tests {
             input.gate_value_projection_output_commitment,
             ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT
         );
+    }
+
+    #[test]
+    fn attention_derived_gate_value_input_validates_checked_commitments_and_rows() {
+        let input = derived_input();
+        assert_eq!(
+            input.source_projection_input_row_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_PROJECTION_INPUT_ROW_COMMITMENT
+        );
+        assert_eq!(
+            input.source_bridge_statement_commitment.as_deref(),
+            Some(ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT)
+        );
+        assert_eq!(
+            input.source_bridge_public_instance_commitment.as_deref(),
+            Some(
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT
+            )
+        );
+        assert_ne!(
+            input.gate_value_projection_output_commitment,
+            ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT
+        );
+        let rows = build_rows(&input.projection_input_q8).expect("derived rows");
+        assert_eq!(rows.len(), ZKAI_D128_GATE_VALUE_ROW_COUNT);
+        assert_eq!(rows[0].projection_input_q8, 0);
     }
 
     #[test]
@@ -1653,7 +1755,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("gate/value projection row commitment"));
+            .contains("gate/value projection row recomputed commitment"));
     }
 
     #[test]
@@ -1665,9 +1767,19 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error
-            .to_string()
-            .contains("source projection input row commitment"));
+        assert!(error.to_string().contains("source bridge anchor"));
+    }
+
+    #[test]
+    fn gate_value_rejects_unapproved_source_bridge_anchor() {
+        let mut value: Value = serde_json::from_str(DERIVED_INPUT_JSON).expect("json");
+        value["source_bridge_statement_commitment"] =
+            Value::String(ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT.to_string());
+        let error = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("source bridge anchor"));
     }
 
     #[test]
@@ -1681,7 +1793,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("gate projection output commitment"));
+            .contains("gate projection output recomputed commitment"));
     }
 
     #[test]
@@ -1706,7 +1818,9 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error.to_string().contains("statement commitment"));
+        assert!(error
+            .to_string()
+            .contains("statement recomputed commitment"));
     }
 
     #[test]
@@ -1718,7 +1832,9 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error.to_string().contains("public instance commitment"));
+        assert!(error
+            .to_string()
+            .contains("public instance recomputed commitment"));
     }
 
     #[test]

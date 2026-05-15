@@ -1,8 +1,8 @@
 # HANDOFF
 
-Last refreshed: 2026-05-15
+Last refreshed: 2026-05-16
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `e9a6d8f5`
+Mainline reference at refresh: `c47e0a19`
 
 ## Immediate orientation
 
@@ -19,6 +19,37 @@ truth under `.codex/research/`. Fresh agents should read
 before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
+
+Recent attention-derived d128 native gate/value result: the derived
+RMSNorm-to-projection bridge now feeds a native gate/value projection proof
+input and proof object. The checked derived gate/value proof has `131,072`
+rows, `64,651` proof bytes, a `537,646` byte envelope, and verifies true. The
+route frontier moves from `2 / 6` to `3 / 6` native-compatible components:
+RMSNorm public rows, RMSNorm-to-projection bridge, and gate/value projection.
+This is not a regenerated attention-derived RMSNorm-MLP fused proof and not a
+NANOZK benchmark win; activation/SwiGLU is now the first blocker because it
+still consumes the older synthetic gate/value output commitment.
+
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_gate_value_projection_proof` with
+  `stwo-d128-gate-value-projection-air-proof-v1`.
+- Timing mode: proof-size/count and verifier-result evidence only, no timing
+  claim.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
+- Reproduce command:
+  `python3 scripts/zkai_d128_gate_value_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv`.
+- Prove/verify commands:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json`
+  and
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json`.
 
 Recent d128 compact-preprocessed result: the selected public RMSNorm row and
 projection-bridge relations now have a smaller native Stwo reprove object. The
@@ -1159,16 +1190,18 @@ Validate with
 Current attention-derived native MLP proof-route result: the value-connected
 attention-derived d128 statement chain remains a GO at `199,553` rows, but the
 regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
-`1 / 6` derived slice payloads currently have the native component input shape
-accepted by the current Stwo RMSNorm-MLP fused proof builder; `5 / 6` are
-statement-chain payloads that must be parameterized or regenerated as native
-component proof inputs. The existing MLP fused proof consumes the older
-synthetic input commitment
+`3 / 6` derived slice payloads currently have the native component input shape:
+RMSNorm public rows, RMSNorm-to-projection bridge, and gate/value projection.
+Activation/SwiGLU, down-projection, and residual-add are still statement-chain
+payloads that must be parameterized or regenerated as native component proof
+inputs. The existing MLP fused proof consumes the older synthetic input commitment
 `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
 not the value-derived commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`.
 Evidence:
-`docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
+`docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
+and
+`docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`.
 Machine-readable evidence:
 `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 and

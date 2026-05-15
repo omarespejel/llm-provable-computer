@@ -40,6 +40,9 @@ SOURCE_BRIDGE_PROOF_VERSION = "stwo-d128-rmsnorm-to-projection-bridge-air-proof-
 SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:ca94d85cb0ed5e9001cd3def00817060745fa015bd8dda5f08732944f7418383"
 SOURCE_BRIDGE_STATEMENT_COMMITMENT = "blake2b-256:fe0a9e59560611ed5220fd25b082806977a66a7032f457fce2cd5c3a41856728"
 PROJECTION_INPUT_ROW_COMMITMENT = "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17"
+DERIVED_BRIDGE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:7939a60307f2b0f078e55430faf45cde8598158dd2090c5d65bf4fd72e436f4b"
+DERIVED_BRIDGE_STATEMENT_COMMITMENT = "blake2b-256:85a4f027ea7570b388a585fb53cb9c66a7358e2431730e044e39f4bdea859abf"
+DERIVED_PROJECTION_INPUT_ROW_COMMITMENT = "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba"
 TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 PROOF_NATIVE_PARAMETER_KIND = "d128-gate-value-projection-synthetic-parameters-v1"
 PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:d128-proof-native-parameter-commitment:v1"
@@ -97,6 +100,30 @@ VALIDATION_COMMANDS = [
     "just gate-fast",
     "just gate",
 ]
+DERIVED_VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_gate_value_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_projection_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_gate_value_projection_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+]
+
+SOURCE_BRIDGE_ANCHORS = (
+    {
+        "kind": "synthetic",
+        "statement_commitment": SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+        "public_instance_commitment": SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        "projection_input_row_commitment": PROJECTION_INPUT_ROW_COMMITMENT,
+        "validation_commands": VALIDATION_COMMANDS,
+    },
+    {
+        "kind": "attention_derived",
+        "statement_commitment": DERIVED_BRIDGE_STATEMENT_COMMITMENT,
+        "public_instance_commitment": DERIVED_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        "projection_input_row_commitment": DERIVED_PROJECTION_INPUT_ROW_COMMITMENT,
+        "validation_commands": DERIVED_VALIDATION_COMMANDS,
+    },
+)
 
 TSV_COLUMNS = (
     "target_id",
@@ -106,6 +133,8 @@ TSV_COLUMNS = (
     "row_count",
     "gate_projection_mul_rows",
     "value_projection_mul_rows",
+    "source_bridge_statement_commitment",
+    "source_bridge_public_instance_commitment",
     "source_projection_input_row_commitment",
     "gate_matrix_root",
     "value_matrix_root",
@@ -171,6 +200,32 @@ def require_commitment(value: Any, label: str) -> str:
     if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
         raise GateValueProjectionInputError(f"{label} must be a 32-byte lowercase hex digest")
     return value
+
+
+def source_bridge_anchor(bridge: dict[str, Any]) -> dict[str, Any]:
+    statement = require_commitment(bridge.get("statement_commitment"), "bridge statement commitment")
+    public_instance = require_commitment(
+        bridge.get("public_instance_commitment"),
+        "bridge public instance commitment",
+    )
+    projection = require_commitment(
+        bridge.get("projection_input_row_commitment"),
+        "bridge projection input row commitment",
+    )
+    for anchor in SOURCE_BRIDGE_ANCHORS:
+        if (
+            statement == anchor["statement_commitment"]
+            and public_instance == anchor["public_instance_commitment"]
+            and projection == anchor["projection_input_row_commitment"]
+        ):
+            return anchor
+    raise GateValueProjectionInputError(
+        "bridge source anchor is not approved for d128 gate/value native input"
+    )
+
+
+def validation_commands_for_bridge(bridge: dict[str, Any]) -> list[str]:
+    return list(source_bridge_anchor(bridge)["validation_commands"])
 
 
 def parse_blake2b_hex(value: str, label: str) -> bytes:
@@ -244,7 +299,7 @@ def statement_commitment(payload: dict[str, Any]) -> str:
             "required_backend_version": REQUIRED_BACKEND_VERSION,
             "row_count": payload["row_count"],
             "source_bridge_proof_version": SOURCE_BRIDGE_PROOF_VERSION,
-            "source_bridge_statement_commitment": SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+            "source_bridge_statement_commitment": payload["source_bridge_statement_commitment"],
             "source_projection_input_row_commitment": payload["source_projection_input_row_commitment"],
             "target_commitment": TARGET_COMMITMENT,
             "target_id": TARGET_ID,
@@ -298,13 +353,11 @@ def validate_bridge(bridge: Any) -> None:
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "row_count": WIDTH,
-        "projection_input_row_commitment": PROJECTION_INPUT_ROW_COMMITMENT,
-        "public_instance_commitment": SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
-        "statement_commitment": SOURCE_BRIDGE_STATEMENT_COMMITMENT,
     }
     for field, expected in constants.items():
         if bridge.get(field) != expected:
             raise GateValueProjectionInputError(f"bridge field mismatch: {field}")
+    source_bridge_anchor(bridge)
     rows = bridge.get("rows")
     if not isinstance(rows, list) or len(rows) != WIDTH:
         raise GateValueProjectionInputError("bridge row vector mismatch")
@@ -415,6 +468,7 @@ def build_rows(inputs: list[int]) -> tuple[list[dict[str, Any]], list[int], list
 
 def build_payload(bridge: dict[str, Any] | None = None) -> dict[str, Any]:
     bridge = load_bridge() if bridge is None else bridge
+    anchor = source_bridge_anchor(bridge)
     inputs = projection_input_values(bridge)
     rows, gate, value = build_rows(inputs)
     gate_root = matrix_root(rows, "gate")
@@ -432,7 +486,9 @@ def build_payload(bridge: dict[str, Any] | None = None) -> dict[str, Any]:
         "gate_projection_mul_rows": FF_DIM * WIDTH,
         "value_projection_mul_rows": FF_DIM * WIDTH,
         "source_bridge_proof_version": SOURCE_BRIDGE_PROOF_VERSION,
-        "source_projection_input_row_commitment": PROJECTION_INPUT_ROW_COMMITMENT,
+        "source_bridge_statement_commitment": anchor["statement_commitment"],
+        "source_bridge_public_instance_commitment": anchor["public_instance_commitment"],
+        "source_projection_input_row_commitment": anchor["projection_input_row_commitment"],
         "gate_matrix_root": gate_root,
         "value_matrix_root": value_root,
         "proof_native_parameter_commitment": native_parameter,
@@ -448,7 +504,7 @@ def build_payload(bridge: dict[str, Any] | None = None) -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": list(anchor["validation_commands"]),
     }
     statement = statement_commitment(payload)
     payload["statement_commitment"] = statement
@@ -463,6 +519,7 @@ def validate_payload(payload: Any) -> None:
     expected_fields = {
         "schema", "decision", "target_id", "required_backend_version", "verifier_domain", "width", "ff_dim",
         "row_count", "gate_projection_mul_rows", "value_projection_mul_rows", "source_bridge_proof_version",
+        "source_bridge_statement_commitment", "source_bridge_public_instance_commitment",
         "source_projection_input_row_commitment", "gate_matrix_root", "value_matrix_root",
         "proof_native_parameter_commitment", "gate_projection_output_commitment", "value_projection_output_commitment",
         "gate_value_projection_output_commitment", "gate_value_projection_mul_row_commitment", "public_instance_commitment",
@@ -483,26 +540,33 @@ def validate_payload(payload: Any) -> None:
         "gate_projection_mul_rows": FF_DIM * WIDTH,
         "value_projection_mul_rows": FF_DIM * WIDTH,
         "source_bridge_proof_version": SOURCE_BRIDGE_PROOF_VERSION,
-        "source_projection_input_row_commitment": PROJECTION_INPUT_ROW_COMMITMENT,
         "gate_matrix_root": GATE_MATRIX_ROOT,
         "value_matrix_root": VALUE_MATRIX_ROOT,
         "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
-        "gate_projection_output_commitment": GATE_PROJECTION_OUTPUT_COMMITMENT,
-        "value_projection_output_commitment": VALUE_PROJECTION_OUTPUT_COMMITMENT,
-        "gate_value_projection_output_commitment": GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
-        "gate_value_projection_mul_row_commitment": GATE_VALUE_PROJECTION_MUL_ROW_COMMITMENT,
-        "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
-        "statement_commitment": STATEMENT_COMMITMENT,
         "non_claims": NON_CLAIMS,
         "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": VALIDATION_COMMANDS,
     }
     for field, expected in constants.items():
         if expected == "TO_BE_FILLED":
             continue
         if payload.get(field) != expected:
             raise GateValueProjectionInputError(f"payload field mismatch: {field}")
+    source_bridge_anchor(
+        {
+            "statement_commitment": payload.get("source_bridge_statement_commitment"),
+            "public_instance_commitment": payload.get("source_bridge_public_instance_commitment"),
+            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
+        }
+    )
+    if payload.get("validation_commands") != validation_commands_for_bridge(
+        {
+            "statement_commitment": payload.get("source_bridge_statement_commitment"),
+            "public_instance_commitment": payload.get("source_bridge_public_instance_commitment"),
+            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
+        }
+    ):
+        raise GateValueProjectionInputError("validation commands drift")
     if payload["gate_value_projection_output_commitment"] == OUTPUT_ACTIVATION_COMMITMENT:
         raise GateValueProjectionInputError("gate/value projection output relabeled as full output commitment")
     inputs = payload["projection_input_q8"]
@@ -574,6 +638,8 @@ def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[di
             "row_count": payload["row_count"],
             "gate_projection_mul_rows": payload["gate_projection_mul_rows"],
             "value_projection_mul_rows": payload["value_projection_mul_rows"],
+            "source_bridge_statement_commitment": payload["source_bridge_statement_commitment"],
+            "source_bridge_public_instance_commitment": payload["source_bridge_public_instance_commitment"],
             "source_projection_input_row_commitment": payload["source_projection_input_row_commitment"],
             "gate_matrix_root": payload["gate_matrix_root"],
             "value_matrix_root": payload["value_matrix_root"],

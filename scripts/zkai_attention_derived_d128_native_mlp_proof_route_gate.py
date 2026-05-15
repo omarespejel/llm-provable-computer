@@ -24,6 +24,9 @@ DERIVED_RMSNORM = EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-public-row
 DERIVED_NATIVE_BRIDGE = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
 )
+DERIVED_NATIVE_GATE_VALUE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+)
 DERIVED_PROJECTION = EVIDENCE_DIR / "zkai-attention-derived-d128-projection-boundary-2026-05.json"
 DERIVED_ACTIVATION = EVIDENCE_DIR / "zkai-attention-derived-d128-activation-swiglu-2026-05.json"
 DERIVED_DOWN = EVIDENCE_DIR / "zkai-attention-derived-d128-down-projection-2026-05.json"
@@ -41,7 +44,7 @@ RESULT = "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED"
 VALUE_CHAIN_STATUS = "GO_ATTENTION_DERIVED_D128_VALUE_CONNECTED_STATEMENT_CHAIN"
 NATIVE_ROUTE_STATUS = "NO_GO_DERIVED_DOWNSTREAM_PAYLOADS_NOT_NATIVE_COMPONENT_PROOF_INPUTS"
 FIRST_BLOCKER = (
-    "the attention-derived gate/value projection slice is still a checked statement-chain payload, "
+    "the attention-derived activation/SwiGLU slice is still a checked statement-chain payload, "
     "not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:attention-derived-d128:native-mlp-proof-route:v1"
@@ -77,8 +80,8 @@ COMPONENT_SPECS = (
     },
     {
         "component_id": "gate_value_projection",
-        "path": DERIVED_PROJECTION,
-        "payload_key": "gate_value_projection_payload",
+        "path": DERIVED_NATIVE_GATE_VALUE,
+        "payload_key": None,
         "required_native_schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
         "required_native_decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
         "required_fields": ("validation_commands", "proof_verifier_hardening", "non_claims"),
@@ -312,6 +315,7 @@ def build_context() -> dict[str, Any]:
     paths = {
         DERIVED_RMSNORM,
         DERIVED_NATIVE_BRIDGE,
+        DERIVED_NATIVE_GATE_VALUE,
         DERIVED_PROJECTION,
         DERIVED_ACTIVATION,
         DERIVED_DOWN,
@@ -555,8 +559,8 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ),
     (
         "component_schema_relabels_native",
-        lambda p: p["component_input_frontier"][2].__setitem__(
-            "schema", p["component_input_frontier"][2]["required_native_schema"]
+        lambda p: p["component_input_frontier"][3].__setitem__(
+            "schema", p["component_input_frontier"][3]["required_native_schema"]
         ),
         True,
     ),

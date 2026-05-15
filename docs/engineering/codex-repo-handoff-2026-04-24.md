@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `e9a6d8f5842403c88d7da361c87e9095783debd1` (matches
+**Mainline tip at last refresh:** `c47e0a19a346327e4ae5c177e57539b92bd637c2` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -71,8 +71,10 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 60. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
 61. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
 62. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
-63. `docs/engineering/reproducibility.md`
-64. `git status --short --branch`
+63. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
+64. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+65. `docs/engineering/reproducibility.md`
+66. `git status --short --branch`
 
 ## Current lane split
 
@@ -84,6 +86,17 @@ truth under `.codex/research/`. Fresh agents should read
 before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
+
+Latest attention-derived d128 native gate/value result: the derived
+RMSNorm-to-projection bridge now feeds a native gate/value projection proof
+input and proof object. The checked derived gate/value proof has `131,072`
+rows, `64,651` proof bytes, a `537,646` byte envelope, and verifies true. The
+route frontier moves from `2 / 6` to `3 / 6` native-compatible components:
+RMSNorm public rows, RMSNorm-to-projection bridge, and gate/value projection.
+This is not a regenerated attention-derived RMSNorm-MLP fused proof and not a
+NANOZK benchmark win; activation/SwiGLU is now the first blocker because it
+still consumes the older synthetic gate/value output commitment. See
+`docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`.
 
 ### 1. Publication/default lane
 
@@ -1202,16 +1215,18 @@ Validate with
 Current attention-derived native MLP proof-route result: the value-connected
 attention-derived d128 statement chain remains a GO at `199,553` rows, but the
 regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
-`1 / 6` derived slice payloads currently have the native component input shape
-accepted by the current Stwo RMSNorm-MLP fused proof builder; `5 / 6` are
-statement-chain payloads that must be parameterized or regenerated as native
-component proof inputs. The existing MLP fused proof consumes the older
-synthetic input commitment
+`3 / 6` derived slice payloads currently have the native component input shape:
+RMSNorm public rows, RMSNorm-to-projection bridge, and gate/value projection.
+Activation/SwiGLU, down-projection, and residual-add are still statement-chain
+payloads that must be parameterized or regenerated as native component proof
+inputs. The existing MLP fused proof consumes the older synthetic input commitment
 `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
 not the value-derived commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`.
 Evidence:
-`docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
+`docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
+and
+`docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`.
 Machine-readable evidence:
 `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 and
