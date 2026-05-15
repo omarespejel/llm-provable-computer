@@ -106,6 +106,18 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source public_instance_commitment"):
             BRIDGE.validate_source(source)
 
+    def test_source_validation_rejects_statement_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["statement_commitment"] = "blake2b-256:" + "44" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source statement commitment drift"):
+            BRIDGE.validate_source(source)
+
+    def test_source_validation_rejects_public_instance_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["public_instance_commitment"] = "blake2b-256:" + "45" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source public instance commitment drift"):
+            BRIDGE.validate_source(source)
+
     def test_load_source_accepts_attention_derived_payload_when_self_consistent(self) -> None:
         source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
         self.assertNotEqual(source["statement_commitment"], BRIDGE.SOURCE_RMSNORM_STATEMENT_COMMITMENT)
@@ -118,13 +130,27 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
             BRIDGE.SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
         )
 
-        payload = BRIDGE.build_payload(source=source)
+        selected_commands = BRIDGE.validation_commands_for_source(DERIVED_RMSNORM_SOURCE)
+        payload = BRIDGE.build_payload(source=source, validation_commands=selected_commands)
+        self.assertEqual(payload["validation_commands"], selected_commands)
         self.assertEqual(payload["source_rmsnorm_statement_commitment"], source["statement_commitment"])
         self.assertEqual(
             payload["source_rmsnorm_output_row_commitment"],
             source["rmsnorm_output_row_commitment"],
         )
         BRIDGE.validate_payload(payload)
+
+    def test_load_source_rejects_attention_derived_statement_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source(DERIVED_RMSNORM_SOURCE))
+        source["statement_commitment"] = "blake2b-256:" + "46" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source statement commitment drift"):
+            BRIDGE.build_payload(source=source)
+
+    def test_load_source_rejects_attention_derived_public_instance_commitment_drift(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source(DERIVED_RMSNORM_SOURCE))
+        source["public_instance_commitment"] = "blake2b-256:" + "47" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source public instance commitment drift"):
+            BRIDGE.build_payload(source=source)
 
     def test_target_validation_rejects_target_commitment_drift(self) -> None:
         target = copy.deepcopy(BRIDGE.load_target())

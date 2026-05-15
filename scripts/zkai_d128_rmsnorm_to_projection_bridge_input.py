@@ -40,12 +40,20 @@ TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64
 SOURCE_RMSNORM_SCHEMA = "zkai-d128-native-rmsnorm-public-row-air-proof-input-v3"
 SOURCE_RMSNORM_DECISION = "GO_PUBLIC_ROW_INPUT_FOR_D128_RMSNORM_AIR_PROOF"
 SOURCE_RMSNORM_PUBLIC_ROW_PROOF_VERSION = "stwo-d128-rmsnorm-public-row-air-proof-v3"
+SOURCE_RMSNORM_SOURCE_PROOF_BACKEND_VERSION = "synthetic-d128-rmsnorm-source-v1"
+SOURCE_Q8_SCALE = 256
 SOURCE_RMSNORM_STATEMENT_COMMITMENT = "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
 SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72"
 SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT = "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
+SOURCE_INPUT_ACTIVATION_DOMAIN = "ptvm:zkai:d128-input-activation:v1"
+SOURCE_RMS_SCALE_DOMAIN = "ptvm:zkai:d128-rms-scale:v1"
 SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d128-rmsnorm-output-row:v1"
+SOURCE_NORMALIZATION_CONFIG_DOMAIN = "ptvm:zkai:d128-rmsnorm-config:v1"
+SOURCE_RMS_SCALE_LEAF_DOMAIN = "ptvm:zkai:d128:rms-scale-leaf:v1"
+SOURCE_RMS_SCALE_TREE_DOMAIN = "ptvm:zkai:d128:rms-scale-tree:v1"
 PROJECTION_INPUT_ROW_DOMAIN = "ptvm:zkai:d128-projection-input-row:v1"
 PROJECTION_INPUT_ROW_COMMITMENT = "blake2b-256:84fd5765c9ed8d21ced01ace55c5f95b34f16d159864c1ec20d9a0cd4cd67b17"
+SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_KIND = "d128-rmsnorm-public-row-synthetic-parameters-v1"
 PROOF_NATIVE_PARAMETER_KIND = "d128-rmsnorm-to-projection-bridge-synthetic-parameters-v1"
 PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:d128-proof-native-parameter-commitment:v1"
 PUBLIC_INSTANCE_DOMAIN = "ptvm:zkai:d128-public-instance:v1"
@@ -183,6 +191,49 @@ def public_instance_commitment(statement: str, width: int = WIDTH) -> str:
     )
 
 
+def source_statement_commitment(source: dict[str, Any], target_commitment: str = TARGET_COMMITMENT) -> str:
+    return blake2b_commitment(
+        {
+            "average_square_floor": source["average_square_floor"],
+            "input_activation_commitment": source["input_activation_commitment"],
+            "input_activation_domain": source["input_activation_domain"],
+            "normalization_config_commitment": source["normalization_config_commitment"],
+            "normalization_config_domain": source["normalization_config_domain"],
+            "operation": "rmsnorm_public_rows",
+            "required_backend_version": REQUIRED_BACKEND_VERSION,
+            "rms_q8": source["rms_q8"],
+            "rms_scale_domain": source["rms_scale_domain"],
+            "rms_scale_leaf_domain": source["rms_scale_leaf_domain"],
+            "rms_scale_tree_domain": source["rms_scale_tree_domain"],
+            "rms_scale_tree_root": source["rms_scale_tree_root"],
+            "rmsnorm_output_row_commitment": source["rmsnorm_output_row_commitment"],
+            "rmsnorm_output_row_domain": source["rmsnorm_output_row_domain"],
+            "row_count": source["row_count"],
+            "scale_q8": source["scale_q8"],
+            "source_proof_backend_version": SOURCE_RMSNORM_SOURCE_PROOF_BACKEND_VERSION,
+            "target_commitment": target_commitment,
+            "target_id": TARGET_ID,
+            "verifier_domain": VERIFIER_DOMAIN,
+            "width": source["width"],
+        },
+        VERIFIER_DOMAIN,
+    )
+
+
+def source_public_instance_commitment(statement: str, width: int = WIDTH) -> str:
+    return blake2b_commitment(
+        {"operation": "rmsnorm_public_rows", "target_commitment": statement, "width": width},
+        PUBLIC_INSTANCE_DOMAIN,
+    )
+
+
+def source_proof_native_parameter_commitment(statement: str) -> str:
+    return blake2b_commitment(
+        {"kind": SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_KIND, "target_commitment": statement},
+        PROOF_NATIVE_PARAMETER_DOMAIN,
+    )
+
+
 def require_commitment(value: Any, label: str) -> str:
     if not isinstance(value, str) or not value.startswith("blake2b-256:"):
         raise D128BridgeInputError(f"{label} must be a blake2b-256 commitment")
@@ -266,13 +317,28 @@ def validate_source(source: Any) -> None:
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "row_count": WIDTH,
+        "source_proof_backend_version": SOURCE_RMSNORM_SOURCE_PROOF_BACKEND_VERSION,
+        "input_activation_domain": SOURCE_INPUT_ACTIVATION_DOMAIN,
+        "rms_scale_domain": SOURCE_RMS_SCALE_DOMAIN,
+        "rmsnorm_output_row_domain": SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN,
+        "normalization_config_domain": SOURCE_NORMALIZATION_CONFIG_DOMAIN,
+        "rms_scale_leaf_domain": SOURCE_RMS_SCALE_LEAF_DOMAIN,
+        "rms_scale_tree_domain": SOURCE_RMS_SCALE_TREE_DOMAIN,
+        "scale_q8": SOURCE_Q8_SCALE,
     }
     for field, expected in constants.items():
         if source.get(field) != expected:
             raise D128BridgeInputError(f"source field mismatch: {field}")
+    for field in ("rms_q8", "sum_squares", "average_square_floor"):
+        if not isinstance(source.get(field), int) or isinstance(source.get(field), bool):
+            raise D128BridgeInputError(f"source scalar mismatch: {field}")
     for field in (
         "statement_commitment",
         "public_instance_commitment",
+        "proof_native_parameter_commitment",
+        "input_activation_commitment",
+        "normalization_config_commitment",
+        "rms_scale_tree_root",
         "rmsnorm_output_row_commitment",
     ):
         require_commitment(source.get(field), f"source {field}")
@@ -288,6 +354,13 @@ def validate_source(source: Any) -> None:
         values.append(value)
     if sequence_commitment(values, SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN) != source["rmsnorm_output_row_commitment"]:
         raise D128BridgeInputError("source RMSNorm output row commitment drift")
+    recomputed_statement = source_statement_commitment(source)
+    if source["statement_commitment"] != recomputed_statement:
+        raise D128BridgeInputError("source statement commitment drift")
+    if source["public_instance_commitment"] != source_public_instance_commitment(recomputed_statement):
+        raise D128BridgeInputError("source public instance commitment drift")
+    if source["proof_native_parameter_commitment"] != source_proof_native_parameter_commitment(recomputed_statement):
+        raise D128BridgeInputError("source proof-native parameter commitment drift")
 
 
 def validation_commands_for_source(path: pathlib.Path) -> list[str]:
