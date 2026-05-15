@@ -45,6 +45,14 @@ SOURCE_GATE_VALUE_DECISION = "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF"
 SOURCE_GATE_VALUE_PROOF_VERSION = "stwo-d128-gate-value-projection-air-proof-v1"
 SOURCE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:be8d4ea70a2fc883381caa077874a4cd5c22707daa527208a606ceee5229728c"
 SOURCE_GATE_VALUE_STATEMENT_COMMITMENT = "blake2b-256:3b60f7e1b9fc592dadc4835ed0c85e643de89017c66e7995724911cfbd8297cf"
+SOURCE_GATE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:7ba96ea1ea4fb7ec19bede9996273b118c90adcef1f02091225bf613cf618ec7"
+SOURCE_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf"
+SOURCE_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3"
+DERIVED_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:a24402af117710fca3b0100bc8480ba03e73e4cb86914ba64f45bc785791d51e"
+DERIVED_GATE_VALUE_STATEMENT_COMMITMENT = "blake2b-256:e6dca036c80385d2d47c3953cb4aca15ed058b2a0ac3fc2596767a0658b30d6c"
+DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:d0d681a8db0c32b7c47e24425cda29b93512d40e46d6b9b9aafdb7cddd2880d8"
+DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:b63e4d4fd6f1c3ba867f4cce7c332deafa67f003d2208bbbe1013b075b7b4781"
+DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT = "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2"
 OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:7e6ae6d301fc60ac2232d807d155785eabe653cf4e91971adda470a04246a572"
 TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 PROOF_NATIVE_PARAMETER_KIND = "d128-activation-swiglu-parameters-v1"
@@ -99,6 +107,34 @@ VALIDATION_COMMANDS = [
     "just gate-fast",
     "just gate",
 ]
+DERIVED_VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+]
+
+SOURCE_GATE_VALUE_ANCHORS = (
+    {
+        "kind": "synthetic",
+        "statement_commitment": SOURCE_GATE_VALUE_STATEMENT_COMMITMENT,
+        "public_instance_commitment": SOURCE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
+        "gate_projection_output_commitment": SOURCE_GATE_PROJECTION_OUTPUT_COMMITMENT,
+        "value_projection_output_commitment": SOURCE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "gate_value_projection_output_commitment": SOURCE_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "validation_commands": VALIDATION_COMMANDS,
+    },
+    {
+        "kind": "attention_derived",
+        "statement_commitment": DERIVED_GATE_VALUE_STATEMENT_COMMITMENT,
+        "public_instance_commitment": DERIVED_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
+        "gate_projection_output_commitment": DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT,
+        "value_projection_output_commitment": DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "gate_value_projection_output_commitment": DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "validation_commands": DERIVED_VALIDATION_COMMANDS,
+    },
+)
 
 TSV_COLUMNS = (
     "target_id",
@@ -150,6 +186,52 @@ def blake2b_commitment(value: Any, domain: str) -> str:
     digest.update(b"\0")
     digest.update(canonical_json_bytes(value))
     return f"blake2b-256:{digest.hexdigest()}"
+
+
+def require_commitment(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value.startswith("blake2b-256:"):
+        raise ActivationSwiGluInputError(f"{label} must be a blake2b-256 commitment")
+    digest = value.removeprefix("blake2b-256:")
+    if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+        raise ActivationSwiGluInputError(f"{label} must be a 32-byte lowercase hex digest")
+    return value
+
+
+def source_gate_value_anchor(source: dict[str, Any]) -> dict[str, Any]:
+    statement = require_commitment(
+        source.get("statement_commitment"),
+        "source_gate_value_projection_statement_commitment",
+    )
+    public_instance = require_commitment(
+        source.get("public_instance_commitment"),
+        "source_gate_value_projection_public_instance_commitment",
+    )
+    gate_output = require_commitment(
+        source.get("gate_projection_output_commitment"),
+        "source_gate_projection_output_commitment",
+    )
+    value_output = require_commitment(
+        source.get("value_projection_output_commitment"),
+        "source_value_projection_output_commitment",
+    )
+    gate_value_output = require_commitment(
+        source.get("gate_value_projection_output_commitment"),
+        "source_gate_value_projection_output_commitment",
+    )
+    for anchor in SOURCE_GATE_VALUE_ANCHORS:
+        if (
+            statement == anchor["statement_commitment"]
+            and public_instance == anchor["public_instance_commitment"]
+            and gate_output == anchor["gate_projection_output_commitment"]
+            and value_output == anchor["value_projection_output_commitment"]
+            and gate_value_output == anchor["gate_value_projection_output_commitment"]
+        ):
+            return anchor
+    raise ActivationSwiGluInputError(
+        "source gate/value anchor is not approved for "
+        "source_gate_value_projection_statement_commitment/"
+        "source_gate_value_projection_public_instance_commitment/output commitments"
+    )
 
 
 def sequence_commitment(values: list[int], domain: str, shape: list[int]) -> str:
@@ -218,8 +300,6 @@ def validate_source(source: Any) -> None:
         "width": WIDTH,
         "ff_dim": FF_DIM,
         "source_bridge_proof_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
-        "public_instance_commitment": SOURCE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
-        "statement_commitment": SOURCE_GATE_VALUE_STATEMENT_COMMITMENT,
     }
     for field, expected in constants.items():
         if source.get(field) != expected:
@@ -228,10 +308,12 @@ def validate_source(source: Any) -> None:
         GATE_VALUE.validate_payload(source)
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors for this script.
         raise ActivationSwiGluInputError(f"source gate/value validation failed: {err}") from err
+    source_gate_value_anchor(source)
 
 
 def source_gate_value_vectors(source: dict[str, Any]) -> tuple[list[int], list[int]]:
     validate_source(source)
+    source_gate_value_anchor(source)
     gate = source["gate_projection_q8"]
     value = source["value_projection_q8"]
     if not isinstance(gate, list) or len(gate) != FF_DIM:
@@ -386,6 +468,7 @@ def rows_commitment(rows: list[dict[str, int]]) -> str:
 
 def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
     source = load_source() if source is None else source
+    anchor = source_gate_value_anchor(source)
     gate, value = source_gate_value_vectors(source)
     rows, activated, hidden = build_rows(gate, value)
     lookup_commitment = activation_lookup_commitment()
@@ -423,7 +506,7 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": list(anchor["validation_commands"]),
     }
     statement = statement_commitment(payload)
     payload["statement_commitment"] = statement
@@ -450,6 +533,15 @@ def validate_payload(payload: Any) -> None:
         raise ActivationSwiGluInputError("payload field set mismatch")
     if payload["hidden_activation_commitment"] == OUTPUT_ACTIVATION_COMMITMENT:
         raise ActivationSwiGluInputError("hidden activation commitment relabeled as full output commitment")
+    source_anchor = source_gate_value_anchor(
+        {
+            "statement_commitment": payload.get("source_gate_value_projection_statement_commitment"),
+            "public_instance_commitment": payload.get("source_gate_value_projection_public_instance_commitment"),
+            "gate_projection_output_commitment": payload.get("source_gate_projection_output_commitment"),
+            "value_projection_output_commitment": payload.get("source_value_projection_output_commitment"),
+            "gate_value_projection_output_commitment": payload.get("source_gate_value_projection_output_commitment"),
+        }
+    )
     constants = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -464,19 +556,17 @@ def validate_payload(payload: Any) -> None:
         "scale_q8": SCALE_Q8,
         "activation_clamp_q8": ACTIVATION_CLAMP_Q8,
         "source_gate_value_projection_proof_version": SOURCE_GATE_VALUE_PROOF_VERSION,
-        "source_gate_value_projection_statement_commitment": SOURCE_GATE_VALUE_STATEMENT_COMMITMENT,
-        "source_gate_value_projection_public_instance_commitment": SOURCE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
+        "source_gate_value_projection_statement_commitment": source_anchor["statement_commitment"],
+        "source_gate_value_projection_public_instance_commitment": source_anchor["public_instance_commitment"],
+        "source_gate_projection_output_commitment": source_anchor["gate_projection_output_commitment"],
+        "source_value_projection_output_commitment": source_anchor["value_projection_output_commitment"],
+        "source_gate_value_projection_output_commitment": source_anchor["gate_value_projection_output_commitment"],
         "activation_lookup_commitment": ACTIVATION_LOOKUP_COMMITMENT,
         "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
-        "activation_output_commitment": ACTIVATION_OUTPUT_COMMITMENT,
-        "hidden_activation_commitment": HIDDEN_ACTIVATION_COMMITMENT,
-        "activation_swiglu_row_commitment": ACTIVATION_SWIGLU_ROW_COMMITMENT,
-        "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
-        "statement_commitment": STATEMENT_COMMITMENT,
         "non_claims": NON_CLAIMS,
         "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": VALIDATION_COMMANDS,
+        "validation_commands": source_anchor["validation_commands"],
     }
     for field, expected in constants.items():
         if expected == "TO_BE_FILLED":

@@ -27,8 +27,13 @@ DERIVED_NATIVE_BRIDGE = (
 DERIVED_NATIVE_GATE_VALUE = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
 )
+DERIVED_NATIVE_ACTIVATION = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
+)
+DERIVED_NATIVE_ACTIVATION_ENVELOPE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json"
+)
 DERIVED_PROJECTION = EVIDENCE_DIR / "zkai-attention-derived-d128-projection-boundary-2026-05.json"
-DERIVED_ACTIVATION = EVIDENCE_DIR / "zkai-attention-derived-d128-activation-swiglu-2026-05.json"
 DERIVED_DOWN = EVIDENCE_DIR / "zkai-attention-derived-d128-down-projection-2026-05.json"
 DERIVED_RESIDUAL = EVIDENCE_DIR / "zkai-attention-derived-d128-residual-add-2026-05.json"
 DERIVED_CHAIN = EVIDENCE_DIR / "zkai-attention-derived-d128-block-statement-chain-2026-05.json"
@@ -44,7 +49,7 @@ RESULT = "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED"
 VALUE_CHAIN_STATUS = "GO_ATTENTION_DERIVED_D128_VALUE_CONNECTED_STATEMENT_CHAIN"
 NATIVE_ROUTE_STATUS = "NO_GO_DERIVED_DOWNSTREAM_PAYLOADS_NOT_NATIVE_COMPONENT_PROOF_INPUTS"
 FIRST_BLOCKER = (
-    "the attention-derived activation/SwiGLU slice is still a checked statement-chain payload, "
+    "the attention-derived down-projection slice is still a checked statement-chain payload, "
     "not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:attention-derived-d128:native-mlp-proof-route:v1"
@@ -88,8 +93,8 @@ COMPONENT_SPECS = (
     },
     {
         "component_id": "activation_swiglu",
-        "path": DERIVED_ACTIVATION,
-        "payload_key": "activation_swiglu_payload",
+        "path": DERIVED_NATIVE_ACTIVATION,
+        "payload_key": None,
         "required_native_schema": "zkai-d128-activation-swiglu-air-proof-input-v1",
         "required_native_decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
         "required_fields": ("validation_commands", "proof_verifier_hardening", "non_claims"),
@@ -167,6 +172,8 @@ TSV_COLUMNS = (
     "current_mlp_typed_saving_vs_separate_bytes",
     "native_compatible_components",
     "native_incompatible_components",
+    "derived_native_activation_proof_bytes",
+    "derived_native_activation_envelope_bytes",
 )
 
 
@@ -316,8 +323,9 @@ def build_context() -> dict[str, Any]:
         DERIVED_RMSNORM,
         DERIVED_NATIVE_BRIDGE,
         DERIVED_NATIVE_GATE_VALUE,
+        DERIVED_NATIVE_ACTIVATION,
+        DERIVED_NATIVE_ACTIVATION_ENVELOPE,
         DERIVED_PROJECTION,
-        DERIVED_ACTIVATION,
         DERIVED_DOWN,
         DERIVED_RESIDUAL,
         DERIVED_CHAIN,
@@ -326,16 +334,20 @@ def build_context() -> dict[str, Any]:
         CURRENT_MLP_FUSED_ENVELOPE,
     }
     loaded: dict[pathlib.Path, dict[str, Any]] = {}
+    raw_by_path: dict[pathlib.Path, bytes] = {}
     artifacts = []
     for path in sorted(paths):
         payload, raw = _load_json(path, path.name)
         loaded[path] = payload
+        raw_by_path[path] = raw
         artifacts.append(source_artifact(path.stem, path, payload, raw))
 
     chain_summary = _dict(loaded[DERIVED_CHAIN].get("summary"), "derived chain summary")
     current_aggregate = _dict(loaded[CURRENT_MLP_FUSED_GATE].get("aggregate"), "current MLP aggregate")
     current_input = loaded[CURRENT_MLP_FUSED_INPUT]
     current_envelope = loaded[CURRENT_MLP_FUSED_ENVELOPE]
+    native_activation = loaded[DERIVED_NATIVE_ACTIVATION]
+    native_activation_envelope = loaded[DERIVED_NATIVE_ACTIVATION_ENVELOPE]
     derived_input_commitment = _commitment(
         chain_summary.get("derived_input_activation_commitment"),
         "derived input activation commitment",
@@ -354,6 +366,13 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("current MLP input commitment drift")
     if envelope_input_commitment != current_input_commitment:
         raise NativeMlpProofRouteError("current MLP envelope/input activation commitment mismatch")
+    if _dict(native_activation_envelope.get("input"), "derived native activation envelope input") != native_activation:
+        raise NativeMlpProofRouteError("derived native activation envelope/input mismatch")
+    if native_activation_envelope.get("proof_backend_version") != "stwo-d128-activation-swiglu-air-proof-v1":
+        raise NativeMlpProofRouteError("derived native activation proof backend version drift")
+    if native_activation_envelope.get("decision") != "GO_D128_ACTIVATION_SWIGLU_AIR_PROOF":
+        raise NativeMlpProofRouteError("derived native activation proof decision drift")
+    activation_proof = _list(native_activation_envelope.get("proof"), "derived native activation proof bytes")
     rows = _int(chain_summary.get("accounted_relation_rows"), "attention-derived relation rows")
     mlp_rows = _int(current_aggregate.get("fused_total_row_count"), "current MLP fused rows")
     if mlp_rows <= 0:
@@ -400,6 +419,24 @@ def build_context() -> dict[str, Any]:
             "current_mlp_typed_saving_ratio_vs_separate": current_aggregate.get(
                 "typed_saving_ratio_vs_separate"
             ),
+            "derived_native_activation_statement_commitment": _commitment(
+                native_activation.get("statement_commitment"),
+                "derived native activation statement commitment",
+            ),
+            "derived_native_activation_public_instance_commitment": _commitment(
+                native_activation.get("public_instance_commitment"),
+                "derived native activation public instance commitment",
+            ),
+            "derived_native_activation_hidden_commitment": _commitment(
+                native_activation.get("hidden_activation_commitment"),
+                "derived native activation hidden commitment",
+            ),
+            "derived_native_activation_proof_backend_version": _str(
+                native_activation_envelope.get("proof_backend_version"),
+                "derived native activation proof backend version",
+            ),
+            "derived_native_activation_proof_bytes": len(activation_proof),
+            "derived_native_activation_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_ACTIVATION_ENVELOPE]),
             "current_native_fused_proof_can_be_reused_for_derived_input": False,
         },
     }
@@ -446,6 +483,24 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             ],
             "current_mlp_typed_saving_ratio_vs_separate": comparison[
                 "current_mlp_typed_saving_ratio_vs_separate"
+            ],
+            "derived_native_activation_statement_commitment": comparison[
+                "derived_native_activation_statement_commitment"
+            ],
+            "derived_native_activation_public_instance_commitment": comparison[
+                "derived_native_activation_public_instance_commitment"
+            ],
+            "derived_native_activation_hidden_commitment": comparison[
+                "derived_native_activation_hidden_commitment"
+            ],
+            "derived_native_activation_proof_backend_version": comparison[
+                "derived_native_activation_proof_backend_version"
+            ],
+            "derived_native_activation_proof_bytes": comparison[
+                "derived_native_activation_proof_bytes"
+            ],
+            "derived_native_activation_envelope_bytes": comparison[
+                "derived_native_activation_envelope_bytes"
             ],
             "native_compatible_components": compatible_count,
             "native_incompatible_components": incompatible_count,
@@ -567,7 +622,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ),
     (
         "component_schema_relabels_native",
-        lambda p: _promote_component_schema(p, "activation_swiglu"),
+        lambda p: _promote_component_schema(p, "down_projection"),
         True,
     ),
     (
@@ -641,6 +696,8 @@ def to_tsv(payload: dict[str, Any], *, context: dict[str, Any] | None = None) ->
             ],
             "native_compatible_components": summary["native_compatible_components"],
             "native_incompatible_components": summary["native_incompatible_components"],
+            "derived_native_activation_proof_bytes": summary["derived_native_activation_proof_bytes"],
+            "derived_native_activation_envelope_bytes": summary["derived_native_activation_envelope_bytes"],
         }
     )
     return output.getvalue()

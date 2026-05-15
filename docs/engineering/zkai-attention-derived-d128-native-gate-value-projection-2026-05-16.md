@@ -14,9 +14,13 @@ This advances the attention-derived native RMSNorm-MLP route from `2 / 6` to
 2. RMSNorm-to-projection bridge
 3. gate/value projection
 
+This was the `3 / 6` route frontier at the time of this gate. The follow-up
+activation/SwiGLU gate moves the frontier to `4 / 6`; see
+`docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`.
+
 The route is still **NO-GO** for a regenerated attention-derived native
-RMSNorm-MLP fused proof because activation/SwiGLU remains pinned to the older
-synthetic gate/value output commitment.
+RMSNorm-MLP fused proof because the downstream route is not fully regenerated
+as native component proof inputs.
 
 ## Checked Numbers
 
@@ -55,9 +59,9 @@ commitment drift, multiplication-row commitment drift, statement drift, public
 instance drift, proof-byte tamper, PCS profile drift, and commitment-vector
 drift.
 
-## Remaining Blocker
+## Original Remaining Blocker
 
-Activation/SwiGLU is now the first incompatible component. The current
+Activation/SwiGLU was the first incompatible component after this gate. The current
 activation input consumes the older synthetic gate/value output commitment:
 
 `blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3`
@@ -68,6 +72,10 @@ The attention-derived native gate/value proof emits:
 
 The next experiment is therefore to parameterize or regenerate the
 attention-derived activation/SwiGLU native component input.
+
+That follow-up is now checked in
+`docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`;
+down-projection is the next blocker.
 
 ## Non-Claims
 
