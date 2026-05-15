@@ -334,6 +334,8 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("current MLP input commitment drift")
     rows = _int(chain_summary.get("accounted_relation_rows"), "attention-derived relation rows")
     mlp_rows = _int(current_aggregate.get("fused_total_row_count"), "current MLP fused rows")
+    if mlp_rows <= 0:
+        raise NativeMlpProofRouteError("current MLP fused rows must be positive before computing row_ratio")
     component_rows = [component_frontier_row(spec, loaded) for spec in COMPONENT_SPECS]
     missing_native_artifacts = [
         {
@@ -393,6 +395,8 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
     )
     incompatible_count = len(context["component_input_frontier"]) - compatible_count
     comparison = context["comparison"]
+    if _int(comparison.get("current_mlp_fused_rows"), "current MLP fused rows") <= 0:
+        raise NativeMlpProofRouteError("current MLP fused rows must be positive before carrying row_ratio")
     payload = {
         "schema": SCHEMA,
         "decision": DECISION,

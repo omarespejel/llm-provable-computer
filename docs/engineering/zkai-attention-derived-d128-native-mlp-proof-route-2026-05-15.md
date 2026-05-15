@@ -62,6 +62,15 @@ RMSNorm-MLP fused proof builder on the derived commitment.
 
 Follow-up issue: `#608`.
 
+## Artifact Scope
+
+The missing native fused artifacts are intentional evidence for this NO-GO
+classification, not placeholders to be filled in by this PR. Publishing a proof
+envelope, fused input JSON, or binary accounting file here would overclaim unless
+the native proof builder has actually consumed the attention-derived input
+commitment above. This PR therefore records the absence explicitly and leaves the
+artifact-producing work to follow-up issue `#608`.
+
 ## Claim Boundary
 
 This gate records:
