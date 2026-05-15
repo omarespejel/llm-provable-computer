@@ -44,6 +44,9 @@ SOURCE_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT = "blake2b-256:b6f7c2b52c71ff5b096
 SOURCE_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:400909bc5391608356a82db328209e275788787658d9689a88a66fbaa669695e"
 OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:7e6ae6d301fc60ac2232d807d155785eabe653cf4e91971adda470a04246a572"
 HIDDEN_ACTIVATION_COMMITMENT = "blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312"
+DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT = "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738"
+DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb"
+DERIVED_HIDDEN_ACTIVATION_COMMITMENT = "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4"
 TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 PROOF_NATIVE_PARAMETER_KIND = "d128-down-projection-synthetic-parameters-v1"
 PROOF_NATIVE_PARAMETER_DOMAIN = "ptvm:zkai:d128-proof-native-parameter-commitment:v1"
@@ -63,6 +66,11 @@ STATEMENT_COMMITMENT = "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca
 RESIDUAL_DELTA_COMMITMENT = "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2"
 RESIDUAL_DELTA_REMAINDER_SHA256 = "a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d"
 DOWN_PROJECTION_MUL_ROW_COMMITMENT = "blake2b-256:76c1e5a35ffbc0c9b390f73d3491d973e85180421ac6168c0cb0e18a91a2ca68"
+DERIVED_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735"
+DERIVED_STATEMENT_COMMITMENT = "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e"
+DERIVED_RESIDUAL_DELTA_COMMITMENT = "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec"
+DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256 = "745d0cc14f1f5c595db32b81dd4b58b49df2e9b98b4ca6e7ec5fc3065811f895"
+DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT = "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278"
 RANGE_POLICY = "signed-M31 hidden activations and residual deltas; exact residual delta quotient/remainder binding; q8 down weights"
 
 NEXT_BACKEND_STEP = "bind d128 residual-add rows to residual_delta_commitment and output_activation_commitment"
@@ -99,6 +107,40 @@ VALIDATION_COMMANDS = [
     "just gate-fast",
     "just gate",
 ]
+DERIVED_VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_down_projection_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_down_projection_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+]
+
+SOURCE_ACTIVATION_ANCHORS = (
+    {
+        "kind": "synthetic",
+        "statement_commitment": SOURCE_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+        "public_instance_commitment": SOURCE_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+        "hidden_activation_commitment": HIDDEN_ACTIVATION_COMMITMENT,
+        "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
+        "residual_delta_remainder_sha256": RESIDUAL_DELTA_REMAINDER_SHA256,
+        "down_projection_mul_row_commitment": DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+        "public_instance_commitment_out": PUBLIC_INSTANCE_COMMITMENT,
+        "statement_commitment_out": STATEMENT_COMMITMENT,
+        "validation_commands": VALIDATION_COMMANDS,
+    },
+    {
+        "kind": "attention_derived",
+        "statement_commitment": DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+        "public_instance_commitment": DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+        "hidden_activation_commitment": DERIVED_HIDDEN_ACTIVATION_COMMITMENT,
+        "residual_delta_commitment": DERIVED_RESIDUAL_DELTA_COMMITMENT,
+        "residual_delta_remainder_sha256": DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+        "down_projection_mul_row_commitment": DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+        "public_instance_commitment_out": DERIVED_PUBLIC_INSTANCE_COMMITMENT,
+        "statement_commitment_out": DERIVED_STATEMENT_COMMITMENT,
+        "validation_commands": DERIVED_VALIDATION_COMMANDS,
+    },
+)
 
 TSV_COLUMNS = (
     "target_id",
@@ -225,6 +267,48 @@ def require_commitment(value: Any, label: str) -> str:
     if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
         raise D128DownProjectionInputError(f"{label} must be a 32-byte lowercase hex digest")
     return value
+
+
+def source_activation_anchor(source: dict[str, Any]) -> dict[str, Any]:
+    statement = require_commitment(
+        source.get("statement_commitment"),
+        "source_activation_swiglu_statement_commitment",
+    )
+    public_instance = require_commitment(
+        source.get("public_instance_commitment"),
+        "source_activation_swiglu_public_instance_commitment",
+    )
+    hidden = require_commitment(
+        source.get("hidden_activation_commitment"),
+        "source_hidden_activation_commitment",
+    )
+    for anchor in SOURCE_ACTIVATION_ANCHORS:
+        if (
+            statement == anchor["statement_commitment"]
+            and public_instance == anchor["public_instance_commitment"]
+            and hidden == anchor["hidden_activation_commitment"]
+        ):
+            return anchor
+    if closest := next(
+        (anchor for anchor in SOURCE_ACTIVATION_ANCHORS if hidden == anchor["hidden_activation_commitment"]),
+        None,
+    ):
+        mismatches = []
+        if statement != closest["statement_commitment"]:
+            mismatches.append("statement_commitment mismatch")
+        if public_instance != closest["public_instance_commitment"]:
+            mismatches.append("public_instance_commitment mismatch")
+        raise D128DownProjectionInputError(
+            "source activation/SwiGLU anchor is not approved for "
+            f"{closest['kind']} anchor: {', '.join(mismatches)}"
+        )
+    expected = ", ".join(
+        f"{anchor['kind']}={anchor['hidden_activation_commitment']}" for anchor in SOURCE_ACTIVATION_ANCHORS
+    )
+    raise D128DownProjectionInputError(
+        "source activation/SwiGLU anchor is not approved: "
+        f"hidden_activation_commitment unknown; expected one of {expected}"
+    )
 
 
 def parse_blake2b_hex(value: str, label: str) -> bytes:
@@ -424,9 +508,6 @@ def validate_source(source: Any) -> None:
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "ff_dim": FF_DIM,
-        "hidden_activation_commitment": HIDDEN_ACTIVATION_COMMITMENT,
-        "statement_commitment": SOURCE_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
-        "public_instance_commitment": SOURCE_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
     }
     for field, expected in constants.items():
         if source.get(field) != expected:
@@ -435,6 +516,7 @@ def validate_source(source: Any) -> None:
         ACTIVATION_SWIGLU.validate_payload(source)
     except Exception as err:  # noqa: BLE001 - normalize imported validator errors for this script.
         raise D128DownProjectionInputError(f"source activation/SwiGLU validation failed: {err}") from err
+    source_activation_anchor(source)
 
 
 def source_hidden_vector(source: dict[str, Any]) -> list[int]:
@@ -484,6 +566,7 @@ def build_rows(hidden: list[int]) -> tuple[list[dict[str, int]], list[int], list
 
 def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
     source = load_source() if source is None else source
+    anchor = source_activation_anchor(source)
     hidden = source_hidden_vector(source)
     rows, residual_delta, residual_delta_remainder = build_rows(hidden)
     down_root = matrix_root(rows)
@@ -516,7 +599,7 @@ def build_payload(source: dict[str, Any] | None = None) -> dict[str, Any]:
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": list(anchor["validation_commands"]),
     }
     statement = statement_commitment(payload)
     payload["statement_commitment"] = statement
@@ -542,6 +625,13 @@ def validate_payload(payload: Any) -> None:
         raise D128DownProjectionInputError("payload field set mismatch")
     if payload.get("residual_delta_commitment") == OUTPUT_ACTIVATION_COMMITMENT:
         raise D128DownProjectionInputError("residual delta commitment relabeled as full output commitment")
+    source_anchor = source_activation_anchor(
+        {
+            "statement_commitment": payload.get("source_activation_swiglu_statement_commitment"),
+            "public_instance_commitment": payload.get("source_activation_swiglu_public_instance_commitment"),
+            "hidden_activation_commitment": payload.get("source_hidden_activation_commitment"),
+        }
+    )
     constants = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -555,19 +645,19 @@ def validate_payload(payload: Any) -> None:
         "residual_delta_rows": WIDTH,
         "residual_delta_scale_divisor": FF_DIM,
         "source_activation_swiglu_proof_version": SOURCE_ACTIVATION_SWIGLU_PROOF_VERSION,
-        "source_activation_swiglu_statement_commitment": SOURCE_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
-        "source_activation_swiglu_public_instance_commitment": SOURCE_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
-        "source_hidden_activation_commitment": HIDDEN_ACTIVATION_COMMITMENT,
+        "source_activation_swiglu_statement_commitment": source_anchor["statement_commitment"],
+        "source_activation_swiglu_public_instance_commitment": source_anchor["public_instance_commitment"],
+        "source_hidden_activation_commitment": source_anchor["hidden_activation_commitment"],
         "down_matrix_root": DOWN_MATRIX_ROOT,
         "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
-        "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
-        "down_projection_mul_row_commitment": DOWN_PROJECTION_MUL_ROW_COMMITMENT,
-        "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
-        "statement_commitment": STATEMENT_COMMITMENT,
+        "residual_delta_commitment": source_anchor["residual_delta_commitment"],
+        "down_projection_mul_row_commitment": source_anchor["down_projection_mul_row_commitment"],
+        "public_instance_commitment": source_anchor["public_instance_commitment_out"],
+        "statement_commitment": source_anchor["statement_commitment_out"],
         "non_claims": NON_CLAIMS,
         "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": VALIDATION_COMMANDS,
+        "validation_commands": source_anchor["validation_commands"],
     }
     for field, expected in constants.items():
         if expected == "TO_BE_FILLED":

@@ -54,6 +54,20 @@ pub const ZKAI_D128_RESIDUAL_DELTA_COMMITMENT: &str =
     "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2";
 pub const ZKAI_D128_DOWN_PROJECTION_MUL_ROW_COMMITMENT: &str =
     "blake2b-256:76c1e5a35ffbc0c9b390f73d3491d973e85180421ac6168c0cb0e18a91a2ca68";
+pub const ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738";
+pub const ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb";
+pub const ZKAI_D128_ATTENTION_DERIVED_HIDDEN_ACTIVATION_COMMITMENT: &str =
+    "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT: &str =
+    "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec";
+pub const ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT: &str =
+    "blake2b-256:cd051c1ff66c5b413203b6d612d7c70ff14a0be7723c214c2808b12625fcc278";
+pub const ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735";
+pub const ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e";
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const ZKAI_D128_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
@@ -128,6 +142,13 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate-fast",
     "just gate",
 ];
+const EXPECTED_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_down_projection_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_down_projection_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+];
 
 #[derive(Debug, Clone)]
 struct D128DownProjectionEval {
@@ -176,6 +197,19 @@ pub struct D128DownProjectionMulRow {
     pub hidden_q8: i64,
     pub weight_q8: i64,
     pub product_q8: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SourceActivationAnchor {
+    name: &'static str,
+    statement_commitment: &'static str,
+    public_instance_commitment: &'static str,
+    hidden_activation_commitment: &'static str,
+    residual_delta_commitment: &'static str,
+    down_projection_mul_row_commitment: &'static str,
+    public_instance_commitment_out: &'static str,
+    statement_commitment_out: &'static str,
+    validation_commands: &'static [&'static str],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -359,19 +393,20 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
         ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
         "source activation/SwiGLU proof version",
     )?;
+    let source_anchor = approved_source_activation_anchor(input)?;
     expect_eq(
         &input.source_activation_swiglu_statement_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+        source_anchor.statement_commitment,
         "source activation/SwiGLU statement commitment",
     )?;
     expect_eq(
         &input.source_activation_swiglu_public_instance_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+        source_anchor.public_instance_commitment,
         "source activation/SwiGLU public instance commitment",
     )?;
     expect_eq(
         &input.source_hidden_activation_commitment,
-        ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+        source_anchor.hidden_activation_commitment,
         "source hidden activation commitment",
     )?;
     let expected_down_matrix_root = expected_down_matrix_root();
@@ -397,22 +432,22 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
     }
     expect_eq(
         &input.residual_delta_commitment,
-        ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+        source_anchor.residual_delta_commitment,
         "residual delta commitment",
     )?;
     expect_eq(
         &input.down_projection_mul_row_commitment,
-        ZKAI_D128_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+        source_anchor.down_projection_mul_row_commitment,
         "down projection row commitment",
     )?;
     expect_eq(
         &input.public_instance_commitment,
-        ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        source_anchor.public_instance_commitment_out,
         "public instance commitment",
     )?;
     expect_eq(
         &input.statement_commitment,
-        ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+        source_anchor.statement_commitment_out,
         "statement commitment",
     )?;
     expect_str_set_eq(
@@ -432,7 +467,7 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
     )?;
     expect_str_set_eq(
         input.validation_commands.iter().map(String::as_str),
-        EXPECTED_VALIDATION_COMMANDS,
+        source_anchor.validation_commands,
         "validation commands",
     )?;
     if input.hidden_q8.len() != ZKAI_D128_FF_DIM {
@@ -525,6 +560,113 @@ fn validate_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> R
         &input.public_instance_commitment,
         "public instance recomputed commitment",
     )?;
+    Ok(())
+}
+
+fn approved_source_activation_anchor(
+    input: &ZkAiD128DownProjectionProofInput,
+) -> Result<SourceActivationAnchor> {
+    require_blake2b_commitment(
+        &input.source_activation_swiglu_statement_commitment,
+        "source activation/SwiGLU statement commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_activation_swiglu_public_instance_commitment,
+        "source activation/SwiGLU public instance commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_hidden_activation_commitment,
+        "source hidden activation commitment",
+    )?;
+
+    let anchors = [
+        SourceActivationAnchor {
+            name: "synthetic",
+            statement_commitment: ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+            public_instance_commitment: ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+            hidden_activation_commitment: ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+            down_projection_mul_row_commitment: ZKAI_D128_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+            public_instance_commitment_out: ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            statement_commitment_out: ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            validation_commands: EXPECTED_VALIDATION_COMMANDS,
+        },
+        SourceActivationAnchor {
+            name: "attention_derived",
+            statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+            public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+            hidden_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_HIDDEN_ACTIVATION_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            down_projection_mul_row_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+            public_instance_commitment_out:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            statement_commitment_out:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            validation_commands: EXPECTED_DERIVED_VALIDATION_COMMANDS,
+        },
+    ];
+    anchors
+        .iter()
+        .copied()
+        .find(|anchor| {
+            input.source_activation_swiglu_statement_commitment == anchor.statement_commitment
+                && input.source_activation_swiglu_public_instance_commitment
+                    == anchor.public_instance_commitment
+                && input.source_hidden_activation_commitment == anchor.hidden_activation_commitment
+        })
+        .ok_or_else(|| down_projection_error(&source_activation_anchor_error(input, &anchors)))
+}
+
+fn source_activation_anchor_error(
+    input: &ZkAiD128DownProjectionProofInput,
+    anchors: &[SourceActivationAnchor],
+) -> String {
+    if let Some(anchor) = anchors.iter().find(|anchor| {
+        input.source_hidden_activation_commitment == anchor.hidden_activation_commitment
+    }) {
+        let mut mismatches = Vec::new();
+        if input.source_activation_swiglu_statement_commitment != anchor.statement_commitment {
+            mismatches.push("statement_commitment mismatch");
+        }
+        if input.source_activation_swiglu_public_instance_commitment
+            != anchor.public_instance_commitment
+        {
+            mismatches.push("public_instance_commitment mismatch");
+        }
+        return format!(
+            "source activation/SwiGLU anchor is not approved for {} anchor: {}",
+            anchor.name,
+            mismatches.join(", ")
+        );
+    }
+
+    let expected = anchors
+        .iter()
+        .map(|anchor| format!("{}={}", anchor.name, anchor.hidden_activation_commitment))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "source activation/SwiGLU anchor is not approved: hidden_activation_commitment unknown; expected one of {expected}"
+    )
+}
+
+fn require_blake2b_commitment(value: &str, label: &str) -> Result<()> {
+    let raw = value.strip_prefix("blake2b-256:").ok_or_else(|| {
+        down_projection_error(format!("{label} must be a blake2b-256 commitment"))
+    })?;
+    if raw.len() != 64 || !raw.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(down_projection_error(format!(
+            "{label} must be a 32-byte lowercase hex digest"
+        )));
+    }
+    if raw.bytes().any(|byte| byte.is_ascii_uppercase()) {
+        return Err(down_projection_error(format!(
+            "{label} must be a 32-byte lowercase hex digest"
+        )));
+    }
     Ok(())
 }
 
@@ -1133,9 +1275,17 @@ mod tests {
     const INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json"
     );
+    const DERIVED_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiD128DownProjectionProofInput {
         zkai_d128_down_projection_input_from_json_str(INPUT_JSON).expect("down projection input")
+    }
+
+    fn derived_input() -> ZkAiD128DownProjectionProofInput {
+        zkai_d128_down_projection_input_from_json_str(DERIVED_INPUT_JSON)
+            .expect("derived down projection input")
     }
 
     #[test]
@@ -1171,6 +1321,41 @@ mod tests {
             input.residual_delta_commitment,
             ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT
         );
+    }
+
+    #[test]
+    fn down_projection_accepts_attention_derived_activation_source_anchor() {
+        let input = derived_input();
+        assert_eq!(
+            input.source_activation_swiglu_statement_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            input.source_hidden_activation_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_HIDDEN_ACTIVATION_COMMITMENT
+        );
+        assert_eq!(
+            input.residual_delta_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT
+        );
+        assert_eq!(
+            input.down_projection_mul_row_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT
+        );
+        assert_eq!(
+            input.statement_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            input.residual_delta_q8[..5],
+            [-10094, -4004, 4637, 7313, 5364]
+        );
+        expect_str_set_eq(
+            input.validation_commands.iter().map(String::as_str),
+            EXPECTED_DERIVED_VALIDATION_COMMANDS,
+            "derived validation commands",
+        )
+        .expect("derived validation command anchor");
     }
 
     #[test]
@@ -1243,7 +1428,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source hidden activation commitment"));
+            .contains("hidden_activation_commitment unknown"));
     }
 
     #[test]
@@ -1257,7 +1442,35 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source activation/SwiGLU public instance commitment"));
+            .contains("synthetic anchor: public_instance_commitment mismatch"));
+    }
+
+    #[test]
+    fn down_projection_rejects_mixed_activation_source_anchor() {
+        let mut value: Value = serde_json::from_str(DERIVED_INPUT_JSON).expect("json");
+        value["source_activation_swiglu_statement_commitment"] =
+            Value::String(ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT.to_string());
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("attention_derived anchor: statement_commitment mismatch"));
+    }
+
+    #[test]
+    fn down_projection_rejects_unknown_activation_source_hidden_commitment() {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        value["source_hidden_activation_commitment"] =
+            Value::String(format!("blake2b-256:{}", "aa".repeat(32)));
+        let error = zkai_d128_down_projection_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("hidden_activation_commitment unknown"));
     }
 
     #[test]

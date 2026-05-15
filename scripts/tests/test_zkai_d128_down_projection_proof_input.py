@@ -52,6 +52,61 @@ class ZkAiD128DownProjectionProofInputTests(unittest.TestCase):
             first_acc,
         )
 
+    def test_builds_from_attention_derived_activation_swiglu_evidence(self) -> None:
+        source = DOWN_PROJECTION.load_source(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
+        )
+        payload = DOWN_PROJECTION.build_payload(source)
+        self.assertEqual(
+            payload["source_hidden_activation_commitment"],
+            DOWN_PROJECTION.DERIVED_HIDDEN_ACTIVATION_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["residual_delta_commitment"],
+            DOWN_PROJECTION.DERIVED_RESIDUAL_DELTA_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["down_projection_mul_row_commitment"],
+            DOWN_PROJECTION.DERIVED_DOWN_PROJECTION_MUL_ROW_COMMITMENT,
+        )
+        self.assertEqual(payload["statement_commitment"], DOWN_PROJECTION.DERIVED_STATEMENT_COMMITMENT)
+        self.assertEqual(payload["public_instance_commitment"], DOWN_PROJECTION.DERIVED_PUBLIC_INSTANCE_COMMITMENT)
+        self.assertEqual(payload["residual_delta_q8"][:5], [-10094, -4004, 4637, 7313, 5364])
+        self.assertEqual(
+            DOWN_PROJECTION.sha256_hex(payload["residual_delta_remainder_q8"]),
+            DOWN_PROJECTION.DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+        )
+        self.assertEqual(payload["validation_commands"], DOWN_PROJECTION.DERIVED_VALIDATION_COMMANDS)
+
+    def test_source_anchor_rejects_unknown_hidden_commitment(self) -> None:
+        source = copy.deepcopy(DOWN_PROJECTION.load_source())
+        source["hidden_activation_commitment"] = "blake2b-256:" + "91" * 32
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "hidden_activation_commitment unknown"):
+            DOWN_PROJECTION.source_activation_anchor(source)
+
+    def test_source_anchor_rejects_partial_anchor_match(self) -> None:
+        source = copy.deepcopy(DOWN_PROJECTION.load_source())
+        source["statement_commitment"] = DOWN_PROJECTION.DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "synthetic anchor: statement_commitment mismatch"):
+            DOWN_PROJECTION.source_activation_anchor(source)
+
+    def test_payload_rejects_validation_commands_from_wrong_source_anchor(self) -> None:
+        source = DOWN_PROJECTION.load_source(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
+        )
+        payload = DOWN_PROJECTION.build_payload(source)
+        payload["validation_commands"] = DOWN_PROJECTION.VALIDATION_COMMANDS
+        with self.assertRaisesRegex(DOWN_PROJECTION.D128DownProjectionInputError, "validation_commands"):
+            DOWN_PROJECTION.validate_payload(payload)
+
     def test_payload_rejects_residual_delta_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
         payload["residual_delta_commitment"] = DOWN_PROJECTION.OUTPUT_ACTIVATION_COMMITMENT

@@ -10,6 +10,12 @@ commitment without relabeling it as the existing canonical d128 block path?
 
 **GO for the derived down-projection boundary input only.**
 
+Superseding note: the May 16 follow-up now regenerates this surface as a native
+Stwo proof input and proof object. This May 13 note remains useful as the
+statement-chain boundary predecessor; use
+`docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+for the current native proof result.
+
 The gate consumes the checked source from
 `zkai-attention-derived-d128-activation-swiglu-2026-05.json`, recomputes the
 deterministic d128 down-projection multiplication rows, recomputes the residual
