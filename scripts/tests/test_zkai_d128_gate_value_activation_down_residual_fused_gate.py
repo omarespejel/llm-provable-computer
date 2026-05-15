@@ -36,6 +36,28 @@ class D128GateValueActivationDownResidualFusedGateTests(unittest.TestCase):
             with self.assertRaises(gate.FusedResidualGateError):
                 gate.read_json_with_size(path, 1024, "bad json")
 
+    def test_invalid_utf8_rejects_with_gate_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"
+            path.write_bytes(b"\xff")
+            with self.assertRaises(gate.FusedResidualGateError):
+                gate.read_json_with_size(path, 1024, "bad json")
+
+    def test_malformed_json_rejects_with_gate_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"
+            path.write_text("{", encoding="utf-8")
+            with self.assertRaises(gate.FusedResidualGateError):
+                gate.read_json_with_size(path, 1024, "bad json")
+
+    def test_missing_accounting_field_rejects_with_gate_error(self) -> None:
+        rows = gate.accounting_rows()
+        mutated = [dict(row) for row in rows]
+        mutated[0].pop("path", None)
+        with mock.patch.object(gate, "accounting_rows", return_value=mutated):
+            with self.assertRaises(gate.FusedResidualGateError):
+                gate.build_payload()
+
     @unittest.skipUnless(hasattr(__import__("os"), "symlink"), "symlink support required")
     def test_read_symlink_rejects(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

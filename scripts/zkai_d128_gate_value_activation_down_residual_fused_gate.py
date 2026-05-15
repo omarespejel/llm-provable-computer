@@ -279,7 +279,10 @@ def payload_commitment(payload: dict[str, Any]) -> str:
 def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple[Any, int]:
     if path.is_symlink():
         raise FusedResidualGateError(f"{label} must not be a symlink: {path}")
-    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError as err:
+        raise FusedResidualGateError(f"failed to open {label} {path}: {err}") from err
     try:
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode):
@@ -299,7 +302,31 @@ def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple
         raw = b"".join(chunks)
     finally:
         os.close(fd)
-    return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), len(raw)
+    try:
+        decoded = raw.decode("utf-8")
+        return json.loads(decoded, parse_constant=reject_json_constant), len(raw)
+    except UnicodeDecodeError as err:
+        raise FusedResidualGateError(f"failed to decode {label} {path} as UTF-8: {err}") from err
+    except json.JSONDecodeError as err:
+        raise FusedResidualGateError(f"failed to parse {label} {path} as JSON: {err}") from err
+
+
+def require_dict(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise FusedResidualGateError(f"{label} must be an object")
+    return value
+
+
+def require_str(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise FusedResidualGateError(f"{label} must be a non-empty string")
+    return value
+
+
+def require_int(value: Any, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise FusedResidualGateError(f"{label} must be an integer")
+    return value
 
 
 def accounting_rows() -> list[dict[str, Any]]:
@@ -326,11 +353,13 @@ def build_payload() -> dict[str, Any]:
         raise FusedResidualGateError(f"expected {len(EXPECTED_ROLES)} accounting rows, got {len(rows)}")
 
     role_rows: dict[str, dict[str, Any]] = {}
-    for row in rows:
+    for index, row_value in enumerate(rows):
+        row = require_dict(row_value, f"accounting row {index}")
         role, expected = role_for_row(row)
-        metadata = row.get("envelope_metadata") or {}
-        typed = (row.get("local_binary_accounting") or {}).get("typed_size_estimate_bytes")
-        grouped = (row.get("local_binary_accounting") or {}).get("grouped_reconstruction")
+        metadata = require_dict(row.get("envelope_metadata"), f"{role} envelope metadata")
+        local_accounting = require_dict(row.get("local_binary_accounting"), f"{role} local binary accounting")
+        typed = local_accounting.get("typed_size_estimate_bytes")
+        grouped = local_accounting.get("grouped_reconstruction")
         if metadata.get("proof_backend_version") != expected["proof_backend_version"]:
             raise FusedResidualGateError(f"{role} proof backend version drift")
         if metadata.get("statement_version") != expected["statement_version"]:
@@ -343,14 +372,14 @@ def build_payload() -> dict[str, Any]:
             raise FusedResidualGateError(f"{role} grouped typed breakdown drift")
         role_rows[role] = {
             "role": role,
-            "path": row["path"],
-            "proof_backend_version": metadata["proof_backend_version"],
-            "statement_version": metadata["statement_version"],
-            "proof_json_size_bytes": row["proof_json_size_bytes"],
+            "path": require_str(row.get("path"), f"{role} path"),
+            "proof_backend_version": require_str(metadata.get("proof_backend_version"), f"{role} proof backend version"),
+            "statement_version": require_str(metadata.get("statement_version"), f"{role} statement version"),
+            "proof_json_size_bytes": require_int(row.get("proof_json_size_bytes"), f"{role} proof JSON size"),
             "local_typed_bytes": typed,
             "grouped_typed_bytes": grouped,
-            "envelope_sha256": row["envelope_sha256"],
-            "proof_sha256": row["proof_sha256"],
+            "envelope_sha256": require_str(row.get("envelope_sha256"), f"{role} envelope sha256"),
+            "proof_sha256": require_str(row.get("proof_sha256"), f"{role} proof sha256"),
         }
 
     missing = set(EXPECTED_GROUPED) - set(role_rows)
@@ -555,7 +584,7 @@ def atomic_write(path: pathlib.Path, data: bytes) -> None:
         os.close(fd)
     try:
         os.replace(tmp, path)
-    except Exception:
+    except OSError:
         try:
             tmp.unlink()
         finally:

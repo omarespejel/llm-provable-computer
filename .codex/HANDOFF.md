@@ -1089,6 +1089,17 @@ saving `88,516` JSON bytes and `24,944` typed bytes (`56.3223%` typed saving,
 not a full transformer block with RMSNorm native fusion, not attention plus MLP
 in one proof object, and not a NANOZK benchmark win. Evidence:
 `docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`.
+Repro metadata: proof backend version
+`stwo-d128-gate-value-activation-down-residual-fused-air-proof-v1`, statement
+version `zkai-d128-gate-value-activation-down-residual-fused-statement-v1`,
+Stwo dependency `2.2.0`, timing mode `none; proof-size/count gate only`.
+Machine-readable evidence:
+`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.input.json`,
+`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05.envelope.json`,
+`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-binary-accounting-2026-05.json`,
+`docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.json`.
+Validate with
+`python3 scripts/zkai_d128_gate_value_activation_down_residual_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-residual-fused-gate-2026-05.tsv`.
 
 1. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
