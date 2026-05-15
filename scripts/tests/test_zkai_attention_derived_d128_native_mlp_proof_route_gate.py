@@ -67,6 +67,12 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
                 "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT",
             )
 
+    def test_rejects_zero_current_mlp_rows_before_ratio(self) -> None:
+        context = copy.deepcopy(self.context)
+        context["comparison"]["current_mlp_fused_rows"] = 0
+        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "current MLP fused rows must be positive"):
+            GATE.build_core_payload(context)
+
     def test_mutations_rejected(self) -> None:
         self.assertTrue(self.payload["all_mutations_rejected"])
         self.assertEqual(self.payload["case_count"], len(GATE.EXPECTED_MUTATIONS))
@@ -100,8 +106,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertIn("\t5", tsv.splitlines()[1])
 
     def test_written_payload_round_trip(self) -> None:
-        tmp_root = ROOT / ".tmp"
-        tmp_root.mkdir(exist_ok=True)
+        tmp_root = ROOT / ".codex"
         with tempfile.TemporaryDirectory(dir=tmp_root) as tmp:
             json_path = pathlib.Path(tmp) / "native-mlp-route.json"
             tsv_path = pathlib.Path(tmp) / "native-mlp-route.tsv"
