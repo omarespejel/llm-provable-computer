@@ -19,9 +19,9 @@
   "value_projection_output_commitment": "blake2b-256:fd1fcf585627f725ec4e9f8ec7154647f6ed8f44a24f04211e110912fbb82edf",
   "gate_value_projection_output_commitment": "blake2b-256:fb1aa112ab63e26da7d5f0805d2a713fad13dff09ab3a68c0060e85c88aee0f3",
   "hidden_activation_commitment": "blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312",
-  "statement_commitment": "blake2b-256:26c4fd784a6f005193ae2231f5deb3e58065673c0db49eea9c9276a683359633",
-  "public_instance_commitment": "blake2b-256:d5adfe306b666b5af1a09c137f282aacd161afbb860557dce1ca9326af5b68d4",
-  "proof_native_parameter_commitment": "blake2b-256:968616c5c3888d82c4396a30818a57e809b281573d31b9a6efbc10d881cc7237",
+  "statement_commitment": "blake2b-256:8dfb2548a0c14899d86f3078ad6a1efbef95f4fd7803068abff57cf92433c5af",
+  "public_instance_commitment": "blake2b-256:893136f0ddb64a7eb2b70d0e1d9860d1a4b9ec6ce87569aa263f6148eec366bf",
+  "proof_native_parameter_commitment": "blake2b-256:9768f4d10d306179a0ef728cdcfb987d4041e541dbf54bdf8da6590fb97d69a5",
   "gate_value_input": {
     "schema": "zkai-d128-gate-value-projection-air-proof-input-v1",
     "decision": "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF",
@@ -3384,6 +3384,7 @@
     "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_fused_gate",
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

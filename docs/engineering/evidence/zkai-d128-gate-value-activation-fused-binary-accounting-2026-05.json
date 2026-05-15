@@ -13,7 +13,7 @@
         "target_id": null,
         "verifier_domain": null
       },
-      "envelope_sha256": "005dbe24814c5cf95cd5d3f99526851c8afc2b6d370827a9e78f0d1ad461ea72",
+      "envelope_sha256": "e8e26b3879d0be75be93b201a4d6a45629f3d61dc4d4a0bf5499ab4b78b16072",
       "evidence_relative_path": "zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json",
       "local_binary_accounting": {
         "component_sum_bytes": 17760,

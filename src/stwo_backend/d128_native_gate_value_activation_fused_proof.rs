@@ -73,6 +73,7 @@ const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:d128-gate-value-activation-fused-proof-native-parameter:v1";
 const PROOF_NATIVE_PARAMETER_KIND: &str =
     "d128-gate-value-activation-fused-proof-native-parameter-v1";
+const EXPECTED_REQUIRED_BACKEND_VERSION: &str = "stwo-rmsnorm-swiglu-residual-d128-v1";
 
 const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
@@ -85,6 +86,7 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 ];
 
 const EXPECTED_NON_CLAIMS: &[&str] = &[
@@ -354,6 +356,11 @@ fn validate_fused_input(input: &ZkAiD128GateValueActivationFusedInput) -> Result
         input.activation_row_count,
         ACTIVATION_ROWS,
         "activation row count",
+    )?;
+    expect_eq(
+        &input.required_backend_version,
+        EXPECTED_REQUIRED_BACKEND_VERSION,
+        "required backend version",
     )?;
     expect_eq(
         &input.gate_value_proof_version,
@@ -684,6 +691,7 @@ fn statement_commitment(input: &ZkAiD128GateValueActivationFusedInput) -> Result
         "gate_value_statement_commitment": input.gate_value_statement_commitment,
         "hidden_activation_commitment": input.hidden_activation_commitment,
         "operation": "gate_value_activation_fused",
+        "required_backend_version": input.required_backend_version,
         "route_id": input.route_id,
         "target_id": input.target_id,
         "verifier_domain": input.verifier_domain,
@@ -832,6 +840,17 @@ mod tests {
         let raw = serde_json::to_string(&value).expect("mutated input");
         let _error = zkai_d128_gate_value_activation_fused_input_from_json_str(&raw)
             .expect_err("handoff drift should reject");
+    }
+
+    #[test]
+    fn fused_rejects_required_backend_version_drift() {
+        let input = input_fixture();
+        let mut value = serde_json::to_value(&input).expect("input json");
+        value["required_backend_version"] = Value::String("wrong-backend".to_string());
+        let raw = serde_json::to_string(&value).expect("mutated input");
+        let error = zkai_d128_gate_value_activation_fused_input_from_json_str(&raw)
+            .expect_err("backend version drift should reject");
+        assert!(error.to_string().contains("required backend version"));
     }
 
     #[test]

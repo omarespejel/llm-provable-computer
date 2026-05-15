@@ -62,7 +62,7 @@ EXPECTED_ROLES = {
         "statement_version": "zkai-d128-gate-value-activation-fused-statement-v1",
         "proof_json_size_bytes": 62_865,
         "local_typed_bytes": 17_760,
-        "envelope_json_size_bytes": 565_359,
+        "envelope_json_size_bytes": 565_378,
     },
     "zkai-d128-gate-value-projection-proof-2026-05.envelope.json": {
         "role": GATE_VALUE_ROLE,
@@ -166,6 +166,7 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 )
 
 TSV_COLUMNS = (
@@ -324,10 +325,17 @@ def build_payload() -> dict[str, Any]:
     activation = EXPECTED_ROLES[ACTIVATION_ENVELOPE_PATH.name]
     separate_typed = gate["local_typed_bytes"] + activation["local_typed_bytes"]
     separate_json = gate["proof_json_size_bytes"] + activation["proof_json_size_bytes"]
+    try:
+        fused_input = require_dict(fused_envelope["input"], "fused envelope input")
+        gate_value_row_count = fused_input["gate_value_row_count"]
+        activation_row_count = fused_input["activation_row_count"]
+    except (KeyError, TypeError) as error:
+        keys = sorted(fused_envelope.keys()) if isinstance(fused_envelope, dict) else type(fused_envelope).__name__
+        raise FusedGateError(f"fused envelope row-count field drift: {error}; keys={keys}") from error
     aggregate = {
         "profiles_checked": 1,
-        "gate_value_row_count": fused_envelope["input"]["gate_value_row_count"],
-        "activation_row_count": fused_envelope["input"]["activation_row_count"],
+        "gate_value_row_count": gate_value_row_count,
+        "activation_row_count": activation_row_count,
         "separate_proof_json_size_bytes": separate_json,
         "fused_proof_json_size_bytes": fused["proof_json_size_bytes"],
         "json_saving_vs_separate_bytes": separate_json - fused["proof_json_size_bytes"],

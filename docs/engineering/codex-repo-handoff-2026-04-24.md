@@ -1073,6 +1073,9 @@ Reproducibility metadata:
 - Evidence paths:
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.input.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json`,
   `docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-binary-accounting-2026-05.json`,
   `docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json`,
@@ -1108,25 +1111,25 @@ Reproducibility metadata:
    - The hardening packet now includes exhaustive deterministic `wrap_delta`
      witness/divisibility checks, and the fuzz suite now includes a
      serialized-artifact differential mutator across Phase44D→48.
-5. Keep SNIP-36 parked until there is a real adapter path from local proof
+6. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts; it is not a current hardening
    blocker.
-6. Keep the cross-backend Phase44D question in the explicit no-go bucket until
+7. Keep the cross-backend Phase44D question in the explicit no-go bucket until
    a new honest non-overflow carry-free source family or another bounded
    backend can drive the same benchmark beyond `2` steps.
-7. Re-run the experimental Phase44D frontier only after any material AIR or
+8. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-8. Broaden review of the experimental backend beyond the current decoding-step
+9. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are both checked.
-9. Treat the Phase43 second-boundary result as landed on the emitted source
+10. Treat the Phase43 second-boundary result as landed on the emitted source
    surface, but keep the claim scoped honestly: it is a real second boundary
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
+11. Treat the first d128 aggregation attempt (`#405`), the two-slice target
     spike (`#408`), issue `#411` recursive/PCD backend audit, issue `#420`
     route selector, and issue `#581` native two-slice outer-backend audit as
     checked bounded no-gos for local recursive/native outer proof-object
@@ -1145,9 +1148,9 @@ Reproducibility metadata:
     proof-generation-time metrics until a real recursive, PCD, or native outer
     proof object exists; report #430 SNARK and #433 RISC Zero timings only as
     statement-receipt adapter timings under their stated local policies.
-11. Only after those steps decide whether any part of the experimental lane
+12. Only after those steps decide whether any part of the experimental lane
     should be promoted toward the paper/publication surface.
-12. Do not spend more time pushing the current publication/default Phase71
+13. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
