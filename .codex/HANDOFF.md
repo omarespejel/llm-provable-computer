@@ -50,6 +50,37 @@ Reproducibility metadata:
 - Gate command:
   `python3 scripts/zkai_d128_component_compact_preprocessed_reprove_gate.py --write-json docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-component-compact-preprocessed-reprove-gate-2026-05.tsv`.
 
+Recent d128 dense gate/value compact-preprocessed probe: the same direct
+compact-preprocessed idea now verifies on the much larger `131,072`-row d128
+gate/value projection surface, but it is not a size win. The baseline native
+gate/value proof is `57,930` JSON proof bytes / `16,360` local typed bytes.
+The compact-preprocessed gate/value proof is `66,218` JSON proof bytes /
+`18,672` local typed bytes, which is `2,312` typed bytes larger
+(`1.141320x`). The checked reason is that queried/opened value savings
+(`-168` typed bytes across OODS and query values) are dominated by larger
+trace/FRI decommitment structure (`+2,480` typed bytes). Treat this as a
+NO-GO for direct dense-row compact-preprocessed proof-size wins and as a
+pointer toward fused/aggregated proof architecture instead.
+
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_gate_value_projection_proof` with
+  `stwo-d128-gate-value-projection-compact-preprocessed-air-proof-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: d128 gate/value projection, `131,072` multiplication rows,
+  publication-v1 PCS profile.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-projection-compact-preprocessed-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.tsv`.
+- Reproduce command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- verify-compact docs/engineering/evidence/zkai-d128-gate-value-projection-compact-preprocessed-proof-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_d128_gate_value_compact_preprocessed_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-compact-preprocessed-gate-2026-05.tsv`.
+
 ### Publication/default lane
 
 - Keep the current paper package and shipped default backend on the conservative carry-free route.
