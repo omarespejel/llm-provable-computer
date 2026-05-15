@@ -265,10 +265,11 @@ def per_source_cell_repeated_lower_bound(flat: list[int], target: list[int]) -> 
     if len(target) != 2 * len(flat):
         raise ValueAdapterPolicyFrontierError("per-source-cell lower bound expects tiled target width")
     values = [0] * len(target)
-    for index, _source_value in enumerate(flat):
-        left = target[index]
-        right = target[index + len(flat)]
-        candidate = left if abs(left - right) <= abs(right - left) else right
+    for index in range(len(flat)):
+        # Either target cell in the repeated pair gives one mismatch when the
+        # pair differs; choose the first one so the lower-bound witness is
+        # deterministic without implying a data-dependent branch.
+        candidate = target[index]
         values[index] = candidate
         values[index + len(flat)] = candidate
     return values
@@ -535,6 +536,14 @@ def refresh_frontier_commitment(payload: dict[str, Any]) -> None:
     refresh_payload_commitment(payload)
 
 
+def set_policy_admissible(payload: dict[str, Any], policy_id: str, admissible: bool) -> None:
+    for policy in payload["policy_frontier"]["policies"]:
+        if policy.get("id") == policy_id:
+            policy["admissible_as_value_adapter"] = admissible
+            return
+    raise ValueAdapterPolicyFrontierError(f"policy not found for mutation: {policy_id}")
+
+
 MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ("decision_promoted", lambda p: p.__setitem__("decision", "GO_VALUE_DERIVED_ADAPTER"), True),
     ("claim_boundary_overclaim", lambda p: p.__setitem__("claim_boundary", "VALUE_DERIVED_ADAPTER_EXISTS"), True),
@@ -545,7 +554,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ),
     (
         "index_only_admitted",
-        lambda p: p["policy_frontier"]["policies"][4].__setitem__("admissible_as_value_adapter", True),
+        lambda p: set_policy_admissible(p, "index_only_synthetic_target_pattern", True),
         True,
     ),
     (
