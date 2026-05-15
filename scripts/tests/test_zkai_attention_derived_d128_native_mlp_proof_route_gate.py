@@ -62,16 +62,16 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         ):
             GATE.build_core_payload(context)
 
-    def test_only_first_component_is_currently_native_input_shape(self) -> None:
+    def test_first_two_components_are_currently_native_input_shape(self) -> None:
         rows = {row["component_id"]: row for row in self.payload["component_input_frontier"]}
         self.assertEqual(rows["rmsnorm_public_rows"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
-        self.assertEqual(rows["rmsnorm_projection_bridge"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
+        self.assertEqual(rows["rmsnorm_projection_bridge"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(rows["gate_value_projection"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
         self.assertEqual(rows["activation_swiglu"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
         self.assertEqual(rows["down_projection"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
         self.assertEqual(rows["residual_add"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
-        self.assertEqual(self.payload["summary"]["native_compatible_components"], 1)
-        self.assertEqual(self.payload["summary"]["native_incompatible_components"], 5)
+        self.assertEqual(self.payload["summary"]["native_compatible_components"], 2)
+        self.assertEqual(self.payload["summary"]["native_incompatible_components"], 4)
 
     def test_pins_missing_native_attention_derived_artifacts(self) -> None:
         missing = self.payload["missing_native_artifacts"]
@@ -120,7 +120,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
     def test_tsv_output(self) -> None:
         tsv = GATE.to_tsv(self.payload, context=self.context)
         self.assertIn("native_incompatible_components", tsv.splitlines()[0])
-        self.assertIn("\t5", tsv.splitlines()[1])
+        self.assertTrue(tsv.splitlines()[1].endswith("\t2\t4"))
 
     def test_written_payload_round_trip(self) -> None:
         tmp_root = ROOT / "docs" / "engineering" / "evidence"

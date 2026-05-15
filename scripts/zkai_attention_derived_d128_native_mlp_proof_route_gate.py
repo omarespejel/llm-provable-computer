@@ -21,6 +21,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 
 DERIVED_RMSNORM = EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
+DERIVED_NATIVE_BRIDGE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+)
 DERIVED_PROJECTION = EVIDENCE_DIR / "zkai-attention-derived-d128-projection-boundary-2026-05.json"
 DERIVED_ACTIVATION = EVIDENCE_DIR / "zkai-attention-derived-d128-activation-swiglu-2026-05.json"
 DERIVED_DOWN = EVIDENCE_DIR / "zkai-attention-derived-d128-down-projection-2026-05.json"
@@ -38,8 +41,8 @@ RESULT = "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED"
 VALUE_CHAIN_STATUS = "GO_ATTENTION_DERIVED_D128_VALUE_CONNECTED_STATEMENT_CHAIN"
 NATIVE_ROUTE_STATUS = "NO_GO_DERIVED_DOWNSTREAM_PAYLOADS_NOT_NATIVE_COMPONENT_PROOF_INPUTS"
 FIRST_BLOCKER = (
-    "the attention-derived downstream slice artifacts are checked statement-chain payloads, "
-    "not native component proof inputs accepted by the current Stwo RMSNorm-MLP fused proof builder"
+    "the attention-derived gate/value projection slice is still a checked statement-chain payload, "
+    "not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:attention-derived-d128:native-mlp-proof-route:v1"
 EXPECTED_DERIVED_INPUT_COMMITMENT = (
@@ -66,8 +69,8 @@ COMPONENT_SPECS = (
     },
     {
         "component_id": "rmsnorm_projection_bridge",
-        "path": DERIVED_PROJECTION,
-        "payload_key": "bridge_payload",
+        "path": DERIVED_NATIVE_BRIDGE,
+        "payload_key": None,
         "required_native_schema": "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1",
         "required_native_decision": "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF",
         "required_fields": ("validation_commands", "proof_verifier_hardening", "non_claims"),
@@ -272,7 +275,12 @@ def source_artifact(artifact_id: str, path: pathlib.Path, payload: dict[str, Any
 
 
 def component_frontier_row(spec: dict[str, Any], source_payloads: dict[pathlib.Path, dict[str, Any]]) -> dict[str, Any]:
-    payload = _dict(source_payloads[spec["path"]].get(spec["payload_key"]), f"{spec['component_id']} payload")
+    payload_key = spec["payload_key"]
+    payload = (
+        source_payloads[spec["path"]]
+        if payload_key is None
+        else _dict(source_payloads[spec["path"]].get(payload_key), f"{spec['component_id']} payload")
+    )
     missing = [field for field in spec["required_fields"] if field not in payload]
     schema = _str(payload.get("schema"), f"{spec['component_id']} schema")
     decision = _str(payload.get("decision"), f"{spec['component_id']} decision")
@@ -287,7 +295,7 @@ def component_frontier_row(spec: dict[str, Any], source_payloads: dict[pathlib.P
     return {
         "component_id": spec["component_id"],
         "source_path": spec["path"].relative_to(ROOT).as_posix(),
-        "payload_key": spec["payload_key"],
+        "payload_key": "root" if payload_key is None else payload_key,
         "schema": schema,
         "required_native_schema": spec["required_native_schema"],
         "schema_matches_native": schema_matches,
@@ -303,6 +311,7 @@ def component_frontier_row(spec: dict[str, Any], source_payloads: dict[pathlib.P
 def build_context() -> dict[str, Any]:
     paths = {
         DERIVED_RMSNORM,
+        DERIVED_NATIVE_BRIDGE,
         DERIVED_PROJECTION,
         DERIVED_ACTIVATION,
         DERIVED_DOWN,
@@ -546,8 +555,8 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ),
     (
         "component_schema_relabels_native",
-        lambda p: p["component_input_frontier"][1].__setitem__(
-            "schema", p["component_input_frontier"][1]["required_native_schema"]
+        lambda p: p["component_input_frontier"][2].__setitem__(
+            "schema", p["component_input_frontier"][2]["required_native_schema"]
         ),
         True,
     ),
