@@ -48,8 +48,14 @@ class ZkAiD128ActivationSwiGluProofInputTests(unittest.TestCase):
 
     def test_load_source_accepts_legacy_synthetic_gate_value_evidence(self) -> None:
         source = ACTIVATION_SWIGLU.load_source()
-        self.assertNotIn("source_bridge_statement_commitment", source)
-        self.assertNotIn("source_bridge_public_instance_commitment", source)
+        self.assertEqual(
+            source["source_bridge_statement_commitment"],
+            ACTIVATION_SWIGLU.GATE_VALUE.SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+        )
+        self.assertEqual(
+            source["source_bridge_public_instance_commitment"],
+            ACTIVATION_SWIGLU.GATE_VALUE.SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        )
         ACTIVATION_SWIGLU.validate_source(source)
 
     def test_payload_rejects_hidden_relabeling_as_full_output(self) -> None:

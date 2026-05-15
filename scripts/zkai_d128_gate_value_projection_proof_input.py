@@ -541,9 +541,8 @@ def validate_payload(payload: Any) -> None:
     else:
         raise GateValueProjectionInputError("payload field set mismatch")
     source_anchor = source_bridge_anchor(source_bridge)
-    normalized_payload = dict(payload)
-    normalized_payload["source_bridge_statement_commitment"] = source_anchor["statement_commitment"]
-    normalized_payload["source_bridge_public_instance_commitment"] = source_anchor["public_instance_commitment"]
+    payload["source_bridge_statement_commitment"] = source_anchor["statement_commitment"]
+    payload["source_bridge_public_instance_commitment"] = source_anchor["public_instance_commitment"]
     constants = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -623,7 +622,7 @@ def validate_payload(payload: Any) -> None:
         raise GateValueProjectionInputError("gate/value projection row commitment drift")
     if proof_native_parameter_commitment(payload["gate_matrix_root"], payload["value_matrix_root"]) != payload["proof_native_parameter_commitment"]:
         raise GateValueProjectionInputError("proof-native parameter commitment drift")
-    if statement_commitment(normalized_payload) != payload["statement_commitment"]:
+    if statement_commitment(payload) != payload["statement_commitment"]:
         raise GateValueProjectionInputError("statement commitment drift")
     if public_instance_commitment(payload["statement_commitment"]) != payload["public_instance_commitment"]:
         raise GateValueProjectionInputError("public instance commitment drift")
